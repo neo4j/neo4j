@@ -54,7 +54,7 @@ public class Native30StringLengthIndexValidationIT extends StringLengthIndexVali
     }
 
     @Override
-    protected String expectedPopulationFailureCauseMessage()
+    protected String expectedPopulationFailureCauseMessage( long nodeId )
     {
         return failureMessage;
     }

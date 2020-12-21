@@ -55,9 +55,9 @@ public class GenericStringLengthIndexValidationIT extends StringLengthIndexValid
     }
 
     @Override
-    protected String expectedPopulationFailureCauseMessage()
+    protected String expectedPopulationFailureCauseMessage( long nodeId )
     {
         return format( "Failed while trying to write to index, targetIndex=Index( 1, 'index_71616483', GENERAL BTREE, :LABEL_ONE(largeString), %s ), " +
-                "nodeId=0", NATIVE_BTREE10.providerName() );
+                "nodeId=%d", NATIVE_BTREE10.providerName(), nodeId );
     }
 }
