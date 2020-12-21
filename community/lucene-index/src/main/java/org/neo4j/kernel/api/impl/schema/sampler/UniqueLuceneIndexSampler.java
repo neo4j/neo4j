@@ -21,9 +21,9 @@ package org.neo4j.kernel.api.impl.schema.sampler;
 
 import org.apache.lucene.search.IndexSearcher;
 
-import org.neo4j.internal.helpers.TaskControl;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.UniqueIndexSampler;
 
@@ -35,18 +35,21 @@ public class UniqueLuceneIndexSampler extends LuceneIndexSampler
 {
     private final IndexSearcher indexSearcher;
 
-    public UniqueLuceneIndexSampler( IndexSearcher indexSearcher, TaskControl taskControl )
+    public UniqueLuceneIndexSampler( IndexSearcher indexSearcher, TaskCoordinator taskCoordinator )
     {
-        super( taskControl );
+        super( taskCoordinator );
         this.indexSearcher = indexSearcher;
     }
 
     @Override
     public IndexSample sampleIndex( PageCursorTracer cursorTracer ) throws IndexNotFoundKernelException
     {
-        UniqueIndexSampler sampler = new UniqueIndexSampler();
-        sampler.increment( indexSearcher.getIndexReader().numDocs() );
-        checkCancellation();
-        return sampler.result();
+        try ( TaskCoordinator.Task task = newTask() )
+        {
+            UniqueIndexSampler sampler = new UniqueIndexSampler();
+            sampler.increment( indexSearcher.getIndexReader().numDocs() );
+            checkCancellation( task );
+            return sampler.result();
+        }
     }
 }

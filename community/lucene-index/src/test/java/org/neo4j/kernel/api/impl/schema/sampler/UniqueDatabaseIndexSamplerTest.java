@@ -23,8 +23,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -38,14 +36,14 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 class UniqueDatabaseIndexSamplerTest
 {
     private final IndexSearcher indexSearcher = mock( IndexSearcher.class, Mockito.RETURNS_DEEP_STUBS );
-    private final TaskCoordinator taskControl = new TaskCoordinator( 0, TimeUnit.MILLISECONDS );
+    private final TaskCoordinator taskControl = new TaskCoordinator();
 
     @Test
     void uniqueSamplingUseDocumentsNumber() throws IndexNotFoundKernelException
     {
         when( indexSearcher.getIndexReader().numDocs() ).thenReturn( 17 );
 
-        UniqueLuceneIndexSampler sampler = new UniqueLuceneIndexSampler( indexSearcher, taskControl.newInstance() );
+        UniqueLuceneIndexSampler sampler = new UniqueLuceneIndexSampler( indexSearcher, taskControl );
         IndexSample sample = sampler.sampleIndex( NULL );
         assertEquals( 17, sample.indexSize() );
     }
@@ -59,7 +57,7 @@ class UniqueDatabaseIndexSamplerTest
             return 17;
         } );
 
-        UniqueLuceneIndexSampler sampler = new UniqueLuceneIndexSampler( indexSearcher, taskControl.newInstance() );
+        UniqueLuceneIndexSampler sampler = new UniqueLuceneIndexSampler( indexSearcher, taskControl );
         IndexNotFoundKernelException notFoundKernelException = assertThrows( IndexNotFoundKernelException.class, () -> sampler.sampleIndex( NULL ) );
         assertEquals( "Index dropped while sampling.", notFoundKernelException.getMessage() );
     }

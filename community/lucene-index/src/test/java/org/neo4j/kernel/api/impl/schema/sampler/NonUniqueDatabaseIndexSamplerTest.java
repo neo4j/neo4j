@@ -30,7 +30,6 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.MapUtil;
@@ -49,7 +48,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 class NonUniqueDatabaseIndexSamplerTest
 {
     private final IndexSearcher indexSearcher = mock( IndexSearcher.class, Mockito.RETURNS_DEEP_STUBS );
-    private final TaskCoordinator taskControl = new TaskCoordinator( 0, TimeUnit.MILLISECONDS );
+    private final TaskCoordinator taskControl = new TaskCoordinator();
     private final IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
 
     @Test
@@ -82,7 +81,7 @@ class NonUniqueDatabaseIndexSamplerTest
 
     private NonUniqueLuceneIndexSampler createSampler()
     {
-        return new NonUniqueLuceneIndexSampler( indexSearcher, taskControl.newInstance(), indexSamplingConfig );
+        return new NonUniqueLuceneIndexSampler( indexSearcher, taskControl, indexSamplingConfig );
     }
 
     private static Terms getTerms( String value, int frequency ) throws IOException

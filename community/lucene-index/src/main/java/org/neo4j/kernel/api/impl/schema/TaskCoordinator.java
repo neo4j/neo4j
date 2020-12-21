@@ -20,33 +20,20 @@
 package org.neo4j.kernel.api.impl.schema;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.function.Factory;
 import org.neo4j.internal.helpers.Cancelable;
 import org.neo4j.internal.helpers.CancellationRequest;
-import org.neo4j.internal.helpers.TaskControl;
 
 /**
- * Represents a collection point for various {@link TaskControl} instances that need to be waited on and potentially
- * cancelled en mass. Instances of {@link TaskControl} acquired through the {@link #newInstance()} method can be
+ * Represents a collection point for various {@link Task} instances that need to be waited on and potentially
+ * cancelled en mass. Instances of {@link Task} acquired through the {@link #newTask()} method can be
  * notified of cancellation with the semantics of {@link CancellationRequest}.
  */
-public class TaskCoordinator implements Cancelable, Factory<TaskControl>
+public class TaskCoordinator implements Cancelable, CancellationRequest
 {
-    private static final AtomicIntegerFieldUpdater<TaskCoordinator> TASKS_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater( TaskCoordinator.class, "tasks" );
+    private static final AtomicInteger tasks = new AtomicInteger();
     private volatile boolean cancelled;
-    @SuppressWarnings( "UnusedDeclaration"/*updated through the updater*/ )
-    private volatile int tasks;
-    private final long sleepTime;
-    private final TimeUnit sleepUnit;
-
-    public TaskCoordinator( long sleepTime, TimeUnit sleepUnit )
-    {
-        this.sleepTime = sleepTime;
-        this.sleepUnit = sleepUnit;
-    }
 
     @Override
     public void cancel()
@@ -56,39 +43,45 @@ public class TaskCoordinator implements Cancelable, Factory<TaskControl>
 
     public void awaitCompletion() throws InterruptedException
     {
-        while ( tasks != 0 )
+        while ( tasks.get() > 0 )
         {
-            sleepUnit.sleep( sleepTime );
+            TimeUnit.MILLISECONDS.sleep( 10 );
         }
     }
 
-    @Override
-    public TaskControl newInstance()
+    public boolean cancellationRequested()
     {
+        return cancelled;
+    }
+
+    public Task newTask()
+    {
+        Task task = new Task();
         if ( cancelled )
         {
+            task.close();
             throw new IllegalStateException( "This manager has already been cancelled." );
         }
-        TASKS_UPDATER.incrementAndGet( this );
-        return new TaskControl()
+        return task;
+    }
+
+    public class Task implements AutoCloseable, CancellationRequest
+    {
+        Task()
         {
-            private volatile boolean closed;
+            tasks.incrementAndGet();
+        }
 
-            @Override
-            public void close()
-            {
-                if ( !closed )
-                {
-                    closed = true;
-                    TASKS_UPDATER.decrementAndGet( TaskCoordinator.this );
-                }
-            }
+        @Override
+        public void close()
+        {
+            tasks.decrementAndGet();
+        }
 
-            @Override
-            public boolean cancellationRequested()
-            {
-                return cancelled;
-            }
-        };
+        @Override
+        public boolean cancellationRequested()
+        {
+            return TaskCoordinator.this.cancellationRequested();
+        }
     }
 }

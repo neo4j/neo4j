@@ -29,7 +29,6 @@ import org.apache.lucene.search.TotalHitCountCollector;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.neo4j.internal.helpers.TaskControl;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -81,14 +80,13 @@ public class SimpleIndexReader extends AbstractIndexReader
     @Override
     public IndexSampler createSampler()
     {
-        TaskControl taskControl = taskCoordinator.newInstance();
         if ( descriptor.isUnique() )
         {
-            return new UniqueLuceneIndexSampler( getIndexSearcher(), taskControl );
+            return new UniqueLuceneIndexSampler( getIndexSearcher(), taskCoordinator );
         }
         else
         {
-            return new NonUniqueLuceneIndexSampler( getIndexSearcher(), taskControl, samplingConfig );
+            return new NonUniqueLuceneIndexSampler( getIndexSearcher(), taskCoordinator, samplingConfig );
         }
     }
 

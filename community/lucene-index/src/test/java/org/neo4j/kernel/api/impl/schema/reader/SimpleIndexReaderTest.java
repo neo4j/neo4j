@@ -28,7 +28,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -65,7 +64,7 @@ class SimpleIndexReaderTest
     private final PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
     private final Neo4jIndexSearcher indexSearcher = mock( Neo4jIndexSearcher.class );
     private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-    private final TaskCoordinator taskCoordinator = new TaskCoordinator( 0, TimeUnit.MILLISECONDS );
+    private final TaskCoordinator taskCoordinator = new TaskCoordinator();
 
     @BeforeEach
     void setUp()

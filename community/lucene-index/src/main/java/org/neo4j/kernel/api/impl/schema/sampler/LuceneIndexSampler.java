@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.sampler;
 
-import org.neo4j.internal.helpers.TaskControl;
+import org.neo4j.internal.helpers.CancellationRequest;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -30,11 +30,11 @@ import org.neo4j.kernel.api.index.IndexSampler;
  */
 abstract class LuceneIndexSampler implements IndexSampler
 {
-    private final TaskControl executionTicket;
+    private final TaskCoordinator taskCoordinator;
 
-    LuceneIndexSampler( TaskControl taskControl )
+    LuceneIndexSampler( TaskCoordinator taskCoordinator )
     {
-        this.executionTicket = taskControl;
+        this.taskCoordinator = taskCoordinator;
     }
 
     /**
@@ -42,17 +42,17 @@ abstract class LuceneIndexSampler implements IndexSampler
      *
      * @throws IndexNotFoundKernelException if cancellation was requested.
      */
-    void checkCancellation() throws IndexNotFoundKernelException
+    void checkCancellation( CancellationRequest ongoingTask ) throws IndexNotFoundKernelException
     {
-        if ( executionTicket.cancellationRequested() )
+        if ( ongoingTask.cancellationRequested() )
         {
             throw new IndexNotFoundKernelException( "Index dropped while sampling." );
         }
     }
 
-    @Override
-    public void close()
+    protected TaskCoordinator.Task newTask() throws IndexNotFoundKernelException
     {
-        executionTicket.close();
+        checkCancellation( taskCoordinator );
+        return taskCoordinator.newTask();
     }
 }
