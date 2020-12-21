@@ -39,4 +39,4 @@ case object InterpretedTestConfig extends TestConfig(Some("interpreted.txt"),"CY
 
 case object PipelinedFullTestConfig extends TestConfig(
   Some("pipelined-single-threaded-full.txt"),
-  "CYPHER planner=cost runtime=pipelined interpretedPipesFallback=all")
+  "CYPHER planner=cost runtime=pipelined interpretedPipesFallback=all", experimental = true)
