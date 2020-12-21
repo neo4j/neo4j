@@ -21,10 +21,10 @@ package org.neo4j.internal.kernel.api.security;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -188,7 +188,7 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsReadRelationshipProperty( IntSupplier relType, int propertyKey )
+        public boolean allowsReadRelationshipProperty( RelTypeSupplier relType, int propertyKey )
         {
             return read;
         }
@@ -284,7 +284,7 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsSetProperty( IntSupplier relType, int propertyKey )
+        public boolean allowsSetProperty( RelTypeSupplier relType, int propertyKey )
         {
             return write;
         }
@@ -339,7 +339,8 @@ public interface AccessMode
     boolean allowsReadNodeProperty( Supplier<TokenSet> labels, int propertyKey );
 
     boolean allowsReadPropertyAllRelTypes( int propertyKey );
-    boolean allowsReadRelationshipProperty( IntSupplier relType, int propertyKey );
+
+    boolean allowsReadRelationshipProperty( RelTypeSupplier relType, int propertyKey );
 
     boolean allowsSeePropertyKeyToken( int propertyKey );
 
@@ -417,7 +418,7 @@ public interface AccessMode
 
     boolean allowsSetProperty( Supplier<TokenSet> labels, int propertyKey );
 
-    boolean allowsSetProperty( IntSupplier relType, int propertyKey );
+    boolean allowsSetProperty( RelTypeSupplier relType, int propertyKey );
 
     AuthorizationViolationException onViolation( String msg );
     String name();

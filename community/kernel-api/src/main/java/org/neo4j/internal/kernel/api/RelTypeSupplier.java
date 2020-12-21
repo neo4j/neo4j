@@ -17,39 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.TokenSet;
-import org.neo4j.storageengine.api.StoragePropertyCursor;
+package org.neo4j.internal.kernel.api;
 
-class FullAccessPropertyCursor extends DefaultPropertyCursor
+@FunctionalInterface
+public interface RelTypeSupplier
 {
-    FullAccessPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
-    {
-        super( pool, storeCursor, null, null );
-    }
-
-    @Override
-    final boolean allowed()
-    {
-        return true;
-    }
-
-    /**
-     * Only used for security checks
-     */
-    @Override
-    public TokenSet get()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Only used for security checks
-     */
-    @Override
-    public int getRelType()
-    {
-        throw new UnsupportedOperationException();
-    }
+    int getRelType();
 }

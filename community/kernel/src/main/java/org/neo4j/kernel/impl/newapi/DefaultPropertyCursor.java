@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Iterator;
-import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.AssertOpen;
@@ -37,7 +37,7 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_ENTITY;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
 
-public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor> implements PropertyCursor, Supplier<TokenSet>, IntSupplier
+public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor> implements PropertyCursor, Supplier<TokenSet>, RelTypeSupplier
 {
     private static final int NODE = -2;
     private Read read;
@@ -284,7 +284,7 @@ public class DefaultPropertyCursor extends TraceableCursor<DefaultPropertyCursor
      * Only used for security checks
      */
     @Override
-    public int getAsInt()
+    public int getRelType()
     {
         assert isRelationship();
 

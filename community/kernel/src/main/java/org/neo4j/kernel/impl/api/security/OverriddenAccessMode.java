@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.security;
 
-import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
+import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.PrivilegeAction;
@@ -140,7 +140,7 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsReadRelationshipProperty( IntSupplier relType, int propertyKey )
+    public boolean allowsReadRelationshipProperty( RelTypeSupplier relType, int propertyKey )
     {
         return wrapping.allowsReadRelationshipProperty( relType, propertyKey );
     }
@@ -200,7 +200,7 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsSetProperty( IntSupplier relType, int propertyKey )
+    public boolean allowsSetProperty( RelTypeSupplier relType, int propertyKey )
     {
         return wrapping.allowsSetProperty( relType, propertyKey);
     }

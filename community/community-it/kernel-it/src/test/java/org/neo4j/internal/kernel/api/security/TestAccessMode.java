@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 
 public class TestAccessMode implements AccessMode
@@ -143,7 +143,7 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
-    public boolean allowsReadRelationshipProperty( IntSupplier relType, int propertyKey )
+    public boolean allowsReadRelationshipProperty( RelTypeSupplier relType, int propertyKey )
     {
         return allowRead;
     }
@@ -239,7 +239,7 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
-    public boolean allowsSetProperty( IntSupplier relType, int propertyKey )
+    public boolean allowsSetProperty( RelTypeSupplier relType, int propertyKey )
     {
         return allowWrite;
     }
