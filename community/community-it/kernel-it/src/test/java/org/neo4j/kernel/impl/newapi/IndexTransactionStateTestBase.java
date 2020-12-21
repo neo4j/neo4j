@@ -73,8 +73,9 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
         }
     }
 
-    @Test
-    void shouldPerformScan() throws Exception
+    @ParameterizedTest
+    @ValueSource( strings = {"true", "false"} )
+    void shouldPerformScan( boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -100,10 +101,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
 
             IndexDescriptor index = tx.schemaRead().indexGetForName( INDEX_NAME );
 
-            // For now, scans cannot request values, since Spatial cannot provide them
-            // If we have to possibility to accept values IFF they exist (which corresponds
-            // to ValueCapability PARTIAL) this needs to change
-            assertEntityAndValueForScan( expected, tx, index, false, "noff" );
+            assertEntityAndValueForScan( expected, tx, index, needsValues, "noff" );
         }
     }
 
@@ -365,7 +363,8 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     void assertEntityAndValue( Set<Pair<Long,Value>> expected, KernelTransaction tx, boolean needsValues, Object anotherValueFoundByQuery,
             EntityValueIndexCursor entities ) throws Exception
     {
-        // Modify tx state with changes that should not be reflected in the cursor, since it was already initialized in the above statement
+        // Modify tx state with changes that should not be reflected in the cursor,
+        // since the cursor was already initialized in the code calling this method
         for ( Pair<Long,Value> pair : expected )
         {
             tx.dataWrite().relationshipDelete( pair.first() );
@@ -412,7 +411,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
      *
      * Since this method modifies TX state for the test it is not safe to call this method more than once in the same transaction.
      *
-     * @param expected the expected nodes and values
+     * @param expected the expected entities and values
      * @param tx the transaction
      * @param index the index
      * @param needsValues if the index is expected to provide values

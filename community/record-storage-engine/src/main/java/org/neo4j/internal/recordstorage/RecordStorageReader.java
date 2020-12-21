@@ -153,9 +153,9 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public boolean hasRelatedSchema( long[] tokes, int propertyKey, EntityType entityType )
+    public boolean hasRelatedSchema( long[] tokens, int propertyKey, EntityType entityType )
     {
-        return schemaCache.hasRelatedSchema( tokes, propertyKey, entityType );
+        return schemaCache.hasRelatedSchema( tokens, propertyKey, entityType );
     }
 
     @Override

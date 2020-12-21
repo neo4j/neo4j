@@ -451,6 +451,8 @@ public class Operations implements Write, SchemaWrite
 
             ktx.assertOpen();
 
+            int type = acquireSharedRelationshipTypeLock();
+
             TransactionState txState = ktx.txState();
             if ( txState.relationshipIsAddedInThisTx( relationship ) )
             {
@@ -458,9 +460,8 @@ public class Operations implements Write, SchemaWrite
             }
             else
             {
-                assertAllowsDeleteRelationship( relationshipCursor.type() );
-                txState.relationshipDoDelete( relationship, relationshipCursor.type(),
-                        relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
+                assertAllowsDeleteRelationship( type );
+                txState.relationshipDoDelete( relationship, type, relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
             }
             return true;
         }
@@ -704,7 +705,7 @@ public class Operations implements Write, SchemaWrite
         }
         if ( existingValue == NO_VALUE )
         {
-            assertAllowsSetProperty( relationshipCursor.type(), propertyKey );
+            assertAllowsSetProperty( type, propertyKey );
             ktx.txState().relationshipDoReplaceProperty( relationship, propertyKey, NO_VALUE, value );
             if ( hasRelatedSchema )
             {
@@ -716,7 +717,7 @@ public class Operations implements Write, SchemaWrite
         {
             if ( propertyHasChanged( existingValue, value ) )
             {
-                assertAllowsSetProperty( relationshipCursor.type(), propertyKey );
+                assertAllowsSetProperty( type, propertyKey );
                 ktx.txState().relationshipDoReplaceProperty( relationship, propertyKey, existingValue, value );
                 if ( hasRelatedSchema )
                 {
@@ -739,7 +740,7 @@ public class Operations implements Write, SchemaWrite
         if ( existingValue != NO_VALUE )
         {
             int type = acquireSharedRelationshipTypeLock();
-            assertAllowsSetProperty( relationshipCursor.type(), propertyKey );
+            assertAllowsSetProperty( type, propertyKey );
             ktx.txState().relationshipDoRemoveProperty( relationship, propertyKey );
             if ( storageReader.hasRelatedSchema( new long[]{type}, propertyKey, RELATIONSHIP ) )
             {

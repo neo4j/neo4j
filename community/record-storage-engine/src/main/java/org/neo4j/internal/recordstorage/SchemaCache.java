@@ -216,9 +216,9 @@ public class SchemaCache
         return schemaCacheState.getUniquenessConstraintsRelatedTo( entityType, changedLabels, unchangedLabels, properties, propertyListIsComplete );
     }
 
-    boolean hasRelatedSchema( long[] tokes, int propertyKey, EntityType entityType )
+    boolean hasRelatedSchema( long[] tokens, int propertyKey, EntityType entityType )
     {
-        return schemaCacheState.hasRelatedSchema( tokes, propertyKey, entityType );
+        return schemaCacheState.hasRelatedSchema( tokens, propertyKey, entityType );
     }
 
     boolean hasRelatedSchema( int token, EntityType entityType )
@@ -468,10 +468,10 @@ public class SchemaCache
             return descriptors;
         }
 
-        boolean hasRelatedSchema( long[] tokes, int propertyKey, EntityType entityType )
+        boolean hasRelatedSchema( long[] tokens, int propertyKey, EntityType entityType )
         {
-            return selectIndexSetByEntityType( entityType ).has( tokes, propertyKey ) ||
-                    selectUniquenessConstraintSetByEntityType( entityType ).has( tokes, propertyKey );
+            return selectIndexSetByEntityType( entityType ).has( tokens, propertyKey ) ||
+                    selectUniquenessConstraintSetByEntityType( entityType ).has( tokens, propertyKey );
         }
 
         boolean hasRelatedSchema( int token, EntityType entityType )

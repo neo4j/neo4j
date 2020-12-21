@@ -83,17 +83,6 @@ abstract class SchemaMatcherTest
     }
 
     @Test
-    void shouldNotMatchIfEntityIsMissingToken()
-    {
-        // when
-        List<IndexDescriptor> matched = new ArrayList<>();
-        SchemaMatcher.onMatchingSchema( iterator( indexWithMissingToken ), new long[]{tokenId1}, unIndexedPropId, props, matched::add );
-
-        // then
-        assertThat( matched ).isEmpty();
-    }
-
-    @Test
     void shouldMatchOnSpecialProperty()
     {
         // when

@@ -53,7 +53,7 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
     boolean indexExists( IndexDescriptor index );
 
     /**
-     * Returns all indexes (including unique) related to a property, any of the tokes (labels or relationship types) and the entity type.
+     * Returns all indexes (including unique) related to a property, any of the tokens (labels or relationship types) and the entity type.
      */
     Collection<IndexDescriptor> indexesGetRelated( long[] tokens, int propertyKeyId, EntityType entityType );
 
@@ -63,7 +63,7 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader
 
     Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated( long[] labels, int[] propertyKeyIds, EntityType entityType );
 
-    boolean hasRelatedSchema( long[] tokes, int propertyKey, EntityType entityType );
+    boolean hasRelatedSchema( long[] tokens, int propertyKey, EntityType entityType );
 
     boolean hasRelatedSchema( int token, EntityType entityType );
 

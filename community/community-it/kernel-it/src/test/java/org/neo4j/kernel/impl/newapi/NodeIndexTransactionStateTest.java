@@ -104,6 +104,7 @@ public class NodeIndexTransactionStateTest extends IndexTransactionStateTestBase
         }
     }
 
+    @Override
     void assertEntityAndValueForScan( Set<Pair<Long,Value>> expected, KernelTransaction tx, IndexDescriptor index, boolean needsValues,
             Object anotherValueFoundByQuery ) throws Exception
     {
