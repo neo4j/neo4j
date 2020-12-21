@@ -109,7 +109,7 @@
     <jamm.version>0.3.3</jamm.version>
     <lucene.version>8.5.1</lucene.version>
     <bouncycastle.version>1.65</bouncycastle.version>
-    <jetty.version>9.4.34.v20201102</jetty.version>
+    <jetty.version>9.4.35.v20201120</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
     <scala-maven-plugin.version>4.3.0</scala-maven-plugin.version>
     <scala.version>2.12.10</scala.version>
@@ -1420,6 +1420,12 @@
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-servlet</artifactId>
         <version>${jetty.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-util-ajax</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
