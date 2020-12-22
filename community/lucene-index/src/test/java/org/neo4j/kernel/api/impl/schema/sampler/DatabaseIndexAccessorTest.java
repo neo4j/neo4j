@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.schema;
+package org.neo4j.kernel.api.impl.schema.sampler;
 
 import org.junit.After;
 import org.junit.Before;
@@ -29,6 +29,7 @@ import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -45,6 +46,10 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexAccessor;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
+import org.neo4j.kernel.api.impl.schema.SchemaIndex;
+import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -54,6 +59,7 @@ import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
@@ -62,6 +68,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
@@ -302,28 +310,56 @@ public class DatabaseIndexAccessorTest
         updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
 
         // when
-        IndexReader indexReader = accessor.newReader(); // needs to be acquired before drop() is called
-        IndexSampler indexSampler = indexReader.createSampler();
+        IndexReader indexReader = accessor.newReader();
+        BinaryLatch dropLatch = new BinaryLatch();
+        BinaryLatch sampleLatch = new BinaryLatch();
 
-        Future<Void> drop = threading.executeAndAwait( (IOFunction<Void,Void>) nothing ->
+        LuceneIndexSampler indexSampler = spy( (LuceneIndexSampler) indexReader.createSampler() );
+        doAnswer( inv ->
         {
-            accessor.drop();
-            return nothing;
-        }, null, waitingWhileIn( TaskCoordinator.class, "awaitCompletion" ), 3, SECONDS );
+            var obj = inv.callRealMethod();
+            dropLatch.release(); //We have now started the sampling, let the index try to drop
+            sampleLatch.await(); //Wait for the drop to be blocked
+            return obj;
+        } ).when( indexSampler ).newTask();
 
+        List<Future<?>> futures = new ArrayList<>();
         try ( IndexReader reader = indexReader /* do not inline! */;
               IndexSampler sampler = indexSampler /* do not inline! */ )
         {
-            sampler.sampleIndex( NULL );
-            fail( "expected exception" );
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            assertEquals( "Index dropped while sampling.", e.getMessage() );
+           futures.add( threading.execute( (IOFunction<Void,Void>) nothing ->
+            {
+                try
+                {
+                    indexSampler.sampleIndex( NULL );
+                    fail( "expected exception" );
+                }
+                catch ( IndexNotFoundKernelException e )
+                {
+                    assertEquals( "Index dropped while sampling.", e.getMessage() );
+                }
+                finally
+                {
+                    dropLatch.release(); //if something goes wrong we do not want to block the drop
+                }
+                return nothing;
+            }, null ) );
+
+            futures.add( threading.executeAndAwait( (IOFunction<Void,Void>) nothing ->
+            {
+                dropLatch.await(); //need to wait for the sampling to start before we drop
+                accessor.drop();
+                return nothing;
+            }, null, waitingWhileIn( TaskCoordinator.class, "awaitCompletion" ), 3, SECONDS ) );
+
+            sampleLatch.release(); //drop is blocked, okay to finish sampling (will fail since index is dropped)
         }
         finally
         {
-            drop.get();
+            for ( Future<?> future : futures )
+            {
+                future.get();
+            }
         }
     }
 
