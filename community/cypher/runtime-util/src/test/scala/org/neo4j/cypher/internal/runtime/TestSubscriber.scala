@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 import org.neo4j.graphdb
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -38,6 +39,8 @@ trait TestSubscriber extends QuerySubscriber {
   def numberOfSeenResults: Int
 
   def allSeen: Seq[Seq[AnyValue]]
+
+  def queryStatistics: graphdb.QueryStatistics
 }
 
 object TestSubscriber {
@@ -50,6 +53,7 @@ object TestSubscriber {
     private var current: ConcurrentLinkedQueue[AnyValue] = _
     private val done = new AtomicBoolean(false)
     private val numberOfSeenRecords = new AtomicInteger(0)
+    private val statistics = new AtomicReference[graphdb.QueryStatistics](null)
 
     override def onResult(numberOfFields: Int): Unit = {
       numberOfSeenRecords.set(0)
@@ -71,6 +75,7 @@ object TestSubscriber {
     override def onError(throwable: Throwable): Unit = {}
 
     override def onResultCompleted(statistics: graphdb.QueryStatistics): Unit = {
+      this.statistics.set(statistics)
       done.set(true)
     }
 
@@ -81,6 +86,8 @@ object TestSubscriber {
     override def numberOfSeenResults: Int = numberOfSeenRecords.get()
 
     override def allSeen: Seq[Seq[AnyValue]] = records.asScala.toSeq
+
+    override def queryStatistics: graphdb.QueryStatistics = statistics.get()
   }
 
   private class SingleThreadedTestSubscriber extends TestSubscriber {
@@ -88,6 +95,7 @@ object TestSubscriber {
     private var current: mutable.ArrayBuffer[AnyValue] = _
     private var done = false
     private var numberOfSeenRecords = 0
+    private var statistics: graphdb.QueryStatistics = _
 
     override def onResult(numberOfFields: Int): Unit = {
       numberOfSeenRecords = 0
@@ -109,6 +117,7 @@ object TestSubscriber {
     override def onError(throwable: Throwable): Unit = {}
 
     override def onResultCompleted(statistics: graphdb.QueryStatistics): Unit = {
+      this.statistics = statistics
       done = true
     }
 
@@ -119,5 +128,7 @@ object TestSubscriber {
     override def numberOfSeenResults: Int = numberOfSeenRecords
 
     override def allSeen: Seq[Seq[AnyValue]] = records
+
+    override def queryStatistics: graphdb.QueryStatistics = statistics
   }
 }

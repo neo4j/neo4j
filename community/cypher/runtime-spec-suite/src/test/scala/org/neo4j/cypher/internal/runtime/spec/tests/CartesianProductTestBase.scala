@@ -26,8 +26,10 @@ import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Direction
 
@@ -626,5 +628,97 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
                         k <- 0 until i} yield Array(j, k)
     val runtimeResult = execute(logicalQuery, runtime, inputRows)
     runtimeResult should beColumns("nn", "mm").withRows(inOrder(expected))
+  }
+
+  test("cartesian product should not eagerly schedule lhs - non-nested") {
+    // given
+    val n = Math.pow(sizeHint, 1.0 / 4).toInt * 2
+    val (as, bs) = given {
+      val as = nodeGraph(n, "A")
+      val bs = nodeGraph(n, "B")
+      (as, bs)
+    }
+
+    val nBatchSize = n/2
+    val inputStream = batchedInputValues(nBatchSize, as.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", IndexOrderNone)
+      .input(nodes = Seq("a"))
+      .build()
+
+    val subscriber = TestSubscriber.concurrent
+    val result = execute(logicalQuery, runtime, inputStream, subscriber)
+
+    result.request(1)
+    result.await() shouldBe true
+
+    inputStream.hasMore shouldBe true
+
+    result.request(Long.MaxValue)
+    result.await() shouldBe false
+
+    inputStream.hasMore shouldBe false
+
+    // then
+    val expectedResultRows = for {a <- as
+                                  b <- bs
+                                  } yield Array(a, b)
+
+    val runtimeResult = RecordingRuntimeResult(result, subscriber)
+    runtimeResult should beColumns("a", "b").withRows(expectedResultRows)
+  }
+
+  test("cartesian product should not eagerly schedule lhs - nested") {
+    // given
+    val n = Math.pow(sizeHint, 1.0 / 4).toInt * 2
+    val (as, bs, cs, ds) = given {
+      val as = nodeGraph(n, "A")
+      val bs = nodeGraph(n, "B")
+      val cs = nodeGraph(n, "C")
+      val ds = nodeGraph(n, "D")
+      (as, bs, cs ,ds)
+    }
+
+    val nBatchSize = n/2
+    val inputStream = batchedInputValues(nBatchSize, as.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "c", "d")
+      .cartesianProduct()
+      .|.cartesianProduct()
+      .|.|.nodeByLabelScan("d", "D", IndexOrderNone)
+      .|.nodeByLabelScan("c", "C", IndexOrderNone)
+      .cartesianProduct()
+      .|.nodeByLabelScan("b", "B", IndexOrderNone)
+      .input(nodes = Seq("a"))
+      .build()
+
+    val subscriber = TestSubscriber.concurrent
+    val result = execute(logicalQuery, runtime, inputStream, subscriber)
+
+    result.request(1)
+    result.await() shouldBe true
+
+    inputStream.hasMore shouldBe true
+
+    result.request(Long.MaxValue)
+    result.await() shouldBe false
+
+    inputStream.hasMore shouldBe false
+
+    // then
+    val expectedResultRows = for {a <- as
+                                  b <- bs
+                                  c <- cs
+                                  d <- ds
+                                  } yield Array(a, b, c, d)
+
+    val runtimeResult = RecordingRuntimeResult(result, subscriber)
+    runtimeResult should beColumns("a", "b", "c", "d").withRows(expectedResultRows)
   }
 }

@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.NoInput
+import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.debug.DebugLog
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -471,6 +472,11 @@ case class RecordingRuntimeResult(runtimeResult: RuntimeResult, recordingQuerySu
 
 }
 
+object RecordingRuntimeResult {
+  def apply(runtimeResult: RuntimeResult, testSubscriber: TestSubscriber): RecordingRuntimeResult =
+    RecordingRuntimeResult(runtimeResult, TestSubscriberWrappingRecordingQuerySubscriber(testSubscriber))
+}
+
 case class NonRecordingRuntimeResult(runtimeResult: RuntimeResult, nonRecordingQuerySubscriber: NonRecordingQuerySubscriber) {
   def awaitAll(): Long = {
     runtimeResult.consumeAll()
@@ -483,4 +489,28 @@ case class NonRecordingRuntimeResult(runtimeResult: RuntimeResult, nonRecordingQ
   def pageCacheMisses: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheMisses
 }
 
+case class TestSubscriberRuntimeResult(runtimeResult: RuntimeResult, testSubscriber: TestSubscriber) {
+  def awaitAll(): IndexedSeq[Array[AnyValue]] = {
+    runtimeResult.consumeAll()
+    runtimeResult.close()
+    testSubscriber.allSeen.map(_.toArray).toArray.asInstanceOf[IndexedSeq[Array[AnyValue]]]
+  }
+
+  def pageCacheHits: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheHits
+  def pageCacheMisses: Long = runtimeResult.asInstanceOf[ClosingRuntimeResult].pageCacheMisses
+}
+
 case class ContextCondition[CONTEXT <: RuntimeContext](test: CONTEXT => Boolean, errorMsg: String)
+
+case class TestSubscriberWrappingRecordingQuerySubscriber(testSubscriber: TestSubscriber) extends RecordingQuerySubscriber {
+  override def getOrThrow: util.List[Array[AnyValue]] = {
+    assertNoErrors()
+    util.Arrays.asList[Array[AnyValue]](testSubscriber.allSeen.map(_.toArray): _*)
+  }
+
+  override def assertNoErrors(): Unit = {}
+
+  override def queryStatistics: QueryStatistics = {
+    testSubscriber.queryStatistics
+  }
+}
