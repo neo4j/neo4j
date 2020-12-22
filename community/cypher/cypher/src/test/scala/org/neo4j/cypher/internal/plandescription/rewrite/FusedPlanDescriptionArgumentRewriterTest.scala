@@ -129,6 +129,62 @@ class FusedPlanDescriptionArgumentRewriterTest extends CypherFunSuite {
     planArgumentTest(result, expectedArguments)
   }
 
+  test("aggregate over two fused apply (ldbc_sf010 read 6)") {
+    val nodeUniqueIndexSeek1 = planDescription(Id(0), "NodeUniqueIndexSeek", NoChildren, Seq(PipelineInfo(0, fused = false), PageCacheHits(2), PageCacheMisses(0), Time(8850000)))
+
+    val nodeUniqueIndexSeek2 = planDescription(Id(1), "NodeUniqueIndexSeek", NoChildren, Seq(PipelineInfo(1, fused = true), PageCacheHits(1537), PageCacheMisses(0), Time(21756000)))
+    val varLengthExpand = planDescription(Id(2), "VarLengthExpand(All)", SingleChild(nodeUniqueIndexSeek2), Seq(PipelineInfo(1, fused = true)))
+    val filter1 = planDescription(Id(3), "Filter", SingleChild(varLengthExpand), Seq(PipelineInfo(1, fused = true)))
+
+    val cartesianProduct = planDescription(Id(4), "CartesianProduct", TwoChildren(nodeUniqueIndexSeek1, filter1), Seq(PipelineInfo(2, fused = false), Time(5483000)))
+
+    val distinct = planDescription(Id(5), "Distinct", SingleChild(cartesianProduct), Seq(PipelineInfo(2, fused = false), PageCacheHits(0), PageCacheMisses(0), Time(15565000)))
+
+    val argument1 = planDescription(Id(6), "Argument", NoChildren, Seq(PipelineInfo(3, fused = true), PageCacheHits(10957), PageCacheMisses(0), Time(65466000)))
+    val expandAll1 = planDescription(Id(7), "Expand(All)", SingleChild(argument1), Seq(PipelineInfo(3, fused = true)))
+
+    val argument2 = planDescription(Id(8), "Argument", NoChildren, Seq(PipelineInfo(4, fused = true), PageCacheHits(1211031), PageCacheMisses(0), Time(577688000)))
+    val expandInto = planDescription(Id(9), "Expand(Into)", SingleChild(argument2), Seq(PipelineInfo(4, fused = true)))
+    val limit = planDescription(Id(10), "Limit", SingleChild(expandInto), Seq(PipelineInfo(4, fused = true)))
+
+    val apply1 = planDescription(Id(11), "Apply", TwoChildren(expandAll1, limit), Seq(PageCacheHits(0), PageCacheMisses(0)))
+
+    val apply2 = planDescription(Id(12), "Apply", TwoChildren(distinct, apply1), Seq(PageCacheHits(0), PageCacheMisses(0)))
+
+    val expandAll2 = planDescription(Id(13), "Expand(All)", SingleChild(apply2), Seq(PipelineInfo(4, fused = true)))
+    val filter2 = planDescription(Id(14), "Filter", SingleChild(expandAll2), Seq(PipelineInfo(4, fused = true)))
+    val eagerAggregation = planDescription(Id(15), "EagerAggregation", SingleChild(filter2), Seq(PipelineInfo(4, fused = true)))
+    val projection = planDescription(Id(16), "Projection", SingleChild(eagerAggregation), Seq(PipelineInfo(5, fused = false), PageCacheHits(29), PageCacheMisses(0), Time(1492000)))
+    val top = planDescription(Id(17), "Top", SingleChild(projection), Seq(PipelineInfo(6, fused = false), PageCacheHits(0), PageCacheMisses(0), Time(1726000)))
+    val produceResult = planDescription(Id(18), "ProduceResults", SingleChild(top), Seq(PipelineInfo(6, fused = false), PageCacheHits(0), PageCacheMisses(0), Time(1143000)))
+
+    val result = new FusedPlanDescriptionArgumentRewriter().rewrite(produceResult)
+
+    val expectedArguments = Map(
+      Id(0) -> nodeUniqueIndexSeek1.arguments,
+      Id(1) -> nodeUniqueIndexSeek2.arguments,
+      Id(2) -> varLengthExpand.arguments,
+      Id(3) -> filter1.arguments,
+      Id(4) -> cartesianProduct.arguments,
+      Id(5) -> distinct.arguments,
+      Id(6) -> argument1.arguments,
+      Id(7) -> expandAll1.arguments,
+      Id(8) -> argument2.arguments,
+      Id(9) -> expandInto.arguments,
+      Id(10) -> limit.arguments,
+      Id(11) -> Seq.empty[Argument],
+      Id(12) -> Seq.empty[Argument],
+      Id(13) -> expandAll2.arguments,
+      Id(14) -> filter2.arguments,
+      Id(15) -> eagerAggregation.arguments,
+      Id(16) -> projection.arguments,
+      Id(17) -> top.arguments,
+      Id(18) -> produceResult.arguments
+    )
+
+    planArgumentTest(result, expectedArguments)
+  }
+
   private def planArgumentTest(plan: InternalPlanDescription, expectedArgumentsByPlanId: Map[Id, Seq[Argument]]): Unit = {
     withClue(s"""Plan "${plan.name}" (${plan.id}) arguments""") {
       plan.arguments should contain theSameElementsAs expectedArgumentsByPlanId.getOrElse(plan.id, Seq.empty)

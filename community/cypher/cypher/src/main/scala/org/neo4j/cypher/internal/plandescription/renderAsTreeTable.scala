@@ -68,11 +68,12 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
 
   def apply(plan: InternalPlanDescription): String = {
 
-    val (rows, columns) = accumulate(plan)
-    val headers = HEADERS.filter(columns.contains)
+    val rows = accumulate(plan)
+    val lengthByColumnName = columnLengths(rows)
+    val headers = HEADERS.filter(lengthByColumnName.contains)
 
-    def width(header:String) = {
-      2 + math.max(header.length, columns(header))
+    def width(header: String) = {
+      2 + math.max(header.length, lengthByColumnName(header))
     }
 
     val result = new StringBuilder((2 + newLine.length + headers.map(width).sum) * (rows.size * 2 + 3))
@@ -128,42 +129,35 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     result.toString()
   }
 
-  case class LevelledPlan(plan: InternalPlanDescription, level: Level, var maybePipelineInfo: Option[PipelineInfo])
+  case class LevelledPlan(plan: InternalPlanDescription, level: Level)
 
-  private def accumulate(incoming: InternalPlanDescription): (Seq[TableRow], Map[String, Int]) = {
+  private def accumulate(incoming: InternalPlanDescription): Seq[TableRow] = {
     var lastSeenPipelineInfo: Option[PipelineInfo] = None
     val plansWithoutPipelineInfo = mutable.ArrayBuffer.empty[(LevelledPlan, Option[String])]
     var previousLevelledPlan: Option[LevelledPlan] = None
     val stack = new mutable.ArrayStack[(InternalPlanDescription, Level)]
     stack.push((compactPlan(incoming), Root))
     val rows = new ArrayBuffer[TableRow]()
-    val columns = mutable.Map[String, Int]()
 
-    def appendRow(levelledPlan: LevelledPlan, childConnector: Option[String]): Unit = {
-      val level = levelledPlan.level
-      val plan = levelledPlan.plan
-      val line = level.line + plan.name
-      mapping(OPERATOR, LeftJustifiedCell(false, line), columns)
-      val mergedColumns = if (isMerged(levelledPlan, previousLevelledPlan)) MERGABLE_COLUMNS else Set.empty[String]
-      rows.append(TableRow(line, tableRow(plan, mergedColumns, columns), level.connector, childConnector.map(_.replace("\\", "")), mergedColumns))
+    def appendRow(levelledPlan: LevelledPlan, childConnector: Option[String], mergeColumns: Boolean): Unit = {
+      val planTreeValue = levelledPlan.level.line + levelledPlan.plan.name
+      val mergedColumns = if (mergeColumns) MERGABLE_COLUMNS else Set.empty[String]
+      val cells = tableRow(levelledPlan.plan, mergedColumns)
+
+      val childConnection = childConnector.map(_.replace("\\", ""))
+      val row = TableRow(planTreeValue, cells, levelledPlan.level.connector, childConnection, mergedColumns)
+
+      rows.append(row)
     }
 
-    def flushPlansWithoutPipelineInfo(mergeWithLastSeen: Boolean): Unit = {
-      if (mergeWithLastSeen) {
-        plansWithoutPipelineInfo.foreach { case (lp, cc) =>
-          lp.maybePipelineInfo = lastSeenPipelineInfo
-          appendRow(lp, cc)
-        }
-      } else {
-        plansWithoutPipelineInfo.foreach { case (lp, cc) => appendRow(lp, cc) }
-      }
+    def flushPlansWithoutPipelineInfo(mergeColumns: Boolean): Unit = {
+      plansWithoutPipelineInfo.foreach { case (lp, cc) => appendRow(lp, cc, mergeColumns) }
       plansWithoutPipelineInfo.clear()
     }
 
-
     while (stack.nonEmpty) {
       val (plan, level) = stack.pop()
-      val levelledPlan = LevelledPlan(plan, level, pipelineInfo(plan))
+      val levelledPlan = LevelledPlan(plan, level)
 
       val childConnector = plan.children match {
         case NoChildren =>
@@ -177,12 +171,14 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
           level.fork.connector
       }
 
-      levelledPlan.maybePipelineInfo match {
+      pipelineInfo(levelledPlan.plan) match {
         case Some(currentInfo) =>
-          // Append rows for intermediate plans without info, if we're still part of the same pipeline we update the missing info
-          flushPlansWithoutPipelineInfo(mergeWithLastSeen = lastSeenPipelineInfo.contains(currentInfo))
+          val isMerged = isPlanMerged(currentInfo, lastSeenPipelineInfo)
 
-          appendRow(levelledPlan, childConnector)
+          // Append rows for intermediate plans without info, if we're still part of the same fused pipeline we merge aggregated columns
+          flushPlansWithoutPipelineInfo(isMerged)
+
+          appendRow(levelledPlan, childConnector, isMerged)
           lastSeenPipelineInfo = Some(currentInfo)
         case None =>
           if (lastSeenPipelineInfo.isDefined) {
@@ -191,30 +187,25 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
             plansWithoutPipelineInfo += ((levelledPlan, childConnector))
           } else {
             assert(plansWithoutPipelineInfo.isEmpty, "In this case, every operator in the plan should have no pipeline info")
-            appendRow(levelledPlan, childConnector)
+            appendRow(levelledPlan, childConnector, mergeColumns = false)
           }
       }
 
       previousLevelledPlan = Some(levelledPlan)
     }
 
-    flushPlansWithoutPipelineInfo(mergeWithLastSeen = false)
+    flushPlansWithoutPipelineInfo(mergeColumns = false)
 
-    (rows, columns.toMap)
+    rows
   }
 
   private def pipelineInfo(plan: InternalPlanDescription): Option[PipelineInfo] = {
     plan.arguments.collectFirst { case info: PipelineInfo => info }
   }
 
-  private def isMerged(plan: LevelledPlan, maybePreviousPlan: Option[LevelledPlan]): Boolean = {
-    maybePreviousPlan match {
-      case Some(previousPlan) =>
-        (plan.maybePipelineInfo, previousPlan.maybePipelineInfo) match {
-          case (Some(planInfo), Some(previousPlanInfo)) if planInfo.pipelineId == previousPlanInfo.pipelineId =>
-            planInfo.fused
-          case _ => false
-        }
+  private def isPlanMerged(planInfo: PipelineInfo, maybeOtherPlanInfo: Option[PipelineInfo]): Boolean = {
+    maybeOtherPlanInfo match {
+      case Some(otherPlanInfo) => planInfo.pipelineId == otherPlanInfo.pipelineId && planInfo.fused && otherPlanInfo.fused
       case None => false
     }
   }
@@ -236,13 +227,13 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     CompactedPlanDescription.create(similar)
   }
 
-  private def tableRow(description: InternalPlanDescription, mergedColumns: Set[String], columns: mutable.Map[String,Int]): Predef.Map[String, Cell] = {
-    def leftJustifiedMapping(key: String, lines: String*): Some[(String, Cell)] =
-      mapping(key, LeftJustifiedCell(mergedColumns.contains(key), lines:_*), columns)
-    def rightJustifiedMapping(key: String, lines: String*): Some[(String, Cell)] =
-      mapping(key, RightJustifiedCell(mergedColumns.contains(key), lines:_*), columns)
+  private def tableRow(description: InternalPlanDescription, mergedColumns: Set[String]): Map[String, Cell] = {
+    def leftJustifiedMapping(key: String, lines: String*): (String, Cell) =
+      key -> LeftJustifiedCell(mergedColumns.contains(key), lines:_*)
+    def rightJustifiedMapping(key: String, lines: String*): (String, Cell) =
+      key -> RightJustifiedCell(mergedColumns.contains(key), lines:_*)
 
-    description.arguments.flatMap {
+    val argumentColumns = description.arguments.collect {
       case EstimatedRows(count) => rightJustifiedMapping(ESTIMATED_ROWS, format(count))
       case Rows(count) => rightJustifiedMapping(ROWS, count.toString)
       case DbHits(count) => rightJustifiedMapping(HITS, count.toString)
@@ -255,8 +246,11 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
       case Details(detailsList) =>
         val detailsLines = splitDetails(detailsList.map(_.prettifiedString).toList, MAX_DETAILS_COLUMN_WIDTH)
         leftJustifiedMapping(DETAILS, detailsLines:_*)
-      case _ => None
-    }.toMap + (OTHER -> LeftJustifiedCell(mergedColumns.contains(OTHER), other(description, columns)))
+    }
+
+    val otherColumn = OTHER -> LeftJustifiedCell(mergedColumns.contains(OTHER), other(description))
+
+    (argumentColumns :+ otherColumn).toMap
   }
 
   protected[plandescription] def splitDetails(details: List[String], length: Int = MAX_DETAILS_COLUMN_WIDTH): Seq[String] = {
@@ -308,15 +302,6 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     (s"$newCurrentLine ", lines)
   }
 
-  private def mapping(key: String, value: Cell, columns: mutable.Map[String,Int]) = {
-    update(columns, key, value.length)
-    Some(key -> value)
-  }
-
-  private def update(columns: mutable.Map[String, Int], key: String, length: Int): Unit = {
-    columns.put(key, math.max(columns.getOrElse(key, 0), length))
-  }
-
   private def otherFields(description: InternalPlanDescription) = {
     description.arguments.collect { case x
       if !x.isInstanceOf[Rows] &&
@@ -341,15 +326,28 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     }
   }
 
-  private def other(description: InternalPlanDescription, columns: mutable.Map[String,Int]): String = {
-    val result = otherFields(description).mkString("; ").replaceAll(UNNAMED_PATTERN, "")
-    if (result.nonEmpty) {
-      update(columns, OTHER, result.length)
-    }
-    result
+  private def other(description: InternalPlanDescription): String = {
+    otherFields(description).mkString("; ").replaceAll(UNNAMED_PATTERN, "")
   }
 
   private def format(v: Double) = if (v.isNaN) v.toString else math.round(v).toString
+
+  private def columnLengths(rows: Seq[TableRow]): Map[String, Int] = {
+    rows
+      .flatMap { row =>
+        val operatorCell = OPERATOR -> LeftJustifiedCell(false, row.tree).length
+        val otherCells = row.allColumns.toSeq.map { case (columnName, cell) => columnName -> cell.length }
+        otherCells :+ operatorCell
+      }
+      .filter { case (_, length) => length > 0 }
+      .foldLeft(mutable.Map.empty[String, Int]) { case (acc, (columnName, length)) =>
+        val currentMax = acc.getOrElseUpdate(columnName, length)
+        if (length > currentMax) {
+          acc.update(columnName, length)
+        }
+        acc
+      }
+  }
 }
 
 /**

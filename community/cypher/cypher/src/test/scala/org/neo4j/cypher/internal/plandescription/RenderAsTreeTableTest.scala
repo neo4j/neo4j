@@ -1002,4 +1002,79 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         |+------------------+------------------------+---------------+
         |""".stripMargin)
   }
+
+  test("merge columns fused over two apply (ldbc_sf010 read 6)") {
+    val nodeUniqueIndexSeek1 = planDescription(id, "NodeUniqueIndexSeek", NoChildren, Seq(PipelineInfo(0, fused = false), PageCacheHits(2), PageCacheMisses(0), Time(8850000)))
+
+    val nodeUniqueIndexSeek2 = planDescription(id, "NodeUniqueIndexSeek", NoChildren, Seq(PipelineInfo(1, fused = true), PageCacheHits(1537), PageCacheMisses(0), Time(21756000)))
+    val varLengthExpand = planDescription(id, "VarLengthExpand(All)", SingleChild(nodeUniqueIndexSeek2), Seq(PipelineInfo(1, fused = true)))
+    val filter1 = planDescription(id, "Filter", SingleChild(varLengthExpand), Seq(PipelineInfo(1, fused = true)))
+
+    val cartesianProduct = planDescription(id, "CartesianProduct", TwoChildren(nodeUniqueIndexSeek1, filter1), Seq(PipelineInfo(2, fused = false), Time(5483000)))
+
+    val distinct = planDescription(id, "Distinct", SingleChild(cartesianProduct), Seq(PipelineInfo(2, fused = false), PageCacheHits(0), PageCacheMisses(0), Time(15565000)))
+
+    val argument1 = planDescription(id, "Argument", NoChildren, Seq(PipelineInfo(3, fused = true), PageCacheHits(10957), PageCacheMisses(0), Time(65466000)))
+    val expandAll1 = planDescription(id, "Expand(All)", SingleChild(argument1), Seq(PipelineInfo(3, fused = true)))
+
+    val argument2 = planDescription(id, "Argument", NoChildren, Seq(PipelineInfo(4, fused = true), PageCacheHits(1211031), PageCacheMisses(0), Time(577688000)))
+    val expandInto = planDescription(id, "Expand(Into)", SingleChild(argument2), Seq(PipelineInfo(4, fused = true)))
+    val limit = planDescription(id, "Limit", SingleChild(expandInto), Seq(PipelineInfo(4, fused = true)))
+
+    val apply1 = planDescription(id, "Apply", TwoChildren(expandAll1, limit))
+
+    val apply2 = planDescription(id, "Apply", TwoChildren(distinct, apply1))
+
+    val expandAll2 = planDescription(id, "Expand(All)", SingleChild(apply2), Seq(PipelineInfo(4, fused = true)))
+    val filter2 = planDescription(id, "Filter", SingleChild(expandAll2), Seq(PipelineInfo(4, fused = true)))
+    val eagerAggregation = planDescription(id, "EagerAggregation", SingleChild(filter2), Seq(PipelineInfo(4, fused = true)))
+    val projection = planDescription(id, "Projection", SingleChild(eagerAggregation), Seq(PipelineInfo(5, fused = false), PageCacheHits(29), PageCacheMisses(0), Time(1492000)))
+    val top = planDescription(id, "Top", SingleChild(projection), Seq(PipelineInfo(6, fused = false), PageCacheHits(0), PageCacheMisses(0), Time(1726000)))
+    val produceResult = planDescription(id, "ProduceResults", SingleChild(top), Seq(PipelineInfo(6, fused = false), PageCacheHits(0), PageCacheMisses(0), Time(1143000)))
+
+    renderAsTreeTable(produceResult) should equal(
+      """+-------------------------+------------------------+-----------+---------------------+
+        || Operator                | Page Cache Hits/Misses | Time (ms) | Other               |
+        |+-------------------------+------------------------+-----------+---------------------+
+        || +ProduceResults         |                    0/0 |     1.143 | In Pipeline 6       |
+        || |                       +------------------------+-----------+---------------------+
+        || +Top                    |                    0/0 |     1.726 | In Pipeline 6       |
+        || |                       +------------------------+-----------+---------------------+
+        || +Projection             |                   29/0 |     1.492 | In Pipeline 5       |
+        || |                       +------------------------+-----------+---------------------+
+        || +EagerAggregation       |                        |           | Fused in Pipeline 4 |
+        || |                       |                        |           +---------------------+
+        || +Filter                 |                        |           | Fused in Pipeline 4 |
+        || |                       |                        |           +---------------------+
+        || +Expand(All)            |                        |           | Fused in Pipeline 4 |
+        || |                       |                        |           +---------------------+
+        || +Apply                  |                        |           |                     |
+        || |\                      |                        |           +---------------------+
+        || | +Apply                |                        |           |                     |
+        || | |\                    |                        |           +---------------------+
+        || | | +Limit              |                        |           | Fused in Pipeline 4 |
+        || | | |                   |                        |           +---------------------+
+        || | | +Expand(Into)       |                        |           | Fused in Pipeline 4 |
+        || | | |                   |                        |           +---------------------+
+        || | | +Argument           |              1211031/0 |   577.688 | Fused in Pipeline 4 |
+        || | |                     +------------------------+-----------+---------------------+
+        || | +Expand(All)          |                        |           | Fused in Pipeline 3 |
+        || | |                     |                        |           +---------------------+
+        || | +Argument             |                10957/0 |    65.466 | Fused in Pipeline 3 |
+        || |                       +------------------------+-----------+---------------------+
+        || +Distinct               |                    0/0 |    15.565 | In Pipeline 2       |
+        || |                       +------------------------+-----------+---------------------+
+        || +CartesianProduct       |                        |     5.483 | In Pipeline 2       |
+        || |\                      +------------------------+-----------+---------------------+
+        || | +Filter               |                        |           | Fused in Pipeline 1 |
+        || | |                     |                        |           +---------------------+
+        || | +VarLengthExpand(All) |                        |           | Fused in Pipeline 1 |
+        || | |                     |                        |           +---------------------+
+        || | +NodeUniqueIndexSeek  |                 1537/0 |    21.756 | Fused in Pipeline 1 |
+        || |                       +------------------------+-----------+---------------------+
+        || +NodeUniqueIndexSeek    |                    2/0 |     8.850 | In Pipeline 0       |
+        |+-------------------------+------------------------+-----------+---------------------+
+        |""".stripMargin
+    )
+  }
 }

@@ -112,17 +112,22 @@ class FusedPlanDescriptionArgumentRewriter extends InternalPlanDescriptionRewrit
    */
   override def rewrite(root: InternalPlanDescription): InternalPlanDescription = {
     var currentPipelineInfo: Option[PipelineInfo] = None
-    var currentPipelinePlans = mutable.ArrayBuffer.empty[InternalPlanDescription]
+    var plansToAggregate = mutable.ArrayBuffer.empty[InternalPlanDescription]
     val stack = new mutable.ArrayStack[InternalPlanDescription]
     val rewritesByPlanId = mutable.Map.empty[Id, PlanRewrite]
 
     def computePipelineArgumentAggregates(): Unit = {
-      if (currentPipelinePlans.size > 1) {
-        val headPlanId = currentPipelinePlans.last.id
-        val aggregatedArguments = aggregateArguments(currentPipelinePlans)
+      val skipLastCount = plansToAggregate.reverseIterator.takeWhile(plan => pipelineInfo(plan).isEmpty).size
+      // Remove trailing plans without info, we only aggregate plans without info if they fall between operators of a fused pipeline
+      plansToAggregate = plansToAggregate.dropRight(skipLastCount)
+      if (plansToAggregate.size > 1) {
+        val headPlanId = plansToAggregate.last.id
+        val aggregatedArguments = aggregateArguments(plansToAggregate)
 
+        // Rewrite for inserting aggregated arguments at head plan
         val replaceRewrite = headPlanId -> PlanRewrite(aggregatedArguments.aggregation, Set.empty)
 
+        // Rewrite for removing arguments that will be aggregated in head plan
         val argumentNamesToRemove = aggregatedArguments.aggregation.map(_.name).toSet
         val removeRewrites = aggregatedArguments.aggregatedPlanIds
           .filter(_ != headPlanId)
@@ -131,7 +136,7 @@ class FusedPlanDescriptionArgumentRewriter extends InternalPlanDescriptionRewrit
         rewritesByPlanId += replaceRewrite
         rewritesByPlanId ++= removeRewrites
 
-        currentPipelinePlans.clear()
+        plansToAggregate.clear()
       }
     }
 
@@ -148,14 +153,21 @@ class FusedPlanDescriptionArgumentRewriter extends InternalPlanDescriptionRewrit
           stack.push(rhs)
       }
 
-      pipelineInfo(plan).foreach { newInfo =>
-        if (!currentPipelineInfo.contains(newInfo)) {
-          computePipelineArgumentAggregates()
-        }
-        if (newInfo.fused) {
-          currentPipelinePlans += plan
-        }
-        currentPipelineInfo = Some(newInfo)
+      pipelineInfo(plan) match {
+        case Some(newInfo) =>
+          if (!currentPipelineInfo.contains(newInfo)) {
+            // We're not in the same fused pipeline anymore, calculate aggregation for previous fused pipeline (if any)
+            computePipelineArgumentAggregates()
+          }
+          if (newInfo.fused ) {
+            plansToAggregate += plan
+          }
+          currentPipelineInfo = Some(newInfo)
+        case None =>
+          if (plansToAggregate.nonEmpty) {
+            // Plans without info are aggregated if they fall between other plans of the same fused pipeline.
+            plansToAggregate += plan
+          }
       }
     }
     computePipelineArgumentAggregates()
@@ -189,3 +201,4 @@ class FusedPlanDescriptionArgumentRewriter extends InternalPlanDescriptionRewrit
     plan.arguments.collectFirst { case info: PipelineInfo => info }
   }
 }
+
