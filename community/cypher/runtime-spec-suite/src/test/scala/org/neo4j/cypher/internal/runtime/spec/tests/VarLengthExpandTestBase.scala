@@ -26,12 +26,16 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.util.Random
 
 abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
@@ -909,6 +913,105 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       } yield Array(p.startNode, p.endNode())
 
     runtimeResult should beColumns("b", "c").withRows(expected)
+  }
+
+  test("var length expand on long paths") {
+    // given
+    val pathLength = 150 // We're interested in triggering special behaviour in pipelined for long paths
+    val paths = given {
+
+      /*                    TO      TO
+       *                 /------>*----->* .... long path
+       *                /      /
+       *  SuperStart   *------- ALSO_TO
+       *                \
+       *                 \----->*----->* ... long path
+       *                   TO      TO
+       */
+      val Seq(branch1, branch2) = chainGraphs(2, (1 to pathLength).map(_ => "TO"):_*)
+      val start = runtimeTestSupport.tx.createNode(Label.label("SuperStart"))
+      val rel1 = start.createRelationshipTo(branch1.startNode, RelationshipType.withName("TO"))
+      val rel2 = start.createRelationshipTo(branch1.startNode, RelationshipType.withName("ALSO_TO"))
+      val rel3 = start.createRelationshipTo(branch2.startNode, RelationshipType.withName("TO"))
+
+      Seq(
+        (start, Seq(rel1) ++ branch1.relationships().asScala, branch1.endNode()),
+        (start, Seq(rel2) ++ branch1.relationships().asScala, branch1.endNode()),
+        (start, Seq(rel3) ++ branch2.relationships().asScala, branch2.endNode())
+      )
+    }
+
+    val input = new InputValues()
+      .and(Array(paths.head._1, paths.head._3))
+      .and(Array(paths.head._1, paths.last._3))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*]->(y)", ExpandInto)
+      .input(Seq("x", "y"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    val expected = for {
+      (startNode, rels, endNode) <- paths
+    } yield {
+      Array(startNode, rels.asJava, endNode)
+    }
+
+    runtimeResult should beColumns("x", "r", "y").withRows(expected, listInAnyOrder = true)
+
+  }
+
+  test("var length expand on long partially doubly linked list") {
+    // given
+    val nodeSize = 128 // We're interested in triggering special behaviour in pipelined for long paths
+    val backwardRelCount = 10
+    val (forwardRelationships, backwardsRelationships) = given {
+      /*
+       *       FORWARD       FORWARD
+       *        ----->       ----->
+       * START *      *  ...        * END
+       *                     <-----
+       *                     BACKWARD (backwardRelCount number of BACKWARDS relations)
+       */
+      val backType = RelationshipType.withName("BACKWARDS")
+      val forwardChain = chainGraphs(1, (1 until nodeSize).map(_ => "FORWARD"):_*).head
+      val backRels = forwardChain.relationships().asScala
+        .zipWithIndex
+        .map {
+          case (forwardRel, index) if index >= nodeSize - backwardRelCount - 1 =>
+            Some(forwardRel.getEndNode.createRelationshipTo(forwardRel.getStartNode, backType))
+          case _ => None
+        }
+        .toIndexedSeq
+      (forwardChain.relationships().asScala.toIndexedSeq, backRels)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*1..]->(y)")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val fromNode = forwardRelationships.head.getStartNode
+    val nodes = (fromNode +: forwardRelationships.map(_.getEndNode))
+    val firstNodeIndexWithBack = nodeSize - backwardRelCount
+    val expected = for {
+      turnPointNodeIndex <- 1 until nodeSize
+      toNodeIndex <- turnPointNodeIndex to math.min(firstNodeIndexWithBack - 1, turnPointNodeIndex) by -1
+    } yield {
+      val backRels = backwardsRelationships.slice(toNodeIndex, turnPointNodeIndex).map(_.get).reverse
+      val rels = forwardRelationships.take(turnPointNodeIndex) ++ backRels
+      val toNode = nodes(toNodeIndex)
+      Array(fromNode, rels.asJava, toNode)
+    }
+
+    runtimeResult should beColumns("x", "r", "y").withRows(expected, listInAnyOrder = true)
   }
 
   // HELPERS

@@ -25,6 +25,8 @@ import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray
 import org.neo4j.memory.MemoryTracker
 
+import scala.reflect.ClassTag
+
 /**
  * Random access data structure which grows dynamically as elements are added.
  */
@@ -48,6 +50,17 @@ class GrowingArray[T <: AnyRef](memoryTracker: MemoryTracker) extends AutoClosea
    */
   def get(index: Int): T = {
     array(index).asInstanceOf[T]
+  }
+
+  /**
+   * Get the element at a given index or null if it doesn't exist.
+   */
+  def getOrNull(index: Int): T = {
+    if (index < highWaterMark) {
+      array(index).asInstanceOf[T]
+    } else {
+      null.asInstanceOf[T]
+    }
   }
 
   /**
@@ -97,6 +110,10 @@ class GrowingArray[T <: AnyRef](memoryTracker: MemoryTracker) extends AutoClosea
       memoryTracker.releaseHeap(trackedMemory + SHALLOW_SIZE)
       array = null
     }
+  }
+
+  def isClosed(): Boolean = {
+    array == null
   }
 
   private def ensureCapacity(size: Int): Unit = {

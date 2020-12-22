@@ -499,7 +499,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     private static final long APPEND_LIST_SHALLOW_SIZE = shallowSizeOfInstance( AppendList.class );
-    static final class AppendList extends ListValue
+    public static final class AppendList extends ListValue
     {
         private final ListValue base;
         private final AnyValue appended;
@@ -564,6 +564,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         public long estimatedHeapUsage()
         {
             return APPEND_LIST_SHALLOW_SIZE + base.estimatedHeapUsage() + appended.estimatedHeapUsage();
+        }
+
+        public long estimatedAppendedHeapUsage()
+        {
+            return APPEND_LIST_SHALLOW_SIZE + appended.estimatedHeapUsage();
         }
     }
 
@@ -838,7 +843,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         return new ReversedList( this );
     }
 
-    public ListValue append( AnyValue value )
+    public AppendList append( AnyValue value )
     {
         return new AppendList( this, value );
     }

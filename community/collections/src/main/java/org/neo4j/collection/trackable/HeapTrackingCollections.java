@@ -42,6 +42,11 @@ public final class HeapTrackingCollections
         return HeapTrackingLongHashSet.createLongHashSet( memoryTracker );
     }
 
+    public static HeapTrackingLongHashSet newLongSet( MemoryTracker memoryTracker, int initialCapacity )
+    {
+        return HeapTrackingLongHashSet.createLongHashSet( memoryTracker, initialCapacity );
+    }
+
     public static <V> MutableLongObjectMap<V> newLongObjectMap( MemoryTracker memoryTracker )
     {
         return HeapTrackingLongObjectHashMap.createLongObjectHashMap( memoryTracker );

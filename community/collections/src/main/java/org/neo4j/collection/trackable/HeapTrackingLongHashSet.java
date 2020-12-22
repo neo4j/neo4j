@@ -40,13 +40,32 @@ public class HeapTrackingLongHashSet extends LongHashSet implements AutoCloseabl
     static HeapTrackingLongHashSet createLongHashSet( MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap( SHALLOW_SIZE + arrayHeapSize( DEFAULT_INITIAL_CAPACITY ) );
-        return new HeapTrackingLongHashSet( memoryTracker, DEFAULT_INITIAL_CAPACITY );
+        return new HeapTrackingLongHashSet( memoryTracker );
     }
 
-    private HeapTrackingLongHashSet( MemoryTracker memoryTracker, int trackedCapacity )
+    static HeapTrackingLongHashSet createLongHashSet( MemoryTracker memoryTracker, int initialCapacity )
+    {
+        int capacity = smallestPowerOfTwoGreaterThan( initialCapacity );
+        memoryTracker.allocateHeap( SHALLOW_SIZE + arrayHeapSize( capacity ) );
+        return new HeapTrackingLongHashSet( memoryTracker, capacity );
+    }
+
+    private HeapTrackingLongHashSet( MemoryTracker memoryTracker )
     {
         this.memoryTracker = requireNonNull( memoryTracker );
-        this.trackedCapacity = trackedCapacity;
+        this.trackedCapacity = DEFAULT_INITIAL_CAPACITY;
+    }
+
+    private HeapTrackingLongHashSet( MemoryTracker memoryTracker, int initialCapacity )
+    {
+        super( initialCapacity );
+        this.memoryTracker = requireNonNull( memoryTracker );
+        this.trackedCapacity = initialCapacity;
+    }
+
+    private static int smallestPowerOfTwoGreaterThan( int n )
+    {
+        return n > 1 ? Integer.highestOneBit(n - 1) << 1 : 1;
     }
 
     @Override
