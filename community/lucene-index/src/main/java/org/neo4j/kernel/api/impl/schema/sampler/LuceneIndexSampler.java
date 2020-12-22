@@ -50,7 +50,7 @@ abstract class LuceneIndexSampler implements IndexSampler
         }
     }
 
-    protected TaskCoordinator.Task newTask() throws IndexNotFoundKernelException
+    TaskCoordinator.Task newTask() throws IndexNotFoundKernelException
     {
         checkCancellation( taskCoordinator );
         return taskCoordinator.newTask();
