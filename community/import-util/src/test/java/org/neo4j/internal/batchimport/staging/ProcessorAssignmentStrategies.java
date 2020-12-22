@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport;
+package org.neo4j.internal.batchimport.staging;
 
 import java.time.Clock;
 import java.util.HashMap;
@@ -26,9 +26,6 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
-import org.neo4j.internal.batchimport.staging.StageExecution;
-import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.time.Clocks;
 
 import static java.lang.String.format;
@@ -36,12 +33,11 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * Processor assigner strategies that are useful for testing {@link ParallelBatchImporter} as to exercise
+ * Processor assigner strategies that are useful for testing as to exercise
  * certain aspects of parallelism which would otherwise only be exercised on particular machines and datasets.
  */
 public class ProcessorAssignmentStrategies
 {
-
     private ProcessorAssignmentStrategies()
     {
     }

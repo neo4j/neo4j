@@ -64,6 +64,7 @@ import org.neo4j.internal.batchimport.input.InputChunk;
 import org.neo4j.internal.batchimport.input.InputEntity;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
+import org.neo4j.internal.batchimport.staging.ProcessorAssignmentStrategies;
 import org.neo4j.internal.batchimport.staging.StageExecution;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
