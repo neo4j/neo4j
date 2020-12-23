@@ -27,6 +27,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
@@ -41,6 +42,7 @@ import static java.time.Duration.ofHours;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation.OFF_HEAP;
 import static org.neo4j.configuration.SettingConstraints.ABSOLUTE_PATH;
 import static org.neo4j.configuration.SettingConstraints.HOSTNAME_ONLY;
@@ -51,6 +53,7 @@ import static org.neo4j.configuration.SettingConstraints.is;
 import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingConstraints.range;
+import static org.neo4j.configuration.SettingConstraints.shouldNotContain;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
@@ -65,6 +68,7 @@ import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.configuration.SettingValueParsers.TIMEZONE;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
+import static org.neo4j.configuration.SettingValueParsers.setOf;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
@@ -130,6 +134,21 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "Only allow read operations from this Neo4j instance. " +
             "This mode still requires write access to the directory for lock purposes." )
     public static final Setting<Boolean> read_only = newBuilder( "dbms.read_only", BOOL, false ).build();
+
+    @Description( "Whether or not any database on this instance are read_only by default. If false, individual databases may be marked as read_only using " +
+                  "dbms.database.read_only. If true, individual databases may be marked as writable using dbms.databases.writable." )
+    public static final Setting<Boolean> read_only_database_default = newBuilder( "dbms.databases.default_to_read_only", BOOL, false )
+            .dynamic().build();
+
+    @Description( "List of databases for which to prevent write queries. Databases not included in this list maybe read_only anyway depending upon the value " +
+                  "of dbms.databases.default_to_read_only." )
+    public static final Setting<Set<String>> read_only_databases = newBuilder( "dbms.databases.read_only", setOf( DATABASENAME ), emptySet() )
+            .addConstraint( shouldNotContain( SYSTEM_DATABASE_NAME, "read only databases collection" ) ).dynamic().build();
+
+    @Description( "List of databases for which to allow write queries. Databases not included in this list will allow write queries anyway, unless " +
+                  "dbms.databases.default_to_read_only is set to true." )
+    public static final Setting<Set<String>> writable_databases = newBuilder( "dbms.databases.writable", setOf( DATABASENAME ), emptySet() )
+            .dynamic().build();
 
     @Description( "A strict configuration validation will prevent the database from starting up if unknown " +
             "configuration options are specified in the neo4j settings namespace (such as dbms., cypher., etc)." )

@@ -52,7 +52,7 @@ import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
-class TransactionRepresentationCommitProcessTest
+class InternalTransactionCommitProcessTest
 {
     private final CommitEvent commitEvent = CommitEvent.NULL;
 
@@ -65,7 +65,7 @@ class TransactionRepresentationCommitProcessTest
         doThrow( new IOException( rootCause ) ).when( appender ).append( any( TransactionToApply.class ),
                 any( LogAppendEvent.class ) );
         StorageEngine storageEngine = mock( StorageEngine.class );
-        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
+        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(
                 appender,
                 storageEngine );
 
@@ -88,7 +88,7 @@ class TransactionRepresentationCommitProcessTest
         StorageEngine storageEngine = mock( StorageEngine.class );
         doThrow( new IOException( rootCause ) ).when( storageEngine ).apply(
                 any( TransactionToApply.class ), any( TransactionApplicationMode.class ) );
-        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
+        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(
                 appender,
                 storageEngine );
         TransactionToApply transaction = mockedTransaction();
@@ -115,7 +115,7 @@ class TransactionRepresentationCommitProcessTest
 
         StorageEngine storageEngine = mock( StorageEngine.class );
 
-        TransactionCommitProcess commitProcess = new TransactionRepresentationCommitProcess(
+        TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(
                 appender, storageEngine );
         PhysicalTransactionRepresentation noCommandTx = new PhysicalTransactionRepresentation( Collections.emptyList() );
         noCommandTx.setHeader( new byte[0], -1, -1, -1, -1, ANONYMOUS );

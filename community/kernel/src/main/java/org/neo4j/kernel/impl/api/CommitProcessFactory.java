@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.StorageEngine;
 
 public interface CommitProcessFactory
 {
-    TransactionCommitProcess create( TransactionAppender appender, StorageEngine storageEngine, Config config );
+    TransactionCommitProcess create( TransactionAppender appender, StorageEngine storageEngine, NamedDatabaseId databaseId,
+                                     ReadOnlyDatabaseChecker readOnlyDatabaseChecker );
 }

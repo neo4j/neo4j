@@ -24,8 +24,10 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.regex.Pattern;
@@ -38,6 +40,7 @@ import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Numbers;
 
 import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 public final class SettingConstraints
 {
@@ -483,5 +486,26 @@ public final class SettingConstraints
     {
         return dependency( settingConstraint, unconstrained(),
                 GraphDatabaseSettings.mode, any( is( GraphDatabaseSettings.Mode.CORE ), is( GraphDatabaseSettings.Mode.READ_REPLICA ) ) );
+    }
+
+    public static <T, C extends Collection<T>> SettingConstraint<C> shouldNotContain( T value, String collectionDescription )
+    {
+        return new SettingConstraint<>()
+        {
+            @Override
+            public void validate( C coll, Configuration config )
+            {
+                if ( coll.contains( value ) )
+                {
+                    throw new IllegalArgumentException( getDescription() );
+                }
+            }
+
+            @Override
+            public String getDescription()
+            {
+                return String.format( "Value '%s' can't be included in %s!", value.toString(), collectionDescription );
+            }
+        };
     }
 }

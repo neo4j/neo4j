@@ -19,20 +19,37 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
+import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-/**
- * For databases in dbms.read_only mode, the implementation of {@link org.neo4j.kernel.impl.api.TransactionCommitProcess}
- * will simply always throw an exception on commit, to ensure that no changes are made.
- */
-public class ReadOnlyTransactionCommitProcess implements TransactionCommitProcess
+public class DatabaseTransactionCommitProcess implements TransactionCommitProcess
 {
+    private final TransactionCommitProcess commitProcess;
+    private final NamedDatabaseId databaseId;
+    private final ReadOnlyDatabaseChecker readOnlyDatabaseChecker;
+
+    public DatabaseTransactionCommitProcess( InternalTransactionCommitProcess commitProcess, NamedDatabaseId databaseId,
+            ReadOnlyDatabaseChecker readOnlyDatabaseChecker )
+    {
+        this.commitProcess = commitProcess;
+        this.databaseId = databaseId;
+        this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
+    }
+
     @Override
     public long commit( TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode ) throws TransactionFailureException
     {
-        throw new TransactionFailureException( Status.General.ForbiddenOnReadOnlyDatabase, "Transactions cannot be committed in a read-only Neo4j database" );
+        if ( readOnlyDatabaseChecker.test( databaseId.name() ) )
+        {
+            throw new RuntimeException( new ReadOnlyDbException( databaseId.name() ) );
+        }
+        else
+        {
+            return commitProcess.commit( batch, commitEvent, mode );
+        }
     }
 }

@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ImpermanentDbmsExtension( configurationCallback = "configure" )
-class TransactionRepresentationCommitProcessIT
+class InternalTransactionCommitProcessIT
 {
     private static final int TOTAL_ACTIVE_THREADS = 6;
 

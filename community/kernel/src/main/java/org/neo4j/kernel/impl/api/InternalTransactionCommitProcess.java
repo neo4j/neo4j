@@ -30,12 +30,12 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionLogError;
 
-public class TransactionRepresentationCommitProcess implements TransactionCommitProcess
+public class InternalTransactionCommitProcess implements TransactionCommitProcess
 {
     private final TransactionAppender appender;
     private final StorageEngine storageEngine;
 
-    public TransactionRepresentationCommitProcess( TransactionAppender appender, StorageEngine storageEngine )
+    public InternalTransactionCommitProcess( TransactionAppender appender, StorageEngine storageEngine )
     {
         this.appender = appender;
         this.storageEngine = storageEngine;

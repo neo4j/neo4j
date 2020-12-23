@@ -42,6 +42,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
+import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.dbms.database.DatabasePageCache;
@@ -224,6 +225,7 @@ public class Database extends LifecycleAdapter
     private final NamedDatabaseId namedDatabaseId;
     private final DatabaseLayout databaseLayout;
     private final boolean readOnly;
+    private final ReadOnlyDatabaseChecker readOnlyDatabaseChecker;
     private final IdController idController;
     private final DbmsInfo dbmsInfo;
     private final VersionContextSupplier versionContextSupplier;
@@ -303,6 +305,7 @@ public class Database extends LifecycleAdapter
         this.fileLockerService = context.getFileLockerService();
         this.leaseService = context.getLeaseService();
         this.startupController = context.getStartupController();
+        this.readOnlyDatabaseChecker = new ReadOnlyDatabaseChecker.Default( databaseConfig );
     }
 
     /**
@@ -772,7 +775,7 @@ public class Database extends LifecycleAdapter
     {
         AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
 
-        TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine, databaseConfig );
+        TransactionCommitProcess transactionCommitProcess = commitProcessFactory.create( appender, storageEngine, namedDatabaseId, readOnlyDatabaseChecker );
 
         /*
          * This is used by explicit indexes and constraint indexes whenever a transaction is to be spawned
@@ -791,7 +794,8 @@ public class Database extends LifecycleAdapter
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         accessCapability, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService, labelScanStore,
-                        relationshipTypeScanStore, indexStatisticsStore, databaseDependencies, tracers, leaseService, transactionsMemoryPool ) );
+                        relationshipTypeScanStore, indexStatisticsStore, databaseDependencies,
+                        tracers, leaseService, transactionsMemoryPool, readOnlyDatabaseChecker ) );
 
         buildTransactionMonitor( kernelTransactions, databaseConfig );
 

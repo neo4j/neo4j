@@ -33,6 +33,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.NotInTransactionException;
@@ -68,6 +69,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -166,6 +168,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final AccessCapability accessCapability;
     private final ConstraintSemantics constraintSemantics;
     private final PageCursorTracer pageCursorTracer;
+    private final ReadOnlyDatabaseChecker readOnlyDatabaseChecker;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
@@ -221,9 +224,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
             LabelScanStore labelScanStore, RelationshipTypeScanStore relationshipTypeScanStore,
             IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
-            NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool )
+            NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool,
+            ReadOnlyDatabaseChecker readOnlyDatabaseChecker )
     {
         this.pageCursorTracer = tracers.getPageCacheTracer().createPageCursorTracer( TRANSACTION_TAG );
+        this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
         long heapGrabSize = config.get( GraphDatabaseInternalSettings.initial_transaction_heap_grab_size );
         this.memoryTracker = config.get( memory_tracking ) ?
                              new LocalMemoryTracker( transactionMemoryPool, transactionHeapBytesLimit, heapGrabSize,
@@ -537,6 +542,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( txState == null )
         {
             leaseClient.ensureValid();
+            if ( readOnlyDatabaseChecker.test( namedDatabaseId.name() ) )
+            {
+                throw new RuntimeException( new ReadOnlyDbException( namedDatabaseId.name() ) );
+            }
             transactionMonitor.upgradeToWriteTransaction();
             txState = new TxState( collectionsFactory, memoryTracker );
         }

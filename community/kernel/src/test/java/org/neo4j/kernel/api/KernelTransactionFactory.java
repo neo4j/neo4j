@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -34,7 +35,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.LeaseService;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -87,15 +88,15 @@ public class KernelTransactionFactory
         dependencies.satisfyDependency( mock( GraphDatabaseFacade.class ) );
         KernelTransactionImplementation transaction =
                 new KernelTransactionImplementation( Config.defaults(), mock( DatabaseTransactionEventListeners.class ),
-                        mock( ConstraintIndexCreator.class ), mock( GlobalProcedures.class ),
-                        mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
-                        mock( Pool.class ), Clocks.nanoClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
-                        mock( DatabaseTracers.class, RETURNS_MOCKS ), storageEngine,
-                        new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
-                        new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
-                        mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
-                        mock( IndexStatisticsStore.class ), dependencies, new TestDatabaseIdRepository().defaultDatabase(), LeaseService.NO_LEASES,
-                        MemoryPools.NO_TRACKING );
+                                                     mock( ConstraintIndexCreator.class ), mock( GlobalProcedures.class ),
+                                                     mock( InternalTransactionCommitProcess.class ), mock( TransactionMonitor.class ),
+                                                     mock( Pool.class ), Clocks.nanoClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
+                                                     mock( DatabaseTracers.class, RETURNS_MOCKS ), storageEngine,
+                                                     new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
+                                                     new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
+                                                     mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
+                                                     mock( IndexStatisticsStore.class ), dependencies, new TestDatabaseIdRepository().defaultDatabase(),
+                                                     LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, ReadOnlyDatabaseChecker.neverReadOnly() );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 

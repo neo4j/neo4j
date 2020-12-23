@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.RelationshipTypeScanStore;
@@ -296,14 +297,14 @@ class KernelTransactionTerminationTest
         TestKernelTransaction( CommitTrackingMonitor monitor, Dependencies dependencies )
         {
             super( Config.defaults(), mock( DatabaseTransactionEventListeners.class ),
-                    mock( ConstraintIndexCreator.class ), mock( GlobalProcedures.class ),
-                    mock( TransactionCommitProcess.class ), monitor, mock( Pool.class ), Clocks.fakeClock(),
-                    new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
-                    mock( DatabaseTracers.class, RETURNS_MOCKS ), mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
-                    EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
-                    mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
-                    mock( IndexStatisticsStore.class ), dependencies, new TestDatabaseIdRepository().defaultDatabase(), LeaseService.NO_LEASES,
-                    MemoryPools.NO_TRACKING );
+                   mock( ConstraintIndexCreator.class ), mock( GlobalProcedures.class ),
+                   mock( TransactionCommitProcess.class ), monitor, mock( Pool.class ), Clocks.fakeClock(),
+                   new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
+                   mock( DatabaseTracers.class, RETURNS_MOCKS ), mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
+                   EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
+                   mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
+                   mock( IndexStatisticsStore.class ), dependencies, new TestDatabaseIdRepository().defaultDatabase(),
+                   LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, ReadOnlyDatabaseChecker.neverReadOnly() );
 
             this.monitor = monitor;
         }

@@ -33,6 +33,7 @@ import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -101,6 +102,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
     private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
     private final TokenHolders tokenHolders;
+    private final ReadOnlyDatabaseChecker readOnlyDatabaseChecker;
     private final NamedDatabaseId namedDatabaseId;
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
@@ -152,7 +154,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             SchemaState schemaState, TokenHolders tokenHolders, NamedDatabaseId namedDatabaseId, IndexingService indexingService, LabelScanStore labelScanStore,
             RelationshipTypeScanStore relationshipTypeScanStore, IndexStatisticsStore indexStatisticsStore,
             Dependencies databaseDependencies, DatabaseTracers tracers, LeaseService leaseService,
-            GlobalMemoryGroupTracker transactionsMemoryPool )
+            GlobalMemoryGroupTracker transactionsMemoryPool, ReadOnlyDatabaseChecker readOnlyDatabaseChecker )
     {
         this.config = config;
         this.statementLocksFactory = statementLocksFactory;
@@ -167,6 +169,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.cpuClockRef = cpuClockRef;
         this.accessCapability = accessCapability;
         this.tokenHolders = tokenHolders;
+        this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
         this.tokenHoldersIdLookup = new TokenHoldersIdLookup( tokenHolders, globalProcedures );
         this.namedDatabaseId = namedDatabaseId;
         this.indexingService = indexingService;
@@ -401,7 +404,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                             tracers, storageEngine, accessCapability,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                             schemaState, tokenHolders, indexingService, labelScanStore, relationshipTypeScanStore, indexStatisticsStore,
-                            databaseDependendies, namedDatabaseId, leaseService, transactionMemoryPool );
+                            databaseDependendies, namedDatabaseId, leaseService, transactionMemoryPool, readOnlyDatabaseChecker );
             this.transactions.add( tx );
             return tx;
         }

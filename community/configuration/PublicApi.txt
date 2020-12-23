@@ -150,6 +150,8 @@ org.neo4j.configuration.GraphDatabaseSettings::procedure_whitelist org.neo4j.gra
 org.neo4j.configuration.GraphDatabaseSettings::query_cache_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::query_statistics_divergence_threshold org.neo4j.graphdb.config.Setting<java.lang.Double> public static final
 org.neo4j.configuration.GraphDatabaseSettings::read_only org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
+org.neo4j.configuration.GraphDatabaseSettings::read_only_database_default org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
+org.neo4j.configuration.GraphDatabaseSettings::read_only_databases org.neo4j.graphdb.config.Setting<java.util.Set<java.lang.String>> public static final
 org.neo4j.configuration.GraphDatabaseSettings::reconciler_maximum_backoff org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::reconciler_maximum_parallelism org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::reconciler_may_retry org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
@@ -191,6 +193,7 @@ org.neo4j.configuration.GraphDatabaseSettings::tx_state_memory_allocation org.ne
 org.neo4j.configuration.GraphDatabaseSettings::tx_state_off_heap_block_cache_size org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::tx_state_off_heap_max_cacheable_block_size org.neo4j.graphdb.config.Setting<java.lang.Long> public static final
 org.neo4j.configuration.GraphDatabaseSettings::upgrade_processors org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
+org.neo4j.configuration.GraphDatabaseSettings::writable_databases org.neo4j.graphdb.config.Setting<java.util.Set<java.lang.String>> public static final
 org.neo4j.configuration.GroupSetting public abstract class extends java.lang.Object
 org.neo4j.configuration.GroupSetting::<T extends java.lang.Object>getBuilder(java.lang.String, org.neo4j.configuration.SettingValueParser<T>, #T) org.neo4j.configuration.SettingImpl.Builder<T> protected
 org.neo4j.configuration.GroupSetting::<T extends java.lang.Object>getBuilder(org.neo4j.configuration.SettingValueParser<T>, #T) org.neo4j.configuration.SettingImpl.Builder<T> protected

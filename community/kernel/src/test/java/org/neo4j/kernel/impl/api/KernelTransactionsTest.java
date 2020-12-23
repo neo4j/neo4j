@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.internal.id.IdController;
@@ -690,7 +691,7 @@ class KernelTransactionsTest
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
                 mockedTokenHolders(), DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
                 mock( IndexStatisticsStore.class ), createDependencies(), tracers, LeaseService.NO_LEASES,
-                new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ) );
+                new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ), ReadOnlyDatabaseChecker.neverReadOnly() );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -751,13 +752,13 @@ class KernelTransactionsTest
                 VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies databaseDependencies )
         {
             super( Config.defaults(), statementLocksFactory, constraintIndexCreator,
-                    transactionCommitProcess, eventListeners, transactionMonitor, databaseAvailabilityGuard,
-                    storageEngine, globalProcedures, transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
-                    accessCapability,
-                    versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
-                    DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
-                    mock( IndexStatisticsStore.class ), databaseDependencies, tracers, LeaseService.NO_LEASES,
-                    new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ) );
+                   transactionCommitProcess, eventListeners, transactionMonitor, databaseAvailabilityGuard,
+                   storageEngine, globalProcedures, transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
+                   accessCapability,
+                   versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
+                   DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
+                   mock( IndexStatisticsStore.class ), databaseDependencies, tracers, LeaseService.NO_LEASES,
+                   new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ), ReadOnlyDatabaseChecker.neverReadOnly() );
         }
 
         @Override

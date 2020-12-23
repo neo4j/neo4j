@@ -53,7 +53,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -111,7 +111,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
 
     private DatabaseManagementService managementService;
     private GraphDatabaseAPI database;
-    private TransactionRepresentationCommitProcess commitProcess;
+    private InternalTransactionCommitProcess commitProcess;
     private TransactionIdStore transactionIdStore;
     private NeoStores neoStores;
     private IndexingService indexingService;
@@ -141,7 +141,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
         database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         DependencyResolver dependencyResolver = database.getDependencyResolver();
 
-        commitProcess = new TransactionRepresentationCommitProcess(
+        commitProcess = new InternalTransactionCommitProcess(
                 dependencyResolver.resolveDependency( TransactionAppender.class ),
                 dependencyResolver.resolveDependency( StorageEngine.class ) );
         transactionIdStore = database.getDependencyResolver().resolveDependency(

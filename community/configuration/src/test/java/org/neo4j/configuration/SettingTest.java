@@ -47,6 +47,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.string.SecureString;
 
 import static java.time.Duration.ofMinutes;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -84,6 +85,7 @@ import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.configuration.SettingValueParsers.ofPartialEnum;
+import static org.neo4j.configuration.SettingValueParsers.setOf;
 import static org.neo4j.configuration.SettingValueParsers.setOfEnums;
 import static org.neo4j.graphdb.config.Configuration.EMPTY;
 
@@ -165,6 +167,17 @@ class SettingTest
 
         assertFalse( setting.valueToString( setting.parse( "4,2,3,1" ) ).startsWith( "[" ) );
         assertFalse( setting.valueToString( setting.parse( "4,2,3,1" ) ).endsWith( "]" ) );
+    }
+
+    @Test
+    void testSet()
+    {
+        var setting = (SettingImpl<Set<Integer>>) setting( "setting", setOf( INT ) );
+        assertThat( setting.parse( "5" ) ).containsExactly( 5 );
+        assertThat( setting.parse( "") ).isEmpty();
+        assertThat( setting.parse( "5, 31, -4  ,2" ) ).containsExactlyInAnyOrder( 5, 31, -4, 2 );
+        assertThat( setting.parse( "5, 5, 5, 3, 900, 0") ).containsExactlyInAnyOrder( 0, 3, 5, 900 );
+        assertThrows( IllegalArgumentException.class, () -> setting.parse( "2,3,foo,7" ) );
     }
 
     @Test

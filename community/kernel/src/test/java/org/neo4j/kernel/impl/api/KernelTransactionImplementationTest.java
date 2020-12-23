@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -43,9 +45,11 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
@@ -64,6 +68,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.DoubleLatch;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -81,10 +86,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only_databases;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionValidationFailed;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 class KernelTransactionImplementationTest extends KernelTransactionTestBase
@@ -747,6 +755,52 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP, mock( StatementLocks.class ), KernelTransaction.Type.IMPLICIT,
                 mock( SecurityContext.class ), 0, 1L, EMBEDDED_CONNECTION );
         assertEquals( "KernelTransaction[lease:" + leaseId + "]", transaction.toString() );
+    }
+
+    @Test
+    void shouldThrowWhenCreatingTxStateWithInvalidLease()
+    {
+        // given
+        var leaseService = mock( LeaseService.class );
+        when( leaseService.newClient() ).thenReturn( new LeaseClient()
+        {
+            @Override
+            public int leaseId()
+            {
+                return 0;
+            }
+
+            @Override
+            public void ensureValid() throws LeaseException
+            {
+                throw new LeaseException( "Invalid lease!", TransactionValidationFailed );
+            }
+        } );
+        var transaction = newNotInitializedTransaction( leaseService );
+        transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP, mock( StatementLocks.class ), KernelTransaction.Type.IMPLICIT,
+                                mock( SecurityContext.class ), 0, 1L, EMBEDDED_CONNECTION );
+
+        // when / then
+        assertThrows( LeaseException.class, transaction::txState );
+    }
+
+    @Test
+    void shouldThrowWhenCreatingTxStateWithReadOnlyDatabase()
+    {
+        // given
+        var fooName = "foo";
+        var fooDb = new TestDatabaseIdRepository().getRaw( fooName );
+        var configValues = Map.of( read_only_database_default, false,
+                                   read_only_databases, Set.of( fooName ) );
+        var config = Config.defaults( configValues );
+
+        var transaction = newNotInitializedTransaction( config, fooDb );
+        transaction.initialize( 0, BASE_TX_COMMIT_TIMESTAMP, mock( StatementLocks.class ), KernelTransaction.Type.IMPLICIT,
+                                mock( SecurityContext.class ), 0, 1L, EMBEDDED_CONNECTION );
+
+        // when / then
+        var rte = assertThrows( RuntimeException.class, transaction::txState );
+        assertThat( rte ).hasCauseInstanceOf( ReadOnlyDbException.class );
     }
 
     @Test

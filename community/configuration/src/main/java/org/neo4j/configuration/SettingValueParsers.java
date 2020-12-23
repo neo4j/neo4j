@@ -231,6 +231,11 @@ public final class SettingValueParsers
         return new CollectionValueParser( List.class, Collectors.toList(), parser );
     }
 
+    public static <T> SettingValueParser<Set<T>> setOf( SettingValueParser<T> parser )
+    {
+        return new CollectionValueParser( Set.class, Collectors.toSet(), parser );
+    }
+
     /**
      * Base class delegating to another parser for creating collections of settings.
      *

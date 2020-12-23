@@ -71,6 +71,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
+import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
 
 import static java.time.ZoneOffset.UTC;
 import static java.util.Collections.emptyMap;
@@ -282,7 +283,7 @@ class TransactionStatusResultTest
                     EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
                     mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ),
                     mock( RelationshipTypeScanStore.class ), mock( IndexStatisticsStore.class ), dependencies,
-                    new TestDatabaseIdRepository().defaultDatabase(), LeaseService.NO_LEASES, MemoryPools.NO_TRACKING )
+                    new TestDatabaseIdRepository().defaultDatabase(), LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, ReadOnlyDatabaseChecker.neverReadOnly() )
             {
                 @Override
                 public Statistics getStatistics()
