@@ -140,6 +140,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     private final JobScheduler jobScheduler;
     private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
+    private volatile StoreScan storeScan;
     private final TokenNameLookup tokenNameLookup;
     private final PageCacheTracer cacheTracer;
     private final String databaseName;
@@ -203,10 +204,9 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         int[] propertyKeyIds = propertyKeyIds();
         IntPredicate propertyKeyIdFilter = propertyKeyId -> contains( propertyKeyIds, propertyKeyId );
 
-        StoreScan storeScan;
         if ( type == EntityType.RELATIONSHIP )
         {
-            storeScan = storeView.visitRelationships( entityTokenIds,
+            StoreScan innerStoreScan = storeView.visitRelationships( entityTokenIds,
                     propertyKeyIdFilter,
                     createPropertyScanConsumer(),
                     createTokenScanConsumer(),
@@ -214,11 +214,11 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
                     true,
                     cacheTracer,
                     memoryTracker );
-            storeScan = new LoggingStoreScan( storeScan, false );
+            storeScan = new LoggingStoreScan( innerStoreScan, false );
         }
         else
         {
-            storeScan = storeView.visitNodes( entityTokenIds,
+            StoreScan innerStoreScan = storeView.visitNodes( entityTokenIds,
                     propertyKeyIdFilter,
                     createPropertyScanConsumer(),
                     createTokenScanConsumer(),
@@ -226,7 +226,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
                     true,
                     cacheTracer,
                     memoryTracker );
-            storeScan = new LoggingStoreScan( storeScan, true );
+            storeScan = new LoggingStoreScan( innerStoreScan, true );
         }
         storeScan.setPhaseTracker( phaseTracker );
         return storeScan;
@@ -401,6 +401,16 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     void stop( IndexPopulation indexPopulation, CursorContext cursorContext )
     {
         indexPopulation.disconnectAndStop( cursorContext );
+        checkEmpty();
+    }
+
+    private void checkEmpty()
+    {
+        StoreScan scan = storeScan;
+        if ( populations.isEmpty() && scan != null )
+        {
+            scan.stop();
+        }
     }
 
     /**
@@ -410,6 +420,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     void dropIndexPopulation( IndexPopulation indexPopulation )
     {
         indexPopulation.disconnectAndDrop();
+        checkEmpty();
     }
 
     private boolean removeFromOngoingPopulations( IndexPopulation indexPopulation )

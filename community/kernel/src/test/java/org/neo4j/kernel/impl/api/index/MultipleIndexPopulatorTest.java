@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
@@ -52,9 +53,9 @@ import org.neo4j.scheduler.JobSchedulerExtension;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.InMemoryTokens;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -96,6 +97,7 @@ class MultipleIndexPopulatorTest
     private MultipleIndexPopulator multipleIndexPopulator;
     private IndexStatisticsStore indexStatisticsStore;
     private InMemoryTokens tokens;
+    private StoreScan actualStoreScan;
 
     @BeforeEach
     void before()
@@ -103,7 +105,10 @@ class MultipleIndexPopulatorTest
         indexStatisticsStore = mock( IndexStatisticsStore.class );
         indexStoreView = mock( IndexStoreView.class );
         when( indexStoreView.newPropertyAccessor( any( CursorContext.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
-        when( indexStoreView.visitNodes( any(), any(), any(), any(), anyBoolean(), anyBoolean(), any(), any() ) ).thenReturn( mock( StoreScan.class ) );
+        // The returned StoreScan instance returned from this MultipleIndexPopulator is wrapped in a LoggingStoreScan
+        // so this inner/actual StoreScan instance is accessible as a field for verification
+        actualStoreScan = mock( StoreScan.class );
+        when( indexStoreView.visitNodes( any(), any(), any(), any(), anyBoolean(), anyBoolean(), any(), any() ) ).thenReturn( actualStoreScan );
         schemaState = mock( SchemaState.class );
         tokens = new InMemoryTokens();
         multipleIndexPopulator = new MultipleIndexPopulator( indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState,
@@ -588,6 +593,38 @@ class MultipleIndexPopulatorTest
         verify( updater, never() ).process( highUpdate );
 
         verify( indexUpdater, never() ).process( any(IndexEntryUpdate.class) );
+    }
+
+    @Test
+    void shouldStopStoreScanWhenLastPopulatorGetsDropped() throws FlipFailedKernelException
+    {
+        shouldStopStoreScanWhenNoMorePopulatorsLeft( population -> multipleIndexPopulator.dropIndexPopulation( population ) );
+    }
+
+    @Test
+    void shouldStopStoreScanWhenLastPopulatorGetsStopped() throws FlipFailedKernelException
+    {
+        shouldStopStoreScanWhenNoMorePopulatorsLeft( population -> multipleIndexPopulator.stop( population, NULL ) );
+    }
+
+    private void shouldStopStoreScanWhenNoMorePopulatorsLeft( Consumer<IndexPopulation> cancelAction ) throws FlipFailedKernelException
+    {
+        // given
+        IndexPopulator populator1 = createIndexPopulator();
+        IndexPopulator populator2 = createIndexPopulator();
+        IndexPopulation population1 = addPopulator( populator1, 1 );
+        IndexPopulation population2 = addPopulator( populator2, 2 );
+        multipleIndexPopulator.create( NULL );
+
+        // when
+        StoreScan storeScan = multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
+        storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
+        cancelAction.accept( population1 );
+        verify( actualStoreScan, never() ).stop();
+
+        // then
+        cancelAction.accept( population2 );
+        verify( actualStoreScan ).stop();
     }
 
     private static IndexEntryUpdate<?> createIndexEntryUpdate( SchemaDescriptorSupplier schemaDescriptor )
