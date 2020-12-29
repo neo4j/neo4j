@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 
 import scala.reflect.ClassTag
 
-case class CompilationContains[T](implicit tag: ClassTag[T]) extends ValidatingCondition {
+case class CompilationContains[T]()(implicit val tag: ClassTag[T]) extends ValidatingCondition {
 
   override def apply(in: Any): Seq[String] = in match {
     case state: LogicalPlanState =>

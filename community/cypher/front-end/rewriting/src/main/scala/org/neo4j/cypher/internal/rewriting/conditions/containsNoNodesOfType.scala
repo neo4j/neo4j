@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.util.ASTNode
 
 import scala.reflect.ClassTag
 
-case class containsNoNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extends ValidatingCondition {
+case class containsNoNodesOfType[T <: ASTNode]()(implicit val tag: ClassTag[T]) extends ValidatingCondition {
   def apply(that: Any): Seq[String] = collectNodesOfType[T].apply(that).map {
     node => s"Expected none but found ${node.getClass.getSimpleName} at position ${node.position}"
   }
