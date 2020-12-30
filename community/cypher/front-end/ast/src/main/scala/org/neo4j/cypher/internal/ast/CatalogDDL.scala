@@ -187,10 +187,8 @@ trait EitherAsString {
 final case class CreateUser(userName: Either[String, Parameter],
                             isEncryptedPassword: Boolean,
                             initialPassword: Expression,
-                            requirePasswordChange: Boolean,
-                            suspended: Option[Boolean],
-                            ifExistsDo: IfExistsDo,
-                            defaultDatabase: Option[Either[String, Parameter]])(val position: InputPosition) extends WriteAdministrationCommand with EitherAsString {
+                            userOptions: UserOptions,
+                            ifExistsDo: IfExistsDo)(val position: InputPosition) extends WriteAdministrationCommand with EitherAsString {
   override def name: String = ifExistsDo match {
     case IfExistsReplace | IfExistsInvalidSyntax => "CREATE OR REPLACE USER"
     case _ => "CREATE USER"
@@ -218,10 +216,8 @@ final case class DropUser(userName: Either[String, Parameter], ifExists: Boolean
 final case class AlterUser(userName: Either[String, Parameter],
                            isEncryptedPassword: Option[Boolean],
                            initialPassword: Option[Expression],
-                           requirePasswordChange: Option[Boolean],
-                           suspended: Option[Boolean],
-                           defaultDatabase: Option[Either[String, Parameter]])(val position: InputPosition) extends WriteAdministrationCommand {
-  assert(initialPassword.isDefined || requirePasswordChange.isDefined || suspended.isDefined || defaultDatabase.isDefined)
+                           userOptions: UserOptions)(val position: InputPosition) extends WriteAdministrationCommand {
+  assert(initialPassword.isDefined || userOptions.requirePasswordChange.isDefined || userOptions.suspended.isDefined || userOptions.defaultDatabase.isDefined)
 
   override def name = "ALTER USER"
 
@@ -239,6 +235,8 @@ final case class SetOwnPassword(newPassword: Expression, currentPassword: Expres
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
 }
+
+final case class UserOptions(requirePasswordChange: Option[Boolean], suspended: Option[Boolean], defaultDatabase: Option[Either[String, Parameter]])
 
 final case class ShowRoles(withUsers: Boolean, showAll: Boolean, override val yieldOrWhere: YieldOrWhere, override val defaultColumnSet: List[ShowColumn])(val position: InputPosition) extends ReadAdministrationCommand {
 

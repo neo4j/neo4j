@@ -124,10 +124,10 @@ object Additions {
       case c: CreateRelationshipPropertyExistenceConstraint if !c.oldSyntax =>
         throw cypherExceptionFactory.syntaxException("Creating relationship existence constraint using `IS NOT NULL` is not supported in this Cypher version.", c.position)
 
-      case c@CreateUser(_, _, _, _, _, _, Some(_)) =>
+      case c@CreateUser(_, _, _, userOptions, _) if userOptions.defaultDatabase.isDefined =>
         throw cypherExceptionFactory.syntaxException("Creating a user with a default database is not supported in this Cypher version.", c.position)
 
-      case c@AlterUser(_, _, _, _, _, Some(_)) =>
+      case c@AlterUser(_, _, _, userOptions) if userOptions.defaultDatabase.isDefined =>
         throw cypherExceptionFactory.syntaxException("Updating a user with a default database is not supported in this Cypher version.", c.position)
     }
   }

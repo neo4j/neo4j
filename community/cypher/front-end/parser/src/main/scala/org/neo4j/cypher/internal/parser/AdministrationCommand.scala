@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.TimeoutAfter
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.InputPosition
 import org.parboiled.scala.Parser
@@ -78,14 +79,10 @@ trait AdministrationCommand extends Parser
   }
 
   def CreateUser: Rule1[ast.CreateUser] = rule("CREATE USER") {
-    // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus
-    group(CreateUserStart ~~ SetPassword ~~ SensitiveStringLiteral ~~ OptionalRequirePasswordChange ~~ OptionalStatus ~~ OptionalDefaultDatabase) ~~>>
-      ((userName, ifExistsDo, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, defaultDatabase) =>
-      ast.CreateUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange.getOrElse(true), suspended, ifExistsDo, defaultDatabase)) |
-    // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus
-    group(CreateUserStart ~~ SetPassword ~~ SensitiveStringParameter ~~ OptionalRequirePasswordChange ~~ OptionalStatus ~~ OptionalDefaultDatabase) ~~>>
-      ((userName, ifExistsDo, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, defaultDatabase) =>
-      ast.CreateUser(userName, isEncryptedPassword, initialPassword, requirePasswordChange.getOrElse(true), suspended, ifExistsDo, defaultDatabase))
+    // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [(SET PASSWORD CHANGE [NOT] REQUIRED) | (SET STATUS SUSPENDED|ACTIVE) | (SET DEFAULT DATABASE name)]*
+    group(CreateUserStart ~~ SetPassword ~~ optional(UserOptions)) ~~>>
+      ((userName, ifExistsDo, isEncryptedPassword, initialPassword, userOptions) =>
+        ast.CreateUser(userName, isEncryptedPassword, initialPassword, userOptions.getOrElse(ast.UserOptions(None, None, None)), ifExistsDo))
   }
 
   def CreateUserStart: Rule2[Either[String, Parameter], ast.IfExistsDo] = {
@@ -102,76 +99,71 @@ trait AdministrationCommand extends Parser
   }
 
   def AlterUser: Rule1[ast.AlterUser] = rule("ALTER USER") {
-    // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword optionalRequirePasswordChange optionalStatus optionalDefaultDatabase
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetPassword ~~ SensitiveStringLiteral ~~ OptionalRequirePasswordChange ~~ OptionalStatus ~~ OptionalDefaultDatabase) ~~>>
-      ((userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, defaultDatabase) =>
-        ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), requirePasswordChange, suspended, defaultDatabase)) |
+    // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [(SET PASSWORD CHANGE [NOT] REQUIRED) | (SET STATUS SUSPENDED|ACTIVE) | (SET DEFAULT DATABASE name)]*
+    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetPassword ~~ optional(UserOptions)) ~~>>
+      ((userName, isEncryptedPassword, initialPassword, userOptions) => ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), userOptions.getOrElse(ast.UserOptions(None, None, None)))) |
     //
-    // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD parameterPassword optionalRequirePasswordChange optionalStatus optionalDefaultDatabase
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetPassword ~~ SensitiveStringParameter ~~ OptionalRequirePasswordChange ~~ OptionalStatus ~~ OptionalDefaultDatabase) ~~>>
-      ((userName, isEncryptedPassword, initialPassword, requirePasswordChange, suspended, defaultDatabase) =>
-        ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), requirePasswordChange, suspended, defaultDatabase)) |
-    //
-    // ALTER USER username setRequirePasswordChange optionalStatus optionalDefaultDatabase
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetRequirePasswordChange ~~ OptionalStatus ~~ OptionalDefaultDatabase) ~~>>
-      ((userName, requirePasswordChange, suspended, defaultDatabase) => ast.AlterUser(userName, None, None, Some(requirePasswordChange), suspended, defaultDatabase)) |
-    //
-    // ALTER USER username setStatus optionalDefaultDatabase
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetStatus ~~ OptionalDefaultDatabase) ~~>>
-      ((userName, suspended, defaultDatabase) => ast.AlterUser(userName, None, None, None, Some(suspended), defaultDatabase)) |
-    //
-    // ALTER USER username DEFAULT DATABASE db
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ DefaultDatabase) ~~>>
-      ((userName, defaultDatabase) => ast.AlterUser(userName, None, None, None, None, Some(defaultDatabase)))
+    // ALTER USER username [(SET PASSWORD CHANGE [NOT] REQUIRED)|(SET STATUS SUSPENDED|ACTIVE)|(SET DEFAULT DATABASE name)]+
+    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ UserOptionsWithSetPart) ~~>>
+      ((userName, userOptions) => ast.AlterUser(userName, None, None, userOptions))
   }
 
   def SetOwnPassword: Rule1[ast.SetOwnPassword] = rule("ALTER CURRENT USER SET PASSWORD") {
-    // ALTER CURRENT USER SET PASSWORD FROM stringLiteralPassword TO stringLiteralPassword
-    group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ SensitiveStringLiteral ~~ keyword("TO") ~~ SensitiveStringLiteral) ~~>>
-      ((currentPassword, newPassword) => ast.SetOwnPassword(newPassword, currentPassword)) |
-    // ALTER CURRENT USER SET PASSWORD FROM stringLiteralPassword TO parameterPassword
-    group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ SensitiveStringLiteral ~~ keyword("TO") ~~ SensitiveStringParameter) ~~>>
-      ((currentPassword, newPassword) => ast.SetOwnPassword(newPassword, currentPassword)) |
-    // ALTER CURRENT USER SET PASSWORD FROM parameterPassword TO stringLiteralPassword
-    group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ SensitiveStringParameter ~~ keyword("TO") ~~ SensitiveStringLiteral) ~~>>
-      ((currentPassword, newPassword) => ast.SetOwnPassword(newPassword, currentPassword)) |
-    // ALTER CURRENT USER SET PASSWORD FROM parameterPassword TO parameterPassword
-    group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ SensitiveStringParameter ~~ keyword("TO") ~~ SensitiveStringParameter) ~~>>
+    // ALTER CURRENT USER SET PASSWORD FROM stringLiteralPassword|parameterPassword TO stringLiteralPassword|parameterPassword
+    group(keyword("ALTER CURRENT USER SET PASSWORD FROM") ~~ PasswordExpression ~~ keyword("TO") ~~ PasswordExpression) ~~>>
       ((currentPassword, newPassword) => ast.SetOwnPassword(newPassword, currentPassword))
   }
 
-  def SetPassword: Rule1[Boolean] = rule("set encrypted or plaintext password") {
+  def SetPassword: Rule2[Boolean, Expression] = rule("set encrypted or plaintext password") {
     // returns: isEncryptedPassword
-    group(keyword("SET") ~~ optional(keyword("PLAINTEXT")) ~~ keyword("PASSWORD") ~> (_ => false)) |
+    group(
+      group(keyword("SET") ~~ optional(keyword("PLAINTEXT")) ~~ keyword("PASSWORD") ~> (_ => false)) |
       group(keyword("SET ENCRYPTED PASSWORD") ~> (_ => true))
+    ) ~~ PasswordExpression
   }
 
-  def OptionalRequirePasswordChange: Rule1[Option[Boolean]] = {
-    optional(
-      group(optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE NOT REQUIRED")) ~>>> (_ => _ => false) |
-      group(optional(keyword("SET PASSWORD")) ~~ keyword("CHANGE REQUIRED")) ~>>> (_ => _ => true)
-    )
-  }
+  def PasswordExpression: Rule1[Expression] = group(SensitiveStringLiteral | SensitiveStringParameter)
 
-  def OptionalStatus: Rule1[Option[Boolean]] = optional(SetStatus)
+  def UserOptions: Rule1[ast.UserOptions] =
+    RequirePasswordChangeNoSetKeyword ~~ SetStatus ~~ SetDefaultDatabase ~~> ((password, status, database) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    RequirePasswordChangeNoSetKeyword ~~ SetDefaultDatabase ~~ SetStatus ~~> ((password, database, status) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    RequirePasswordChangeNoSetKeyword ~~ SetStatus                       ~~> ((password, status)           => ast.UserOptions(Some(password), Some(status), None)) |
+    RequirePasswordChangeNoSetKeyword ~~ SetDefaultDatabase              ~~> ((password, database)         => ast.UserOptions(Some(password), None, Some(database))) |
+    RequirePasswordChangeNoSetKeyword                                    ~~> (password                     => ast.UserOptions(Some(password), None, None)) |
+    UserOptionsWithSetPart
 
-  def OptionalDefaultDatabase: Rule1[Option[Either[String, Parameter]]] = optional(DefaultDatabase)
+  def UserOptionsWithSetPart: Rule1[ast.UserOptions] =
+    RequirePasswordChange ~~ SetStatus ~~ SetDefaultDatabase ~~> ((password, status, database) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    RequirePasswordChange ~~ SetDefaultDatabase ~~ SetStatus ~~> ((password, database, status) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    SetStatus ~~ RequirePasswordChange ~~ SetDefaultDatabase ~~> ((status, password, database) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    SetStatus ~~ SetDefaultDatabase ~~ RequirePasswordChange ~~> ((status, database, password) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    SetDefaultDatabase ~~ RequirePasswordChange ~~ SetStatus ~~> ((database, password, status) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    SetDefaultDatabase ~~ SetStatus ~~ RequirePasswordChange ~~> ((database, status, password) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    RequirePasswordChange ~~ SetStatus                       ~~> ((password, status)           => ast.UserOptions(Some(password), Some(status), None)) |
+    RequirePasswordChange ~~ SetDefaultDatabase              ~~> ((password, database)         => ast.UserOptions(Some(password), None, Some(database))) |
+    SetStatus ~~ RequirePasswordChange                       ~~> ((status, password)           => ast.UserOptions(Some(password), Some(status), None)) |
+    SetStatus ~~ SetDefaultDatabase                          ~~> ((status, database)           => ast.UserOptions(None, Some(status), Some(database))) |
+    SetDefaultDatabase ~~ RequirePasswordChange              ~~> ((database, password)         => ast.UserOptions(Some(password), None, Some(database))) |
+    SetDefaultDatabase ~~ SetStatus                          ~~> ((database, status)           => ast.UserOptions(None, Some(status), Some(database))) |
+    RequirePasswordChange                                    ~~> (password                     => ast.UserOptions(Some(password), None, None)) |
+    SetStatus                                                ~~> (status                       => ast.UserOptions(None, Some(status), None)) |
+    SetDefaultDatabase                                       ~~> (database                     => ast.UserOptions(None, None, Some(database)))
 
-  def DefaultDatabase: Rule1[Either[String, Parameter]] = rule("DEFAULT DATABASE db") {
-    keyword("SET DEFAULT DATABASE") ~~ SymbolicDatabaseNameOrStringParameter
-  }
+  def RequirePasswordChangeNoSetKeyword: Rule1[Boolean] =
+    keyword("CHANGE NOT REQUIRED") ~>>> (_ => _ => false) |
+    keyword("CHANGE REQUIRED") ~>>> (_ => _ => true)
 
   //noinspection MutatorLikeMethodIsParameterless
-  def SetStatus: Rule1[Boolean] = {
-    keyword("SET STATUS SUSPENDED") ~>>> (_ => _ => true) |
-    keyword("SET STATUS ACTIVE") ~>>> (_ => _ => false)
-  }
-
-  //noinspection MutatorLikeMethodIsParameterless
-  def SetRequirePasswordChange: Rule1[Boolean] = {
+  def RequirePasswordChange: Rule1[Boolean] =
     keyword("SET PASSWORD CHANGE NOT REQUIRED") ~>>> (_ => _ => false) |
     keyword("SET PASSWORD CHANGE REQUIRED") ~>>> (_ => _ => true)
-  }
+
+  def SetStatus: Rule1[Boolean] =
+    keyword("SET STATUS SUSPENDED") ~>>> (_ => _ => true) |
+    keyword("SET STATUS ACTIVE") ~>>> (_ => _ => false)
+
+  def SetDefaultDatabase: Rule1[Either[String, Parameter]] =
+    keyword("SET DEFAULT DATABASE") ~~ SymbolicDatabaseNameOrStringParameter
 
   // Role management commands
 

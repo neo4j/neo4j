@@ -225,6 +225,7 @@ import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.UserAllQualifier
+import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
@@ -1296,7 +1297,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     suspended             <- option(boolean)
     ifExistsDo            <- _ifExistsDo
     defaultDatabase       <- option(_nameAsEither)
-  } yield CreateUser(userName, isEncryptedPassword, password, requirePasswordChange, suspended, ifExistsDo, defaultDatabase)(pos)
+  } yield CreateUser(userName, isEncryptedPassword, password, UserOptions(Some(requirePasswordChange), suspended, defaultDatabase), ifExistsDo)(pos)
 
   def _dropUser: Gen[DropUser] = for {
     userName <- _nameAsEither
@@ -1310,7 +1311,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     isEncryptedPassword   <- if (password.isEmpty) const(None) else some(boolean)
     suspended             <- if (password.isEmpty && requirePasswordChange.isEmpty) some(boolean) else option(boolean) // All three are not allowed to be None
     defaultDatabase       <- option(_nameAsEither)
-  } yield AlterUser(userName, isEncryptedPassword, password, requirePasswordChange, suspended, defaultDatabase)(pos)
+  } yield AlterUser(userName, isEncryptedPassword, password, UserOptions(requirePasswordChange, suspended, defaultDatabase))(pos)
 
   def _setOwnPassword: Gen[SetOwnPassword] = for {
     newPassword <- _password
