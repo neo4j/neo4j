@@ -21,6 +21,7 @@ package org.neo4j.test;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
@@ -96,7 +97,7 @@ class RaceTest
     }
 
     @Test
-    void shouldBreakOnError() throws Throwable
+    void shouldBreakOnError()
     {
         // GIVEN
         String error = "Noooo";
@@ -108,9 +109,25 @@ class RaceTest
         } );
         race.addContestants( 3, () -> { } );
 
-        // WHEN
-        Exception exception = assertThrows( Exception.class, () -> race.go() );
+        // WHEN/THEN
+        Exception exception = assertThrows( Exception.class, race::go );
         assertEquals( error, exception.getMessage() );
+    }
+
+    @Test
+    void shouldRunFailureAction()
+    {
+        // GIVEN
+        AtomicBoolean failureActionRun = new AtomicBoolean();
+        Race race = new Race().withFailureAction( t -> failureActionRun.set( true ) );
+        race.addContestant( () ->
+        {
+            throw new RuntimeException();
+        } );
+
+        // WHEN/THEN
+        assertThrows( Exception.class, race::go );
+        assertTrue( failureActionRun.get() );
     }
 
     public static class ControlledBooleanSupplier implements BooleanSupplier
