@@ -29,6 +29,11 @@ import java.util.function.Function;
 
 import org.neo4j.util.Preconditions;
 
+/**
+ * Changes to counts, kept as {@link AtomicLong} to allow for concurrent threads incrementing/decrementing.
+ * As part of checkpoint a new instance is created and the old (now immutable) instance accessible to read from while those counts are written to
+ * the backing tree.
+ */
 class CountsChanges
 {
     static final long ABSENT = -1;
@@ -46,17 +51,32 @@ class CountsChanges
         this.previousChanges = previousChanges;
     }
 
+    /**
+     * Makes this instance immutable and returns a new (mutable) instance with this instance as the instance to first read counts from,
+     * since those counts represent persisted counts which may or may not yet have made it to the backing tree.
+     * @return a new instance which will replace this instance for making updates to.
+     */
     CountsChanges freezeAndFork()
     {
         frozen = true;
         return new CountsChanges( changes );
     }
 
+    /**
+     * Clears the reference to the old instances that now has been written to the backing tree.
+     */
     void clearPreviousChanges()
     {
         this.previousChanges = null;
     }
 
+    /**
+     * Make a relative counts change to the given key.
+     *
+     * @param key {@link CountsKey} the key to make the update for.
+     * @param delta the delta for the count, can be positive or negative.
+     * @param defaultToStoredCount where to read the absolute count if it isn't already loaded into this instance (or the "old" instance).
+     */
     void add( CountsKey key, long delta, Function<CountsKey,AtomicLong> defaultToStoredCount )
     {
         Preconditions.checkState( !frozen, "Can't make changes in a frozen state" );
@@ -86,6 +106,10 @@ class CountsChanges
         return changes.entrySet();
     }
 
+    /**
+     * @param key {@link CountsKey} to check.
+     * @return {@code true} if there have been an update to the given key in this instance or in the "old" instance.
+     */
     boolean containsChange( CountsKey key )
     {
         if ( changes.containsKey( key ) )
@@ -96,6 +120,11 @@ class CountsChanges
         return prev != null && prev.containsKey( key );
     }
 
+    /**
+     * @param key {@link CountsKey} to get count for.
+     * @return the absolute count for the given key, be it from this instance or the "old" instance. If this key doesn't exist here then
+     * {@link #ABSENT} is returned, but that can still mean that the count exist, although in the backing tree.
+     */
     long get( CountsKey key )
     {
         AtomicLong count = changes.get( key );

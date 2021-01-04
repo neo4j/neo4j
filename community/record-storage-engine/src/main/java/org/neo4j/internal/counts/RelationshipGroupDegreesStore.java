@@ -26,6 +26,9 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 
+/**
+ * Store for degrees of relationship chains for dense nodes. Relationship group record ID plus relationship direction forms the key for the counts.
+ */
 public interface RelationshipGroupDegreesStore extends AutoCloseable
 {
     Updater apply( long txId, PageCursorTracer cursorTracer );

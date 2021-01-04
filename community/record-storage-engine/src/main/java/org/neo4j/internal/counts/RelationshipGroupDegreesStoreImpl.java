@@ -20,6 +20,7 @@
 package org.neo4j.internal.counts;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Path;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -31,12 +32,13 @@ import org.neo4j.storageengine.api.RelationshipDirection;
 
 class RelationshipGroupDegreesStoreImpl extends GBPTreeGenericCountsStore implements RelationshipGroupDegreesStore
 {
+    private static final String NAME = "Relationship group degrees store";
     static final byte TYPE_DEGREE = (byte) 3;
 
     RelationshipGroupDegreesStoreImpl( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
             Rebuilder rebuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor ) throws IOException
     {
-        super( pageCache, file, fileSystem, recoveryCollector, rebuilder, readOnly, pageCacheTracer, monitor );
+        super( pageCache, file, fileSystem, recoveryCollector, rebuilder, readOnly, NAME, pageCacheTracer, monitor );
     }
 
     public Updater apply( long txId, PageCursorTracer cursorTracer )
@@ -75,6 +77,11 @@ class RelationshipGroupDegreesStoreImpl extends GBPTreeGenericCountsStore implem
     private static CountsKey degreeKey( long groupId, RelationshipDirection direction )
     {
         return new CountsKey( TYPE_DEGREE, groupId << 2 | direction.ordinal(), 0 );
+    }
+
+    public static void dump( PageCache pageCache, Path file, PrintStream out, PageCursorTracer cursorTracer ) throws IOException
+    {
+        GBPTreeGenericCountsStore.dump( pageCache, file, out, NAME, cursorTracer );
     }
 
     private static final Updater NO_OP_UPDATER = new Updater()

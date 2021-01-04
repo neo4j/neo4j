@@ -20,6 +20,7 @@
 package org.neo4j.internal.counts;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -50,10 +51,12 @@ import static org.neo4j.internal.counts.CountsKey.relationshipKey;
  */
 public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements CountsStore
 {
+    private static final String NAME = "Counts store";
+
     public GBPTreeCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
             CountsBuilder initialCountsBuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor ) throws IOException
     {
-        super( pageCache, file, fileSystem, recoveryCollector, new InitialCountsRebuilder( initialCountsBuilder ), readOnly, pageCacheTracer, monitor );
+        super( pageCache, file, fileSystem, recoveryCollector, new InitialCountsRebuilder( initialCountsBuilder ), readOnly, NAME, pageCacheTracer, monitor );
     }
 
     @Override
@@ -104,6 +107,11 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
         {
             throw new UnderlyingStorageException( e );
         }
+    }
+
+    public static void dump( PageCache pageCache, Path file, PrintStream out, PageCursorTracer cursorTracer ) throws IOException
+    {
+        GBPTreeGenericCountsStore.dump( pageCache, file, out, NAME, cursorTracer );
     }
 
     private static class Incrementer implements CountsAccessor.Updater

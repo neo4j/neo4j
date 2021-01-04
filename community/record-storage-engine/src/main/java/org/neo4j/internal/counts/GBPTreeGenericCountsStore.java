@@ -65,7 +65,21 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
-public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyCheckable
+/**
+ * A "counts store" backed by {@link GBPTree}. It solves the problem of incrementing/decrementing counts for arbitrary keys, while at the same time
+ * being persistent and minimizing contention from concurrent writers.
+ *
+ * Updates that are {@link #updater(long, PageCursorTracer) applied} are relative values (e.g. +10 or -5) and counts are read as their absolute values.
+ * Multiple transactions can update counts concurrently where counts are CAS:ed to minimize contention.
+ * Updates between {@link #checkpoint(IOLimiter, PageCursorTracer) checkpoints} are kept in an internal {@link CountsChanges} map and only written
+ * as part of a checkpoint. Checkpoint has a very short critical section where it switches over to a new {@link CountsChanges} instance
+ * and also snapshots data about which transactions have applied before letting updaters continue to make changes while the checkpointing thread
+ * writes the changes to the backing tree concurrently.
+ *
+ * Data flow wise updates are accumulated and written in each checkpoint. Reads are served from the tree or directly from {@link CountsChanges}
+ * if there's changes to that particular key.
+ */
+public abstract class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyCheckable
 {
     public static final Monitor NO_MONITOR = txId -> {};
     private static final long NEEDS_REBUILDING_HIGH_ID = 0;
@@ -80,15 +94,17 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
     protected final CountsLayout layout = new CountsLayout();
     private final Rebuilder rebuilder;
     private final boolean readOnly;
+    private final String name;
     private final Monitor monitor;
     protected volatile CountsChanges changes = new CountsChanges();
     private final TxIdInformation txIdInformation;
     private volatile boolean started;
 
     public GBPTreeGenericCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-            Rebuilder rebuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor ) throws IOException
+            Rebuilder rebuilder, boolean readOnly, String name, PageCacheTracer pageCacheTracer, Monitor monitor ) throws IOException
     {
         this.readOnly = readOnly;
+        this.name = name;
         this.monitor = monitor;
 
         // First just read the header so that we can avoid creating it if this store is read-only
@@ -133,7 +149,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
         try
         {
             return new GBPTree<>( pageCache, file, layout, GBPTree.NO_MONITOR, header, header, recoveryCollector, readOnly, pageCacheTracer,
-                    immutable.empty(), "Counts store" );
+                    immutable.empty(), name );
         }
         catch ( TreeFileNotFoundException e )
         {
@@ -360,9 +376,10 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
      * @param pageCache {@link PageCache} to use to map the counts store file into.
      * @param file {@link Path} pointing out the counts store.
      * @param out to print to.
+     * @param name of the {@link GBPTree}.
      * @throws IOException on missing file or I/O error.
      */
-    public static void dump( PageCache pageCache, Path file, PrintStream out, PageCursorTracer cursorTracer ) throws IOException
+    protected static void dump( PageCache pageCache, Path file, PrintStream out, String name, PageCursorTracer cursorTracer ) throws IOException
     {
         // First check if it even exists as we don't really want to create it as part of dumping it. readHeader will throw if not found
         CountsHeader header = new CountsHeader( BASE_TX_ID );
@@ -370,7 +387,7 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
 
         // Now open it and dump its contents
         try ( GBPTree<CountsKey,CountsValue> tree = new GBPTree<>( pageCache, file, new CountsLayout(), GBPTree.NO_MONITOR, header, GBPTree.NO_HEADER_WRITER,
-                RecoveryCleanupWorkCollector.ignore(), true, NULL, immutable.empty(), "Counts store" ) )
+                RecoveryCleanupWorkCollector.ignore(), true, NULL, immutable.empty(), name ) )
         {
             out.printf( "Highest gap-free txId: %d%n", header.highestGapFreeTxId() );
             tree.visit( new GBPTreeVisitor.Adaptor<>()
