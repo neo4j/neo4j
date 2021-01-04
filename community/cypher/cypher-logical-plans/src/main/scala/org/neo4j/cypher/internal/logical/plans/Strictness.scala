@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.ir.LazyMode
 import org.neo4j.cypher.internal.ir.StrictnessMode
 
 /**
- * A plan that which limits selectivity on child plans.
+ * A plan that limits selectivity on child plans.
  */
 trait LimitingLogicalPlan {
   self: LazyLogicalPlan =>

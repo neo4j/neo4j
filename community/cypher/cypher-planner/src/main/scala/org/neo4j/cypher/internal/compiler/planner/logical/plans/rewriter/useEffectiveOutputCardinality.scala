@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.topDown
 
+import scala.collection.mutable
+
 
 /**
  * Traverse the LogicalPlan and update cardinalities to "effective cardinalities". The update is meant to represent how we, in certain cases, "push down" a
@@ -37,15 +39,15 @@ import org.neo4j.cypher.internal.util.topDown
 case class useEffectiveOutputCardinality(cardinalities: Cardinalities, attributes: Attributes[LogicalPlan]) extends Rewriter {
 
   override def apply(input: AnyRef): AnyRef = {
-    var incomingSelectivity = Map[Id, Selectivity]().withDefaultValue(Selectivity.ONE)
+    var incomingSelectivity: mutable.Map[Id, Selectivity] = mutable.Map().withDefaultValue(Selectivity.ONE)
 
     val rewriter: Rewriter = {
       topDown(Rewriter.lift {
         case p: LogicalPlan =>
           val (lhsSelectivity, rhsSelectivity) = CardinalityCostModel.childrenLimitSelectivities(p, incomingSelectivity(p.id), cardinalities)
 
-          if (p.lhs.isDefined) { incomingSelectivity += (p.lhs.get.id -> lhsSelectivity) }
-          if (p.rhs.isDefined) { incomingSelectivity += (p.rhs.get.id -> rhsSelectivity) }
+          p.lhs.foreach { lhs => incomingSelectivity += (lhs.id -> lhsSelectivity) }
+          p.rhs.foreach { rhs => incomingSelectivity += (rhs.id -> rhsSelectivity) }
 
           // No need to create a new plan if we do not have a LIMIT selectivity
           if (incomingSelectivity(p.id) == Selectivity.ONE) {
