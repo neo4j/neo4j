@@ -22,16 +22,12 @@ package org.neo4j.internal.counts;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.counts.CountsVisitor;
-import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -81,32 +77,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
     @Override
     public void accept( CountsVisitor visitor, PageCursorTracer cursorTracer )
     {
-        // First visit the changes that we haven't check-pointed yet
-        for ( Map.Entry<CountsKey,AtomicLong> changedEntry : changes.sortedChanges( layout ) )
-        {
-            // Our simplistic approach to the changes map makes it contain 0 counts at times, we don't remove entries from it
-            if ( changedEntry.getValue().get() != 0 )
-            {
-                changedEntry.getKey().accept( visitor, changedEntry.getValue().get() );
-            }
-        }
-
-        // Then visit the remaining stored changes from the last check-point
-        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( CountsKey.MIN_COUNT, CountsKey.MAX_COUNT, cursorTracer ) )
-        {
-            while ( seek.next() )
-            {
-                CountsKey key = seek.key();
-                if ( !changes.containsChange( key ) )
-                {
-                    key.accept( visitor, seek.value().count );
-                }
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
+        visitAllCounts( ( key, count ) -> key.accept( visitor, count ), cursorTracer );
     }
 
     public static void dump( PageCache pageCache, Path file, PrintStream out, PageCursorTracer cursorTracer ) throws IOException

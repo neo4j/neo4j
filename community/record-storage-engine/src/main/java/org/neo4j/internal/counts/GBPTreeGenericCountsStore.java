@@ -35,6 +35,7 @@ import java.util.function.LongConsumer;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.collection.PrimitiveLongArrayQueue;
+import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
@@ -79,7 +80,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
  * Data flow wise updates are accumulated and written in each checkpoint. Reads are served from the tree or directly from {@link CountsChanges}
  * if there's changes to that particular key.
  */
-public abstract class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyCheckable
+public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyCheckable
 {
     public static final Monitor NO_MONITOR = txId -> {};
     private static final long NEEDS_REBUILDING_HIGH_ID = 0;
@@ -309,6 +310,36 @@ public abstract class GBPTreeGenericCountsStore implements AutoCloseable, Consis
         return changedCount != ABSENT ? changedCount : readCountFromTree( key, cursorTracer );
     }
 
+    public void visitAllCounts( CountVisitor visitor, PageCursorTracer cursorTracer )
+    {
+        // First visit the changes that we haven't check-pointed yet
+        for ( Map.Entry<CountsKey,AtomicLong> changedEntry : changes.sortedChanges( layout ) )
+        {
+            // Our simplistic approach to the changes map makes it contain 0 counts at times, we don't remove entries from it
+            if ( changedEntry.getValue().get() != 0 )
+            {
+                visitor.visit( changedEntry.getKey(), changedEntry.getValue().get() );
+            }
+        }
+
+        // Then visit the remaining stored changes from the last check-point
+        try ( Seeker<CountsKey,CountsValue> seek = tree.seek( CountsKey.MIN_COUNT, CountsKey.MAX_COUNT, cursorTracer ) )
+        {
+            while ( seek.next() )
+            {
+                CountsKey key = seek.key();
+                if ( !changes.containsChange( key ) )
+                {
+                    visitor.visit( key, seek.value().count );
+                }
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
     /**
      * Read the count from the store. For writes this is done on an unchanging tree because we have the read lock where check-pointing
      * (where changes are written to the tree) can only be done if the write-lock is acquired. For plain unmodified reads this is read from the tree
@@ -419,5 +450,10 @@ public abstract class GBPTreeGenericCountsStore implements AutoCloseable, Consis
         long lastCommittedTxId();
 
         void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+    }
+
+    public interface CountVisitor
+    {
+        void visit( CountsKey key, long count );
     }
 }
