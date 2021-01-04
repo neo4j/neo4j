@@ -205,4 +205,48 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("n", "m").withRows(expected)
   }
+
+  test("should handle empty multi node seek") {
+    // given
+    val size = Math.max(sizeHint, 10)
+    index("Label", "prop")
+    val nodes = given {
+      nodePropertyGraph(size, {
+        case i: Int => Map("prop" -> i % 10)
+      }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "m")
+      .multiNodeIndexSeekOperator(_.indexSeek("n:Label(prop=7)"),
+        _.indexSeek("m:Label(prop IN ???)", paramExpr = Some(listOfInt())))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n", "m").withNoRows()
+  }
+
+  test("should handle null multi node seek") {
+    // given
+    val size = Math.max(sizeHint, 10)
+    index("Label", "prop")
+    val nodes = given {
+      nodePropertyGraph(size, {
+        case i: Int => Map("prop" -> i % 10)
+      }, "Label")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "m")
+      .multiNodeIndexSeekOperator(_.indexSeek("n:Label(prop=7)"),
+        _.indexSeek("m:Label(prop IN ???)", paramExpr = Some(nullLiteral)))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n", "m").withNoRows()
+  }
 }
