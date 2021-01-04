@@ -437,6 +437,68 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     q.findFirstRequiredOrder shouldBe empty
   }
 
+  test("should not find required order when it's not usable by the head query part because of aggregation") {
+    val q = buildSinglePlannerQuery("MATCH (n) WITH n, 1 AS foo RETURN n, count(*) AS c ORDER BY c")
+    q.findFirstRequiredOrder shouldBe empty
+
+    q.interestingOrder.requiredOrderCandidate shouldEqual RequiredOrderCandidate.empty
+    q.tail.get.interestingOrder.requiredOrderCandidate shouldNot equal(RequiredOrderCandidate.empty)
+  }
+
+  test("should not find UNWIND required order when it's not usable by the head query part because of aggregation") {
+    val q = buildSinglePlannerQuery("UNWIND [1, 2, 3] AS n RETURN n, count(*) AS c ORDER BY c")
+    q.findFirstRequiredOrder shouldBe empty
+
+    q.interestingOrder.requiredOrderCandidate shouldEqual RequiredOrderCandidate.empty
+    q.tail.get.interestingOrder.requiredOrderCandidate shouldNot equal(RequiredOrderCandidate.empty)
+  }
+
+  test("should find UNWIND required order when it's usable by the head query part") {
+    val q = buildSinglePlannerQuery("MATCH (c) UNWIND [1, 2, 3] AS n RETURN n, c ORDER BY c")
+    q.findFirstRequiredOrder shouldBe Some(
+      InterestingOrder.required(RequiredOrderCandidate.asc(varFor("c"), Map("c" -> varFor("c"))))
+    )
+
+    interestingOrders(q).take(2) should be(List(
+      InterestingOrder.interested(InterestingOrderCandidate.asc(varFor("c"), Map("c" -> varFor("c")))),
+      InterestingOrder.required(RequiredOrderCandidate.asc(varFor("c"), Map("c" -> varFor("c"))))
+    ))
+  }
+
+  test("should find required order when it's usable only by aggregating horizon but not by MATCH part before it") {
+    val q = buildSinglePlannerQuery("""MATCH (a)
+                                      |WITH count(a) AS count
+                                      |MATCH (b)-[r2:R]->(c)
+                                      |RETURN b, c, count ORDER BY count""".stripMargin)
+    // Ideally, we would want a different Interesting order for the `MATCH (a)` and for the `WITH count(a) AS count`.
+    // In the MATCH part we cannot yet sort by count, but in the WITH part we can.
+    q.findFirstRequiredOrder shouldBe Some(
+      InterestingOrder.required(RequiredOrderCandidate.asc(varFor("count"), Map("count" -> varFor("count"))))
+    )
+
+    interestingOrders(q).take(2) should be(List(
+      InterestingOrder.interested(InterestingOrderCandidate.asc(varFor("count"), Map("count" -> varFor("count")))),
+      InterestingOrder.required(RequiredOrderCandidate.asc(varFor("count"), Map("count" -> varFor("count"))))
+    ))
+  }
+
+  test("should find UNWIND property required order when it's usable by the head query part") {
+    val q = buildSinglePlannerQuery(
+      """
+        |MATCH (n:N)-[r:R]-() WHERE exists(n.prop)
+        |UNWIND [1, 2, 3] AS i
+        |RETURN n
+        |ORDER BY n.prop""".stripMargin)
+    q.findFirstRequiredOrder shouldBe Some(
+      InterestingOrder.required(RequiredOrderCandidate.asc(prop("n", "prop"), Map("n" -> varFor("n"))))
+    )
+
+    interestingOrders(q).take(2) should be(List(
+      InterestingOrder.interested(InterestingOrderCandidate.asc(prop("n", "prop"), Map("n" -> varFor("n")))),
+      InterestingOrder.required(RequiredOrderCandidate.asc(prop("n", "prop"), Map("n" -> varFor("n"))))
+    ))
+  }
+
   test("should find required order in head query part") {
     val q = buildSinglePlannerQuery("MATCH (n) RETURN n.prop ORDER BY n.prop")
     q.findFirstRequiredOrder shouldBe Some(

@@ -120,13 +120,16 @@ trait SinglePlannerQuery extends PlannerQueryPart {
    * First interesting order with non-empty required order that is usable by the current query part.
    */
   def findFirstRequiredOrder: Option[InterestingOrder] = {
-    if (interestingOrder.requiredOrderCandidate.nonEmpty)
+    if (interestingOrder.requiredOrderCandidate.nonEmpty) {
       Some(interestingOrder)
-    else
-      tail
-        .flatMap(_.findFirstRequiredOrder)
-        .map(reverseProjectedInterestingOrder(_, horizon, queryGraph.argumentIds))
-        .filter(_.requiredOrderCandidate.nonEmpty)
+    } else {
+      tail.flatMap { nextPart =>
+        nextPart
+          .findFirstRequiredOrder
+          .map(reverseProjectedInterestingOrder(_, horizon, nextPart.queryGraph.argumentIds))
+          .filter(_.requiredOrderCandidate.nonEmpty)
+      }
+    }
   }
 
   def isCoveredByHints(other: SinglePlannerQuery): Boolean = allHints.forall(other.allHints.contains)
@@ -253,10 +256,17 @@ object SinglePlannerQuery {
     patternNodeIds ++ patternRelIds
   }
 
+  /**
+   * Rename and filter the columns in an interesting order to before a given horizon.
+   *
+   * @param order       the InterestingOrder
+   * @param horizon     the horizon
+   * @param argumentIds the arguments to the next query part
+   */
   def reverseProjectedInterestingOrder(order: InterestingOrder, horizon: QueryHorizon, argumentIds: Set[String]): InterestingOrder = {
     horizon match {
       case qp: QueryProjection => order.withReverseProjectedColumns(qp.projections, argumentIds)
-      case _ => order
+      case _ => order.withReverseProjectedColumns(Map.empty, argumentIds)
     }
   }
 

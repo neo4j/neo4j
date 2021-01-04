@@ -171,14 +171,31 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
     result should be(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("y"))))
   }
 
+  test("should reverse project property to property if variable is argument") {
+    val result = InterestingOrder.required(RequiredOrderCandidate.asc(prop("y", "prop"))).withReverseProjectedColumns(Map.empty, Set("y"))
+    result should be(InterestingOrder.required(RequiredOrderCandidate.asc(prop("y", "prop"))))
+  }
+
   test("should reverse project variable to variable if is argument when projections exist") {
     val projections = Map("y" -> varFor("x"))
     val result = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("y"))).withReverseProjectedColumns(projections, Set("y"))
     result should be(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("y"), projections)))
   }
 
+  test("should reverse project property to property if variable is argument when projections exist") {
+    val projections = Map("y" -> varFor("x"))
+    val result = InterestingOrder.required(RequiredOrderCandidate.asc(prop("y", "prop"))).withReverseProjectedColumns(projections, Set("y"))
+    result should be(InterestingOrder.required(RequiredOrderCandidate.asc(prop("y", "prop"), projections)))
+  }
+
   test("should reverse project variable to variable if is argument when old projections exist") {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("y"), Map("y" -> varFor("x"))))
+    val result = io.withReverseProjectedColumns(Map.empty, Set("x"))
+    result should be(io)
+  }
+
+  test("should reverse project property to property if variable is argument when old projections exist") {
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("y", "prop"), Map("y" -> varFor("x"))))
     val result = io.withReverseProjectedColumns(Map.empty, Set("x"))
     result should be(io)
   }

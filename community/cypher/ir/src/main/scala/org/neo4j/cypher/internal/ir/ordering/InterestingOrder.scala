@@ -81,7 +81,11 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
 
   def withReverseProjectedColumns(projectExpressions: Map[String, Expression], argumentIds: Set[String]): InterestingOrder = {
     def columnIfArgument(expression: Expression, column: ColumnOrder): Option[ColumnOrder] = {
-      if (argumentIds.contains(expression.asCanonicalStringVal)) Some(column) else None
+      expression match {
+        case Property(Variable(varName), _) if argumentIds.contains(varName) => Some(column)
+        case Variable(varName) if argumentIds.contains(varName) => Some(column)
+        case _ => None
+      }
     }
 
     def projectedColumnOrder(column: ColumnOrder, projected: Expression, name: String) = {

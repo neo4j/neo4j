@@ -43,8 +43,7 @@ object InterestingOrderConfig {
     val readOnly = if (isHorizon) query.tail.forall(_.readOnly) else query.readOnly
     if (isRhs || !readOnly) {
       InterestingOrderConfig(query.interestingOrder.asInteresting)
-    }
-    else {
+    } else {
       val orderToReport = query.interestingOrder
       val orderToSolve = query.findFirstRequiredOrder.fold(orderToReport) { order =>
         // merge interesting order candidates

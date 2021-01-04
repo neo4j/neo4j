@@ -1806,6 +1806,53 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     plan shouldEqual expectedPlan
   }
 
+  test("should sort between aggregation and widening expand") {
+    val query =
+      """MATCH (a)-[r1:NARROW]->(aa)
+        |WITH count(a) AS count
+        |MATCH (b)-[r2:R]->(c)
+        |RETURN b, c, count ORDER BY count""".stripMargin
+
+    val plan = wideningExpandConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = wideningExpandConfig.subPlanBuilder()
+      .expandAll("(c)<-[r2:R]-(b)")
+      .apply()
+      .|.allNodeScan("c", "count")
+      .sort(Seq(Ascending("count")))
+      .aggregation(Seq(), Seq("count(a) AS count"))
+      .expandAll("(a)-[r1:NARROW]->(aa)")
+      .allNodeScan("a")
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should sort between distinct and widening expand") {
+    val query =
+      """MATCH (a)
+        |WITH DISTINCT a.count AS count
+        |MATCH (b)-[r2:R]->(c)
+        |RETURN b, c, count ORDER BY count""".stripMargin
+
+    val plan = wideningExpandConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = wideningExpandConfig.subPlanBuilder()
+      .expandAll("(c)<-[r2:R]-(b)")
+      .apply()
+      .|.allNodeScan("c", "count")
+      .sort(Seq(Ascending("count")))
+      .distinct("a.count AS count")
+      .allNodeScan("a")
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
   test("should not sort before widening expand if there is an updating plan in tail") {
     val query =
       """MATCH (a)-[r1:NARROW]->(b)
