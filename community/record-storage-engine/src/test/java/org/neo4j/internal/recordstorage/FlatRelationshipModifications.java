@@ -26,9 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
@@ -93,11 +91,11 @@ public class FlatRelationshipModifications implements RelationshipModifications
     }
 
     @Override
-    public void forEachSplit( Consumer<NodeRelationshipIds> nodeRelationshipIds )
+    public void forEachSplit( IdsVisitor visitor )
     {
         data.forEach( ( nodeId, nodeData ) ->
         {
-            nodeRelationshipIds.accept( new NodeRelationshipIds()
+            visitor.accept( new NodeRelationshipIds()
             {
                 @Override
                 public long nodeId()
@@ -136,11 +134,11 @@ public class FlatRelationshipModifications implements RelationshipModifications
                 }
 
                 @Override
-                public void forEachCreationSplitInterruptible( Predicate<NodeRelationshipTypeIds> nodeRelationshipTypeIds )
+                public void forEachCreationSplitInterruptible( InterruptibleTypeIdsVisitor visitor )
                 {
                     for ( Map.Entry<Integer,List<RelationshipData>> entry : nodeData.creations.entrySet() )
                     {
-                        if ( nodeRelationshipTypeIds.test( new FlatNodeRelationshipTypeIds( entry.getKey(), entry.getValue(), nodeId ) ) )
+                        if ( visitor.test( new FlatNodeRelationshipTypeIds( entry.getKey(), entry.getValue(), nodeId ) ) )
                         {
                             break;
                         }
@@ -148,11 +146,11 @@ public class FlatRelationshipModifications implements RelationshipModifications
                 }
 
                 @Override
-                public void forEachDeletionSplitInterruptible( Predicate<NodeRelationshipTypeIds> nodeRelationshipTypeIds )
+                public void forEachDeletionSplitInterruptible( InterruptibleTypeIdsVisitor visitor )
                 {
                     for ( Map.Entry<Integer,List<RelationshipData>> entry : nodeData.deletions.entrySet() )
                     {
-                        if ( nodeRelationshipTypeIds.test( new FlatNodeRelationshipTypeIds( entry.getKey(), entry.getValue(), nodeId ) ) )
+                        if ( visitor.test( new FlatNodeRelationshipTypeIds( entry.getKey(), entry.getValue(), nodeId ) ) )
                         {
                             break;
                         }

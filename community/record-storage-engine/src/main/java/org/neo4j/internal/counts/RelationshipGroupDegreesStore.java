@@ -34,6 +34,7 @@ public interface RelationshipGroupDegreesStore extends AutoCloseable
 
     void start( PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException;
 
+    @Override
     void close();
 
     void checkpoint( IOLimiter ioLimiter, PageCursorTracer cursorTracer ) throws IOException;

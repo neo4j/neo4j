@@ -26,7 +26,6 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
 import java.util.Iterator;
-import java.util.function.Predicate;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
@@ -298,20 +297,20 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
         return new RelationshipBatchImpl( relationshipsRemoved, decorator );
     }
 
-    void visitAddedIdsSplit( Predicate<RelationshipModifications.NodeRelationshipTypeIds> nodeRelationshipTypeIds,
+    void visitAddedIdsSplit( RelationshipModifications.InterruptibleTypeIdsVisitor visitor,
             RelationshipModifications.IdDataDecorator idDataDecorator )
     {
         if ( hasAddedRelationships() )
         {
-            relationshipsAdded.visitIdsSplit( nodeRelationshipTypeIds, idDataDecorator );
+            relationshipsAdded.visitIdsSplit( visitor, idDataDecorator );
         }
     }
 
-    void visitRemovedIdsSplit( Predicate<RelationshipModifications.NodeRelationshipTypeIds> nodeRelationshipTypeIds )
+    void visitRemovedIdsSplit( RelationshipModifications.InterruptibleTypeIdsVisitor visitor )
     {
         if ( hasRemovedRelationships() )
         {
-            relationshipsRemoved.visitIdsSplit( nodeRelationshipTypeIds, RelationshipModifications.noAdditionalDataDecorator() );
+            relationshipsRemoved.visitIdsSplit( visitor, RelationshipModifications.noAdditionalDataDecorator() );
         }
     }
 

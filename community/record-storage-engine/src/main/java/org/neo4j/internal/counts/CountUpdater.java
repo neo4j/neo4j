@@ -27,7 +27,7 @@ import org.neo4j.counts.CountsAccessor;
  * The implementation of {@link CountsAccessor.Updater} for the {@link GBPTreeCountsStore}.
  * Writing happens inside the supplied {@link CountWriter}.
  */
-public class CountUpdater implements AutoCloseable
+class CountUpdater implements AutoCloseable
 {
     private final CountWriter writer;
     private final Lock lock;
@@ -56,7 +56,7 @@ public class CountUpdater implements AutoCloseable
         }
     }
 
-    public interface CountWriter extends AutoCloseable
+    interface CountWriter extends AutoCloseable
     {
         void write( CountsKey key, long delta );
 

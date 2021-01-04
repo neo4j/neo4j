@@ -29,7 +29,6 @@ import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Predicate;
 
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.function.ThrowingLongConsumer;
@@ -270,7 +269,7 @@ public class RelationshipChangesForNode
         }
     }
 
-    void visitIdsSplit( Predicate<RelationshipModifications.NodeRelationshipTypeIds> idsByType, RelationshipModifications.IdDataDecorator idDataDecorator )
+    void visitIdsSplit( RelationshipModifications.InterruptibleTypeIdsVisitor idsByType, RelationshipModifications.IdDataDecorator idDataDecorator )
     {
         for ( RelationshipSetsByDirection typeSets : byType )
         {

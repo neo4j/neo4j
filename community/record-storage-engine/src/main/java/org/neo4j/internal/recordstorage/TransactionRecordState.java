@@ -578,7 +578,7 @@ public class TransactionRecordState implements RecordState
         void receive( P property, long propertyRecordId );
     }
 
-    public static class DegreesUpdater implements RelationshipGroupDegreesStore.Updater
+    private static class DegreesUpdater implements RelationshipGroupDegreesStore.Updater
     {
         private MutableLongObjectMap<MutableLong> degrees;
 

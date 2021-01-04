@@ -187,7 +187,6 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_ro
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
-import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.graphdb.Label.label;
@@ -270,7 +269,6 @@ public class BatchInserterImpl implements BatchInserter
                 .set( transaction_logs_root_path, layout.transactionLogsRootDirectory() )
                 .set( logs_directory, Path.of( "" ) )
                 .fromConfig( fromConfig )
-                .set( read_only, false )
                 .build();
         this.fileSystem = fileSystem;
         pageCacheTracer = tracers.getPageCacheTracer();
@@ -1132,7 +1130,8 @@ public class BatchInserterImpl implements BatchInserter
               var ignore = new Lifespan( life );
               locker;
               neoStores;
-              degreeUpdater; groupDegreesStore )
+              degreeUpdater;
+              groupDegreesStore )
         {
             rebuildCounts( pageCacheTracer, memoryTracker );
             LabelScanStore labelIndex = buildLabelIndex();

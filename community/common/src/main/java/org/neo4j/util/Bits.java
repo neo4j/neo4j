@@ -360,8 +360,13 @@ public final class Bits
 
     public static boolean bitFlag( byte flags, byte flag )
     {
-        assert (flag & (-flag)) == flag : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
+        assert isPowerOfTwo( flag ) : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
         return (flags & flag) == flag;
+    }
+
+    private static boolean isPowerOfTwo( byte flag )
+    {
+        return (flag & (-flag)) == flag;
     }
 
     public static boolean bitFlag( int flags, int flag )
@@ -372,7 +377,7 @@ public final class Bits
 
     public static int bitFlag( boolean value, int flag )
     {
-        assert Integer.bitCount( flag ) == 1 : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
+        assert (flag & (-flag)) == flag : "flag should be a power of 2, not: 0x" + Integer.toHexString( flag );
         return value ? flag : 0;
     }
 

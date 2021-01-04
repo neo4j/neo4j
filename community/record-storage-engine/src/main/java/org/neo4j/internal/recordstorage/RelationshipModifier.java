@@ -51,7 +51,6 @@ import static org.neo4j.lock.ResourceTypes.NODE;
 import static org.neo4j.lock.ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
-import static org.neo4j.util.Preconditions.checkState;
 
 /**
  * Manages locking and creation/delete of relationships. Will call on {@link RelationshipCreator} and {@link RelationshipDeleter} for actual
@@ -136,8 +135,6 @@ public class RelationshipModifier
                 {
                     byNode.forEachCreationSplit( byType ->
                     {
-                        // Get group and check if any of the directions we will delete relationships for is missing
-                        // the external degrees mark and if so lock the node
                         RelationshipGroupGetter.RelationshipGroupPosition groupPosition = relGroupGetter.getRelationshipGroup( nodeContext.groupStartingPrevId,
                                 nodeContext.groupStartingId, byType.type(), recordChanges.getRelGroupRecords(), group ->
                                 {
@@ -279,7 +276,7 @@ public class RelationshipModifier
                     }
                     else if ( byNode.hasCreations() )
                     {
-                        //First rel is taken if we have any deletions!
+                        //First rel is taken if we don't have any deletions!
                         long firstRel = node.getNextRel();
                         if ( !isNull( firstRel ) )
                         {
@@ -345,7 +342,10 @@ public class RelationshipModifier
         {
             RelationshipRecord rel = relRecords.getOrLoad( nextRel, null, cursorTracer ).forReadingData();
             long nodeId = node.getId();
-            assert rel.isFirstInChain( nodeId );
+            if ( !rel.isFirstInChain( nodeId ) )
+            {
+                throw new IllegalStateException( "Expected node " + rel + " to be first in chain for node " + nodeId );
+            }
             int currentDegree = relCount( nodeId, rel );
             if ( currentDegree + byNode.creations().size() >= denseNodeThreshold )
             {
@@ -358,7 +358,10 @@ public class RelationshipModifier
                 }
                 while ( !isNull( nextRel ) );
 
-                checkState( index == currentDegree, "Degree " + currentDegree + " for " + node + " doesn't match actual relationship count " + index );
+                if ( index != currentDegree )
+                {
+                    throw new IllegalStateException( "Degree " + currentDegree + " for " + node + " doesn't match actual relationship count " + index );
+                }
                 Arrays.sort( ids );
                 locks.acquireExclusive( lockTracer, RELATIONSHIP, ids );
                 return true;

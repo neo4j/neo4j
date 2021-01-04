@@ -697,7 +697,7 @@ public abstract class Command implements StorageCommand
 
         public static long combinedKeyOnGroupAndDirection( long groupId, RelationshipDirection direction )
         {
-            return groupId << 2 | direction.ordinal();
+            return groupId << 2 | direction.id();
         }
 
         public static long groupIdFromCombinedKey( long key )
@@ -707,7 +707,7 @@ public abstract class Command implements StorageCommand
 
         public static RelationshipDirection directionFromCombinedKey( long key )
         {
-            return RelationshipDirection.ofOrdinal( (int) (key & 0x3) );
+            return RelationshipDirection.ofId( (int) (key & 0x3) );
         }
     }
 }

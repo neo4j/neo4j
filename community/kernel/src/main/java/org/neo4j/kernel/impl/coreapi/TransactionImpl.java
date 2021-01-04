@@ -150,7 +150,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
     public void commit( KernelTransaction.KernelTransactionMonitor kernelTransactionMonitor )
     {
-        safeTerminalOperation( transaction -> kernelTransaction().commit( kernelTransactionMonitor ) );
+        safeTerminalOperation( transaction -> transaction.commit( kernelTransactionMonitor ) );
     }
 
     @Override

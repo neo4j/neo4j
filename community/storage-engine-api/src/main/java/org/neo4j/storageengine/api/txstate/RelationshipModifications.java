@@ -123,11 +123,23 @@ public interface RelationshipModifications
         };
     }
 
-    void forEachSplit( Consumer<NodeRelationshipIds> nodeRelationshipIds );
+    void forEachSplit( IdsVisitor visitor );
 
     RelationshipBatch creations();
 
     RelationshipBatch deletions();
+
+    interface IdsVisitor extends Consumer<NodeRelationshipIds>
+    {
+    }
+
+    interface TypeIdsVisitor extends Consumer<NodeRelationshipTypeIds>
+    {
+    }
+
+    interface InterruptibleTypeIdsVisitor extends Predicate<NodeRelationshipTypeIds>
+    {
+    }
 
     interface NodeRelationshipIds
     {
@@ -143,27 +155,27 @@ public interface RelationshipModifications
 
         RelationshipBatch deletions();
 
-        default void forEachCreationSplit( Consumer<NodeRelationshipTypeIds> nodeRelationshipTypeIds )
+        default void forEachCreationSplit( TypeIdsVisitor visitor )
         {
             forEachCreationSplitInterruptible( byType ->
             {
-                nodeRelationshipTypeIds.accept( byType );
+                visitor.accept( byType );
                 return false;
             } );
         }
 
-        void forEachCreationSplitInterruptible( Predicate<NodeRelationshipTypeIds> nodeRelationshipTypeIds );
+        void forEachCreationSplitInterruptible( InterruptibleTypeIdsVisitor visitor );
 
-        default void forEachDeletionSplit( Consumer<NodeRelationshipTypeIds> nodeRelationshipTypeIds )
+        default void forEachDeletionSplit( TypeIdsVisitor visitor )
         {
             forEachDeletionSplitInterruptible( byType ->
             {
-                nodeRelationshipTypeIds.accept( byType );
+                visitor.accept( byType );
                 return false;
             } );
         }
 
-        void forEachDeletionSplitInterruptible( Predicate<NodeRelationshipTypeIds> nodeRelationshipTypeIds );
+        void forEachDeletionSplitInterruptible( InterruptibleTypeIdsVisitor visitor );
     }
 
     interface NodeRelationshipTypeIds

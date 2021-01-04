@@ -30,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
@@ -519,7 +520,7 @@ public class NodeEntityTest extends EntityTest
         // This test measures page cache access very specifically when accessing degree for dense node.
         // For dense nodes chain degrees gets "upgraded" to live in a separate degrees store on a certain chain length threshold
         // which is why we create an additional short chain where this still is the case
-        for ( int i = 0; i < 100; i++ )
+        for ( int i = 0; i < GraphDatabaseSettings.dense_node_threshold.defaultValue() * 2; i++ )
         {
             source.createRelationshipTo( tx.createNode(), relationshipType );
         }

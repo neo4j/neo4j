@@ -111,11 +111,17 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
      *
      * When {@code commit()} is completed, all resources are released and no more changes are possible in this transaction.
      *
+     * @param kernelTransactionMonitor monitor for advanced interaction with commit process.
      * @return id of the committed transaction or {@link #ROLLBACK_ID} if transaction was rolled back or
      * {@link #READ_ONLY_ID} if transaction was read-only.
      */
     long commit( KernelTransactionMonitor kernelTransactionMonitor ) throws TransactionFailureException;
 
+    /**
+     * Commit without a {@link KernelTransactionMonitor}.
+     *
+     * @see #commit(KernelTransactionMonitor)
+     */
     default long commit() throws TransactionFailureException
     {
         return commit( NO_MONITOR );
@@ -440,8 +446,8 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
     {
         /**
          * Called during commit after all logical transaction state have been converted into storage commands,
-         * but before the commands have been applied to the store.
+         * but before the commands have been applied to the transaction log and store.
          */
-        void beforeApplyToStore();
+        void beforeApply();
     }
 }

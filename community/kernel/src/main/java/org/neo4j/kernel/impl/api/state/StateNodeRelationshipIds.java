@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.util.function.Predicate;
-
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 
@@ -53,7 +51,7 @@ class StateNodeRelationshipIds implements RelationshipModifications.NodeRelation
     @Override
     public long nodeId()
     {
-        return nodeState.id;
+        return nodeState.getId();
     }
 
     @Override
@@ -88,15 +86,15 @@ class StateNodeRelationshipIds implements RelationshipModifications.NodeRelation
 
     @Override
     public void forEachCreationSplitInterruptible(
-            Predicate<RelationshipModifications.NodeRelationshipTypeIds> nodeRelationshipTypeIds )
+            RelationshipModifications.InterruptibleTypeIdsVisitor visitor )
     {
-        nodeState.visitAddedIdsSplit( nodeRelationshipTypeIds, relationshipVisit );
+        nodeState.visitAddedIdsSplit( visitor, relationshipVisit );
     }
 
     @Override
     public void forEachDeletionSplitInterruptible(
-            Predicate<RelationshipModifications.NodeRelationshipTypeIds> nodeRelationshipTypeIds )
+            RelationshipModifications.InterruptibleTypeIdsVisitor visitor )
     {
-        nodeState.visitRemovedIdsSplit( nodeRelationshipTypeIds );
+        nodeState.visitRemovedIdsSplit( visitor );
     }
 }

@@ -31,7 +31,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
@@ -157,9 +156,9 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
                 visitor.visitRelationshipModifications( new RelationshipModifications()
                 {
                     @Override
-                    public void forEachSplit( Consumer<NodeRelationshipIds> nodeRelationshipIds )
+                    public void forEachSplit( IdsVisitor visitor )
                     {
-                        sortedNodeRelState.forEach( nodeRelationshipIds );
+                        sortedNodeRelState.forEach( visitor );
                     }
 
                     @Override

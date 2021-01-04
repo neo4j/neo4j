@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -28,6 +29,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.memory.EmptyMemoryTracker;
 
+import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.recordstorage.RecordAssert.assertThat;
 import static org.neo4j.internal.recordstorage.RecordBuilders.filterType;
 import static org.neo4j.internal.recordstorage.RecordBuilders.firstIn;
@@ -203,7 +205,7 @@ class RelationshipCreatorTest
 
         FlatRelationshipModifications
                 data = new FlatRelationshipModifications( new FlatRelationshipModifications.RelationshipData( nextRelId( givenState ), 0, fromNode, toNode ) );
-        logic.modifyRelationships( data, changeset, new TransactionRecordState.DegreesUpdater(), ResourceLocker.IGNORE, LockTracer.NONE );
+        logic.modifyRelationships( data, changeset, mock( RelationshipGroupDegreesStore.Updater.class ), ResourceLocker.IGNORE, LockTracer.NONE );
     }
 
     private static long nextRelId( AbstractBaseRecord[] existingRecords )

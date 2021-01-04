@@ -41,7 +41,7 @@ class RelationshipGroupDegreesStoreImpl extends GBPTreeGenericCountsStore implem
 
     public Updater apply( long txId, PageCursorTracer cursorTracer )
     {
-        CountUpdater updater = super.updater( txId, cursorTracer );
+        CountUpdater updater = updater( txId, cursorTracer );
         return updater != null ? new DegreeUpdater( updater ) : NO_OP_UPDATER;
     }
 

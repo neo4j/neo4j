@@ -41,9 +41,12 @@ class CommandCreationLocking
 
     public void acquireNodeDeletionLock( ReadableTransactionState txState, ResourceLocker locker, LockTracer lockTracer, long node )
     {
-        locker.acquireExclusive( lockTracer, ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, node );
-        locker.acquireExclusive( lockTracer, ResourceTypes.NODE, node );
-        locker.acquireExclusive( lockTracer, ResourceTypes.DEGREES, node );
+        if ( !txState.nodeIsAddedInThisTx( node ) )
+        {
+            locker.acquireExclusive( lockTracer, ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, node );
+            locker.acquireExclusive( lockTracer, ResourceTypes.NODE, node );
+            locker.acquireExclusive( lockTracer, ResourceTypes.DEGREES, node );
+        }
     }
 
     private static void lockGroupAndDegrees( ReadableTransactionState txState, ResourceLocker locker, LockTracer lockTracer, long sourceNode, long targetNode )

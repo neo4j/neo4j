@@ -73,6 +73,9 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
 
     protected final GBPTree<CountsKey,CountsValue> tree;
     private final OutOfOrderSequence idSequence;
+    /**
+     * Guards interaction between checkpoint (write-lock) and transactions (read-lock).
+     */
     private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
     protected final CountsLayout layout = new CountsLayout();
     private final Rebuilder rebuilder;
@@ -351,11 +354,6 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
         }
     }
 
-    public interface Monitor
-    {
-        void ignoredTransaction( long txId );
-    }
-
     /**
      * Dumps the contents of a counts store.
      *
@@ -392,6 +390,11 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
                 }
             }, cursorTracer );
         }
+    }
+
+    public interface Monitor
+    {
+        void ignoredTransaction( long txId );
     }
 
     public interface Rebuilder

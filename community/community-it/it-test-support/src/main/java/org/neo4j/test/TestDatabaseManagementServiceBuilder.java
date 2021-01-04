@@ -90,7 +90,6 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         super( layout.homeDirectory() );
         setConfig( GraphDatabaseInternalSettings.databases_root_path, layout.databasesDirectory() );
         setConfig( GraphDatabaseSettings.transaction_logs_root_path, layout.transactionLogsRootDirectory() );
-        setConfig( GraphDatabaseInternalSettings.additional_lock_verification, true );
     }
 
     public TestDatabaseManagementServiceBuilder( DatabaseLayout layout )

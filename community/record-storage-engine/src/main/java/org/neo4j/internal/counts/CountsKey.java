@@ -51,7 +51,7 @@ public class CountsKey
      * second: 0
      * </pre>
      */
-    static final byte TYPE_NODE = 1;
+    private static final byte TYPE_NODE = 1;
 
     /**
      * Key data layout for this type:

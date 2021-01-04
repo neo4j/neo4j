@@ -53,26 +53,13 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
     public GBPTreeCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
             CountsBuilder initialCountsBuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor ) throws IOException
     {
-        super( pageCache, file, fileSystem, recoveryCollector, new GBPTreeGenericCountsStore.Rebuilder()
-        {
-            @Override
-            public long lastCommittedTxId()
-            {
-                return initialCountsBuilder.lastCommittedTxId();
-            }
-
-            @Override
-            public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
-            {
-                initialCountsBuilder.initialize( new Incrementer( updater ), cursorTracer, memoryTracker );
-            }
-        }, readOnly, pageCacheTracer, monitor );
+        super( pageCache, file, fileSystem, recoveryCollector, new InitialCountsRebuilder( initialCountsBuilder ), readOnly, pageCacheTracer, monitor );
     }
 
     @Override
     public CountsAccessor.Updater apply( long txId, PageCursorTracer cursorTracer )
     {
-        CountUpdater updater = super.updater( txId, cursorTracer );
+        CountUpdater updater = updater( txId, cursorTracer );
         return updater != null ? new Incrementer( updater ) : NO_OP_UPDATER;
     }
 
@@ -144,6 +131,28 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
         public void close()
         {
             actual.close();
+        }
+    }
+
+    private static class InitialCountsRebuilder implements Rebuilder
+    {
+        private final CountsBuilder initialCountsBuilder;
+
+        InitialCountsRebuilder( CountsBuilder initialCountsBuilder )
+        {
+            this.initialCountsBuilder = initialCountsBuilder;
+        }
+
+        @Override
+        public long lastCommittedTxId()
+        {
+            return initialCountsBuilder.lastCommittedTxId();
+        }
+
+        @Override
+        public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+        {
+            initialCountsBuilder.initialize( new Incrementer( updater ), cursorTracer, memoryTracker );
         }
     }
 }

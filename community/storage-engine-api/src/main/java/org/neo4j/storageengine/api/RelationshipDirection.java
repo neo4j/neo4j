@@ -39,16 +39,17 @@ package org.neo4j.storageengine.api;
  */
 public enum RelationshipDirection
 {
-    OUTGOING,
-    INCOMING,
-    LOOP,
-    ERROR;
+    // These IDs mustn't change, they are used for serializing/deserializing directions
+    OUTGOING( 0 ),
+    INCOMING( 1 ),
+    LOOP( 2 ),
+    ERROR( 3 );
 
-    public static final RelationshipDirection[] DIRECTIONS = values();
+    private static final RelationshipDirection[] DIRECTIONS_BY_ID = new RelationshipDirection[]{OUTGOING, INCOMING, LOOP, ERROR};
 
-    public static RelationshipDirection ofOrdinal( int ordinal )
+    public static RelationshipDirection ofId( int id )
     {
-        return DIRECTIONS[ordinal];
+        return DIRECTIONS_BY_ID[id];
     }
 
     public static RelationshipDirection directionOfStrict( long nodeReference, long sourceNodeReference, long targetNodeReference )
@@ -63,5 +64,17 @@ public enum RelationshipDirection
         }
         throw new IllegalStateException( "Traversed relationship that wasn't part of the origin node:" + nodeReference +
                 ". The encountered relationship has source:" + sourceNodeReference + " and target:" + targetNodeReference );
+    }
+
+    private final int id;
+
+    RelationshipDirection( int id )
+    {
+        this.id = id;
+    }
+
+    public int id()
+    {
+        return id;
     }
 }
