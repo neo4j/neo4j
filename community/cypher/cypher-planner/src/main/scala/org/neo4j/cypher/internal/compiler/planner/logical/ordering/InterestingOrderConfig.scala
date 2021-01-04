@@ -21,9 +21,18 @@ package org.neo4j.cypher.internal.compiler.planner.logical.ordering
 
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 
+/**
+ * When there is an ORDER BY later in the query, it can make sense to solve it earlier.
+ * In that case, we are not required to solve it and cannot mark it as solved.
+ * To account for this, we need to track both the order to report (which is the one required to solve right now)
+ * and the one to solve, which can come from a later point of the query.
+ */
 final case class InterestingOrderConfig(orderToReport: InterestingOrder, orderToSolve: InterestingOrder)
 
 object InterestingOrderConfig {
+  /**
+   * An InterestingOrderConfig with the same order to report and order to solve.
+   */
   def apply(orderToReportAndSolve: InterestingOrder): InterestingOrderConfig =
     InterestingOrderConfig(orderToReportAndSolve, orderToReportAndSolve)
 

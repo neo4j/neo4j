@@ -31,12 +31,12 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object aggregation {
   /**
-   * @param interestingOrder         the interesting order of this query part
-   * @param previousInterestingOrder the interesting order of the previous query part, if there was a previous part
+   * @param interestingOrderToReportForLimit the interesting order to report when planning a LIMIT for aggregation of this query part
+   * @param previousInterestingOrder         the interesting order of the previous query part, if there was a previous part
    */
   def apply(plan: LogicalPlan,
             aggregation: AggregatingQueryProjection,
-            interestingOrder: InterestingOrder,
+            interestingOrderToReportForLimit: InterestingOrder,
             previousInterestingOrder: Option[InterestingOrder],
             context: LogicalPlanningContext): LogicalPlan = {
 
@@ -86,7 +86,7 @@ object aggregation {
         projectedPlan,
         reportedGrouping = aggregation.groupingExpressions,
         reportedAggregation = aggregation.aggregationExpressions,
-        interestingOrder = interestingOrder,
+        interestingOrder = interestingOrderToReportForLimit,
         context = context
       )
     } else {
