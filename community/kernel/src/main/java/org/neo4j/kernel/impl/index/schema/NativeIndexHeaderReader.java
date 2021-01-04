@@ -34,6 +34,20 @@ class NativeIndexHeaderReader implements Header.Reader
 {
     byte state;
     String failureMessage;
+    private final byte failureByte;
+
+    NativeIndexHeaderReader()
+    {
+        failureByte = BYTE_FAILED;
+    }
+
+    /**
+     * Use this if the index uses a custom failure byte (e.g. TokenIndex).
+     */
+    NativeIndexHeaderReader( byte failureByte )
+    {
+        this.failureByte = failureByte;
+    }
 
     @Override
     public void read( ByteBuffer headerData )
@@ -41,14 +55,14 @@ class NativeIndexHeaderReader implements Header.Reader
         try
         {
             state = headerData.get();
-            if ( state == BYTE_FAILED )
+            if ( state == failureByte )
             {
                 failureMessage = readFailureMessage( headerData );
             }
         }
         catch ( BufferUnderflowException e )
         {
-            state = BYTE_FAILED;
+            state = failureByte;
             failureMessage =
                     format( "Could not read header, most likely caused by index not being fully constructed. Index needs to be recreated. Stacktrace:%n%s",
                             ExceptionUtils.getStackTrace( e ) );
