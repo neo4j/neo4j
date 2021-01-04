@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Equals
@@ -46,6 +47,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.CSVFormat
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -101,6 +103,7 @@ import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSemiApply
 import org.neo4j.cypher.internal.logical.plans.Limit
+import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
@@ -997,6 +1000,22 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def triadicFilter(triadicSelectionId: Int, positivePredicate: Boolean, sourceId: String, targetId: String): IMPL =
     appendAtCurrentIndent(UnaryOperator(lp => TriadicFilter(lp, positivePredicate, sourceId, targetId, Some(Id(triadicSelectionId)))(_)))
+
+  def loadCSV(url: String,
+              variableName: String,
+              format: CSVFormat,
+              fieldTerminator: Option[String]): IMPL = {
+    val urlExpr = Parser.parseExpression(url)
+    appendAtCurrentIndent(UnaryOperator(lp => LoadCSV(
+      lp,
+      urlExpr,
+      variableName,
+      format,
+      fieldTerminator,
+      legacyCsvQuoteEscaping = false,
+      csvBufferSize = GraphDatabaseSettings.csv_buffer_size.defaultValue().toInt
+    )(_)))
+  }
 
   def injectValue(variable: String, value: String): IMPL = {
     val collection = s"${variable}Collection"

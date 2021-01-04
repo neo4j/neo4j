@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
@@ -120,7 +121,7 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false,
-    csvBufferSize = 4 * 1024 * 1024,
+    csvBufferSize = GraphDatabaseSettings.csv_buffer_size.defaultValue().toInt,
     nonIndexedLabelWarningThreshold = 10000,
     planSystemCommands = false,
     useJavaCCParser = true,

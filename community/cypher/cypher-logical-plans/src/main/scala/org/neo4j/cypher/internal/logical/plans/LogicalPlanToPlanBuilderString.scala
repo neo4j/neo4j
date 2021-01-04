@@ -386,7 +386,9 @@ object LogicalPlanToPlanBuilderString {
       case LockNodes(_, nodesToLock) => wrapInQuotationsAndMkString(nodesToLock)
       case Prober(_, _) => "Prober.NoopProbe" // We do not preserve the object reference through the string transformation
       case RemoveLabels(_, idName, labelNames) => wrapInQuotationsAndMkString(idName +: labelNames.map(_.name))
-
+      case LoadCSV(_, url, variableName, format, fieldTerminator, _, _) =>
+        val fieldTerminatorStr = fieldTerminator.fold("None")(ft => s"Some(${wrapInQuotations(ft)})")
+        Seq(wrapInQuotations(expressionStringifier(url)), wrapInQuotations(variableName), format, fieldTerminatorStr).mkString(", ")
     }
     val plansWithContent2: PartialFunction[LogicalPlan, String] = {
       case MultiNodeIndexSeek(indexSeekLeafPlans: Seq[NodeIndexSeekLeafPlan]) =>

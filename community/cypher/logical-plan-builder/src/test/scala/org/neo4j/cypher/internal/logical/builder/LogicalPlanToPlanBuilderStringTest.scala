@@ -24,6 +24,8 @@ import java.lang.reflect.Modifier
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.ir.HasHeaders
+import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
@@ -1025,6 +1027,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .argument("n")
       .build())
 
+  testPlan("loadCSV",
+    new TestPlanBuilder()
+      .produceResults("x", "var")
+      .loadCSV("url", "var", NoHeaders, Some("-"))
+      .loadCSV("url", "var", HasHeaders, None)
+      .allNodeScan("x")
+      .build())
+
   private def interpretPlanBuilder(code: String): LogicalPlan = {
     val completeCode =
       s"""
@@ -1047,6 +1057,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
             |import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING, BOTH}
             |import org.neo4j.cypher.internal.logical.plans._
             |import org.neo4j.cypher.internal.logical.builder.TestException
+            |import org.neo4j.cypher.internal.ir.HasHeaders
+            |import org.neo4j.cypher.internal.ir.NoHeaders
             |""".stripMargin)
         interpreter.bind("result", "Array[AnyRef]", res)
       }

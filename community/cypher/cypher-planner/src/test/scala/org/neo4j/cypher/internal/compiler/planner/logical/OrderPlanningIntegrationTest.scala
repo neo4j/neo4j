@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -44,7 +45,10 @@ import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.PartialSort
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
+import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
@@ -1258,7 +1262,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     }
   }
 
-  test("Should soft before widening expands, when sorting after horizon with udpates.") {
+  test("Should sort before widening expands, when sorting after horizon with updates.") {
     val query =
       """MATCH (a:A)
         |WHERE exists(a.prop) AND exists(a.foo)
@@ -1281,7 +1285,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .distinct("a AS a")
       .eager()
       .create(createNode("newNode"))
-      .filter("exists(cacheN[a.prop])")
+      .filter("exists(cacheNFromStore[a.prop])")
       .nodeIndexOperator("a:A(foo)")
       .build()
 
@@ -1358,6 +1362,14 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   private val wideningExpandConfig: StatisticsBackedLogicalPlanningConfiguration = {
+    val proc = ProcedureSignature(
+      QualifiedName(Seq("my"), "proc"),
+      IndexedSeq(),
+      None,
+      None,
+      ProcedureReadOnlyAccess(Array.empty),
+      id = 1)
+
     val nodeCount = 10000
     plannerBuilder()
       .setAllNodesCardinality(nodeCount)
@@ -1365,6 +1377,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setRelationshipCardinality("()-[:R]->()", nodeCount * nodeCount)
       .setRelationshipCardinality("()-[:Q]->()", nodeCount * nodeCount)
       .setRelationshipCardinality("()-[:NARROW]->()", nodeCount / 10)
+      .addProcedure(proc)
       .build()
   }
 
@@ -1806,6 +1819,101 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     plan shouldEqual expectedPlan
   }
 
+  test("should sort between narrowing and widening expand with unwind inbetween") {
+    val query =
+      """MATCH (a)-[r1:NARROW]->(b)
+        |UNWIND [1, 2, 3] AS i
+        |MATCH (b)-[r2:R]->(c)
+        |RETURN a, b, c ORDER BY a.prop""".stripMargin
+
+    val plan = wideningExpandConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = wideningExpandConfig.subPlanBuilder()
+      .expandAll("(b)-[r2:R]->(c)")
+      .unwind("[1, 2, 3] AS i")
+      .sort(Seq(Ascending("a.prop")))
+      .projection("a.prop AS `a.prop`")
+      .expandAll("(a)-[r1:NARROW]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should sort between narrowing and widening expand with call subquery inbetween") {
+    val query =
+      """MATCH (a)-[r1:NARROW]->(b)
+        |CALL {
+        |  MATCH (d) RETURN d
+        |}
+        |MATCH (b)-[r2:R]->(c)
+        |RETURN a, b, c ORDER BY a.prop""".stripMargin
+
+    val plan = wideningExpandConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = wideningExpandConfig.subPlanBuilder()
+      .expandAll("(b)-[r2:R]->(c)")
+      .cartesianProduct()
+      .|.allNodeScan("d")
+      .sort(Seq(Ascending("a.prop")))
+      .projection("a.prop AS `a.prop`")
+      .expandAll("(a)-[r1:NARROW]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should sort between narrowing and widening expand with procedure call inbetween") {
+    val query =
+      """MATCH (a)-[r1:NARROW]->(b)
+        |CALL my.proc()
+        |MATCH (b)-[r2:R]->(c)
+        |RETURN a, b, c ORDER BY a.prop""".stripMargin
+
+    val plan = wideningExpandConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = wideningExpandConfig.subPlanBuilder()
+      .expandAll("(b)-[r2:R]->(c)")
+      .procedureCall("my.proc()")
+      .sort(Seq(Ascending("a.prop")))
+      .projection("a.prop AS `a.prop`")
+      .expandAll("(a)-[r1:NARROW]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should sort between narrowing and widening expand with LOAD CSV inbetween") {
+    val query =
+      """MATCH (a)-[r1:NARROW]->(b)
+        |LOAD CSV FROM 'url' AS line
+        |MATCH (b)-[r2:R]->(c)
+        |RETURN a, b, c ORDER BY a.prop""".stripMargin
+
+    val plan = wideningExpandConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = wideningExpandConfig.subPlanBuilder()
+      .expandAll("(b)-[r2:R]->(c)")
+      .loadCSV("'url'", "line", NoHeaders, None)
+      .sort(Seq(Ascending("a.prop")))
+      .projection("a.prop AS `a.prop`")
+      .expandAll("(a)-[r1:NARROW]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
   test("should sort between aggregation and widening expand") {
     val query =
       """MATCH (a)-[r1:NARROW]->(aa)
@@ -1818,9 +1926,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .stripProduceResults
 
     val expectedPlan = wideningExpandConfig.subPlanBuilder()
-      .expandAll("(c)<-[r2:R]-(b)")
+      .expandAll("(b)-[r2:R]->(c)")
       .apply()
-      .|.allNodeScan("c", "count")
+      .|.allNodeScan("b", "count")
       .sort(Seq(Ascending("count")))
       .aggregation(Seq(), Seq("count(a) AS count"))
       .expandAll("(a)-[r1:NARROW]->(aa)")
@@ -1842,9 +1950,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .stripProduceResults
 
     val expectedPlan = wideningExpandConfig.subPlanBuilder()
-      .expandAll("(c)<-[r2:R]-(b)")
+      .expandAll("(b)-[r2:R]->(c)")
       .apply()
-      .|.allNodeScan("c", "count")
+      .|.allNodeScan("b", "count")
       .sort(Seq(Ascending("count")))
       .distinct("a.count AS count")
       .allNodeScan("a")
