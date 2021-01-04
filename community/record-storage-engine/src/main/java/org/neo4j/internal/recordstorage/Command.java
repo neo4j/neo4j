@@ -36,6 +36,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.lock.LockGroup;
+import org.neo4j.lock.LockService;
+import org.neo4j.lock.LockType;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageCommand;
 
@@ -140,6 +143,11 @@ public abstract class Command implements StorageCommand
 
     public abstract boolean handle( CommandVisitor handler ) throws IOException;
 
+    void lock( LockService lockService, LockGroup lockGroup )
+    {
+        // most commands does not need this locking
+    }
+
     protected static String beforeAndAfterToString( AbstractBaseRecord before, AbstractBaseRecord after )
     {
         return format( "\t-%s%n\t+%s", before, after );
@@ -206,6 +214,12 @@ public abstract class Command implements StorageCommand
         {
             serialization.writeNodeCommand( channel, this );
         }
+
+        @Override
+        void lock( LockService lockService, LockGroup locks )
+        {
+            locks.add( lockService.acquireNodeLock( getKey(), LockType.EXCLUSIVE ) );
+        }
     }
 
     public static class RelationshipCommand extends BaseCommand<RelationshipRecord>
@@ -234,6 +248,12 @@ public abstract class Command implements StorageCommand
         {
             serialization.writeRelationshipCommand( channel, this );
         }
+
+        @Override
+        void lock( LockService lockService, LockGroup locks )
+        {
+            locks.add( lockService.acquireRelationshipLock( getKey(), LockType.EXCLUSIVE ) );
+        }
     }
 
     public static class RelationshipGroupCommand extends BaseCommand<RelationshipGroupRecord>
@@ -261,6 +281,12 @@ public abstract class Command implements StorageCommand
         public void serialize( WritableChannel channel ) throws IOException
         {
             serialization.writeRelationshipGroupCommand( channel, this );
+        }
+
+        @Override
+        void lock( LockService lockService, LockGroup locks )
+        {
+            locks.add( lockService.acquireNodeLock( after.getOwningNode(), LockType.EXCLUSIVE ) );
         }
     }
 
@@ -362,6 +388,19 @@ public abstract class Command implements StorageCommand
         public long getSchemaRuleId()
         {
             return after.getSchemaRuleId();
+        }
+
+        @Override
+        void lock( LockService lockService, LockGroup locks )
+        {
+            if ( after.isNodeSet() )
+            {
+                locks.add( lockService.acquireNodeLock( getNodeId(), LockType.EXCLUSIVE ) );
+            }
+            else
+            {
+                locks.add( lockService.acquireRelationshipLock( getRelId(), LockType.EXCLUSIVE ) );
+            }
         }
     }
 

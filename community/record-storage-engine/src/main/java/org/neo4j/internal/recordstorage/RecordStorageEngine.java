@@ -20,6 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -78,6 +79,7 @@ import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
@@ -86,6 +88,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
@@ -452,6 +455,23 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             var rule = IndexDescriptor.NLI_PROTOTYPE.materialise( nliId );
             return new Command.SchemaRuleCommand( serialization, before, after, rule );
+        }
+    }
+
+    @Override
+    public void lockRecoveryCommands( CommandStream commands, LockService lockService, LockGroup lockGroup )
+    {
+        try
+        {
+            commands.accept( element ->
+            {
+                ((Command) element).lock( lockService, lockGroup );
+                return false;
+            } );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 

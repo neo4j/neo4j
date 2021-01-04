@@ -29,6 +29,8 @@ import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.lock.LockGroup;
+import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.Log;
@@ -108,6 +110,8 @@ public interface StorageEngine extends Lifecycle
      * @return commands for making an upgrade to the desired {@link KernelVersion}.
      */
     List<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo );
+
+    void lockRecoveryCommands( CommandStream commands, LockService lockService, LockGroup lockGroup );
 
     /**
      * Apply a batch of groups of commands to this storage.

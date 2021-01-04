@@ -35,8 +35,6 @@ import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.CommandVersion;
 
-import static org.neo4j.lock.LockType.EXCLUSIVE;
-
 /**
  * Visits commands targeted towards the {@link NeoStores} and update corresponding stores.
  * What happens in here is what will happen in a "internal" transaction, i.e. a transaction that has been
@@ -73,7 +71,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     public boolean visitNodeCommand( Command.NodeCommand command )
     {
         // acquire lock
-        lockGroup.add( lockService.acquireNodeLock( command.getKey(), EXCLUSIVE ) );
+        command.lock( lockService, lockGroup );
 
         // update store
         updateStore( neoStores.getNodeStore(), command );
@@ -83,7 +81,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     @Override
     public boolean visitRelationshipCommand( Command.RelationshipCommand command )
     {
-        lockGroup.add( lockService.acquireRelationshipLock( command.getKey(), EXCLUSIVE ) );
+        command.lock( lockService, lockGroup );
 
         updateStore( neoStores.getRelationshipStore(), command );
         return false;
@@ -93,14 +91,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     public boolean visitPropertyCommand( Command.PropertyCommand command )
     {
         // acquire lock
-        if ( command.getNodeId() != -1 )
-        {
-            lockGroup.add( lockService.acquireNodeLock( command.getNodeId(), EXCLUSIVE ) );
-        }
-        else if ( command.getRelId() != -1 )
-        {
-            lockGroup.add( lockService.acquireRelationshipLock( command.getRelId(), EXCLUSIVE ) );
-        }
+        command.lock( lockService, lockGroup );
 
         updateStore( neoStores.getPropertyStore(), command );
         return false;
