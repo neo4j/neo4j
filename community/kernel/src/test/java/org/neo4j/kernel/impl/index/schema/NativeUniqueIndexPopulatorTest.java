@@ -77,6 +77,12 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, V
         return indexLayoutFactory.create();
     }
 
+    @Override
+    IndexDescriptor indexDescriptor()
+    {
+        return uniqueDescriptor;
+    }
+
     @Test
     void addShouldThrowOnDuplicateValues()
     {

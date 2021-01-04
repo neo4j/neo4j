@@ -48,10 +48,12 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexValueCapability;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -60,6 +62,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.test.rule.PageCacheConfig;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.RandomValues;
@@ -85,6 +88,7 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
@@ -92,15 +96,29 @@ import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
 import static org.neo4j.values.storable.Values.of;
 
 abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-        extends NativeIndexTestUtil<KEY,VALUE>
+        extends IndexTestUtil<KEY,VALUE, IndexLayout<KEY,VALUE>>
 {
     private NativeIndexAccessor<KEY,VALUE> accessor;
+    NativeValueIndexUtility<KEY,VALUE> valueUtil;
+    ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
 
     @BeforeEach
     void setupAccessor() throws IOException
     {
+        valueCreatorUtil = createValueCreatorUtil();
+        valueUtil = new NativeValueIndexUtility<>( valueCreatorUtil, layout );
         accessor = makeAccessor( pageCache );
     }
+
+    @Override
+    IndexFiles createIndexFiles( FileSystemAbstraction fs, TestDirectory directory, IndexDescriptor indexDescriptor )
+    {
+        IndexDirectoryStructure indexDirectoryStructure =
+                directoriesByProvider( directory.directory( "root" ) ).forProvider( indexDescriptor.getIndexProvider() );
+        return new IndexFiles.Directory( fs, indexDirectoryStructure, indexDescriptor.getId() );
+    }
+
+    abstract ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil();
 
     abstract NativeIndexAccessor<KEY,VALUE> makeAccessor( PageCache pageCache ) throws IOException;
 
@@ -150,7 +168,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
 
         // then
         forceAndCloseAccessor();
-        verifyUpdates( updates );
+        valueUtil.verifyUpdates( updates, this::getTree );
     }
 
     @Test
@@ -173,7 +191,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
 
         // then
         forceAndCloseAccessor();
-        verifyUpdates( updates );
+        valueUtil.verifyUpdates( updates, this::getTree );
     }
 
     @Test
@@ -192,7 +210,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             forceAndCloseAccessor();
 
             // then
-            verifyUpdates( Arrays.copyOfRange( updates, i + 1, updates.length ) );
+            valueUtil.verifyUpdates( Arrays.copyOfRange( updates, i + 1, updates.length ), this::getTree );
             setupAccessor();
         }
     }
@@ -218,7 +236,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             // verifyUpdates
             forceAndCloseAccessor();
             //noinspection unchecked
-            verifyUpdates( expectedData.toArray( new ValueIndexEntryUpdate[0] ) );
+            valueUtil.verifyUpdates( expectedData.toArray( new ValueIndexEntryUpdate[0] ), this::getTree );
             setupAccessor();
         }
     }
@@ -565,7 +583,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
 
         // then
         forceAndCloseAccessor();
-        verifyUpdates( updates );
+        valueUtil.verifyUpdates( updates, this::getTree );
     }
 
     @Test
@@ -626,7 +644,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         accessor.close();
 
         // then
-        verifyUpdates( data );
+        valueUtil.verifyUpdates( data, this::getTree );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -641,7 +659,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         accessor.close();
 
         // then
-        verifyUpdates( new ValueIndexEntryUpdate[0] );
+        valueUtil.verifyUpdates( new ValueIndexEntryUpdate[0], this::getTree );
     }
 
     @Test

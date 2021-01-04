@@ -20,122 +20,48 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.SchemaTestUtil;
-import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
-import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobHandle;
-import org.neo4j.scheduler.JobMonitoringParams;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 
-@TestDirectoryExtension
-@ExtendWith( RandomExtension.class )
-public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue>
+public class NativeValueIndexUtility<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
 {
-    static final long NON_EXISTENT_ENTITY_ID = 1_000_000_000;
+    private final ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
+    private final Layout<KEY,VALUE> layout;
 
-    @RegisterExtension
-    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
-    @Inject
-    protected DefaultFileSystemAbstraction fs;
-    @Inject
-    private TestDirectory directory;
-    @Inject
-    protected PageCache pageCache;
-    @Inject
-    protected RandomRule random;
-
-    IndexDescriptor indexDescriptor;
-    ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
-    IndexLayout<KEY,VALUE> layout;
-    private IndexDirectoryStructure indexDirectoryStructure;
-    IndexFiles indexFiles;
-    IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
-    JobScheduler jobScheduler;
-    IndexPopulator.PopulationWorkScheduler populationWorkScheduler;
-    TokenNameLookup tokenNameLookup;
-
-    @BeforeEach
-    void setup() throws IOException
+    public NativeValueIndexUtility( ValueCreatorUtil<KEY,VALUE> valueCreatorUtil, Layout<KEY,VALUE> layout )
     {
-        valueCreatorUtil = createValueCreatorUtil();
-        indexDescriptor = valueCreatorUtil.indexDescriptor();
-        layout = createLayout();
-        indexDirectoryStructure = directoriesByProvider( directory.directory( "root" ) ).forProvider( indexDescriptor.getIndexProvider() );
-        this.indexFiles = new IndexFiles.Directory( fs, indexDirectoryStructure, indexDescriptor.getId() );
-        fs.mkdirs( indexFiles.getStoreFile().getParent() );
-        tokenNameLookup = SchemaTestUtil.SIMPLE_NAME_LOOKUP;
-        jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
-        populationWorkScheduler = new IndexPopulator.PopulationWorkScheduler()
-        {
-
-            @Override
-            public <T> JobHandle<T> schedule( IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job )
-            {
-                return jobScheduler.schedule( Group.INDEX_POPULATION_WORK, new JobMonitoringParams( null, null, null ), job );
-            }
-        };
+        this.valueCreatorUtil = valueCreatorUtil;
+        this.layout = layout;
     }
-
-    @AfterEach
-    void tearDown() throws Exception
-    {
-        jobScheduler.shutdown();
-    }
-
-    abstract ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil();
-
-    abstract IndexLayout<KEY,VALUE> createLayout();
 
     private void copyValue( VALUE value, VALUE intoValue )
     {
         valueCreatorUtil.copyValue( value, intoValue );
     }
 
-    void verifyUpdates( ValueIndexEntryUpdate<IndexDescriptor>[] updates )
+    void verifyUpdates( ValueIndexEntryUpdate<IndexDescriptor>[] updates, Supplier<GBPTree<KEY,VALUE>> treeProvider )
             throws IOException
     {
         Pair<KEY,VALUE>[] expectedHits = convertToHits( updates, layout );
         List<Pair<KEY,VALUE>> actualHits = new ArrayList<>();
-        try ( GBPTree<KEY,VALUE> tree = getTree();
+        try ( GBPTree<KEY,VALUE> tree = treeProvider.get();
               Seeker<KEY,VALUE> scan = scan( tree ) )
         {
             while ( scan.next() )
@@ -157,11 +83,6 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
             }
         };
         assertSameHits( expectedHits, actualHits.toArray( new Pair[0] ), hitComparator );
-    }
-
-    GBPTree<KEY,VALUE> getTree()
-    {
-        return new GBPTreeBuilder<>( pageCache, indexFiles.getStoreFile(), layout ).build();
     }
 
     private Seeker<KEY,VALUE> scan( GBPTree<KEY,VALUE> tree ) throws IOException
@@ -219,22 +140,5 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
             hits.add( Pair.of( key, value ) );
         }
         return hits.toArray( new Pair[0] );
-    }
-
-    void assertFilePresent()
-    {
-        assertTrue( fs.fileExists( indexFiles.getStoreFile() ) );
-    }
-
-    void assertFileNotPresent()
-    {
-        assertFalse( fs.fileExists( indexFiles.getStoreFile() ) );
-    }
-
-    // Useful when debugging
-    void setSeed( long seed )
-    {
-        random.setSeed( seed );
-        random.reset();
     }
 }

@@ -86,6 +86,12 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         return indexLayoutFactory.create();
     }
 
+    @Override
+    IndexDescriptor indexDescriptor()
+    {
+        return nonUniqueDescriptor;
+    }
+
     @Test
     void addShouldApplyDuplicateValues() throws Exception
     {
@@ -99,7 +105,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         // then
         populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
         populator.close( true, NULL );
-        verifyUpdates( updates );
+        valueUtil.verifyUpdates( updates, this::getTree );
     }
 
     @Test
@@ -120,7 +126,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         // then
         populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
         populator.close( true, NULL );
-        verifyUpdates( updates );
+        valueUtil.verifyUpdates( updates, this::getTree );
     }
 
     @Test

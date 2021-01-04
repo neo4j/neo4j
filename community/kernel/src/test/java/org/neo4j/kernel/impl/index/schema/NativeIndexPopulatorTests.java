@@ -19,118 +19,76 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 
-import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.test.rule.PageCacheConfig;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
-import static org.apache.commons.lang3.exception.ExceptionUtils.hasCause;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
-import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
-import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_POPULATING;
 
 abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue>
-        extends NativeIndexTestUtil<KEY,VALUE>
+        extends IndexPopulatorTests<KEY,VALUE,IndexLayout<KEY,VALUE>>
 {
     private static final int LARGE_AMOUNT_OF_UPDATES = 1_000;
-    static final NodePropertyAccessor null_property_accessor = ( nodeId, propertyKeyId, cursorTracer ) ->
-    {
-        throw new RuntimeException( "Did not expect an attempt to go to store" );
-    };
-
-    NativeIndexPopulator<KEY,VALUE> populator;
+    NativeValueIndexUtility<KEY,VALUE> valueUtil;
+    ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
 
     @BeforeEach
-    void setupPopulator() throws IOException
+    void setupValueCreator()
     {
-        populator = createPopulator( pageCache );
+        valueCreatorUtil = createValueCreatorUtil();
+        valueUtil = new NativeValueIndexUtility<>( valueCreatorUtil, layout );
     }
 
-    abstract NativeIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache ) throws IOException;
-
-    @Test
-    void createShouldCreateFile()
+    @Override
+    IndexFiles createIndexFiles( FileSystemAbstraction fs, TestDirectory directory, IndexDescriptor indexDescriptor )
     {
-        // given
-        assertFileNotPresent();
-
-        // when
-        populator.create();
-
-        // then
-        assertFilePresent();
-        populator.close( true, NULL );
+        IndexDirectoryStructure indexDirectoryStructure =
+                directoriesByProvider( directory.directory( "root" ) ).forProvider( indexDescriptor.getIndexProvider() );
+        return new IndexFiles.Directory( fs, indexDirectoryStructure, indexDescriptor.getId() );
     }
 
-    @Test
-    void createShouldClearExistingFile() throws Exception
+    byte failureByte()
     {
-        // given
-        byte[] someBytes = fileWithContent();
-
-        // when
-        populator.create();
-
-        // then
-        try ( StoreChannel r = fs.read( indexFiles.getStoreFile() ) )
-        {
-            byte[] firstBytes = new byte[someBytes.length];
-            r.readAll( ByteBuffer.wrap( firstBytes ) );
-            assertNotEquals(
-                someBytes, firstBytes, "Expected previous file content to have been cleared but was still there" );
-        }
-        populator.close( true, NULL );
+        return BYTE_FAILED;
     }
 
-    @Test
-    void dropShouldDeleteExistingFile()
+    byte populatingByte()
     {
-        // given
-        populator.create();
-
-        // when
-        populator.drop();
-
-        // then
-        assertFileNotPresent();
+        return BYTE_POPULATING;
     }
+
+    byte onlineByte()
+    {
+        return BYTE_ONLINE;
+    }
+
+    abstract ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil();
 
     @Test
     void dropShouldDeleteExistingDirectory()
@@ -147,34 +105,6 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
     }
 
     @Test
-    void dropShouldSucceedOnNonExistentFile()
-    {
-        // given
-        assertFileNotPresent();
-
-        // when
-        populator.drop();
-
-        // then
-        assertFileNotPresent();
-    }
-
-    @Test
-    void addShouldHandleEmptyCollection() throws Exception
-    {
-        // given
-        populator.create();
-        List<ValueIndexEntryUpdate<?>> updates = Collections.emptyList();
-
-        // when
-        populator.add( updates, NULL );
-        populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
-
-        // then
-        populator.close( true, NULL );
-    }
-
-    @Test
     void addShouldApplyAllUpdatesOnce() throws Exception
     {
         // given
@@ -187,7 +117,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
 
         // then
         populator.close( true, NULL );
-        verifyUpdates( updates );
+        valueUtil.verifyUpdates( updates, this::getTree );
     }
 
     @Test
@@ -208,7 +138,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
         // then
         populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
         populator.close( true, NULL );
-        verifyUpdates( updates );
+        valueUtil.verifyUpdates( updates, this::getTree );
     }
 
     @Test
@@ -238,134 +168,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
         // then
         populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
         populator.close( true, NULL );
-        verifyUpdates( updates );
-    }
-
-    @Test
-    void successfulCloseMustCloseGBPTree() throws Exception
-    {
-        // given
-        populator.create();
-        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile() );
-        if ( existingMapping.isPresent() )
-        {
-            existingMapping.get().close();
-        }
-        else
-        {
-            fail( "Expected underlying GBPTree to have a mapping for this file" );
-        }
-
-        // when
-        populator.close( true, NULL );
-
-        // then
-        existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile() );
-        assertFalse( existingMapping.isPresent() );
-    }
-
-    @Test
-    void successfulCloseMustMarkIndexAsOnline() throws Exception
-    {
-        // given
-        populator.create();
-
-        // when
-        populator.close( true, NULL );
-
-        // then
-        assertHeader( ONLINE, null, false );
-    }
-
-    @Test
-    void unsuccessfulCloseMustSucceedWithoutMarkAsFailed()
-    {
-        // given
-        populator.create();
-
-        // then
-        populator.close( false, NULL );
-    }
-
-    @Test
-    void unsuccessfulCloseMustCloseGBPTree() throws Exception
-    {
-        // given
-        populator.create();
-        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile() );
-        if ( existingMapping.isPresent() )
-        {
-            existingMapping.get().close();
-        }
-        else
-        {
-            fail( "Expected underlying GBPTree to have a mapping for this file" );
-        }
-
-        // when
-        populator.close( false, NULL );
-
-        // then
-        existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile() );
-        assertFalse( existingMapping.isPresent() );
-    }
-
-    @Test
-    void unsuccessfulCloseMustNotMarkIndexAsOnline() throws Exception
-    {
-        // given
-        populator.create();
-
-        // when
-        populator.close( false, NULL );
-
-        // then
-        assertHeader( POPULATING, null, false );
-    }
-
-    @Test
-    void closeMustWriteFailureMessageAfterMarkedAsFailed() throws Exception
-    {
-        // given
-        populator.create();
-
-        // when
-        String failureMessage = "Fly, you fools!";
-        populator.markAsFailed( failureMessage );
-        populator.close( false, NULL );
-
-        // then
-        assertHeader( FAILED, failureMessage, false );
-    }
-
-    @Test
-    void closeMustWriteFailureMessageAfterMarkedAsFailedWithLongMessage() throws Exception
-    {
-        // given
-        populator.create();
-
-        // when
-        String failureMessage = longString( pageCache.pageSize() );
-        populator.markAsFailed( failureMessage );
-        populator.close( false, NULL );
-
-        // then
-        assertHeader( FAILED, failureMessage, true );
-    }
-
-    @Test
-    void successfulCloseMustThrowIfMarkedAsFailed()
-    {
-        // given
-        populator.create();
-
-        // when
-        populator.markAsFailed( "" );
-
-        // then
-        var e = assertThrows( RuntimeException.class, () -> populator.close( true, NULL ) );
-        assertTrue( hasCause( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
-        populator.close( false, NULL );
+        valueUtil.verifyUpdates( updates, this::getTree );
     }
 
     @Test
@@ -387,177 +190,25 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
         verifyUpdates( valueCreatorUtil.randomUpdateGenerator( random ), count );
     }
 
-    @Test
-    void dropMustSucceedAfterSuccessfulClose()
+    private void verifyUpdates( Iterator<ValueIndexEntryUpdate<IndexDescriptor>> indexEntryUpdateIterator, int count )
+            throws IOException
     {
-        // given
-        populator.create();
-        populator.close( true, NULL );
-
-        // when
-        populator.drop();
-
-        // then
-        assertFileNotPresent();
-    }
-
-    @Test
-    void dropMustSucceedAfterUnsuccessfulClose()
-    {
-        // given
-        populator.create();
-        populator.close( false, NULL );
-
-        // when
-        populator.drop();
-
-        // then
-        assertFileNotPresent();
-    }
-
-    @Test
-    void dropShouldNotFlushContent() throws IOException
-    {
-        // given
-        DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
-        try ( PageCache pageCache = pageCacheExtension.getPageCache( fs, PageCacheConfig.config().withTracer( tracer ) ) )
+        @SuppressWarnings( "unchecked" )
+        ValueIndexEntryUpdate<IndexDescriptor>[] updates = new ValueIndexEntryUpdate[count];
+        for ( int i = 0; i < count; i++ )
         {
-            populator = createPopulator( pageCache );
-            populator.create();
-            long preDrop = tracer.flushes();
-
-            // when
-            populator.drop();
-
-            // then
-            long postDrop = tracer.flushes();
-            assertEquals( preDrop, postDrop );
+            updates[i] = indexEntryUpdateIterator.next();
         }
+        valueUtil.verifyUpdates( updates, this::getTree );
     }
 
-    @Test
-    void successfulCloseMustThrowWithoutPriorSuccessfulCreate()
-    {
-        // given
-        assertFileNotPresent();
-
-        // when
-        var e = assertThrows( RuntimeException.class, () -> populator.close( true, NULL ) );
-        assertTrue( hasCause( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
-    }
-
-    @Test
-    void unsuccessfulCloseMustSucceedWithoutSuccessfulPriorCreate() throws Exception
-    {
-        // given
-        assertFileNotPresent();
-        String failureMessage = "There is no spoon";
-        populator.markAsFailed( failureMessage );
-
-        // when
-        populator.close( false, NULL );
-
-        // then
-        assertHeader( FAILED, failureMessage, false );
-    }
-
-    @Test
-    void successfulCloseMustThrowAfterDrop()
-    {
-        // given
-        populator.create();
-
-        // when
-        populator.drop();
-
-        // then
-        var e = assertThrows( RuntimeException.class, () -> populator.close( true, NULL ) );
-        assertTrue( hasCause( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
-    }
-
-    @Test
-    void unsuccessfulCloseMustThrowAfterDrop()
-    {
-        // given
-        populator.create();
-
-        // when
-        populator.drop();
-
-        // then
-        var e = assertThrows( RuntimeException.class, () -> populator.close( false, NULL ) );
-        assertTrue( hasCause( e, IllegalStateException.class ), "Expected cause to contain " + IllegalStateException.class );
-    }
-
-    private int interleaveLargeAmountOfUpdates( Random updaterRandom,
-            Iterator<ValueIndexEntryUpdate<IndexDescriptor>> updates ) throws IndexEntryConflictException
-    {
-        int count = 0;
-        for ( int i = 0; i < LARGE_AMOUNT_OF_UPDATES; i++ )
-        {
-            if ( updaterRandom.nextFloat() < 0.1 )
-            {
-                try ( IndexUpdater indexUpdater = populator.newPopulatingUpdater( null_property_accessor, NULL ) )
-                {
-                    int numberOfUpdaterUpdates = updaterRandom.nextInt( 100 );
-                    for ( int j = 0; j < numberOfUpdaterUpdates; j++ )
-                    {
-                        indexUpdater.process( updates.next() );
-                        count++;
-                    }
-                }
-            }
-            populator.add( Collections.singletonList( updates.next() ), NULL );
-            count++;
-        }
-        return count;
-    }
-
-    private void assertHeader( InternalIndexState expectedState, String failureMessage, boolean messageTruncated ) throws IOException
-    {
-        NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader();
-        try ( GBPTree<KEY,VALUE> ignored = new GBPTreeBuilder<>( pageCache, indexFiles.getStoreFile(), layout ).with( headerReader ).build() )
-        {
-            switch ( expectedState )
-            {
-            case ONLINE:
-                assertEquals( BYTE_ONLINE, headerReader.state, "Index was not marked as online when expected not to be." );
-                assertNull( headerReader.failureMessage, "Expected failure message to be null when marked as online." );
-                break;
-            case FAILED:
-                assertEquals( BYTE_FAILED, headerReader.state, "Index was marked as online when expected not to be." );
-                if ( messageTruncated )
-                {
-                    assertTrue( headerReader.failureMessage.length() < failureMessage.length() );
-                    assertTrue( failureMessage.startsWith( headerReader.failureMessage ) );
-                }
-                else
-                {
-                    assertEquals( failureMessage, headerReader.failureMessage );
-                }
-                break;
-            case POPULATING:
-                assertEquals( BYTE_POPULATING, headerReader.state, "Index was not left as populating when expected to be." );
-                assertNull( headerReader.failureMessage, "Expected failure message to be null when marked as populating." );
-                break;
-            default:
-                throw new UnsupportedOperationException( "Unexpected index state " + expectedState );
-            }
-        }
-    }
-
-    private static String longString( int length )
-    {
-        return RandomStringUtils.random( length, true, true );
-    }
-
-    private void applyInterleaved( ValueIndexEntryUpdate<IndexDescriptor>[] updates, NativeIndexPopulator<KEY,VALUE> populator )
+    void applyInterleaved( IndexEntryUpdate<IndexDescriptor>[] updates, IndexPopulator populator )
             throws IndexEntryConflictException
     {
         boolean useUpdater = true;
-        Collection<ValueIndexEntryUpdate<IndexDescriptor>> populatorBatch = new ArrayList<>();
+        Collection<IndexEntryUpdate<IndexDescriptor>> populatorBatch = new ArrayList<>();
         IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL );
-        for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
             if ( random.nextInt( 100 ) < 20 )
             {
@@ -592,28 +243,27 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
         }
     }
 
-    private void verifyUpdates( Iterator<ValueIndexEntryUpdate<IndexDescriptor>> indexEntryUpdateIterator, int count )
-            throws IOException
+    int interleaveLargeAmountOfUpdates( Random updaterRandom,
+            Iterator<? extends IndexEntryUpdate<IndexDescriptor>> updates ) throws IndexEntryConflictException
     {
-        @SuppressWarnings( "unchecked" )
-        ValueIndexEntryUpdate<IndexDescriptor>[] updates = new ValueIndexEntryUpdate[count];
-        for ( int i = 0; i < count; i++ )
+        int count = 0;
+        for ( int i = 0; i < LARGE_AMOUNT_OF_UPDATES; i++ )
         {
-            updates[i] = indexEntryUpdateIterator.next();
+            if ( updaterRandom.nextFloat() < 0.1 )
+            {
+                try ( IndexUpdater indexUpdater = populator.newPopulatingUpdater( null_property_accessor, NULL ) )
+                {
+                    int numberOfUpdaterUpdates = updaterRandom.nextInt( 100 );
+                    for ( int j = 0; j < numberOfUpdaterUpdates; j++ )
+                    {
+                        indexUpdater.process( updates.next() );
+                        count++;
+                    }
+                }
+            }
+            populator.add( Collections.singletonList( updates.next() ), NULL );
+            count++;
         }
-        verifyUpdates( updates );
-    }
-
-    private byte[] fileWithContent() throws IOException
-    {
-        int size = 1000;
-        fs.mkdirs( indexFiles.getStoreFile().getParent() );
-        try ( StoreChannel storeChannel = fs.write( indexFiles.getStoreFile() ) )
-        {
-            byte[] someBytes = new byte[size];
-            random.nextBytes( someBytes );
-            storeChannel.writeAll( ByteBuffer.wrap( someBytes ) );
-            return someBytes;
-        }
+        return count;
     }
 }

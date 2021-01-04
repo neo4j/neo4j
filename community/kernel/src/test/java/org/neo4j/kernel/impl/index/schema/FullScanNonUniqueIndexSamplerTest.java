@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -27,11 +28,14 @@ import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
@@ -42,15 +46,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
 import static org.neo4j.values.storable.RandomValues.typesOfGroup;
 import static org.neo4j.values.storable.ValueGroup.NUMBER;
 
-public class FullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<GenericKey,NativeIndexValue>
+public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<GenericKey,NativeIndexValue,IndexLayout<GenericKey,NativeIndexValue>>
 {
     private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
+
+    private static final IndexDescriptor index = forSchema( forLabel( 42, 666 ) ).withName( "index" ).materialise( 0 );
+
+    NativeValueIndexUtility<GenericKey,NativeIndexValue> valueUtil;
+    ValueCreatorUtil<GenericKey,NativeIndexValue> valueCreatorUtil;
+
+    @BeforeEach
+    void setupValueCreator()
+    {
+        valueCreatorUtil = createValueCreatorUtil();
+        valueUtil = new NativeValueIndexUtility<>( valueCreatorUtil, layout );
+    }
 
     @Test
     void shouldIncludeAllValuesInTree() throws Exception
@@ -136,11 +153,23 @@ public class FullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<Gener
         }
     }
 
-    @Override
-    protected ValueCreatorUtil<GenericKey,NativeIndexValue> createValueCreatorUtil()
+    private ValueCreatorUtil<GenericKey,NativeIndexValue> createValueCreatorUtil()
     {
-        IndexDescriptor index = forSchema( forLabel( 42, 666 ) ).withName( "index" ).materialise( 0 );
         return new ValueCreatorUtil<>( index, typesOfGroup( NUMBER ), FRACTION_DUPLICATE_NON_UNIQUE );
+    }
+
+    @Override
+    IndexFiles createIndexFiles( FileSystemAbstraction fs, TestDirectory directory, IndexDescriptor indexDescriptor )
+    {
+        IndexDirectoryStructure indexDirectoryStructure =
+                directoriesByProvider( directory.directory( "root" ) ).forProvider( indexDescriptor.getIndexProvider() );
+        return new IndexFiles.Directory( fs, indexDirectoryStructure, indexDescriptor.getId() );
+    }
+
+    @Override
+    IndexDescriptor indexDescriptor()
+    {
+        return index;
     }
 
     @Override

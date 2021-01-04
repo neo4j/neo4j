@@ -23,6 +23,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexCapability;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.ValueType;
@@ -36,6 +37,7 @@ class NativeIndexAccessorTest extends NativeIndexAccessorTests<GenericKey,Native
     private static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings =
             IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     private static final StandardConfiguration configuration = new StandardConfiguration();
+    private static final IndexDescriptor indexDescriptor = forSchema( forLabel( 42, 666 ) ).withName( "index" ).materialise( 0 );
 
     private final ValueType[] supportedTypes = ValueType.values();
     private final IndexLayoutFactory<GenericKey,NativeIndexValue> indexLayoutFactory = () -> new GenericLayout( 1, spaceFillingCurveSettings );
@@ -59,7 +61,13 @@ class NativeIndexAccessorTest extends NativeIndexAccessorTests<GenericKey,Native
     @Override
     ValueCreatorUtil<GenericKey,NativeIndexValue> createValueCreatorUtil()
     {
-        return new ValueCreatorUtil<>( forSchema( forLabel( 42, 666 ) ).withName( "index" ).materialise( 0 ), supportedTypes, FRACTION_DUPLICATE_NON_UNIQUE );
+        return new ValueCreatorUtil<>( indexDescriptor, supportedTypes, FRACTION_DUPLICATE_NON_UNIQUE );
+    }
+
+    @Override
+    IndexDescriptor indexDescriptor()
+    {
+        return indexDescriptor;
     }
 
     @Override
