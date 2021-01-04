@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.store.synthetic.TokenScanDocument;
 import org.neo4j.internal.helpers.Strings;
-import org.neo4j.internal.index.label.EntityTokenRange;
+import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;

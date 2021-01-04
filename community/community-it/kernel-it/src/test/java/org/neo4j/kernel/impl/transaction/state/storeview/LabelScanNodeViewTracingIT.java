@@ -23,10 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.EntityTokenUpdate;

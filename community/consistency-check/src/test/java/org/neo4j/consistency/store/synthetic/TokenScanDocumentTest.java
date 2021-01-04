@@ -21,7 +21,7 @@ package org.neo4j.consistency.store.synthetic;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.index.label.EntityTokenRange;
+import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.common.EntityType.NODE;

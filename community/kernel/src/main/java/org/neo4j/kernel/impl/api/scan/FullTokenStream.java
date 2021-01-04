@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.api.scan;
 import java.io.IOException;
 
 import org.neo4j.internal.helpers.collection.Visitor;
-import org.neo4j.internal.index.label.FullStoreChangeStream;
-import org.neo4j.internal.index.label.TokenScanWriter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.index.schema.FullStoreChangeStream;
+import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 

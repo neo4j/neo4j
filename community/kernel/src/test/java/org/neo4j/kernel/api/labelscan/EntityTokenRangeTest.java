@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.labelscan;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.index.label.EntityTokenRange;
+import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;

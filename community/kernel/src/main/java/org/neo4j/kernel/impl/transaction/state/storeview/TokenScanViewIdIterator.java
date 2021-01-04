@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.internal.index.label.TokenScanReader;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.index.schema.TokenScanReader;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 
 /**

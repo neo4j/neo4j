@@ -20,10 +20,10 @@
 package org.neo4j.consistency.store;
 
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.index.schema.LabelScanStore;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.token.TokenHolders;
 

@@ -27,14 +27,14 @@ import java.nio.file.Files;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.index.label.TokenScanReader;
-import org.neo4j.internal.index.label.TokenScanStoreTest;
-import org.neo4j.internal.index.label.TokenScanWriter;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.index.schema.LabelScanStore;
+import org.neo4j.kernel.impl.index.schema.TokenScanReader;
+import org.neo4j.kernel.impl.index.schema.TokenScanStoreTest;
+import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.test.extension.DbmsExtension;

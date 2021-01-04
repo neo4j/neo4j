@@ -28,9 +28,9 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.index.label.LabelScanStore;
-import org.neo4j.internal.index.label.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.index.schema.LabelScanStore;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
 public class SchemaAndIndexingFileIndexListing

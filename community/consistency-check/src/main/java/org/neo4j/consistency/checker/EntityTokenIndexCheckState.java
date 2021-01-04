@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checker;
 
-import org.neo4j.internal.index.label.EntityTokenRange;
+import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
 
 class EntityTokenIndexCheckState
 {

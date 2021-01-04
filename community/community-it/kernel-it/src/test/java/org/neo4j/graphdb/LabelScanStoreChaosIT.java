@@ -24,9 +24,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Set;
 
-import org.neo4j.internal.index.label.TokenScanStoreTest;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.index.schema.TokenScanStoreTest;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
