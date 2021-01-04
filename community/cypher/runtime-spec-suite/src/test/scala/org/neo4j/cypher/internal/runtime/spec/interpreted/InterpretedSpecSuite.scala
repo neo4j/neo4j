@@ -111,7 +111,8 @@ import org.neo4j.cypher.internal.runtime.spec.tests.RollupApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SelectOrAntiSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SelectOrSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SemiApplyTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.SetPropertiesFromMapTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.SetPropertiesFromMapNodeTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.SetPropertiesFromMapRelationshipTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SetPropertyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ShortestPathTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SkipTestBase
@@ -238,6 +239,7 @@ class InterpretedAssertSameNodeTest extends AssertSameNodeTestBase(COMMUNITY.EDI
 class InterpretedCreateTest extends CreateTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLenientCreateRelationshipTest extends LenientCreateRelationshipTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedSetPropertyTest extends SetPropertyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
-class InterpretedSetPropertiesFromMapTest extends SetPropertiesFromMapTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedSetPropertiesFromMapNodeTest extends SetPropertiesFromMapNodeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedSetPropertiesFromMapRelationshipTest extends SetPropertiesFromMapRelationshipTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLockNodesTest extends LockNodesTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedForEachApplyTest extends ForeachApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
