@@ -58,8 +58,8 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * Implementations may verify constraints at this time, or defer them until the first verification
      * of {@link #verifyDeferredConstraints(NodePropertyAccessor)}.
      *
-     * @param updates batch of node property updates that needs to be inserted. Node ids will be retrieved using
-     * {@link IndexEntryUpdate#getEntityId()} method and property values will be retrieved using
+     * @param updates batch of index updates (entity property updates or entity token updates) that needs to be inserted. Entity ids will be retrieved using
+     * {@link IndexEntryUpdate#getEntityId()} method and property (or token) values will be retrieved using
      * {@link IndexEntryUpdate#values()} method.
      * @param cursorTracer underlying page cache events tracer
      * @throws IndexEntryConflictException if this is a uniqueness index and any of the updates are detected
@@ -88,16 +88,16 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * Index population goes through the existing data in the graph and feeds relevant data to this populator.
      * Simultaneously as population progresses there might be incoming updates
      * from committing transactions, which needs to be applied as well. This populator will only receive updates
-     * for nodes that it already has seen. Updates coming in here must be applied idempotently as the same data
+     * for entities that it already has seen. Updates coming in here must be applied idempotently as the same data
      * may have been {@link #add(Collection, PageCursorTracer) added previously }.
-     * Updates can come in two different {@link IndexEntryUpdate#updateMode()} modes}.
+     * Updates can come in three different {@link IndexEntryUpdate#updateMode()} modes}.
      * <ol>
-     *   <li>{@link UpdateMode#ADDED} means that there's an added property to a node already seen by this
+     *   <li>{@link UpdateMode#ADDED} means that there's an added property/label/type to a node/relationship already seen by this
      *   populator and so needs to be added. Note that this addition needs to be applied idempotently.
-     *   <li>{@link UpdateMode#CHANGED} means that there's a change to a property for a node already seen by
+     *   <li>{@link UpdateMode#CHANGED} means that there's a change to a property/label/type for a node/relationship already seen by
      *   this populator and that this new change needs to be applied. Note that this change needs to be
      *   applied idempotently.</li>
-     *   <li>{@link UpdateMode#REMOVED} means that a property already seen by this populator or even the node itself
+     *   <li>{@link UpdateMode#REMOVED} means that a property/label/type already seen by this populator or even the node/relationship itself
      *   has been removed and need to be removed from this index as well. Note that this removal needs to be
      *   applied idempotently.</li>
      * </ol>
@@ -128,7 +128,7 @@ public interface IndexPopulator extends MinimalIndexAccessor
     void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer );
 
     /**
-     * Called then a population failed. The failure string should be stored for future retrieval by
+     * Called when a population failed. The failure string should be stored for future retrieval by
      * {@link IndexProvider#getPopulationFailure(IndexDescriptor, PageCursorTracer)}. Called before {@link #close(boolean, PageCursorTracer)}
      * if there was a failure during population.
      *
