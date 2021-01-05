@@ -94,6 +94,7 @@ public enum Group
     AKKA_HELPER( "AkkaActorSystemRestarter" ),
     DOWNLOAD_SNAPSHOT( "DownloadSnapshot" ),
     CATCHUP_CLIENT( "CatchupClient" ),
+    CATCHUP_PROCESS( "CatchupProcess" ),
     CATCHUP_SERVER( "CatchupServer" ),
     STORE_COPY_CLIENT( "StoreCopyClient" ),
     THROUGHPUT_MONITOR( "ThroughputMonitor" ),
