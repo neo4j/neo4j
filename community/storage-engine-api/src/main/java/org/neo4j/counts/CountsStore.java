@@ -22,8 +22,8 @@ package org.neo4j.counts;
 import java.io.IOException;
 
 import org.neo4j.annotations.documented.ReporterFactory;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -31,7 +31,7 @@ import org.neo4j.memory.MemoryTracker;
  * This makes it necessary to tie all changes to transaction ids so that this store can tell whether or not to re-apply any given
  * set of changes during recovery. Changes are applied by making calls to {@link CountsAccessor.Updater} from {@link #apply(long, PageCursorTracer)}.
  */
-public interface CountsStore extends CountsAccessor, AutoCloseable, ConsistencyCheckable
+public interface CountsStore extends CountsStorage, CountsAccessor
 {
     CountsStore NULL_INSTANCE = new NullCountsStore();
 
@@ -41,19 +41,6 @@ public interface CountsStore extends CountsAccessor, AutoCloseable, ConsistencyC
      * @return an updater where count deltas are being applied onto.
      */
     CountsAccessor.Updater apply( long txId, PageCursorTracer cursorTracer );
-
-    /**
-     * Closes this counts store so that no more changes can be made and no more counts can be read.
-     */
-    @Override
-    void close();
-
-    /**
-     * Puts the counts store in started state, i.e. after potentially recovery has been made. Any changes {@link #apply(long, PageCursorTracer)}  applied}
-     * before this call is made are considered recovery repairs from a previous non-clean shutdown.
-     * @throws IOException any type of error happening when transitioning to started state.
-     */
-    void start( PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException;
 
     class NullCountsStore implements CountsStore
     {
@@ -70,6 +57,11 @@ public interface CountsStore extends CountsAccessor, AutoCloseable, ConsistencyC
 
         @Override
         public void start( PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException
+        {   // no-op
+        }
+
+        @Override
+        public void checkpoint( IOLimiter ioLimiter, PageCursorTracer cursorTracer ) throws IOException
         {   // no-op
         }
 

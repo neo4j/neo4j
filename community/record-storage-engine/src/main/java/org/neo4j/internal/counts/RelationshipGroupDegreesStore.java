@@ -19,28 +19,18 @@
  */
 package org.neo4j.internal.counts;
 
-import java.io.IOException;
-
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.counts.CountsStorage;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 
 /**
  * Store for degrees of relationship chains for dense nodes. Relationship group record ID plus relationship direction forms the key for the counts.
  */
-public interface RelationshipGroupDegreesStore extends AutoCloseable
+public interface RelationshipGroupDegreesStore extends CountsStorage
 {
     Updater apply( long txId, PageCursorTracer cursorTracer );
 
     long degree( long groupId, RelationshipDirection direction, PageCursorTracer cursorTracer );
-
-    void start( PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException;
-
-    @Override
-    void close();
-
-    void checkpoint( IOLimiter ioLimiter, PageCursorTracer cursorTracer ) throws IOException;
 
     interface Updater extends AutoCloseable
     {

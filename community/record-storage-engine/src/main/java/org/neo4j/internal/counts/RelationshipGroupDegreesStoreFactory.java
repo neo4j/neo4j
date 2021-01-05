@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.LongSupplier;
 
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings.FeatureState;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -115,6 +116,12 @@ public final class RelationshipGroupDegreesStoreFactory
         @Override
         public void checkpoint( IOLimiter ioLimiter, PageCursorTracer cursorTracer )
         { //NOOP
+        }
+
+        @Override
+        public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
+        {
+            return true;
         }
 
         private final Updater THROWING_UPDATER = new Updater()

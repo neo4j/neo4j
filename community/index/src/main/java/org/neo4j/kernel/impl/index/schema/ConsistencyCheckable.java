@@ -24,5 +24,8 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public interface ConsistencyCheckable
 {
+    /**
+     * @return {@code true} if consistent, otherwise {@code false} and one or more issues reported to {@code reporterFactory}.
+     */
     boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer );
 }
