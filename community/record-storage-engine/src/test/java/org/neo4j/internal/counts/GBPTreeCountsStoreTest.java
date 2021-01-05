@@ -42,9 +42,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.counts.CountsKey.nodeKey;
-import static org.neo4j.internal.counts.CountsKey.relationshipKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
+import static org.neo4j.internal.counts.GBPTreeCountsStore.keyToString;
+import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
+import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -181,9 +182,9 @@ class GBPTreeCountsStoreTest
 
         // then
         String dump = out.toString();
-        assertThat( dump ).contains( nodeKey( LABEL_ID_1 ) + " = 10" );
-        assertThat( dump ).contains( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2 ) + " = 3" );
-        assertThat( dump ).contains( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2 ) + " = 7" );
+        assertThat( dump ).contains( keyToString( nodeKey( LABEL_ID_1 ) ) + " = 10" );
+        assertThat( dump ).contains( keyToString( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2 ) ) + " = 3" );
+        assertThat( dump ).contains( keyToString( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2 ) ) + " = 7" );
         assertThat( dump ).contains( "Highest gap-free txId: " + txId );
     }
 

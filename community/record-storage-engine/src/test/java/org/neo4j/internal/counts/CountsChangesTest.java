@@ -40,8 +40,8 @@ import org.neo4j.test.rule.RandomRule;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.internal.counts.CountsChanges.ABSENT;
-import static org.neo4j.internal.counts.CountsKey.nodeKey;
-import static org.neo4j.internal.counts.CountsKey.relationshipKey;
+import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
+import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
 
 @ExtendWith( RandomExtension.class )
 class CountsChangesTest

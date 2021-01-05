@@ -33,6 +33,8 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
+import static java.lang.String.format;
+
 /**
  * {@link RelationshipGroupDegreesStore} backed by the {@link GBPTree}.
  * @see GBPTreeGenericCountsStore
@@ -83,12 +85,21 @@ class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsStore imp
 
     static CountsKey degreeKey( long groupId, RelationshipDirection direction )
     {
-        return new CountsKey( TYPE_DEGREE, groupId << 2 | direction.ordinal(), 0 );
+        return new CountsKey( TYPE_DEGREE, groupId << 2 | direction.id(), 0 );
+    }
+
+    static String keyToString( CountsKey key )
+    {
+        if ( key.type == TYPE_DEGREE )
+        {
+            return format( "Degree[groupId:%d, direction:%s]", key.first >> 2, RelationshipDirection.ofId( (int) (key.first & 0x3) ) );
+        }
+        throw new IllegalArgumentException( "Unknown type " + key.type );
     }
 
     public static void dump( PageCache pageCache, Path file, PrintStream out, PageCursorTracer cursorTracer ) throws IOException
     {
-        GBPTreeGenericCountsStore.dump( pageCache, file, out, NAME, cursorTracer );
+        GBPTreeGenericCountsStore.dump( pageCache, file, out, NAME, cursorTracer, GBPTreeRelationshipGroupDegreesStore::keyToString );
     }
 
     private static final Updater NO_OP_UPDATER = new Updater()

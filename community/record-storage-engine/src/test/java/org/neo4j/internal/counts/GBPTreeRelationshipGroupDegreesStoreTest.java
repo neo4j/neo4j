@@ -47,6 +47,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.EMPTY_REBUILD;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.degreeKey;
+import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.keyToString;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -186,9 +187,9 @@ class GBPTreeRelationshipGroupDegreesStoreTest
 
         // then
         String dump = out.toString();
-        assertThat( dump ).contains( degreeKey( GROUP_ID_1, OUTGOING ) + " = 10" );
-        assertThat( dump ).contains( degreeKey( GROUP_ID_1, INCOMING ) + " = 3" );
-        assertThat( dump ).contains( degreeKey( GROUP_ID_2, LOOP ) + " = 7" );
+        assertThat( dump ).contains( keyToString( degreeKey( GROUP_ID_1, OUTGOING ) ) + " = 10" );
+        assertThat( dump ).contains( keyToString( degreeKey( GROUP_ID_1, INCOMING ) ) + " = 3" );
+        assertThat( dump ).contains( keyToString( degreeKey( GROUP_ID_2, LOOP ) ) + " = 7" );
         assertThat( dump ).contains( "Highest gap-free txId: " + txId );
     }
 

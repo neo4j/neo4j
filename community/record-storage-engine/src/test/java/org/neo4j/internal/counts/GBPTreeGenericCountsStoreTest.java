@@ -24,9 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -75,9 +73,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.counts.CountsKey.nodeKey;
-import static org.neo4j.internal.counts.CountsKey.relationshipKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
+import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
+import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
 import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.EMPTY_REBUILD;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -514,32 +512,6 @@ class GBPTreeGenericCountsStoreTest
 
         // then it's fine to call checkpoint, because no changes can actually be made on a read-only counts store anyway
         countsStore.checkpoint( UNLIMITED, NULL );
-    }
-
-    @Test
-    void shouldDumpCountsStore() throws IOException
-    {
-        // given
-        long txId = BASE_TX_ID + 1;
-        try ( CountUpdater updater = countsStore.updater( txId, NULL ) )
-        {
-            updater.increment( nodeKey( LABEL_ID_1 ), 10 );
-            updater.increment( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2 ), 3 );
-            updater.increment( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2 ), 7 );
-        }
-        countsStore.checkpoint( UNLIMITED, NULL );
-        closeCountsStore();
-
-        // when
-        ByteArrayOutputStream out = new ByteArrayOutputStream( 1024 );
-        GBPTreeCountsStore.dump( pageCache, countsStoreFile(), new PrintStream( out ), NULL );
-
-        // then
-        String dump = out.toString();
-        assertThat( dump ).contains( nodeKey( LABEL_ID_1 ) + " = 10" );
-        assertThat( dump ).contains( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2 ) + " = 3" );
-        assertThat( dump ).contains( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2 ) + " = 7" );
-        assertThat( dump ).contains( "Highest gap-free txId: " + txId );
     }
 
     @Test

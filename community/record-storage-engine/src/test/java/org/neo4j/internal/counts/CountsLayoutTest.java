@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.counts.CountsKey.relationshipKey;
+import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
 
 class CountsLayoutTest
 {

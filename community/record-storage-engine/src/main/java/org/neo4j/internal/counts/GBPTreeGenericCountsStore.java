@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Function;
 import java.util.function.LongConsumer;
 
 import org.neo4j.annotations.documented.ReporterFactory;
@@ -409,9 +410,12 @@ public class GBPTreeGenericCountsStore implements CountsStorage
      * @param file {@link Path} pointing out the counts store.
      * @param out to print to.
      * @param name of the {@link GBPTree}.
+     * @param cursorTracer tracer for page cache access.
+     * @param keyToString function for generating proper descriptions of the keys.
      * @throws IOException on missing file or I/O error.
      */
-    protected static void dump( PageCache pageCache, Path file, PrintStream out, String name, PageCursorTracer cursorTracer ) throws IOException
+    protected static void dump( PageCache pageCache, Path file, PrintStream out, String name, PageCursorTracer cursorTracer,
+            Function<CountsKey,String> keyToString ) throws IOException
     {
         // First check if it even exists as we don't really want to create it as part of dumping it. readHeader will throw if not found
         CountsHeader header = new CountsHeader( BASE_TX_ID );
@@ -435,7 +439,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
                 @Override
                 public void value( CountsValue value )
                 {
-                    out.printf( "%s = %d%n", key, value.count );
+                    out.printf( "%s = %d%n", keyToString.apply( key ), value.count );
                 }
             }, cursorTracer );
         }

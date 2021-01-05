@@ -20,8 +20,8 @@
 package org.neo4j.internal.counts;
 
 import java.util.Objects;
+import java.util.function.Function;
 
-import org.neo4j.counts.CountsVisitor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 
 import static java.lang.String.format;
@@ -43,24 +43,6 @@ public class CountsKey
      * </pre>
      */
     private static final byte TYPE_STRAY_TX_ID = 0;
-
-    /**
-     * Key data layout for this type:
-     * <pre>
-     * first:  4B (lsb) labelId
-     * second: 0
-     * </pre>
-     */
-    private static final byte TYPE_NODE = 1;
-
-    /**
-     * Key data layout for this type:
-     * <pre>
-     * first:  4B (msb) startLabelId, 4B (lsb) relationshipTypeId
-     * second: 4B endLabelId
-     * </pre>
-     */
-    private static final byte TYPE_RELATIONSHIP = 2;
 
     // Commonly used keys
     static final CountsKey MIN_COUNT = new CountsKey( (byte) (TYPE_STRAY_TX_ID + 1), Long.MIN_VALUE, Integer.MIN_VALUE );
@@ -100,31 +82,19 @@ public class CountsKey
         this.second = keySecond;
     }
 
-    /**
-     * Public utility method for instantiating a {@link CountsKey} for a node label id.
-     * @param labelId id of the label.
-     * @return a {@link CountsKey for the node label id. The returned key can be put into {@link Map maps} and similar.
-     */
-    public static CountsKey nodeKey( long labelId )
-    {
-        return new CountsKey( TYPE_NODE, labelId, 0 );
-    }
-
-    /**
-     * Public utility method for instantiating a {@link CountsKey} for a node start/end label and relationship type id.
-     * @param startLabelId id of the label of start node.
-     * @param typeId id of the relationship type.
-     * @param endLabelId id of the label of end node.
-     * @return a {@link CountsKey for the node start/end label and relationship type id. The returned key can be put into {@link Map maps} and similar.
-     */
-    public static CountsKey relationshipKey( long startLabelId, long typeId, long endLabelId )
-    {
-        return new CountsKey( TYPE_RELATIONSHIP, (startLabelId << Integer.SIZE) | (typeId & 0xFFFFFFFFL), (int) endLabelId );
-    }
-
     static CountsKey strayTxId( long txId )
     {
         return new CountsKey( TYPE_STRAY_TX_ID, txId, 0 );
+    }
+
+    int extractHighFirstInt()
+    {
+        return (int) (first >>> Integer.SIZE);
+    }
+
+    int extractLowFirstInt()
+    {
+        return (int) first;
     }
 
     // Implements hashCode/equals so that these instances can be keys in a map
@@ -145,39 +115,18 @@ public class CountsKey
         return type == other.type && first == other.first && second == other.second;
     }
 
-    void accept( CountsVisitor visitor, long count )
-    {
-        switch ( type )
-        {
-        case TYPE_NODE:
-            visitor.visitNodeCount( (int) first, count );
-            break;
-        case TYPE_RELATIONSHIP:
-            visitor.visitRelationshipCount( extractStartLabelId(), (int) first, second, count );
-            break;
-        default:
-            throw new IllegalArgumentException( "Unknown key type " + type );
-        }
-    }
-
-    private int extractStartLabelId()
-    {
-        return (int) (first >>> Integer.SIZE);
-    }
-
     @Override
     public String toString()
     {
-        switch ( type )
+        return toString( key -> format( "CountsKey[type:%d, first:%d, second:%d]", key.type, key.first, key.second ) );
+    }
+
+    String toString( Function<CountsKey,String> customTypeToString )
+    {
+        if ( type == TYPE_STRAY_TX_ID )
         {
-        case TYPE_NODE:
-            return format( "Node[label:%d]", first );
-        case TYPE_RELATIONSHIP:
-            return format( "Relationship[startLabel:%d, type:%d, endLabel:%d]", extractStartLabelId(), (int) first, second );
-        case TYPE_STRAY_TX_ID:
             return format( "Stray tx id:%d", first );
-        default:
-            return format( "Unknown key type:%d, first:%d, second:%d", type, first, second );
         }
+        return customTypeToString.apply( this );
     }
 }

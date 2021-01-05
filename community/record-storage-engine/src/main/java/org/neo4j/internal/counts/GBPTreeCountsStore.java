@@ -22,6 +22,7 @@ package org.neo4j.internal.counts;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.Map;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStore;
@@ -35,8 +36,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.neo4j.internal.counts.CountsKey.nodeKey;
-import static org.neo4j.internal.counts.CountsKey.relationshipKey;
+import static java.lang.String.format;
 
 /**
  * Counts store build on top of the {@link GBPTree}.
@@ -48,6 +48,45 @@ import static org.neo4j.internal.counts.CountsKey.relationshipKey;
 public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements CountsStore
 {
     private static final String NAME = "Counts store";
+
+    static final byte TYPE_NODE = 1;
+    static final byte TYPE_RELATIONSHIP = 2;
+
+    /**
+     * Public utility method for instantiating a {@link CountsKey} for a node label id.
+     *
+     * Key data layout for this type:
+     * <pre>
+     * first:  4B (lsb) labelId
+     * second: 0
+     * </pre>
+     *
+     * @param labelId id of the label.
+     * @return a {@link CountsKey for the node label id. The returned key can be put into {@link Map maps} and similar.
+     */
+    public static CountsKey nodeKey( long labelId )
+    {
+        return new CountsKey( TYPE_NODE, labelId, 0 );
+    }
+
+    /**
+     * Public utility method for instantiating a {@link CountsKey} for a node start/end label and relationship type id.
+     *
+     * Key data layout for this type:
+     * <pre>
+     * first:  4B (msb) startLabelId, 4B (lsb) relationshipTypeId
+     * second: 4B endLabelId
+     * </pre>
+     *
+     * @param startLabelId id of the label of start node.
+     * @param typeId id of the relationship type.
+     * @param endLabelId id of the label of end node.
+     * @return a {@link CountsKey for the node start/end label and relationship type id. The returned key can be put into {@link Map maps} and similar.
+     */
+    public static CountsKey relationshipKey( long startLabelId, long typeId, long endLabelId )
+    {
+        return new CountsKey( TYPE_RELATIONSHIP, (startLabelId << Integer.SIZE) | (typeId & 0xFFFFFFFFL), (int) endLabelId );
+    }
 
     public GBPTreeCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
             CountsBuilder initialCountsBuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor ) throws IOException
@@ -77,12 +116,39 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
     @Override
     public void accept( CountsVisitor visitor, PageCursorTracer cursorTracer )
     {
-        visitAllCounts( ( key, count ) -> key.accept( visitor, count ), cursorTracer );
+        visitAllCounts( ( key, count ) ->
+        {
+            if ( key.type == TYPE_NODE )
+            {
+                visitor.visitNodeCount( (int) key.first, count );
+            }
+            else if ( key.type == TYPE_RELATIONSHIP )
+            {
+                visitor.visitRelationshipCount( key.extractHighFirstInt(), key.extractLowFirstInt(), key.second, count );
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Unknown key type " + key.type );
+            }
+        }, cursorTracer );
+    }
+
+    public static String keyToString( CountsKey key )
+    {
+        if ( key.type == TYPE_NODE )
+        {
+            return format( "Node[label:%d]", key.first );
+        }
+        else if ( key.type == TYPE_RELATIONSHIP )
+        {
+            return format( "Relationship[startLabel:%d, type:%d, endLabel:%d]", key.extractHighFirstInt(), key.extractLowFirstInt(), key.second );
+        }
+        throw new IllegalArgumentException( "Unknown type " + key.type );
     }
 
     public static void dump( PageCache pageCache, Path file, PrintStream out, PageCursorTracer cursorTracer ) throws IOException
     {
-        GBPTreeGenericCountsStore.dump( pageCache, file, out, NAME, cursorTracer );
+        GBPTreeGenericCountsStore.dump( pageCache, file, out, NAME, cursorTracer, GBPTreeCountsStore::keyToString );
     }
 
     private static class Incrementer implements CountsAccessor.Updater
