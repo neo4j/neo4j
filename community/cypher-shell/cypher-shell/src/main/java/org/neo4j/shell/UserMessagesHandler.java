@@ -24,6 +24,8 @@ import javax.annotation.Nonnull;
 import org.neo4j.shell.commands.Exit;
 import org.neo4j.shell.commands.Help;
 import org.neo4j.shell.log.AnsiFormattedText;
+import org.neo4j.shell.util.Version;
+import org.neo4j.shell.util.Versions;
 
 public class UserMessagesHandler
 {
@@ -42,7 +44,8 @@ public class UserMessagesHandler
         String neo4j = "Neo4j";
         if ( !serverVersion.isEmpty() )
         {
-            neo4j += " " + serverVersion;
+            Version version = Versions.version( serverVersion );
+            neo4j += " using Bolt protocol version " + version.major() + "." + version.minor();
         }
         AnsiFormattedText welcomeMessage = AnsiFormattedText.from( "Connected to " )
                                                             .append( neo4j )
