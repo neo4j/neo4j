@@ -19,48 +19,35 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.StringUtils;
-
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
-import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.TextValue;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class LayoutTestUtil
+public class IndexEntryTestUtil
 {
-    public static String generateStringResultingInSizeForIndexProvider( int size, GraphDatabaseSettings.SchemaIndex schemaIndex )
+    public static <KEY extends NativeIndexKey<KEY>> String generateStringResultingInIndexEntrySize( int size )
     {
-        if ( schemaIndex == GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 )
-        {
-            IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-            return generateStringResultingInSize( new GenericLayout( 1, spatialSettings ), size );
-        }
-        throw new UnsupportedOperationException( "SchemaIndex " + schemaIndex + " is not supported." );
+        GenericLayout layout = new GenericLayout( 1, IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() ) );
+        return generateStringValueResultingInIndexEntrySize( layout, size ).stringValue();
     }
 
-    static <KEY extends NativeIndexKey<KEY>> Value generateStringValueResultingInSize( Layout<KEY,?> layout, int size )
+    public static <KEY extends NativeIndexKey<KEY>> TextValue generateStringValueResultingInIndexEntrySize( Layout<KEY,?> layout, int size )
     {
-        return stringValue( generateStringResultingInSize( layout, size ) );
-    }
-
-    static <KEY extends NativeIndexKey<KEY>> String generateStringResultingInSize( Layout<KEY,?> layout, int size )
-    {
-        String string;
+        TextValue value;
         KEY key = layout.newKey();
         key.initialize( 0 );
         int stringLength = size;
         do
         {
-            string = StringUtils.repeat( 'A', stringLength-- );
-            Value value = stringValue( string );
+            value = stringValue( "A".repeat( stringLength-- ) );
             key.initFromValue( 0, value, NativeIndexKey.Inclusion.NEUTRAL );
         }
         while ( layout.keySize( key ) > size );
         assertEquals( size, layout.keySize( key ) );
-        return string;
+        return value;
     }
 }

@@ -89,6 +89,7 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByPr
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
+import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringValueResultingInIndexEntrySize;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.values.storable.Values.intValue;
@@ -509,7 +510,7 @@ class BlockBasedIndexPopulatorTest
         {
             int size = populator.tree.keyValueSizeCap();
             GenericLayout layout = layout();
-            Value value = generateStringResultingInSize( layout, size );
+            Value value = generateStringValueResultingInIndexEntrySize( layout, size );
             Collection<? extends IndexEntryUpdate<?>> data = singletonList( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, value ) );
             populator.add( data, NULL );
             populator.scanCompleted( nullInstance, populationWorkScheduler, NULL );
@@ -539,7 +540,7 @@ class BlockBasedIndexPopulatorTest
         {
             int size = populator.tree.keyValueSizeCap() + 1;
             assertThrows( IllegalArgumentException.class, () -> populator.add( singletonList( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR,
-                    generateStringResultingInSize( layout(), size ) ) ), NULL ) );
+                    generateStringValueResultingInIndexEntrySize( layout(), size ) ) ), NULL ) );
         }
         finally
         {
@@ -558,7 +559,7 @@ class BlockBasedIndexPopulatorTest
         {
             int size = populator.tree.keyValueSizeCap();
             GenericLayout layout = layout();
-            Value value = generateStringResultingInSize( layout, size );
+            Value value = generateStringValueResultingInIndexEntrySize( layout, size );
             IndexEntryUpdate<IndexDescriptor> update = IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, value );
             Race.ThrowingRunnable updateAction = () ->
             {
@@ -611,7 +612,7 @@ class BlockBasedIndexPopulatorTest
             {
                 try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL ) )
                 {
-                    updater.process( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, generateStringResultingInSize( layout(), size ) ) );
+                    updater.process( IndexEntryUpdate.add( 0, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize( layout(), size ) ) );
                 }
             } );
         }
@@ -693,22 +694,6 @@ class BlockBasedIndexPopulatorTest
     private static IndexEntryUpdate<IndexDescriptor> add( int i )
     {
         return IndexEntryUpdate.add( i, INDEX_DESCRIPTOR, stringValue( "Value" + i ) );
-    }
-
-    static <KEY extends NativeIndexKey<KEY>> Value generateStringResultingInSize( Layout<KEY,?> layout, int size )
-    {
-        Value value;
-        KEY key = layout.newKey();
-        key.initialize( 0 );
-        int stringLength = size;
-        do
-        {
-            value = stringValue( "A".repeat( stringLength-- ) );
-            key.initFromValue( 0, value, NativeIndexKey.Inclusion.NEUTRAL );
-        }
-        while ( layout.keySize( key ) > size );
-        assertEquals( size, layout.keySize( key ) );
-        return value;
     }
 
     private static class TrappingMonitor extends BlockStorage.Monitor.Adapter

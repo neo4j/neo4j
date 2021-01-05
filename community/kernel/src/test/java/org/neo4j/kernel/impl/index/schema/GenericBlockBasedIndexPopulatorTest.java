@@ -73,6 +73,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
+import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringValueResultingInIndexEntrySize;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -264,7 +265,7 @@ class GenericBlockBasedIndexPopulatorTest
         {
             int maxKeyValueSize = populator.tree.keyValueSizeCap();
             ValueIndexEntryUpdate<IndexDescriptor> update =
-                    add( 1, INDEX_DESCRIPTOR, LayoutTestUtil.generateStringValueResultingInSize( populator.layout, maxKeyValueSize ) );
+                    add( 1, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize( populator.layout, maxKeyValueSize ) );
 
             // when
             Collection<ValueIndexEntryUpdate<?>> updates = singleton( update );
@@ -289,7 +290,7 @@ class GenericBlockBasedIndexPopulatorTest
         {
             int maxKeyValueSize = populator.tree.keyValueSizeCap();
             ValueIndexEntryUpdate<IndexDescriptor> update =
-                    add( 1, INDEX_DESCRIPTOR, BlockBasedIndexPopulatorTest.generateStringResultingInSize( populator.layout, maxKeyValueSize + 1 ) );
+                    add( 1, INDEX_DESCRIPTOR, generateStringValueResultingInIndexEntrySize( populator.layout, maxKeyValueSize + 1 ) );
             IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () ->
             {
                 Collection<ValueIndexEntryUpdate<?>> updates = singleton( update );

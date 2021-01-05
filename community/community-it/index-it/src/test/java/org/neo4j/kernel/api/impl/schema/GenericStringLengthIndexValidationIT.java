@@ -22,11 +22,11 @@ package org.neo4j.kernel.api.impl.schema;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.index.schema.LayoutTestUtil;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
+import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringResultingInIndexEntrySize;
 
 public class GenericStringLengthIndexValidationIT extends StringLengthIndexValidationIT
 {
@@ -39,7 +39,7 @@ public class GenericStringLengthIndexValidationIT extends StringLengthIndexValid
     @Override
     protected String getString( RandomRule random, int keySize )
     {
-        return LayoutTestUtil.generateStringResultingInSizeForIndexProvider( keySize, NATIVE_BTREE10 );
+        return generateStringResultingInIndexEntrySize( keySize );
     }
 
     @Override
