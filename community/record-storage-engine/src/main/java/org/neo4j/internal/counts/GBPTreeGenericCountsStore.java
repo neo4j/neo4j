@@ -456,4 +456,18 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
     {
         void visit( CountsKey key, long count );
     }
+
+    public static final Rebuilder EMPTY_REBUILD = new Rebuilder()
+    {
+        @Override
+        public long lastCommittedTxId()
+        {
+            return BASE_TX_ID;
+        }
+
+        @Override
+        public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+        {
+        }
+    };
 }

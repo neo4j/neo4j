@@ -27,6 +27,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings.FeatureState;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -53,7 +54,7 @@ public final class RelationshipGroupDegreesStoreFactory
         if ( featureEnabled( config, layout, fileSystem ) )
         {
             boolean readOnly = config.get( GraphDatabaseSettings.read_only );
-            return new RelationshipGroupDegreesStoreImpl( pageCache, file, fileSystem, recoveryCollector, noRebuilder( lastCommitedTxSupplier ),
+            return new GBPTreeRelationshipGroupDegreesStore( pageCache, file, fileSystem, recoveryCollector, noRebuilder( lastCommitedTxSupplier ),
                     readOnly, pageCacheTracer, monitor );
         }
         if ( fileSystem.fileExists( file ) )
@@ -70,9 +71,9 @@ public final class RelationshipGroupDegreesStoreFactory
         return FeatureState.ENABLED.equals( state ) || FeatureState.AUTO.equals( state ) && fileSystem.fileExists( layout.relationshipGroupDegreesStore() );
     }
 
-    private static GBPTreeGenericCountsStore.Rebuilder noRebuilder( LongSupplier lastCommitedTxSupplier )
+    private static DegreesRebuilder noRebuilder( LongSupplier lastCommitedTxSupplier )
     {
-        return new GBPTreeGenericCountsStore.Rebuilder()
+        return new DegreesRebuilder()
         {
             @Override
             public long lastCommittedTxId()
@@ -81,8 +82,8 @@ public final class RelationshipGroupDegreesStoreFactory
             }
 
             @Override
-            public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
-            { //We dont support rebuilding this store
+            public void rebuild( RelationshipGroupDegreesStore.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            {   // TODO We don't support rebuilding this store
             }
         };
     }

@@ -41,8 +41,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.counts.CountsAccessor;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
+import org.neo4j.internal.counts.GBPTreeGenericCountsStore.Rebuilder;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -78,6 +78,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.counts.CountsKey.nodeKey;
 import static org.neo4j.internal.counts.CountsKey.relationshipKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
+import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.EMPTY_REBUILD;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -114,7 +115,7 @@ class GBPTreeGenericCountsStoreTest
     @BeforeEach
     void openCountsStore() throws Exception
     {
-        openCountsStore( CountsBuilder.EMPTY );
+        openCountsStore( EMPTY_REBUILD );
     }
 
     @AfterEach
@@ -352,16 +353,16 @@ class GBPTreeGenericCountsStoreTest
         TestableCountsBuilder builder = new TestableCountsBuilder( rebuiltAtTransactionId )
         {
             @Override
-            public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
             {
-                super.initialize( updater, cursorTracer, memoryTracker );
-                updater.incrementNodeCount( labelId, 10 );
-                updater.incrementRelationshipCount( labelId, relationshipTypeId, labelId2, 14 );
+                super.rebuild( updater, cursorTracer, memoryTracker );
+                updater.increment( nodeKey( labelId ), 10 );
+                updater.increment( relationshipKey( labelId, relationshipTypeId, labelId2 ), 14 );
             }
         };
         openCountsStore( builder );
         assertTrue( builder.lastCommittedTxIdCalled );
-        assertTrue( builder.initializeCalled );
+        assertTrue( builder.rebuildCalled );
         assertEquals( 10, countsStore.read( nodeKey( labelId ), NULL ) );
         assertEquals( 0, countsStore.read( nodeKey( labelId2 ), NULL ) );
         assertEquals( 14, countsStore.read( relationshipKey( labelId, relationshipTypeId, labelId2 ), NULL ) );
@@ -391,12 +392,12 @@ class GBPTreeGenericCountsStoreTest
         deleteCountsStore();
         GBPTreeCountsStore.Monitor monitor = mock( GBPTreeCountsStore.Monitor.class );
         // instantiate, but don't start
-        instantiateCountsStore( new CountsBuilder()
+        instantiateCountsStore( new Rebuilder()
         {
             @Override
-            public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
             {
-                updater.incrementNodeCount( labelId, 2 );
+                updater.increment( nodeKey( labelId ), 2 );
             }
 
             @Override
@@ -495,7 +496,7 @@ class GBPTreeGenericCountsStoreTest
         // given
         countsStore.checkpoint( UNLIMITED, NULL );
         closeCountsStore();
-        instantiateCountsStore( CountsBuilder.EMPTY, true, NO_MONITOR );
+        instantiateCountsStore( EMPTY_REBUILD, true, NO_MONITOR );
         countsStore.start( NULL, INSTANCE );
 
         // then
@@ -508,7 +509,7 @@ class GBPTreeGenericCountsStoreTest
         // given
         countsStore.checkpoint( UNLIMITED, NULL );
         closeCountsStore();
-        instantiateCountsStore( CountsBuilder.EMPTY, true, NO_MONITOR );
+        instantiateCountsStore( EMPTY_REBUILD, true, NO_MONITOR );
         countsStore.start( NULL, INSTANCE );
 
         // then it's fine to call checkpoint, because no changes can actually be made on a read-only counts store anyway
@@ -600,18 +601,18 @@ class GBPTreeGenericCountsStoreTest
         }
 
         // when
-        CountsBuilder countsBuilder = mock( CountsBuilder.class );
+        Rebuilder countsBuilder = mock( Rebuilder.class );
         when( countsBuilder.lastCommittedTxId() ).thenReturn( BASE_TX_ID );
         doAnswer( invocationOnMock ->
         {
-            CountsAccessor.Updater updater = invocationOnMock.getArgument( 0, CountsAccessor.Updater.class );
-            updater.incrementNodeCount( LABEL_ID_1, 3 );
+            CountUpdater updater = invocationOnMock.getArgument( 0, CountUpdater.class );
+            updater.increment( nodeKey( LABEL_ID_1 ), 3 );
             return null;
-        } ).when( countsBuilder ).initialize( any(), any(), any() );
+        } ).when( countsBuilder ).rebuild( any(), any(), any() );
         openCountsStore( countsBuilder );
 
         // then rebuild store instead of throwing exception
-        verify( countsBuilder ).initialize( any(), any(), any() );
+        verify( countsBuilder ).rebuild( any(), any(), any() );
         assertEquals( 3, countsStore.read( nodeKey( LABEL_ID_1 ), NULL ) );
     }
 
@@ -619,7 +620,10 @@ class GBPTreeGenericCountsStoreTest
     {
         try ( CountUpdater updater = countsStore.updater( txId, NULL ) )
         {
-            updater.increment( nodeKey( labelId ), delta );
+            if ( updater != null )
+            {
+                updater.increment( nodeKey( labelId ), delta );
+            }
         }
     }
 
@@ -629,20 +633,16 @@ class GBPTreeGenericCountsStoreTest
         source.entrySet().stream()
                 .filter( entry -> entry.getValue().get() != 0 )                        // counts store won't have entries w/ 0 count
                 .forEach( entry -> expected.put( entry.getKey(), entry.getValue() ) ); // copy them over to the one we're going to verify
-        countsStore.visitAllCounts( new GBPTreeGenericCountsStore.CountVisitor()
+        countsStore.visitAllCounts( ( key, count ) ->
         {
-            @Override
-            public void visit( CountsKey key, long count )
+            AtomicLong expectedCount = expected.remove( key );
+            if ( expectedCount == null )
             {
-                AtomicLong expectedCount = expected.remove( key );
-                if ( expectedCount == null )
-                {
-                    assertEquals( baseCount, count, () -> format( "Counts store has wrong count for (absent) %s", key ) );
-                }
-                else
-                {
-                    assertEquals( baseCount + expectedCount.get(), count, () -> format( "Counts store has wrong count for %s", key ) );
-                }
+                assertEquals( baseCount, count, () -> format( "Counts store has wrong count for (absent) %s", key ) );
+            }
+            else
+            {
+                assertEquals( baseCount + expectedCount.get(), count, () -> format( "Counts store has wrong count for %s", key ) );
             }
         }, NULL );
         assertTrue( expected.isEmpty(), expected::toString );
@@ -669,26 +669,29 @@ class GBPTreeGenericCountsStoreTest
         Random rng = new Random( random.seed() + txId );
         try ( CountUpdater updater = countsStore.updater( txId, NULL ) )
         {
-            int numberOfKeys = rng.nextInt( 10 );
-            for ( int j = 0; j < numberOfKeys; j++ )
+            if ( updater != null )
             {
-                long delta = rng.nextInt( 11 ) - 1; // chance to get -1
-                CountsKey expectedKey;
-                if ( rng.nextBoolean() )
-                {   // Node
-                    int labelId = randomTokenId( rng );
-                    updater.increment( nodeKey( labelId ), delta );
-                    expectedKey = nodeKey( labelId );
+                int numberOfKeys = rng.nextInt( 10 );
+                for ( int j = 0; j < numberOfKeys; j++ )
+                {
+                    long delta = rng.nextInt( 11 ) - 1; // chance to get -1
+                    CountsKey expectedKey;
+                    if ( rng.nextBoolean() )
+                    {   // Node
+                        int labelId = randomTokenId( rng );
+                        updater.increment( nodeKey( labelId ), delta );
+                        expectedKey = nodeKey( labelId );
+                    }
+                    else
+                    {   // Relationship
+                        int startLabelId = randomTokenId( rng );
+                        int type = randomTokenId( rng );
+                        int endLabelId = randomTokenId( rng );
+                        updater.increment( relationshipKey( startLabelId, type, endLabelId ), delta );
+                        expectedKey = relationshipKey( startLabelId, type, endLabelId );
+                    }
+                    expected.computeIfAbsent( expectedKey, k -> new AtomicLong() ).addAndGet( delta );
                 }
-                else
-                {   // Relationship
-                    int startLabelId = randomTokenId( rng );
-                    int type = randomTokenId( rng );
-                    int endLabelId = randomTokenId( rng );
-                    updater.increment( relationshipKey( startLabelId, type, endLabelId ), delta );
-                    expectedKey = relationshipKey( startLabelId, type, endLabelId );
-                }
-                expected.computeIfAbsent( expectedKey, k -> new AtomicLong() ).addAndGet( delta );
             }
         }
     }
@@ -722,15 +725,15 @@ class GBPTreeGenericCountsStoreTest
         return directory.file( "counts.db" );
     }
 
-    private void openCountsStore( CountsBuilder builder ) throws IOException
+    private void openCountsStore( Rebuilder builder ) throws IOException
     {
         instantiateCountsStore( builder, false, NO_MONITOR );
         countsStore.start( NULL, INSTANCE );
     }
 
-    private void instantiateCountsStore( CountsBuilder builder, boolean readOnly, GBPTreeCountsStore.Monitor monitor ) throws IOException
+    private void instantiateCountsStore( Rebuilder builder, boolean readOnly, GBPTreeGenericCountsStore.Monitor monitor ) throws IOException
     {
-        countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnly, PageCacheTracer.NULL, monitor );
+        countsStore = new GBPTreeGenericCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnly, "test", PageCacheTracer.NULL, monitor );
     }
 
     private void assertZeroGlobalTracer( PageCacheTracer pageCacheTracer )
@@ -749,11 +752,11 @@ class GBPTreeGenericCountsStoreTest
         assertThat( pageCacheTracer.hits() ).isZero();
     }
 
-    private static class TestableCountsBuilder implements CountsBuilder
+    private static class TestableCountsBuilder implements Rebuilder
     {
         private final long rebuiltAtTransactionId;
         boolean lastCommittedTxIdCalled;
-        boolean initializeCalled;
+        boolean rebuildCalled;
 
         TestableCountsBuilder( long rebuiltAtTransactionId )
         {
@@ -761,9 +764,9 @@ class GBPTreeGenericCountsStoreTest
         }
 
         @Override
-        public void initialize( CountsAccessor.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+        public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
         {
-            initializeCalled = true;
+            rebuildCalled = true;
         }
 
         @Override

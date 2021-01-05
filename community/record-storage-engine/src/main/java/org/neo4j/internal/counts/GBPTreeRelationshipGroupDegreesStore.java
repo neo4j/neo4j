@@ -23,22 +23,29 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 
+import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.TransactionIdStore;
 
-class RelationshipGroupDegreesStoreImpl extends GBPTreeGenericCountsStore implements RelationshipGroupDegreesStore
+/**
+ * {@link RelationshipGroupDegreesStore} backed by the {@link GBPTree}.
+ * @see GBPTreeGenericCountsStore
+ */
+class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsStore implements RelationshipGroupDegreesStore
 {
     private static final String NAME = "Relationship group degrees store";
     static final byte TYPE_DEGREE = (byte) 3;
 
-    RelationshipGroupDegreesStoreImpl( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-            Rebuilder rebuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor ) throws IOException
+    GBPTreeRelationshipGroupDegreesStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
+            DegreesRebuilder rebuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor ) throws IOException
     {
-        super( pageCache, file, fileSystem, recoveryCollector, rebuilder, readOnly, NAME, pageCacheTracer, monitor );
+        super( pageCache, file, fileSystem, recoveryCollector, new RebuilderWrapper( rebuilder ), readOnly, NAME, pageCacheTracer, monitor );
     }
 
     public Updater apply( long txId, PageCursorTracer cursorTracer )
@@ -74,7 +81,7 @@ class RelationshipGroupDegreesStoreImpl extends GBPTreeGenericCountsStore implem
         }
     }
 
-    private static CountsKey degreeKey( long groupId, RelationshipDirection direction )
+    static CountsKey degreeKey( long groupId, RelationshipDirection direction )
     {
         return new CountsKey( TYPE_DEGREE, groupId << 2 | direction.ordinal(), 0 );
     }
@@ -96,4 +103,47 @@ class RelationshipGroupDegreesStoreImpl extends GBPTreeGenericCountsStore implem
         {
         }
     };
+
+    public interface DegreesRebuilder
+    {
+        void rebuild( Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+
+        long lastCommittedTxId();
+    }
+
+    public static final DegreesRebuilder EMPTY_REBUILD = new DegreesRebuilder()
+    {
+        @Override
+        public void rebuild( Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+        {
+        }
+
+        @Override
+        public long lastCommittedTxId()
+        {
+            return TransactionIdStore.BASE_TX_ID;
+        }
+    };
+
+    private static class RebuilderWrapper implements Rebuilder
+    {
+        private final DegreesRebuilder rebuilder;
+
+        RebuilderWrapper( DegreesRebuilder rebuilder )
+        {
+            this.rebuilder = rebuilder;
+        }
+
+        @Override
+        public void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+        {
+            rebuilder.rebuild( new DegreeUpdater( updater ), cursorTracer, memoryTracker );
+        }
+
+        @Override
+        public long lastCommittedTxId()
+        {
+            return rebuilder.lastCommittedTxId();
+        }
+    }
 }
