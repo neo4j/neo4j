@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -109,7 +110,8 @@ class RecordNodeCursorTest
             return null;
         } ).when( relationshipStore ).getRecordByCursor( eq( relationshipId ), any(), any(), any() );
         RelationshipGroupStore groupStore = mock( RelationshipGroupStore.class );
-        RecordNodeCursor nodeCursor = new RecordNodeCursor( nodeStore, relationshipStore, groupStore, NULL );
+        RelationshipGroupDegreesStore groupDegreesStore = mock( RelationshipGroupDegreesStore.class );
+        RecordNodeCursor nodeCursor = new RecordNodeCursor( nodeStore, relationshipStore, groupStore, groupDegreesStore, NULL );
 
         // when
         nodeCursor.single( nodeId );
