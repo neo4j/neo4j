@@ -75,7 +75,19 @@ final class RelationshipLockHelper
         }
     }
 
-    static RecordAccess.RecordProxy<RelationshipRecord,Void> findAndLockEntrypoint( long firstInChain, long nodeId,
+    /**
+     * Traverses a relationship chain and tries to exclusively lock two consecutive relationships, and if successful that location
+     * can be used as an insertion point for new relationships.
+     *
+     * @param firstInChain first relationship to start traversing from.
+     * @param nodeId node id, i.e. which side of the relationship to follow when traversing.
+     * @param relRecords for coordinate changes in.
+     * @param locks used to try and lock the relationships.
+     * @param lockTracer to go with the locks.
+     * @param cursorTracer for tracing page cache access.
+     * @return the insertion point, if found. Otherwise {@code null}.
+     */
+    static RecordAccess.RecordProxy<RelationshipRecord,Void> findAndLockInsertionPoint( long firstInChain, long nodeId,
             RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks, LockTracer lockTracer, PageCursorTracer cursorTracer )
     {
         long nextRel = firstInChain;

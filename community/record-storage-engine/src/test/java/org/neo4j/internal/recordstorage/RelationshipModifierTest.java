@@ -171,6 +171,7 @@ class RelationshipModifierTest
         locks.assertNoLock( NODE, EXCLUSIVE, node1 );
         locks.assertNoLock( RELATIONSHIP_GROUP, EXCLUSIVE, node1 );
         locks.assertHasLock( NODE, EXCLUSIVE, node2 );
+        assertThat( store.loadNode( node1 ).isDense() ).isTrue();
     }
 
     @Test
@@ -198,6 +199,7 @@ class RelationshipModifierTest
         // given
         long node = createEmptyNode();
         createRelationships( generateRelationshipData( DENSE_THRESHOLD, node, type( 1 ), this::createEmptyNode, OUT ) );
+        assertThat( store.loadNode( node ).isDense() ).isTrue();
 
         // when
         modify( singleCreate( relationship( nextRelationshipId(), 2, node, createEmptyNode() ) ) );
@@ -230,7 +232,7 @@ class RelationshipModifierTest
     {
         // given
         long node = createEmptyNode();
-        createRelationships( generateRelationshipData( DENSE_THRESHOLD * 3, node, alternatingTypes( 3 ), this::createEmptyNode, OUT ) );
+        createRelationships( generateRelationshipData( DENSE_THRESHOLD * 3, node, alternatingTypes( 0, 1, 2 ), this::createEmptyNode, OUT ) );
 
         // when
         modify( creations(
@@ -355,11 +357,6 @@ class RelationshipModifierTest
         monitors.addMonitorListener( new ResourceTypeLockOrderVerifier() );
         // on read
         monitors.addMonitorListener( new ChangeWorldOnReadMonitor( node, typeStrategy, otherNodeStrategy, directionStrategy, expectedRelationships ) );
-        // on marked as forChanging
-        monitors.addMonitorListener( (RecordAccess.LoadMonitor) before ->
-        {
-            // TODO register what gets changes and let that be a template for what we assert on after the modifications have been done
-        } );
 
         // when
         RelationshipModifications modifications = modifications( relationshipsToCreate.toArray( RelationshipData[]::new ), relationshipsToDelete );
@@ -368,7 +365,6 @@ class RelationshipModifierTest
 
         // then
         assertThat( readRelationshipsFromStore( node, store ) ).isEqualTo( asSet( expectedRelationships ) );
-        // TODO assert locking
     }
 
     private Set<RelationshipData> readRelationshipsFromStore( long node, MapRecordStore store )
@@ -483,21 +479,6 @@ class RelationshipModifierTest
     private IntSupplier randomTypes( int numTypes )
     {
         return () -> random.nextInt( numTypes );
-    }
-
-    private IntSupplier alternatingTypes( int numTypes )
-    {
-        return new IntSupplier()
-        {
-            private int count;
-
-            @Override
-            public int getAsInt()
-            {
-                int c = count++;
-                return c % numTypes;
-            }
-        };
     }
 
     private IntSupplier alternatingTypes( int... types )

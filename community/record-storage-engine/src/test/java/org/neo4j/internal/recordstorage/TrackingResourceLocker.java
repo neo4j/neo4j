@@ -44,6 +44,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.LockType.SHARED;
 
+/**
+ * {@link ResourceLocker} that keeps track of acquired locks so that they can be verified later after test.
+ * It can also be configured with a chance of getting a lock in {@link #tryExclusiveLock(ResourceType, long)}, this to mimic
+ * some sort of concurrency without actually having multiple threads.
+ */
 class TrackingResourceLocker implements ResourceLocker
 {
     private final Set<ResourceType> strictAssertions = new HashSet<>();
@@ -55,11 +60,12 @@ class TrackingResourceLocker implements ResourceLocker
 
     TrackingResourceLocker( RandomRule random, LockAcquisitionMonitor lockAcquisitionMonitor )
     {
-        this( random, lockAcquisitionMonitor, random.nextInt( 1, 8 ) );  // i.e. 10%-90% chance
+        this( random, lockAcquisitionMonitor, random.nextInt( 10, 90 )/*%*/ );
     }
 
     TrackingResourceLocker( RandomRule random, LockAcquisitionMonitor lockAcquisitionMonitor, int chanceOfGettingTrylockInPercent  )
     {
+        assert chanceOfGettingTrylockInPercent >= 0 && chanceOfGettingTrylockInPercent <= 100 : chanceOfGettingTrylockInPercent;
         this.random = random;
         this.lockAcquisitionMonitor = lockAcquisitionMonitor;
         this.changeOfGettingTryLock = chanceOfGettingTrylockInPercent;

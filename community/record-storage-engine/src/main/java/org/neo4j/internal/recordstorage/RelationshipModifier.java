@@ -42,7 +42,7 @@ import static org.neo4j.internal.recordstorage.RelationshipCreator.NodeDataLooku
 import static org.neo4j.internal.recordstorage.RelationshipCreator.NodeDataLookup.DIR_LOOP;
 import static org.neo4j.internal.recordstorage.RelationshipCreator.NodeDataLookup.DIR_OUT;
 import static org.neo4j.internal.recordstorage.RelationshipCreator.relCount;
-import static org.neo4j.internal.recordstorage.RelationshipLockHelper.findAndLockEntrypoint;
+import static org.neo4j.internal.recordstorage.RelationshipLockHelper.findAndLockInsertionPoint;
 import static org.neo4j.internal.recordstorage.RelationshipLockHelper.lockRelationshipsInOrder;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.Record.isNull;
@@ -135,14 +135,7 @@ public class RelationshipModifier
                 {
                     byNode.forEachCreationSplit( byType ->
                     {
-                        RelationshipGroupGetter.RelationshipGroupPosition groupPosition = relGroupGetter.getRelationshipGroup( nodeContext.groupStartingPrevId,
-                                nodeContext.groupStartingId, byType.type(), recordChanges.getRelGroupRecords(), group ->
-                                {
-                                    if ( group.getType() != byType.type() )
-                                    {
-                                        nodeContext.checkEmptyGroup( group );
-                                    }
-                                } );
+                        RelationshipGroupGetter.RelationshipGroupPosition groupPosition = findRelationshipGroup( recordChanges, nodeContext, byType );
                         nodeContext.setCurrentGroup( groupPosition.group() != null ? groupPosition.group() : groupPosition.closestPrevious() );
                         RecordProxy<RelationshipGroupRecord,Integer> groupProxy = groupPosition.group();
                         if ( groupProxy == null )
@@ -257,6 +250,23 @@ public class RelationshipModifier
         } );
     }
 
+    /**
+     * Traverses a relationship group chain and while doing that it will notice empty groups and mark that in the context.
+     * This information can later be used to attempt to delete empty groups at a place where they will be locked.
+     */
+    private RelationshipGroupGetter.RelationshipGroupPosition findRelationshipGroup( RecordAccessSet recordChanges, NodeContext nodeContext,
+            RelationshipModifications.NodeRelationshipTypeIds byType )
+    {
+        return relGroupGetter.getRelationshipGroup( nodeContext.groupStartingPrevId(), nodeContext.groupStartingId(), byType.type(),
+                recordChanges.getRelGroupRecords(), group ->
+                {
+                    if ( group.getType() != byType.type() )
+                    {
+                        nodeContext.checkEmptyGroup( group );
+                    }
+                } );
+    }
+
     private void acquireRelationshipLocksAndSomeOthers( RelationshipModifications modifications, RecordAccessSet recordChanges, ResourceLocker locks,
             LockTracer lockTracer, MutableLongObjectMap<NodeContext> contexts )
     {
@@ -295,16 +305,16 @@ public class RelationshipModifier
                         NodeContext.DenseContext context = nodeContext.denseContext( byType.type() );
                         RelationshipGroupRecord group =
                                 context.getOrLoadGroup( relGroupGetter, node, byType.type(), recordChanges.getRelGroupRecords(), cursorTracer );
-                        long outFirstInChainForDegrees = !group.hasExternalDegreesOut() ? group.getFirstOut() : NULL_REFERENCE.longValue();
-                        long inFirstInChainForDegrees = !group.hasExternalDegreesIn() ? group.getFirstIn() : NULL_REFERENCE.longValue();
-                        long loopFirstInChainForDegrees = !group.hasExternalDegreesLoop() ? group.getFirstLoop() : NULL_REFERENCE.longValue();
+                        long outFirstInChainForDegrees = group.hasExternalDegreesOut() ? NULL_REFERENCE.longValue() : group.getFirstOut();
+                        long inFirstInChainForDegrees = group.hasExternalDegreesIn() ? NULL_REFERENCE.longValue() : group.getFirstIn();
+                        long loopFirstInChainForDegrees = group.hasExternalDegreesLoop() ? NULL_REFERENCE.longValue() : group.getFirstLoop();
                         lockRelationshipsInOrder( byType.out(), outFirstInChainForDegrees, relRecords, locks, cursorTracer, memoryTracker );
                         lockRelationshipsInOrder( byType.in(), inFirstInChainForDegrees, relRecords, locks, cursorTracer, memoryTracker );
                         lockRelationshipsInOrder( byType.loop(), loopFirstInChainForDegrees, relRecords, locks, cursorTracer, memoryTracker );
 
-                        context.setEntryPoint( DIR_OUT, entrypointFromDeletion( byType.out(), relRecords ) );
-                        context.setEntryPoint( DIR_IN, entrypointFromDeletion( byType.in(), relRecords ) );
-                        context.setEntryPoint( DIR_LOOP, entrypointFromDeletion( byType.loop(), relRecords ) );
+                        context.setInsertionPoint( DIR_OUT, insertionPointFromDeletion( byType.out(), relRecords ) );
+                        context.setInsertionPoint( DIR_IN, insertionPointFromDeletion( byType.in(), relRecords ) );
+                        context.setInsertionPoint( DIR_LOOP, insertionPointFromDeletion( byType.loop(), relRecords ) );
                     } );
                 }
 
@@ -315,13 +325,13 @@ public class RelationshipModifier
                         NodeContext.DenseContext context = nodeContext.denseContext( byType.type() );
                         RelationshipGroupRecord group =
                                 context.getOrLoadGroup( relGroupGetter, node, byType.type(), recordChanges.getRelGroupRecords(), cursorTracer );
-                        context.setEntryPoint( DIR_OUT, findAndLockEntrypointForDense(
-                                byType.out(), context.entryPoint( DIR_OUT ), relRecords, locks, lockTracer, group, DirectionWrapper.OUTGOING, nodeId ) );
-                        context.setEntryPoint( DIR_IN, findAndLockEntrypointForDense(
-                                byType.in(), context.entryPoint( DIR_IN ), relRecords, locks, lockTracer, group, DirectionWrapper.INCOMING, nodeId ) );
-                        context.setEntryPoint( DIR_LOOP, findAndLockEntrypointForDense(
-                                byType.loop(), context.entryPoint( DIR_LOOP ), relRecords, locks, lockTracer, group, DirectionWrapper.LOOP, nodeId ) );
-                        context.markEntryPointsAsChanged();
+                        context.setInsertionPoint( DIR_OUT, findAndLockInsertionPointForDense(
+                                byType.out(), context.insertionPoint( DIR_OUT ), relRecords, locks, lockTracer, group, DirectionWrapper.OUTGOING, nodeId ) );
+                        context.setInsertionPoint( DIR_IN, findAndLockInsertionPointForDense(
+                                byType.in(), context.insertionPoint( DIR_IN ), relRecords, locks, lockTracer, group, DirectionWrapper.INCOMING, nodeId ) );
+                        context.setInsertionPoint( DIR_LOOP, findAndLockInsertionPointForDense(
+                                byType.loop(), context.insertionPoint( DIR_LOOP ), relRecords, locks, lockTracer, group, DirectionWrapper.LOOP, nodeId ) );
+                        context.markInsertionPointsAsChanged();
                     } );
                 }
 
@@ -370,20 +380,20 @@ public class RelationshipModifier
         return false;
     }
 
-    private RecordProxy<RelationshipRecord,Void> entrypointFromDeletion( RelationshipBatch deletions, RecordAccess<RelationshipRecord,Void> relRecords )
+    private RecordProxy<RelationshipRecord,Void> insertionPointFromDeletion( RelationshipBatch deletions, RecordAccess<RelationshipRecord,Void> relRecords )
     {
         return deletions.isEmpty() ? null : relRecords.getOrLoad( deletions.first(), null, ALWAYS, cursorTracer );
     }
 
-    private RecordProxy<RelationshipRecord,Void> findAndLockEntrypointForDense( RelationshipBatch creations,
-            RecordProxy<RelationshipRecord,Void> potentialEntrypointFromDeletion, RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks,
+    private RecordProxy<RelationshipRecord,Void> findAndLockInsertionPointForDense( RelationshipBatch creations,
+            RecordProxy<RelationshipRecord,Void> potentialInsertionPointFromDeletion, RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks,
             LockTracer lockTracer, RelationshipGroupRecord group, DirectionWrapper direction, long nodeId )
     {
         if ( !creations.isEmpty() )
         {
-            if ( potentialEntrypointFromDeletion != null )
+            if ( potentialInsertionPointFromDeletion != null )
             {
-                return potentialEntrypointFromDeletion;
+                return potentialInsertionPointFromDeletion;
             }
             // If we get here then there are no deletions on this chain and we have the RELATIONSHIP_GROUP SHARED Lock
             long firstInChain = direction.getNextRel( group );
@@ -393,7 +403,7 @@ public class RelationshipModifier
                 {
                     locks.acquireExclusive( lockTracer, RELATIONSHIP, firstInChain );
                 }
-                return findAndLockEntrypoint( firstInChain, nodeId, relRecords, locks, lockTracer, cursorTracer );
+                return findAndLockInsertionPoint( firstInChain, nodeId, relRecords, locks, lockTracer, cursorTracer );
             }
         }
         return null;

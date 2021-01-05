@@ -51,6 +51,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
+import static java.lang.Integer.min;
 import static org.neo4j.internal.recordstorage.TrackingResourceLocker.LockAcquisitionMonitor.NO_MONITOR;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.Record.isNull;
@@ -67,10 +68,11 @@ class RelationshipLockHelperTest
     void shouldKeepListSorted()
     {
         MutableLongList shuffle = LongLists.mutable.empty();
-        SortedLockList sortedListIterator = new SortedLockList( 0 );
-        for ( int i = 0; i < 1000; i++ )
+        int numIds = 1000;
+        SortedLockList sortedListIterator = new SortedLockList( random.nextInt( numIds ) );
+        for ( int i = 0; i < numIds; i++ )
         {
-            int value = random.nextInt( 1000 );
+            int value = random.nextInt( numIds );
             sortedListIterator.add( value );
             shuffle.add( value );
             assertThat( sortedListIterator.underlyingList().toArray() ).isSorted();
@@ -105,7 +107,7 @@ class RelationshipLockHelperTest
             long toAdd = random.nextInt( maxValue );
             sortedListIterator.add( toAdd );
 
-            assertThat( value ).isEqualTo( value );
+            assertThat( value ).isEqualTo( sortedListIterator.currentHighestLockedId() );
 
             if ( shuffle.notEmpty() )
             {
@@ -114,7 +116,7 @@ class RelationshipLockHelperTest
                 {
                     sortedListIterator.remove( toRemove );
                 }
-                assertThat( value ).isEqualTo( value );
+                assertThat( value ).isEqualTo( sortedListIterator.currentHighestLockedId() );
             }
 
             if ( random.nextInt( 10 ) == 0 )
@@ -158,6 +160,7 @@ class RelationshipLockHelperTest
             assertThat( sortedListIterator.prevUnique() ).isTrue();
             assertThat( sortedListIterator.currentHighestLockedId() ).isEqualTo( unique );
         } );
+        assertThat( sortedListIterator.prevUnique() ).isFalse();
     }
 
     @ParameterizedTest
@@ -203,7 +206,7 @@ class RelationshipLockHelperTest
         MutableLongObjectMap<RecordAccess.RecordProxy<RelationshipRecord,Void>> proxies = LongObjectMaps.mutable.empty();
         chain.forEach( record ->
         {
-            RecordAccess.RecordProxy proxy = Mockito.mock( RecordAccess.RecordProxy.class );
+            RecordAccess.RecordProxy<RelationshipRecord,Void> proxy = Mockito.mock( RecordAccess.RecordProxy.class );
             Mockito.when( proxy.getKey() ).thenAnswer( invocation -> record.getId() );
             Mockito.when( proxy.forReadingLinkage() ).thenAnswer( invocation -> record );
             Mockito.when( proxy.forReadingData() ).thenAnswer( invocation -> record );
@@ -215,11 +218,11 @@ class RelationshipLockHelperTest
                 .thenAnswer( invocation -> proxies.get( invocation.getArgument( 0 ) ) );
 
         double chanceOfGettingLock = Math.sqrt( 0.8 / ((double) chainLength * 0.5) );
-        TrackingResourceLocker locks = new TrackingResourceLocker( random, NO_MONITOR, (int) (chanceOfGettingLock * 100.0) );
+        TrackingResourceLocker locks = new TrackingResourceLocker( random, NO_MONITOR, min( 95, (int) (chanceOfGettingLock * 100.0) ) );
 
         //When
         RecordAccess.RecordProxy<RelationshipRecord,Void> entrypoint =
-                RelationshipLockHelper.findAndLockEntrypoint( chain.get( 0 ).getId(), nodeId, relRecords, locks, LockTracer.NONE, PageCursorTracer.NULL );
+                RelationshipLockHelper.findAndLockInsertionPoint( chain.get( 0 ).getId(), nodeId, relRecords, locks, LockTracer.NONE, PageCursorTracer.NULL );
 
         //Then
         long[] actualLocks = locks.getExclusiveLocks( ResourceTypes.RELATIONSHIP ).toArray();
@@ -265,6 +268,9 @@ class RelationshipLockHelperTest
         return chain;
     }
 
+    /**
+     * {@link RelationshipRecord} with convenience methods for simulating it being "concurrently" changed in between reads.
+     */
     private class VolatileRelationshipRecord extends RelationshipRecord
     {
         private final MutableLongBag usedIds;
@@ -304,16 +310,16 @@ class RelationshipLockHelperTest
             return this;
         }
 
-        private void changeId( Consumer<Long> consumer, Supplier<Long> supplier )
+        private void changeId( Consumer<Long> fieldSetter, Supplier<Long> fieldGetter )
         {
-            long oldId = supplier.get();
+            long oldId = fieldGetter.get();
             usedIds.remove( oldId );
             long newId = randId( init );
             if ( newId != NULL_REFERENCE.longValue() )
             {
                 usedIds.add( newId );
             }
-            consumer.accept( newId );
+            fieldSetter.accept( newId );
         }
 
         private boolean test()

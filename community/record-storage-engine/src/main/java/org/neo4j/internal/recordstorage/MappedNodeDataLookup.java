@@ -49,7 +49,7 @@ class MappedNodeDataLookup implements RelationshipCreator.NodeDataLookup
     }
 
     @Override
-    public RecordProxy<RelationshipRecord,Void> entryPoint( long nodeId, int type, int dir )
+    public RecordProxy<RelationshipRecord,Void> insertionPoint( long nodeId, int type, int dir )
     {
         NodeContext byNode = contexts.get( nodeId );
         if ( byNode != null )
@@ -57,7 +57,7 @@ class MappedNodeDataLookup implements RelationshipCreator.NodeDataLookup
             NodeContext.DenseContext context = byNode.denseContextIfExists( type );
             if ( context != null )
             {
-                return context.entryPoint( dir );
+                return context.insertionPoint( dir );
             }
         }
         return null;

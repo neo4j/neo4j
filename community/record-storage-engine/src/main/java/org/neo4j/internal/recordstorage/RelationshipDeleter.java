@@ -62,7 +62,10 @@ class RelationshipDeleter
      * Deletes relationships found in {@code ids}.
      *
      * @param deletions The ids of all relationships to delete in this transaction.
-     * @param nodeDataLookup
+     * @param recordChanges {@link RecordAccessSet} to coordinate and keep changes to records.
+     * @param groupDegreesUpdater for recording updates to degrees for the degrees store.
+     * @param nodeDataLookup additional lookup for groups.
+     * @param locks {@link ResourceLocker} for optimistic locking for deleting groups.
      */
     void relationshipDelete( RelationshipBatch deletions, RecordAccessSet recordChanges, RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
             MappedNodeDataLookup nodeDataLookup, ResourceLocker locks )

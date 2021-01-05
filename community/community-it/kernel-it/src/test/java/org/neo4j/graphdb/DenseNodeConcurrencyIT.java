@@ -27,7 +27,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.platform.commons.util.ExceptionUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -64,8 +63,8 @@ import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -112,7 +111,7 @@ class DenseNodeConcurrencyIT
     private static final int NUM_DENSE_NODES_IN_MULTI_SETUP = 10;
     private static final int NUM_TASKS = 1_000;
     private static final RelationshipType INITIAL_DENSE_NODE_TYPE = TEST2;
-    private final Label INITIAL_LABEL = Label.label( "INITIAL" );
+    private static final Label INITIAL_LABEL = Label.label( "INITIAL" );
 
     @Inject
     DatabaseManagementService dbms;
@@ -274,7 +273,7 @@ class DenseNodeConcurrencyIT
     @MethodSource( "permutations" )
     @ParameterizedTest( name = "multipleDenseNodes:{0}, startAsDense:{1}, multipleOpsPerTx:{2}, multipleTypes:{3}, opWeights:{4}" )
     void shouldCreateAndDeleteRelationshipsConcurrently( boolean multipleDenseNodes, boolean startAsDense, boolean multipleOperationsInOneTx,
-            boolean multipleTypes, int[] operationWeights )
+            boolean multipleTypes, Map<WorkType,Integer> operationWeights )
     {
         // given
         Map<Long,Set<Relationship>> relationships = new ConcurrentHashMap<>();
@@ -367,18 +366,6 @@ class DenseNodeConcurrencyIT
         assertThat( numDeadlocks.get() ).isLessThan( NUM_TASKS / 10 );
     }
 
-    private static class TxNodeChanges
-    {
-        final long id;
-        Set<Relationship> relationships = new HashSet<>();
-        boolean node;
-
-        private TxNodeChanges( long id )
-        {
-            this.id = id;
-        }
-    }
-
     private void assertDeletedNodes( Set<Long> deletedInitialNodes )
     {
         try ( Transaction tx = database.beginTx() )
@@ -409,25 +396,49 @@ class DenseNodeConcurrencyIT
                 {
                     for ( boolean multipleTypes : new boolean[]{true, false} )
                     {
+                        // For each of the permutations above add different types of scenarios below which exercises different types of contention and locking
+
                         // Only create
-                        permutations.add( arguments( multipleDenseNodes, startAsDense, multipleOpsPerTx, multipleTypes, new int[]{1} ) );
+                        permutations.add( arguments( multipleDenseNodes, startAsDense, multipleOpsPerTx, multipleTypes, operationWeights(
+                                WorkType.CREATE, 1 ) ) );
                         if ( startAsDense )
                         {
                             // Only delete
-                            permutations.add( arguments( multipleDenseNodes, startAsDense, multipleOpsPerTx, multipleTypes, new int[]{0, 1} ) );
+                            permutations.add( arguments( multipleDenseNodes, startAsDense, multipleOpsPerTx, multipleTypes, operationWeights(
+                                    WorkType.DELETE, 1 ) ) );
                             // Create and delete, mostly deletes
-                            permutations.add( arguments( multipleDenseNodes, startAsDense, multipleOpsPerTx, multipleTypes, new int[]{3, 4} ) );
+                            permutations.add( arguments( multipleDenseNodes, startAsDense, multipleOpsPerTx, multipleTypes, operationWeights(
+                                    WorkType.CREATE, 3,
+                                    WorkType.DELETE, 4 ) ) );
                         }
                         // Create and delete, mostly creates
-                        permutations.add( arguments( multipleDenseNodes, startAsDense, multipleOpsPerTx, multipleTypes, new int[]{3, 1} ) );
+                        permutations.add( arguments( multipleDenseNodes, startAsDense, multipleOpsPerTx, multipleTypes, operationWeights(
+                                WorkType.CREATE, 3,
+                                WorkType.DELETE, 1 ) ) );
                         // Create, delete, delete all
-                        permutations.add( arguments( multipleDenseNodes, startAsDense, multipleOpsPerTx, multipleTypes, new int[]{10, 6, 2, 1, 1} ) );
-                        permutations.add( arguments( multipleDenseNodes, startAsDense, multipleOpsPerTx, multipleTypes, new int[]{40, 20, 8, 6, 4, 1} ) );
+                        permutations.add( arguments( multipleDenseNodes, startAsDense, multipleOpsPerTx, multipleTypes, operationWeights(
+                                WorkType.CREATE, 10,
+                                WorkType.DELETE, 6,
+                                WorkType.DELETE_ALL_TYPE_DIRECTION, 2,
+                                WorkType.DELETE_ALL_TYPE, 1,
+                                WorkType.DELETE_ALL, 1 ) ) );
+                        permutations.add( arguments( multipleDenseNodes, startAsDense, multipleOpsPerTx, multipleTypes, operationWeights(
+                                WorkType.CREATE, 40,
+                                WorkType.DELETE, 20,
+                                WorkType.DELETE_ALL_TYPE_DIRECTION, 8,
+                                WorkType.DELETE_ALL_TYPE, 6,
+                                WorkType.DELETE_ALL, 4,
+                                WorkType.CHANGE_OTHER_NODE_DATA, 1 ) ) );
                     }
                 }
             }
         }
         return permutations.stream();
+    }
+
+    private static Map<WorkType,Integer> operationWeights( Object... weights )
+    {
+        return MapUtil.genericMap( weights );
     }
 
     private void assertRelationshipsAndDegrees( long denseNodeId, Set<Relationship> relationships )
@@ -446,7 +457,7 @@ class DenseNodeConcurrencyIT
                             var shouldContain = diff( relationships, currentRelationships );
                             var shouldNotContain = diff( currentRelationships, relationships );
                             return (shouldContain.isEmpty() ? "" : " Should contain: " + shouldContain) +
-                                    (!shouldContain.isEmpty() && !shouldNotContain.isEmpty() ? "\n" : "") +
+                                    (!shouldContain.isEmpty() && !shouldNotContain.isEmpty() ? System.lineSeparator() : "") +
                                     (shouldNotContain.isEmpty() ? "" : " Should not contain: " + shouldNotContain);
                         }
                     } )
@@ -470,250 +481,15 @@ class DenseNodeConcurrencyIT
         return s;
     }
 
-    private interface WorkTask
+    private Collection<WorkTask> createWork( Map<WorkType,Integer> weights )
     {
-        void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
-                Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted );
-    }
-
-    enum WorkType implements WorkTask
-    {
-        CREATE
-        {
-            @Override
-            public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
-                    Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
-            {
-                Node from;
-                Node to;
-                switch ( random.nextInt( 6 ) )
-                {
-                case 0:
-                case 1:
-                case 2:
-                    from = randomDenseNode( tx, denseNodeIds, random );
-                    to = denseNodeIds.size() > 1 && random.nextBoolean() ? randomDenseNode( tx, denseNodeIds, random ) : tx.createNode();
-                    break;
-                case 3:
-                case 4:
-                    from = denseNodeIds.size() > 1 && random.nextBoolean() ? randomDenseNode( tx, denseNodeIds, random ) : tx.createNode();
-                    to = randomDenseNode( tx, denseNodeIds, random );
-                    break;
-                case 5:
-                default:
-                    from = randomDenseNode( tx, denseNodeIds, random );
-                    to = from;
-                    break;
-                }
-
-                int numRelationships = random.nextInt( 3 ) + 1;
-                for ( int i = 0; i < numRelationships; i++ )
-                {
-                    Relationship relationship = from.createRelationshipTo( to, type );
-                    trackTxRelationship( relationship, txCreated, txDeleted, denseNodeIds, true );
-                }
-            }
-        },
-        DELETE
-        {
-            @Override
-            public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
-                    Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
-            {
-                Node onNode = randomDenseNode( tx, denseNodeIds, random );
-                List<Relationship> rels = StreamSupport.stream( onNode.getRelationships( type ).spliterator(), false ).collect( Collectors.toList() );
-                int batch = random.nextInt( 3 ) + 1;
-                for ( int i = 0; i < batch; i++ )
-                {
-                    Relationship rel = rels.isEmpty() ? null : rels.get( random.nextInt( rels.size() ) );
-                    if ( rel != null && allRelationships.remove( rel ) )
-                    {
-                        rels.remove( rel );
-                        safeDeleteRelationship( rel, txCreated, txDeleted, denseNodeIds );
-                    }
-                }
-            }
-        },
-        DELETE_ALL_TYPE_DIRECTION
-        {
-            @Override
-            public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
-                    Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
-            {
-                Node onNode = randomDenseNode( tx, denseNodeIds, random );
-                Iterable<Relationship> relationships = onNode.getRelationships( Direction.values()[random.nextInt( Direction.values().length )], type );
-                deleteRelationships( allRelationships, txCreated, txDeleted, relationships, denseNodeIds );
-            }
-        },
-        DELETE_ALL_TYPE
-        {
-            @Override
-            public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
-                    Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
-            {
-                Node onNode = randomDenseNode( tx, denseNodeIds, random );
-                deleteRelationships( allRelationships, txCreated, txDeleted, onNode.getRelationships( type ), denseNodeIds );
-            }
-        },
-        DELETE_ALL
-        {
-            @Override
-            public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
-                    Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
-            {
-                Node onNode = randomDenseNode( tx, denseNodeIds, random );
-                deleteRelationships( allRelationships, txCreated, txDeleted, onNode.getRelationships(), denseNodeIds );
-            }
-        },
-        CHANGE_OTHER_NODE_DATA
-        {
-            @Override
-            public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
-                    Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
-            {
-                Node onNode = randomDenseNode( tx, denseNodeIds, random );
-                switch ( random.nextInt( 4 ) )
-                {
-                case 0:
-                    onNode.setProperty( "KEY_" + random.nextInt( 3 ), random.nextInt() );
-                    break;
-                case 1:
-                    onNode.removeProperty( "KEY_" + random.nextInt( 3 ) );
-                    break;
-                case 2:
-                    onNode.addLabel( Label.label( "LABEL_" + random.nextInt( 3 ) ) );
-                    break;
-                default:
-                    onNode.removeLabel( Label.label( "LABEL_" + random.nextInt( 3 ) ) );
-                    break;
-                }
-            }
-        },
-        DETACH_DELETE
-        {
-            @Override
-            public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
-                    Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
-            {
-                //This work task is currently unused (detach delete is tested in another test) due
-                // to the problem of keeping track of the actually deleted relationships in order to create correct assertions as the end of the test.
-                try
-                {
-                    long id;
-                    do
-                    {
-                        if ( denseNodeIds.size() <= 3 )
-                        {
-                            return;
-                        }
-                        id = randomAmong( denseNodeIds, random );
-                    }
-                    while ( id == Record.NULL_REFERENCE.longValue() || !denseNodeIds.remove( id ) );
-                    txDeleted.computeIfAbsent( id, TxNodeChanges::new ).node = true;
-
-                    InternalTransaction internalTx = (InternalTransaction) tx;
-                    internalTx.kernelTransaction().dataWrite().nodeDetachDelete( id );
-
-                    Set<Long> denseNodesInclId = new HashSet<>( denseNodeIds );
-                    denseNodesInclId.add( id );
-                    long finalId = id;
-                    allRelationships.removeIf( relationship -> {
-                        boolean toDelete = relationship.getStartNodeId() == finalId || relationship.getEndNodeId() == finalId;
-                        if ( toDelete )
-                        {
-                            trackTxRelationship( relationship, txCreated, txDeleted, denseNodesInclId, false );
-                        }
-                        return toDelete;
-                    } );
-                }
-                catch ( KernelException e )
-                {
-                    ExceptionUtils.throwAsUncheckedException( e );
-                }
-            }
-        };
-
-        private static Node randomDenseNode( Transaction tx, Set<Long> denseNodeIds, RandomRule random )
-        {
-            long id = randomAmong( denseNodeIds, random );
-            assertThat( isNull( id ) ).isFalse();
-            return tx.getNodeById( id );
-        }
-
-        private static long randomAmong( Set<Long> ids, RandomRule randomRule )
-        {
-            long value = Record.NULL_REFERENCE.longValue();
-            do
-            {
-                Object[] array = ids.toArray();
-                if ( array.length >= 1 )
-                {
-                    value = (long) randomRule.among( array );
-                }
-            }
-            while ( !ids.contains( value ) && !ids.isEmpty() );
-            return ids.isEmpty() ? Record.NULL_REFERENCE.longValue() : value;
-        }
-
-        private static void safeDeleteRelationship( Relationship relationship, Map<Long,TxNodeChanges> txCreated,
-                Map<Long,TxNodeChanges> txDeleted, Set<Long> denseNodeIds )
-        {
-            try
-            {
-                trackTxRelationship( relationship, txCreated, txDeleted, denseNodeIds, false );
-                relationship.delete();
-            }
-            catch ( NotFoundException e )
-            {
-                //this is not yet fully understood, but is caught and rethrown as transient to cause retry of this transaction
-                throw new TransientTransactionFailureException( Status.Database.Unknown, "Relationship vanished in front of us, hmm" );
-            }
-        }
-
-        private static void trackTxRelationship( Relationship relationship, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted,
-                Set<Long> denseNodeIds, boolean create )
-        {
-            var map1 = create ? txCreated : txDeleted;
-            var map2 = create ? txDeleted : txCreated;
-            if ( denseNodeIds.contains( relationship.getStartNodeId() ) )
-            {
-                map1.computeIfAbsent( relationship.getStartNodeId(), TxNodeChanges::new ).relationships.add( relationship );
-                map2.computeIfAbsent( relationship.getStartNodeId(), TxNodeChanges::new ).relationships.remove( relationship );
-            }
-            if ( denseNodeIds.contains( relationship.getEndNodeId() ) )
-            {
-                map1.computeIfAbsent( relationship.getEndNodeId(), TxNodeChanges::new ).relationships.add( relationship );
-                map2.computeIfAbsent( relationship.getEndNodeId(), TxNodeChanges::new ).relationships.remove( relationship );
-            }
-        }
-
-        private static void deleteRelationships( Set<Relationship> allRelationships, Map<Long,TxNodeChanges> txCreated,
-                Map<Long,TxNodeChanges> txDeleted, Iterable<Relationship> relationships, Set<Long> denseNodeIds )
-        {
-            List<Relationship> readRelationships = StreamSupport.stream( relationships.spliterator(), false ).collect( Collectors.toList() );
-            readRelationships.stream().filter( allRelationships::remove ).forEach(
-                    relationship -> safeDeleteRelationship( relationship, txCreated, txDeleted, denseNodeIds ) );
-        }
-    }
-
-    private Collection<WorkTask> createWork( int... weights )
-    {
-        if ( weights.length < WorkType.values().length )
-        {
-            // Just fill the rest with zeros
-            weights = Arrays.copyOf( weights, WorkType.values().length );
-        }
-
-        ArrayList<WorkTask> weightedWork = new ArrayList<>();
-        for ( WorkType work : WorkType.values() )
-        {
-            weightedWork.addAll( Collections.nCopies( weights[work.ordinal()], work ) );
-        }
+        List<WorkTask> weightedWork = new ArrayList<>();
+        weights.forEach( ( workType, weight ) -> weightedWork.addAll( Collections.nCopies( weight, workType ) ) );
 
         List<WorkTask> work = new ArrayList<>();
         for ( int i = 0; i < NUM_TASKS; i++ )
         {
-            work.add( weightedWork.get( random.nextInt( weightedWork.size() ) ) );
+            work.add( random.among( weightedWork ) );
         }
         return work;
     }
@@ -961,6 +737,201 @@ class DenseNodeConcurrencyIT
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
+        }
+    }
+
+    private static class TxNodeChanges
+    {
+        final long id;
+        Set<Relationship> relationships = new HashSet<>();
+        boolean node;
+
+        private TxNodeChanges( long id )
+        {
+            this.id = id;
+        }
+    }
+
+    private interface WorkTask
+    {
+        void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
+                Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted );
+    }
+
+    enum WorkType implements WorkTask
+    {
+        CREATE
+                {
+                    @Override
+                    public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
+                            Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
+                    {
+                        Node from;
+                        Node to;
+                        switch ( random.nextInt( 6 ) )
+                        {
+                        case 0:
+                        case 1:
+                        case 2:
+                            from = randomDenseNode( tx, denseNodeIds, random );
+                            to = denseNodeIds.size() > 1 && random.nextBoolean() ? randomDenseNode( tx, denseNodeIds, random ) : tx.createNode();
+                            break;
+                        case 3:
+                        case 4:
+                            from = denseNodeIds.size() > 1 && random.nextBoolean() ? randomDenseNode( tx, denseNodeIds, random ) : tx.createNode();
+                            to = randomDenseNode( tx, denseNodeIds, random );
+                            break;
+                        case 5:
+                        default:
+                            from = randomDenseNode( tx, denseNodeIds, random );
+                            to = from;
+                            break;
+                        }
+
+                        int numRelationships = random.nextInt( 3 ) + 1;
+                        for ( int i = 0; i < numRelationships; i++ )
+                        {
+                            Relationship relationship = from.createRelationshipTo( to, type );
+                            trackTxRelationship( relationship, txCreated, txDeleted, denseNodeIds, true );
+                        }
+                    }
+                },
+        DELETE
+                {
+                    @Override
+                    public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
+                            Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
+                    {
+                        Node onNode = randomDenseNode( tx, denseNodeIds, random );
+                        List<Relationship> rels = Iterables.asList( onNode.getRelationships( type ) );
+                        int batch = random.nextInt( 3 ) + 1;
+                        for ( int i = 0; i < batch; i++ )
+                        {
+                            Relationship rel = rels.isEmpty() ? null : rels.get( random.nextInt( rels.size() ) );
+                            if ( rel != null && allRelationships.remove( rel ) )
+                            {
+                                rels.remove( rel );
+                                safeDeleteRelationship( rel, txCreated, txDeleted, denseNodeIds );
+                            }
+                        }
+                    }
+                },
+        DELETE_ALL_TYPE_DIRECTION
+                {
+                    @Override
+                    public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
+                            Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
+                    {
+                        Node onNode = randomDenseNode( tx, denseNodeIds, random );
+                        Iterable<Relationship> relationships = onNode.getRelationships( random.among( Direction.values() ), type );
+                        deleteRelationships( allRelationships, txCreated, txDeleted, relationships, denseNodeIds );
+                    }
+                },
+        DELETE_ALL_TYPE
+                {
+                    @Override
+                    public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
+                            Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
+                    {
+                        Node onNode = randomDenseNode( tx, denseNodeIds, random );
+                        deleteRelationships( allRelationships, txCreated, txDeleted, onNode.getRelationships( type ), denseNodeIds );
+                    }
+                },
+        DELETE_ALL
+                {
+                    @Override
+                    public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
+                            Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
+                    {
+                        Node onNode = randomDenseNode( tx, denseNodeIds, random );
+                        deleteRelationships( allRelationships, txCreated, txDeleted, onNode.getRelationships(), denseNodeIds );
+                    }
+                },
+        CHANGE_OTHER_NODE_DATA
+                {
+                    @Override
+                    public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
+                            Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
+                    {
+                        Node onNode = randomDenseNode( tx, denseNodeIds, random );
+                        switch ( random.nextInt( 4 ) )
+                        {
+                        case 0:
+                            onNode.setProperty( "KEY_" + random.nextInt( 3 ), random.nextInt() );
+                            break;
+                        case 1:
+                            onNode.removeProperty( "KEY_" + random.nextInt( 3 ) );
+                            break;
+                        case 2:
+                            onNode.addLabel( Label.label( "LABEL_" + random.nextInt( 3 ) ) );
+                            break;
+                        default:
+                            onNode.removeLabel( Label.label( "LABEL_" + random.nextInt( 3 ) ) );
+                            break;
+                        }
+                    }
+                };
+
+        private static Node randomDenseNode( Transaction tx, Set<Long> denseNodeIds, RandomRule random )
+        {
+            long id = randomAmong( denseNodeIds, random );
+            assertThat( isNull( id ) ).isFalse();
+            return tx.getNodeById( id );
+        }
+
+        private static long randomAmong( Set<Long> ids, RandomRule randomRule )
+        {
+            long value = Record.NULL_REFERENCE.longValue();
+            do
+            {
+                Object[] array = ids.toArray();
+                if ( array.length >= 1 )
+                {
+                    value = (long) randomRule.among( array );
+                }
+            }
+            while ( !ids.contains( value ) && !ids.isEmpty() );
+            return ids.isEmpty() ? Record.NULL_REFERENCE.longValue() : value;
+        }
+
+        private static void safeDeleteRelationship( Relationship relationship, Map<Long,TxNodeChanges> txCreated,
+                Map<Long,TxNodeChanges> txDeleted, Set<Long> denseNodeIds )
+        {
+            try
+            {
+                trackTxRelationship( relationship, txCreated, txDeleted, denseNodeIds, false );
+                relationship.delete();
+            }
+            catch ( NotFoundException e )
+            {
+                //this is not yet fully understood, but is caught and rethrown as transient to cause retry of this transaction
+                throw new TransientTransactionFailureException( Status.Database.Unknown, "Relationship vanished in front of us, hmm" );
+            }
+        }
+
+        private static void trackTxRelationship( Relationship relationship, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted,
+                Set<Long> denseNodeIds, boolean create )
+        {
+            var map1 = create ? txCreated : txDeleted;
+            var map2 = create ? txDeleted : txCreated;
+            if ( denseNodeIds.contains( relationship.getStartNodeId() ) )
+            {
+                map1.computeIfAbsent( relationship.getStartNodeId(), TxNodeChanges::new ).relationships.add( relationship );
+                map2.computeIfAbsent( relationship.getStartNodeId(), TxNodeChanges::new ).relationships.remove( relationship );
+            }
+            if ( denseNodeIds.contains( relationship.getEndNodeId() ) )
+            {
+                map1.computeIfAbsent( relationship.getEndNodeId(), TxNodeChanges::new ).relationships.add( relationship );
+                map2.computeIfAbsent( relationship.getEndNodeId(), TxNodeChanges::new ).relationships.remove( relationship );
+            }
+        }
+
+        private static void deleteRelationships( Set<Relationship> allRelationships, Map<Long,TxNodeChanges> txCreated,
+                Map<Long,TxNodeChanges> txDeleted, Iterable<Relationship> relationships, Set<Long> denseNodeIds )
+        {
+            List<Relationship> readRelationships = StreamSupport.stream( relationships.spliterator(), false ).collect( Collectors.toList() );
+            readRelationships.stream().filter( allRelationships::remove ).forEach(
+                    relationship -> safeDeleteRelationship( relationship, txCreated, txDeleted, denseNodeIds ) );
         }
     }
 }
