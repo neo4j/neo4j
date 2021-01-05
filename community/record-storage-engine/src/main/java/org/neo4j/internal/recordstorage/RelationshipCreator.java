@@ -32,6 +32,10 @@ import org.neo4j.storageengine.api.txstate.RelationshipModifications.Relationshi
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.isNull;
 
+/**
+ * A utility class to handle all record changes necessary for creating relationships
+ * It is assumed that all required locks are taken before the use of this class
+ */
 public class RelationshipCreator
 {
     private final int denseNodeThreshold;
@@ -91,6 +95,7 @@ public class RelationshipCreator
 
     /**
      * Creates a relationship with the given id, from the nodes identified by id and of type typeId
+     * Here we assume that all required locks are taken do do the changes needed
      *
      * @param id The id of the relationship to create.
      * @param type The id of the relationship type this relationship will have.
@@ -115,6 +120,7 @@ public class RelationshipCreator
 
     static int relCount( long nodeId, RelationshipRecord rel )
     {
+        //Degrees are stored in the backward pointer of the first in chain!
         return (int) rel.getPrevRel( nodeId );
     }
 
@@ -239,8 +245,14 @@ public class RelationshipCreator
         long firstRelId = direction.getNextRel( group );
         RecordProxy<RelationshipRecord,Void> relationshipBefore = null;
         RecordProxy<RelationshipRecord,Void> relationshipAfter = null;
+        //We need a place to insert the relationship. We have three cases
+        //  First in chain (between group and potentially the previously first relationship)
+        //  Between two relationships somewhere in the chain
+        //  After the last in the chain
+
         if ( insertionPoint != null )
         {
+            //If we provided an insertion point we use that, otherwise we insert first
             relationshipBefore = insertionPoint;
             long next = insertionPoint.forReadingLinkage().getNextRel( nodeId );
             if ( !isNull( next ) )
@@ -278,7 +290,7 @@ public class RelationshipCreator
         }
         else if ( relationshipAfter != null )
         {
-            // between
+            // between two relationships somewhere in the chain
             createdRelationship.setFirstInChain( false, nodeId );
             // Link before <-> created
             RelationshipRecord before = relationshipBefore.forChangingLinkage();
@@ -292,17 +304,17 @@ public class RelationshipCreator
         }
         else
         {
-            // last
+            // last in the chain
             createdRelationship.setFirstInChain( false, nodeId );
             RelationshipRecord lastRelationship = relationshipBefore.forChangingLinkage();
             lastRelationship.setNextRel( createdRelationship.getId(), nodeId );
             createdRelationship.setPrevRel( lastRelationship.getId(), nodeId );
         }
 
-        //Degrees
-
+        //With the chain connected we need to update the degrees
         if ( direction.hasExternalDegrees( group ) ) //Optimistic reading is fine, as this is a one-way switch
         {
+            //we don't need any locks to update the external degrees as that is safe
             groupDegreesUpdater.increment( group.getId(), direction.direction(), 1 );
         }
         else
@@ -310,7 +322,7 @@ public class RelationshipCreator
             RecordProxy<RelationshipRecord,Void> firstRelProxy = relRecords.getOrLoad( firstRelId, null, cursorTracer );
             long prevCount = firstRelProxy.forReadingLinkage().getPrevRel( nodeId );
             long count = prevCount + 1;
-
+            //If we can we switch to external degrees for better concurrency in future updates
             if ( count > externalDegreesThreshold )
             {
                 group = groupProxy.forChangingData();
@@ -319,6 +331,7 @@ public class RelationshipCreator
             }
             else
             {
+                //Or update the degrees stored in the back-pointer of the first-in-chain
                 firstRelProxy.forChangingLinkage().setPrevRel( count, nodeId );
             }
         }

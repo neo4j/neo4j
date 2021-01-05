@@ -32,6 +32,9 @@ import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.util.Preconditions;
 
 /**
+ * A {@link RelationshipModifications} is a set representing relationship changes with utility functions for iterating over different subsets/groupings
+ * The changes are first grouped by node, then by relationship type and last relationship direction
+ *
  * <pre>
  * // For example
  * ids.forEachSplit( byNode ->

@@ -42,6 +42,10 @@ import static org.neo4j.lock.ResourceTypes.NODE;
 import static org.neo4j.lock.ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
 
+/**
+ * A utility class to handle all record changes necessary for deleting relationships
+ * It is assumed that all required locks are taken before the use of this class but it may try take some additional locks to clean up empty records
+ */
 class RelationshipDeleter
 {
     private final RelationshipGroupGetter relGroupGetter;
@@ -60,6 +64,7 @@ class RelationshipDeleter
 
     /**
      * Deletes relationships found in {@code ids}.
+     * Here we assume that all required locks are taken do do the changes needed
      *
      * @param deletions The ids of all relationships to delete in this transaction.
      * @param recordChanges {@link RecordAccessSet} to coordinate and keep changes to records.
@@ -130,15 +135,19 @@ class RelationshipDeleter
             ResourceLocker locks )
     {
         //When we reach here, all required locks (node/relationships/groups) should be taken for the required changes
+        //The relationship is already disconnected, so we just need to fix the degrees and potentially update some pointers if we deleted the first
         RecordProxy<NodeRecord,Void> nodeProxy = recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorTracer );
         NodeRecord node = nodeProxy.forReadingLinkage();
         if ( !node.isDense() )
         {
+            //Sparse node
             if ( rel.isFirstInChain( nodeId ) )
             {
+                //If we're deleting the first-in-chain, update that
                 node = nodeProxy.forChangingLinkage();
                 node.setNextRel( rel.getNextRel( nodeId ) );
             }
+            //Then the degrees
             if ( updateDegree )
             {
                 decrementTotalRelationshipCount( nodeId, rel, node.getNextRel(), recordChanges.getRelRecords() );
@@ -146,18 +155,24 @@ class RelationshipDeleter
         }
         else
         {
+            //Dense node
             DirectionWrapper direction = DirectionWrapper.wrapDirection( rel, node );
             RecordProxy<RelationshipGroupRecord,Integer> groupProxy = nodeDataLookup.group( nodeId, rel.getType(), false );
             if ( rel.isFirstInChain( nodeId ) )
             {
+                //If we're deleting the first
                 RelationshipGroupRecord group = groupProxy.forChangingData();
+                //update the first-in-chain
                 direction.setNextRel( group, rel.getNextRel( nodeId ) );
                 if ( group.inUse() && groupIsEmpty( group ) )
                 {
+                    //We're deleting the last relationship in this group, lets try to clean it up
+                    //Since we don't have the required locks we can only do best-effort here with try-lock or risk deadlocks
                     boolean nodeRelationshipsLocked = locks.tryExclusiveLock( NODE_RELATIONSHIP_GROUP_DELETE, nodeId );
                     boolean nodeLocked = nodeRelationshipsLocked && locks.tryExclusiveLock( NODE, nodeId );
                     if ( nodeLocked && locks.tryExclusiveLock( RELATIONSHIP_GROUP, nodeId ) )
                     {
+                        //We got all the locks, delete it!
                         nodeProxy = recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorTracer );
 
                         if ( isNull( group.getPrev() ) )
@@ -171,6 +186,8 @@ class RelationshipDeleter
                     }
                     else
                     {
+                        //We failed to get the all the locks. Cleanup will be done when we find empty groups in later transactions
+                        //We need to unlock the locks we got
                         if ( nodeLocked )
                         {
                             locks.releaseExclusive( NODE, nodeId );
@@ -188,10 +205,14 @@ class RelationshipDeleter
                 RelationshipGroupRecord group = groupProxy.forReadingData();
                 if ( direction.hasExternalDegrees( group ) ) //Optimistic reading is fine, as this is a one-way switch
                 {
+                    //Either a simple lockfree external degrees update
                     groupDegreesUpdater.increment( group.getId(), direction.direction(), -1 );
                 }
                 else
                 {
+                    //Of we need to update the degree stored in the first back-pointer
+                    //or potentially flip to external degrees (this is a rare case, most likely seen when the store was created before the introduction of
+                    // external degrees, with nodes having long relationship chains
                     RecordProxy<RelationshipRecord,Void> firstRelProxy = null;
                     long prevCount;
                     if ( rel.isFirstInChain( nodeId ) )

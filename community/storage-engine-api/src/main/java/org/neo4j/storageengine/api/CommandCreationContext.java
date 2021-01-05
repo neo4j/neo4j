@@ -74,11 +74,37 @@ public interface CommandCreationContext extends AutoCloseable
      */
     int reserveRelationshipTypeTokenId();
 
+    /**
+     * Acquire the required locks (during transaction creation phase) for creating a relationship
+     * Additional locks may be taken during transaction commit
+     * @param txState The transaction state
+     * @param locker The locker for acquiring locks
+     * @param sourceNode The source node id of the relationship to be created
+     * @param targetNode The target node id of the relationship to be created
+     */
     void acquireRelationshipCreationLock( ReadableTransactionState txState, ResourceLocker locker, LockTracer lockTracer, long sourceNode, long targetNode );
 
+    /**
+     * Acquire the required locks (during transaction creation phase) for deleting a relationship
+     * Additional locks may be taken during transaction commit
+     *
+     * @param txState The transaction state
+     * @param locker The locker for acquiring locks
+     * @param sourceNode The source node id of the relationship to be deleted
+     * @param targetNode The target node id of the relationship to be deleted
+     * @param relationship The id of the relationship to be deleted
+     */
     void acquireRelationshipDeletionLock( ReadableTransactionState txState, ResourceLocker locker, LockTracer lockTracer,
             long sourceNode, long targetNode, long relationship );
 
+    /**
+     * Acquire the required locks (during transaction creation phase) for deleting a node
+     * Additional locks may be taken during transaction commit
+     *
+     * @param txState The transaction state
+     * @param locker The locker for acquiring locks
+     * @param node The id of the node to be deleted
+     */
     void acquireNodeDeletionLock( ReadableTransactionState txState, ResourceLocker locker, LockTracer lockTracer, long node );
 
     @Override

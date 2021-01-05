@@ -48,6 +48,9 @@ import static org.neo4j.lock.LockTracer.NONE;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
 import static org.neo4j.memory.HeapEstimator.sizeOfLongArray;
 
+/**
+ * A utility class to contain the algorithms related to acquiring relationship locks related to creations or deletions in relationship chains
+ */
 final class RelationshipLockHelper
 {
     private RelationshipLockHelper()
@@ -167,8 +170,9 @@ final class RelationshipLockHelper
             HeapTrackingLongObjectHashMap<RelationshipRecord> optimistic = HeapTrackingCollections.newLongObjectMap( scopedMemoryTracker );
             scopedMemoryTracker.allocateHeap( sizeOfLongArray( upperLimitOfLocks ) );
 
+            //First will build the list of locks we need
             SortedLockList lockList = new SortedLockList( upperLimitOfLocks );
-            lockList.add( optionalFirstInChain );
+            lockList.add( optionalFirstInChain ); //The locklist does not accept NULL(-1) values, so we don't need to care about that
             ids.forEach( ( id, type, startNode, endNode ) ->
             {
                 RelationshipRecord relationship = relRecords.getOrLoad( id, null, cursorTracer ).forReadingLinkage();
@@ -180,17 +184,21 @@ final class RelationshipLockHelper
                 lockList.add( END_PREV.get( relationship ) );
             } );
 
+            //Then we start traversing and locking
             while ( lockList.nextUnique() )
             {
                 long id = lockList.currentHighestLockedId();
-
+                //This could be either a relationship we're deleting, a neighbour or the first-in-chain. They all needs to be locked
                 locks.acquireExclusive( NONE, RELATIONSHIP, id );
                 RelationshipRecord old = optimistic.get( id );
                 if ( old != null )
                 {
+                    //This is a relationship we we're deleting
+                    //No when it is locked we can check if the optimistic read is stable
                     RelationshipRecord actual = relRecords.getOrLoad( id, null, cursorTracer ).forReadingLinkage();
                     if ( recordHasLinkageChanges( old, actual ) )
                     {
+                        //Something changed, so we need to retry, by unlocking and trying again
                         rewindAndUnlockChanged( locks, lockList, old, actual );
                         optimistic.put( id, actual );
                     }
@@ -201,6 +209,7 @@ final class RelationshipLockHelper
 
     private static void rewindAndUnlockChanged( ResourceLocker locks, SortedLockList lockList, RelationshipRecord old, RelationshipRecord actual )
     {
+        //check all neighbours for changes between optimistic and actual (locked) reads
         rewindAndUnlockChanged( locks, START_NEXT, lockList, old, actual );
         rewindAndUnlockChanged( locks, START_PREV, lockList, old, actual );
         rewindAndUnlockChanged( locks, END_NEXT, lockList, old, actual );
@@ -256,10 +265,12 @@ final class RelationshipLockHelper
     private static void lockSingleRelationship( long relId, long optionalFirstInChain, RecordAccess<RelationshipRecord,Void> relRecords, ResourceLocker locks,
             PageCursorTracer cursorTracer )
     {
+        //The naive and simple solution when we're only locking one relationship
         boolean retry;
+        //Optimistically read the relationship
         RelationshipRecord optimistic = relRecords.getOrLoad( relId, null, cursorTracer ).forReadingLinkage();
         assert optimistic.inUse() : optimistic.toString();
-        final long[] neighbours = new long[6];
+        final long[] neighbours = new long[6]; //The relationship itself, all 4 neighbours and potentially the first in chain (if needed for degrees update)
         do
         {
             retry = false;
@@ -269,6 +280,7 @@ final class RelationshipLockHelper
             neighbours[3] = START_PREV.get( optimistic );
             neighbours[4] = END_NEXT.get( optimistic );
             neighbours[5] = END_PREV.get( optimistic );
+            //Lock them sorted
             Arrays.sort( neighbours );
             lockRelationshipsExclusively( locks, neighbours );
 
@@ -276,8 +288,11 @@ final class RelationshipLockHelper
             assert actual.inUse();
             if ( recordHasLinkageChanges( optimistic, actual ) )
             {
+                //Our optimistic read has changed
                 retry = true;
+                //we need to unlock everything we locked
                 unlockRelationshipsExclusively( locks, neighbours );
+                //and try again until we get a stable read
                 optimistic = actual;
             }
         }

@@ -22,6 +22,10 @@ package org.neo4j.lock;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
+/**
+ * A {@link ResourceLocker} can acquire and release both exclusive and shared locks.
+ * A lock is defined by its {@link ResourceType} and id
+ */
 public interface ResourceLocker
 {
     boolean tryExclusiveLock( ResourceType resourceType, long resourceId );
@@ -112,7 +116,6 @@ public interface ResourceLocker
         @Override
         public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds )
         {
-
         }
 
         @Override
