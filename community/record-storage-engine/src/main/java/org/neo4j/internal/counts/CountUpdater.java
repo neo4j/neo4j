@@ -21,11 +21,8 @@ package org.neo4j.internal.counts;
 
 import java.util.concurrent.locks.Lock;
 
-import org.neo4j.counts.CountsAccessor;
-
 /**
- * The implementation of {@link CountsAccessor.Updater} for the {@link GBPTreeCountsStore}.
- * Writing happens inside the supplied {@link CountWriter}.
+ * Manages a {@link CountWriter}, which is injectable, and a lock which it will release in {@link #close()}.
  */
 class CountUpdater implements AutoCloseable
 {

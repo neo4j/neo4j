@@ -21,9 +21,7 @@ package org.neo4j.internal.counts;
 
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
-import org.neo4j.util.concurrent.OutOfOrderSequence;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.REMOVED;
 import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.REPLACED;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
@@ -37,15 +35,11 @@ class TreeWriter implements CountUpdater.CountWriter
             ( existingKey, newKey, existingValue, newValue ) -> newValue.count > 0 ? REPLACED : REMOVED;
 
     private final Writer<CountsKey,CountsValue> treeWriter;
-    private final OutOfOrderSequence idSequence;
-    private final long txId;
     private final CountsValue value = new CountsValue();
 
-    TreeWriter( Writer<CountsKey,CountsValue> treeWriter, OutOfOrderSequence idSequence, long txId )
+    TreeWriter( Writer<CountsKey,CountsValue> treeWriter )
     {
         this.treeWriter = treeWriter;
-        this.idSequence = idSequence;
-        this.txId = txId;
     }
 
     @Override
@@ -58,10 +52,9 @@ class TreeWriter implements CountUpdater.CountWriter
     public void close()
     {
         closeAllUnchecked( treeWriter );
-        idSequence.set( txId, EMPTY_LONG_ARRAY );
     }
 
-    static void merge( Writer<CountsKey,CountsValue> writer, CountsKey key, CountsValue value )
+    private static void merge( Writer<CountsKey,CountsValue> writer, CountsKey key, CountsValue value )
     {
         if ( value.count > 0 )
         {

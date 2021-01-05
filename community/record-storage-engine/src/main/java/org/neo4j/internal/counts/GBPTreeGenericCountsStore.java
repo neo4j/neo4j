@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.counts;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
@@ -62,7 +63,6 @@ import static org.neo4j.internal.counts.CountsChanges.ABSENT;
 import static org.neo4j.internal.counts.CountsKey.MAX_STRAY_TX_ID;
 import static org.neo4j.internal.counts.CountsKey.MIN_STRAY_TX_ID;
 import static org.neo4j.internal.counts.CountsKey.strayTxId;
-import static org.neo4j.internal.counts.TreeWriter.merge;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
@@ -173,9 +173,13 @@ public class GBPTreeGenericCountsStore implements CountsStorage
             }
             Lock lock = lock( this.lock.writeLock() );
             long txId = rebuilder.lastCommittedTxId();
-            try ( CountUpdater updater = new CountUpdater( new TreeWriter( tree.writer( cursorTracer ), idSequence, txId ), lock ) )
+            try ( CountUpdater updater = new CountUpdater( new TreeWriter( tree.writer( cursorTracer ) ), lock ) )
             {
                 rebuilder.rebuild( updater, cursorTracer, memoryTracker );
+            }
+            finally
+            {
+                idSequence.set( txId, ArrayUtils.EMPTY_LONG_ARRAY );
             }
         }
         started = true;
@@ -260,16 +264,10 @@ public class GBPTreeGenericCountsStore implements CountsStorage
 
     private void writeCountsChanges( CountsChanges changes, PageCursorTracer cursorTracer ) throws IOException
     {
-        // Sort the entries in the natural tree order to get more performance in the writer
-        Iterable<Map.Entry<CountsKey,AtomicLong>> changeList = changes.sortedChanges( layout );
-        try ( Writer<CountsKey,CountsValue> writer = tree.writer( cursorTracer ) )
+        try ( TreeWriter writer = new TreeWriter( tree.writer( cursorTracer ) ) )
         {
-            CountsValue value = new CountsValue();
-            for ( Map.Entry<CountsKey,AtomicLong> entry : changeList )
-            {
-                long count = entry.getValue().get();
-                merge( writer, entry.getKey(), value.initialize( count ) );
-            }
+            // Sort the entries in the natural tree order to get more performance in the writer
+            changes.sortedChanges( layout ).forEach( entry -> writer.write( entry.getKey(), entry.getValue().get() ) );
         }
     }
 
