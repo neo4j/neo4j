@@ -20,10 +20,10 @@
 package org.neo4j.codegen.api
 
 import java.io.PrintStream
-import java.util
 
 import org.neo4j.codegen
 import org.neo4j.codegen.TypeReference
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.Value
@@ -34,7 +34,9 @@ import org.neo4j.values.storable.Values
  *
  * The representation is intended to be quite low level and fairly close to the actual bytecode representation.
  */
-sealed trait IntermediateRepresentation
+sealed trait IntermediateRepresentation {
+  def typeReference: TypeReference
+}
 
 /**
  * Invoke a static method
@@ -42,7 +44,9 @@ sealed trait IntermediateRepresentation
  * @param method the method to invoke
  * @param params the parameter to the static method
  */
-case class InvokeStatic(method: Method, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
+case class InvokeStatic(method: Method, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = method.returnType
+}
 
 /**
  * Invoke a static method with side effects
@@ -50,7 +54,9 @@ case class InvokeStatic(method: Method, params: Seq[IntermediateRepresentation])
  * @param method the method to invoke
  * @param params the parameter to the static method
  */
-case class InvokeStaticSideEffect(method: Method, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
+case class InvokeStaticSideEffect(method: Method, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = method.returnType
+}
 
 /**
  * Invoke a method
@@ -60,7 +66,9 @@ case class InvokeStaticSideEffect(method: Method, params: Seq[IntermediateRepres
  * @param params the parameter to the method
  */
 case class Invoke(target: IntermediateRepresentation, method: Method, params: Seq[IntermediateRepresentation])
-  extends IntermediateRepresentation
+  extends IntermediateRepresentation {
+  override def typeReference: TypeReference = method.returnType
+}
 
 /**
  * Invoke a void method
@@ -70,21 +78,25 @@ case class Invoke(target: IntermediateRepresentation, method: Method, params: Se
  * @param params the parameter to the method
  */
 case class InvokeSideEffect(target: IntermediateRepresentation, method: Method, params: Seq[IntermediateRepresentation])
-  extends IntermediateRepresentation
+  extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.VOID
+}
 
 /**
  * Load a local variable by name
  *
  * @param variable the name of the variable
  */
-case class Load(variable: String) extends IntermediateRepresentation
+case class Load(variable: String, typeReference: TypeReference) extends IntermediateRepresentation
 
 /**
  * Load a field
  *
  * @param field the field to load
  */
-case class LoadField(field: Field) extends IntermediateRepresentation
+case class LoadField(field: Field) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = field.typ
+}
 
 /**
  * Set a field to a value
@@ -92,35 +104,26 @@ case class LoadField(field: Field) extends IntermediateRepresentation
  * @param field the field to set
  * @param value the value to set
  */
-case class SetField(field: Field, value: IntermediateRepresentation) extends IntermediateRepresentation
+case class SetField(field: Field, value: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.VOID
+}
 
 /**
  * Constant java value
  *
  * @param value the constant value
  */
-case class Constant(value: Any) extends IntermediateRepresentation
+case class Constant(value: Any) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.typeReference(value.getClass)
+}
 
 /**
  * Loads an array literal of the given inputs
  *
  * @param values the values of the array
  */
-case class ArrayLiteral(typ: codegen.TypeReference, values: Array[IntermediateRepresentation]) extends IntermediateRepresentation {
-
-  override def canEqual(other: Any): Boolean = other.isInstanceOf[ArrayLiteral]
-
-  override def equals(other: Any): Boolean =
-    other match {
-      case that: ArrayLiteral =>
-        (that canEqual this) &&
-          typ == that.typ && util.Arrays.equals(values.asInstanceOf[Array[AnyRef]], that.values.asInstanceOf[Array[AnyRef]])
-      case _ => false
-    }
-
-  override def hashCode(): Int = {
-    typ.hashCode() + 31 * util.Arrays.hashCode(values.asInstanceOf[Array[AnyRef]])
-  }
+case class ArrayLiteral(typ: codegen.TypeReference, values: Seq[IntermediateRepresentation]) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.arrayOf(typ)
 }
 
 /**
@@ -129,7 +132,9 @@ case class ArrayLiteral(typ: codegen.TypeReference, values: Array[IntermediateRe
  * @param array array to load from
  * @param offset offset to load from
  */
-case class ArrayLoad(array: IntermediateRepresentation, offset: IntermediateRepresentation) extends IntermediateRepresentation
+case class ArrayLoad(array: IntermediateRepresentation, offset: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = array.typeReference.elementOfArray()
+}
 
 /**
  * Set a value in an array at the given offset
@@ -138,13 +143,17 @@ case class ArrayLoad(array: IntermediateRepresentation, offset: IntermediateRepr
  * @param offset offset to set at
  * @param value value to set
  */
-case class ArraySet(array: IntermediateRepresentation, offset: IntermediateRepresentation, value: IntermediateRepresentation) extends IntermediateRepresentation
+case class ArraySet(array: IntermediateRepresentation, offset: IntermediateRepresentation, value: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.VOID
+}
 
 /**
  * Returns the lenght of an array
  * @param array the length of the array
  */
-case class ArrayLength(array: IntermediateRepresentation) extends IntermediateRepresentation
+case class ArrayLength(array: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.INT
+}
 
 /**
  * Defines ternary expression, i.e. {{{condition ? onTrue : onFalse}}}
@@ -155,7 +164,12 @@ case class ArrayLength(array: IntermediateRepresentation) extends IntermediateRe
  */
 case class Ternary(condition: IntermediateRepresentation,
                    onTrue: IntermediateRepresentation,
-                   onFalse: IntermediateRepresentation) extends IntermediateRepresentation
+                   onFalse: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = {
+    if (onTrue.typeReference == onFalse.typeReference) onTrue.typeReference
+    else TypeReference.OBJECT
+  }
+}
 
 /**
  * Defines {{{lhs + rhs}}}
@@ -163,7 +177,12 @@ case class Ternary(condition: IntermediateRepresentation,
  * @param lhs the left-hand side to add
  * @param rhs the right-hand side to add
  */
-case class Add(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+case class Add(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = {
+    require(lhs.typeReference == rhs.typeReference)
+    lhs.typeReference
+  }
+}
 
 /**
  * Defines {{{lhs - rhs}}}
@@ -171,7 +190,12 @@ case class Add(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation)
  * @param lhs the left-hand side to subtract from
  * @param rhs the right-hand side to subtract
  */
-case class Subtract(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+case class Subtract(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = {
+    require(lhs.typeReference == rhs.typeReference)
+    lhs.typeReference
+  }
+}
 
 /**
  * Defines {{{lhs * rhs}}}
@@ -179,7 +203,12 @@ case class Subtract(lhs: IntermediateRepresentation, rhs: IntermediateRepresenta
  * @param lhs the left-hand side to multiply
  * @param rhs the right-hand side to multiply
  */
-case class Multiply(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+case class Multiply(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = {
+    require(lhs.typeReference == rhs.typeReference)
+    lhs.typeReference
+  }
+}
 
 /**
  * Defines {{{lhs < rhs}}}
@@ -187,7 +216,9 @@ case class Multiply(lhs: IntermediateRepresentation, rhs: IntermediateRepresenta
  * @param lhs the left-hand side to compare
  * @param rhs the right-hand side to compare
  */
-case class Lt(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+case class Lt(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.BOOLEAN
+}
 
 /**
  * Defines {{{lhs <= rhs}}}
@@ -195,7 +226,10 @@ case class Lt(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) 
  * @param lhs the left-hand side to compare
  * @param rhs the right-hand side to compare
  */
-case class Lte(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+case class Lte(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.BOOLEAN
+
+}
 
 /**
  * Defines {{{lhs > rhs}}}
@@ -203,7 +237,10 @@ case class Lte(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation)
  * @param lhs the left-hand side to compare
  * @param rhs the right-hand side to compare
  */
-case class Gt(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+case class Gt(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.BOOLEAN
+
+}
 
 /**
  * Defines {{{lhs >= rhs}}}
@@ -211,7 +248,10 @@ case class Gt(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) 
  * @param lhs the left-hand side to compare
  * @param rhs the right-hand side to compare
  */
-case class Gte(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+case class Gte(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.BOOLEAN
+
+}
 
 /**
  * Defines equality or identy, i.e. {{{lhs == rhs}}}
@@ -219,7 +259,10 @@ case class Gte(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation)
  * @param lhs the left-hand side to check
  * @param rhs the right-hand side to check
  */
-case class Eq(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+case class Eq(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.BOOLEAN
+
+}
 
 /**
  * Defines  {{{lhs != rhs}}}
@@ -227,30 +270,43 @@ case class Eq(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) 
  * @param lhs the left-hand side to check
  * @param rhs the right-hand side to check
  */
-case class NotEq(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+case class NotEq(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.BOOLEAN
+
+}
 
 /**
  * Defines  !test
  *
  * @param test the expression to check
  */
-case class Not(test: IntermediateRepresentation) extends IntermediateRepresentation
+case class Not(test: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.BOOLEAN
+
+}
 
 /**
  * Checks if expression is null
  */
-case class IsNull(test: IntermediateRepresentation) extends IntermediateRepresentation
+case class IsNull(test: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.BOOLEAN
+
+}
 
 /**
  * A block is a sequence of operations where the block evaluates to the last expression
  * @param ops the operations to perform in the block
  */
-case class Block(ops: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
+case class Block(ops: Seq[IntermediateRepresentation]) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = ops.last.typeReference
+}
 
 /**
  * Noop does absolutely nothing.
  */
-case object Noop extends IntermediateRepresentation
+case object Noop extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.VOID
+}
 
 /**
  * A conditon executes the operation if the test evaluates to true.
@@ -271,7 +327,9 @@ case object Noop extends IntermediateRepresentation
  */
 case class Condition(test: IntermediateRepresentation, onTrue: IntermediateRepresentation,
                      onFalse: Option[IntermediateRepresentation] = None)
-  extends IntermediateRepresentation
+  extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.VOID
+}
 
 /**
  * A loop runs body while the provided test is true
@@ -279,7 +337,9 @@ case class Condition(test: IntermediateRepresentation, onTrue: IntermediateRepre
  * @param body the body to run on each iteration
  */
 case class Loop(test: IntermediateRepresentation, body: IntermediateRepresentation, labelName: String)
-  extends IntermediateRepresentation
+  extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.VOID
+}
 
 /**
  * Break out of a labeled loop.
@@ -296,7 +356,9 @@ case class Loop(test: IntermediateRepresentation, body: IntermediateRepresentati
  * }}}
  * @param labelName The label name of the loop to break out of
  */
-case class Break(labelName: String) extends IntermediateRepresentation
+case class Break(labelName: String) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.VOID
+}
 
 /**
  * Declare a local variable of the given type.
@@ -307,7 +369,9 @@ case class Break(labelName: String) extends IntermediateRepresentation
  * @param typ the type of the variable
  * @param name the name of the variable
  */
-case class DeclareLocalVariable(typ: codegen.TypeReference, name: String) extends IntermediateRepresentation
+case class DeclareLocalVariable(typ: codegen.TypeReference, name: String) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.VOID
+}
 
 /**
  * Assign a variable to a value.
@@ -318,7 +382,9 @@ case class DeclareLocalVariable(typ: codegen.TypeReference, name: String) extend
  * @param name the name of the variable
  * @param value the value to assign to the variable
  */
-case class AssignToLocalVariable(name: String, value: IntermediateRepresentation) extends IntermediateRepresentation
+case class AssignToLocalVariable(name: String, value: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.VOID
+}
 
 /**
  * try-catch block
@@ -337,13 +403,17 @@ case class AssignToLocalVariable(name: String, value: IntermediateRepresentation
  * @param exception the type of the exception
  * @param name the name of the caught exception
  */
-case class TryCatch(ops: IntermediateRepresentation, onError: IntermediateRepresentation, exception: codegen.TypeReference, name: String) extends IntermediateRepresentation
+case class TryCatch(ops: IntermediateRepresentation, onError: IntermediateRepresentation, exception: codegen.TypeReference, name: String) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = ops.typeReference
+}
 
 /**
  * Throw an error
  * @param error the error to throw
  */
-case class Throw(error: IntermediateRepresentation) extends IntermediateRepresentation
+case class Throw(error: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.VOID
+}
 
 /**
  * Boolean && operator
@@ -353,7 +423,9 @@ case class Throw(error: IntermediateRepresentation) extends IntermediateRepresen
  * @param lhs the left-hand side of and
  * @param rhs the right-hand side of and
  */
-case class BooleanAnd(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+case class BooleanAnd(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.BOOLEAN
+}
 
 /**
  * Boolean || operator
@@ -363,7 +435,9 @@ case class BooleanAnd(lhs: IntermediateRepresentation, rhs: IntermediateRepresen
  * @param lhs the left-hand side of or
  * @param rhs the right-hand side of or
  */
-case class BooleanOr(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
+case class BooleanOr(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.BOOLEAN
+}
 
 /**
  * Loads a static field
@@ -371,14 +445,18 @@ case class BooleanOr(lhs: IntermediateRepresentation, rhs: IntermediateRepresent
  * @param output The type of the static field
  * @param name The name of the static field
  */
-case class GetStatic(owner: Option[codegen.TypeReference], output: codegen.TypeReference, name: String) extends IntermediateRepresentation
+case class GetStatic(owner: Option[codegen.TypeReference], output: codegen.TypeReference, name: String) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = output
+}
 
 /**
  * Instantiate a new object
  * @param constructor the constructor to call
  * @param params the parameter to the constructor
  */
-case class NewInstance(constructor: Constructor, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
+case class NewInstance(constructor: Constructor, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = constructor.owner
+}
 
 /**
  * Instantiate a new instance of an inner class
@@ -386,35 +464,47 @@ case class NewInstance(constructor: Constructor, params: Seq[IntermediateReprese
  * @param clazz     the inner-class to instantiate
  * @param arguments the arguments to the constructor
  */
-case class NewInstanceInnerClass(clazz: ExtendClass, arguments: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
+case class NewInstanceInnerClass(clazz: ExtendClass, arguments: Seq[IntermediateRepresentation]) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = clazz.overrides
+}
 
 /**
  * Instantiate a new array
  * @param baseType the type of the array elements
  * @param size the size of the array.
  */
-case class NewArray(baseType: codegen.TypeReference, size: Int) extends IntermediateRepresentation
+case class NewArray(baseType: codegen.TypeReference, size: Int) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.arrayOf(baseType)
+}
 
-case class Returns(representation: IntermediateRepresentation) extends IntermediateRepresentation
+case class Returns(representation: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.VOID
+}
 
 case class OneTime(inner: IntermediateRepresentation)(private var used: Boolean) extends IntermediateRepresentation {
   def isUsed: Boolean = used
   def use(): Unit = {
     used = true
   }
+
+  override def typeReference: TypeReference = inner.typeReference
 }
 
 /**
  * Box a primitive value
  * @param expression the value to box
  */
-case class Box(expression: IntermediateRepresentation) extends IntermediateRepresentation
+case class Box(expression: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.toBoxedType(expression.typeReference)
+}
 
 /**
  * Unbox a value to a primitive
  * @param expression the value to unbox
  */
-case class Unbox(expression: IntermediateRepresentation) extends IntermediateRepresentation
+case class Unbox(expression: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.toUnboxedType(expression.typeReference)
+}
 
 /**
  * Defines a constructor
@@ -432,19 +522,24 @@ case class Constructor(owner: codegen.TypeReference, params: Seq[codegen.TypeRef
  * @param to the type to cast to
  * @param expression the expression to cast
  */
-case class Cast(to: codegen.TypeReference, expression: IntermediateRepresentation) extends IntermediateRepresentation
+case class Cast(to: codegen.TypeReference, expression: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = to
+}
 
 /**
  * Instance of check if the given expression has the given type
  * @param typ does expression have this type
  * @param expression the expression to check
  */
-case class InstanceOf(typ: codegen.TypeReference, expression: IntermediateRepresentation) extends IntermediateRepresentation
+case class InstanceOf(typ: codegen.TypeReference, expression: IntermediateRepresentation) extends IntermediateRepresentation {
+  override def typeReference: TypeReference = TypeReference.BOOLEAN
+}
 
 /**
  * Returns `this`
  */
-case object Self extends IntermediateRepresentation
+case class Self(typeReference: TypeReference) extends IntermediateRepresentation {
+}
 
 /**
  * A class that extends another class.
@@ -678,9 +773,11 @@ object IntermediateRepresentation {
                        params: IntermediateRepresentation*): IntermediateRepresentation =
     InvokeSideEffect(owner, method, params)
 
-  def load(variable: String): Load = Load(variable)
+  def load[TYPE](variable: String)(implicit typ: Manifest[TYPE]): Load = Load(variable, typeRef(typ))
 
-  def load(variable: LocalVariable): IntermediateRepresentation = Load(variable.name)
+  def load(variable: LocalVariable): IntermediateRepresentation = Load(variable.name, variable.typ)
+
+  def load(parameter: Parameter): IntermediateRepresentation = Load(parameter.name, parameter.typ)
 
   def cast[TO](expression: IntermediateRepresentation)(implicit to: Manifest[TO]): Cast = Cast(typeRef(to), expression)
 
@@ -708,7 +805,7 @@ object IntermediateRepresentation {
   def constant(value: Any): IntermediateRepresentation = Constant(value)
 
   def arrayOf[T](values: IntermediateRepresentation*)(implicit t: Manifest[T]): IntermediateRepresentation =
-    ArrayLiteral(typeRef(t), values.toArray)
+    ArrayLiteral(typeRef(t), values)
 
   def arrayLoad(array: IntermediateRepresentation, offset: Int): IntermediateRepresentation =
     arrayLoad(array, constant(offset))

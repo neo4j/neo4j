@@ -35,6 +35,7 @@ import static org.neo4j.codegen.TypeReference.VALUE;
 import static org.neo4j.codegen.TypeReference.VOID;
 import static org.neo4j.codegen.TypeReference.arrayOf;
 import static org.neo4j.codegen.TypeReference.toBoxedType;
+import static org.neo4j.codegen.TypeReference.toUnboxedType;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
 public abstract class Expression extends ExpressionTemplate
@@ -621,37 +622,7 @@ public abstract class Expression extends ExpressionTemplate
     /** unbox expression */
     public static Expression unbox( final Expression expression )
     {
-        TypeReference type;
-        switch ( expression.type.fullName() )
-        {
-        case "java.lang.Byte":
-            type = TypeReference.typeReference( byte.class );
-            break;
-        case "java.lang.Short":
-            type = TypeReference.typeReference( short.class );
-            break;
-        case "java.lang.Integer":
-            type = TypeReference.typeReference( int.class );
-            break;
-        case "java.lang.Long":
-            type = TypeReference.typeReference( long.class );
-            break;
-        case "java.lang.Character":
-            type = TypeReference.typeReference( char.class );
-            break;
-        case "java.lang.Boolean":
-            type = TypeReference.typeReference( boolean.class );
-            break;
-        case "java.lang.Float":
-            type = TypeReference.typeReference( float.class );
-            break;
-        case "java.lang.Double":
-            type = TypeReference.typeReference( double.class );
-            break;
-        default:
-            throw new IllegalStateException( "Cannot unbox " + expression.type.fullName() );
-        }
-        return new Expression( type )
+        return new Expression(  toUnboxedType( expression.type ) )
         {
             @Override
             public void accept( ExpressionVisitor visitor )

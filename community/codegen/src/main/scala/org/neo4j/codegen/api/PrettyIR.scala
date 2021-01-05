@@ -130,7 +130,7 @@ object PrettyIR {
         case Constant(value) =>
           append(value.toString)
 
-        case Load(name) =>
+        case Load(name, _) =>
           append(name)
 
         case Eq(lhs, rhs) =>

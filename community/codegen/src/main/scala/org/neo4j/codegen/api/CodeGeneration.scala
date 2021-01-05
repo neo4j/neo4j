@@ -41,15 +41,15 @@ import org.neo4j.codegen.FieldReference.staticField
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen.TypeReference
 import org.neo4j.codegen.TypeReference.OBJECT
+import org.neo4j.codegen.api.IntermediateRepresentation.computeSize
 import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
 import org.neo4j.codegen.bytecode.ByteCode.PRINT_BYTECODE
 import org.neo4j.codegen.source.SourceCode.PRINT_SOURCE
 import org.neo4j.codegen.source.SourceCode.SOURCECODE
-import org.neo4j.codegen.source.SourceVisitor
-import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.codegen.source.SourceCode.sourceLocation
-import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.codegen.source.SourceVisitor
+import org.neo4j.cypher.internal.options.CypherDebugOption
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -173,6 +173,9 @@ object CodeGeneration {
 
     generateCode(classOf[IntermediateRepresentation].getClassLoader, strategy, options: _*)
   }
+  //invoke static 3 bytes
+  //ivoke interface 5 bytes
+  //each load 2 bytes
 
   private def compileExpression(ir: IntermediateRepresentation, block: codegen.CodeBlock): codegen.Expression = ir match {
     //Foo.method(p1, p2,...)
@@ -198,7 +201,7 @@ object CodeGeneration {
       codegen.Expression.EMPTY
 
     //loads local variable by name
-    case Load(variable) => block.load(variable)
+    case Load(variable, _) => block.load(variable)
 
     //loads field
     case LoadField(f) =>
@@ -361,7 +364,7 @@ object CodeGeneration {
     case Unbox(expression) =>
       codegen.Expression.unbox(compileExpression(expression, block))
 
-    case Self => block.self()
+    case Self(_) => block.self()
 
     case NewInstanceInnerClass(ExtendClass(className, overrides, params, methods, fields), args) =>
       val parentClass: ClassHandle = block.classGenerator().handle()
@@ -405,6 +408,10 @@ object CodeGeneration {
                           block => compileExpression(c.initializationCode, block),
                           c.extendsClass)
       c.methods.foreach { m =>
+        val i = computeSize(m.body)
+//        if (i > 20000) {
+//          throw new CantCompileQueryException("Method is too big")
+//        }
         compileMethodDeclaration(clazz, m)
       }
       clazz.handle()

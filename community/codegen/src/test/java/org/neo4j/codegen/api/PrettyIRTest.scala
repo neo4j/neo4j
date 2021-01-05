@@ -63,7 +63,7 @@ class PrettyIRTest extends FunSuite {
   test("prettify block") {
     val blockIr = block(Seq(
       assign("a", add(constant(0), constant(7))),
-      assign("a", add(Load("a"), constant(7)))
+      assign("a", add(load[Int]("a"), constant(7)))
     ): _*)
 
     PrettyIR.pretty(blockIr) shouldBe
@@ -77,7 +77,7 @@ class PrettyIRTest extends FunSuite {
     val blockIR = block(Seq(
       declare(typeRefOf[AnyValue], "a"),
       assign("a", add(constant(0), constant(7))),
-      assign("a", add(Load("a"), constant(7)))
+      assign("a", add(load[Int]("a"), constant(7)))
     ): _*)
 
     PrettyIR.pretty(blockIR) shouldBe
@@ -91,7 +91,7 @@ class PrettyIRTest extends FunSuite {
     val blockIR = block(Seq(
       declare(typeRefOf[AnyValue], "a"),
       assign("a", add(constant(0), constant(7))),
-      condition(load("b"))(
+      condition(load[Boolean]("b"))(
         block(Seq(
           assign("b", constant(false)),
           assign("a", constant(13))
@@ -114,7 +114,7 @@ class PrettyIRTest extends FunSuite {
   }
 
   test("invoke function") {
-    PrettyIR.pretty(invoke(load("iter"), method[java.util.Iterator[AnyValue], Boolean]("hasNext"))) shouldBe "iter.hasNext()"
+    PrettyIR.pretty(invoke(load[java.util.Iterator[AnyValue]]("iter"), method[java.util.Iterator[AnyValue], Boolean]("hasNext"))) shouldBe "iter.hasNext()"
   }
 
   test("get static no value") {
@@ -167,7 +167,7 @@ class PrettyIRTest extends FunSuite {
     )(
       block(Seq(
       assign("a", add(constant(0), constant(7))),
-      assign("a", add(Load("a"), constant(7)))
+      assign("a", add(load[Int]("a"), constant(7)))
     ): _*))
     PrettyIR.pretty(condition) shouldBe
       s"""if (true) 0 else {
@@ -181,34 +181,34 @@ class PrettyIRTest extends FunSuite {
   }
 
   test("Loop without label") {
-    val loopIR = loop(notEqual(load("a"), constant(100)))(assign("a", add(load("a"), constant(1))))
+    val loopIR = loop(notEqual(load[Int]("a"), constant(100)))(assign("a", add(load[Int]("a"), constant(1))))
     PrettyIR.pretty(loopIR) shouldBe "while (a != 100) a = a + 1"
   }
 
   test("Loop with label") {
-    val loopIR = labeledLoop("loop1", notEqual(load("a"), constant(100)))(assign("a", add(load("a"), constant(1))))
+    val loopIR = labeledLoop("loop1", notEqual(load[Int]("a"), constant(100)))(assign("a", add(load[Int]("a"), constant(1))))
     PrettyIR.pretty(loopIR) shouldBe
         """loop1:
           |while (a != 100) a = a + 1""".stripMargin
   }
 
   test("array load") {
-    PrettyIR.pretty(arrayLoad(load("maybeList"), 0)) shouldBe "maybeList[0]"
+    PrettyIR.pretty(arrayLoad(load[Array[Int]]("maybeList"), 0)) shouldBe "maybeList[0]"
   }
 
   test("array set") {
-    PrettyIR.pretty(arraySet(load("maybeList"), 0, constant(1))) shouldBe "maybeList[0] = 1"
+    PrettyIR.pretty(arraySet(load[Array[Int]]("maybeList"), 0, constant(1))) shouldBe "maybeList[0] = 1"
   }
 
   test("one time") {
-    PrettyIR.pretty(oneTime(load("maybeList"))) shouldBe "oneTime(maybeList)"
+    PrettyIR.pretty(oneTime(load[Array[Int]]("maybeList"))) shouldBe "oneTime(maybeList)"
   }
 
   test("try catch with cast") {
     val tryCatchIR = tryCatch[ClassCastException]("e")(
-      cast[Double](load("a"))
+      cast[Double](load[Int]("a"))
     )(
-      IntermediateRepresentation.fail(load("e"))
+      IntermediateRepresentation.fail(load[ClassCastException]("e"))
     )
     PrettyIR.pretty(tryCatchIR) shouldBe
     s"""try {
