@@ -43,7 +43,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, projections, context)
+    val result = projection(startPlan, projections, Some(projections), context)
 
     // then
     result should equal(Projection(startPlan, projections))
@@ -58,7 +58,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, projectionsToMarkSolved, context)
+    val result = projection(startPlan, projections, Some(projectionsToMarkSolved), context)
 
     // then
     result should equal(Projection(startPlan, projections))
@@ -71,7 +71,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, projections, context)
+    val result = projection(startPlan, projections, Some(projections), context)
 
     // then
     result should equal(startPlan)
@@ -84,7 +84,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, projections, context)
+    val result = projection(startPlan, projections, Some(projections), context)
 
     // then
     val actualProjections = Map("42" -> literalInt(42))
@@ -98,7 +98,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
-    val result = projection(startPlan, projections, projections, context)
+    val result = projection(startPlan, projections, Some(projections), context)
 
     // then
     result should equal(Projection(startPlan, projections))

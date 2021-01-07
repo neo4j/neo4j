@@ -44,15 +44,18 @@ object SortPlanner {
    * If the interesting order is non-empty, and the given plan does not already satisfy the interesting order, try to plan a Sort/PartialSort
    * to satisfy the interesting order. If that is possible, return the new plan, otherwise None.
    */
-  def maybeSortedPlan(plan: LogicalPlan, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Option[LogicalPlan] = {
+  def maybeSortedPlan(plan: LogicalPlan,
+                      interestingOrderConfig: InterestingOrderConfig,
+                      context: LogicalPlanningContext,
+                      updateSolved: Boolean): Option[LogicalPlan] = {
     if (interestingOrderConfig.orderToSolve.requiredOrderCandidate.nonEmpty) {
       orderSatisfaction(interestingOrderConfig, context, plan) match {
         case FullSatisfaction() =>
           Some(plan)
         case NoSatisfaction() =>
-          planSort(plan, Seq.empty, interestingOrderConfig, context)
+          planSort(plan, Seq.empty, interestingOrderConfig, context, updateSolved)
         case Satisfaction(satisfiedPrefix, _) =>
-          planSort(plan, satisfiedPrefix, interestingOrderConfig, context)
+          planSort(plan, satisfiedPrefix, interestingOrderConfig, context, updateSolved)
       }
     } else {
       None
@@ -69,7 +72,7 @@ object SortPlanner {
    */
   def planIfAsSortedAsPossible(plan: LogicalPlan, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Option[LogicalPlan] = {
     // This plan will be fully sorted if possible, but even otherwise it might be as sorted as currently possible.
-    val newPlan = maybeSortedPlan(plan, interestingOrderConfig, context).getOrElse(plan)
+    val newPlan = maybeSortedPlan(plan, interestingOrderConfig, context, updateSolved = true).getOrElse(plan)
     val asSortedAsPossible = SatisfiedForPlan(plan)
     orderSatisfaction(interestingOrderConfig, context, newPlan) match {
       case asSortedAsPossible() => Some(newPlan)
@@ -82,8 +85,11 @@ object SortPlanner {
    * Update the Solveds attribute if no Sort planning was necessery.
    * Throw an exception if no plan that can solve the interesting order could be found.
    */
-  def ensureSortedPlanWithSolved(plan: LogicalPlan, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): LogicalPlan =
-    maybeSortedPlan(plan, interestingOrderConfig, context) match {
+  def ensureSortedPlanWithSolved(plan: LogicalPlan,
+                                 interestingOrderConfig: InterestingOrderConfig,
+                                 context: LogicalPlanningContext,
+                                 updateSolved: Boolean): LogicalPlan =
+    maybeSortedPlan(plan, interestingOrderConfig, context, updateSolved) match {
       case Some(sortedPlan) =>
         if (sortedPlan == plan) context.logicalPlanProducer.updateSolvedForSortedItems(sortedPlan, interestingOrderConfig.orderToReport, context)
         else sortedPlan
@@ -119,16 +125,17 @@ object SortPlanner {
   private def planSort(plan: LogicalPlan,
                        satisfiedPrefix: Seq[ir.ordering.ColumnOrder],
                        interestingOrderConfig: InterestingOrderConfig,
-                       context: LogicalPlanningContext): Option[LogicalPlan] = {
+                       context: LogicalPlanningContext,
+                       updateSolved: Boolean): Option[LogicalPlan] = {
 
     def idFrom(expression: Expression, projection: Map[String, Expression]): String = {
       projection.find(_._2 == expression).map(_._1).getOrElse(expression.asCanonicalStringVal)
     }
 
-    def projected(plan: LogicalPlan, projections: Map[String, Expression], updateSolved: Boolean = true): LogicalPlan = {
+    def projected(plan: LogicalPlan, projections: Map[String, Expression], updateSolved: Boolean): LogicalPlan = {
       val projectionDeps = projections.flatMap(e => e._2.dependencies)
       if (projections.nonEmpty && projectionDeps.forall(e => plan.availableSymbols.contains(e.name)))
-        projection(plan, projections, if (updateSolved) projections else Map.empty, context)
+        projection(plan, projections, if (updateSolved) Some(projections) else None, context)
       else
         plan
     }
@@ -156,7 +163,7 @@ object SortPlanner {
     // Project all variables needed for sort in two steps
     // First the ones that are part of projection list and may introduce variables that are needed for the second projection
     val projections = sortItems.foldLeft(Map.empty[String, Expression])((acc, i) => acc ++ i.providedOrderColumn.projections)
-    val projected1 = projected(plan, projections)
+    val projected1 = projected(plan, projections, updateSolved = updateSolved)
     // And then all the ones from unaliased sort items that may refer to newly introduced variables
     val unaliasedProjections = sortItems.foldLeft(Map.empty[String, Expression])((acc, i) => acc ++ i.unaliasedProjections)
     val projected2 = projected(projected1, unaliasedProjections, updateSolved = false)

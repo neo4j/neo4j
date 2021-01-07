@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanSingleQuery.addAggregatedPropertiesToContext
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.countStorePlanner
 import org.neo4j.cypher.internal.expressions.Expression
@@ -36,7 +37,7 @@ import scala.annotation.tailrec
 This coordinates PlannerQuery planning and delegates work to the classes that do the actual planning of
 QueryGraphs and EventHorizons
  */
-case class PlanSingleQuery(planPart: MatchPlanner = planMatch,
+case class PlanSingleQuery(planMatch: MatchPlanner = planMatch,
                            planEventHorizon: EventHorizonPlanner = PlanEventHorizon,
                            planWithTail: TailPlanner = PlanWithTail(),
                            planUpdates:UpdatesPlanner = PlanUpdates)
@@ -47,16 +48,16 @@ case class PlanSingleQuery(planPart: MatchPlanner = planMatch,
 
     val plans = countStorePlanner(in, updatedContext) match {
       case Some(plan) =>
-        Seq(plan)
+        BestResults(plan, None)
       case None =>
-        val matchPlans = planPart(in, updatedContext)
+        val matchPlans = planMatch(in, updatedContext)
         // We take all plans solving the MATCH part. This could be two, if we have a required order.
-        val plansWithHorizon = matchPlans.allResults.map(planUpdatesInputAndHorizon(_, in, updatedContext))
-        // `distinct` to skip planning subsequent query parts twice if the best overall plan and the best sorted plan happen to be be the same.
-        plansWithHorizon.toSeq.distinct
+        val plansWithInput: BestResults[LogicalPlan] = matchPlans.map(planUpdatesAndInput(_, in, updatedContext))
+
+        planEventHorizon.planHorizon(in, plansWithInput, None, updatedContext)
       }
 
-    val contextForTail = updatedContext.withUpdatedLabelInfo(plans.head) // cardinality should be the same for all plans, let's use the first one
+    val contextForTail = updatedContext.withUpdatedLabelInfo(plans.bestResult) // cardinality should be the same for all plans, let's use the first one
     val (plan, _) = planWithTail(plans, in, contextForTail)
     plan
   }
@@ -65,17 +66,15 @@ case class PlanSingleQuery(planPart: MatchPlanner = planMatch,
    * Plan updates, query input, and horizon for all of them.
    * Horizon planning will ensure that any ORDER BY clause is solved, so in the end we have up to two plans that are comparable.
    */
-  private def planUpdatesInputAndHorizon(matchPlan: LogicalPlan, in: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
+  private def planUpdatesAndInput(matchPlan: LogicalPlan, in: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val planWithUpdates = planUpdates(in, matchPlan, firstPlannerQuery = true, context)
 
-    val planWithInput = in.queryInput match {
+    in.queryInput match {
       case Some(variables) =>
         val inputPlan = context.logicalPlanProducer.planInput(variables, context)
         context.logicalPlanProducer.planInputApply(inputPlan, planWithUpdates, variables, context)
       case None => planWithUpdates
     }
-
-    planEventHorizon(in, planWithInput, None, context)
   }
 }
 
@@ -123,11 +122,14 @@ trait MatchPlanner {
 }
 
 trait EventHorizonPlanner {
-  def apply(query: SinglePlannerQuery, plan: LogicalPlan, previousInterestingOrder: Option[InterestingOrder], context: LogicalPlanningContext): LogicalPlan
+  def planHorizon(plannerQuery: SinglePlannerQuery,
+                  incomingPlans: BestResults[LogicalPlan],
+                  prevInterestingOrder: Option[InterestingOrder],
+                  context: LogicalPlanningContext): BestResults[LogicalPlan]
 }
 
 trait TailPlanner {
-  def apply(lhsPlans: Seq[LogicalPlan], in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
+  def apply(lhsPlans: BestPlans, in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
 }
 
 trait UpdatesPlanner {

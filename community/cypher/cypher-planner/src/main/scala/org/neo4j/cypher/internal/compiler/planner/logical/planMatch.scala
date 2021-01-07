@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.util.Selectivity
 
@@ -38,38 +37,8 @@ case object planMatch extends MatchPlanner {
 
     context.strategy.plan(
       query.queryGraph,
-      interestingOrderForPart(query, rhsPart),
+      InterestingOrderConfig.interestingOrderForPart(query, rhsPart, isHorizon = false),
       context.withLimitSelectivity(limitSelectivity))
-  }
-
-  // Extract the interesting InterestingOrder for this part of the query
-  // If the required order has dependency on argument, then it should not solve the ordering here
-  // If we have a mutating pattern that depends on the sorting variables, we cannot solve ordering here
-  private def interestingOrderForPart(query: SinglePlannerQuery, isRhs: Boolean): InterestingOrderConfig = {
-    if (isRhs) {
-      InterestingOrderConfig(query.interestingOrder.asInteresting)
-    }
-    else {
-      val orderToReport = query.interestingOrder
-      val orderToSolve = query.findFirstRequiredOrder.fold(orderToReport) { order =>
-        // merge interesting order candidates
-        val existing = order.interestingOrderCandidates.toSet
-        val extraCandidates = orderToReport.interestingOrderCandidates.filterNot(existing.contains)
-        order.copy(interestingOrderCandidates = order.interestingOrderCandidates ++ extraCandidates)
-      }
-      val mutatingDependencies = query.queryGraph.mutatingPatterns.flatMap(_.dependencies)
-      if (hasDependencies(orderToReport, mutatingDependencies) || hasDependencies(orderToSolve, mutatingDependencies)) {
-        InterestingOrderConfig(orderToReport.asInteresting)
-      } else {
-        InterestingOrderConfig(orderToReport = orderToReport, orderToSolve = orderToSolve)
-      }
-    }
-  }
-
-  private def hasDependencies(interestingOrder: InterestingOrder, dependencies: Seq[String]): Boolean = {
-    val orderCandidate = interestingOrder.requiredOrderCandidate.order
-    val orderingDependencies = orderCandidate.flatMap(_.projections).flatMap(_._2.dependencies) ++ orderCandidate.flatMap(_.expression.dependencies)
-    orderingDependencies.exists(dep => dependencies.contains(dep.name))
   }
 
   private[logical] def limitSelectivityForRestOfQuery(query: SinglePlannerQuery, context: LogicalPlanningContext): Selectivity = {

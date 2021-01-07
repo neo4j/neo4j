@@ -802,21 +802,26 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planEmptyProjection(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
     annotate(EmptyResult(inner), solveds.get(inner.id), ProvidedOrder.empty, context)
 
-  def planStarProjection(inner: LogicalPlan, reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
-    val newSolved: SinglePlannerQuery = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
-    // Keep some attributes, but change solved
-    val keptAttributes = Attributes(idGen, cardinalities, providedOrders, leveragedOrders)
-    val newPlan = inner.copyPlanWithIdGen(keptAttributes.copy(inner.id))
-    solveds.set(newPlan.id, newSolved)
-    newPlan
+  def planStarProjection(inner: LogicalPlan, reported: Option[Map[String, Expression]]): LogicalPlan = {
+    reported.fold(inner) { reported =>
+      val newSolved: SinglePlannerQuery = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
+      // Keep some attributes, but change solved
+      val keptAttributes = Attributes(idGen, cardinalities, providedOrders, leveragedOrders)
+      val newPlan = inner.copyPlanWithIdGen(keptAttributes.copy(inner.id))
+      solveds.set(newPlan.id, newSolved)
+      newPlan
+    }
   }
 
   /**
    * @param expressions must be solved by the PatternExpressionSolver. This is not done here since that can influence the projection list,
    *                    thus this logic is put into [[projection]] instead.
    */
-  def planRegularProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
-    val solved: SinglePlannerQuery = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
+  def planRegularProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Option[Map[String, Expression]], context: LogicalPlanningContext): LogicalPlan = {
+    val innerSolved: SinglePlannerQuery = solveds.get(inner.id).asSinglePlannerQuery
+    val solved = reported.fold(innerSolved) { reported =>
+      innerSolved.updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
+    }
     planRegularProjectionHelper(inner, expressions, context, solved)
   }
 

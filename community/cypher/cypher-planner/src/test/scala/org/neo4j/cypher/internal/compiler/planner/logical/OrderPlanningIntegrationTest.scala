@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Distinct
@@ -1201,7 +1202,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     plan shouldBe a[Sort]
   }
 
-  private def chooseLargerIndexConfig(): StatisticsBackedLogicalPlanningConfiguration = {
+  private val chooseLargerIndexConfig: StatisticsBackedLogicalPlanningConfiguration = {
     val nodeCount = 10000
     plannerBuilder()
       .setAllNodesCardinality(nodeCount)
@@ -1220,7 +1221,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN DISTINCT a.prop
         |ORDER BY a.prop""".stripMargin
 
-    val plan = chooseLargerIndexConfig()
+    val plan = chooseLargerIndexConfig
       .plan(query)
       .stripProduceResults
 
@@ -1245,7 +1246,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN a, b, c
         |ORDER BY a.prop""".stripMargin
 
-    val plan = chooseLargerIndexConfig()
+    val plan = chooseLargerIndexConfig
       .plan(query)
       .stripProduceResults
 
@@ -1255,6 +1256,36 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         case _: PartialSort => true
       } shouldBe 0
     }
+  }
+
+  test("Should soft before widening expands, when sorting after horizon with udpates.") {
+    val query =
+      """MATCH (a:A)
+        |WHERE exists(a.prop) AND exists(a.foo)
+        |CREATE (newNode)
+        |WITH DISTINCT a
+        |MATCH (a)-[r1]->(b)-[r2]->(c)
+        |RETURN a, b, c
+        |ORDER BY a.prop""".stripMargin
+
+    val plan = chooseLargerIndexConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = chooseLargerIndexConfig.subPlanBuilder()
+      .filter("not r1 = r2")
+      .expandAll("(b)-[r2]->(c)")
+      .expandAll("(a)-[r1]->(b)")
+      .sort(Seq(Ascending("a.prop")))
+      .projection("cacheN[a.prop] AS `a.prop`")
+      .distinct("a AS a")
+      .eager()
+      .create(createNode("newNode"))
+      .filter("exists(cacheN[a.prop])")
+      .nodeIndexOperator("a:A(foo)")
+      .build()
+
+    plan shouldEqual expectedPlan
   }
 
   test("Should choose larger index on the same variable, if sorting can be avoided, when sorting after multiple horizons.") {
@@ -1267,7 +1298,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN a, b, c
         |ORDER BY a.prop""".stripMargin
 
-    val plan = chooseLargerIndexConfig()
+    val plan = chooseLargerIndexConfig
       .plan(query)
       .stripProduceResults
 
@@ -1289,7 +1320,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN x, b, c
         |ORDER BY x.prop""".stripMargin
 
-    val plan = chooseLargerIndexConfig()
+    val plan = chooseLargerIndexConfig
       .plan(query)
       .stripProduceResults
 
@@ -1314,7 +1345,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN x, y, b, c
         |ORDER BY y.prop""".stripMargin
 
-    val plan = chooseLargerIndexConfig()
+    val plan = chooseLargerIndexConfig
       .plan(query)
       .stripProduceResults
 
@@ -1326,7 +1357,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     }
   }
 
-  private def wideningExpandConfig(): StatisticsBackedLogicalPlanningConfiguration = {
+  private val wideningExpandConfig: StatisticsBackedLogicalPlanningConfiguration = {
     val nodeCount = 10000
     plannerBuilder()
       .setAllNodesCardinality(nodeCount)
@@ -1343,7 +1374,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN DISTINCT a.prop
         |ORDER BY a.prop""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1358,7 +1389,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN DISTINCT a.prop AS x
         |ORDER BY x""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1373,7 +1404,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN DISTINCT a.prop AS x
         |ORDER BY a.prop""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1388,7 +1419,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN DISTINCT a.prop+1 AS x
         |ORDER BY x""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1403,7 +1434,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN DISTINCT a.prop+1 AS x
         |ORDER BY a.prop+1""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1418,7 +1449,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN DISTINCT a.prop +1 AS x
         |ORDER BY a.prop+ 1""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1433,7 +1464,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN DISTINCT a.prop+ 1
         |ORDER BY a.prop +1""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1448,7 +1479,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN DISTINCT a.prop AS p1, a.prop AS p2
         |ORDER BY p1""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1482,7 +1513,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN a.prop, count(*) AS c
         |ORDER BY a.prop""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1497,7 +1528,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN a.prop AS x, count(*) AS c
         |ORDER BY x""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1512,7 +1543,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN a.prop AS x, count(*) AS c
         |ORDER BY a.prop""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1527,7 +1558,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN a.prop+1 AS x, count(*) AS c
         |ORDER BY x""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1542,7 +1573,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN a.prop+1 AS x, count(*) AS c
         |ORDER BY a.prop+1""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1557,7 +1588,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN a.prop +1 AS x, count(*) AS c
         |ORDER BY a.prop+ 1""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1572,7 +1603,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN a.prop+ 1, count(*) AS c
         |ORDER BY a.prop +1""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1586,7 +1617,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN a.prop AS p1, a.prop AS p2, count(*) AS c
         |ORDER BY p1""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1620,7 +1651,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN a.prop AS p1, a.prop AS p2, count(*) AS c
         |ORDER BY p1""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
@@ -1659,15 +1690,142 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN a, b
         |ORDER BY a.prop""".stripMargin
 
-    val plan = wideningExpandConfig()
+    val plan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 
-    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+    val expectedPlan = wideningExpandConfig.subPlanBuilder()
       .expand("(a)-[r]->(b)")
       .skip(0)
       .sort(Seq(Ascending("a.prop")))
       .projection("a.prop AS `a.prop`")
+      .allNodeScan("a")
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should sort after multiple query parts with narrowing expands, before widening expand") {
+    val query =
+      """MATCH (a)-[r1:NARROW]->(b)
+        |WITH DISTINCT a, b
+        |MATCH (b)-[r2:NARROW]->(c)-[r3:NARROW]->(d)
+        |WITH DISTINCT a, b, c, d
+        |MATCH (d)-[r4:R]->(e)
+        |RETURN a, b, c, d, e ORDER BY a.prop""".stripMargin
+
+    val plan = wideningExpandConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = wideningExpandConfig.subPlanBuilder()
+      .expandAll("(d)-[r4:R]->(e)")
+      .sort(Seq(Ascending("a.prop")))
+      .projection("a.prop AS `a.prop`")
+      .distinct("a AS a", "b AS b", "c AS c", "d AS d")
+      .filter("not r2 = r3")
+      .expandAll("(c)-[r3:NARROW]->(d)")
+      .expandAll("(b)-[r2:NARROW]->(c)")
+      .distinct("a AS a", "b AS b")
+      .expandAll("(a)-[r1:NARROW]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should sort after distinct, before widening expand") {
+    val query =
+      """MATCH (a)-[r1:NARROW]->(b)
+        |WITH DISTINCT a, b
+        |MATCH (b)-[r2:R]->(c)
+        |RETURN a, b, c ORDER BY a.prop""".stripMargin
+
+    val plan = wideningExpandConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = wideningExpandConfig.subPlanBuilder()
+      .expandAll("(b)-[r2:R]->(c)")
+      .sort(Seq(Ascending("a.prop")))
+      .projection("a.prop AS `a.prop`")
+      .distinct("a AS a", "b AS b")
+      .expandAll("(a)-[r1:NARROW]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should sort before widening expand after updating plan in horizon") {
+    val query =
+      """MATCH (a)-[r1:NARROW]->(b)
+        |FOREACH (x in [1,2,3] | SET a.prop = x)
+        |WITH *
+        |MATCH (b)-[r2:R]->(c)
+        |RETURN a, b, c ORDER BY a""".stripMargin
+
+    val plan = wideningExpandConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = wideningExpandConfig.subPlanBuilder()
+      .expandAll("(b)-[r2:R]->(c)")
+      .sort(Seq(Ascending("a")))
+      .eager()
+      .foreachApply("x", "[1, 2, 3]")
+      .|.setNodeProperty("a", "prop", "x")
+      .|.argument("a", "b", "r1", "x")
+      .expandAll("(a)-[r1:NARROW]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should sort before 2 widening expands with unwind inbetween") {
+    val query =
+      """MATCH (a)-[r1:R]->(b)
+        |UNWIND [1, 2, 3] AS i
+        |MATCH (b)-[r2:R]->(c)
+        |RETURN a, b, c ORDER BY a.prop""".stripMargin
+
+    val plan = wideningExpandConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = wideningExpandConfig.subPlanBuilder()
+      .expandAll("(b)-[r2:R]->(c)")
+      .unwind("[1, 2, 3] AS i")
+      .expandAll("(a)-[r1:R]->(b)")
+      .sort(Seq(Ascending("a.prop")))
+      .projection("a.prop AS `a.prop`")
+      .allNodeScan("a")
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should not sort before widening expand if there is an updating plan in tail") {
+    val query =
+      """MATCH (a)-[r1:NARROW]->(b)
+        |WITH DISTINCT a, b
+        |MATCH (b)-[r2:R]->(c)
+        |CREATE (newNode)
+        |RETURN a, b, c ORDER BY a.prop""".stripMargin
+
+    val plan = wideningExpandConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = wideningExpandConfig.subPlanBuilder()
+      .sort(Seq(Ascending("a.prop")))
+      .projection("a.prop AS `a.prop`")
+      .create(createNode("newNode"))
+      .eager()
+      .expandAll("(b)-[r2:R]->(c)")
+      .distinct("a AS a", "b AS b")
+      .expandAll("(a)-[r1:NARROW]->(b)")
       .allNodeScan("a")
       .build()
 
@@ -1682,15 +1840,17 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |RETURN prop, other
         |ORDER BY other""".stripMargin
 
-    val plan = plannerBuilder()
+    val cfg = plannerBuilder()
       .setAllNodesCardinality(10000)
       .setLabelCardinality("N", 1000)
       .addIndex("N", Seq("prop"), existsSelectivity = 0.9, uniqueSelectivity = 0.9, withValues = true, providesOrder = IndexOrderCapability.ASC)
       .build()
+
+    val plan = cfg
       .plan(query)
       .stripProduceResults
 
-    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+    val expectedPlan = cfg.subPlanBuilder()
       .sort(Seq(Ascending("other")))
       .orderedDistinct(Seq("cache[n.prop]"), "cache[n.prop] AS prop", "n.otherProp AS other")
       .nodeIndexOperator("n:N(prop)", getValue = GetValue, indexOrder = IndexOrderAscending)

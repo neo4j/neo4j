@@ -71,7 +71,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val projections = Map("xfoo" -> prop("x", "foo"))
 
       //when
-      val result = lpp.planRegularProjection(plan, projections, projections, context)
+      val result = lpp.planRegularProjection(plan, projections, Some(projections), context)
 
       // then
       context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(varFor("xfoo")).fromLeft)
@@ -88,7 +88,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val projections = Map("y" -> varFor("x"))
 
       //when
-      val result = lpp.planRegularProjection(plan, projections, projections, context)
+      val result = lpp.planRegularProjection(plan, projections, Some(projections), context)
 
       // then
       context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(prop("y","foo")).fromLeft)
@@ -105,7 +105,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val projections = Map("y" -> varFor("x"))
 
       //when
-      val result = lpp.planRegularProjection(plan, projections, projections, context)
+      val result = lpp.planRegularProjection(plan, projections, Some(projections), context)
 
       // then
       context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(varFor("y")).fromLeft)
@@ -122,7 +122,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val projections = Map("carrot" -> cachedNodeProp("x", "foo"))
 
       //when
-      val result = lpp.planRegularProjection(plan, projections, projections, context)
+      val result = lpp.planRegularProjection(plan, projections, Some(projections), context)
 
       // then
       context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(varFor("carrot")).fromLeft)

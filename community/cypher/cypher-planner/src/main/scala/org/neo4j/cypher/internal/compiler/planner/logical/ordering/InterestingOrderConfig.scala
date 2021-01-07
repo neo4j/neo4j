@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.ordering
 
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 
 /**
@@ -37,4 +38,21 @@ object InterestingOrderConfig {
     InterestingOrderConfig(orderToReportAndSolve, orderToReportAndSolve)
 
   val empty: InterestingOrderConfig = InterestingOrderConfig(InterestingOrder.empty)
+
+  def interestingOrderForPart(query: SinglePlannerQuery, isRhs: Boolean, isHorizon: Boolean): InterestingOrderConfig = {
+    val readOnly = if (isHorizon) query.tail.forall(_.readOnly) else query.readOnly
+    if (isRhs || !readOnly) {
+      InterestingOrderConfig(query.interestingOrder.asInteresting)
+    }
+    else {
+      val orderToReport = query.interestingOrder
+      val orderToSolve = query.findFirstRequiredOrder.fold(orderToReport) { order =>
+        // merge interesting order candidates
+        val existing = order.interestingOrderCandidates.toSet
+        val extraCandidates = orderToReport.interestingOrderCandidates.filterNot(existing.contains)
+        order.copy(interestingOrderCandidates = order.interestingOrderCandidates ++ extraCandidates)
+      }
+      InterestingOrderConfig(orderToReport = orderToReport, orderToSolve = orderToSolve)
+    }
+  }
 }

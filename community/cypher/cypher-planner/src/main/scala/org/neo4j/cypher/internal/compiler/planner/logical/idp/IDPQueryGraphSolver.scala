@@ -65,7 +65,7 @@ object IDPQueryGraphSolver {
     if (interestingOrderConfig.orderToSolve.isEmpty) {
       selectingSolverStep
     } else {
-      val sortingSolverStep = selectingSolverStep.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrderConfig, context).filterNot(_ == plan))
+      val sortingSolverStep = selectingSolverStep.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrderConfig, context, updateSolved = true).filterNot(_ == plan))
       selectingSolverStep ++ sortingSolverStep
     }
   }

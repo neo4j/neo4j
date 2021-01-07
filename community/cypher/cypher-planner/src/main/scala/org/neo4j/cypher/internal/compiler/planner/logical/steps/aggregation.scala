@@ -78,7 +78,7 @@ object aggregation {
       val projectedPlan = context.logicalPlanProducer.planRegularProjection(
         rewrittenPlan,
         projectionMapForLimit,
-        Map.empty,
+        None,
         context
       )
 

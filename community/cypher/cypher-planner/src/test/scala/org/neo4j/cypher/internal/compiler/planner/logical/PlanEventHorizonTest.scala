@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
@@ -66,7 +67,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = Argument()
 
       // When
-      val producedPlan = PlanEventHorizon(pq, inputPlan, None, context)
+      val producedPlan = PlanEventHorizon.planHorizonForPlan(pq, inputPlan, None, context, InterestingOrderConfig(pq.interestingOrder))
 
       // Then
       producedPlan should equal(Projection(inputPlan, Map("a" -> literal)))
@@ -89,7 +90,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = Argument()
 
       // When
-      val producedPlan = PlanEventHorizon(pq, inputPlan, None, context)
+      val producedPlan = PlanEventHorizon.planHorizonForPlan(pq, inputPlan, None, context, InterestingOrderConfig(pq.interestingOrder))
 
       // Then
       producedPlan should equal(ProcedureCall(inputPlan, call))
@@ -106,7 +107,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = Argument()
 
       // When
-      val producedPlan = PlanEventHorizon(pq, inputPlan, None, context)
+      val producedPlan = PlanEventHorizon.planHorizonForPlan(pq, inputPlan, None, context, InterestingOrderConfig(pq.interestingOrder))
 
       // Then
       producedPlan should equal(CartesianProduct(
@@ -126,7 +127,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = Argument()
 
       // When
-      val producedPlan = PlanEventHorizon(pq, inputPlan, None, context)
+      val producedPlan = PlanEventHorizon.planHorizonForPlan(pq, inputPlan, None, context, InterestingOrderConfig(pq.interestingOrder))
 
       // Then
       producedPlan should equal(Apply(
@@ -147,7 +148,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       context.planningAttributes.solveds.set(inputPlan.id, SinglePlannerQuery.empty)
 
       // When
-      val producedPlan = PlanEventHorizon(pq, inputPlan, None, context)
+      val producedPlan = PlanEventHorizon.planHorizonForPlan(pq, inputPlan, None, context, InterestingOrderConfig(pq.interestingOrder))
 
       // Then
       producedPlan should equal(Projection(Sort(inputPlan, Seq(Ascending("a"))), Map("b" -> literal, "c" -> literal)))
@@ -165,7 +166,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       context.planningAttributes.solveds.set(inputPlan.id, SinglePlannerQuery.empty)
 
       // When
-      val producedPlan = PlanEventHorizon(pq, inputPlan, None, context)
+      val producedPlan = PlanEventHorizon.planHorizonForPlan(pq, inputPlan, None, context, InterestingOrderConfig(pq.interestingOrder))
 
       // Then
       producedPlan should equal(Projection(Sort(Projection(inputPlan, Map("a" -> literal)), Seq(Ascending("a"))), Map("b" -> literal, "c" -> literal)))
@@ -183,7 +184,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
 
       // When
-      val result = PlanEventHorizon(pq, inputPlan, None, context)
+      val result = PlanEventHorizon.planHorizonForPlan(pq, inputPlan, None, context, InterestingOrderConfig(pq.interestingOrder))
 
       // Then
       val sorted = Sort(inputPlan, Seq(Ascending("x")))
@@ -208,7 +209,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "m", "n")
 
       // When
-      val result = PlanEventHorizon(pq, inputPlan, None, context)
+      val result = PlanEventHorizon.planHorizonForPlan(pq, inputPlan, None, context, InterestingOrderConfig(pq.interestingOrder))
 
       // Then
       val distinct = Distinct(inputPlan, groupingExpressions = projectionsMap)
@@ -239,7 +240,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "m", "n", "o")
 
       // When
-      val result = PlanEventHorizon(pq, inputPlan, None, context)
+      val result = PlanEventHorizon.planHorizonForPlan(pq, inputPlan, None, context, InterestingOrderConfig(pq.interestingOrder))
 
       // Then
       val aggregation = Aggregation(inputPlan, grouping, aggregating)

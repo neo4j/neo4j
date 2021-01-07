@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.aggregation
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.distinct
@@ -44,73 +45,109 @@ aggregation and UNWIND.
  */
 case object PlanEventHorizon extends EventHorizonPlanner {
 
-  override def apply(query: SinglePlannerQuery, plan: LogicalPlan, previousInterestingOrder: Option[InterestingOrder], context: LogicalPlanningContext): LogicalPlan = {
-    val interestingOrderForPlanning = InterestingOrderConfig(query.interestingOrder)
-    val selectedPlan = context.config.applySelections(plan, query.queryGraph, interestingOrderForPlanning, context)
+  override def planHorizon(plannerQuery: SinglePlannerQuery,
+                           incomingPlans: BestResults[LogicalPlan],
+                           prevInterestingOrder: Option[InterestingOrder],
+                           context: LogicalPlanningContext): BestResults[LogicalPlan] = {
+    val pickBest: CandidateSelector = {
+      val limitSelectivity = planMatch.limitSelectivityForRestOfQuery(plannerQuery, context)
+      context.config.pickBestCandidate(context.withLimitSelectivity(limitSelectivity))
+    }
+    // This config will only plan Sort if there is a required order in this plannerQuery
+    val sortIfSelfRequiredConfig = InterestingOrderConfig(plannerQuery.interestingOrder)
+    // This config will even plan Sort if there is a required order in a tail plannerQuery
+    val sortIfTailOrSelfRequiredConfig = InterestingOrderConfig.interestingOrderForPart(plannerQuery, isRhs = false, isHorizon = true)
+
+    def planSortIfSelfRequired = planHorizonForPlan(plannerQuery, incomingPlans.bestResult, prevInterestingOrder, context, sortIfSelfRequiredConfig)
+    def planSortIfTailOrSelfRequired = planHorizonForPlan(plannerQuery, incomingPlans.bestResult, prevInterestingOrder, context, sortIfTailOrSelfRequiredConfig)
+    def maintainSort = incomingPlans.bestResultFulfillingReq.map(planHorizonForPlan(plannerQuery, _, prevInterestingOrder, context, sortIfTailOrSelfRequiredConfig))
+
+    if (plannerQuery.interestingOrder.requiredOrderCandidate.nonEmpty) {
+      val Some(bestOverall) = pickBest(Seq(planSortIfSelfRequired) ++ maintainSort, "best overall plan with horizon")
+      BestResults(bestOverall, None)
+    } else {
+      val bestOverall = planSortIfSelfRequired
+      val bestSorted = if (sortIfSelfRequiredConfig == sortIfTailOrSelfRequiredConfig) {
+        None
+      } else {
+        pickBest(Seq(planSortIfTailOrSelfRequired) ++ maintainSort, "best sorted plan with horizon")
+      }
+      BestResults(bestOverall, bestSorted)
+    }
+  }
+
+  private[logical] def planHorizonForPlan(query: SinglePlannerQuery,
+                                          plan: LogicalPlan,
+                                          previousInterestingOrder: Option[InterestingOrder],
+                                          context: LogicalPlanningContext,
+                                          interestingOrderConfig: InterestingOrderConfig): LogicalPlan = {
+    val selectedPlan = context.config.applySelections(plan, query.queryGraph, interestingOrderConfig, context)
+    // We only want to mark a planned Sort (or a projection for a Sort) as solved if the ORDER BY comes from the current horizon.
+    val updateSolvedOrdering = query.interestingOrder.requiredOrderCandidate.nonEmpty
 
     val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
-        val aggregationPlan = aggregation(selectedPlan, aggregatingProjection, interestingOrderForPlanning.orderToReport, previousInterestingOrder, context)
+        val aggregationPlan = aggregation(selectedPlan, aggregatingProjection, interestingOrderConfig.orderToReport, previousInterestingOrder, context)
         // aggregation is the only case where sort happens after the projection. The provided order of the aggregation plan will include
         // renames of the projection, thus we need to rename this as well for the required order before considering planning a sort.
-        val sorted = SortPlanner.ensureSortedPlanWithSolved(aggregationPlan, interestingOrderForPlanning, context)
+        val sorted = SortPlanner.ensureSortedPlanWithSolved(aggregationPlan, interestingOrderConfig, context, updateSolvedOrdering)
         val limited = skipAndLimit(sorted, query, context)
         if (aggregatingProjection.selections.isEmpty) {
           limited
         } else {
           val predicates = aggregatingProjection.selections.flatPredicates
-          context.logicalPlanProducer.planHorizonSelection(limited, predicates, interestingOrderForPlanning, context)
+          context.logicalPlanProducer.planHorizonSelection(limited, predicates, interestingOrderConfig, context)
         }
 
       case regularProjection: RegularQueryProjection =>
-        val sorted = SortPlanner.ensureSortedPlanWithSolved(selectedPlan, interestingOrderForPlanning, context)
+        val sorted = SortPlanner.ensureSortedPlanWithSolved(selectedPlan, interestingOrderConfig, context, updateSolvedOrdering)
         val limited = skipAndLimit(sorted, query, context)
         val projected =
           if (regularProjection.projections.isEmpty && query.tail.isEmpty) {
             context.logicalPlanProducer.planEmptyProjection(plan, context)
           } else {
-            projection(limited, regularProjection.projections, regularProjection.projections, context)
+            projection(limited, regularProjection.projections, Some(regularProjection.projections), context)
           }
         if (regularProjection.selections.isEmpty) {
           projected
         } else {
           val predicates = regularProjection.selections.flatPredicates
-          context.logicalPlanProducer.planHorizonSelection(projected, predicates, interestingOrderForPlanning, context)
+          context.logicalPlanProducer.planHorizonSelection(projected, predicates, interestingOrderConfig, context)
         }
 
       case distinctProjection: DistinctQueryProjection =>
         val distinctPlan = distinct(selectedPlan, distinctProjection, context)
-        val sorted = SortPlanner.ensureSortedPlanWithSolved(distinctPlan, interestingOrderForPlanning, context)
+        val sorted = SortPlanner.ensureSortedPlanWithSolved(distinctPlan, interestingOrderConfig, context, updateSolvedOrdering)
         val limited = skipAndLimit(sorted, query, context)
         if (distinctProjection.selections.isEmpty) {
           limited
         } else {
           val predicates = distinctProjection.selections.flatPredicates
-          context.logicalPlanProducer.planHorizonSelection(limited, predicates, interestingOrderForPlanning, context)
+          context.logicalPlanProducer.planHorizonSelection(limited, predicates, interestingOrderConfig, context)
         }
 
       case UnwindProjection(variable, expression) =>
         val projected = context.logicalPlanProducer.planUnwind(selectedPlan, variable, expression, context)
-        SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderForPlanning, context)
+        SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderConfig, context, updateSolvedOrdering)
 
       case ProcedureCallProjection(call) =>
         val projected = context.logicalPlanProducer.planProcedureCall(plan, call, context)
-        SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderForPlanning, context)
+        SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderConfig, context, updateSolvedOrdering)
 
       case LoadCSVProjection(variableName, url, format, fieldTerminator) =>
         val projected = context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator, context)
-        SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderForPlanning, context)
+        SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderConfig, context, updateSolvedOrdering)
 
       case PassthroughAllHorizon() =>
         val projected = context.logicalPlanProducer.planPassAll(plan, context)
-        SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderForPlanning, context)
+        SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderConfig, context, updateSolvedOrdering)
 
       case CallSubqueryHorizon(callSubquery, correlated) =>
+        // TODO call SortPlanner
         val subqueryContext = if (correlated)
           context.withUpdatedLabelInfo(plan)
         else
           context
-
         val subPlan = plannerQueryPartPlanner.plan(callSubquery, subqueryContext)
         context.logicalPlanProducer.planSubquery(plan, subPlan, context, correlated)
 

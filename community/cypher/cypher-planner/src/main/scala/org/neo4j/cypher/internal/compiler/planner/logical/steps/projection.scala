@@ -30,7 +30,7 @@ object projection {
 
   def apply(in: LogicalPlan,
             projectionsToPlan: Map[String, Expression],
-            projectionsToMarkSolved: Map[String, Expression],
+            projectionsToMarkSolved: Option[Map[String, Expression]],
             context: LogicalPlanningContext): LogicalPlan = {
     val stillToSolveProjection = projectionsLeft(in, projectionsToPlan, context.planningAttributes.solveds)
     val solver = PatternExpressionSolver.solverFor(in, context)
@@ -48,7 +48,7 @@ object projection {
       }).toMap
 
     if (projectionsDiff.isEmpty) {
-      context.logicalPlanProducer.planStarProjection(plan, projectionsToMarkSolved, context)
+      context.logicalPlanProducer.planStarProjection(plan, projectionsToMarkSolved)
     } else {
       context.logicalPlanProducer.planRegularProjection(plan, projectionsDiff, projectionsToMarkSolved, context)
     }

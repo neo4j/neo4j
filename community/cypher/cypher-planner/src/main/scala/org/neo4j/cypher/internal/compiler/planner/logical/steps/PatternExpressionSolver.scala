@@ -298,7 +298,7 @@ object PatternExpressionSolver {
       val innerPlan = context.strategy.plan(qg, InterestingOrderConfig.empty, context).result
       val variableToCollectName = expr.variableToCollectName
       val projectedPath = projectionCreator(expr)
-      val projectedInner = projection(innerPlan, Map(variableToCollectName -> projectedPath), Map(variableToCollectName -> projectedPath), context)
+      val projectedInner = projection(innerPlan, Map(variableToCollectName -> projectedPath), Some(Map(variableToCollectName -> projectedPath)), context)
       PlannedSubQuery(columnName = variableToCollectName, innerPlan = projectedInner)
     }
   }

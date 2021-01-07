@@ -160,7 +160,7 @@ case object plannerQueryPartPlanner {
         val partPlanWithProjection = context.logicalPlanProducer.planProjectionForUnionMapping(partPlan, projectionsForPart, context)
 
         val queryPlan = planSingleQuery(query, context)
-        val queryPlanWithProjection = context.logicalPlanProducer.planRegularProjection(queryPlan, projectionsForQuery, Map.empty, context)
+        val queryPlanWithProjection = context.logicalPlanProducer.planRegularProjection(queryPlan, projectionsForQuery, None, context)
 
         val unionPlan = context.logicalPlanProducer.planUnion(partPlanWithProjection, queryPlanWithProjection, unionMappings, context)
         if (distinct && distinctifyUnions)

@@ -265,7 +265,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       // The first in where we put the sorted component left-most, so that we don't have to plan an extra sort.
       val candidate1 = componentsWithSortedPlanFirst.map(cross).map(_.plan)
       // The second is taking the cheapest order of cartesian products, and planning an extra sort afterwards.
-      val candidate2 = SortPlanner.maybeSortedPlan(bestPlan.plan, interestingOrderConfig, context)
+      val candidate2 = SortPlanner.maybeSortedPlan(bestPlan.plan, interestingOrderConfig, context, updateSolved = true)
       kit.pickBest(Set(candidate1, candidate2).flatten, s"best sorted plan for ${plans.map(_.queryGraph)}")
     }
     PlannedComponent(bestPlan.queryGraph, BestResults(bestPlan.plan, bestSortedPlan))
