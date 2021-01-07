@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.ProcedureName
@@ -34,6 +35,7 @@ import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -52,6 +54,7 @@ import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -246,6 +249,134 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val aggregation = Aggregation(inputPlan, grouping, aggregating)
       val sorted = Sort(aggregation, Seq(Ascending("m"), Ascending("o")))
       result should equal(sorted)
+    }
+  }
+
+  /**
+   * Plan that claims to solve a projection `variable` AS `variable` and is sorted ASC by `variable`.
+   */
+  private def fakeSortedLogicalPlanFor(planningAttributes: PlanningAttributes, variable: String) = {
+    // __sorted to disambiguate from unsorted plan.
+    val result = fakeLogicalPlanFor(planningAttributes, variable, "__sorted")
+    // Fake sort the plan
+    planningAttributes.solveds.set(result.id, RegularSinglePlannerQuery(interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor(variable)))))
+    planningAttributes.providedOrders.set(result.id, ProvidedOrder.asc(varFor(variable)))
+    result
+  }
+
+  test("planHorizon, only self required order, cheapest to maintain sorted plan") {
+    // Given
+    new given {
+      cost = {
+        // Cheaper to maintain sort.
+        case (lp, _, _, _) if lp.availableSymbols.contains("__sorted") => 1.0
+        case _ => 10.0
+      }
+    }.withLogicalPlanningContext { (_, context) =>
+      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))
+      val horizon = RegularQueryProjection(Map("x" -> varFor("x")))
+      val pq = RegularSinglePlannerQuery(interestingOrder = interestingOrder, horizon = horizon)
+
+      val bestInputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val bestSortedInputPlan = fakeSortedLogicalPlanFor(context.planningAttributes, "x")
+
+      // When
+      val result = PlanEventHorizon.planHorizon(pq, BestResults(bestInputPlan, Some(bestSortedInputPlan)), None, context)
+
+      // Then
+      result shouldBe BestResults(bestSortedInputPlan, None)
+    }
+  }
+
+  test("planHorizon, only self required order, cheapest to sort") {
+    // Given
+    new given{
+      cost = {
+        // Cheaper to sort.
+        case (lp, _, _, _) if lp.availableSymbols.contains("__sorted") => 10.0
+        case _ => 1.0
+      }
+    }.withLogicalPlanningContext { (_, context) =>
+      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))
+      val horizon = RegularQueryProjection(Map("x" -> varFor("x")))
+      val pq = RegularSinglePlannerQuery(interestingOrder = interestingOrder, horizon = horizon)
+
+      val bestInputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val bestSortedInputPlan = fakeSortedLogicalPlanFor(context.planningAttributes, "x")
+
+      // When
+      val result = PlanEventHorizon.planHorizon(pq, BestResults(bestInputPlan, Some(bestSortedInputPlan)), None, context)
+
+      // Then
+      result shouldBe BestResults(Sort(bestInputPlan, Seq(Ascending("x"))), None)
+    }
+  }
+
+  test("planHorizon, tail required order, cheapest to maintain sorted plan") {
+    // Given
+    new given {
+      cost = {
+        // Cheaper to maintain sort.
+        case (lp, _, _, _) if lp.availableSymbols.contains("__sorted") => 1.0
+        case _ => 10.0
+      }
+    }.withLogicalPlanningContext { (_, context) =>
+      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))
+      val horizon = RegularQueryProjection(Map("x" -> varFor("x")))
+      val pq = RegularSinglePlannerQuery(interestingOrder = InterestingOrder.empty, horizon = horizon,
+        tail = Some(RegularSinglePlannerQuery(interestingOrder = interestingOrder)))
+
+      val bestInputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val bestSortedInputPlan = fakeSortedLogicalPlanFor(context.planningAttributes, "x")
+
+      // When
+      val result = PlanEventHorizon.planHorizon(pq, BestResults(bestInputPlan, Some(bestSortedInputPlan)), None, context)
+
+      // Then
+      result shouldBe BestResults(bestInputPlan, Some(bestSortedInputPlan))
+    }
+  }
+
+  test("planHorizon, tail required order, cheapest to sort") {
+    // Given
+    new given {
+      cost = {
+        // Cheaper to sort.
+        case (lp, _, _, _) if lp.availableSymbols.contains("__sorted") => 10.0
+        case _ => 1.0
+      }
+    }.withLogicalPlanningContext { (_, context) =>
+      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))
+      val horizon = RegularQueryProjection(Map("x" -> varFor("x")))
+      val pq = RegularSinglePlannerQuery(interestingOrder = InterestingOrder.empty, horizon = horizon,
+        tail = Some(RegularSinglePlannerQuery(interestingOrder = interestingOrder)))
+
+      val bestInputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      val bestSortedInputPlan = fakeSortedLogicalPlanFor(context.planningAttributes, "x")
+
+      // When
+      val result = PlanEventHorizon.planHorizon(pq, BestResults(bestInputPlan, Some(bestSortedInputPlan)), None, context)
+
+      // Then
+      result shouldBe BestResults(bestInputPlan, Some(Sort(bestInputPlan, Seq(Ascending("x")))))
+    }
+  }
+
+  test("planHorizon, no required order") {
+    // Given
+    new given().withLogicalPlanningContext { (_, context) =>
+      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))
+      val horizon = RegularQueryProjection(Map("x" -> varFor("x")))
+      val pq = RegularSinglePlannerQuery(interestingOrder = InterestingOrder.empty, horizon = horizon,
+        tail = Some(RegularSinglePlannerQuery(interestingOrder = InterestingOrder.empty)))
+
+      val bestInputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+
+      // When
+      val result = PlanEventHorizon.planHorizon(pq, BestResults(bestInputPlan, None), None, context)
+
+      // Then
+      result shouldBe BestResults(bestInputPlan, None)
     }
   }
 }
