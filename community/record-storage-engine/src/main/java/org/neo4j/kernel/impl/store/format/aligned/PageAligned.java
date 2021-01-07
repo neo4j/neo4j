@@ -27,5 +27,7 @@ public class PageAligned
     {
     }
 
-    public static final RecordFormats LATEST_RECORD_FORMATS = PageAlignedV4_1.RECORD_FORMATS;
+    public static final RecordFormats LATEST_RECORD_FORMATS = PageAlignedV4_3.RECORD_FORMATS;
+    public static final String LATEST_NAME = PageAlignedV4_3.NAME;
+
 }

@@ -41,7 +41,6 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
-import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -83,7 +82,7 @@ class IdGeneratorMigratorTest
         }
         // Pretend that the relationship store was copied so that relationship id file should be migrated from there
         try ( NeoStores neoStores = new StoreFactory( upgrade, defaults(), new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs,
-                StandardV4_0.RECORD_FORMATS, nullLogProvider(), PageCacheTracer.NULL, immutable.empty() ).openAllNeoStores( true ) )
+                Standard.LATEST_RECORD_FORMATS, nullLogProvider(), PageCacheTracer.NULL, immutable.empty() ).openAllNeoStores( true ) )
         {
             // Let relationships have every fourth a created record
             createSomeRecordsAndSomeHoles( neoStores.getRelationshipStore(), 600, 3, 1 );

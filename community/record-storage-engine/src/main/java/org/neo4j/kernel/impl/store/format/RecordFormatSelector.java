@@ -38,10 +38,12 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_1;
+import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_3;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
+import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.service.Services;
 
@@ -64,12 +66,14 @@ import static org.neo4j.kernel.impl.store.format.FormatFamily.isSameFamily;
 public class RecordFormatSelector
 {
     private static final String STORE_SELECTION_TAG = "storeSelection";
-    private static final RecordFormats DEFAULT_FORMAT = PageAlignedV4_1.RECORD_FORMATS;
+    private static final RecordFormats DEFAULT_FORMAT = PageAlignedV4_3.RECORD_FORMATS;
 
     private static final List<RecordFormats> KNOWN_FORMATS = asList(
             StandardV3_4.RECORD_FORMATS,
             StandardV4_0.RECORD_FORMATS,
-            PageAlignedV4_1.RECORD_FORMATS
+            StandardV4_3.RECORD_FORMATS,
+            PageAlignedV4_1.RECORD_FORMATS,
+            PageAlignedV4_3.RECORD_FORMATS
     );
 
     private RecordFormatSelector()

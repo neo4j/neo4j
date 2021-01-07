@@ -84,6 +84,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -123,7 +124,7 @@ import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.Configuration.defaultConfiguration;
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.KERNEL_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
@@ -687,8 +688,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
         // Upgrade version in NeoStore
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, STORE_VERSION, MetaDataStore.versionStringToLong( versionToMigrateTo ), cursorTracer );
-
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, CHECKPOINT_LOG_VERSION, 0, cursorTracer );
+        if ( MetaDataStore.getRecord( pageCache, sourceDirectoryStructure.metadataStore(), KERNEL_VERSION, cursorTracer ) == FIELD_NOT_PRESENT )
+        {
+            MetaDataStore.setRecord( pageCache, migrationDirNeoStore, KERNEL_VERSION, KernelVersion.V4_2.version(), cursorTracer );
+        }
     }
 
     private boolean requiresSchemaStoreMigration( RecordFormats oldFormat, RecordFormats newFormat )

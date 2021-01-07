@@ -17,14 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.standard;
+package org.neo4j.kernel.impl.store.format.aligned;
 
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
-import org.neo4j.kernel.impl.store.format.StoreVersion;
+import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.LabelTokenRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.PropertyKeyTokenRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.PropertyRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.RelationshipGroupRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.RelationshipRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.RelationshipTypeTokenRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.SchemaRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -36,15 +45,26 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.IndexCapabilities;
 
-public class StandardV4_0 extends BaseRecordFormats
-{
-    public static final String STORE_VERSION = StoreVersion.STANDARD_V4_0.versionString();
-    public static final RecordFormats RECORD_FORMATS = new StandardV4_0();
-    public static final String NAME = "standardV4_0";
+import static org.neo4j.kernel.impl.store.format.StoreVersion.ALIGNED_V4_3;
 
-    public StandardV4_0()
+/**
+ * Record format, very similar to {@link Standard}, only more machine friendly.
+ *
+ * Pages are padded at the end instead of letting record span 2 pages.
+ * As a result, we can ask the OS to fetch and write full 8K pages which
+ * it is more happier to work with than for instance 8K - 5 bytes.
+ *
+ * The only reason why it is just not an evolution of the standard format is
+ * that it requires costly migration.
+ */
+public class PageAlignedV4_3 extends BaseRecordFormats
+{
+    public static final RecordFormats RECORD_FORMATS = new PageAlignedV4_3();
+    public static final String NAME = "aligned";
+
+    private PageAlignedV4_3()
     {
-        super( STORE_VERSION, StoreVersion.STANDARD_V4_0.introductionVersion(), 9,
+        super( ALIGNED_V4_3.versionString(), ALIGNED_V4_3.introductionVersion(), 2,
                 RecordStorageCapability.SCHEMA,
                 RecordStorageCapability.DENSE_NODES,
                 RecordStorageCapability.POINT_PROPERTIES,
@@ -55,67 +75,68 @@ public class StandardV4_0 extends BaseRecordFormats
                 IndexCapabilities.LuceneCapability.LUCENE_8,
                 IndexCapabilities.IndexProviderCapability.INDEX_PROVIDERS_40,
                 IndexCapabilities.ConfigCapability.SCHEMA_STORE_CONFIG,
-                RecordStorageCapability.GBPTREE_COUNTS_STORE );
+                RecordStorageCapability.GBPTREE_COUNTS_STORE,
+                RecordStorageCapability.KERNEL_VERSION );
     }
 
     @Override
     public RecordFormat<NodeRecord> node()
     {
-        return new NodeRecordFormat();
+        return new NodeRecordFormat( true );
     }
 
     @Override
     public RecordFormat<RelationshipGroupRecord> relationshipGroup()
     {
-        return new RelationshipGroupRecordFormat();
+        return new RelationshipGroupRecordFormat( true );
     }
 
     @Override
     public RecordFormat<RelationshipRecord> relationship()
     {
-        return new RelationshipRecordFormat();
+        return new RelationshipRecordFormat( true );
     }
 
     @Override
     public RecordFormat<PropertyRecord> property()
     {
-        return new PropertyRecordFormat();
+        return new PropertyRecordFormat( true );
     }
 
     @Override
     public RecordFormat<LabelTokenRecord> labelToken()
     {
-        return new LabelTokenRecordFormat();
+        return new LabelTokenRecordFormat( true );
     }
 
     @Override
     public RecordFormat<PropertyKeyTokenRecord> propertyKeyToken()
     {
-        return new PropertyKeyTokenRecordFormat();
+        return new PropertyKeyTokenRecordFormat( true );
     }
 
     @Override
     public RecordFormat<RelationshipTypeTokenRecord> relationshipTypeToken()
     {
-        return new RelationshipTypeTokenRecordFormat();
+        return new RelationshipTypeTokenRecordFormat( true );
     }
 
     @Override
     public RecordFormat<DynamicRecord> dynamic()
     {
-        return new DynamicRecordFormat();
-    }
-
-    @Override
-    public FormatFamily getFormatFamily()
-    {
-        return StandardFormatFamily.INSTANCE;
+        return new DynamicRecordFormat( true );
     }
 
     @Override
     public RecordFormat<SchemaRecord> schema()
     {
-        return new SchemaRecordFormat();
+        return new SchemaRecordFormat( true );
+    }
+
+    @Override
+    public FormatFamily getFormatFamily()
+    {
+        return AlignedFormatFamily.INSTANCE;
     }
 
     @Override

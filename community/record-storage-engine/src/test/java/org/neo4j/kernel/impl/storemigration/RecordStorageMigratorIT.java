@@ -49,6 +49,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
+import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
@@ -64,6 +65,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -100,12 +102,16 @@ import static java.util.Collections.singleton;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.allocateRecordsFromBytes;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.LogAssertions.assertThat;
+import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.migration.MigrationProgressMonitor.SILENT;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -130,7 +136,7 @@ class RecordStorageMigratorIT
     private DatabaseLayout migrationLayout;
     private BatchImporterFactory batchImporterFactory;
 
-    private final MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
+    private final MigrationProgressMonitor progressMonitor = SILENT;
     private final JobScheduler jobScheduler = new ThreadPoolJobScheduler();
 
     private static Stream<Arguments> versions()
@@ -170,7 +176,7 @@ class RecordStorageMigratorIT
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
-        MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
+        MigrationProgressMonitor progressMonitor = SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
                 batchImporterFactory, INSTANCE );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
@@ -232,7 +238,7 @@ class RecordStorageMigratorIT
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
-        MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
+        MigrationProgressMonitor progressMonitor = SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
                 batchImporterFactory, INSTANCE );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
@@ -264,7 +270,7 @@ class RecordStorageMigratorIT
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
-        MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
+        MigrationProgressMonitor progressMonitor = SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
                 batchImporterFactory, INSTANCE );
 
@@ -290,7 +296,7 @@ class RecordStorageMigratorIT
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
-        MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
+        MigrationProgressMonitor progressMonitor = SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
                 batchImporterFactory, INSTANCE );
 
@@ -382,7 +388,7 @@ class RecordStorageMigratorIT
 
         RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
-        MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
+        MigrationProgressMonitor progressMonitor = SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler, PageCacheTracer.NULL,
                 batchImporterFactory, INSTANCE );
 
@@ -409,6 +415,75 @@ class RecordStorageMigratorIT
             generatedRules = generatedRules.stream().map( r -> r.withName( "a" ) ).collect( Collectors.toList() );
 
             assertThat( migratedRules ).isEqualTo( generatedRules );
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void shouldStartCheckpointLogVersionFromZeroIfMissingBeforeMigration( String version, LogPosition expectedLogPosition,
+            Function<TransactionId,Boolean> txIdComparator ) throws Exception
+    {
+        // given
+        Path prepare = testDirectory.directory( "prepare" );
+        var fs = testDirectory.getFileSystem();
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
+        RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
+        String versionToMigrateFrom = getVersionToMigrateFrom( check );
+        String versionToMigrateTo = getVersionToMigrateTo( check );
+
+        // when
+        RecordStorageMigrator migrator =
+                new RecordStorageMigrator( fs, pageCache, CONFIG, NullLogService.getInstance(), jobScheduler, PageCacheTracer.NULL, batchImporterFactory,
+                        INSTANCE );
+
+        // when
+        migrator.migrate( databaseLayout, migrationLayout, SILENT.startSection( "section" ), versionToMigrateFrom, versionToMigrateTo );
+        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo );
+        // since this migrates from a legacy ID generator to the new ones then remove the neostore.id file (which we're opening below)
+        fs.deleteFile( databaseLayout.idMetadataStore() );
+
+        // then
+        try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs,
+                nullLogProvider(), PageCacheTracer.NULL ).openNeoStores( StoreType.META_DATA ) )
+        {
+            neoStores.start( NULL );
+            assertThat( neoStores.getMetaDataStore().getCheckpointLogVersion() ).isEqualTo( 0 );
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void shouldKeepCheckpointLogVersionIfPresentBeforeMigration( String version, LogPosition expectedLogPosition,
+            Function<TransactionId,Boolean> txIdComparator ) throws Exception
+    {
+        // given
+        Path prepare = testDirectory.directory( "prepare" );
+        var fs = testDirectory.getFileSystem();
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout.databaseDirectory(), prepare );
+        RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
+        String versionToMigrateFrom = getVersionToMigrateFrom( check );
+        String versionToMigrateTo = getVersionToMigrateTo( check );
+        // explicitly set a checkpoint log version into the meta data store
+        long checkpointLogVersion = 4;
+        MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), CHECKPOINT_LOG_VERSION, checkpointLogVersion, NULL );
+
+        // when
+        RecordStorageMigrator migrator =
+                new RecordStorageMigrator( fs, pageCache, CONFIG, NullLogService.getInstance(), jobScheduler, PageCacheTracer.NULL, batchImporterFactory,
+                        INSTANCE );
+
+        // when
+        migrator.migrate( databaseLayout, migrationLayout, SILENT.startSection( "section" ), versionToMigrateFrom, versionToMigrateTo );
+        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo );
+        // since this migrates from a legacy ID generator to the new ones then remove the neostore.id file (which we're opening below)
+        fs.deleteFile( databaseLayout.idMetadataStore() );
+
+        // then
+        try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs,
+                nullLogProvider(), PageCacheTracer.NULL ).openNeoStores( StoreType.META_DATA ) )
+        {
+            neoStores.start( NULL );
+            assertThat( neoStores.getMetaDataStore().getCheckpointLogVersion() ).isEqualTo( checkpointLogVersion );
         }
     }
 

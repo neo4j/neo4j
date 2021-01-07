@@ -30,7 +30,7 @@ public class Standard
     {
     }
 
-    public static final String LATEST_STORE_VERSION = StandardV4_0.STORE_VERSION;
-    public static final RecordFormats LATEST_RECORD_FORMATS = StandardV4_0.RECORD_FORMATS;
-    public static final String LATEST_NAME = StandardV4_0.NAME;
+    public static final String LATEST_STORE_VERSION = StandardV4_3.STORE_VERSION;
+    public static final RecordFormats LATEST_RECORD_FORMATS = StandardV4_3.RECORD_FORMATS;
+    public static final String LATEST_NAME = StandardV4_3.NAME;
 }

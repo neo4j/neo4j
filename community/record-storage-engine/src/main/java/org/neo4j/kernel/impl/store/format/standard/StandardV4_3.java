@@ -36,15 +36,15 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.IndexCapabilities;
 
-public class StandardV4_0 extends BaseRecordFormats
+public class StandardV4_3 extends BaseRecordFormats
 {
-    public static final String STORE_VERSION = StoreVersion.STANDARD_V4_0.versionString();
-    public static final RecordFormats RECORD_FORMATS = new StandardV4_0();
-    public static final String NAME = "standardV4_0";
+    public static final String STORE_VERSION = StoreVersion.STANDARD_V4_3.versionString();
+    public static final RecordFormats RECORD_FORMATS = new StandardV4_3();
+    public static final String NAME = "standard";
 
-    public StandardV4_0()
+    public StandardV4_3()
     {
-        super( STORE_VERSION, StoreVersion.STANDARD_V4_0.introductionVersion(), 9,
+        super( STORE_VERSION, StoreVersion.STANDARD_V4_3.introductionVersion(), 10,
                 RecordStorageCapability.SCHEMA,
                 RecordStorageCapability.DENSE_NODES,
                 RecordStorageCapability.POINT_PROPERTIES,
@@ -55,7 +55,8 @@ public class StandardV4_0 extends BaseRecordFormats
                 IndexCapabilities.LuceneCapability.LUCENE_8,
                 IndexCapabilities.IndexProviderCapability.INDEX_PROVIDERS_40,
                 IndexCapabilities.ConfigCapability.SCHEMA_STORE_CONFIG,
-                RecordStorageCapability.GBPTREE_COUNTS_STORE );
+                RecordStorageCapability.GBPTREE_COUNTS_STORE,
+                RecordStorageCapability.KERNEL_VERSION );
     }
 
     @Override
