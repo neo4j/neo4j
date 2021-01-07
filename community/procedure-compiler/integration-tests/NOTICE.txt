@@ -37,8 +37,10 @@ Apache Software License, Version 2.0
   Guava ListenableFuture only
   Guava: Google Core Libraries for Java
   J2ObjC Annotations
-  java-diff-utils
   Truth Core
+
+BSD License
+  asm
 
 MIT License
   Checker Qual
