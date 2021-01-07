@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.SystemOutCostLogger
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
@@ -38,14 +36,11 @@ import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
-import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.StepSequencer
 
 case object QueryPlanner
@@ -173,65 +168,7 @@ case object plannerQueryPartPlanner {
     }
 }
 
-case object planMatch extends MatchPlanner {
 
-  def apply(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): BestPlans = {
-    val ctx = query.preferredStrictness match {
-      case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
-      case _ => context
-    }
-
-    val maybeLimitSelectivity = limitSelectivityForPart(query.withoutTail, context)
-
-    ctx.strategy.plan(
-      query.queryGraph,
-      interestingOrderForPart(query, rhsPart),
-      maybeLimitSelectivity.fold(ctx)(ctx.withLimitSelectivity))
-  }
-
-  // Extract the interesting InterestingOrder for this part of the query
-  // If the required order has dependency on argument, then it should not solve the ordering here
-  // If we have a mutating pattern that depends on the sorting variables, we cannot solve ordering here
-  private def interestingOrderForPart(query: SinglePlannerQuery, isRhs: Boolean): InterestingOrderConfig = {
-    if (isRhs) {
-      InterestingOrderConfig(query.interestingOrder.asInteresting)
-    }
-    else {
-      val orderToReport = query.interestingOrder
-      val orderToSolve = query.findFirstRequiredOrder.fold(orderToReport) { order =>
-        // merge interesting order candidates
-        val existing = order.interestingOrderCandidates.toSet
-        val extraCandidates = orderToReport.interestingOrderCandidates.filterNot(existing.contains)
-        order.copy(interestingOrderCandidates = order.interestingOrderCandidates ++ extraCandidates)
-      }
-      val mutatingDependencies = query.queryGraph.mutatingPatterns.flatMap(_.dependencies)
-      if (hasDependencies(orderToReport, mutatingDependencies) || hasDependencies(orderToSolve, mutatingDependencies))
-        InterestingOrderConfig(orderToReport.asInteresting)
-      else
-        InterestingOrderConfig(orderToReport = orderToReport, orderToSolve = orderToSolve)
-    }
-  }
-
-  private def hasDependencies(interestingOrder: InterestingOrder, dependencies: Seq[String]): Boolean = {
-    val orderCandidate = interestingOrder.requiredOrderCandidate.order
-    val orderingDependencies = orderCandidate.flatMap(_.projections).flatMap(_._2.dependencies) ++ orderCandidate.flatMap(_.expression.dependencies)
-    orderingDependencies.exists(dep => dependencies.contains(dep.name))
-  }
-
-  private def limitSelectivityForPart(query: SinglePlannerQuery, context: LogicalPlanningContext): Option[Selectivity] = {
-    query.horizon match {
-      case proj: QueryProjection if proj.queryPagination.limit.isDefined =>
-        val cardinalityModel = context.metrics.cardinality(_, context.input, context.semanticTable)
-        val cardinalityWithLimit = cardinalityModel(query)
-        val cardinalityWithoutLimit = cardinalityModel(
-          query.updateQueryProjection(_ => proj.withPagination(proj.queryPagination.withLimit(None))))
-
-        cardinalityWithLimit / cardinalityWithoutLimit
-
-      case _ => None
-    }
-  }
-}
 
 trait SingleQueryPlanner {
   def apply(in: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan
