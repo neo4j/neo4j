@@ -66,7 +66,7 @@
     <maven.compiler.target>11</maven.compiler.target>
     <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
     <lucene.version>8.2.0</lucene.version>
-    <bouncycastle.version>1.64</bouncycastle.version>
+    <bouncycastle.version>1.68</bouncycastle.version>
     <ThreadLeakageGuardExtension.PRINT_ONLY>false</ThreadLeakageGuardExtension.PRINT_ONLY>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
     <test.runner.jvm/>
