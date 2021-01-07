@@ -107,6 +107,8 @@ import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
+import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
+import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
@@ -934,6 +936,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       newNode(varFor(VariableParser.unescaped(relationship.endNode)))
     })
     appendAtCurrentIndent(UnaryOperator(source => Create(source, nodes, relationships)(_)))
+  }
+
+  def mergeCreateNode(node: CreateNode): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => MergeCreateNode(source, node.idName, node.labels, node.properties)(_)))
+  }
+
+  def mergeCreateRelationship(rel: CreateRelationship): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source => MergeCreateRelationship(source, rel.idName, rel.startNode, rel.relType, rel.endNode, rel.properties)(_)))
   }
 
   def nodeHashJoin(nodes: String*): IMPL = {

@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.graphdb.Label.label
 import org.neo4j.internal.helpers.collection.Iterables
 
@@ -39,7 +40,7 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsScalaMapConverter
 
-abstract class CreateTestBase[CONTEXT <: RuntimeContext](
+abstract class MergeCreateTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
                                                                runtime: CypherRuntime[CONTEXT],
                                                                sizeHint: Int
@@ -47,17 +48,18 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
 
   test("should create node with labels") {
-    // given an empty data base
+    // given a null node
+    val values = inputValues(Array(null))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .create(createNode("n", "A", "B", "C"))
-      .argument()
+      .mergeCreateNode(createNode("n", "A", "B", "C"))
+      .input(Seq("n"))
       .build(readOnly = false)
 
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, values)
     consume(runtimeResult)
     val node = Iterables.single(tx.getAllNodes)
     runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 3)
@@ -65,18 +67,19 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should create node with labels and empty results") {
-    // given an empty data base
+    // given a null node
+    val values = inputValues(Array(null))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .emptyResult()
-      .create(createNode("n", "A", "B", "C"))
-      .argument()
+      .mergeCreateNode(createNode("n", "A", "B", "C"))
+      .input(Seq("n"))
       .build(readOnly = false)
 
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, values)
     consume(runtimeResult)
     val node = Iterables.single(tx.getAllNodes)
     runtimeResult should beColumns("n").withNoRows().withStatistics(nodesCreated = 1, labelsAdded = 3)
@@ -84,59 +87,37 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should create node with properties") {
-    // given an empty data base
+    // given null input
+    val values = inputValues(Array(null))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .create(createNodeWithProperties("n", Seq("A"), "{p1: 1, p2: 2, p3: 3}"))
-      .argument()
+      .mergeCreateNode(createNodeWithProperties("n", Seq("A"), "{p1: 1, p2: 2, p3: 3}"))
+      .input(Seq("n"))
       .build(readOnly = false)
 
     // then
-    val runtimeResult = execute(logicalQuery, runtime)
+    val runtimeResult = execute(logicalQuery, runtime, values)
     consume(runtimeResult)
     val node = Iterables.single(tx.getAllNodes)
     runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 1, propertiesSet = 3)
     node.getAllProperties.asScala should equal(Map("p1" -> 1 , "p2" -> 2, "p3" -> 3))
   }
 
-  test("should handle creating node with null properties") {
-    // given an empty data base
+  test("should fail creating node if property is null") {
+    // given null input
+    val values = inputValues(Array[Any](null))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .create(createNodeWithProperties("n", Seq("A"), "{p1: 1, p2: null}"))
-      .argument()
+      .mergeCreateNode(createNodeWithProperties("n", Seq("A"), "{p1: 1, p2: NULL}"))
+      .input(Seq("n"))
       .build(readOnly = false)
-
     // then
-    val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
-    val node = Iterables.single(tx.getAllNodes)
-    runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
-    node.getAllProperties.asScala should equal(Map("p1" -> 1))
-  }
-
-  test("should create two nodes with dependency") {
-    // given an empty data base
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("mprop", "nprop")
-      .projection("m.prop AS mprop", "n.prop AS nprop")
-      .create(
-        createNodeWithProperties("m", Seq("A"), "{prop: 1}"),
-        createNodeWithProperties("n", Seq("A"), "{prop: m.prop + 1}")
-      )
-      .argument()
-      .build(readOnly = false)
-
-    // then
-    val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
-    runtimeResult should beColumns("mprop", "nprop").withSingleRow(1, 2).withStatistics(nodesCreated = 2, labelsAdded = 2, propertiesSet = 2)
+    the [InvalidSemanticsException] thrownBy consume(execute(logicalQuery, runtime, values)) should have message
+      s"Cannot merge the following node because of null property value for 'p2': (:A {p2: null})"
   }
 
   test("should create many nodes with labels") {
@@ -148,7 +129,8 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .create(createNode("n", "A", "B", "C"))
+      .mergeCreateNode(createNode("n", "A", "B", "C"))
+      .optionalExpandAll("(x)-[:NONE]-(n)") // required to introduce variable 'n'
       .expand("(x)--(y)")
       .nodeByLabelScan("x", "L", IndexOrderNone)
       .build(readOnly = false)
@@ -163,18 +145,19 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not create node when LIMIT 0 before CREATE") {
-    // given an empty data base
+    // given null input
+    val values = inputValues(Array[Any](null))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .create(createNode("n", "A", "B", "C"))
+      .mergeCreateNode(createNode("n", "A", "B", "C"))
       .limit(0)
-      .argument()
+      .input(Seq("n"))
       .build(readOnly = false)
 
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, values)
     consume(runtimeResult)
     tx.getAllNodes.asScala shouldBe empty
     runtimeResult should beColumns("n").withNoRows().withNoUpdates()
@@ -188,8 +171,9 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .create(createNode("n", "A", "B", "C"))
+      .mergeCreateNode(createNode("n", "A", "B", "C"))
       .limit(3)
+      .optionalExpandAll("(x)-[:NON_EXISTENT]-(n)") // required to introduce variable 'n'
       .expand("(x)--(y)")
       .nodeByLabelScan("x", "L", IndexOrderNone)
       .build(readOnly = false)
@@ -212,8 +196,9 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .apply()
-      .|.create(createNode("n", "A", "B", "C"))
+      .|.mergeCreateNode(createNode("n", "A", "B", "C"))
       .|.limit(1)
+      .|.optionalExpandAll("(x)-[:NON_EXISTENT]-(n)") // required to introduce variable 'n'
       .|.expand("(x)--(y)")
       .|.argument("x")
       .nodeByLabelScan("x", "L", IndexOrderNone)
@@ -229,19 +214,20 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should create node with labels on the RHS of an Apply") {
-    // given an empty data base
+    // given null node
+    val values = inputValues(Array(null))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .apply()
-      .|.create(createNode("n", "A", "B", "C"))
+      .|.mergeCreateNode(createNode("n", "A", "B", "C"))
       .|.argument()
-      .argument()
+      .input(Seq("n"))
       .build(readOnly = false)
 
     // then
-    val runtimeResult = execute(logicalQuery, runtime)
+    val runtimeResult = execute(logicalQuery, runtime, values)
     consume(runtimeResult)
     val node = Iterables.single(tx.getAllNodes)
     runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 3)
@@ -258,7 +244,8 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .apply()
-      .|.create(createNode("n", "A", "B", "C"))
+      .|.mergeCreateNode(createNode("n", "A", "B", "C"))
+      .|.optionalExpandAll("(x)-[:NON_EXISTENT]-(n)") // required to introduce variable 'n'
       .|.expand("(x)--(y)")
       .|.argument("x")
       .nodeByLabelScan("x", "L", IndexOrderNone)
@@ -274,19 +261,20 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should create relationship with type and properties") {
-    // given an empty data base
+    // given null node
+    val values = inputValues(Array(null, null, null))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .create(nodes = Seq(createNode("n", "A"), createNode("m", "B")),
-        relationships = Seq(
-          createRelationship("r", "n", "R", "m", OUTGOING, Some("{p1: 1, p2: 2, p3: 3}"))))
-      .argument()
+      .mergeCreateRelationship(createRelationship("r", "n", "R", "m", OUTGOING, Some("{p1: 1, p2: 2, p3: 3}")))
+      .mergeCreateNode(createNode("m", "B"))
+      .mergeCreateNode(createNode("n", "A"))
+      .input(Seq("n", "m"), Seq("r"))
       .build(readOnly = false)
 
     // then
-    val runtimeResult = execute(logicalQuery, runtime)
+    val runtimeResult = execute(logicalQuery, runtime, values)
     consume(runtimeResult)
     val relationship = Iterables.single(tx.getAllRelationships)
     runtimeResult should beColumns("r").withSingleRow(relationship).withStatistics(nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1, propertiesSet = 3)
@@ -294,47 +282,22 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     relationship.getAllProperties.asScala should equal(Map("p1" -> 1 , "p2" -> 2, "p3" -> 3))
   }
 
-  test("should create relationship with null property") {
-    // given an empty data base
+  test("should fail creating relationship if property is null") {
+    // given null node
+    val values = inputValues(Array(null, null, null))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .create(nodes = Seq(createNode("n", "A"), createNode("m", "B")),
-        relationships = Seq(
-          createRelationship("r", "n", "R", "m", OUTGOING, Some("{p1: 1, p2: null}"))))
-      .argument()
+      .mergeCreateRelationship(createRelationship("r", "n", "R", "m", OUTGOING, Some("{p1: 1, p2: NULL}")))
+      .mergeCreateNode(createNode("m", "B"))
+      .mergeCreateNode(createNode("n", "A"))
+      .input(Seq("n", "m"), Seq("r"))
       .build(readOnly = false)
 
     // then
-    val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
-    val relationship = Iterables.single(tx.getAllRelationships)
-    runtimeResult should beColumns("r").withSingleRow(relationship).withStatistics(nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1, propertiesSet = 1)
-    relationship.getType.name() should equal("R")
-    relationship.getAllProperties.asScala should equal(Map("p1" -> 1 ))
-  }
-
-  test("should create two relationships with dependency") {
-    // given an empty data base
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r1prop", "r2prop")
-      .projection("r1.prop AS r1prop", "r2.prop AS r2prop")
-      .create(nodes = Seq(createNode("n", "A"), createNode("m", "B")),
-          relationships = Seq(
-            createRelationship("r1", "n", "R", "m", OUTGOING, Some("{prop: 1}")),
-            createRelationship("r2", "n", "R", "m", OUTGOING, Some("{prop: r1.prop + 1}"))
-          )
-      )
-      .argument()
-      .build(readOnly = false)
-
-    // then
-    val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
-    runtimeResult should beColumns("r1prop", "r2prop").withSingleRow(1, 2).withStatistics(nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 2, propertiesSet = 2)
+    the [InvalidSemanticsException] thrownBy consume(execute(logicalQuery, runtime, values)) should have message
+      s"Cannot merge the following relationship because of null property value for 'p2': (n)-[:R {p2: null}]->(m)"
   }
 
   test("should create many relationships on the RHS of an Apply") {
@@ -347,8 +310,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .apply()
-      .|.create(nodes = Seq.empty,
-                relationships = Seq(createRelationship("r", "x", "NEW", "y", OUTGOING)))
+      .|.mergeCreateRelationship(createRelationship("r", "x", "NEW", "y", OUTGOING))
       .|.expand("(x)-[:R]-(y)")
       .|.argument("x")
       .nodeByLabelScan("x", "L", IndexOrderNone)
@@ -368,8 +330,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .create(nodes = Seq.empty,
-        relationships = Seq(createRelationship("r", "n", "R", "n", OUTGOING)))
+      .mergeCreateRelationship(createRelationship("r", "n", "R", "n", OUTGOING))
       .input(nodes = Seq("n"))
       .build(readOnly = false)
 
@@ -384,8 +345,8 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .create(nodes = Seq(createNode("m", "A")),
-        relationships = Seq(createRelationship("r", "n", "R", "m", OUTGOING)))
+      .mergeCreateRelationship(createRelationship("r", "n", "R", "m", OUTGOING))
+      .create(createNode("m", "A"))
       .input(nodes = Seq("n"))
       .build(readOnly = false)
 
@@ -400,8 +361,8 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .create(nodes = Seq(createNode("n", "A")),
-        relationships = Seq(createRelationship("r", "n", "R", "m", OUTGOING)))
+      .mergeCreateRelationship(createRelationship("r", "n", "R", "m", OUTGOING))
+      .create(createNode("n", "A"))
       .input(nodes = Seq("m"))
       .build(readOnly = false)
 
@@ -411,58 +372,63 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   }
 }
 
-abstract class LenientCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
-                                                                            edition: Edition[CONTEXT],
-                                                                            runtime: CypherRuntime[CONTEXT]
-                                                                          )
+abstract class LenientMergeCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
+                                                                                  edition: Edition[CONTEXT],
+                                                                                  runtime: CypherRuntime[CONTEXT]
+                                                                                )
   extends RuntimeTestSuite[CONTEXT](edition.copyWith(
     GraphDatabaseSettings.cypher_lenient_create_relationship -> java.lang.Boolean.TRUE), runtime) {
   test("should ignore to create relationship if both nodes are missing") {
-    // given an empty data base
+    // given null nodes
+    val values = inputValues(Array(null, null, null))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .create(nodes = Seq.empty,
-        relationships = Seq(createRelationship("r", "n", "R", "n", OUTGOING)))
-      .input(nodes = Seq("n"))
+      .mergeCreateRelationship(createRelationship("r", "n", "R", "n", OUTGOING))
+      .input(nodes = Seq("n", "m"), relationships = Seq("r"))
       .build(readOnly = false)
 
-    val results = execute(logicalQuery, runtime, inputValues(Array[Any](null)))
+    val results = execute(logicalQuery, runtime, values)
     consume(results)
     results should beColumns("r").withSingleRow(null).withNoUpdates()
   }
 
   test("should ignore to create relationship if start node is missing") {
-    // given an empty data base
+    // given null nodes
+    val input = given {
+      val nodes = nodeGraph(10)
+      nodes.map(m => Array[Any](null, m, null))
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .create(nodes = Seq(createNode("m", "A")),
-        relationships = Seq(createRelationship("r", "n", "R", "m", OUTGOING)))
-      .input(nodes = Seq("n"))
+      .mergeCreateRelationship(createRelationship("r", "n", "R", "m", OUTGOING))
+      .input(nodes = Seq("n", "m"), relationships = Seq("r"))
       .build(readOnly = false)
 
-    val results = execute(logicalQuery, runtime, inputValues(Array[Any](null)))
+    val results = execute(logicalQuery, runtime, inputValues(input: _*))
     consume(results)
-    results should beColumns("r").withSingleRow(null).withStatistics(nodesCreated = 1, labelsAdded = 1)
+    results should beColumns("r").withRows(singleColumn(input.map(_ => null))).withNoUpdates()
   }
 
   test("should ignore to create relationship if end node is missing") {
-    // given an empty data base
+    // given null nodes
+    val input = given {
+      val nodes = nodeGraph(10)
+      nodes.map(n => Array[Any](n, null, null))
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .create(nodes = Seq(createNode("n", "A")),
-        relationships = Seq(createRelationship("r", "n", "R", "m", OUTGOING)))
-      .input(nodes = Seq("m"))
+      .mergeCreateRelationship(createRelationship("r", "n", "R", "m", OUTGOING))
+      .input(nodes = Seq("n", "m"), relationships = Seq("r"))
       .build(readOnly = false)
 
-    val results = execute(logicalQuery, runtime, inputValues(Array[Any](null)))
+    val results = execute(logicalQuery, runtime, inputValues(input: _*))
     consume(results)
-    results should beColumns("r").withSingleRow(null).withStatistics(nodesCreated = 1, labelsAdded = 1)
+    results should beColumns("r").withRows(singleColumn(input.map(_ => null))).withNoUpdates()
   }
-
 }
