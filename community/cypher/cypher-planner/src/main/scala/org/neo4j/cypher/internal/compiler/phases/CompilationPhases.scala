@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.CheckForUnresolvedTokens
 import org.neo4j.cypher.internal.compiler.planner.ResolveTokens
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.CardinalityRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDs
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties
@@ -89,6 +90,7 @@ object CompilationPhases {
     QueryPlanner,
     PlanRewriter,
     InsertCachedProperties,
+    CardinalityRewriter,
     CompressPlanIDs,
     CheckForUnresolvedTokens,
   ), initialConditions = Set(StatementCondition(containsNoReturnAll)))
