@@ -105,7 +105,12 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
     override def hasParameters(expr: Expression): Boolean = ???
   }
 
-  lazy val labelsById: Map[Int, String] = indexes.keys.map(_.label).zipWithIndex.map(_.swap).toMap
+  lazy val labelsById: Map[Int, String] = {
+    val indexed = indexes.keys.map(_.label).toSeq
+    val known = knownLabels.toSeq
+    val indexedThenKnown = (indexed ++ known).distinct
+    indexedThenKnown.zipWithIndex.map(_.swap).toMap
+  }
 
   override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders), Cost] = {
     case (lp, input, semanticTable, cardinalities, providedOrders) =>

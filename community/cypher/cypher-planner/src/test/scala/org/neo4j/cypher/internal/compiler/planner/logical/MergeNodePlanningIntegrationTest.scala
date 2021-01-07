@@ -63,6 +63,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val emptyResult = EmptyResult(mergeNode)
 
     (new given {
+      knownLabels = Set("X")
       labelCardinality = Map(
         "X" -> 30.0
       )

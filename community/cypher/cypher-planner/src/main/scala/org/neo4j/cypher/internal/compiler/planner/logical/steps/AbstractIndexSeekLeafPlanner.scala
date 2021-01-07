@@ -116,9 +116,9 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
     }
 
     // Find plans solving given label predicates together with any property predicates from QG
-    lazy val allIndexCompatibles: Set[IndexCompatiblePredicate] = qg.selections.flatPredicates.toSet.collect(
-      asIndexCompatiblePredicate(qg.argumentIds, arguments, qg.hints))
     val resultFromLabelPredicates = {
+      lazy val allIndexCompatibles: Set[IndexCompatiblePredicate] = qg.selections.flatPredicates.toSet.collect(
+        asIndexCompatiblePredicate(qg.argumentIds, arguments, qg.hints))
       val candidateLabelPredicates = predicates.collect { case p@HasLabels(v: LogicalVariable, _) => IndexCandidateHasLabelsPredicate(v.name, p) }
       candidateLabelPredicates.flatMap { candidate =>
         val name = candidate.name
