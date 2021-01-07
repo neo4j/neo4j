@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -51,6 +52,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -59,6 +61,7 @@ import java.util.stream.StreamSupport;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -71,6 +74,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.NodeEntity;
+import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -586,6 +590,99 @@ class DenseNodeConcurrencyIT
                 details -> details.isAt( NodeEntity.class, "createRelationshipTo" ) );
     }
 
+    /* Some tests to verify that (Public API) tx lock behavior is unchanged */
+
+    @ParameterizedTest
+    @ValueSource( booleans = {false, true} )
+    void txNodeLocksShouldBlockNodeOperations( boolean writeLock ) throws Throwable
+    {
+        nodeOperationShouldBeBlockedByNodeLock( Node::delete, "delete", writeLock );
+        nodeOperationShouldBeBlockedByNodeLock( node -> node.addLabel( Label.label( "foo" ) ), "addLabel", writeLock );
+        nodeOperationShouldBeBlockedByNodeLock( node -> node.setProperty( "foo", "bar" ), "setProperty", writeLock );
+    }
+
+    @Test
+    void txNodeWriteLockShouldBlockRelationshipOperations() throws Throwable
+    {
+        nodeOperationShouldBeBlockedByNodeLock( node -> node.createRelationshipTo( node, RelationshipType.withName( "foo" ) ), "createRelationshipTo", true );
+        relationshipOperationShouldBeBlockedByNodeLock( Relationship::delete, "delete", true );
+    }
+
+    @ParameterizedTest
+    @ValueSource( booleans = {false, true} )
+    void txRelationshipWriteLockShouldBlockRelationshipOperation( boolean writeLock ) throws Throwable
+    {
+        relationshipOperationShouldBeBlockedByRelationshipLock( Relationship::delete, "delete", writeLock );
+        relationshipOperationShouldBeBlockedByRelationshipLock( relationship -> relationship.setProperty( "foo", "bar" ), "setProperty", writeLock );
+    }
+
+    private void nodeOperationShouldBeBlockedByNodeLock( Consumer<Node> blockedOperation, String blockedAt, boolean writeLock ) throws Throwable
+    {
+        long nodeId = createEmptyDenseNode();
+        operationShouldBeBlocked( tx -> tx.getNodeById( nodeId ), blockedOperation, writeLock, NodeEntity.class, blockedAt );
+    }
+
+    private void relationshipOperationShouldBeBlockedByRelationshipLock( Consumer<Relationship> blockedOperation, String blockedAt, boolean writeLock )
+            throws Throwable
+    {
+        long nodeId = createEmptyDenseNode();
+        long relId;
+        try ( Transaction tx = database.beginTx() )
+        {
+            relId = tx.getNodeById( nodeId ).createRelationshipTo( tx.createNode(), INITIAL_DENSE_NODE_TYPE ).getId();
+            tx.commit();
+        }
+
+        operationShouldBeBlocked( tx -> tx.getRelationshipById( relId ), blockedOperation, writeLock, RelationshipEntity.class, blockedAt );
+    }
+
+    private void relationshipOperationShouldBeBlockedByNodeLock( Consumer<Relationship> blockedOperation, String blockedAt, boolean writeLock ) throws Throwable
+    {
+        long nodeId = createEmptyDenseNode();
+        try ( Transaction tx = database.beginTx() )
+        {
+            tx.getNodeById( nodeId ).createRelationshipTo( tx.createNode(), INITIAL_DENSE_NODE_TYPE ).getId();
+            tx.commit();
+        }
+
+        operationShouldBeBlocked( tx -> tx.getNodeById( nodeId ), node -> blockedOperation.accept( Iterables.asList( node.getRelationships() ).get( 0 ) ),
+                writeLock, RelationshipEntity.class, blockedAt );
+    }
+
+    private <T extends Entity> void operationShouldBeBlocked( Function<Transaction,T> resourceSupplier, Consumer<T> blockedOperation, boolean writeLock,
+            Class<?> blockedClass, String blockedAt ) throws Throwable
+    {
+        // when/then
+        assertBlocking( tx ->
+        {
+            T entity = resourceSupplier.apply( tx );
+            Lock lock = writeLock ? tx.acquireWriteLock( entity ) : tx.acquireReadLock( entity );
+        }, tx -> blockedOperation.accept( resourceSupplier.apply( tx ) ), details -> details.isAt( blockedClass, blockedAt ) );
+    }
+
+    private long createEmptyDenseNode()
+    {
+        long nodeId;
+        try ( Transaction tx = database.beginTx() )
+        {
+            Node node = tx.createNode();
+            nodeId = node.getId();
+            Node otherNode = tx.createNode();
+            for ( int i = 0; i < GraphDatabaseSettings.dense_node_threshold.defaultValue() * 2; i++ )
+            {
+                node.createRelationshipTo( otherNode, INITIAL_DENSE_NODE_TYPE );
+            }
+            tx.commit();
+        }
+        try ( Transaction tx = database.beginTx() )
+        {
+            tx.getNodeById( nodeId ).getRelationships().forEach( Relationship::delete );
+            tx.commit();
+        }
+
+        return nodeId;
+    }
+
     private void deleteRelationship( Relationship relationship, Set<Relationship> relationships )
     {
         relationship.delete();
@@ -633,6 +730,7 @@ class DenseNodeConcurrencyIT
                 try ( Transaction tx = database.beginTx() )
                 {
                     tx1.accept( tx );
+                    tx.createNode(); //ensure we upgrade to a write transaction to reach the barrier
                     ((TransactionImpl) tx).commit( barrier::reached );
                 }
             } ) );
