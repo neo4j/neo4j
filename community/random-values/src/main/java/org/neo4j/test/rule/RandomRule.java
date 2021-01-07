@@ -268,6 +268,11 @@ public class RandomRule implements TestRule
         return randoms.among( among );
     }
 
+    public int among( int[] among )
+    {
+        return randoms.among( among );
+    }
+
     public <T> T among( List<T> among )
     {
         return randoms.among( among );

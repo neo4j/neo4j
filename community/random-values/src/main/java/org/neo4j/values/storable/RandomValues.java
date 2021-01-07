@@ -1555,6 +1555,17 @@ public class RandomValues
     }
 
     /**
+     * Returns a random element from the provided array.
+     *
+     * @param among the array to choose a random element from.
+     * @return a random element of the provided array.
+     */
+    public int among( int[] among )
+    {
+        return among[generator.nextInt( among.length )];
+    }
+
+    /**
      * Returns a random element of the provided list
      *
      * @param among the list to choose a random element from
