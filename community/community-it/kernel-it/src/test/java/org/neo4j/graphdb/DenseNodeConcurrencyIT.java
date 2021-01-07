@@ -343,10 +343,6 @@ class DenseNodeConcurrencyIT
                         // Random back-off after deadlock
                         Thread.sleep( random.nextInt( 1, 10 * numRetries ) );
                     }
-                    catch ( NotFoundException e )
-                    {
-                        retry = false; // can happen when detach-deleting
-                    }
                 }
                 while ( retry );
             }
@@ -428,7 +424,7 @@ class DenseNodeConcurrencyIT
                                 WorkType.DELETE_ALL_TYPE_DIRECTION, 8,
                                 WorkType.DELETE_ALL_TYPE, 6,
                                 WorkType.DELETE_ALL, 4,
-                                WorkType.CHANGE_OTHER_NODE_DATA, 1 ) ) );
+                                WorkType.CHANGE_OTHER_DATA, 1 ) ) );
                     }
                 }
             }
@@ -847,7 +843,7 @@ class DenseNodeConcurrencyIT
                         deleteRelationships( allRelationships, txCreated, txDeleted, onNode.getRelationships(), denseNodeIds );
                     }
                 },
-        CHANGE_OTHER_NODE_DATA
+        CHANGE_OTHER_DATA
                 {
                     @Override
                     public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
@@ -865,9 +861,35 @@ class DenseNodeConcurrencyIT
                         case 2:
                             onNode.addLabel( Label.label( "LABEL_" + random.nextInt( 3 ) ) );
                             break;
-                        default:
+                        case 3:
                             onNode.removeLabel( Label.label( "LABEL_" + random.nextInt( 3 ) ) );
                             break;
+                        case 4:
+                            modifyRandomRelationship( onNode, type, r -> r.setProperty( "KEY_" + random.nextInt( 3 ), random.nextInt() ),
+                                    allRelationships, random );
+                        default:
+                            modifyRandomRelationship( onNode, type, r -> r.removeProperty( "KEY_" + random.nextInt( 3 ) ), allRelationships, random );
+                            break;
+                        }
+                    }
+
+                    private void modifyRandomRelationship( Node fromNode, RelationshipType type, Consumer<Relationship> modifier,
+                            Set<Relationship> allRelationships, RandomRule random )
+                    {
+                        List<Relationship> rels = Iterables.asList( fromNode.getRelationships( type ) );
+                        while ( !rels.isEmpty() )
+                        {
+                            Relationship rel = random.among( rels );
+                            if ( allRelationships.remove( rel ) )
+                            {
+                                modifier.accept( rel ); //Ensure we dont modify it when someone tries to delete it!
+                                allRelationships.add( rel );
+                                return;
+                            }
+                            else
+                            {
+                                rels.remove( rel );
+                            }
                         }
                     }
                 };
