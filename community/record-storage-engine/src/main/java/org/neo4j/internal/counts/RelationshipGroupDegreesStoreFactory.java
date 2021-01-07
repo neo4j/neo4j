@@ -21,20 +21,19 @@ package org.neo4j.internal.counts;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.function.LongSupplier;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings.FeatureState;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 
@@ -48,14 +47,14 @@ public final class RelationshipGroupDegreesStoreFactory
     }
 
     public static RelationshipGroupDegreesStore create( Config config, PageCache pageCache, DatabaseLayout layout, FileSystemAbstraction fileSystem,
-            RecoveryCleanupWorkCollector recoveryCollector, LongSupplier lastCommitedTxSupplier, PageCacheTracer pageCacheTracer,
+            RecoveryCleanupWorkCollector recoveryCollector, NeoStores neoStores, PageCacheTracer pageCacheTracer,
             GBPTreeGenericCountsStore.Monitor monitor ) throws IOException
     {
         Path file = layout.relationshipGroupDegreesStore();
         if ( featureEnabled( config, layout, fileSystem ) )
         {
             boolean readOnly = config.get( GraphDatabaseSettings.read_only );
-            return new GBPTreeRelationshipGroupDegreesStore( pageCache, file, fileSystem, recoveryCollector, noRebuilder( lastCommitedTxSupplier ),
+            return new GBPTreeRelationshipGroupDegreesStore( pageCache, file, fileSystem, recoveryCollector, new DegreesRebuildFromStore( neoStores ),
                     readOnly, pageCacheTracer, monitor );
         }
         if ( fileSystem.fileExists( file ) )
@@ -70,23 +69,6 @@ public final class RelationshipGroupDegreesStoreFactory
     {
         FeatureState state = config.get( relaxed_dense_node_locking );
         return FeatureState.ENABLED.equals( state ) || FeatureState.AUTO.equals( state ) && fileSystem.fileExists( layout.relationshipGroupDegreesStore() );
-    }
-
-    private static DegreesRebuilder noRebuilder( LongSupplier lastCommitedTxSupplier )
-    {
-        return new DegreesRebuilder()
-        {
-            @Override
-            public long lastCommittedTxId()
-            {
-                return lastCommitedTxSupplier.getAsLong();
-            }
-
-            @Override
-            public void rebuild( RelationshipGroupDegreesStore.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
-            {   // TODO We don't support rebuilding this store
-            }
-        };
     }
 
     private static final RelationshipGroupDegreesStore NO_GROUP_DEGREES_STORE = new RelationshipGroupDegreesStore()
@@ -122,6 +104,11 @@ public final class RelationshipGroupDegreesStoreFactory
         public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
         {
             return true;
+        }
+
+        @Override
+        public void accept( GroupDegreeVisitor visitor, PageCursorTracer cursorTracer )
+        { //NOOP
         }
 
         private final Updater THROWING_UPDATER = new Updater()

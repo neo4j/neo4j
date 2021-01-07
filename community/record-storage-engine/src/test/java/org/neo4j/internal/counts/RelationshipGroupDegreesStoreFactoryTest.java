@@ -34,6 +34,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -42,6 +45,8 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.FeatureState.AUTO;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.FeatureState.DISABLED;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.FeatureState.ENABLED;
@@ -160,7 +165,12 @@ class RelationshipGroupDegreesStoreFactoryTest
         RelationshipGroupDegreesStore store = null;
         try
         {
-            store = RelationshipGroupDegreesStoreFactory.create( config, pageCache, layout, fs, ignore(), () -> 0L, NULL, NO_MONITOR );
+            NeoStores neoStores = mock( NeoStores.class );
+            MetaDataStore metaDataStore = mock( MetaDataStore.class );
+            when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
+            RelationshipGroupStore groupStore = mock( RelationshipGroupStore.class );
+            when( neoStores.getRelationshipGroupStore() ).thenReturn( groupStore );
+            store = RelationshipGroupDegreesStoreFactory.create( config, pageCache, layout, fs, ignore(), neoStores, NULL, NO_MONITOR );
             store.start( PageCursorTracer.NULL, EmptyMemoryTracker.INSTANCE );
             return store;
         }

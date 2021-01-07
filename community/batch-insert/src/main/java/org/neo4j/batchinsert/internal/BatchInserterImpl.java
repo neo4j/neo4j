@@ -324,7 +324,7 @@ public class BatchInserterImpl implements BatchInserter
             labelTokenStore = neoStores.getLabelTokenStore();
 
             groupDegreesStore = RelationshipGroupDegreesStoreFactory.create( config, pageCache, databaseLayout, fileSystem,
-                    immediate(), () -> neoStores.getMetaDataStore().getLastCommittedTransactionId() - 1, pageCacheTracer, NO_MONITOR );
+                    immediate(), neoStores, pageCacheTracer, NO_MONITOR );
             groupDegreesStore.start( cursorTracer, memoryTracker );
             boolean relaxedLockingForDenseNodes = RelationshipGroupDegreesStoreFactory.featureEnabled( config, databaseLayout, fileSystem );
 

@@ -32,11 +32,18 @@ public interface RelationshipGroupDegreesStore extends CountsStorage
 
     long degree( long groupId, RelationshipDirection direction, PageCursorTracer cursorTracer );
 
+    void accept( GroupDegreeVisitor visitor, PageCursorTracer cursorTracer );
+
     interface Updater extends AutoCloseable
     {
         @Override
         void close();
 
         void increment( long groupId, RelationshipDirection direction, long delta );
+    }
+
+    interface GroupDegreeVisitor
+    {
+        void degree( long groupId, RelationshipDirection direction, long degree );
     }
 }

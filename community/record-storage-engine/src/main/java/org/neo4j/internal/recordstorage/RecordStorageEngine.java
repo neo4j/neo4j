@@ -281,8 +281,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         try
         {
-            return RelationshipGroupDegreesStoreFactory.create( config, pageCache, layout, fs, recoveryCleanupWorkCollector,
-                    () -> neoStores.getMetaDataStore().getLastCommittedTransactionId(), pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR );
+            return RelationshipGroupDegreesStoreFactory.create( config, pageCache, layout, fs, recoveryCleanupWorkCollector, neoStores, pageCacheTracer,
+                    GBPTreeGenericCountsStore.NO_MONITOR );
         }
         catch ( IOException e )
         {
@@ -583,6 +583,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public CountsAccessor countsAccessor()
     {
         return countsStore;
+    }
+
+    @VisibleForTesting
+    public RelationshipGroupDegreesStore relationshipGroupDegreesStore()
+    {
+        return groupDegreesStore;
     }
 
     @Override

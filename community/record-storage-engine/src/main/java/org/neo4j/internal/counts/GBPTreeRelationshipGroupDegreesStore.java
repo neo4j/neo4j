@@ -61,6 +61,12 @@ class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsStore imp
         return read( degreeKey( groupId, direction ), cursorTracer );
     }
 
+    @Override
+    public void accept( GroupDegreeVisitor visitor, PageCursorTracer cursorTracer )
+    {
+        visitAllCounts( ( key, count ) -> visitor.degree( groupIdOf( key ), directionOf( key ), count ), cursorTracer );
+    }
+
     private static class DegreeUpdater implements Updater, AutoCloseable
     {
         private final CountUpdater actual;
@@ -92,9 +98,19 @@ class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsStore imp
     {
         if ( key.type == TYPE_DEGREE )
         {
-            return format( "Degree[groupId:%d, direction:%s]", key.first >> 2, RelationshipDirection.ofId( (int) (key.first & 0x3) ) );
+            return format( "Degree[groupId:%d, direction:%s]", groupIdOf( key ), directionOf( key ) );
         }
         throw new IllegalArgumentException( "Unknown type " + key.type );
+    }
+
+    private static RelationshipDirection directionOf( CountsKey key )
+    {
+        return RelationshipDirection.ofId( (int) (key.first & 0x3) );
+    }
+
+    private static long groupIdOf( CountsKey key )
+    {
+        return key.first >> 2;
     }
 
     public static void dump( PageCache pageCache, Path file, PrintStream out, PageCursorTracer cursorTracer ) throws IOException

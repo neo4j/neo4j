@@ -43,7 +43,7 @@ public class FlatRelationshipModifications implements RelationshipModifications
 {
     private final SortedMap<Long,NodeData> data = new TreeMap<>();
 
-    FlatRelationshipModifications( RelationshipData... creations )
+    public FlatRelationshipModifications( RelationshipData... creations )
     {
         mapData( creations, NodeData::creations );
     }
