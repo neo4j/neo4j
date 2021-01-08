@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.logical.generator
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults
+import org.neo4j.cypher.internal.compiler.test_helpers.TestGraphStatistics
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.ListLiteral
@@ -54,14 +55,11 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
-import org.neo4j.cypher.internal.planner.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
-import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.scalatest.FunSuite
@@ -523,20 +521,5 @@ class CardinalityCalculatorTest extends FunSuite with Matchers with AstConstruct
 
     val c = CardinalityCalculator.valueHashJoinCardinality(plan, defaultState, new TestGraphStatistics, Map.empty)
     c shouldBe Cardinality.EMPTY
-  }
-
-  private class TestGraphStatistics extends GraphStatistics {
-    override def nodesAllCardinality(): Cardinality =
-      fail()
-    override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-      fail()
-    override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-      fail()
-    override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
-      fail()
-    override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
-      fail()
-
-    private def fail() = throw new IllegalStateException("Should not have been called in this test.")
   }
 }

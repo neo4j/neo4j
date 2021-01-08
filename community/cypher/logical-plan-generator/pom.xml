@@ -105,6 +105,14 @@
       <type>test-jar</type>
     </dependency>
 
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-planner</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <type>test-jar</type>
+    </dependency>
+
     <!-- neo4j-cypher test -->
 
   </dependencies>
