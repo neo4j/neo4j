@@ -303,29 +303,31 @@ object CardinalityCostModel {
   private final case class EffectiveCardinalities(currentPlanWorkload: Cardinality, lhs: Cardinality, rhs: Cardinality)
 
   /**
-   * Given an incomingLimitSelectivity, calculate how this selectivity applies to the LHS and RHS of the plan.
+   * Given an parentLimitSelectivity, calculate how this selectivity applies to the LHS and RHS of the plan.
    *
    */
-  def childrenLimitSelectivities(plan: LogicalPlan, incomingLimitSelectivity: Selectivity, cardinalities: Cardinalities): (Selectivity, Selectivity) = plan match {
-    case _: CartesianProduct =>
-      val sqrt = Selectivity.of(math.sqrt(incomingLimitSelectivity.factor)).getOrElse(Selectivity.ONE)
-      (sqrt, sqrt)
+  def childrenLimitSelectivities(plan: LogicalPlan, parentLimitSelectivity: Selectivity, cardinalities: Cardinalities): (Selectivity, Selectivity) = {
+    plan match {
+      case _: CartesianProduct =>
+        val sqrt = Selectivity.of(math.sqrt(parentLimitSelectivity.factor)).getOrElse(Selectivity.ONE)
+        (sqrt, sqrt)
 
-    //NOTE: we don't match on ExhaustiveLimit here since that doesn't affect the cardinality of earlier plans
-    case p: LimitingLogicalPlan =>
-      val sourceCardinality = cardinalities.get(p.source.id)
-      val thisCardinality = cardinalities.get(p.id) * incomingLimitSelectivity
-      val s = (thisCardinality / sourceCardinality) getOrElse Selectivity.ONE
-      (s, s)
+      //NOTE: we don't match on ExhaustiveLimit here since that doesn't affect the cardinality of earlier plans
+      case p: LimitingLogicalPlan =>
+        val sourceCardinality = cardinalities.get(p.source.id)
+        val thisCardinality = cardinalities.get(p.id) * parentLimitSelectivity
+        val s = (thisCardinality / sourceCardinality) getOrElse Selectivity.ONE
+        (s, s)
 
-    case HashJoin() =>
-      (Selectivity.ONE, incomingLimitSelectivity)
+      case HashJoin() =>
+        (Selectivity.ONE, parentLimitSelectivity)
 
-    case _: ExhaustiveLogicalPlan =>
-      (Selectivity.ONE, Selectivity.ONE)
+      case _: ExhaustiveLogicalPlan =>
+        (Selectivity.ONE, Selectivity.ONE)
 
-    case _ =>
-      (incomingLimitSelectivity, incomingLimitSelectivity)
+      case _ =>
+        (parentLimitSelectivity, parentLimitSelectivity)
+    }
   }
 
 
