@@ -639,6 +639,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       (as, bs)
     }
 
+    require((n & 1) == 0)
     val nBatchSize = n/2
     val inputStream = batchedInputValues(nBatchSize, as.map(n => Array[Any](n)): _*).stream()
 
@@ -683,6 +684,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       (as, bs, cs ,ds)
     }
 
+    require((n & 1) == 0)
     val nBatchSize = n/2
     val inputStream = batchedInputValues(nBatchSize, as.map(n => Array[Any](n)): _*).stream()
 
