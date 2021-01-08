@@ -96,7 +96,7 @@ public abstract class CodeGenerator
         openClassCount--;
     }
 
-    void setByteCodeVisitor( ByteCodeVisitor visitor )
+    public void setByteCodeVisitor( ByteCodeVisitor visitor )
     {
         this.byteCodeVisitor = visitor;
     }

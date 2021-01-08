@@ -146,11 +146,11 @@ class PrettyIRTest extends FunSuite {
   }
 
   test("boolean or") {
-    PrettyIR.pretty(or(constant(true), constant(false))) shouldBe "true || false"
+    PrettyIR.pretty(or(load[Boolean]("a"), load[Boolean]("b"))) shouldBe "a || b"
   }
 
   test("boolean and") {
-    PrettyIR.pretty(and(constant(true), constant(false))) shouldBe "true && false"
+    PrettyIR.pretty(and(load[Boolean]("a"), load[Boolean]("b"))) shouldBe "a && b"
   }
 
   test("if-condition") {
@@ -225,7 +225,7 @@ class PrettyIRTest extends FunSuite {
   test("Not(...)") {
     PrettyIR.pretty(IntermediateRepresentation.not(IntermediateRepresentation.equal(constant(true), constant(false)))) shouldBe "true != false"
 
-    PrettyIR.pretty(IntermediateRepresentation.not(IntermediateRepresentation.or(constant(false), constant(false)))) shouldBe "!(false || false)"
+    PrettyIR.pretty(IntermediateRepresentation.not(IntermediateRepresentation.or(load[Boolean]("a"), load[Boolean]("b")))) shouldBe "!(a || b)"
   }
 
 }

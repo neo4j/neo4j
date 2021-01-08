@@ -845,11 +845,11 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
             //ICONST_5 = 8;
             methodVisitor.visitInsn( ICONST_0 + integer );
         }
-        else if ( integer < Byte.MAX_VALUE && integer > Byte.MIN_VALUE )
+        else if ( integer <= Byte.MAX_VALUE && integer >= Byte.MIN_VALUE )
         {
             methodVisitor.visitIntInsn( BIPUSH, integer );
         }
-        else if ( integer < Short.MAX_VALUE && integer > Short.MIN_VALUE )
+        else if ( integer <= Short.MAX_VALUE && integer >= Short.MIN_VALUE )
         {
             methodVisitor.visitIntInsn( SIPUSH, integer );
         }

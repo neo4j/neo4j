@@ -35,7 +35,7 @@ import java.util.Arrays;
 
 import static org.objectweb.asm.Type.getType;
 
-interface ByteCodeVisitor
+public interface ByteCodeVisitor
 {
     interface Configurable
     {

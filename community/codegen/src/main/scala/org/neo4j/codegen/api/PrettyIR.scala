@@ -145,11 +145,19 @@ object PrettyIR {
         case Subtract(lhs, rhs) =>
           pretty(lhs).append(" - ").pretty(rhs)
 
-        case BooleanOr(lhs, rhs) =>
-          pretty(lhs).append(" || ").pretty(rhs)
+        case BooleanOr(as) =>
+          val size = as.size
+          as.zipWithIndex.foreach {
+            case (v, i) if i < size -1 => pretty(v).append(" || ")
+            case (v, _) => pretty((v))
+          }
 
-        case BooleanAnd(lhs, rhs) =>
-          pretty(lhs).append(" && ").pretty(rhs)
+        case BooleanAnd(as) =>
+          val size = as.size
+          as.zipWithIndex.foreach {
+            case (v, i) if i < size -1 => pretty(v).append(" && ")
+            case (v, _) => pretty((v))
+          }
 
         case Condition(test, onTrue, onFalse) =>
           append("if (").pretty(test).append(") ").pretty(onTrue)

@@ -183,8 +183,14 @@ public class TypeReference
             return in;
         }
     }
+
     public static TypeReference toUnboxedType( TypeReference in )
     {
+        if ( in.isPrimitive() )
+        {
+            return in;
+        }
+
         switch ( in.fullName() )
         {
         case "java.lang.Byte":
@@ -271,10 +277,11 @@ public class TypeReference
 
     public boolean isPrimitive()
     {
-
-        if ( isArray() ) {
+        if ( isArray() )
+        {
             return false;
-        } else
+        }
+        else
         {
             switch ( name )
             {
@@ -321,7 +328,7 @@ public class TypeReference
     public TypeReference elementOfArray()
     {
         Preconditions.checkState( isArray(), "Should only be called on array" );
-        return new TypeReference( packageName, name, arrayDepth - 1, isTypeParameter, declaringClass, modifiers, parameters);
+        return new TypeReference( packageName, name, arrayDepth - 1, isTypeParameter, declaringClass, modifiers, parameters );
     }
 
     int arrayDepth()

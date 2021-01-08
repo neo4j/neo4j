@@ -144,6 +144,11 @@ object Foldable {
     Searches in trees, counting how many matches are found
      */
     def treeCount(f: PartialFunction[Any, Boolean]): Int = {
+      val lifted = f.lift
+      countAcc(mutable.ArrayStack(that), (a: Any) => lifted(a).map(_ => 1), 0)
+    }
+
+    def treeCountAccumulation(f: PartialFunction[Any, Int]): Int = {
       countAcc(mutable.ArrayStack(that), f.lift, 0)
     }
 
@@ -225,17 +230,17 @@ object Foldable {
 
   @tailrec
   private def countAcc(
-      remaining: mutable.ArrayStack[Any],
-      f: Any => Option[Boolean],
-      acc: Int
-  ): Int =
+                        remaining: mutable.ArrayStack[Any],
+                        f: Any => Option[Int],
+                        acc: Int
+                      ): Int =
     if (remaining.isEmpty) {
       acc
     } else {
       val that = remaining.pop()
       val next = f(that) match {
-        case Some(true) =>
-          acc + 1
+        case Some(value) =>
+          acc + value
         case _ =>
           acc
       }

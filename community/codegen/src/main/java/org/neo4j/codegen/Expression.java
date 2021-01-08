@@ -192,6 +192,11 @@ public abstract class Expression extends ExpressionTemplate
         return new And( expressions );
     }
 
+    public static Expression ands( final Expression[] expressions )
+    {
+        return new And( expressions );
+    }
+
     public static Expression or( final Expression lhs, final Expression rhs )
     {
         if ( lhs == TRUE || rhs == TRUE )
@@ -226,6 +231,11 @@ public abstract class Expression extends ExpressionTemplate
         {
             expressions = new Expression[] {lhs, rhs};
         }
+        return new Or( expressions );
+    }
+
+    public static Expression ors( final Expression[] expressions )
+    {
         return new Or( expressions );
     }
 
