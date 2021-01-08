@@ -117,7 +117,6 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should return all tied rows") {
     val input = inputValues((0 until sizeHint).flatMap(i => Seq.fill(5)(Array[Any](i))): _*)
-    val limit = sizeHint + 1
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -150,7 +149,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.minBy(-_.getId)
+    val expected = nodes.maxBy(_.getId)
 
     runtimeResult should beColumns("x").withSingleRow(expected)
   }
@@ -173,7 +172,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val expected = aNodes.map(_ => bNodes.minBy(-_.getId)).head
+    val expected = bNodes.maxBy(_.getId)
 
     runtimeResult should beColumns("y").withRows(Seq.fill(nodesPerLabel)(Array[Any](expected)))
   }

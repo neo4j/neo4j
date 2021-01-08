@@ -100,10 +100,10 @@ case class Top1WithTiesPipe(source: Pipe, comparator: Comparator[ReadableRow])
     if (input.isEmpty)
       ClosingIterator.empty
     else {
-      val scopedMemoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x).getScopedMemoryTracker
+      val memoryTracker = state.memoryTracker.memoryTrackerForOperator(id.x)
       val first = input.next()
       var best = first
-      val matchingRows = init(best, scopedMemoryTracker)
+      val matchingRows = init(best, memoryTracker)
 
       while (input.hasNext) {
         val ctx = input.next()
