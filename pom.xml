@@ -108,7 +108,7 @@
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
     <jamm.version>0.3.3</jamm.version>
-    <lucene.version>8.5.1</lucene.version>
+    <lucene.version>8.7.0</lucene.version>
     <bouncycastle.version>1.68</bouncycastle.version>
     <jetty.version>9.4.35.v20201120</jetty.version>
     <findbugs.version>3.0.1u2</findbugs.version>

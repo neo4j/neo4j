@@ -117,7 +117,7 @@ public class IndexReaderStub extends LeafReader
     @Override
     public SortedNumericDocValues getSortedNumericDocValues( String field )
     {
-        return DocValues.emptySortedNumeric( elements.length );
+        return DocValues.emptySortedNumeric();
     }
 
     @Override
