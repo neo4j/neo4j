@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.stream.LongStream;
 
 import org.neo4j.configuration.Config;
@@ -32,28 +33,32 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogAssertions;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_keep_threshold;
+import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 
 class LogPruningTest
 {
     private final Config config = Config.defaults();
     private FileSystemAbstraction fs;
     private LogFiles logFiles;
-    private LogProvider logProvider;
+    private AssertableLogProvider logProvider;
     private SystemNanoClock clock;
     private LogPruneStrategyFactory factory;
 
@@ -67,7 +72,7 @@ class LogPruningTest
         when( logFiles.getCheckpointFile() ).thenReturn( mock( CheckpointFile.class ) );
         doAnswer( inv -> Path.of( String.valueOf( inv.getArguments()[0] ) ) )
                 .when( logFile ).getLogFileForVersion( anyLong() );
-        logProvider = NullLogProvider.getInstance();
+        logProvider = new AssertableLogProvider();
         clock = mock( SystemNanoClock.class );
         factory = mock( LogPruneStrategyFactory.class );
     }
@@ -114,5 +119,38 @@ class LogPruningTest
         assertEquals( "keep_all", pruning.describeCurrentStrategy() );
         config.setDynamic( GraphDatabaseSettings.keep_logical_logs, "10 files", "" );
         assertEquals( "10 files", pruning.describeCurrentStrategy() );
+    }
+
+    @Test
+    void mustLogLatestPreservedCheckpointVersion()
+    {
+        // given
+        when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( logProvider ), eq( clock ), anyString() ) )
+                .thenReturn( x -> LongStream.empty() );
+        int checkpointLogFilesToKeep = config.get( checkpoint_logical_log_keep_threshold );
+        CheckpointFile checkpointFile = mock( CheckpointFile.class );
+        Path[] checkpointFiles = new Path[checkpointLogFilesToKeep + 2];
+        for ( int i = 0; i < checkpointFiles.length; i++ )
+        {
+            checkpointFiles[i] = Paths.get( String.valueOf( i ) );
+        }
+        when( checkpointFile.getDetachedCheckpointFiles() ).thenReturn( checkpointFiles );
+        when( checkpointFile.getDetachedCheckpointLogFileVersion( any() ) ).thenAnswer( invocationOnMock ->
+        {
+            Path file = invocationOnMock.getArgument( 0 );
+            return Long.parseLong( file.getFileName().toString() );
+        } );
+        when( checkpointFile.getCurrentDetachedLogVersion() ).thenReturn( (long) checkpointFiles.length - 1 );
+        when( logFiles.getCheckpointFile() ).thenReturn( checkpointFile );
+
+        // when
+        LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
+        pruning.pruneLogs( 1 );
+
+        // then
+        verify( fs ).deleteFile( checkpointFiles[0] );
+        verify( fs ).deleteFile( checkpointFiles[1] );
+        LogAssertions.assertThat( logProvider ).forLevel( INFO ).forClass( LogPruningImpl.class ).containsMessages(
+                "Pruned 2 checkpoint log files. Lowest preserved version: 2" );
     }
 }
