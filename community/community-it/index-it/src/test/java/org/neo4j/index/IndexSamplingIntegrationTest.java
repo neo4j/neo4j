@@ -43,7 +43,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.fs.FileUtils.deleteFile;
@@ -122,11 +121,11 @@ class IndexSamplingIntegrationTest
 
         // lucene will consider also the delete nodes, native won't
         var indexSample = fetchIndexSamplingValues();
-        assertEquals( names.length, indexSample.uniqueValues() );
-        assertThat( indexSample.sampleSize() ).isGreaterThanOrEqualTo( nodes - deletedNodes ).isLessThanOrEqualTo( nodes );
+        assertThat( indexSample.uniqueValues() ).as( "Unique values" ).isEqualTo( names.length );
+        assertThat( indexSample.sampleSize() ).as( "Sample size" ).isGreaterThanOrEqualTo( nodes - deletedNodes ).isLessThanOrEqualTo( nodes );
         // but regardless, the deleted nodes should not be considered in the index size value
-        assertEquals( 0, indexSample.updates() );
-        assertEquals( nodes - deletedNodes, indexSample.indexSize() );
+        assertThat( indexSample.updates() ).as( "Updates" ).isEqualTo( 0 );
+        assertThat( indexSample.indexSize() ).as( "Index size" ).isEqualTo( nodes - deletedNodes );
     }
 
     @Test
@@ -181,10 +180,10 @@ class IndexSamplingIntegrationTest
 
         // Then
         var indexSample = fetchIndexSamplingValues();
-        assertEquals( nodes - deletedNodes, indexSample.uniqueValues() );
-        assertEquals( nodes - deletedNodes, indexSample.sampleSize() );
-        assertEquals( 0, indexSample.updates() );
-        assertEquals( nodes - deletedNodes, indexSample.indexSize() );
+        assertThat( indexSample.uniqueValues() ).as( "Unique values" ).isEqualTo( nodes - deletedNodes );
+        assertThat( indexSample.sampleSize() ).as( "Sample size" ).isEqualTo( nodes - deletedNodes );
+        assertThat( indexSample.updates() ).as( "Updates" ).isEqualTo( 0 );
+        assertThat( indexSample.indexSize() ).as( "Index size" ).isEqualTo( nodes - deletedNodes );
     }
 
     private IndexDescriptor indexId( KernelTransaction tx )
@@ -219,6 +218,6 @@ class IndexSamplingIntegrationTest
     private void triggerIndexResamplingOnNextStartup()
     {
         // Trigger index resampling on next at startup
-        deleteFile( databaseLayout.countStore() );
+        deleteFile( databaseLayout.indexStatisticsStore() );
     }
 }
