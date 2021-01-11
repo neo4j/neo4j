@@ -265,15 +265,16 @@ class IndexPopulationIT
     private void prePopulateDatabase( GraphDatabaseService database, Label testLabel, String propertyName )
     {
         final RandomValues randomValues = RandomValues.create();
-        for ( int j = 0; j < 10_000; j++ )
+
+        try ( Transaction transaction = database.beginTx() )
         {
-            try ( Transaction transaction = database.beginTx() )
+            for ( int j = 0; j < 10_000; j++ )
             {
                 Node node = transaction.createNode( testLabel );
                 Object property = randomValues.nextValue().asObject();
                 node.setProperty( propertyName, property );
-                transaction.commit();
             }
+            transaction.commit();
         }
     }
 
