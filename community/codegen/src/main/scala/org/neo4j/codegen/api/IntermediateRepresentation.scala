@@ -25,6 +25,8 @@ import java.lang.reflect.Modifier.isInterface
 import org.neo4j.codegen
 import org.neo4j.codegen.TypeReference
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.Value
@@ -1009,98 +1011,114 @@ object IntermediateRepresentation {
       case _ => 8
     }
 
-    ir.treeCountAccumulation {
-      //Freebies
-      case _: Block | Noop | _: OneTime  => 0
-      //Single byte instructions
-      case _: ArraySet |  _: ArrayLength | _: ArrayLoad | _: Add | _: Subtract | _: Multiply | _: Returns | _: Self | _:Throw => 1
+    val visitedOneTimes = mutable.Set.empty[IntermediateRepresentation]
+     ir.treeFold(0) {
+       case op: IntermediateRepresentation =>
 
-      //multi byte instructions
-      case i: InvokeSideEffect =>  if (isInterface(i.method.owner.modifiers())) 5 else 3
-      case i: Invoke => if (isInterface(i.method.owner.modifiers())) 5 else 3
-      case _: InvokeStatic | _: InvokeStaticSideEffect => 3
-      case Load(name, _) => localVarInstruction(name)
-      case _: LoadField => 4// load this + 3 bytes for the field
-      case _: SetField => 4// load this + 3 bytes for setting the field
-      case _: GetStatic => 3
-      case DeclareLocalVariable(typ, name) =>
-        declare(typ, name)
-        0
-      case AssignToLocalVariable(name, _) =>
-        localVarInstruction(name)
-      case Constant(constant) => constant match {
-        case i: Int => sizeOfIntPush(i)
-        case l: Long => if (l == 0L || l == 1L) 1 else 3 //constant pool (unless 0 or 1)
-        case _: Boolean => 1
-        case _: Double => 3
-        case null => 1
-        case _ => 2
-      }
-      case ArrayLiteral(typ, values) =>
-        val numberOfElements = values.length
-        val sizeOfNewArray = if (typ.isPrimitive) 2 else 3
-        sizeOfIntPush(numberOfElements) + sizeOfNewArray + (0 until numberOfElements).map(i => 1 + sizeOfIntPush(i) + 1).sum
-      case NewArray(typ, size) => sizeOfIntPush(size) + (if (typ.isPrimitive) 2 else 3)
+         var visitChildren = true
 
-      //Conditions and loops
-      case _: Ternary => 3 + 3 //two jump instructions
-      case Condition(_:BooleanAnd, _, onFalse) =>
-        //Here we subtract the cost of the jump instruction + TRUE + FALSE since we can combine
-        //it with the jump instruction of the conditional
-        -5 + onFalse.map(_ => 3).getOrElse(0)
-      case Condition(_:BooleanOr, _, onFalse) =>
-        //Here we subtract the cost of the jump instruction + TRUE + FALSE since we can combine
-        //it with the jump instruction of the conditional
-        -5 + onFalse.map(_ => 3).getOrElse(0)
-      case Condition(Not(_:BooleanAnd), _, onFalse) => onFalse.map(_ => 3).getOrElse(0) - 8 - 5
-      case Condition(Not(_:BooleanOr), _, onFalse) => onFalse.map(_ => 3).getOrElse(0) - 8 - 5
-      case Condition(not:Not, _, onFalse) => 3 - costOfNot(not) + onFalse.map(_ => 3).getOrElse(0)
-      case Condition(_: IsNull, _, onFalse) => 3 - 8 + onFalse.map(_ => 3).getOrElse(0)
-      case c: Condition => 3 + c.onFalse.map(_ => 3).getOrElse(0)//single jump instruction takes 3 bytes
+         val bytesForInstruction = op match {
+           //Freebies
+           case oneTime: OneTime =>
+             if (!visitedOneTimes.add(oneTime)) {
+               visitChildren = false
+             }
+             0
+           case _: Block | Noop => 0
 
-      case Loop(_:BooleanAnd, _, _) =>
-        //Here we subtract the cost of the jump instruction + TRUE + FALSE since we can combine
-        //it with the jump instruction of the loop
-        -5 + 3
-      case Loop(_:BooleanOr, _, _) =>
-        //Here we subtract the cost of the jump instruction + TRUE + FALSE since we can combine
-        //it with the jump instruction of the loop
-        -5 + 3
-      case Loop(Not(_: BooleanAnd), _, _) => 3 - 5 - 8//subtract the cost of OR and the cost of NOT
-      case Loop(Not(_:BooleanOr), _, _) => 3 - 5 - 8//subtract the cost of OR and the cost of NOT
-      case Loop(not: Not, _, _) => 6 - costOfNot(not)
-      case Loop(_: IsNull, _, _) => 6 - 8
-      case _: Loop => 3 + 3//two jump instructions
+           //Single byte instructions
+           case _: ArraySet | _: ArrayLength | _: ArrayLoad | _: Add | _: Subtract | _: Multiply | _: Returns | _: Self | _: Throw => 1
 
-      //Boolean operations
-      case BooleanAnd(as) =>
-        //For a stand-alone `and` we generate a single jump instruction (3 bytes) and a TRUE and FALSE for the different cases
-        //furthermore for each argument we generate a jump instruction
-        5 + as.length * 3
-      //For a stand-alone `or` we generate a single jump instruction (3 bytes) and a TRUE and FALSE for the different cases
-      //furthermore for each argument we generate a jump instruction
-      case BooleanOr(as) => 5 + as.length * 3
-      case c: Gt => if (c.lhs.typeReference == TypeReference.INT) 8 else 9
-      case c: Gte => if (c.lhs.typeReference == TypeReference.INT) 8 else 9
-      case c: Lt => if (c.lhs.typeReference == TypeReference.INT) 8 else 9
-      case c: Lte => if (c.lhs.typeReference == TypeReference.INT) 8 else 9
-      case c: Eq => if (c.lhs.typeReference == TypeReference.INT || !c.lhs.typeReference.isPrimitive) 8 else 9
-      case c: NotEq => if (c.lhs.typeReference == TypeReference.INT || !c.lhs.typeReference.isPrimitive) 8 else 9
-      case _: IsNull => 8
-      case n: Not => costOfNot(n)
+           //multi byte instructions
+           case i: InvokeSideEffect => if (isInterface(i.method.owner.modifiers())) 5 else 3
+           case i: Invoke => if (isInterface(i.method.owner.modifiers())) 5 else 3
+           case _: InvokeStatic | _: InvokeStaticSideEffect => 3
+           case Load(name, _) => localVarInstruction(name)
+           case _: LoadField => 4 // load this + 3 bytes for the field
+           case _: SetField => 4 // load this + 3 bytes for setting the field
+           case _: GetStatic => 3
+           case DeclareLocalVariable(typ, name) =>
+             declare(typ, name)
+             0
+           case AssignToLocalVariable(name, _) =>
+             localVarInstruction(name)
+           case Constant(constant) => constant match {
+             case i: Int => sizeOfIntPush(i)
+             case l: Long => if (l == 0L || l == 1L) 1 else 3 //constant pool (unless 0 or 1)
+             case _: Boolean => 1
+             case _: Double => 3
+             case null => 1
+             case _ => 2
+           }
+           case ArrayLiteral(typ, values) =>
+             val numberOfElements = values.length
+             val sizeOfNewArray = if (typ.isPrimitive) 2 else 3
+             sizeOfIntPush(numberOfElements) + sizeOfNewArray + (0 until numberOfElements).map(i => 1 + sizeOfIntPush(i) + 1).sum
+           case NewArray(typ, size) => sizeOfIntPush(size) + (if (typ.isPrimitive) 2 else 3)
 
-      //Misc operations
-      case _: NewInstance | _: NewInstanceInnerClass => 3/*NEW*/ + 1/*DUP*/ + 3/*INVOKESPECIAL*/
-      case _: Break => 3//an extra jump instruction
-      case _: Box => 3//boils down to INVOKESTATIC, eg `Long.valueOf(x)`
-      case _: Unbox =>  3//boils down to INVOKEVIRTUAL, eg `x.longValue()`
-      case Cast(to, _) => if (to.isPrimitive) 1 else 3
-      case _: InstanceOf => 3
-      case t: TryCatch =>
-        declare(t.typeReference, t.name)
-        3 + localVarInstruction(t.name)
+           //Conditions and loops
+           case _: Ternary => 3 + 3 //two jump instructions
+           case Condition(_: BooleanAnd, _, onFalse) =>
+             //Here we subtract the cost of the jump instruction + TRUE + FALSE since we can combine
+             //it with the jump instruction of the conditional
+             -5 + onFalse.map(_ => 3).getOrElse(0)
+           case Condition(_: BooleanOr, _, onFalse) =>
+             //Here we subtract the cost of the jump instruction + TRUE + FALSE since we can combine
+             //it with the jump instruction of the conditional
+             -5 + onFalse.map(_ => 3).getOrElse(0)
+           case Condition(Not(_: BooleanAnd), _, onFalse) => onFalse.map(_ => 3).getOrElse(0) - 8 - 5
+           case Condition(Not(_: BooleanOr), _, onFalse) => onFalse.map(_ => 3).getOrElse(0) - 8 - 5
+           case Condition(not: Not, _, onFalse) => 3 - costOfNot(not) + onFalse.map(_ => 3).getOrElse(0)
+           case Condition(_: IsNull, _, onFalse) => 3 - 8 + onFalse.map(_ => 3).getOrElse(0)
+           case c: Condition => 3 + c.onFalse.map(_ => 3).getOrElse(0) //single jump instruction takes 3 bytes
 
-      case unknown: IntermediateRepresentation => throw new IllegalStateException(s"Don't know how many bytes $unknown will use")
-    }
+           case Loop(_: BooleanAnd, _, _) =>
+             //Here we subtract the cost of the jump instruction + TRUE + FALSE since we can combine
+             //it with the jump instruction of the loop
+             -5 + 3
+           case Loop(_: BooleanOr, _, _) =>
+             //Here we subtract the cost of the jump instruction + TRUE + FALSE since we can combine
+             //it with the jump instruction of the loop
+             -5 + 3
+           case Loop(Not(_: BooleanAnd), _, _) => 3 - 5 - 8 //subtract the cost of OR and the cost of NOT
+           case Loop(Not(_: BooleanOr), _, _) => 3 - 5 - 8 //subtract the cost of OR and the cost of NOT
+           case Loop(not: Not, _, _) => 6 - costOfNot(not)
+           case Loop(_: IsNull, _, _) => 6 - 8
+           case _: Loop => 3 + 3 //two jump instructions
+
+           //Boolean operations
+           case BooleanAnd(as) =>
+             //For a stand-alone `and` we generate a single jump instruction (3 bytes) and a TRUE and FALSE for the different cases
+             //furthermore for each argument we generate a jump instruction
+             5 + as.length * 3
+           //For a stand-alone `or` we generate a single jump instruction (3 bytes) and a TRUE and FALSE for the different cases
+           //furthermore for each argument we generate a jump instruction
+           case BooleanOr(as) => 5 + as.length * 3
+           case c: Gt => if (c.lhs.typeReference == TypeReference.INT) 8 else 9
+           case c: Gte => if (c.lhs.typeReference == TypeReference.INT) 8 else 9
+           case c: Lt => if (c.lhs.typeReference == TypeReference.INT) 8 else 9
+           case c: Lte => if (c.lhs.typeReference == TypeReference.INT) 8 else 9
+           case c: Eq => if (c.lhs.typeReference == TypeReference.INT || !c.lhs.typeReference.isPrimitive) 8 else 9
+           case c: NotEq => if (c.lhs.typeReference == TypeReference.INT || !c.lhs.typeReference.isPrimitive) 8 else 9
+           case _: IsNull => 8
+           case n: Not => costOfNot(n)
+
+           //Misc operations
+           case _: NewInstance | _: NewInstanceInnerClass => 3 /*NEW*/ + 1 /*DUP*/ + 3 /*INVOKESPECIAL*/
+           case _: Break => 3 //an extra jump instruction
+           case _: Box => 3 //boils down to INVOKESTATIC, eg `Long.valueOf(x)`
+           case _: Unbox => 3 //boils down to INVOKEVIRTUAL, eg `x.longValue()`
+           case Cast(to, _) => if (to.isPrimitive) 1 else 3
+           case _: InstanceOf => 3
+           case t: TryCatch =>
+             declare(t.typeReference, t.name)
+             3 + localVarInstruction(t.name)
+
+           case unknown: IntermediateRepresentation => throw new IllegalStateException(s"Don't know how many bytes $unknown will use")
+         }
+
+         if (visitChildren) acc => TraverseChildren(acc + bytesForInstruction)
+         else acc => SkipChildren(acc + bytesForInstruction)
+     }
   }
 }

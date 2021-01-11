@@ -56,6 +56,7 @@ import org.neo4j.codegen.api.IntermediateRepresentation.multiply
 import org.neo4j.codegen.api.IntermediateRepresentation.newArray
 import org.neo4j.codegen.api.IntermediateRepresentation.newInstance
 import org.neo4j.codegen.api.IntermediateRepresentation.noop
+import org.neo4j.codegen.api.IntermediateRepresentation.oneTime
 import org.neo4j.codegen.api.IntermediateRepresentation.or
 import org.neo4j.codegen.api.IntermediateRepresentation.self
 import org.neo4j.codegen.api.IntermediateRepresentation.setField
@@ -985,6 +986,28 @@ class SizeEstimationTest extends CypherFunSuite {
         } /*catch*/ {
           IntermediateRepresentation.fail(load[RuntimeException]("e"))
         }
+      )
+
+    sizeOf(instructions) should equal(computeSize(instructions))
+  }
+
+  test("only count one-time once") {
+    val once = oneTime(block(
+      declare[Int]("a"),
+      assign("a", constant(42)))
+    )
+    val instructions =
+      block(
+        declare[Int]("b"),
+        assign("b", block(once, load[Int]("a"))),
+        declare[Int]("c"),
+        assign("c", block(once, load[Int]("a"))),
+        declare[Int]("d"),
+        assign("d", block(once, load[Int]("a"))),
+        declare[Int]("e"),
+        assign("e", block(once, load[Int]("a"))),
+        declare[Int]("f"),
+        assign("f", block(once, load[Int]("a"))),
       )
 
     sizeOf(instructions) should equal(computeSize(instructions))
