@@ -631,6 +631,8 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("cartesian product should not eagerly schedule lhs - non-nested") {
+    assume(!isParallel)
+
     // given
     val n = Math.pow(sizeHint, 1.0 / 4).toInt * 2
     val (as, bs) = given {
@@ -674,6 +676,8 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("cartesian product should not eagerly schedule lhs - nested") {
+    assume(!isParallel)
+
     // given
     val n = Math.pow(sizeHint, 1.0 / 4).toInt * 2
     val (as, bs, cs, ds) = given {
