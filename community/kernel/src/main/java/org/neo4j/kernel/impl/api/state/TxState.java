@@ -709,18 +709,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public IndexDescriptor indexCreatedForConstraint( ConstraintDescriptor constraint )
-    {
-        if ( constraint.isIndexBackedConstraint() )
-        {
-            IndexBackedConstraintDescriptor indexBacked = constraint.asIndexBackedConstraint();
-            return createdConstraintIndexesByConstraint == null ? null :
-                   createdConstraintIndexesByConstraint.get( indexBacked );
-        }
-        return IndexDescriptor.NO_INDEX;
-    }
-
-    @Override
     @Nullable
     public UnmodifiableMap<ValueTuple, ? extends LongDiffSets> getIndexUpdates( SchemaDescriptor schema )
     {

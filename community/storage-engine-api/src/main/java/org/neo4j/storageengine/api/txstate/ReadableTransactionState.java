@@ -117,8 +117,6 @@ public interface ReadableTransactionState
 
     DiffSets<ConstraintDescriptor> constraintsChangesForRelationshipType( int relTypeId );
 
-    IndexDescriptor indexCreatedForConstraint( ConstraintDescriptor constraint );
-
     // INDEX UPDATES
 
     /**
