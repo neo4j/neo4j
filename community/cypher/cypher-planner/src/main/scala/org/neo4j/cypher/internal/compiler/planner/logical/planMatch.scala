@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.util.Selectivity
 
+import scala.annotation.tailrec
+
 case object planMatch extends MatchPlanner {
 
   def apply(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): BestPlans = {
@@ -73,6 +75,7 @@ case object planMatch extends MatchPlanner {
   }
 
   private[logical] def limitSelectivityForRestOfQuery(query: SinglePlannerQuery, context: LogicalPlanningContext): Selectivity = {
+    @tailrec
     def recurse(query: SinglePlannerQuery, context: LogicalPlanningContext, parentLimitSelectivity: Selectivity): Selectivity = {
       val lastPartSelectivity = limitSelectivityForPart(query, context, parentLimitSelectivity)
 
@@ -88,17 +91,21 @@ case object planMatch extends MatchPlanner {
   }
 
   private[logical] def limitSelectivityForPart(query: SinglePlannerQuery, context: LogicalPlanningContext, parentLimitSelectivity: Selectivity): Selectivity = {
-    query.lastQueryHorizon match {
-      case proj: QueryProjection if proj.queryPagination.limit.isDefined =>
-        val queryWithoutLimit = query.updateTailOrSelf(_.updateQueryProjection(_ => proj.withPagination(proj.queryPagination.withLimit(None))))
-        val cardinalityModel = context.metrics.cardinality(_, context.input, context.semanticTable)
+    if (!query.readOnly) {
+       Selectivity.ONE
+    } else {
+      query.lastQueryHorizon match {
+        case proj: QueryProjection if proj.queryPagination.limit.isDefined =>
+          val queryWithoutLimit = query.updateTailOrSelf(_.updateQueryProjection(_ => proj.withPagination(proj.queryPagination.withLimit(None))))
+          val cardinalityModel = context.metrics.cardinality(_, context.input, context.semanticTable)
 
-        val cardinalityWithoutLimit = cardinalityModel(queryWithoutLimit)
-        val cardinalityWithLimit = cardinalityModel(query)
+          val cardinalityWithoutLimit = cardinalityModel(queryWithoutLimit)
+          val cardinalityWithLimit = cardinalityModel(query)
 
-        CardinalityCostModel.limitingPlanSelectivity(cardinalityWithoutLimit, cardinalityWithLimit, parentLimitSelectivity)
+          CardinalityCostModel.limitingPlanSelectivity(cardinalityWithoutLimit, cardinalityWithLimit, parentLimitSelectivity)
 
-      case _ => parentLimitSelectivity
+        case _ => parentLimitSelectivity
+      }
     }
   }
 }

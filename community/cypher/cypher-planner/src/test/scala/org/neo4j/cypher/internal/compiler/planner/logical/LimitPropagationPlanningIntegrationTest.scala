@@ -250,6 +250,34 @@ class LimitPropagationPlanningIntegrationTest
     }
   }
 
+  test("should not plan lazy index seek when updates before the limit") {
+    val query =
+      s"""
+         |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
+         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE c.id STARTS WITH ''
+         |SET b.prop = 5
+         |RETURN a, c ORDER BY c.id
+         |LIMIT 10
+         |""".stripMargin
+
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
+      .produceResults("a", "c")
+      .top(Seq(Ascending("c.id")), 10)
+      .projection("cache[c.id] AS `c.id`")
+      .setNodeProperty("b", "prop", "5")
+      .filterExpression(
+        hasLabels("c", "C"),
+        startsWith(
+          cachedNodeProp("c", "id"),
+          literalString("")))
+      .expandAll("(b)<-[cb:REL_CB]-(c)")
+      .filterExpression(hasLabels("b", "B"))
+      .expandAll("(a)-[ab:REL_AB]->(b)")
+      .nodeIndexOperator("a:A(id = 123)")
+      .build()
+    }
+  }
+
   test("should plan lazy index seek instead of sort when under limit and small skip in the next query part") {
     val query =
       s"""

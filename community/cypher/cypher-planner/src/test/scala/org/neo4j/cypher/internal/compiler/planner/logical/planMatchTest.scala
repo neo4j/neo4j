@@ -20,11 +20,20 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.test_helpers.TestGraphStatistics
+import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.ProcedureName
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
+import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -295,6 +304,91 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     }
   }
 
+  test("limitSelectivityForRestOfQuery: updating statement in first part, horizon with LIMIT") {
+    val limit = 10
+    val nodes = 100
+
+    // MATCH (n), (m) SET n.foo = 1 RETURN * LIMIT 10
+    new given {
+      statistics = new TestGraphStatistics() {
+        override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
+      }
+    }.withLogicalPlanningContext { (_, context) =>
+      val query = RegularSinglePlannerQuery(
+        queryGraph = QueryGraph(
+          patternNodes = Set("n", "m"),
+          mutatingPatterns = IndexedSeq(SetNodePropertyPattern("n", PropertyKeyName("foo")(pos), literalInt(1)))
+        ),
+        horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit))))
+      )
+
+      // WHEN
+      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+
+      // THEN
+      result shouldBe Selectivity.ONE
+    }
+  }
+
+  test("limitSelectivityForRestOfQuery: updating procedure call in first horizon, tail with LIMIT") {
+    val limit = 10
+    val nodes = 100
+
+    val ns = Namespace(List("my", "proc"))(pos)
+    val name = ProcedureName("foo")(pos)
+    val qualifiedName = QualifiedName(ns.parts, name.name)
+    val signature = ProcedureSignature(qualifiedName, IndexedSeq.empty, None, None, ProcedureReadWriteAccess(Array.empty), id = 42)
+
+    val resolvedCall = ResolvedCall(signature, Seq.empty, IndexedSeq.empty)(pos)
+
+    // MATCH (n), (m) CALL my.proc.foo() RETURN * LIMIT 10
+    new given {
+      statistics = new TestGraphStatistics() {
+        override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
+      }
+    }.withLogicalPlanningContext { (_, context) =>
+      val query = RegularSinglePlannerQuery(
+        queryGraph = QueryGraph(patternNodes = Set("n", "m")),
+        horizon = ProcedureCallProjection(resolvedCall),
+        tail = Some(RegularSinglePlannerQuery(
+          horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit))))
+        ))
+      )
+
+      // WHEN
+      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+
+      // THEN
+      result shouldBe Selectivity.ONE
+    }
+  }
+
+  test("limitSelectivityForRestOfQuery: limit in first part, updating statement in tail") {
+    val limit = 10
+    val nodes = 100
+
+    // MATCH (n), (m) WITH * LIMIT 10 SET n.foo = 1
+    new given {
+      statistics = new TestGraphStatistics() {
+        override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
+      }
+    }.withLogicalPlanningContext { (_, context) =>
+      val query = RegularSinglePlannerQuery(
+        queryGraph = QueryGraph(patternNodes = Set("n", "m")),
+        horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit)))),
+        tail = Some(RegularSinglePlannerQuery(
+          queryGraph = QueryGraph(mutatingPatterns = IndexedSeq(SetNodePropertyPattern("n", PropertyKeyName("foo")(pos), literalInt(1))))
+        ))
+      )
+
+      // WHEN
+      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+
+      // THEN
+      result shouldBe Selectivity(limit / (nodes.toDouble * nodes.toDouble))
+    }
+  }
+
   // MATCH (n)--(m)--(o) RETURN m.foo + n.foo AS x, count(*) AS c LIMIT 10
   // Choose n-->m-->o over Join(n-->m, m<--o) because Join is eager
   // But then aggregation is exhaustive anyway and join might have been better.
@@ -307,11 +401,5 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   // MATCH (n)--(m) ... RETURN * ORDER BY n.foo, m.bar LIMIT 1
   // This will directly compare [n-->m, PartialSort] against [m-->n, Sort] during IDP
   // So the laziness and eagerness of these plans get considered correctly.
-
-  // MATCH (n)--(m) ... SET n.foo = 1 ...RETURN * ORDER BY m.bar, n.foo LIMIT 1
-  // Easy to find by checking if there are writes before the LIMIT.
-  // In those cases we know it will become an ExhaustiveLimit and should reset Selectivity back to 1.
-
-  // MATCH (n), (m) WITH * LIMIT 10 [EAGER] CREATE (p) RETURN *
 
 }
