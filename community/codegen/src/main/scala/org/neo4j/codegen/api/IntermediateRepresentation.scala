@@ -598,6 +598,12 @@ object IntermediateRepresentation {
                                                                  in6: Manifest[IN6], in7: Manifest[IN7], in8: Manifest[IN8], in9: Manifest[IN9], in10: Manifest[IN10]): Method =
     Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9), typeRef(in10))
 
+  def method[OWNER, OUT, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9, IN10, IN11](name: String)
+                                                                           (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
+                                                                            in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5],
+                                                                            in6: Manifest[IN6], in7: Manifest[IN7], in8: Manifest[IN8], in9: Manifest[IN9],
+                                                                            in10: Manifest[IN10], in11: Manifest[IN11]): Method =
+    Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9), typeRef(in10), typeRef(in11))
 
   def methodDeclaration[OUT](name: String,
                              body: IntermediateRepresentation,

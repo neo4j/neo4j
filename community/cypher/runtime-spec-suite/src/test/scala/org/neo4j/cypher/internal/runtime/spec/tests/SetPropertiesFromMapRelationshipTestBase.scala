@@ -363,6 +363,50 @@ abstract class SetPropertiesFromMapRelationshipTestBase[CONTEXT <: RuntimeContex
       .withStatistics()
   }
 
+  test("should throw on null map") {
+    given {
+      val nodes = nodeGraph(2)
+      nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("r.prop as p")
+      .setPropertiesFromMap("r","null", removeOtherProps = true)
+      .expandAll("(n)-[r]->()")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    the [CypherTypeException] thrownBy consume(runtimeResult) should have message "Expected Null() to be a map, but it was :`NO_VALUE`"
+  }
+
+  test("should handle empty map") {
+    given {
+      val nodes = nodeGraph(2)
+      val r = nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
+      r.setProperty("prop", "1")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("r.prop as p")
+      .setPropertiesFromMap("r","{}", removeOtherProps = true)
+      .expandAll("(n)-[r]->()")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withSingleRow(null).withStatistics(propertiesSet = 1)
+    property shouldBe "prop"
+  }
+
   test("should set relationship property on null node with removeOtherProps") {
     val r = given {
       val nodes = nodeGraph(2)
@@ -474,9 +518,8 @@ abstract class SetPropertiesFromMapRelationshipTestBase[CONTEXT <: RuntimeContex
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    assertThrows[CypherTypeException]({
-      consume(runtimeResult)
-    })
+    val thrownException = the [CypherTypeException] thrownBy consume(runtimeResult)
+    thrownException.getMessage should fullyMatch regex "Expected (.*)3(.*) to be a map, but it was :`Long\\(3\\)`".r
   }
 
   /*

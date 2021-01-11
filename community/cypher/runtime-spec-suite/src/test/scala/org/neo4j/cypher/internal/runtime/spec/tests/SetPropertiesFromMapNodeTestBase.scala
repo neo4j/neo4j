@@ -138,9 +138,8 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    assertThrows[InvalidArgumentException]({
-      consume(runtimeResult)
-    })
+    val thrownException = the [InvalidArgumentException] thrownBy consume(runtimeResult)
+    thrownException.getMessage should fullyMatch regex "The expression (.*) should have been a node or a relationship, but got (.*)".r
   }
 
   test("should handle multiple set/remove without removeOtherProps") {
@@ -358,6 +357,45 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p").withSingleRow(null).withNoUpdates()
   }
 
+  test("should throw on null map") {
+    given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("n.prop as p")
+      .setPropertiesFromMap("n", "null", removeOtherProps = true)
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    the [CypherTypeException] thrownBy consume(runtimeResult) should have message "Expected Null() to be a map, but it was :`NO_VALUE`"
+  }
+
+  test("should handle empty map") {
+    given {
+      nodePropertyGraph(1, { case _ => Map("prop" -> 1)})
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("n.prop as p")
+      .setPropertiesFromMap("n", "{}", removeOtherProps = true)
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val property = Iterables.single(tx.getAllPropertyKeys)
+    runtimeResult should beColumns("p").withSingleRow(null).withStatistics(propertiesSet = 1)
+    property shouldBe "prop"
+  }
+
   test("should handle set node property on null node") {
     val n = given {
       nodeGraph(1)
@@ -437,9 +475,8 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    assertThrows[CypherTypeException]({
-      consume(runtimeResult)
-    })
+    val thrownException = the [CypherTypeException] thrownBy consume(runtimeResult)
+    thrownException.getMessage should fullyMatch regex "Expected (.*)3(.*) to be a map, but it was :`Long\\(3\\)`".r
   }
 
   /*
