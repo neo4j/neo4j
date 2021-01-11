@@ -67,7 +67,7 @@ class LatchMapTest
             while ( th == null );
             ThreadTestUtils.awaitThreadState( th, 10_000, Thread.State.WAITING );
             latch.release();
-            assertThat( future.get( 1, TimeUnit.SECONDS ) ).isNull();
+            assertThat( future.get( 1, TimeUnit.MINUTES ) ).isNull();
         }
         finally
         {
@@ -88,7 +88,7 @@ class LatchMapTest
         {
             executor = Executors.newSingleThreadExecutor();
             Future<BinaryLatch> future = executor.submit( () -> latches.takeOrAwaitLatch( 33 ) );
-            assertThat( future.get( 1, TimeUnit.SECONDS ) ).isNotNull();
+            assertThat( future.get( 1, TimeUnit.MINUTES ) ).isNotNull();
             latch.release();
         }
         finally
