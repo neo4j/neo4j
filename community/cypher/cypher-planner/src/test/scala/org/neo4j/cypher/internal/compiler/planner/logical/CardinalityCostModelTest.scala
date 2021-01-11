@@ -323,8 +323,6 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val withLimit = QueryGraphSolverInput.empty.withLimitSelectivity(Selectivity.of(0.5).get)
     val unlimited = costFor(plan, withLimit, semanticTable, builder.cardinalities, builder.providedOrders)
     val limited = costFor(plan, withoutLimit, semanticTable, builder.cardinalities, builder.providedOrders)
-    println(unlimited)
-    println(limited)
     unlimited should equal(limited)
   }
 }

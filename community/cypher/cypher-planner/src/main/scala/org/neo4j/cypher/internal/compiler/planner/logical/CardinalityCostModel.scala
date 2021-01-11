@@ -304,7 +304,6 @@ object CardinalityCostModel {
 
   /**
    * Given an parentLimitSelectivity, calculate how this selectivity applies to the LHS and RHS of the plan.
-   *
    */
   def childrenLimitSelectivities(plan: LogicalPlan, parentLimitSelectivity: Selectivity, cardinalities: Cardinalities): (Selectivity, Selectivity) = {
     plan match {
@@ -314,9 +313,9 @@ object CardinalityCostModel {
 
       //NOTE: we don't match on ExhaustiveLimit here since that doesn't affect the cardinality of earlier plans
       case p: LimitingLogicalPlan =>
-        val sourceCardinality = cardinalities.get(p.source.id)
-        val thisCardinality = cardinalities.get(p.id) * parentLimitSelectivity
-        val s = (thisCardinality / sourceCardinality) getOrElse Selectivity.ONE
+        val cardinalityWithoutLimit = cardinalities.get(p.source.id)
+        val cardinalityWithLimit = cardinalities.get(p.id)
+        val s = limitingPlanSelectivity(cardinalityWithoutLimit, cardinalityWithLimit, parentLimitSelectivity)
         (s, s)
 
       case HashJoin() =>
@@ -330,6 +329,17 @@ object CardinalityCostModel {
     }
   }
 
+  /**
+   * The limit selectivity of a limiting plan.
+   *
+   * @param cardinalityWithoutLimit the cardinality of this plan, disregarding its LIMIT
+   * @param cardinalityWithLimit    the cardinality of this plan
+   * @param parentLimitSelectivity  the limit selectivity of the parent of this plan
+   */
+  def limitingPlanSelectivity(cardinalityWithoutLimit: Cardinality, cardinalityWithLimit: Cardinality, parentLimitSelectivity: Selectivity): Selectivity = {
+    val effectiveCardinalityWithLimit = cardinalityWithLimit * parentLimitSelectivity
+    (effectiveCardinalityWithLimit / cardinalityWithoutLimit) getOrElse Selectivity.ONE
+  }
 
   private object HashJoin {
     def unapply(x: LogicalPlan): Boolean = x match {

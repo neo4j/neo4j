@@ -102,7 +102,7 @@ class LimitPropagationPlanningIntegrationTest
     }
   }
 
-  test("should not (yet) plan lazy index seek instead of sort when limit is in a different query part") {
+  test("should plan lazy index seek instead of sort when limit is in a different query part") {
     val query =
       s"""
          |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
@@ -113,14 +113,63 @@ class LimitPropagationPlanningIntegrationTest
 
     assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
       .produceResults("a", "c")
-      .top(Seq(Ascending("c.id")), 10)
-      .projection("cache[c.id] AS `c.id`")
-      .filterExpression(
-        hasLabels("c", "C"),
-        startsWith(
-          cachedNodeProp("c", "id"),
-          literalString("")))
-      .expandAll("(b)<-[cb:REL_CB]-(c)")
+      .limit(10)
+      .nodeHashJoin("b")
+      .|.expandAll("(c)-[cb:REL_CB]->(b)")
+      .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
+      .filterExpression(hasLabels("b", "B"))
+      .expandAll("(a)-[ab:REL_AB]->(b)")
+      .nodeIndexOperator("a:A(id = 123)")
+      .build()
+    }
+  }
+
+  test("should plan lazy index seek instead of sort when sort and limit are in a different query part") {
+    val query =
+      s"""
+         |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
+         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE c.id STARTS WITH ''
+         |WITH DISTINCT a, c
+         |RETURN a, c ORDER BY c.id LIMIT 10
+         |""".stripMargin
+
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
+      .produceResults("a", "c")
+      .limit(10)
+      .distinct("a AS a", "c AS c")
+      .nodeHashJoin("b")
+      .|.expandAll("(c)-[cb:REL_CB]->(b)")
+      .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
+      .filterExpression(hasLabels("b", "B"))
+      .expandAll("(a)-[ab:REL_AB]->(b)")
+      .nodeIndexOperator("a:A(id = 123)")
+      .build()
+    }
+  }
+
+  test("should plan lazy index seek instead of sort when sort and limit are in a different query part with many horizons inbetween") {
+    val query =
+      s"""
+         |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
+         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE c.id STARTS WITH ''
+         |WITH DISTINCT a, c
+         |WITH *, 1 AS foo
+         |CALL {
+         |  WITH a
+         |  RETURN a AS aaa
+         |}
+         |RETURN a, c ORDER BY c.id LIMIT 10
+         |""".stripMargin
+
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
+      .produceResults("a", "c")
+      .limit(10)
+      .projection("a AS aaa")
+      .projection("1 AS foo")
+      .distinct("a AS a", "c AS c")
+      .nodeHashJoin("b")
+      .|.expandAll("(c)-[cb:REL_CB]->(b)")
+      .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
       .filterExpression(hasLabels("b", "B"))
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")
@@ -193,6 +242,116 @@ class LimitPropagationPlanningIntegrationTest
         startsWith(
           cachedNodeProp("c", "id"),
           literalString("")))
+      .expandAll("(b)<-[cb:REL_CB]-(c)")
+      .filterExpression(hasLabels("b", "B"))
+      .expandAll("(a)-[ab:REL_AB]->(b)")
+      .nodeIndexOperator("a:A(id = 123)")
+      .build()
+    }
+  }
+
+  test("should plan lazy index seek instead of sort when under limit and small skip in the next query part") {
+    val query =
+      s"""
+         |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
+         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE c.id STARTS WITH ''
+         |WITH DISTINCT a, c
+         |RETURN a, c ORDER BY c.id
+         |SKIP 7 LIMIT 10
+         |""".stripMargin
+
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
+      .produceResults("a", "c")
+      .skip(7)
+      .limit(add(literalInt(10), literalInt(7)))
+      .distinct("a AS a", "c AS c")
+      .nodeHashJoin("b")
+      .|.expandAll("(c)-[cb:REL_CB]->(b)")
+      .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
+      .filterExpression(hasLabels("b", "B"))
+      .expandAll("(a)-[ab:REL_AB]->(b)")
+      .nodeIndexOperator("a:A(id = 123)")
+      .build()
+    }
+  }
+
+  test("should not plan lazy index seek instead of sort when under limit and large skip in the next query part") {
+    val query =
+      s"""
+         |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
+         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE c.id STARTS WITH ''
+         |WITH DISTINCT a, c
+         |RETURN a, c ORDER BY c.id
+         |SKIP 100000 LIMIT 10
+         |""".stripMargin
+
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
+      .produceResults("a", "c")
+      .skip(100000)
+      .top(Seq(Ascending("c.id")), add(literalInt(10), literalInt(100000)))
+      .projection("cache[c.id] AS `c.id`")
+      .distinct("a AS a", "c AS c")
+      .filterExpression(
+        hasLabels("c", "C"),
+        startsWith(
+          cachedNodeProp("c", "id"),
+          literalString("")))
+      .expandAll("(b)<-[cb:REL_CB]-(c)")
+      .filterExpression(hasLabels("b", "B"))
+      .expandAll("(a)-[ab:REL_AB]->(b)")
+      .nodeIndexOperator("a:A(id = 123)")
+      .build()
+    }
+  }
+
+  test("should plan lazy index seek instead of sort when under small skip in same query part and limit and in the next query part") {
+    val query =
+      s"""
+         |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
+         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE c.id STARTS WITH ''
+         |WITH DISTINCT a, c
+         |SKIP 7
+         |RETURN a, c ORDER BY c.id
+         |LIMIT 10
+         |""".stripMargin
+
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
+      .produceResults("a", "c")
+      .limit(10)
+      .skip(7)
+      .distinct("a AS a", "c AS c")
+      .nodeHashJoin("b")
+      .|.expandAll("(c)-[cb:REL_CB]->(b)")
+      .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
+      .filterExpression(hasLabels("b", "B"))
+      .expandAll("(a)-[ab:REL_AB]->(b)")
+      .nodeIndexOperator("a:A(id = 123)")
+      .build()
+    }
+  }
+
+  test("should not plan lazy index seek instead of sort when under large skip in same query part and limit in the next query part") {
+    val query =
+      s"""
+         |MATCH (a:A {id: 123})-[ab:REL_AB]->(b:B)
+         |MATCH (c:C)-[cb:REL_CB]->(b) WHERE c.id STARTS WITH ''
+         |WITH DISTINCT a, c
+         |SKIP 100000
+         |RETURN a, c ORDER BY c.id
+         |LIMIT 10
+         |""".stripMargin
+
+    assertExpectedPlanForQueryGivenStatistics(query, statisticsForLimitPropagationTests) { planBuilder => planBuilder
+      .produceResults("a", "c")
+      .top(Seq(Ascending("c.id")), 10)
+      .projection("cache[c.id] AS `c.id`")
+      .skip(100000)
+      .distinct("a AS a", "c AS c")
+      .filterExpression(
+        startsWith(
+          cachedNodeProp("c", "id"),
+          literalString("")),
+        hasLabels("c", "C"))
       .expandAll("(b)<-[cb:REL_CB]-(c)")
       .filterExpression(hasLabels("b", "B"))
       .expandAll("(a)-[ab:REL_AB]->(b)")

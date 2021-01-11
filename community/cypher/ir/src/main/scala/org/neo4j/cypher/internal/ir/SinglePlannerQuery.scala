@@ -78,6 +78,12 @@ trait SinglePlannerQuery extends PlannerQueryPart {
     case _ => copy(tail = None)
   }
 
+  def withoutLast: Option[SinglePlannerQuery] = tail match {
+    case Some(tt) if tt.tail.isEmpty => Some(copy(tail = None))
+    case Some(tt) => Some(copy(tail = Some(tt.withoutLast.get)))
+    case None => None
+  }
+
   def withInput(queryInput: Seq[String]): SinglePlannerQuery =
     copy(input = Some(queryInput), queryGraph = queryGraph.copy(argumentIds = queryGraph.argumentIds ++ queryInput))
 

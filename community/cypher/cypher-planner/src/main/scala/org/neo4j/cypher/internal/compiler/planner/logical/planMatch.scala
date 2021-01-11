@@ -34,12 +34,12 @@ case object planMatch extends MatchPlanner {
       case _ => context
     }
 
-    val maybeLimitSelectivity = limitSelectivityForPart(query.withoutTail, context)
+    val limitSelectivity = limitSelectivityForRestOfQuery(query, context)
 
     ctx.strategy.plan(
       query.queryGraph,
       interestingOrderForPart(query, rhsPart),
-      maybeLimitSelectivity.fold(ctx)(ctx.withLimitSelectivity))
+      ctx.withLimitSelectivity(limitSelectivity))
   }
 
   // Extract the interesting InterestingOrder for this part of the query
@@ -72,19 +72,33 @@ case object planMatch extends MatchPlanner {
     orderingDependencies.exists(dep => dependencies.contains(dep.name))
   }
 
-  private[logical] def limitSelectivityForRestOfQuery(query: SinglePlannerQuery, context: LogicalPlanningContext): Option[Selectivity] = ???
+  private[logical] def limitSelectivityForRestOfQuery(query: SinglePlannerQuery, context: LogicalPlanningContext): Selectivity = {
+    def recurse(query: SinglePlannerQuery, context: LogicalPlanningContext, parentLimitSelectivity: Selectivity): Selectivity = {
+      val lastPartSelectivity = limitSelectivityForPart(query, context, parentLimitSelectivity)
 
-  private[logical] def limitSelectivityForPart(query: SinglePlannerQuery, context: LogicalPlanningContext): Option[Selectivity] = {
-    query.horizon match {
+      query.withoutLast match {
+        case None => lastPartSelectivity
+        case Some(withoutLast) =>
+          val currentSelectivity = lastPartSelectivity
+          recurse(withoutLast, context, currentSelectivity)
+      }
+    }
+
+    recurse(query, context, Selectivity.ONE)
+  }
+
+  private[logical] def limitSelectivityForPart(query: SinglePlannerQuery, context: LogicalPlanningContext, parentLimitSelectivity: Selectivity): Selectivity = {
+    query.lastQueryHorizon match {
       case proj: QueryProjection if proj.queryPagination.limit.isDefined =>
+        val queryWithoutLimit = query.updateTailOrSelf(_.updateQueryProjection(_ => proj.withPagination(proj.queryPagination.withLimit(None))))
         val cardinalityModel = context.metrics.cardinality(_, context.input, context.semanticTable)
+
+        val cardinalityWithoutLimit = cardinalityModel(queryWithoutLimit)
         val cardinalityWithLimit = cardinalityModel(query)
-        val cardinalityWithoutLimit = cardinalityModel(
-          query.updateQueryProjection(_ => proj.withPagination(proj.queryPagination.withLimit(None))))
 
-        cardinalityWithLimit / cardinalityWithoutLimit
+        CardinalityCostModel.limitingPlanSelectivity(cardinalityWithoutLimit, cardinalityWithLimit, parentLimitSelectivity)
 
-      case _ => None
+      case _ => parentLimitSelectivity
     }
   }
 }
