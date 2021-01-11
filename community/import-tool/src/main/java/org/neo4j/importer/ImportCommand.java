@@ -142,7 +142,9 @@ public class ImportCommand extends AbstractCommand
     private char quote = DEFAULT_CSV_CONFIG.quotationCharacter();
 
     @Option( names = "--read-buffer-size", paramLabel = "<size>", converter = ByteUnitConverter.class,
-            description = "Size of each buffer for reading input data. It has to at least be large enough to hold the biggest single value in the input data." )
+            description = "Size of each buffer for reading input data. " +
+                    "The size has to at least be large enough to hold the biggest single value in the input data. " +
+                    "The value can be a plain number or a byte units string, e.g. 128k, 1m." )
     private long bufferSize = DEFAULT_CSV_CONFIG.bufferSize();
 
     @Option( names = "--max-memory", paramLabel = "<size>", defaultValue = "90%", converter = MemoryConverter.class,
@@ -156,9 +158,10 @@ public class ImportCommand extends AbstractCommand
     private Boolean highIo;
 
     @Option( names = "--cache-on-heap", showDefaultValue = ALWAYS, arity = "0..1", paramLabel = "<true/false>",
-            description = "(advanced) Whether or not to allow allocating memory for the cache on heap. If 'false' then caches will still be " +
-                    "allocated off-heap, but the additional free memory inside the JVM will not be allocated for the caches. This to be able to have better " +
-                    "control over the heap memory" )
+            description = "(advanced) Whether or not to allow allocating memory for the cache on heap. " +
+                    "If 'false' then caches will still be allocated off-heap, " +
+                    "but the additional free memory inside the JVM will not be allocated for the caches. " +
+                    "Use this option to be able to have better control over the heap memory." )
     private boolean cacheOnHeap = DEFAULT_IMPORTER_CONFIG.allowCacheAllocationOnHeap();
 
     @Option( names = "--processors", paramLabel = "<num>",
@@ -178,7 +181,7 @@ public class ImportCommand extends AbstractCommand
 
     @Option( names = "--skip-bad-relationships", arity = "0..1", showDefaultValue = ALWAYS, paramLabel = "<true/false>",
             description = "Whether or not to skip importing relationships that refers to missing node ids, i.e. either start or end node id/group referring " +
-                    "to node that wasn't specified by the node input data. Skipped nodes will be logged, containing at most number of entities " +
+                    "to node that wasn't specified by the node input data. Skipped relationships will be logged, containing at most number of entities " +
                     "specified by bad-tolerance, unless otherwise specified by skip-bad-entries-logging option." )
     private boolean skipBadRelationships;
 

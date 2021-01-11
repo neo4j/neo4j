@@ -147,9 +147,11 @@ class ImportCommandTest
                         "                               using \\." + lineSeparator() +
                         "                               Default: \"" + lineSeparator() +
                         "      --read-buffer-size=<size>" + lineSeparator() +
-                        "                             Size of each buffer for reading input data. It has" + lineSeparator() +
-                        "                               to at least be large enough to hold the biggest" + lineSeparator() +
-                        "                               single value in the input data." + lineSeparator() +
+                        "                             Size of each buffer for reading input data. The" + lineSeparator() +
+                        "                               size has to at least be large enough to hold the" + lineSeparator() +
+                        "                               biggest single value in the input data. The" + lineSeparator() +
+                        "                               value can be a plain number or a byte units" + lineSeparator() +
+                        "                               string, e.g. 128k, 1m." + lineSeparator() +
                         "                               Default: 4194304" + lineSeparator() +
                         "      --max-memory=<size>    Maximum memory that neo4j-admin can use for" + lineSeparator() +
                         "                               various data structures and caching to improve" + lineSeparator() +
@@ -167,8 +169,9 @@ class ImportCommandTest
                         "                               memory for the cache on heap. If 'false' then" + lineSeparator() +
                         "                               caches will still be allocated off-heap, but the" + lineSeparator() +
                         "                               additional free memory inside the JVM will not" + lineSeparator() +
-                        "                               be allocated for the caches. This to be able to" + lineSeparator() +
-                        "                               have better control over the heap memory" + lineSeparator() +
+                        "                               be allocated for the caches. Use this option to" + lineSeparator() +
+                        "                               be able to have better control over the heap" + lineSeparator() +
+                        "                               memory." + lineSeparator() +
                         "                               Default: false" + lineSeparator() +
                         "      --processors=<num>     (advanced) Max number of processors used by the" + lineSeparator() +
                         "                               importer. Defaults to the number of available" + lineSeparator() +
@@ -194,9 +197,9 @@ class ImportCommandTest
                         "                               that refers to missing node ids, i.e. either" + lineSeparator() +
                         "                               start or end node id/group referring to node" + lineSeparator() +
                         "                               that wasn't specified by the node input data." + lineSeparator() +
-                        "                               Skipped nodes will be logged, containing at most" + lineSeparator() +
-                        "                               number of entities specified by bad-tolerance," + lineSeparator() +
-                        "                               unless otherwise specified by" + lineSeparator() +
+                        "                               Skipped relationships will be logged, containing" + lineSeparator() +
+                        "                               at most number of entities specified by" + lineSeparator() +
+                        "                               bad-tolerance, unless otherwise specified by" + lineSeparator() +
                         "                               skip-bad-entries-logging option." + lineSeparator() +
                         "                               Default: false" + lineSeparator() +
                         "      --skip-duplicate-nodes[=<true/false>]" + lineSeparator() +
