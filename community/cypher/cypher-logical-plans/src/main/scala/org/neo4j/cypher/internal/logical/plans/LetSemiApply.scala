@@ -46,9 +46,12 @@ case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)(i
 case class LetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)(implicit idGen: IdGen) extends AbstractLetSemiApply(left, right, idName)(idGen)
 
 abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with ApplyPlan {
+  extends LogicalPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
+
+  val source: LogicalPlan = left
+  val inner: LogicalPlan = right
 
   override val availableSymbols: Set[String] = left.availableSymbols + idName
 }

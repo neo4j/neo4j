@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.WorkReduction
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.topDown
@@ -39,22 +40,23 @@ import scala.collection.mutable
 case class useEffectiveOutputCardinality(cardinalities: Cardinalities, attributes: Attributes[LogicalPlan]) extends Rewriter {
 
   override def apply(input: AnyRef): AnyRef = {
-    val incomingSelectivity: mutable.Map[Id, Selectivity] = mutable.Map().withDefaultValue(Selectivity.ONE)
+    val workReductions: mutable.Map[Id, WorkReduction] = mutable.Map().withDefaultValue(WorkReduction.NoReduction)
 
     val rewriter: Rewriter = {
       topDown(Rewriter.lift {
         case p: LogicalPlan =>
-          val (lhsSelectivity, rhsSelectivity) = CardinalityCostModel.childrenLimitSelectivities(p, incomingSelectivity(p.id), cardinalities)
+          val reduction = workReductions(p.id)
+          val effectiveCardinalities = CardinalityCostModel.effectiveCardinalities(p, reduction, cardinalities)
 
-          p.lhs.foreach { lhs => incomingSelectivity += (lhs.id -> lhsSelectivity) }
-          p.rhs.foreach { rhs => incomingSelectivity += (rhs.id -> rhsSelectivity) }
+          p.lhs.foreach { lhs => workReductions += (lhs.id -> effectiveCardinalities.lhsReduction) }
+          p.rhs.foreach { rhs => workReductions += (rhs.id -> effectiveCardinalities.rhsReduction) }
 
-          // No need to create a new plan if we do not have a LIMIT selectivity
-          if (incomingSelectivity(p.id) == Selectivity.ONE) {
+          // No need to create a new plan if we do not have a work reduction
+          if (reduction == WorkReduction.NoReduction) {
             p
           } else {
             val newP = p.copyPlanWithIdGen(attributes.copy(p.id))
-            cardinalities.set(newP.id, cardinalities(p.id) * incomingSelectivity(p.id))
+            cardinalities.set(newP.id, effectiveCardinalities.outputCardinality)
             newP
           }
       })

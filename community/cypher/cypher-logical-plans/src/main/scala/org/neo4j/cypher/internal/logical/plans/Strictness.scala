@@ -43,3 +43,13 @@ trait ExhaustiveLogicalPlan {
 trait EagerLogicalPlan extends ExhaustiveLogicalPlan {
   self: LogicalPlan =>
 }
+
+/**
+ * A plan that consumes only a single row from RHS for every row in LHS
+ */
+trait SingleFromRightLogicalPlan {
+  self: LogicalPlan =>
+
+  val source: LogicalPlan
+  val inner: LogicalPlan
+}

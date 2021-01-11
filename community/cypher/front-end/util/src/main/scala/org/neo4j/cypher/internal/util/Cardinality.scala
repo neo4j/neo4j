@@ -129,3 +129,23 @@ object Multiplier {
     def compare(x: Multiplier, y: Multiplier): Int = x.compare(y)
   }
 }
+
+/**
+ * Represents a reduction of work due to laziness and limiting
+ *
+ * @param fraction Expected fraction of the original work that needs to be done
+ * @param minimum Expected minimum number of rows to produce
+ */
+final case class WorkReduction(fraction: Selectivity, minimum: Option[Cardinality] = None) {
+  def calculate(original: Cardinality, useMinimum: Boolean = false): Cardinality =
+    (useMinimum, minimum) match {
+      case (true, Some(card)) => Cardinality.max(original * fraction, card)
+      case _                  => original * fraction
+    }
+
+  def withFraction(selectivity: Selectivity): WorkReduction = copy(fraction = selectivity)
+}
+
+object WorkReduction {
+  val NoReduction: WorkReduction = WorkReduction(Selectivity.ONE, None)
+}

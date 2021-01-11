@@ -32,12 +32,14 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolv
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.CostPerRow
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.WorkReduction
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -280,5 +282,73 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val unlimited = costFor(plan, withLimit, semanticTable, builder.cardinalities, builder.providedOrders)
     val limited = costFor(plan, withoutLimit, semanticTable, builder.cardinalities, builder.providedOrders)
     unlimited should equal(limited)
+  }
+
+  test("should reduce cardinality of all semiApply variants") {
+    val plans = Seq[LogicalPlanBuilder => LogicalPlan](
+      _.semiApply().withCardinality(75)
+       .|.expandAll("(n)-->()").withCardinality(12345)
+       .|.argument("n").withCardinality(100)
+       .allNodeScan("n").withCardinality(100)
+       .build(),
+      _.antiSemiApply().withCardinality(25)
+       .|.expandAll("(n)-->()").withCardinality(12345)
+       .|.argument("n").withCardinality(100)
+       .allNodeScan("n").withCardinality(100)
+       .build(),
+      _.letSemiApply("x").withCardinality(100)
+       .|.expandAll("(n)-->()").withCardinality(12345)
+       .|.argument("n").withCardinality(100)
+       .allNodeScan("n").withCardinality(100)
+       .build(),
+      _.letAntiSemiApply("x").withCardinality(100)
+       .|.expandAll("(n)-->()").withCardinality(12345)
+       .|.argument("n").withCardinality(100)
+       .allNodeScan("n").withCardinality(100)
+       .build(),
+      _.selectOrSemiApply("x").withCardinality(50)
+       .|.expandAll("(n)-->()").withCardinality(12345)
+       .|.argument("n").withCardinality(100)
+       .allNodeScan("n").withCardinality(100)
+       .build(),
+      _.selectOrAntiSemiApply("x").withCardinality(50)
+       .|.expandAll("(n)-->()").withCardinality(12345)
+       .|.argument("n").withCardinality(100)
+       .allNodeScan("n").withCardinality(100)
+       .build(),
+      _.letSelectOrSemiApply("x", "true").withCardinality(50)
+       .|.expandAll("(n)-->()").withCardinality(12345)
+       .|.argument("n").withCardinality(100)
+       .allNodeScan("n").withCardinality(100)
+       .build(),
+      _.letSelectOrAntiSemiApply("x", "true").withCardinality(50)
+       .|.expandAll("(n)-->()").withCardinality(12345)
+       .|.argument("n").withCardinality(100)
+       .allNodeScan("n").withCardinality(100)
+       .build(),
+    )
+
+    plans.foreach { buildPlan =>
+      val incoming = WorkReduction.NoReduction
+      val (plan, reduction) = workReductionOf(buildPlan, incoming)
+      withClue(LogicalPlanToPlanBuilderString(plan)) {
+        reduction shouldEqual ((incoming, WorkReduction(fraction = Selectivity(100.0/12345.0), minimum = Some(Cardinality(100)))))
+      }
+    }
+
+    plans.foreach { buildPlan =>
+      val incoming = WorkReduction(Selectivity(0.3))
+      val (plan, reduction) = workReductionOf(buildPlan, incoming)
+      withClue(LogicalPlanToPlanBuilderString(plan)) {
+        reduction shouldEqual ((incoming, WorkReduction(fraction = Selectivity(30.0/12345.0), minimum = Some(Cardinality(30)))))
+      }
+    }
+  }
+
+  private def workReductionOf(buildPlan: LogicalPlanBuilder => LogicalPlan, incomingWorkReduction: WorkReduction) = {
+    val builder = new LogicalPlanBuilder(wholePlan = false)
+    val plan = buildPlan(builder)
+    val reduction = CardinalityCostModel.childrenWorkReduction(plan, incomingWorkReduction, builder.cardinalities)
+    (plan, reduction)
   }
 }

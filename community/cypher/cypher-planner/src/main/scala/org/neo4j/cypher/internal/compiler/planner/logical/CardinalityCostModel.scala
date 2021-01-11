@@ -26,9 +26,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.E
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.HashJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROBE_BUILD_COST
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROBE_SEARCH_COST
-import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.cardinalityForPlan
-import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.childrenLimitSelectivities
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.costPerRow
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.effectiveCardinalities
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.expressions.Expression
@@ -52,7 +51,9 @@ import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Limit
+import org.neo4j.cypher.internal.logical.plans.SingleFromRightLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LimitingLogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -82,6 +83,7 @@ import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.CostPerRow
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.WorkReduction
 
 case class CardinalityCostModel(executionModel: ExecutionModel) extends CostModel {
 
@@ -91,7 +93,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
                        cardinalities: Cardinalities,
                        providedOrders: ProvidedOrders,
                        monitor: CostModelMonitor): Cost =
-    calculateCost(plan, input.limitSelectivity, cardinalities, providedOrders, semanticTable, plan, monitor)
+    calculateCost(plan, WorkReduction(input.limitSelectivity), cardinalities, providedOrders, semanticTable, plan, monitor)
 
   /**
    * Calculate the combined cost of a plan, including the costs of its children.
@@ -139,41 +141,35 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
         effectiveCardinalities.rhs * PROBE_SEARCH_COST
 
     case _ =>
-      val rowCost = costPerRow(plan, effectiveCardinalities.currentPlanWorkload, semanticTable)
-      val costForThisPlan = effectiveCardinalities.currentPlanWorkload * rowCost
+      val rowCost = costPerRow(plan, effectiveCardinalities.inputCardinality, semanticTable)
+      val costForThisPlan = effectiveCardinalities.inputCardinality * rowCost
       costForThisPlan + lhsCost + rhsCost
   }
 
   /**
    * Recursively calculate the cost of a plan
    *
-   * @param plan             the plan
-   * @param limitSelectivity the selectivity of a LIMIT affecting this plan
-   * @param rootPlan         the whole plan currently calculating cost for.
+   * @param plan          the plan
+   * @param workReduction expected work reduction due to limits and laziness
+   * @param rootPlan      the whole plan currently calculating cost for.
    */
   private def calculateCost(plan: LogicalPlan,
-                            limitSelectivity: Selectivity,
+                            workReduction: WorkReduction,
                             cardinalities: Cardinalities,
                             providedOrders: ProvidedOrders,
                             semanticTable: SemanticTable,
                             rootPlan: LogicalPlan,
                             monitor: CostModelMonitor): Cost = {
 
-    val (lhsLimitSelectivity, rhsLimitSelectivity) = childrenLimitSelectivities(plan, limitSelectivity, cardinalities)
+    val effectiveCard = effectiveCardinalities(plan, workReduction, cardinalities)
 
-    val lhsCost = plan.lhs.map(p => calculateCost(p, lhsLimitSelectivity, cardinalities, providedOrders, semanticTable, rootPlan, monitor)) getOrElse Cost.ZERO
-    val rhsCost = plan.rhs.map(p => calculateCost(p, rhsLimitSelectivity, cardinalities, providedOrders, semanticTable, rootPlan, monitor)) getOrElse Cost.ZERO
+    val lhsCost = plan.lhs.map(p => calculateCost(p, effectiveCard.lhsReduction, cardinalities, providedOrders, semanticTable, rootPlan, monitor)) getOrElse Cost.ZERO
+    val rhsCost = plan.rhs.map(p => calculateCost(p, effectiveCard.rhsReduction, cardinalities, providedOrders, semanticTable, rootPlan, monitor)) getOrElse Cost.ZERO
 
-    val effectiveCardinalities = EffectiveCardinalities(
-      cardinalityForPlan(plan, cardinalities) * lhsLimitSelectivity,
-      plan.lhs.map(p => cardinalities.get(p.id) * lhsLimitSelectivity) getOrElse Cardinality.EMPTY,
-      plan.rhs.map(p => cardinalities.get(p.id) * rhsLimitSelectivity) getOrElse Cardinality.EMPTY
-    )
-
-    val cost = combinedCostForPlan(plan, effectiveCardinalities, cardinalities, providedOrders, lhsCost, rhsCost, semanticTable, rootPlan)
+    val cost = combinedCostForPlan(plan, effectiveCard, cardinalities, providedOrders, lhsCost, rhsCost, semanticTable, rootPlan)
 
     monitor.reportPlanCost(rootPlan, plan, cost)
-    monitor.reportPlanEffectiveCardinality(rootPlan, plan, cardinalities.get(plan.id) * limitSelectivity)
+    monitor.reportPlanEffectiveCardinality(rootPlan, plan, effectiveCard.outputCardinality)
 
     cost
   }
@@ -286,36 +282,72 @@ object CardinalityCostModel {
   /**
    * The input cardinality if defined, otherwise the output cardinality
    */
-  private def cardinalityForPlan(plan: LogicalPlan, cardinalities: Cardinalities): Cardinality =
-    plan.lhs.map(p => cardinalities.get(p.id)).getOrElse(cardinalities.get(plan.id))
+  private def inputCardinality(plan: LogicalPlan, cardinalities: Cardinalities): Cardinality =
+    plan.lhs.map(p => cardinalities.get(p.id)).getOrElse(outputCardinality(plan, cardinalities))
 
-  private final case class EffectiveCardinalities(currentPlanWorkload: Cardinality, lhs: Cardinality, rhs: Cardinality)
+  private def outputCardinality(plan: LogicalPlan, cardinalities: Cardinalities): Cardinality =
+    cardinalities.get(plan.id)
+
+  final case class EffectiveCardinalities(
+    outputCardinality: Cardinality,
+    inputCardinality: Cardinality,
+    lhs: Cardinality,
+    rhs: Cardinality,
+    lhsReduction: WorkReduction,
+    rhsReduction: WorkReduction,
+  )
+
+  def effectiveCardinalities(plan: LogicalPlan, workReduction: WorkReduction, cardinalities: Cardinalities): EffectiveCardinalities = {
+    val (lhsWorkReduction, rhsWorkReduction) = childrenWorkReduction(plan, workReduction, cardinalities)
+
+    // Make sure argument leaf plans under semiApply etc. get bounded to the same cardinality as the lhs
+    val useMinimum = plan match {
+      case _: Argument => true
+      case _           => false
+    }
+
+    EffectiveCardinalities(
+      outputCardinality = workReduction.calculate(outputCardinality(plan, cardinalities), useMinimum),
+      inputCardinality = lhsWorkReduction.calculate(inputCardinality(plan, cardinalities), useMinimum),
+      plan.lhs.map(p => lhsWorkReduction.calculate(cardinalities.get(p.id))) getOrElse Cardinality.EMPTY,
+      plan.rhs.map(p => rhsWorkReduction.calculate(cardinalities.get(p.id))) getOrElse Cardinality.EMPTY,
+      lhsWorkReduction,
+      rhsWorkReduction,
+    )
+  }
 
   /**
-   * Given an parentLimitSelectivity, calculate how this selectivity applies to the LHS and RHS of the plan.
+   * Given an parent WorkReduction, calculate how this reduction applies to the LHS and RHS of the plan.
+   *
    */
-  def childrenLimitSelectivities(plan: LogicalPlan, parentLimitSelectivity: Selectivity, cardinalities: Cardinalities): (Selectivity, Selectivity) = {
-    plan match {
-      case _: CartesianProduct =>
-        val sqrt = Selectivity.of(math.sqrt(parentLimitSelectivity.factor)).getOrElse(Selectivity.ONE)
-        (sqrt, sqrt)
+  def childrenWorkReduction(plan: LogicalPlan, parentWorkReduction: WorkReduction, cardinalities: Cardinalities): (WorkReduction, WorkReduction) = plan match {
 
-      //NOTE: we don't match on ExhaustiveLimit here since that doesn't affect the cardinality of earlier plans
-      case p: LimitingLogicalPlan =>
-        val inputCardinality = cardinalities.get(p.source.id)
-        val outputCardinality = cardinalities.get(p.id)
-        val s = limitingPlanSelectivity(inputCardinality, outputCardinality, parentLimitSelectivity)
-        (s, s)
+    case _: CartesianProduct =>
+      val sqrt = Selectivity.of(math.sqrt(parentWorkReduction.fraction.factor)).getOrElse(Selectivity.ONE)
+      (parentWorkReduction.withFraction(sqrt), parentWorkReduction.withFraction(sqrt))
 
-      case HashJoin() =>
-        (Selectivity.ONE, parentLimitSelectivity)
+    //NOTE: we don't match on ExhaustiveLimit here since that doesn't affect the cardinality of earlier plans
+    case p: LimitingLogicalPlan =>
+      val inputCardinality = cardinalities.get(p.source.id)
+      val outputCardinality = cardinalities.get(p.id)
+      val reduction = limitingPlanWorkReduction(inputCardinality, outputCardinality, parentWorkReduction)
+      (reduction, reduction)
+
+    case p: SingleFromRightLogicalPlan =>
+      val lhsCardinality = cardinalities.get(p.source.id)
+      val rhsCardinality = cardinalities.get(p.inner.id)
+      val effectiveLhsCardinality = parentWorkReduction.calculate(cardinalities.get(p.source.id))
+      val rhsReduction = limitingPlanWorkReduction(rhsCardinality, lhsCardinality, parentWorkReduction).copy(minimum = Some(effectiveLhsCardinality))
+      (parentWorkReduction, rhsReduction)
+
+    case HashJoin() =>
+      (WorkReduction.NoReduction, parentWorkReduction)
 
       case _: ExhaustiveLogicalPlan =>
-        (Selectivity.ONE, Selectivity.ONE)
+        (WorkReduction.NoReduction, WorkReduction.NoReduction)
 
-      case _ =>
-        (parentLimitSelectivity, parentLimitSelectivity)
-    }
+    case _ =>
+      (parentWorkReduction, parentWorkReduction)
   }
 
   /**
@@ -325,9 +357,20 @@ object CardinalityCostModel {
    * @param outputCardinality       the cardinality of plan
    * @param parentLimitSelectivity  the limit selectivity of the plan's parent
    */
-  def limitingPlanSelectivity(inputCardinality: Cardinality, outputCardinality: Cardinality, parentLimitSelectivity: Selectivity): Selectivity = {
-    val effectiveCardinalityWithLimit = outputCardinality * parentLimitSelectivity
-    (effectiveCardinalityWithLimit / inputCardinality) getOrElse Selectivity.ONE
+  def limitingPlanSelectivity(inputCardinality: Cardinality, outputCardinality: Cardinality, parentLimitSelectivity: Selectivity): Selectivity =
+    limitingPlanWorkReduction(inputCardinality, outputCardinality, WorkReduction(parentLimitSelectivity)).fraction
+
+  /**
+   * The work reduction of a limiting plan.
+   *
+   * @param inputCardinality        the cardinality of the plan's parent
+   * @param outputCardinality       the cardinality of plan
+   * @param parentWorkReduction     the work reduction of the plan's parent
+   */
+  def limitingPlanWorkReduction(inputCardinality: Cardinality, outputCardinality: Cardinality, parentWorkReduction: WorkReduction): WorkReduction = {
+    val reducedOutput = parentWorkReduction.calculate(outputCardinality)
+    val fraction = (reducedOutput / inputCardinality) getOrElse Selectivity.ONE
+    parentWorkReduction.withFraction(fraction)
   }
 
   private object HashJoin {

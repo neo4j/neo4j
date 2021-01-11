@@ -59,9 +59,12 @@ case class SelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, expressi
   extends AbstractSelectOrSemiApply(left, right)(idGen)
 
 abstract class AbstractSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan)(idGen: IdGen)
-  extends LogicalPlan(idGen) with ApplyPlan {
+  extends LogicalPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
+
+  val source: LogicalPlan = left
+  val inner: LogicalPlan = right
 
   val availableSymbols: Set[String] = left.availableSymbols
 
