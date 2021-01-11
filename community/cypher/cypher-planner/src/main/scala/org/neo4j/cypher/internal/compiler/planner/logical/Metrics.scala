@@ -89,7 +89,12 @@ object Metrics {
      *
      * @return the cost of the given plan
      */
-    def costFor(plan: LogicalPlan, input: QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities, providedOrders: ProvidedOrders): Cost
+    def costFor(plan: LogicalPlan,
+                input: QueryGraphSolverInput,
+                semanticTable: SemanticTable,
+                cardinalities: Cardinalities,
+                providedOrders: ProvidedOrders,
+                monitor: CostModelMonitor): Cost
   }
 
 

@@ -19,23 +19,108 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.verify
-import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CachedFunctionTest extends CypherFunSuite {
-  test("does not re-calculate stuff") {
-    val f: QueryGraph => Unit = mock[QueryGraph => Unit]
-
+  test("1 argument") {
+    var i = 0
+    val f = (_: Int) => {
+      i += 1
+      5
+    }
     val cachedF = CachedFunction(f)
 
-    val qg1 = QueryGraph(patternNodes = Set("a"))
-    val qg2 = QueryGraph(patternNodes = Set("a"))
+    cachedF(3)
+    cachedF(3)
+    cachedF(2)
+    cachedF(2)
+    cachedF(4)
 
-    cachedF(qg1)
-    cachedF(qg2)
+    i should be(3)
+  }
 
-    verify(f).apply(any())
+  test("2 arguments") {
+    var i = 0
+    val f = (_: Int, _: Int) => {
+      i += 1
+      5
+    }
+    val cachedF = CachedFunction(f)
+
+    cachedF(1, 2)
+    cachedF(1, 2)
+    cachedF(1, 3)
+    cachedF(4, 5)
+    cachedF(4, 5)
+
+    i should be(3)
+  }
+
+  test("3 arguments") {
+    var i = 0
+    val f = (_: Int, _: Int, _: Int) => {
+      i += 1
+      5
+    }
+    val cachedF = CachedFunction(f)
+
+    cachedF(1, 2, 3)
+    cachedF(1, 2, 3)
+    cachedF(1, 3, 4)
+    cachedF(4, 5, 1)
+    cachedF(4, 5, 1)
+
+    i should be(3)
+  }
+
+  test("4 arguments") {
+    var i = 0
+    val f = (_: Int, _: Int, _:Int, _:Int) => {
+      i += 1
+      5
+    }
+    val cachedF = CachedFunction(f)
+
+    cachedF(1, 2, 3, 4)
+    cachedF(1, 2, 2, 1)
+    cachedF(1, 2, 2, 1)
+    cachedF(1, 2, 3, 4)
+    cachedF(4, 3, 2, 1)
+
+    i should be(3)
+  }
+
+  test("5 arguments") {
+    var i = 0
+    val f = (_: Int, _: Int, _:Int, _:Int, _:Int) => {
+      i += 1
+      5
+    }
+    val cachedF = CachedFunction(f)
+
+    cachedF(1, 2, 3, 4, 5)
+    cachedF(1, 2, 2, 1, 2)
+    cachedF(1, 2, 2, 1, 2)
+    cachedF(1, 2, 3, 4, 5)
+    cachedF(4, 3, 2, 1, 0)
+
+    i should be(3)
+  }
+
+  test("6 arguments") {
+    var i = 0
+    val f = (_: Int, _: Int, _: Int, _: Int, _: Int, _: Int) => {
+      i += 1
+      5
+    }
+    val cachedF = CachedFunction(f)
+
+    cachedF(1, 2, 3, 4, 5, 6)
+    cachedF(1, 2, 3, 4, 5, 6)
+    cachedF(1, 1, 1, 1, 1, 1)
+    cachedF(4, 5, 1, 1, 1, 1)
+    cachedF(4, 5, 1, 1, 1, 1)
+
+    i should be(3)
   }
 }

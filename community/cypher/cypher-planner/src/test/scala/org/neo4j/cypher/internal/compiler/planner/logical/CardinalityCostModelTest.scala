@@ -53,7 +53,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
                       cardinalities: Cardinalities,
                       providedOrders: ProvidedOrders,
                       executionModel: ExecutionModel = ExecutionModel.default): Cost = {
-    CardinalityCostModel(executionModel).costFor(plan, input, semanticTable, cardinalities, providedOrders)
+    CardinalityCostModel(executionModel).costFor(plan, input, semanticTable, cardinalities, providedOrders, CostModelMonitor.DEFAULT)
   }
 
   test("expand should only be counted once") {

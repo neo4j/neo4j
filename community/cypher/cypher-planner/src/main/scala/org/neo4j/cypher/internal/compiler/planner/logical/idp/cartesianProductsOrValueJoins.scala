@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
@@ -209,7 +210,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
 
     def sortCriteria(c: Component): (Cost, Cardinality) = {
       val cardinality = context.planningAttributes.cardinalities(c.plan.id)
-      val cost = context.cost.costFor(c.plan, context.input, context.semanticTable, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders)
+      val cost = context.cost.costFor(c.plan, context.input, context.semanticTable, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders, CostModelMonitor.DEFAULT)
       (cost, cardinality)
     }
 

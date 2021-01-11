@@ -93,8 +93,9 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
                        input: QueryGraphSolverInput,
                        semanticTable: SemanticTable,
                        cardinalities: Cardinalities,
-                       providedOrders: ProvidedOrders): Cost =
-    calculateCost(plan, input.limitSelectivity, input.strictness, cardinalities, providedOrders, semanticTable, plan)
+                       providedOrders: ProvidedOrders,
+                       monitor: CostModelMonitor): Cost =
+    calculateCost(plan, input.limitSelectivity, input.strictness, cardinalities, providedOrders, semanticTable, plan, monitor)
 
   /**
    * Calculate the combined cost of a plan, including the costs of its children.
@@ -160,11 +161,13 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
                             cardinalities: Cardinalities,
                             providedOrders: ProvidedOrders,
                             semanticTable: SemanticTable,
-                            rootPlan: LogicalPlan): Cost = {
+                            rootPlan: LogicalPlan,
+                            monitor: CostModelMonitor): Cost = {
+
     val (lhsLimitSelectivity, rhsLimitSelectivity) = childrenLimitSelectivities(plan, limitSelectivity, cardinalities)
 
-    val lhsCost = plan.lhs.map(p => calculateCost(p, lhsLimitSelectivity, strictness, cardinalities, providedOrders, semanticTable, rootPlan)) getOrElse Cost.ZERO
-    val rhsCost = plan.rhs.map(p => calculateCost(p, rhsLimitSelectivity, strictness, cardinalities, providedOrders, semanticTable, rootPlan)) getOrElse Cost.ZERO
+    val lhsCost = plan.lhs.map(p => calculateCost(p, lhsLimitSelectivity, strictness, cardinalities, providedOrders, semanticTable, rootPlan, monitor)) getOrElse Cost.ZERO
+    val rhsCost = plan.rhs.map(p => calculateCost(p, rhsLimitSelectivity, strictness, cardinalities, providedOrders, semanticTable, rootPlan, monitor)) getOrElse Cost.ZERO
 
     val effectiveCardinalities = EffectiveCardinalities(
       cardinalityForPlan(plan, cardinalities) * lhsLimitSelectivity,
@@ -174,10 +177,15 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
 
     val cost = combinedCostForPlan(plan, effectiveCardinalities, cardinalities, providedOrders, lhsCost, rhsCost, semanticTable, rootPlan)
 
-    strictness match {
+    val actualCost = strictness match {
       case Some(LazyMode) if plan.strictness != LazyMode => cost * EAGERNESS_MULTIPLIER
       case _ => cost
     }
+
+    monitor.reportPlanCost(rootPlan, plan, actualCost)
+    monitor.reportPlanEffectiveCardinality(rootPlan, plan, cardinalities.get(plan.id) * limitSelectivity)
+
+    actualCost
   }
 }
 

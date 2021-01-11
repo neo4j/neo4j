@@ -44,7 +44,7 @@ case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsF
 
   override def newCostModel(config: CypherPlannerConfiguration, executionModel: ExecutionModel): CostModel = {
     val cached = CachedFunction(metricsFactory.newCostModel(config: CypherPlannerConfiguration, executionModel).costFor _)
-    (plan: LogicalPlan, input: Metrics.QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities, providedOrders: ProvidedOrders) => cached(plan, input, semanticTable, cardinalities, providedOrders)
+    (plan: LogicalPlan, input: Metrics.QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities, providedOrders: ProvidedOrders, monitor: CostModelMonitor) => cached(plan, input, semanticTable, cardinalities, providedOrders, monitor)
   }
 
   override def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel = {

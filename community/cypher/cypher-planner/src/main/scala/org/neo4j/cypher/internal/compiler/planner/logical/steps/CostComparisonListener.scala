@@ -21,10 +21,15 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import java.util.concurrent.atomic.AtomicLong
 
+import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.Cost
+import org.neo4j.cypher.internal.util.attribution.Id
 
+import scala.collection.mutable
 import scala.io.AnsiColor
 
 trait CostComparisonListener {
@@ -68,14 +73,29 @@ object SystemOutCostLogger extends CostComparisonListener {
                 resolved: => String,
                 resolvedPerPlan: LogicalPlan => String = _ => ""
                ): Unit = {
+    // Key is a tuple of (root plan ID, plan ID)
+    val planCost: mutable.Map[(Id, Id), Cost] = mutable.Map.empty
+    val planEffectiveCardinality: mutable.Map[(Id, Id), Cardinality] = mutable.Map.empty
 
-    def costString(plan: LogicalPlan) = {
-      val cost = context.cost.costFor(plan, context.input, context.semanticTable, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders).gummyBears
+    val monitor = new CostModelMonitor {
+      override def reportPlanCost(rootPlan: LogicalPlan, plan: LogicalPlan, cost: Cost): Unit = planCost += ((rootPlan.id, plan.id) -> cost)
+      override def reportPlanEffectiveCardinality(rootPlan: LogicalPlan, plan: LogicalPlan, cardinality: Cardinality): Unit = planEffectiveCardinality += ((rootPlan.id, plan.id) -> cardinality)
+    }
+
+    def costString(rootPlan: LogicalPlan)(plan: LogicalPlan) = {
+      val cost = planCost(rootPlan.id, plan.id).gummyBears
       val cardinality = context.planningAttributes.cardinalities.get(plan.id).amount
-      magenta(" // cost ") + magenta_bold(cost.toString) + magenta(" cardinality ") + magenta_bold(cardinality.toString)
+      val effectiveCardinality = planEffectiveCardinality(rootPlan.id, plan.id).amount
+      magenta(" // cost ") + magenta_bold(cost.toString) + magenta(" cardinality ") + magenta_bold(cardinality.toString) + magenta(" (effective cardinality ") + magenta_bold(effectiveCardinality.toString) + magenta(")")
     }
 
     val plansInOrder = input.toIndexedSeq.sorted(inputOrdering).map(projector)
+
+    // Update cost and effective cardinality for each subplan
+    plansInOrder.foreach(
+      plan =>
+        context.cost.costFor(plan, context.input, context.semanticTable, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders, monitor)
+    )
 
     if (plansInOrder.size > 1) {
       val id = comparisonId.getAndIncrement()
@@ -85,7 +105,7 @@ object SystemOutCostLogger extends CostComparisonListener {
         val winner = if (index == 0) green(" [winner]") else ""
         val resolvedStr = cyan(s" ${resolvedPerPlan(plan)}")
         val header = blue(s"$index: Plan #${plan.debugId}") + winner + resolvedStr
-        val planWithCosts = LogicalPlanToPlanBuilderString(plan, extra = costString)
+        val planWithCosts = LogicalPlanToPlanBuilderString(plan, extra = costString(plan))
         val hints = s"(hints: ${context.planningAttributes.solveds.get(plan.id).numHints})"
 
         println(indent(1, header))

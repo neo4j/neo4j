@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
+import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.shouldPlanExhaustiveLimit
@@ -234,7 +235,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
         override protected def defaultValue: ProvidedOrder = ProvidedOrder.empty
       }
       CardinalityCostModel(Volcano)
-        .costFor(plan, QueryGraphSolverInput.empty, state.semanticTable, state.cardinalities, po) <= costLimit
+        .costFor(plan, QueryGraphSolverInput.empty, state.semanticTable, state.cardinalities, po, CostModelMonitor.DEFAULT) <= costLimit
   }
 
   def innerLogicalPlanWithAtLeastOneSymbol(state: State): Gen[WithState[LogicalPlan]] =
