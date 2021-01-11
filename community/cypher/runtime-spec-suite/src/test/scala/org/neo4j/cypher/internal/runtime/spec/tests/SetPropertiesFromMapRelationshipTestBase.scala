@@ -181,7 +181,7 @@ abstract class SetPropertiesFromMapRelationshipTestBase[CONTEXT <: RuntimeContex
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     val properties = tx.getAllPropertyKeys.asScala.toList
-    runtimeResult should beColumns("p1", "p2").withSingleRow(3, null).withStatistics(propertiesSet = 3)
+    runtimeResult should beColumns("p1", "p2").withSingleRow(3, null)
     properties shouldBe Seq("prop1", "prop2")
   }
 
