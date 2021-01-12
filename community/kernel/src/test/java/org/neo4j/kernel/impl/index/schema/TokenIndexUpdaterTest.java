@@ -54,7 +54,7 @@ import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 @ExtendWith( RandomExtension.class )
 @PageCacheExtension
-class NativeTokenIndexUpdaterTest
+class TokenIndexUpdaterTest
 {
     private static final int LABEL_COUNT = 5;
     private static final int NODE_COUNT = 10_000;
@@ -85,7 +85,7 @@ class NativeTokenIndexUpdaterTest
     {
         // GIVEN
         long[] expected = new long[NODE_COUNT];
-        try ( NativeTokenIndexUpdater writer = new NativeTokenIndexUpdater( max( 5, NODE_COUNT / 100 ), NativeTokenScanWriter.EMPTY ) )
+        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ), NativeTokenScanWriter.EMPTY ) )
         {
             writer.initialize( tree.writer( NULL ) );
 
@@ -113,7 +113,7 @@ class NativeTokenIndexUpdaterTest
         // GIVEN
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () ->
         {
-            try ( NativeTokenIndexUpdater writer = new NativeTokenIndexUpdater( 1, NativeTokenScanWriter.EMPTY ) )
+            try ( TokenIndexUpdater writer = new TokenIndexUpdater( 1, NativeTokenScanWriter.EMPTY ) )
             {
                 writer.initialize( tree.writer( NULL ) );
 
@@ -134,7 +134,7 @@ class NativeTokenIndexUpdaterTest
         int numberOfNodesInEach = 5;
         int labelId = 1;
         long[] labels = {labelId};
-        try ( NativeTokenIndexUpdater writer = new NativeTokenIndexUpdater( max( 5, NODE_COUNT / 100 ), NativeTokenScanWriter.EMPTY ) )
+        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ), NativeTokenScanWriter.EMPTY ) )
         {
             writer.initialize( tree.writer( NULL ) );
 
@@ -153,7 +153,7 @@ class NativeTokenIndexUpdaterTest
 
         // when removing all the nodes from one of the tree nodes
         int treeEntryToRemoveFrom = 1;
-        try ( NativeTokenIndexUpdater writer = new NativeTokenIndexUpdater( max( 5, NODE_COUNT / 100 ), NativeTokenScanWriter.EMPTY ) )
+        try ( TokenIndexUpdater writer = new TokenIndexUpdater( max( 5, NODE_COUNT / 100 ), NativeTokenScanWriter.EMPTY ) )
         {
             writer.initialize( tree.writer( NULL ) );
             long baseNodeId = treeEntryToRemoveFrom * RANGE_SIZE;

@@ -53,7 +53,7 @@ import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
  *
  * @see PhysicalToLogicalTokenChanges2
  */
-class NativeTokenIndexUpdater implements IndexUpdater
+class TokenIndexUpdater implements IndexUpdater
 {
     /**
      * {@link Comparator} for sorting the entity id ranges, used in batches to apply updates in sorted order.
@@ -74,7 +74,7 @@ class NativeTokenIndexUpdater implements IndexUpdater
     private final NativeTokenScanWriter.WriteMonitor monitor;
 
     /**
-     * {@link Writer} acquired when acquiring this {@link NativeTokenIndexUpdater},
+     * {@link Writer} acquired when acquiring this {@link TokenIndexUpdater},
      * acquired from {@link GBPTree#writer(PageCursorTracer)}.
      */
     private Writer<TokenScanKey,TokenScanValue> writer;
@@ -122,7 +122,7 @@ class NativeTokenIndexUpdater implements IndexUpdater
 
     private boolean closed = true;
 
-    NativeTokenIndexUpdater( int batchSize, NativeTokenScanWriter.WriteMonitor monitor )
+    TokenIndexUpdater( int batchSize, NativeTokenScanWriter.WriteMonitor monitor )
     {
         this.pendingUpdates = new TokenIndexEntryUpdate[batchSize];
         this.addMerger = new AddMerger( monitor );
@@ -137,7 +137,7 @@ class NativeTokenIndexUpdater implements IndexUpdater
         this.monitor = monitor;
     }
 
-    NativeTokenIndexUpdater initialize( Writer<TokenScanKey,TokenScanValue> writer )
+    TokenIndexUpdater initialize( Writer<TokenScanKey,TokenScanValue> writer )
     {
         if ( !closed )
         {

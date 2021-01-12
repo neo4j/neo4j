@@ -133,9 +133,9 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
     private GBPTree<TokenScanKey,TokenScanValue> index;
 
     /**
-     * The single instance of {@link NativeTokenIndexUpdater} used for updates.
+     * The single instance of {@link TokenIndexUpdater} used for updates.
      */
-    private NativeTokenIndexUpdater singleUpdater;
+    private TokenIndexUpdater singleUpdater;
 
     /**
      * Monitor for all writes going into this token index.
@@ -201,7 +201,7 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
         writeMonitor = config.get( GraphDatabaseInternalSettings.token_scan_write_log_enabled )
                        ? new TokenScanWriteMonitor( fs, directoryStructure, entityType, config )
                        : NativeTokenScanWriter.EMPTY;
-        singleUpdater = new NativeTokenIndexUpdater( 1_000, writeMonitor );
+        singleUpdater = new TokenIndexUpdater( 1_000, writeMonitor );
     }
 
     @Override
@@ -236,7 +236,7 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer ) throws IndexEntryConflictException
     {
-        try ( NativeTokenIndexUpdater updater = singleUpdater.initialize( index.writer( cursorTracer ) ) )
+        try ( TokenIndexUpdater updater = singleUpdater.initialize( index.writer( cursorTracer ) ) )
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
