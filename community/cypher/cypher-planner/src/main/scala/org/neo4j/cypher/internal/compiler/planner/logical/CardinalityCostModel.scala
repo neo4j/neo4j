@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
-import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EAGERNESS_MULTIPLIER
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EffectiveCardinalities
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.HashJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROBE_BUILD_COST
@@ -37,8 +36,6 @@ import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.ir.LazyMode
-import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.logical.plans.AbstractLetSemiApply
 import org.neo4j.cypher.internal.logical.plans.AbstractSemiApply
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
@@ -84,7 +81,6 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.CostPerRow
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
-import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Selectivity
 
 case class CardinalityCostModel(executionModel: ExecutionModel) extends CostModel {
@@ -95,7 +91,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
                        cardinalities: Cardinalities,
                        providedOrders: ProvidedOrders,
                        monitor: CostModelMonitor): Cost =
-    calculateCost(plan, input.limitSelectivity, input.strictness, cardinalities, providedOrders, semanticTable, plan, monitor)
+    calculateCost(plan, input.limitSelectivity, cardinalities, providedOrders, semanticTable, plan, monitor)
 
   /**
    * Calculate the combined cost of a plan, including the costs of its children.
@@ -157,7 +153,6 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
    */
   private def calculateCost(plan: LogicalPlan,
                             limitSelectivity: Selectivity,
-                            strictness: Option[StrictnessMode],
                             cardinalities: Cardinalities,
                             providedOrders: ProvidedOrders,
                             semanticTable: SemanticTable,
@@ -166,8 +161,8 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
 
     val (lhsLimitSelectivity, rhsLimitSelectivity) = childrenLimitSelectivities(plan, limitSelectivity, cardinalities)
 
-    val lhsCost = plan.lhs.map(p => calculateCost(p, lhsLimitSelectivity, strictness, cardinalities, providedOrders, semanticTable, rootPlan, monitor)) getOrElse Cost.ZERO
-    val rhsCost = plan.rhs.map(p => calculateCost(p, rhsLimitSelectivity, strictness, cardinalities, providedOrders, semanticTable, rootPlan, monitor)) getOrElse Cost.ZERO
+    val lhsCost = plan.lhs.map(p => calculateCost(p, lhsLimitSelectivity, cardinalities, providedOrders, semanticTable, rootPlan, monitor)) getOrElse Cost.ZERO
+    val rhsCost = plan.rhs.map(p => calculateCost(p, rhsLimitSelectivity, cardinalities, providedOrders, semanticTable, rootPlan, monitor)) getOrElse Cost.ZERO
 
     val effectiveCardinalities = EffectiveCardinalities(
       cardinalityForPlan(plan, cardinalities) * lhsLimitSelectivity,
@@ -177,15 +172,10 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
 
     val cost = combinedCostForPlan(plan, effectiveCardinalities, cardinalities, providedOrders, lhsCost, rhsCost, semanticTable, rootPlan)
 
-    val actualCost = strictness match {
-      case Some(LazyMode) if plan.strictness != LazyMode => cost * EAGERNESS_MULTIPLIER
-      case _ => cost
-    }
-
-    monitor.reportPlanCost(rootPlan, plan, actualCost)
+    monitor.reportPlanCost(rootPlan, plan, cost)
     monitor.reportPlanEffectiveCardinality(rootPlan, plan, cardinalities.get(plan.id) * limitSelectivity)
 
-    actualCost
+    cost
   }
 }
 
@@ -193,7 +183,6 @@ object CardinalityCostModel {
   val DEFAULT_COST_PER_ROW: CostPerRow = 0.1
   val PROBE_BUILD_COST: CostPerRow = 3.1
   val PROBE_SEARCH_COST: CostPerRow = 2.4
-  val EAGERNESS_MULTIPLIER: Multiplier = 2.0
   // A property has at least 2 db hits, even though it could even have many more.
   val PROPERTY_ACCESS_DB_HITS = 2
   val LABEL_CHECK_DB_HITS = 1

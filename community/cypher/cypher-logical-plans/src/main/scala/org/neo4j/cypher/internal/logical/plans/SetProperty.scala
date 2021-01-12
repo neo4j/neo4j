@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -43,6 +42,4 @@ case class SetProperty(
   override def rhs = None
 
   override val availableSymbols: Set[String] = source.availableSymbols
-
-  override def strictness: StrictnessMode = source.strictness
 }

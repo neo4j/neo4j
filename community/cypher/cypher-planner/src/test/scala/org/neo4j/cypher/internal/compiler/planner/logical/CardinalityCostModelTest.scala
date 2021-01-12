@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.D
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.LABEL_CHECK_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROPERTY_ACCESS_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.ir.LazyMode
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -67,49 +66,6 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       .build()
 
     costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) should equal(Cost(231))
-  }
-
-  test("should introduce increase cost when estimating an eager operator and laziness is preferred") {
-    val builder = new LogicalPlanBuilder(wholePlan = false)
-    val plan = builder
-      .nodeHashJoin("a").withCardinality(10)
-      .|.nodeByLabelScan("a", "A").withCardinality(10)
-      .expand("(b)-[r]->(a)").withCardinality(15)
-      .nodeByLabelScan("b", "B").withCardinality(5)
-      .build()
-
-    val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
-    val whatever = QueryGraphSolverInput.empty
-
-    costFor(plan, whatever, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) should be < costFor(plan, pleaseLazy, builder.getSemanticTable, builder.cardinalities, builder.providedOrders)
-  }
-
-  test("non-lazy plan should be penalized when estimating cost wrt a lazy one when laziness is preferred") {
-    // MATCH (a1: A)-[r1]->(b)<-[r2]-(a2: A) RETURN b
-    val lazyBuilder = new LogicalPlanBuilder(wholePlan = false)
-    val lazyPlan = lazyBuilder
-      .projection("b AS b").withCardinality(250)
-      .filterExpression(hasLabels("a2", "A")).withCardinality(250)
-      .expand("(b)<-[r2]-(a2)").withCardinality(250)
-      .expand("(a1)-[r1]->(b)").withCardinality(50)
-      .nodeByLabelScan("a1", "A").withCardinality(10)
-      .build()
-
-    val eagerBuilder = new LogicalPlanBuilder(wholePlan = false)
-    val eagerPlan = eagerBuilder
-      .projection("b AS b").withCardinality(250)
-      .nodeHashJoin("b").withCardinality(250)
-      .|.expand("(a2)-[r2]->(b)").withCardinality(50)
-      .|.nodeByLabelScan("a2", "A").withCardinality(10)
-      .expand("(a1)-[r1]->(b)").withCardinality(50)
-      .nodeByLabelScan("a1", "A").withCardinality(10)
-      .build()
-
-    val whatever = QueryGraphSolverInput.empty
-    costFor(lazyPlan, whatever, lazyBuilder.getSemanticTable, lazyBuilder.cardinalities, lazyBuilder.providedOrders) should be > costFor(eagerPlan, whatever, eagerBuilder.getSemanticTable, eagerBuilder.cardinalities, eagerBuilder.providedOrders)
-
-    val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
-    costFor(lazyPlan, pleaseLazy, lazyBuilder.getSemanticTable, lazyBuilder.cardinalities, lazyBuilder.providedOrders) should be < costFor(eagerPlan, pleaseLazy, eagerBuilder.getSemanticTable, eagerBuilder.cardinalities, eagerBuilder.providedOrders)
   }
 
   test("multiple property expressions are counted for in cost") {

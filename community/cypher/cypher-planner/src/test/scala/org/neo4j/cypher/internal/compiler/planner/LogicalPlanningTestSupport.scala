@@ -75,7 +75,6 @@ import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
-import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.LazyLogicalPlan
@@ -198,13 +197,12 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       semanticTable: SemanticTable = newMockedSemanticTable,
                                       strategy: QueryGraphSolver = newMockQueryGraphSolver,
                                       cardinality: Cardinality = Cardinality(1),
-                                      strictness: Option[StrictnessMode] = None,
                                       notificationLogger: InternalNotificationLogger = devNullLogger,
                                       useErrorsOverWarnings: Boolean = false
                                      ): LogicalPlanningContext = {
     val planningAttributes = PlanningAttributes.newAttributes
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen), metrics, semanticTable,
-      strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
+      strategy, QueryGraphSolverInput(Map.empty, cardinality),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
@@ -218,12 +216,11 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                                         semanticTable: SemanticTable = newMockedSemanticTable,
                                                         strategy: QueryGraphSolver = newMockQueryGraphSolver,
                                                         cardinality: Cardinality = Cardinality(1),
-                                                        strictness: Option[StrictnessMode] = None,
                                                         notificationLogger: InternalNotificationLogger = devNullLogger,
                                                         useErrorsOverWarnings: Boolean = false): LogicalPlanningContext = {
     val planningAttributes = newStubbedPlanningAttributes
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen), metrics, semanticTable,
-      strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
+      strategy, QueryGraphSolverInput(Map.empty, cardinality),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, csvBufferSize = config.csvBufferSize,
       config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,

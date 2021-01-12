@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -41,6 +40,4 @@ case class MergeCreateNode(source: LogicalPlan, idName: String, labels: Seq[Labe
   }
 
   override def rhs: Option[LogicalPlan] = None
-
-  override def strictness: StrictnessMode = source.strictness
 }

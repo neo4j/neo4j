@@ -20,19 +20,12 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ir.LazyMode
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.QueryPagination
-import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
-
-  private val mockInterestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(null, null))
 
   test("pair map") {
 
@@ -86,31 +79,5 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     result should not equal input
     result.queryGraph should equal(firstQueryGraph)
     result.tail.get.queryGraph should equal(secondQueryGraph)
-  }
-
-  test("should compute laziness preference correctly for a single planner query") {
-    val noLimit = RegularSinglePlannerQuery(horizon = QueryProjection.empty)
-    noLimit.preferredStrictness should equal(None)
-
-    val paginationWithLimit = QueryProjection.empty.withPagination(QueryPagination(limit = Some(literalUnsignedInt(42))))
-    val hasLimit = RegularSinglePlannerQuery(interestingOrder = InterestingOrder.empty, horizon = paginationWithLimit)
-    hasLimit.preferredStrictness should equal(Some(LazyMode))
-
-    val hasLimitAndSort = RegularSinglePlannerQuery(interestingOrder = mockInterestingOrder, horizon = paginationWithLimit)
-    hasLimitAndSort.preferredStrictness should equal(None)
-  }
-
-  test("should consider planner query tails when computing laziness preference") {
-    val paginationWithLimit = QueryProjection.empty.withPagination(QueryPagination(limit = Some(literalUnsignedInt(42))))
-
-    // pq -> pqWithLimit -> pqWithLimitAndSort
-
-    val pqWithLimitAndSort: SinglePlannerQuery = RegularSinglePlannerQuery(interestingOrder = mockInterestingOrder, horizon = paginationWithLimit)
-    val pqWithLimit = RegularSinglePlannerQuery(interestingOrder = InterestingOrder.empty, horizon = paginationWithLimit, tail = Some(pqWithLimitAndSort))
-    val pq = RegularSinglePlannerQuery(tail = Some(pqWithLimit))
-
-    pq.preferredStrictness should equal(Some(LazyMode))
-    pqWithLimit.preferredStrictness should equal(Some(LazyMode))
-    pqWithLimitAndSort.preferredStrictness should equal(None)
   }
 }

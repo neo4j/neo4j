@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
-import org.neo4j.cypher.internal.ir.Strictness
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewritable
@@ -53,7 +52,6 @@ to data in the database, to the root, which is the final operator producing the 
 abstract class LogicalPlan(idGen: IdGen)
   extends Product
   with Foldable
-  with Strictness
   with Rewritable
   with Identifiable {
 

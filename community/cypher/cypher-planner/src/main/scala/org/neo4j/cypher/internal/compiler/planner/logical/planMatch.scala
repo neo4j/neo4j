@@ -31,17 +31,12 @@ import scala.annotation.tailrec
 case object planMatch extends MatchPlanner {
 
   def apply(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): BestPlans = {
-    val ctx = query.preferredStrictness match {
-      case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
-      case _ => context
-    }
-
     val limitSelectivity = limitSelectivityForRestOfQuery(query, context)
 
-    ctx.strategy.plan(
+    context.strategy.plan(
       query.queryGraph,
       interestingOrderForPart(query, rhsPart),
-      ctx.withLimitSelectivity(limitSelectivity))
+      context.withLimitSelectivity(limitSelectivity))
   }
 
   // Extract the interesting InterestingOrder for this part of the query

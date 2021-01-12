@@ -32,8 +32,6 @@ import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.ir.LazyMode
-import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.SecurityAdministrationException
@@ -46,8 +44,6 @@ abstract class AdministrationCommandLogicalPlan(source: Option[AdministrationCom
   val returnColumns: List[String] = List.empty
 
   override val availableSymbols: Set[String] = returnColumns.toSet
-
-  override def strictness: StrictnessMode = LazyMode
 
   def invalid(message: String): RuntimeException
 }

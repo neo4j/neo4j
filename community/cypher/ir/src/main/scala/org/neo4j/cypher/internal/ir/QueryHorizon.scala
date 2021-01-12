@@ -33,8 +33,6 @@ trait QueryHorizon {
 
   def dependingExpressions: Seq[Expression]
 
-  def preferredStrictness(sorted: Boolean): Option[StrictnessMode]
-
   def dependencies: Set[String] = dependingExpressions.treeFold(Set.empty[String]) {
     case id: Variable =>
       acc => TraverseChildren(acc + id.name)
@@ -47,32 +45,24 @@ final case class PassthroughAllHorizon() extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds
 
   override def dependingExpressions: Seq[Expression] = Seq.empty
-
-  override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] = None
 }
 
 case class UnwindProjection(variable: String, exp: Expression) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds + variable
 
   override def dependingExpressions: Seq[Expression] = Seq(exp)
-
-  override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] = None
 }
 
 case class LoadCSVProjection(variable: String, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral]) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds + variable
 
   override def dependingExpressions: Seq[Expression] = Seq(url)
-
-  override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] = None
 }
 
 case class CallSubqueryHorizon(callSubquery: PlannerQueryPart, correlated: Boolean) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds ++ callSubquery.returns
 
   override def dependingExpressions: Seq[Expression] = Seq.empty
-
-  override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] = None
 
   override def readOnly: Boolean = callSubquery.readOnly
 }
@@ -87,8 +77,6 @@ sealed abstract class QueryProjection extends QueryHorizon {
   def withPagination(queryPagination: QueryPagination): QueryProjection
 
   override def dependingExpressions: Seq[Expression] = projections.values.toSeq
-  override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] =
-    if (queryPagination.limit.isDefined && !sorted) Some(LazyMode) else None
 
   def updatePagination(f: QueryPagination => QueryPagination): QueryProjection = withPagination(f(queryPagination))
 

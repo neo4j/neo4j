@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -32,6 +31,4 @@ case class ProduceResult(source: LogicalPlan, columns: Seq[String])(implicit idG
   def rhs = None
 
   val availableSymbols: Set[String] = source.availableSymbols
-
-  def strictness: StrictnessMode = source.strictness
 }

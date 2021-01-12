@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -76,8 +75,6 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
 
     override val availableSymbols: Set[String] = Set.empty
 
-    override def strictness: StrictnessMode = ???
-
     override def lhs: Option[LogicalPlan] = Some(left)
 
     override def rhs: Option[LogicalPlan] = Some(right)
@@ -86,8 +83,6 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
   case class Unary(child: LogicalPlan, value: Any) extends LogicalPlan(new SequentialIdGen) {
 
     override val availableSymbols: Set[String] = Set.empty
-
-    override def strictness: StrictnessMode = ???
 
     override def rhs: Option[LogicalPlan] = None
 
@@ -101,7 +96,5 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
     override def rhs: Option[LogicalPlan] = None
 
     override val availableSymbols: Set[String] = Set.empty
-
-    override def strictness: StrictnessMode = ???
   }
 }

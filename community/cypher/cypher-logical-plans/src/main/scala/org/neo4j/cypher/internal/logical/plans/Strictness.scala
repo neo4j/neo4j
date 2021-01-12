@@ -19,10 +19,6 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.ir.EagerMode
-import org.neo4j.cypher.internal.ir.LazyMode
-import org.neo4j.cypher.internal.ir.StrictnessMode
-
 /**
  * A plan that limits selectivity on child plans.
  */
@@ -44,8 +40,6 @@ trait ExhaustiveLogicalPlan {
  */
 trait LazyLogicalPlan {
   self: LogicalPlan =>
-
-  override def strictness: StrictnessMode = LazyMode
 }
 
 /**
@@ -53,6 +47,4 @@ trait LazyLogicalPlan {
  */
 trait EagerLogicalPlan extends ExhaustiveLogicalPlan {
   self: LogicalPlan =>
-
-  override def strictness: StrictnessMode = EagerMode
 }

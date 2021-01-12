@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -32,6 +31,4 @@ case class ErrorPlan(source: LogicalPlan, exception: Exception)(implicit idGen: 
   override val rhs: Option[LogicalPlan] = None
 
   override val availableSymbols: Set[String] = source.availableSymbols
-
-  override def strictness: StrictnessMode = source.strictness
 }

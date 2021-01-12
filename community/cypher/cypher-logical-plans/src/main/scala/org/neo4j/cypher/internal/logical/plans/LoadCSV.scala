@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.CSVFormat
-import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -45,6 +44,4 @@ case class LoadCSV(source: LogicalPlan,
   override def lhs = Some(source)
 
   override def rhs = None
-
-  override def strictness: StrictnessMode = source.strictness
 }

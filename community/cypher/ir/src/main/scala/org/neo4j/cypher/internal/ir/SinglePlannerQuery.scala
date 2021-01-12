@@ -60,9 +60,6 @@ trait SinglePlannerQuery extends PlannerQueryPart {
 
   override def readOnly: Boolean = (queryGraph.readOnly && horizon.readOnly) && tail.forall(_.readOnly)
 
-  def preferredStrictness: Option[StrictnessMode] =
-    horizon.preferredStrictness(interestingOrder.requiredOrderCandidate.nonEmpty) orElse tail.flatMap(_.preferredStrictness)
-
   def last: SinglePlannerQuery = tail.map(_.last).getOrElse(this)
 
   def lastQueryGraph: QueryGraph = last.queryGraph

@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.expressions.functions.Rand
 import org.neo4j.cypher.internal.expressions.functions.RandomUUID
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -53,19 +52,18 @@ object Metrics {
 
   object QueryGraphSolverInput {
 
-    def empty: QueryGraphSolverInput = QueryGraphSolverInput(Map.empty, Cardinality(1), strictness = None)
+    def empty: QueryGraphSolverInput = QueryGraphSolverInput(Map.empty, Cardinality(1))
   }
 
   case class QueryGraphSolverInput(labelInfo: LabelInfo,
                                    inboundCardinality: Cardinality,
-                                   strictness: Option[StrictnessMode],
                                    alwaysMultiply: Boolean = false,
                                    limitSelectivity: Selectivity = Selectivity.ONE) {
 
     def recurse(fromPlan: LogicalPlan, solveds: Solveds, cardinalities: Cardinalities): QueryGraphSolverInput = {
       val newCardinalityInput = cardinalities.get(fromPlan.id)
       val newLabels = (labelInfo fuse solveds.get(fromPlan.id).asSinglePlannerQuery.labelInfo) (_ ++ _)
-      copy(labelInfo = newLabels, inboundCardinality = newCardinalityInput, strictness = strictness)
+      copy(labelInfo = newLabels, inboundCardinality = newCardinalityInput)
     }
 
     def withFusedLabelInfo(newLabelInfo: LabelInfo): QueryGraphSolverInput =
@@ -73,9 +71,6 @@ object Metrics {
 
     def withCardinality(cardinality: Cardinality): QueryGraphSolverInput =
       copy(inboundCardinality = cardinality)
-
-    def withPreferredStrictness(strictness: StrictnessMode): QueryGraphSolverInput =
-      copy(strictness = Some(strictness))
 
     def withLimitSelectivity(s: Selectivity): QueryGraphSolverInput =
       copy(limitSelectivity = s)

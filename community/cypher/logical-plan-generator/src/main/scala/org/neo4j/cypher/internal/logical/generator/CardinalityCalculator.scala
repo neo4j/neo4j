@@ -117,7 +117,6 @@ object CardinalityCalculator {
       val qgsi = QueryGraphSolverInput(
         labelInfo = state.labelInfo,
         inboundCardinality = state.cardinalities.get(source.id),
-        strictness = None
       )
       val qgCardinalityModel = AssumeIndependenceQueryGraphCardinalityModel(stats, IndependenceCombiner)
       qgCardinalityModel(qg, qgsi, state.semanticTable)

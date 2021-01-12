@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.ir.LazyMode
-import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 abstract class SchemaLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
@@ -35,9 +33,6 @@ abstract class SchemaLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
   override def rhs: Option[LogicalPlan] = None
 
   override val availableSymbols: Set[String] = Set.empty
-
-  override def strictness: StrictnessMode = LazyMode
-
 }
 
 case class CreateNodeKeyConstraint(source: Option[DoNothingIfExistsForConstraint], node: String, label: LabelName, props: Seq[Property], name: Option[String], options: Map[String, Expression])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {

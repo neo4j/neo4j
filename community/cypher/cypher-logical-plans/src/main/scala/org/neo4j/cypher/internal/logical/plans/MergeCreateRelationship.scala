@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -39,6 +38,4 @@ case class MergeCreateRelationship(source: LogicalPlan, idName: String, startNod
   override val availableSymbols: Set[String] = source.availableSymbols + idName + startNode + endNode
 
   override def rhs: Option[LogicalPlan] = None
-
-  override def strictness: StrictnessMode = source.strictness
 }
