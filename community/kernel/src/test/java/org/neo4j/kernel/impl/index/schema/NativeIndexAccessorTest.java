@@ -44,7 +44,7 @@ class NativeIndexAccessorTest extends NativeIndexAccessorTests<GenericKey,Native
     private final IndexCapability indexCapability = GenericNativeIndexProvider.CAPABILITY;
 
     @Override
-    NativeIndexAccessor<GenericKey,NativeIndexValue> makeAccessor( PageCache pageCache )
+    NativeIndexAccessor<GenericKey,NativeIndexValue> createAccessor( PageCache pageCache )
     {
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
         DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).withReadOnly( false ).build();

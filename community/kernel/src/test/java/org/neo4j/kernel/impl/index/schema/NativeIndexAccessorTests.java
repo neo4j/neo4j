@@ -20,12 +20,9 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,7 +36,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
@@ -50,8 +46,6 @@ import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -61,7 +55,6 @@ import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
-import org.neo4j.test.rule.PageCacheConfig;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -96,18 +89,16 @@ import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
 import static org.neo4j.values.storable.Values.of;
 
 abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-        extends IndexTestUtil<KEY,VALUE, IndexLayout<KEY,VALUE>>
+        extends IndexAccessorTests<KEY,VALUE, IndexLayout<KEY,VALUE>>
 {
-    private NativeIndexAccessor<KEY,VALUE> accessor;
     NativeValueIndexUtility<KEY,VALUE> valueUtil;
     ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
 
     @BeforeEach
-    void setupAccessor() throws IOException
+    void setupValueUtil()
     {
         valueCreatorUtil = createValueCreatorUtil();
         valueUtil = new NativeValueIndexUtility<>( valueCreatorUtil, layout );
-        accessor = makeAccessor( pageCache );
     }
 
     @Override
@@ -120,30 +111,9 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
 
     abstract ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil();
 
-    abstract NativeIndexAccessor<KEY,VALUE> makeAccessor( PageCache pageCache ) throws IOException;
-
     abstract IndexCapability indexCapability();
 
-    @AfterEach
-    void closeAccessor()
-    {
-        accessor.close();
-    }
-
     // UPDATER
-
-    @Test
-    void shouldHandleCloseWithoutCallsToProcess() throws Exception
-    {
-        // given
-        IndexUpdater updater = accessor.newUpdater( ONLINE, NULL );
-
-        // when
-        updater.close();
-
-        // then
-        // ... should be fine
-    }
 
     @Test
     void processMustThrowAfterClose() throws Exception
@@ -587,52 +557,6 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     }
 
     @Test
-    void requestForSecondUpdaterMustThrow() throws Exception
-    {
-        // given
-        try ( IndexUpdater ignored = accessor.newUpdater( ONLINE, NULL ) )
-        {
-            assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL ) );
-        }
-    }
-
-    @Test
-    void dropShouldDeleteAndCloseIndex()
-    {
-        // given
-        assertFilePresent();
-
-        // when
-        accessor.drop();
-
-        // then
-        assertFileNotPresent();
-    }
-
-    @Test
-    void dropShouldNotFlushContent() throws IOException
-    {
-        // given
-        accessor.close();
-        DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
-        try ( PageCache pageCache = pageCacheExtension.getPageCache( fs, PageCacheConfig.config().withTracer( tracer ) ) )
-        {
-            accessor = makeAccessor( pageCache );
-            long baseline = tracer.flushes();
-            accessor.force( IOLimiter.UNLIMITED, NULL );
-            long preDrop = tracer.flushes();
-            assertThat( preDrop ).isGreaterThan( baseline );
-
-            // when
-            accessor.drop();
-
-            // then
-            long postDrop = tracer.flushes();
-            assertEquals( preDrop, postDrop );
-        }
-    }
-
-    @Test
     void forceShouldCheckpointTree() throws Exception
     {
         // given
@@ -663,18 +587,6 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     }
 
     @Test
-    void snapshotFilesShouldReturnIndexFile()
-    {
-        // when
-        ResourceIterator<Path> files = accessor.snapshotFiles();
-
-        // then
-        assertTrue( files.hasNext() );
-        assertEquals( indexFiles.getStoreFile(), files.next() );
-        assertFalse( files.hasNext() );
-    }
-
-    @Test
     void shouldSampleIndex() throws Exception
     {
         // given
@@ -691,42 +603,6 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             assertEquals( updates.length, sample.sampleSize() );
             assertEquals( countUniqueValues( updates ), sample.uniqueValues() );
         }
-    }
-
-    @Test
-    void readingAfterDropShouldThrow()
-    {
-        // given
-        accessor.drop();
-
-        assertThrows( IllegalStateException.class, () -> accessor.newReader() );
-    }
-
-    @Test
-    void writingAfterDropShouldThrow()
-    {
-        // given
-        accessor.drop();
-
-        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL ) );
-    }
-
-    @Test
-    void readingAfterCloseShouldThrow()
-    {
-        // given
-        accessor.close();
-
-        assertThrows( IllegalStateException.class, () -> accessor.newReader() );
-    }
-
-    @Test
-    void writingAfterCloseShouldThrow()
-    {
-        // given
-        accessor.close();
-
-        assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL ) );
     }
 
     @Test
