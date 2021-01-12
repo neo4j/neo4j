@@ -74,6 +74,7 @@ import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 object RuntimeTestSuite {
@@ -293,6 +294,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     private var rowsMatcher: RowsMatcher = AnyRowsMatcher
     private var maybeStatisticts: Option[QueryStatisticsMatcher] = None
     private var maybeLockedNodes: Option[LockNodesMatcher] = None
+    private var maybeLocks: Option[LockMatcher] = None
 
     def withNoUpdates(): RuntimeResultMatcher = withStatistics()
 
@@ -307,8 +309,13 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       this
     }
 
-    def withLockedNodes(nodeIds: Set[Long]) = {
+    def withLockedNodes(nodeIds: Set[Long]): RuntimeResultMatcher = {
       maybeLockedNodes = Some(new LockNodesMatcher(nodeIds))
+      this
+    }
+
+    def withLocks(locks: (LockType, ResourceType)*): RuntimeResultMatcher = {
+      maybeLocks = Some(new LockMatcher(locks))
       this
     }
 
@@ -335,14 +342,19 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
           .filter(_.matches == false)
           .getOrElse {
             val rows = consume(left)
-            maybeLockedNodes
+            maybeLocks
               .map(_.apply(()))
               .filter(_.matches == false)
               .getOrElse {
-                rowsMatcher.matches(columns, rows) match {
-                  case RowsMatch => MatchResult(matches = true, "", "")
-                  case RowsDontMatch(msg) => MatchResult(matches = false, msg, "")
-                }
+                maybeLockedNodes
+                  .map(_.apply(()))
+                  .filter(_.matches == false)
+                  .getOrElse {
+                    rowsMatcher.matches(columns, rows) match {
+                      case RowsMatch => MatchResult(matches = true, "", "")
+                      case RowsDontMatch(msg) => MatchResult(matches = false, msg, "")
+                    }
+                  }
               }
           }
       }
@@ -350,7 +362,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   /*
-   * locks.accept() does not keep the order of when the locks was taken, therefor we don't assert on the order of the locks.
+   * locks.accept() does not keep the order of when the locks was taken, therefore we don't assert on the order of the locks.
    */
   class LockNodesMatcher(expectedLocked: Set[Long]) extends Matcher[Unit] {
      override def apply(left: Unit): MatchResult = {
@@ -364,6 +376,37 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       MatchResult(
         matches = actualLocked == expectedLocked,
         rawFailureMessage = s"expected nodesLocked=$expectedLocked but was $actualLocked",
+        rawNegatedFailureMessage = ""
+      )
+    }
+  }
+
+  class LockMatcher(expectedLocked: Seq[(LockType, ResourceType)]) extends Matcher[Unit] {
+
+    private val ordering = new Ordering[(LockType, ResourceType)] {
+      override def compare(x: (LockType, ResourceType),
+                           y: (LockType, ResourceType)): Int = {
+        val (xLock, xType) = x
+        val (yLock, yType) = y
+        val comparison = xLock.compareTo(yLock)
+        if (comparison == 0) {
+          Integer.compare(xType.typeId(), yType.typeId())
+        } else {
+          comparison
+        }
+      }
+    }
+    override def apply(left: Unit): MatchResult = {
+      val actualLockList = ArrayBuffer.empty[(LockType, ResourceType)]
+      runtimeTestSupport.locks.accept(
+        (lockType: LockType, resourceType: ResourceType, _: Long, _: Long, _: String, _: Long, _: Long) =>
+
+          actualLockList.append((lockType, resourceType))
+      )
+
+      MatchResult(
+        matches = expectedLocked.sorted(ordering) == actualLockList.sorted(ordering),
+        rawFailureMessage = s"expected locks ${expectedLocked.mkString(", ")} but got ${actualLockList.mkString(", ")}",
         rawNegatedFailureMessage = ""
       )
     }

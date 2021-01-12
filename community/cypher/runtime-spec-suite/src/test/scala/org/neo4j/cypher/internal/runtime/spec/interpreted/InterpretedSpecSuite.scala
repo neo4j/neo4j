@@ -64,6 +64,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.LetSelectOrSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LetSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LimitTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LockNodesTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.LockingUniqueNodeIndexSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryDeallocationTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementDisabledTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase
@@ -165,6 +166,8 @@ class InterpretedNodeIndexSeekTest extends NodeIndexSeekTestBase(COMMUNITY.EDITI
                                    with NodeIndexSeekRangeAndCompositeTestBase[CommunityRuntimeContext]
                                    with NodeLockingUniqueIndexSeekTestBase[CommunityRuntimeContext]
                                    with ArrayIndexSupport[CommunityRuntimeContext]
+class InterpretedLockingUniqueNodeIndexSeekTest extends LockingUniqueNodeIndexSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
 class InterpretedNodeIndexPointDistanceSeekTest extends NodeIndexPointDistanceSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedMultiNodeIndexSeekTest extends MultiNodeIndexSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedInputTest extends InputTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
