@@ -44,8 +44,6 @@ abstract class CompositeValueIndexCursor extends DefaultCloseListenable with Nod
 
   override def numberOfProperties(): Int = current.numberOfProperties()
 
-  override def propertyKey(offset: Int): Int = current.propertyKey(offset)
-
   override def hasValue: Boolean = current.hasValue
 
   override def propertyValue(offset: Int): Value = current.propertyValue(offset)

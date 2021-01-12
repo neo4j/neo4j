@@ -28,8 +28,6 @@ public interface ValueIndexCursor
      */
     int numberOfProperties();
 
-    int propertyKey( int offset );
-
     /**
      * Check before trying to access values with {@link #propertyValue(int)}. Result can change with each call to {@link #next()}.
      *

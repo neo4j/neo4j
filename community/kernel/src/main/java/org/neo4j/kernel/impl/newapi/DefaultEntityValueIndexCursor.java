@@ -450,12 +450,6 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     }
 
     @Override
-    public final int propertyKey( int offset )
-    {
-        return query[offset].propertyKeyId();
-    }
-
-    @Override
     public final boolean hasValue()
     {
         return values != null;

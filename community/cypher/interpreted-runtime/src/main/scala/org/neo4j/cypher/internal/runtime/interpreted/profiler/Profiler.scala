@@ -225,8 +225,6 @@ final class ProfilingPipeQueryContext(inner: QueryContext)
 
     override def numberOfProperties(): Int = inner.numberOfProperties()
 
-    override def propertyKey(offset: Int): Int = inner.propertyKey(offset)
-
     override def hasValue: Boolean = inner.hasValue
 
     override def propertyValue(offset: Int): Value = inner.propertyValue(offset)

@@ -29,8 +29,6 @@ class ValuedNodeIndexCursor(val inner: NodeValueIndexCursor, values: Array[Value
 
   override def numberOfProperties(): Int = values.length
 
-  override def propertyKey(offset: Int): Int = inner.propertyKey(offset)
-
   override def hasValue: Boolean = true
 
   override def propertyValue(offset: Int): Value = values(offset)

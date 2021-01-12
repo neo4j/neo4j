@@ -93,12 +93,6 @@ public interface NodeValueIndexCursor extends NodeIndexCursor, ValueIndexCursor
         }
 
         @Override
-        public int propertyKey( int offset )
-        {
-            return -1;
-        }
-
-        @Override
         public boolean hasValue()
         {
             return false;

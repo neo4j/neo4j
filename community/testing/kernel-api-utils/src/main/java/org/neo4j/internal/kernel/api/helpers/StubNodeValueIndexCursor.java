@@ -96,12 +96,6 @@ public class StubNodeValueIndexCursor extends DefaultCloseListenable implements 
     }
 
     @Override
-    public int propertyKey( int offset )
-    {
-        return 0;
-    }
-
-    @Override
     public boolean hasValue()
     {
         return values != null;

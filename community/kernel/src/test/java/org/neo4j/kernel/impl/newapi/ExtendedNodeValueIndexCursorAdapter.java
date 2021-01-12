@@ -69,12 +69,6 @@ public class ExtendedNodeValueIndexCursorAdapter extends DefaultCloseListenable 
     }
 
     @Override
-    public int propertyKey( int offset )
-    {
-        return 0;
-    }
-
-    @Override
     public boolean hasValue()
     {
         return false;

@@ -415,8 +415,6 @@ class NodeValueHit(val nodeId: Long, val values: Array[Value]) extends DefaultCl
 
   override def numberOfProperties(): Int = values.length
 
-  override def propertyKey(offset: Int): Int = throw new UnsupportedOperationException("not implemented")
-
   override def hasValue: Boolean = true
 
   override def propertyValue(offset: Int): Value = values(offset)
