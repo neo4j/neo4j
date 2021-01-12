@@ -24,6 +24,7 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -72,17 +73,22 @@ import static org.neo4j.kernel.configuration.ssl.SslPolicyConfig.TLS_VERSION_DEF
  */
 public class SslPolicyLoader
 {
+    private static final FilenameFilter ALL_FILES = ( File dir, String name ) -> true;
+    private static final FilenameFilter SKIP_DOT_FILES = ( File dir, String name ) -> !name.startsWith( "." );
+
     private final Map<String,SslPolicy> policies = new ConcurrentHashMap<>();
     private final PkiUtils pkiUtils = new PkiUtils();
     private final Config config;
     private final SslProvider sslProvider;
     private final LogProvider logProvider;
+    private final boolean skipDotFiles;
 
     private SslPolicy legacyPolicy;
 
     private SslPolicyLoader( Config config, LogProvider logProvider )
     {
         this.config = config;
+        this.skipDotFiles = config.get( SslSystemInternalSettings.ignore_dotfiles );
         this.sslProvider = config.get( SslSystemSettings.netty_ssl_provider );
         this.logProvider = logProvider;
     }
@@ -211,7 +217,7 @@ public class SslPolicyLoader
             boolean verifyHostname = config.get( policyConfig.verify_hostname );
             TrustManagerFactory trustManagerFactory;
 
-            Collection<X509CRL> crls = getCRLs( revokedCertificatesDir );
+            Collection<X509CRL> crls = getCRLs( revokedCertificatesDir, certificateFilenameFilter() );
 
             try
             {
@@ -251,10 +257,10 @@ public class SslPolicyLoader
         }
     }
 
-    private Collection<X509CRL> getCRLs( File revokedCertificatesDir )
+    private Collection<X509CRL> getCRLs( File revokedCertificatesDir, FilenameFilter filter )
     {
         Collection<X509CRL> crls = new ArrayList<>();
-        File[] revocationFiles = revokedCertificatesDir.listFiles();
+        File[] revocationFiles = revokedCertificatesDir.exists() ? revokedCertificatesDir.listFiles( filter ) : new File[0];
 
         if ( revocationFiles == null )
         {
@@ -334,7 +340,7 @@ public class SslPolicyLoader
         KeyStore trustStore = KeyStore.getInstance( KeyStore.getDefaultType() );
         trustStore.load( null, null );
 
-        File[] trustedCertFiles = trustedCertificatesDir.listFiles();
+        File[] trustedCertFiles = trustedCertificatesDir.exists() ? trustedCertificatesDir.listFiles( certificateFilenameFilter() ) : new File[0];
 
         if ( trustedCertFiles == null )
         {
@@ -384,5 +390,10 @@ public class SslPolicyLoader
         }
 
         return trustManagerFactory;
+    }
+
+    private FilenameFilter certificateFilenameFilter()
+    {
+        return skipDotFiles ? SKIP_DOT_FILES : ALL_FILES;
     }
 }
