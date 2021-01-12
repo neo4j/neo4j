@@ -481,7 +481,6 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
             monitor.rebuilding();
             long numberOfEntities;
 
-            // Intentionally ignore read-only flag here when rebuilding.
             final PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( TOKEN_SCAN_REBUILD_TAG );
             try ( TokenScanWriter writer = newBulkAppendWriter( cursorTracer ) )
             {
