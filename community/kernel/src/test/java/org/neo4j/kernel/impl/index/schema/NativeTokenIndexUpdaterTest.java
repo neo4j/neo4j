@@ -127,7 +127,7 @@ class NativeTokenIndexUpdaterTest
     }
 
     @Test
-    void shouldRemoveTreeEmptyTreeEntries() throws Exception
+    void shouldRemoveEmptyTreeEntries() throws Exception
     {
         // given
         int numberOfTreeEntries = 3;
@@ -138,7 +138,7 @@ class NativeTokenIndexUpdaterTest
         {
             writer.initialize( tree.writer( NULL ) );
 
-            // a couple of entries with a couple of entries each
+            // a couple of tree entries with a couple of nodes each
             // concept art: [xxxx          ][xxxx          ][xxxx          ] where x is used node.
             for ( int i = 0; i < numberOfTreeEntries; i++ )
             {

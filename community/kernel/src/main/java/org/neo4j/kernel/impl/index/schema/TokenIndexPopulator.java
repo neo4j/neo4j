@@ -133,7 +133,7 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
     private GBPTree<TokenScanKey,TokenScanValue> index;
 
     /**
-     * The single instance of {@link NativeTokenScanWriter} used for updates.
+     * The single instance of {@link NativeTokenIndexUpdater} used for updates.
      */
     private NativeTokenIndexUpdater singleUpdater;
 
@@ -271,10 +271,8 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
     @Override
     public synchronized void close( boolean populationCompletedSuccessfully, PageCursorTracer cursorTracer )
     {
-        if ( populationCompletedSuccessfully && failureBytes != null )
-        {
-            throw new IllegalStateException( "Can't mark index as online after it has been marked as failure" );
-        }
+        Preconditions.checkState( !(populationCompletedSuccessfully && failureBytes != null),
+                "Can't mark index as online after it has been marked as failure" );
 
         try
         {
@@ -350,18 +348,12 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
 
     private void assertNotDropped()
     {
-        if ( dropped )
-        {
-            throw new IllegalStateException( "Populator has already been dropped." );
-        }
+        Preconditions.checkState( !dropped, "Populator has already been dropped." );
     }
 
     private void assertNotClosed()
     {
-        if ( closed )
-        {
-            throw new IllegalStateException( "Populator has already been closed." );
-        }
+        Preconditions.checkState( !closed, "Populator has already been closed." );
     }
 
     private void ensureTreeInstantiated()
@@ -374,10 +366,7 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
 
     private void assertPopulatorOpen()
     {
-        if ( index == null )
-        {
-            throw new IllegalStateException( "Populator has already been closed." );
-        }
+        Preconditions.checkState( index != null, "Populator has already been closed." );
     }
 
     private class TokenIndexTreeMonitor extends GBPTree.Monitor.Adaptor

@@ -38,7 +38,7 @@ class NativeIndexHeaderReader implements Header.Reader
 
     NativeIndexHeaderReader()
     {
-        failureByte = BYTE_FAILED;
+        this( BYTE_FAILED );
     }
 
     /**

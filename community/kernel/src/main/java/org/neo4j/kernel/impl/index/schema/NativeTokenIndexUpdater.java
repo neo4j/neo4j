@@ -196,7 +196,6 @@ class NativeTokenIndexUpdater implements IndexUpdater
             {
                 TokenIndexEntryUpdate<?> update = pendingUpdates[i];
                 long entityId = update.getEntityId();
-                // FIXME The monitor wants transaction id. Should be added to the update and sent in here
                 nextTokenId = extractChange( update.values(), currentTokenId, entityId, nextTokenId, true, -1 );
                 nextTokenId = extractChange( update.beforeValues(), currentTokenId, entityId, nextTokenId, false, -1 );
             }
@@ -295,11 +294,6 @@ class NativeTokenIndexUpdater implements IndexUpdater
     static long rangeOf( long entityId )
     {
         return entityId / RANGE_SIZE;
-    }
-
-    static int offsetOf( long entityId )
-    {
-        return (int) (entityId % RANGE_SIZE);
     }
 
     /**

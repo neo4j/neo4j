@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 import org.neo4j.io.compress.ZipUtils;
@@ -154,11 +153,10 @@ public abstract class IndexFiles
         {
             try
             {
-                fs.deleteFileOrThrow( singleFile );
-            }
-            catch ( NoSuchFileException e )
-            {
-                // Even better, it didn't even exist
+                if ( fs.fileExists( singleFile ) )
+                {
+                    fs.deleteFileOrThrow( singleFile );
+                }
             }
             catch ( IOException e )
             {

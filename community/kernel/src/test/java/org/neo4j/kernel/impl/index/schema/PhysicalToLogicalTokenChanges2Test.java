@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 @Execution( CONCURRENT )
-class PhysicalToLogicalTokenChangesTest2
+class PhysicalToLogicalTokenChanges2Test
 {
     @Test
     void shouldSeeSimpleAddition()

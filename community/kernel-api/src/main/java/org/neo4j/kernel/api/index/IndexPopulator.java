@@ -34,7 +34,9 @@ import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -58,9 +60,9 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * Implementations may verify constraints at this time, or defer them until the first verification
      * of {@link #verifyDeferredConstraints(NodePropertyAccessor)}.
      *
-     * @param updates batch of index updates (entity property updates or entity token updates) that needs to be inserted. Entity ids will be retrieved using
-     * {@link IndexEntryUpdate#getEntityId()} method and property (or token) values will be retrieved using
-     * {@link IndexEntryUpdate#values()} method.
+     * @param updates batch of index updates (entity property updates or entity token updates) that needs to be inserted.
+     * Depending on the type of index the updates will be  {@link ValueIndexEntryUpdate property value index updates}
+     * or {@link TokenIndexEntryUpdate token index updates}.
      * @param cursorTracer underlying page cache events tracer
      * @throws IndexEntryConflictException if this is a uniqueness index and any of the updates are detected
      * to violate that constraint. Implementations may choose to not detect in this call, but instead do one efficient
@@ -92,12 +94,12 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * may have been {@link #add(Collection, PageCursorTracer) added previously }.
      * Updates can come in three different {@link IndexEntryUpdate#updateMode()} modes}.
      * <ol>
-     *   <li>{@link UpdateMode#ADDED} means that there's an added property/label/type to a node/relationship already seen by this
+     *   <li>{@link UpdateMode#ADDED} means that there's an added property/label/type to an entity already seen by this
      *   populator and so needs to be added. Note that this addition needs to be applied idempotently.
-     *   <li>{@link UpdateMode#CHANGED} means that there's a change to a property/label/type for a node/relationship already seen by
+     *   <li>{@link UpdateMode#CHANGED} means that there's a change to a property/label/type for an entity already seen by
      *   this populator and that this new change needs to be applied. Note that this change needs to be
      *   applied idempotently.</li>
-     *   <li>{@link UpdateMode#REMOVED} means that a property/label/type already seen by this populator or even the node/relationship itself
+     *   <li>{@link UpdateMode#REMOVED} means that a property/label/type already seen by this populator or even the entity itself
      *   has been removed and need to be removed from this index as well. Note that this removal needs to be
      *   applied idempotently.</li>
      * </ol>

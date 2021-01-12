@@ -40,14 +40,13 @@ class FailureHeaderWriter implements Consumer<PageCursor>
 
     FailureHeaderWriter( byte[] failureBytes )
     {
-        this.failureBytes = failureBytes;
-        byteFailed = NativeIndexPopulator.BYTE_FAILED;
+        this( failureBytes, NativeIndexPopulator.BYTE_FAILED );
     }
 
     FailureHeaderWriter( byte[] failureBytes, byte headerFailureByte )
     {
         this.failureBytes = failureBytes;
-        byteFailed = headerFailureByte;
+        this.byteFailed = headerFailureByte;
     }
 
     @Override
