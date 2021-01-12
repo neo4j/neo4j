@@ -406,10 +406,10 @@ trait CloseableResource extends AutoCloseable {
 }
 
 object NodeValueHit {
-  val EMPTY = new NodeValueHit(-1L, null)
+  val EMPTY = new NodeValueHit(-1L, null, null)
 }
 
-class NodeValueHit(val nodeId: Long, val values: Array[Value]) extends DefaultCloseListenable with NodeValueIndexCursor {
+class NodeValueHit(val nodeId: Long, val values: Array[Value], read: Read) extends DefaultCloseListenable with NodeValueIndexCursor {
 
   private var _next = nodeId != -1L
 
@@ -419,7 +419,9 @@ class NodeValueHit(val nodeId: Long, val values: Array[Value]) extends DefaultCl
 
   override def propertyValue(offset: Int): Value = values(offset)
 
-  override def node(cursor: NodeCursor): Unit = throw new UnsupportedOperationException("not implemented")
+  override def node(cursor: NodeCursor): Unit = {
+    read.singleNode(nodeId, cursor)
+  }
 
   override def nodeReference(): Long = nodeId
 
@@ -435,7 +437,7 @@ class NodeValueHit(val nodeId: Long, val values: Array[Value]) extends DefaultCl
 
   override def score(): Float = Float.NaN
 
-  override def setTracer(tracer: KernelReadTracer): Unit = throw new UnsupportedOperationException("not implemented")
+  override def setTracer(tracer: KernelReadTracer): Unit = {}//throw new UnsupportedOperationException("not implemented")
 
-  override def removeTracer(): Unit = throw new UnsupportedOperationException("not implemented")
+  override def removeTracer(): Unit = {}//throw new UnsupportedOperationException("not implemented")
 }

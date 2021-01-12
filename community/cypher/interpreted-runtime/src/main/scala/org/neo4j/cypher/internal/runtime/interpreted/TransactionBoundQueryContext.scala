@@ -375,7 +375,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
           NodeValueHit.EMPTY
         } else {
           val values = queries.map(_.value()).toArray
-          new NodeValueHit(resultNodeId, values)
+          new NodeValueHit(resultNodeId, values, reads())
         }
       }
     } finally {

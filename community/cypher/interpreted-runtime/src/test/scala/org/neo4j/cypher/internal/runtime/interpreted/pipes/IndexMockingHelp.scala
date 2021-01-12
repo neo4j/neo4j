@@ -85,7 +85,7 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
   }
 
   protected def nodeValueHit(nodeValue: VirtualNodeValue, values: Object*): NodeValueHit =
-    new NodeValueHit(nodeValue.id, values.map(Values.of).toArray)
+    new NodeValueHit(nodeValue.id, values.map(Values.of).toArray, null)
 
   protected def cachedProperty(node: String, property: PropertyKeyToken): CachedProperty =
     CachedProperty("n", Variable(node)(pos), PropertyKeyName(property.name)(pos), NODE_TYPE)(pos)
