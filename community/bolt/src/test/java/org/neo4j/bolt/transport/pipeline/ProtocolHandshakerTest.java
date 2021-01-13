@@ -29,8 +29,14 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
 
 import java.util.NoSuchElementException;
+import java.util.stream.Stream;
+
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
@@ -42,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -55,6 +62,22 @@ class ProtocolHandshakerTest
 {
     private final BoltChannel boltChannel = newTestBoltChannel();
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
+
+    private static Stream<Arguments> protocolVersionProviderInRange()
+    {
+        return Stream.of(Arguments.of(4, 0),
+                         Arguments.of(4, 3),
+                         Arguments.of(4, 2),
+                         Arguments.of(4, 1));
+    }
+
+    private static Stream<Arguments> protocolVersionProviderOutOfRange()
+    {
+        return Stream.of(Arguments.of(4, 1),    //below lowest minor range
+                         Arguments.of(3, 5),    //lower major
+                         Arguments.of(5, 0),    //higher major
+                         Arguments.of(4, 5));   //above highest minor and range
+    }
 
     @AfterEach
     void tearDown()
@@ -87,6 +110,60 @@ class ProtocolHandshakerTest
 
         assertTrue( channel.isActive() );
         verify( protocol ).install();
+    }
+
+    @ParameterizedTest
+    @MethodSource( "protocolVersionProviderInRange" )
+    void shouldHandleProtocolRanges( int major, int minor )
+    {
+        //Given
+        int packedVersion = new BoltProtocolVersion( major, minor ).toInt();
+        BoltProtocol protocol = newBoltProtocol( major, minor );
+        BoltProtocolFactory handlerFactory = newProtocolFactory( major, minor, protocol );
+        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
+
+        // When
+        ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
+                                                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
+                                                new byte[]{0, 0, 0, 4},  // first choice - 4.0 no range
+                                                new byte[]{0, 2, 3, 4},  // second choice - 4.3 -> 4.1 inclusive range of 2
+                                                new byte[]{0, 0, 0, 0},  // No protocol
+                                                new byte[]{0, 0, 0, 0} ); // No protocol
+        channel.writeInbound( input );
+
+        //Then
+        assertEquals( 1, channel.outboundMessages().size() );
+        assertByteBufEquals( Unpooled.buffer().writeInt( packedVersion ), channel.readOutbound() );
+
+        assertThrows( NoSuchElementException.class, () -> channel.pipeline().remove( ProtocolHandshaker.class ) );
+        assertTrue( channel.isActive() );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "protocolVersionProviderOutOfRange" )
+    void shouldFailOutOfRangeProtocol( int major, int minor )
+    {
+        //Given
+        int noVersion = 0;
+        BoltProtocol protocol = newBoltProtocol( major, minor );
+        BoltProtocolFactory handlerFactory = newProtocolFactory( major, minor, protocol );
+        EmbeddedChannel channel = new EmbeddedChannel( new ProtocolHandshaker( handlerFactory, boltChannel, logProvider, false, true ) );
+
+        // When
+        ByteBuf input = Unpooled.wrappedBuffer( // create handshake data
+                                                new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17}, // preamble
+                                                new byte[]{0, 0, 0, 4},  // first choice - 4.0 no range
+                                                new byte[]{0, 2, 4, 4},  // second choice - 4.4 -> 4.2 inclusive range of 2
+                                                new byte[]{0, 0, 0, 0},  // No protocol
+                                                new byte[]{0, 0, 0, 0} ); // No protocol
+        channel.writeInbound( input );
+
+        //Then
+        assertEquals( 1, channel.outboundMessages().size() );
+        assertByteBufEquals( Unpooled.buffer().writeInt( noVersion ), channel.readOutbound() );
+
+        assertThrows( NoSuchElementException.class, () -> channel.pipeline().remove( ProtocolHandshaker.class ) );
+        assertFalse( channel.isActive() );
     }
 
     @Test
