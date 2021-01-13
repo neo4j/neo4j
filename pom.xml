@@ -113,7 +113,7 @@
     <jetty.version>9.4.35.v20201120</jetty.version>
     <findbugs.version>3.0.1u2</findbugs.version>
     <scala-maven-plugin.version>4.4.0</scala-maven-plugin.version>
-    <scala.version>2.12.12</scala.version>
+    <scala.version>2.12.13</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
     <asm.version>9.0</asm.version>
