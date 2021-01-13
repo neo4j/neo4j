@@ -83,7 +83,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) with existence/node key constraint on :User(prop) or aggregation on n.prop
-      case predicate@HasLabels(expr@Variable(name), labels) =>
+      case predicate@HasLabels(expr@Variable(name), labels) if !qg.argumentIds.contains(name) =>
         val label = labels.head
         val labelName = label.name
         val constrainedProps = context.planContext.getPropertiesWithExistenceConstraint(labelName)
