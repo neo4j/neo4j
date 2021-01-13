@@ -142,9 +142,11 @@ object CodeGeneration {
     result
   }
 
-  private def generateConstructor(clazz: codegen.ClassGenerator, fields: Seq[Field], params: Seq[Parameter] = Seq.empty,
-                          initializationCode: codegen.CodeBlock => codegen.Expression = _ => codegen.Expression.EMPTY,
-                          parent: Option[TypeReference] = None): Unit = {
+  private def generateConstructor(clazz: codegen.ClassGenerator,
+                                  fields: Seq[Field],
+                                  params: Seq[Parameter],
+                                  initializationCode: codegen.CodeBlock => codegen.Expression,
+                                  parent: Option[TypeReference]): Unit = {
     beginBlock(clazz.generateConstructor(params.map(_.asCodeGen): _*)) { block =>
       block.expression(invokeSuper(parent.getOrElse(OBJECT)))
       fields.distinct.foreach {

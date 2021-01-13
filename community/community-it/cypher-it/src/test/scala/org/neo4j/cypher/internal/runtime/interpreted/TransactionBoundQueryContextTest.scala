@@ -478,7 +478,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     }
   }
 
-  private def createLabeledNodesAndRels: Unit = {
+  private def createLabeledNodesAndRels(): Unit = {
     val label = Label.label("Foo")
     val relType = RelationshipType.withName("Foo")
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.writeToken())

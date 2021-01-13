@@ -235,7 +235,7 @@ trait GraphIcing {
 
     def inTx[T](f: => T): T = inTx(_ => f, Type.IMPLICIT)
 
-    private def createTransactionalContext(tx: InternalTransaction, queryText: String, params: Map[String, Any] = Map.empty): TransactionalContext = {
+    private def createTransactionalContext(tx: InternalTransaction, queryText: String, params: Map[String, Any]): TransactionalContext = {
       val contextFactory = Neo4jTransactionalContextFactory.create(graphService)
       contextFactory.newContext(tx, queryText, ValueUtils.asParameterMapValue(asJavaMapDeep(params)))
     }
