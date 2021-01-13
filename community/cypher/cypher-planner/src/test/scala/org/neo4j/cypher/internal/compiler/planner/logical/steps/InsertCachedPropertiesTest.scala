@@ -77,10 +77,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   private val cachedNProp2 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE.bumped())
   private val cachedNRelProp1 = CachedProperty("n", n, prop, RELATIONSHIP_TYPE)(InputPosition.NONE)
   private val cachedNRelProp2 = CachedProperty("n", n, prop, RELATIONSHIP_TYPE)(InputPosition.NONE.bumped())
-  private val cachedXProp = CachedProperty("x", x, prop, NODE_TYPE)(InputPosition.NONE)
 
   private val xProp = Property(x, prop)(InputPosition.NONE)
-  private val mProp = Property(m, prop)(InputPosition.NONE)
 
   def indexScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): IndexLeafPlan = IndexSeek(s"$node:$label($property)", getValueFromIndex)
   def indexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): IndexLeafPlan = IndexSeek(s"$node:$label($property = 42)", getValueFromIndex)

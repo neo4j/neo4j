@@ -39,7 +39,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set node property") {
     // given a single node
-    val n = given {
+    given {
       nodeGraph(1)
     }
 
@@ -61,7 +61,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should remove node property") {
     // given a single node
-    val n = given {
+    given {
       nodePropertyGraph(1, { case i: Int => Map("prop" -> i)})
     }
 
@@ -285,7 +285,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set cached node property") {
     // given a single node
-    val n = given {
+    given {
       nodeGraph(1)
     }
 
@@ -309,7 +309,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set node property from null value") {
     // given a single node
-    val n = given {
+    given {
       nodeGraph(1)
     }
 
@@ -355,7 +355,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set node property from expression that requires null check") {
     // given a single node
-    val n = given {
+    given {
       nodeGraph(1)
     }
 

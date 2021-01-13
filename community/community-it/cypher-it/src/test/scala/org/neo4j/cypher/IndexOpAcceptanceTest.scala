@@ -63,7 +63,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
 
   test("secondIndexCreationShouldFailIfIndexesHasFailed") {
     // GIVEN
-    val graph = createDbWithFailedIndex
+    createDbWithFailedIndex
     try {
       // WHEN THEN
       val e = intercept[FailedIndexException](execute("CREATE INDEX FOR (n:Person) ON (n.name)"))

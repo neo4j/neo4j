@@ -55,7 +55,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("anti conditional apply on nonempty lhs and empty rhs, where condition(lhs) always is false") {
     // given
-    val nodes = given {
+    given {
       nodeGraph(19, "RHS")
       nodeGraph(sizeHint)
     }

@@ -213,7 +213,7 @@ class FabricStitcherTest
         init(defaultUse)
           .apply(_ => init(defaultUse))
 
-      val x = tree.rewritten.topDown {
+      tree.rewritten.topDown {
         case i: Fragment.Init => i.copy(argumentColumns = Seq("a"))
       }
     }

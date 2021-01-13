@@ -1067,8 +1067,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle many optional expand with random predicates") {
     // given
-    val nodeLabel = label("Label")
-    val nodes = given {
+    given {
       val allLabels = Array("A", "B", "C", "D", "E")
       def randomLabel = label(allLabels(Random.nextInt(allLabels.length)))
       val nodes = nodeGraph(sizeHint, "N")
@@ -1103,7 +1102,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should handle multiple optional expands when first predicate fails with limit") {
     // given
     val nodeLabel = label("Label")
-    val nodes = given {
+    given {
       val nodes = nodeGraph(sizeHint, "N")
       nodes.foreach(n => {
         n.createRelationshipTo(tx.createNode(nodeLabel), RelationshipType.withName("A"))
@@ -1134,7 +1133,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should handle multiple optional expands when second predicate fails with limit") {
     // given
     val nodeLabel = label("Label")
-    val nodes = given {
+    given {
       val nodes = nodeGraph(sizeHint, "N")
       nodes.foreach(n => {
         n.createRelationshipTo(tx.createNode(nodeLabel), RelationshipType.withName("A"))

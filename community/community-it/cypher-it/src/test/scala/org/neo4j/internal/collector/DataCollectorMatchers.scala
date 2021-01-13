@@ -148,7 +148,6 @@ object DataCollectorMatchers {
                 (expectedValue match {
                   case m: Matcher[AnyRef] =>
                     m.apply(value).matches
-                  case m: Matcher[_] => ???
                   case something =>
                     arraySafeEquals(value, something)
                 })

@@ -63,7 +63,6 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
   private val nIsAnimal = predicate(HasLabels(varFor("n"), Seq(labelName("Animal"))) _)
 
   private val nIsPersonLabelInfo = Map("n" -> Set(labelName("Person")))
-  private val nIsAnimalLabelInfo = Map("n" -> Set(labelName("Animal")))
   private val nIsPersonAndAnimalLabelInfo = Map("n" -> Set(labelName("Person"), labelName("Animal")))
 
   private val personPropSel = 0.2

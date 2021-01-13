@@ -41,7 +41,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
         try {
           (1 to nodeCount) foreach {
             x =>
-              val r = execute(q, "id" -> x)
+              execute(q, "id" -> x)
           }
         }
         catch {
@@ -134,7 +134,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     val n1 = createNode()
     val n2 = createNode()
     val query = "MATCH (n) WHERE ID(n) = $id1 MERGE (n)-[r:TEST]-(m)"
-    val compileFirst = execute(s"EXPLAIN $query", "id1" -> n1.getId, "id2" -> n2.getId)
+    execute(s"EXPLAIN $query", "id1" -> n1.getId, "id2" -> n2.getId)
     var exceptionsThrown = List.empty[Throwable]
 
     def createRunner(n1: Long, n2: Long) = new Runnable {
@@ -168,7 +168,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     val n1 = createNode()
     val n2 = createNode()
     val query = "MATCH (n), (m) WHERE ID(n) = $id1 AND ID(m) = $id2 MERGE (n)-[r:TEST]-(m)"
-    val compileFirst = execute(s"EXPLAIN $query", "id1" -> n1.getId, "id2" -> n2.getId)
+    execute(s"EXPLAIN $query", "id1" -> n1.getId, "id2" -> n2.getId)
 
     var exceptionsThrown = List.empty[Throwable]
 

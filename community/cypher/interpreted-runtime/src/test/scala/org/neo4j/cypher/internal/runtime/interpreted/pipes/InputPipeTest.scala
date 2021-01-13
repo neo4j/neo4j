@@ -68,10 +68,6 @@ class InputPipeTest extends CypherFunSuite {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
     val inputStream = new MyInputStream(Array(10), Array(11), Array(12))
-    val state = QueryStateHelper.emptyWith(
-      query = QueryStateHelper.emptyWithResourceManager(resourceManager).query,
-      input = inputStream
-    )
 
     val pipe = InputPipe(Array("a"))()
     // exhaust

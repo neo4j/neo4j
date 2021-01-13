@@ -39,7 +39,7 @@ import scala.collection.mutable
 case class useEffectiveOutputCardinality(cardinalities: Cardinalities, attributes: Attributes[LogicalPlan]) extends Rewriter {
 
   override def apply(input: AnyRef): AnyRef = {
-    var incomingSelectivity: mutable.Map[Id, Selectivity] = mutable.Map().withDefaultValue(Selectivity.ONE)
+    val incomingSelectivity: mutable.Map[Id, Selectivity] = mutable.Map().withDefaultValue(Selectivity.ONE)
 
     val rewriter: Rewriter = {
       topDown(Rewriter.lift {

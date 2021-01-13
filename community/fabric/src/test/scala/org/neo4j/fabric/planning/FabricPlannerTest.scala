@@ -350,7 +350,7 @@ class FabricPlannerTest
       """.stripMargin)
 
       // Assert that getting the plan does not fail
-      val dummy = inst.plan
+      inst.plan
     }
 
   }

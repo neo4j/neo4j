@@ -155,16 +155,6 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   private def createPipe(src: FakePipe, min: Int, max: Int, outgoing: SemanticDirection) = {
     PruningVarLengthExpandPipe(src, "from", "to", types, outgoing, min, max)()
   }
-
-  private def createPipe(src: FakePipe,
-                         min: Int,
-                         max: Int,
-                         outgoing: SemanticDirection,
-                         relationshipPredicate: Predicate,
-                         nodePredicate: Predicate) = {
-    val filteringStep = createVarLengthPredicate(nodePredicate, relationshipPredicate)
-    PruningVarLengthExpandPipe(src, "from", "to", types, outgoing, min, max, filteringStep)()
-  }
 }
 
 object PruningVarLengthExpandPipeTest {

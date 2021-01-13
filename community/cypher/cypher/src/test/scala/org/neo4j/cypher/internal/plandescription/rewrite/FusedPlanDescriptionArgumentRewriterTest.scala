@@ -37,8 +37,6 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class FusedPlanDescriptionArgumentRewriterTest extends CypherFunSuite {
 
-  private val id: Id = Id.INVALID_ID
-
   test("single fused pipeline should aggregate time and page cache hits/misses") {
     val argsLeaf1 = Seq(PageCacheHits(1), PageCacheMisses(10), Time(1000000), PipelineInfo(1, true))
     val argsLeaf2 = Seq(PageCacheHits(2), PageCacheMisses(11), Time(2000000), PipelineInfo(1, true))

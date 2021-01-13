@@ -184,14 +184,6 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
     val queryNotUsingIndex = s"MATCH (n:Label) WHERE n.nonIndexed $operator $$prop RETURN n, n.nonIndexed AS prop ORDER BY id(n)"
     val queryUsingIndex = s"MATCH (n:Label) WHERE n.indexed $operator $$prop RETURN n, n.indexed AS prop ORDER BY id(n)"
 
-    def testValue(queryNotUsingIndex: String, queryUsingIndex: String, value: Value): Unit = {
-      val valueObject = value.asObject()
-      val indexedResult = execute(queryUsingIndex, "prop" -> valueObject)
-      val nonIndexedResult = execute(queryNotUsingIndex, "prop" -> valueObject)
-      nonIndexedResult.toList should equal(indexedResult.toList)
-      indexedResult.executionPlanDescription().toString should include("NodeIndexSeek")
-    }
-
     case object behaveEqualWithAndWithoutIndex extends Matcher[Value] {
       def apply(value: Value): MatchResult = {
         val valueObject = value.asObject()

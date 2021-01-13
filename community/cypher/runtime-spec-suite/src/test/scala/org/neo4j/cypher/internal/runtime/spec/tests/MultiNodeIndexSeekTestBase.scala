@@ -210,7 +210,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // given
     val size = Math.max(sizeHint, 10)
     index("Label", "prop")
-    val nodes = given {
+    given {
       nodePropertyGraph(size, {
         case i: Int => Map("prop" -> i % 10)
       }, "Label")
@@ -232,7 +232,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // given
     val size = Math.max(sizeHint, 10)
     index("Label", "prop")
-    val nodes = given {
+    given {
       nodePropertyGraph(size, {
         case i: Int => Map("prop" -> i % 10)
       }, "Label")

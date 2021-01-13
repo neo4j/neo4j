@@ -349,7 +349,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     index("B", "x")
     val aNodes = given {
       val aNodes = nodeGraph(2, "A")
-      val bNodes = nodePropertyGraph(sizeHint, {
+      nodePropertyGraph(sizeHint, {
         case i: Int => Map("x" -> i / chunkSize, "y" -> -i)
       }, "B")
       aNodes
@@ -384,7 +384,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     index("B", "x")
     val aNodes = given {
       val aNodes = nodeGraph(2, "A")
-      val bNodes = nodePropertyGraph(sizeHint, {
+      nodePropertyGraph(sizeHint, {
         case i: Int => Map("x" -> i / chunkSize, "y" -> -i)
       }, "B")
       aNodes

@@ -286,7 +286,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should assert same nodes on top of range seek and fail") {
-    val nodes = given {
+    given {
       uniqueIndex("Honey", "prop")
       nodePropertyGraph(sizeHint, {
         case i => Map("prop" -> i)
@@ -420,7 +420,7 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
       .nodeIndexOperator("x:Honey(prop = 20)")
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime)
+    execute(logicalQuery, runtime)
 
     //then
     a [MergeConstraintConflictException] shouldBe thrownBy(consume(execute(logicalQuery, runtime)))

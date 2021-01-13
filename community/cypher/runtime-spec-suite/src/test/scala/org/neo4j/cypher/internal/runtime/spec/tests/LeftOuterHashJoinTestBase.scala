@@ -245,7 +245,7 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
   }
   
   test("should work when LHS is empty") {
-    val nodes = given {
+    given {
       val randomSmallIntProps: PartialFunction[Int, Map[String, Any]] = {
         case _ => Map("leftProp" -> Random.nextInt(4), "rightProp" -> Random.nextInt(4))
       }

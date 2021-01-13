@@ -107,7 +107,7 @@ class GrowingArrayTest extends CypherFunSuite {
 
   test("should allocate memory on creation") {
     val memoryTracking = new LocalMemoryTracker()
-    val x = new GrowingArray[String](memoryTracking)
+    new GrowingArray[String](memoryTracking)
 
     memoryTracking.estimatedHeapMemory() shouldBe > (0L)
   }

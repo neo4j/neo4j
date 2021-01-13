@@ -275,7 +275,6 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
     var dbHits: Option[Long] = None
     var pageCacheHits: Option[Long] = None
     var pageCacheMisses: Option[Long] = None
-    var pageCacheHitRatio: Option[Double] = None
     var time: Option[Long] = None
     var rows: Option[Long] = None
 

@@ -127,7 +127,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle null in exact multiple seek") {
-    val nodes = given {
+    given {
       index("Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {

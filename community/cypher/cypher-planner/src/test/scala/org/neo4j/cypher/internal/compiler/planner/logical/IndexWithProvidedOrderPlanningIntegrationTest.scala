@@ -445,8 +445,6 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         )))
       } getLogicalPlanFor s"MATCH (a:A), (b:B) WHERE a.prop > 'foo' AND a.prop = b.prop RETURN a.prop ORDER BY a.prop $cypherToken"
 
-      val expectedBIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
-
       plan._2 should equal(
         Projection(
           Apply(
