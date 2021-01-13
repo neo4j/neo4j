@@ -34,7 +34,7 @@ public class StubPropertyCursor extends DefaultCloseListenable implements Proper
     private Integer[] keys;
     private Value[] values;
 
-    void init( Map<Integer, Value> properties )
+    public void init( Map<Integer, Value> properties )
     {
         offset = -1;
         keys = properties.keySet().toArray( new Integer[0] );
