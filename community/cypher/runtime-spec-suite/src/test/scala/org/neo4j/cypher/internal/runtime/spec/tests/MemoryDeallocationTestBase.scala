@@ -420,6 +420,70 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     compareMemoryUsage(logicalQuery1, logicalQuery2, toleratedDeviation)
   }
 
+  test("should deallocate memory for distinct on RHS of apply") {
+    val ys = Seq(1,1,2,3,4,4,5,1,3,2,5,4,1)
+    val nRows = sizeHint
+    val input1 = finiteInput(nRows)
+    val input2 = finiteInput(nRows*3)
+
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .apply()
+      .|.distinct("y as y")
+      .|.unwind(s"[${ys.mkString(",")}] AS y")
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
+  }
+
+  test("should deallocate memory between single primitive distinct on RHS of apply") {
+    given {
+      nodeGraph(5)
+    }
+
+    val nRows = sizeHint
+    val input1 = finiteInput(nRows)
+    val input2 = finiteInput(nRows*3)
+
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .apply()
+      .|.distinct("y as y")
+      .|.allNodeScan("y")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
+  }
+
+  test("should deallocate memory between multiple primitive distinct on RHS of apply") {
+    given {
+      nodeGraph(5)
+    }
+
+    val nRows = sizeHint
+    val input1 = finiteInput(nRows)
+    val input2 = finiteInput(nRows*3)
+
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y", "z")
+      .apply()
+      .|.distinct("y as y", "y as z")
+      .|.allNodeScan("y")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
+  }
+
   protected def compareMemoryUsage(logicalQuery1: LogicalQuery,
                                    logicalQuery2: LogicalQuery,
                                    toleratedDeviation: Double = 0.0d): Unit = {

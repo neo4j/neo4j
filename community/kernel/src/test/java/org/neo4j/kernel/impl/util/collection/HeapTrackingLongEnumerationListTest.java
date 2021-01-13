@@ -208,6 +208,41 @@ class HeapTrackingLongEnumerationListTest
     }
 
     @Test
+    void removeUntil()
+    {
+        long size = 10000;
+
+        // add 0, .., 9999
+        for ( long i = 0; i < size; i++ )
+        {
+            table.add( i + 100000 );
+        }
+        assertEquals( 9999L, table.lastKey() );
+        assertHeapUsageWithNumberOfLongs( 10000 );
+
+        // remove 2500-7500
+        for ( long i = size / 4; i < (size - size / 4); i++ )
+        {
+            table.remove( i );
+        }
+        assertEquals( 9999L, table.lastKey() );
+        assertHeapUsageWithNumberOfLongs( 5000 );
+
+        // remove until 9000
+        final long[] ia = new long[]{0L};
+        table.removeUntil(9000, (removedKey, removedValue) -> {
+            assertEquals( ia[0], removedKey );
+            assertEquals(ia[0] + 100000, removedValue );
+            ia[0]++;
+            if (ia[0] == 2500) {
+                ia[0] += 5000;
+            }
+        });
+        assertEquals( 9999L, table.lastKey() );
+        assertHeapUsageWithNumberOfLongs( 1000 );
+    }
+
+    @Test
     void removeAtChunkBoundaries()
     {
         int size = Math.max( DEFAULT_CHUNK_SIZE, 4 ); // This test will not work for chunk sizes 1 and 2

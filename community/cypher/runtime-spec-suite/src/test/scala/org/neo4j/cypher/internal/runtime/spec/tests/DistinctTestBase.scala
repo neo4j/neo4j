@@ -200,12 +200,36 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on RHS of apply") {
 
-    val as = Seq(10,11,12,12,12)
-    val bs = Seq(1,1,2,3,4,4,5)
+    val as = Seq(10,11,12,13)
+    val bs = Seq(1,1,2,3,4,4,5,1,3,2,5,4,1)
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("b")
+      .apply()
+      .|.distinct("b AS b")
+      .|.unwind(s"[${bs.mkString(",")}] AS b")
+      .|.argument()
+      .unwind(s"[${as.mkString(",")}] AS a")
+      .argument("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = for {_ <- as; b <- bs.distinct} yield b
+    runtimeResult should beColumns("b").withRows(singleColumn(expected))
+  }
+
+  test("should work on RHS of apply, not in final pipeline") {
+
+    val as = Seq(10,11,12,13)
+    val bs = Seq(1,1,2,3,4,4,5,1,3,2,5,4,1)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("b")
+      .eager()
       .apply()
       .|.distinct("b AS b")
       .|.unwind(s"[${bs.mkString(",")}] AS b")
@@ -243,6 +267,29 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("y").withRows(singleColumn(expected))
   }
 
+  test("should work with distinct on single primitive node column on RHS of apply, not in final pipeline") {
+    // given
+    val nodes = given {nodeGraph(sizeHint)}
+    val inputNodes = inputValues(nodes.flatMap(n => Seq.fill(11)(n)).map(Array[Any](_)): _*)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .eager()
+      .apply()
+      .|.distinct("x AS y")
+      .|.argument("x")
+      .input(nodes = Seq("x"), nullable = false)
+
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputNodes)
+
+    // then
+    val expected = for {_ <- 1 to 11; n <- nodes.distinct} yield n
+    runtimeResult should beColumns("y").withRows(singleColumn(expected))
+  }
+
   test("should work with distinct on multiple primitive columns on RHS of apply") {
     // given
     val (nodes, _) = given {circleGraph(sizeHint)}
@@ -251,6 +298,31 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("z", "r")
+      .apply()
+      .|.distinct("x AS z", "r AS r")
+      .|.expand("(x)-[r]->(y)")
+      .|.argument("x")
+      .input(nodes = Seq("x"), nullable = false)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputNodes)
+
+    val expected = for {_ <- 1 to 11
+                        n <- nodes
+                        r <- n.getRelationships(OUTGOING).asScala} yield Array[Any](n, r)
+    // then
+    runtimeResult should beColumns("z", "r").withRows(expected)
+  }
+
+  test("should work with distinct on multiple primitive columns on RHS of apply, not in final pipeline") {
+    // given
+    val (nodes, _) = given {circleGraph(sizeHint)}
+    val inputNodes = inputValues(nodes.flatMap(n => Seq.fill(11)(n)).map(Array[Any](_)): _*)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("z", "r")
+      .eager()
       .apply()
       .|.distinct("x AS z", "r AS r")
       .|.expand("(x)-[r]->(y)")

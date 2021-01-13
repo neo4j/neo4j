@@ -429,6 +429,21 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
     }
 
     /**
+     * Remove each key starting from the first key until we reach the given key,
+     * and apply the given function to each removed value, skipping over null values.
+     */
+    @SuppressWarnings( "unchecked" )
+    public void removeUntil( long untilKey, BiConsumer<Long, V> fun )
+    {
+        while ( firstKey < untilKey )
+        {
+            long key = firstKey;
+            V value = remove( key );
+            fun.accept( key, value );
+        }
+    }
+
+    /**
      * @return The last added key or -1 if no keys exist (i.e. if nothing was ever added to the list)
      */
     public long lastKey()
