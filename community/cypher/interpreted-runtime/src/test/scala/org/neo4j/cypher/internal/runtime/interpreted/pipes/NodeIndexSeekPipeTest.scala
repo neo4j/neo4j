@@ -61,7 +61,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite {
       IndexOrderNone)()
     // exhaust
     pipe.createResults(state).toList
-    monitor.closedResources.collect { case t@`cursor` => t } should have size(1)
+    monitor.closedResources.collect { case `cursor` => cursor } should have size(1)
   }
 
   test("close should close cursor") {
@@ -86,6 +86,6 @@ class NodeIndexSeekPipeTest extends CypherFunSuite {
       IndexOrderNone)()
     val result = pipe.createResults(state)
     result.close()
-    monitor.closedResources.collect { case t@`cursor` => t } should have size(1)
+    monitor.closedResources.collect { case `cursor` => cursor } should have size(1)
   }
 }

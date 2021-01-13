@@ -29,7 +29,7 @@ import org.neo4j.graphdb.spatial.Point
 object DriverParameterConverter extends ParameterConverter {
   def convertParameterValue(value: Any): AnyRef = value match {
     case null                            => null
-    case map: Map[String, Any]           => convertParameters(map)
+    case map: Map[_, _]                  => convertParameters(map.asInstanceOf[Map[String, Any]])
     case array: Array[AnyRef]            => array.map(convertParameterValue)
     case iterable: Iterable[_]           => iterable.map(convertParameterValue).toArray
     case traversable: TraversableOnce[_] => traversable.map(convertParameterValue).toArray

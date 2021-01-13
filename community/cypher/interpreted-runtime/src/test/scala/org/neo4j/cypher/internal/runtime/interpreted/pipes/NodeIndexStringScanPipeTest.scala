@@ -122,7 +122,7 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
       IndexOrderNone)()
     // exhaust
     pipe.createResults(state).toList
-    monitor.closedResources.collect { case t@`cursor` => t } should have size(1)
+    monitor.closedResources.collect { case `cursor` => cursor } should have size(1)
   }
 
   test("Contains: close should close cursor") {
@@ -145,7 +145,7 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
       IndexOrderNone)()
     val result = pipe.createResults(state)
     result.close()
-    monitor.closedResources.collect { case t@`cursor` => t } should have size(1)
+    monitor.closedResources.collect { case `cursor` => cursor } should have size(1)
   }
 
   test("Ends with: exhaust should close cursor") {
@@ -168,7 +168,7 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
       IndexOrderNone)()
     // exhaust
     pipe.createResults(state).toList
-    monitor.closedResources.collect { case t@`cursor` => t } should have size(1)
+    monitor.closedResources.collect { case `cursor` => cursor } should have size(1)
   }
 
   test("Ends with: close should close cursor") {
@@ -191,6 +191,6 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
       IndexOrderNone)()
     val result = pipe.createResults(state)
     result.close()
-    monitor.closedResources.collect { case t@`cursor` => t } should have size(1)
+    monitor.closedResources.collect { case `cursor` => cursor } should have size(1)
   }
 }

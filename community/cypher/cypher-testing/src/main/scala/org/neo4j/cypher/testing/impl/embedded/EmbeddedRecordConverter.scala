@@ -40,8 +40,8 @@ object EmbeddedRecordConverter {
     case value: Relationship             => convertRelationship(value)
     case value: Path                     => convertPath(value)
     case _: Point                        => throw new IllegalStateException("Point type is not supported yet")
-    case value: util.Map[String, AnyRef] => convertMap(value)
-    case value: util.List[AnyRef]        => convertList(value)
+    case value: util.Map[_, _]           => convertMap(value.asInstanceOf[util.Map[String, AnyRef]])
+    case value: util.List[_]             => convertList(value.asInstanceOf[util.List[AnyRef]])
     case value                           => value.asInstanceOf[AnyRef]
   }
 

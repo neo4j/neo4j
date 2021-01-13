@@ -26,10 +26,10 @@ object ResultDebug {
         "\n" + indent + "[\n" +
           seq.map(indent + asJson(_, indent = indent + "  ")).mkString(",\n") + "\n" +
           indent + "]"
-      case map: Map[String, _] =>
+      case map: Map[_, _] =>
         "\n" + indent + "{\n" +
-          map.map{
-            case (key, value) => asJson(key, value, indent + "  ")
+          map.map {
+            case (key: String, value) => asJson(key, value, indent + "  ")
           }.mkString(",\n") + "\n" +
           indent + "}"
       case x => x.toString

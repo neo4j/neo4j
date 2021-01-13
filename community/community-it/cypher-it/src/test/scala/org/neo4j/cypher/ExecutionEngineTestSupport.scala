@@ -109,7 +109,7 @@ object ExecutionEngineHelper {
 
   def asJavaValueDeep(any: Any): AnyRef =
     any match {
-      case map: Map[String, Any] => asJavaMapDeep(map)
+      case map: Map[_, _] => asJavaMapDeep(map.asInstanceOf[Map[String, Any]])
       case array: Array[Any] => array.map(asJavaValueDeep)
       case iterable: Iterable[_] => asJavaIterable(iterable.map(asJavaValueDeep))
       case traversable: TraversableOnce[_] => asJavaIterable(traversable.map(asJavaValueDeep).toList)

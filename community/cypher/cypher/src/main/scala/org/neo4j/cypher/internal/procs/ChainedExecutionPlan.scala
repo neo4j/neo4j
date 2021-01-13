@@ -72,8 +72,8 @@ abstract class ChainedExecutionPlan[T <: QueryContext with CountingQueryContext]
     sourceResult match {
       case Some(IgnoredRuntimeResult) =>
         onSkip(ctx, subscriber)
-      case Some(UpdatingSystemCommandRuntimeResult(newCtx: T)) =>
-        runSpecific(newCtx, executionMode, params, prePopulateResults, ignore, subscriber)
+      case Some(UpdatingSystemCommandRuntimeResult(newCtx)) =>
+        runSpecific(newCtx.asInstanceOf[T], executionMode, params, prePopulateResults, ignore, subscriber)
       case _  =>
         runSpecific(ctx, executionMode, params, prePopulateResults, ignore, subscriber)
     }
