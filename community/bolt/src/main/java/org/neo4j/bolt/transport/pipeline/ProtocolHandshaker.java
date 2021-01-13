@@ -26,6 +26,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
@@ -99,7 +100,7 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
                     if ( performHandshake() )
                     {
                         // announce selected protocol to the client
-                        ctx.writeAndFlush( ctx.alloc().buffer( 4 ).writeInt( (int)protocol.version().toInt() ) );
+                        ctx.writeAndFlush( ctx.alloc().buffer( 4 ).writeInt( protocol.version().toInt() ) );
 
                         // install related protocol handlers into the pipeline
                         protocol.install();
@@ -164,22 +165,38 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
 
     private boolean performHandshake()
     {
-        BoltProtocolVersion[] suggestions = new BoltProtocolVersion[4];
+        ArrayList<BoltProtocolVersion> suggestions = new ArrayList<BoltProtocolVersion>();
+
         for ( int i = 0; i < 4; i++ )
         {
-            BoltProtocolVersion suggestion = BoltProtocolVersion.fromRawBytes( handshakeBuffer.getInt( (i + 1) * Integer.BYTES ) );
+            int rawBytes = handshakeBuffer.getInt( (i + 1) * Integer.BYTES);
+            int major = BoltProtocolVersion.getMajorFromRawBytes( rawBytes ),
+                minor = BoltProtocolVersion.getMinorFromRawBytes( rawBytes ),
+                range = BoltProtocolVersion.getRangeFromRawBytes( rawBytes );
 
-            protocol = boltProtocolFactory.create( suggestion, boltChannel );
+            for ( int j = 0; j <= range; j++ )   //Range is inclusive thus the use of <=
+            {
+                int newMinor = Math.max( minor - j, 0 );
+                BoltProtocolVersion suggestion = new BoltProtocolVersion( major, newMinor );
+
+                protocol = boltProtocolFactory.create( suggestion, boltChannel );
+                if ( protocol != null )
+                {
+                    break;
+                }
+                suggestions.add( suggestion );
+            }
+
             if ( protocol != null )
             {
                 break;
             }
-            suggestions[i] = suggestion;
         }
 
         if ( protocol == null )
         {
-            log.debug( "Failed Bolt handshake: Bolt versions suggested by client '%s' are not supported by this server.", Arrays.toString( suggestions ) );
+            log.debug( "Failed Bolt handshake: Bolt versions suggested by client '%s' are not supported by this server.",
+                       Arrays.toString( suggestions.toArray() ) );
         }
 
         return protocol != null;
