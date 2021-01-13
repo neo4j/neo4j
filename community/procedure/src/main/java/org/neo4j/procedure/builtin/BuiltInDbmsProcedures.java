@@ -478,13 +478,20 @@ public class BuiltInDbmsProcedures
                     if ( tx.executingQuery().isPresent() )
                     {
                         ExecutingQuery query = tx.executingQuery().get();
-                        String username = query.username();
-                        var action = new AdminActionOnResource( SHOW_TRANSACTION, dbScope, new UserSegment( username ) );
-                        if ( isSelfOrAllows( username, action ) )
+
+                        // Include both the executing query and any previous queries (parent queries of nested query) in the result.
+                        while ( query != null )
                         {
-                            result.add(
-                                    new QueryStatusResult( query, (InternalTransaction) transaction, zoneId,
-                                                           databaseContext.databaseFacade().databaseName() ) );
+                            String username = query.username();
+                            var action = new AdminActionOnResource( SHOW_TRANSACTION, dbScope, new UserSegment( username ) );
+                            if ( isSelfOrAllows( username, action ) )
+                            {
+                                result.add(
+                                        new QueryStatusResult( query, (InternalTransaction) transaction, zoneId,
+                                                databaseContext.databaseFacade().databaseName() ) );
+                            }
+
+                            query = query.getPreviousQuery();
                         }
                     }
                 }
