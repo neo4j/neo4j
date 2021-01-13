@@ -24,7 +24,10 @@ import org.opencypher.tools.tck.api.Execute
 import org.opencypher.tools.tck.api.Scenario
 import org.scalatest.FunSpecLike
 
-class Neo4jASTFactoryTCKTest extends ParsingTestBase with FunSpecLike {
+/**
+ * Compares the parboiled and JavaCC parsers with all TCK scenarios.
+ */
+class ParserComparisonTCKTest extends ParserComparisonTestBase with FunSpecLike {
 
   val scenariosPerFeature: Map[String, Seq[Scenario]] =
     CypherTCK.allTckScenarios.foldLeft(Map.empty[String, Seq[Scenario]]) {

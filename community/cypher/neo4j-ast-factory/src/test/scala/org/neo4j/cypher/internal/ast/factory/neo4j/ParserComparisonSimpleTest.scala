@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.scalatest.FunSuiteLike
 
-class Neo4jASTFactorySimpleTest extends ParsingTestBase with FunSuiteLike with TestName {
+class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteLike with TestName {
 
   test("RETURN 1 AS x") {
     assertSameAST(testName)

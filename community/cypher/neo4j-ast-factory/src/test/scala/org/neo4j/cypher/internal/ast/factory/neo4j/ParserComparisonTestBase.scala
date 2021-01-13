@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.parser.javacc.Cypher
 import org.neo4j.cypher.internal.parser.javacc.CypherCharStream
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
+import org.scalatest.Assertion
 import org.scalatest.Assertions
 import org.scalatest.Matchers
 
@@ -30,9 +31,12 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-abstract class ParsingTestBase() extends Assertions with Matchers {
+/**
+ * Tests that the parboiled and JavaCC parsers produce the same AST and error positions.
+ */
+abstract class ParserComparisonTestBase() extends Assertions with Matchers {
 
-  protected def assertSameAST(query: String) = {
+  protected def assertSameAST(query: String): Assertion = {
     withClue(query+System.lineSeparator()) {
       val parboiledParser = new org.neo4j.cypher.internal.parser.CypherParser()
       val exceptionFactory = new OpenCypherExceptionFactory(None)
