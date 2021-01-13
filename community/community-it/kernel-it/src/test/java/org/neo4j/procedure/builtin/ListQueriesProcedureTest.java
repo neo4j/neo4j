@@ -28,14 +28,23 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Procedure;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -69,7 +78,8 @@ public class ListQueriesProcedureTest
     {
         builder.setConfig( cypher_hints_error, true )
                .setConfig( GraphDatabaseSettings.track_query_allocation, true )
-               .setConfig( track_query_cpu_time, true );
+               .setConfig( track_query_cpu_time, true )
+               .addExtension( new CustomProcedureExtensionFactory() );
     }
 
     @Test
@@ -207,6 +217,31 @@ public class ListQueriesProcedureTest
             assertThat( index ).containsEntry( "label", "Node" );
             assertThat( index ).containsEntry( "propertyKey", "value" );
         }
+    }
+
+    @Test
+    void shouldListBothChildAndParentOfNestedQueries() throws ExecutionException, InterruptedException
+    {
+        List<Object> foundQueries;
+        String query = "CALL db.testProcedure()";
+        String queryInProc = "MATCH (n) SET n.v = n.v + 1";
+        String listQuery = "CALL dbms.listQueries";
+
+        // Call procedure that executes a query that will try to get node lock.
+        // Both the parent (procedure call) and child (set property) queries should be included in the listQueries result.
+        try ( Resource<Node> test = test( Transaction::createNode, query ) )
+        {
+            try ( Transaction transaction = db.beginTx() )
+            {
+                try ( Result rows = transaction.execute( listQuery ) )
+                {
+                    foundQueries = rows.stream().map( row -> row.getOrDefault( "query", "no query" ) ).collect( Collectors.toList() );
+                }
+                transaction.commit();
+            }
+        }
+
+        assertThat( foundQueries ).containsExactlyInAnyOrder( query, queryInProc, listQuery );
     }
 
     private void shouldListUsedIndexes( String label, String property ) throws Exception
@@ -361,5 +396,44 @@ public class ListQueriesProcedureTest
         }, null, waitingWhileIn( Locks.Client.class, "acquireExclusive" ), SECONDS_TIMEOUT, SECONDS );
 
         return new Resource<>( listQueriesLatch, finishQueriesLatch, resource );
+    }
+
+    public static class NestedQueryProcedure
+    {
+        @Context
+        public Transaction transaction;
+
+        @Procedure( name = "db.testProcedure" )
+        public void myProc()
+        {
+            transaction.execute( "MATCH (n) SET n.v = n.v + 1" ).close();
+        }
+    }
+
+    private static class CustomProcedureExtensionFactory extends ExtensionFactory<CustomProcedureExtensionFactory.Dependencies>
+    {
+        protected CustomProcedureExtensionFactory()
+        {
+            super( "customProcedureFactory" );
+        }
+
+        interface Dependencies
+        {
+            GlobalProcedures procedures();
+        }
+
+        @Override
+        public Lifecycle newInstance( ExtensionContext context, CustomProcedureExtensionFactory.Dependencies dependencies )
+        {
+            try
+            {
+                dependencies.procedures().registerProcedure( NestedQueryProcedure.class );
+            }
+            catch ( KernelException e )
+            {
+                throw new RuntimeException( e );
+            }
+            return new LifecycleAdapter();
+        }
     }
 }
