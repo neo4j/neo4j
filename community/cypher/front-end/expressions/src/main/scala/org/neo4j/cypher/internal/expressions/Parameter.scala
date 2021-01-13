@@ -36,7 +36,7 @@ sealed trait Parameter extends Expression {
 }
 
 object Parameter {
-  def unapply(p: Parameter): Option[(String, CypherType)] = Some(p.name, p.parameterType)
+  def unapply(p: Parameter): Option[(String, CypherType)] = Some((p.name, p.parameterType))
   def apply(name: String,
             parameterType: CypherType)(position: InputPosition): Parameter = ExplicitParameter(name, parameterType)(position)
 }

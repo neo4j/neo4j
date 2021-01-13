@@ -61,11 +61,11 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseO
 
     // then
     val expectedOperatorPageCacheStats: Map[Int, (Long, Long)] = if (canFuseOverPipelines) {
-      Map(0 -> (-1, -1), // ProduceResults is part of a fused pipeline
-          1 -> (-1, -1), // Projection is part of a fused pipeline
-          2 -> (-1, -1)) // Filer is part of a fused pipeline
+      Map(0 -> ((-1, -1)), // ProduceResults is part of a fused pipeline
+          1 -> ((-1, -1)), // Projection is part of a fused pipeline
+          2 -> ((-1, -1))) // Filer is part of a fused pipeline
     } else {
-      Map(0 -> (0, 0)) // Projection of a previous row should not access store
+      Map(0 -> ((0, 0))) // Projection of a previous row should not access store
     }
     checkProfilerStatsMakeSense(runtimeResult, 4,
       expectedOperatorPageCacheStats
@@ -94,9 +94,9 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseO
 
     // then
     val expectedOperatorPageCacheStats: Map[Int, (Long, Long)] = if (canFuseOverPipelines) {
-      Map(1 -> (-1, -1), // Aggregation is part of a fused pipeline
-          2 -> (-1, -1), // Projection is part of a fused pipeline
-          3 -> (-1, -1)  // Filter is part of a fused pipeline
+      Map(1 -> ((-1, -1)), // Aggregation is part of a fused pipeline
+          2 -> ((-1, -1)), // Projection is part of a fused pipeline
+          3 -> ((-1, -1))  // Filter is part of a fused pipeline
       )
     } else {
       Map.empty
@@ -131,16 +131,16 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseO
 
     // then
     val expectedOperatorPageCacheStats: Map[Int, (Long, Long)] = if (canFuseOverPipelines) {
-      Map(2 -> (0, 0), // A join should not access store
-          3 -> (0, 0), // Apply does not do anything
-          4 -> (-1, -1), // Aggregation is part of a fused pipeline
-          5 -> (0, 0), // Argument does not do anything
+      Map(2 -> ((0, 0)), // A join should not access store
+          3 -> ((0, 0)), // Apply does not do anything
+          4 -> ((-1, -1)), // Aggregation is part of a fused pipeline
+          5 -> ((0, 0)), // Argument does not do anything
       )
     } else {
-      Map(2 -> (0, 0), // A join should not access store
-          3 -> (0, 0), // Apply does not do anything
-          4 -> (0, 0), // Aggregation should not access store
-          5 -> (0, 0), // Argument does not do anything
+      Map(2 -> ((0, 0)), // A join should not access store
+          3 -> ((0, 0)), // Apply does not do anything
+          4 -> ((0, 0)), // Aggregation should not access store
+          5 -> ((0, 0)), // Argument does not do anything
       )
     }
     checkProfilerStatsMakeSense(runtimeResult, 8,
@@ -172,14 +172,14 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseO
     // then
     val expectedOperatorPageCacheStats: Map[Int, (Long, Long)] = if (canFuseOverPipelines) {
       Map(
-        0 -> (0, 0), // Produce result should not access store
-        1 -> (0, 0), // Apply does not do anything
+        0 -> ((0, 0)), // Produce result should not access store
+        1 -> ((0, 0)), // Apply does not do anything
         // TODO Shouldn't it be like this: 3 -> (-1, -1) // Expand all is part of a fused pipeline
       )
     } else {
       Map(
-        0 -> (0, 0), // Produce result should not access store
-        1 -> (0, 0) // Apply does not do anything
+        0 -> ((0, 0)), // Produce result should not access store
+        1 -> ((0, 0)) // Apply does not do anything
       )
     }
     checkProfilerStatsMakeSense(runtimeResult, 8,

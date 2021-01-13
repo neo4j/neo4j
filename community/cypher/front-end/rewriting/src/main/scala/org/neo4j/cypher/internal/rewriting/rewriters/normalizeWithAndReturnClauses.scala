@@ -81,27 +81,27 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
     case q@Query(_, queryPart) => q.copy(part = rewriteTopLevelQueryPart(queryPart))(q.position)
 
     case s@ShowPrivileges(_, Some(Left((yields, returns))),_) =>
-      s.copy(yieldOrWhere = Some(Left(addAliasesToYield(yields),returns.map(addAliasesToReturn))))(s.position)
+      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 
     case s@ShowPrivilegeCommands(_, _, Some(Left((yields, returns))),_) =>
-      s.copy(yieldOrWhere = Some(Left(addAliasesToYield(yields),returns.map(addAliasesToReturn))))(s.position)
+      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 
     case s@ShowDatabase(_, Some(Left((yields, returns))),_) =>
-      s.copy(yieldOrWhere = Some(Left(addAliasesToYield(yields),returns.map(addAliasesToReturn))))(s.position)
+      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 
     case s@ShowCurrentUser(Some(Left((yields, returns))),_) =>
-      s.copy(yieldOrWhere = Some(Left(addAliasesToYield(yields),returns.map(addAliasesToReturn))))(s.position)
+      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 
     case s@ShowUsers(Some(Left((yields, returns))),_) =>
-      s.copy(yieldOrWhere = Some(Left(addAliasesToYield(yields),returns.map(addAliasesToReturn))))(s.position)
+      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 
     case s@ShowRoles(_, _, Some(Left((yields, returns))),_) =>
-      s.copy(yieldOrWhere = Some(Left(addAliasesToYield(yields),returns.map(addAliasesToReturn))))(s.position)
+      s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
 
     case x => x
