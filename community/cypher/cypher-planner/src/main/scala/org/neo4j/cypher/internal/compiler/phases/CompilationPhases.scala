@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.rewriting.Additions
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
+import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
@@ -93,7 +94,7 @@ object CompilationPhases {
     CardinalityRewriter,
     CompressPlanIDs,
     CheckForUnresolvedTokens,
-  ), initialConditions = Set(StatementCondition(containsNoReturnAll)))
+  ), initialConditions = Set(StatementCondition(containsNoReturnAll), StatementCondition(containsNamedPathOnlyForShortestPath)))
 
   case class ParsingConfig(
                             innerVariableNamer: InnerVariableNamer,

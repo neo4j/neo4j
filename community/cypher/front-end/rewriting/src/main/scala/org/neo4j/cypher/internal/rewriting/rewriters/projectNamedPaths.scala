@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.SubQuery
 import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
 import org.neo4j.cypher.internal.expressions.EveryPath
@@ -45,6 +46,8 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -53,11 +56,12 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.annotation.tailrec
 
-case object projectNamedPaths extends Rewriter with StepSequencer.Step {
+case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
 
   case class Projectibles(paths: Map[Variable, PathExpression] = Map.empty,
                           protectedVariables: Set[Ref[LogicalVariable]] = Set.empty,
@@ -94,7 +98,9 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step {
     val empty: Projectibles = Projectibles()
   }
 
-  def apply(input: AnyRef): AnyRef = {
+  def apply(input: AnyRef): AnyRef = instance(input)
+
+  private val instance: Rewriter = input => {
     val Projectibles(_, protectedVariables, variableRewrites, insertedWiths) = collectProjectibles(input)
     val applicator = Rewriter.lift {
 
@@ -217,7 +223,8 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This rewriter needs to know the expanded return items
-    containsNoReturnAll
+    containsNoReturnAll,
+    NoNamedPathsInPatternComprehensions
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
@@ -225,4 +232,9 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step {
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
+
+  override def getRewriter(innerVariableNamer: InnerVariableNamer,
+                           semanticState: SemanticState,
+                           parameterTypeMapping: Map[String, CypherType],
+                           cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
 }

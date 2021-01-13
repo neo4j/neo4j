@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeMatchPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeNotEquals
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeSargablePredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.parameterValueTypeReplacement
+import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -65,6 +66,7 @@ class ASTRewriter(innerVariableNamer: InnerVariableNamer) {
     replaceLiteralDynamicPropertyLookups,
     inlineNamedPathsInPatternComprehensions,
     parameterValueTypeReplacement,
+    projectNamedPaths,
   ), initialConditions = Set(ProjectionClausesHaveSemanticInfo, PatternExpressionsHaveSemanticInfo))
 
   def rewrite(statement: Statement,

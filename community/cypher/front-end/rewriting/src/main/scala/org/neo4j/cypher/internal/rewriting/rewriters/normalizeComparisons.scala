@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
+import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -48,7 +49,8 @@ case object normalizeComparisons extends Rewriter with StepSequencer.Step with A
   override def apply(that: AnyRef): AnyRef = instance(that)
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    HasLabelsOrTypesReplacedIfPossible // These have to have been rewritten to HasLabels / HasTypes at this point
+    HasLabelsOrTypesReplacedIfPossible, // These have to have been rewritten to HasLabels / HasTypes at this point
+    !containsNamedPathOnlyForShortestPath // this rewriter will not achieve 'noReferenceEqualityAmongVariables' if projectNamedPaths run first
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(OnlySingleHasLabels, noReferenceEqualityAmongVariables)

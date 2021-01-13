@@ -20,7 +20,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.rewriters.collapseMultipleInPredicates
-import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
@@ -29,8 +28,7 @@ import org.neo4j.cypher.internal.util.inSequence
 case object LateAstRewriting extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
 
   private val steps: Set[StepSequencer.Step with Rewriter] = Set(
-    collapseMultipleInPredicates,
-    projectNamedPaths
+    collapseMultipleInPredicates
   )
 
   private val AccumulatedSteps(orderedSteps, accumulatedConditions) = StepSequencer(ListStepAccumulator[StepSequencer.Step with Rewriter]()).orderSteps(steps, initialConditions = steps.flatMap(_.preConditions))
