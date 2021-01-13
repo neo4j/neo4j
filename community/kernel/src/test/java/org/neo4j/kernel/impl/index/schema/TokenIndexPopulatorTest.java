@@ -54,7 +54,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
-class TokenIndexPopulatorTests extends IndexPopulatorTests<TokenScanKey,TokenScanValue,TokenScanLayout>
+class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScanValue,TokenScanLayout>
 {
     @Override
     IndexFiles createIndexFiles( FileSystemAbstraction fs, TestDirectory directory, IndexDescriptor indexDescriptor )
