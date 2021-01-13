@@ -42,7 +42,7 @@ public class ReadTestSupport implements KernelAPIReadTestSupport
     private GraphDatabaseService db;
     private DatabaseManagementService managementService;
 
-    <T> void addSetting( Setting<T> setting, T value )
+    public <T> void addSetting( Setting<T> setting, T value )
     {
         settings.put( setting, value );
     }

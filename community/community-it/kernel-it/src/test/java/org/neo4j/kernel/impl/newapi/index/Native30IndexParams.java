@@ -17,70 +17,71 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+
+package org.neo4j.kernel.impl.newapi.index;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.kernel.impl.newapi.ReadTestSupport;
 
-public class NodeValueIndexClientNative30Test extends AbstractNodeValueIndexCursorTest
+class Native30IndexParams implements IndexParams
 {
+
     @Override
-    public ReadTestSupport newTestSupport()
+    public void enrichSettings( ReadTestSupport testSupport )
     {
-        ReadTestSupport readTestSupport = new ReadTestSupport();
-        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE30.providerName() );
-        return readTestSupport;
+        testSupport.addSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE30.providerName() );
     }
 
     @Override
-    protected String providerKey()
+    public String providerKey()
     {
         return "lucene+native";
     }
 
     @Override
-    protected String providerVersion()
+    public String providerVersion()
     {
         return "3.0";
     }
 
     @Override
-    protected boolean indexProvidesStringValues()
+    public boolean indexProvidesStringValues()
     {
         return false;
     }
 
     @Override
-    protected boolean indexProvidesAllValues()
+    public boolean indexProvidesAllValues()
     {
         return false;
     }
 
     @Override
-    protected boolean indexProvidesNumericValues()
+    public boolean indexProvidesNumericValues()
     {
         return true;
     }
 
     @Override
-    protected boolean indexProvidesArrayValues()
+    public boolean indexProvidesArrayValues()
     {
         return true;
     }
 
     @Override
-    protected boolean indexProvidesBooleanValues()
+    public boolean indexProvidesBooleanValues()
     {
         return true;
     }
 
     @Override
-    protected boolean indexProvidesSpatialValues()
+    public boolean indexProvidesSpatialValues()
     {
         return true;
     }
 
     @Override
-    protected boolean indexProvidesTemporalValues()
+    public boolean indexProvidesTemporalValues()
     {
         return true;
     }

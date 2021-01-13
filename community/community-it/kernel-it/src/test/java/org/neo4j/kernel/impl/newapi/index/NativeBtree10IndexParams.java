@@ -17,58 +17,59 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+
+package org.neo4j.kernel.impl.newapi.index;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.kernel.impl.newapi.ReadTestSupport;
 
-public class NodeValueIndexCursorNativeBtree10Test extends AbstractNodeValueIndexCursorTest
+class NativeBtree10IndexParams implements IndexParams
 {
+
     @Override
-    public ReadTestSupport newTestSupport()
+    public void enrichSettings( ReadTestSupport testSupport )
     {
-        ReadTestSupport readTestSupport = new ReadTestSupport();
-        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
-        return readTestSupport;
+        testSupport.addSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
     }
 
     @Override
-    protected String providerKey()
+    public String providerKey()
     {
         return "native-btree";
     }
 
     @Override
-    protected String providerVersion()
+    public String providerVersion()
     {
         return "1.0";
     }
 
     @Override
-    protected boolean indexProvidesStringValues()
+    public boolean indexProvidesStringValues()
     {
         return true;
     }
 
     @Override
-    protected boolean indexProvidesNumericValues()
+    public boolean indexProvidesNumericValues()
     {
         return true;
     }
 
     @Override
-    protected boolean indexProvidesAllValues()
+    public boolean indexProvidesAllValues()
     {
         return true;
     }
 
     @Override
-    protected boolean indexProvidesArrayValues()
+    public boolean indexProvidesArrayValues()
     {
         return true;
     }
 
     @Override
-    protected boolean indexProvidesBooleanValues()
+    public boolean indexProvidesBooleanValues()
     {
         return true;
     }
