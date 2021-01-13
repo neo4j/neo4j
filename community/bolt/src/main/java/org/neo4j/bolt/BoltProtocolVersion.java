@@ -34,10 +34,22 @@ public class BoltProtocolVersion
 
     public static BoltProtocolVersion fromRawBytes( int rawVersion )
     {
-        int major = rawVersion & 0x000000FF;
-        int minor = ( rawVersion >> 8 ) & 0x000000FF;
+        return new BoltProtocolVersion( getMajorFromRawBytes(rawVersion), getMinorFromRawBytes(rawVersion) );
+    }
 
-        return new BoltProtocolVersion( major, minor );
+    public static int getMinorFromRawBytes( int rawVersion )
+    {
+        return ( rawVersion >> 8 ) & 0x000000FF;
+    }
+
+    public static int getMajorFromRawBytes( int rawVersion )
+    {
+        return rawVersion & 0x000000FF;
+    }
+
+    public static int getRangeFromRawBytes( int rawVersion )
+    {
+        return ( rawVersion >> 16 ) & 0x000000FF;
     }
 
     public long getMinorVersion()
