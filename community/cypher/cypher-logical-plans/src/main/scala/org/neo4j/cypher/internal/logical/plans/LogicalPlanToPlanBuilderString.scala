@@ -47,9 +47,11 @@ object LogicalPlanToPlanBuilderString {
   /**
    * Generates a string that plays nicely together with `AbstractLogicalPlanBuilder`.
    */
-  def apply(logicalPlan: LogicalPlan): String = render(logicalPlan, None)
+  def apply(logicalPlan: LogicalPlan): String = render(logicalPlan, None, None)
 
-  def apply(logicalPlan: LogicalPlan, extra: LogicalPlan => String): String = render(logicalPlan, Some(extra))
+  def apply(logicalPlan: LogicalPlan,
+            extra: LogicalPlan => String,
+            planPrefixDot: LogicalPlan => String): String = render(logicalPlan, Some(extra), Some(planPrefixDot))
 
   def expressionStringifierExtension(expression: Expression): String = {
     expression match {
@@ -59,7 +61,7 @@ object LogicalPlanToPlanBuilderString {
     }
   }
 
-  private def render(logicalPlan: LogicalPlan, extra: Option[LogicalPlan => String]) = {
+  private def render(logicalPlan: LogicalPlan, extra: Option[LogicalPlan => String], planPrefixDot: Option[LogicalPlan => String]) = {
     var childrenStack = LevelPlanItem(0, logicalPlan) :: Nil
     val sb = new StringBuilder()
 
@@ -69,7 +71,7 @@ object LogicalPlanToPlanBuilderString {
 
       sb ++= ".|" * level
 
-      sb += '.'
+      sb ++= planPrefixDot.getOrElse((_:LogicalPlan) => ".").apply(plan)
       sb ++= pre(plan)
       sb += '('
       sb ++= par(plan)

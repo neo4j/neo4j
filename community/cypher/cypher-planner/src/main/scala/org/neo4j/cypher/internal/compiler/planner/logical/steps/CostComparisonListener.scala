@@ -57,10 +57,13 @@ object SystemOutCostLogger extends CostComparisonListener {
   private val comparisonId = new AtomicLong()
   private val prefix = "\t"
   private def blue(str: String) = AnsiColor.BLUE + str + AnsiColor.RESET
+  private def blue_bold(str: String) = AnsiColor.BLUE + AnsiColor.BOLD + str + AnsiColor.RESET
   private def cyan(str: String) = AnsiColor.CYAN + str + AnsiColor.RESET
+  private def cyan_bold(str: String) = AnsiColor.CYAN + AnsiColor.BOLD + str + AnsiColor.RESET
+  private def cyan_background(str: String) = AnsiColor.CYAN_B + str + AnsiColor.RESET
   private def green(str: String) = AnsiColor.GREEN + str + AnsiColor.RESET
   private def magenta(str: String) = AnsiColor.MAGENTA + str + AnsiColor.RESET
-  private def magenta_bold(str: String) = AnsiColor.MAGENTA + AnsiColor.BOLD + AnsiColor.UNDERLINED + str + AnsiColor.RESET
+  private def magenta_bold(str: String) = AnsiColor.MAGENTA + AnsiColor.BOLD + str + AnsiColor.RESET
   private def indent(level: Int, str: String) = {
     val ind = prefix * level
     ind + str.replaceAll(System.lineSeparator(), System.lineSeparator() + ind)
@@ -86,7 +89,16 @@ object SystemOutCostLogger extends CostComparisonListener {
       val cost = planCost(rootPlan.id, plan.id).gummyBears
       val cardinality = context.planningAttributes.cardinalities.get(plan.id).amount
       val effectiveCardinality = planEffectiveCardinality(rootPlan.id, plan.id).amount
-      magenta(" // cost ") + magenta_bold(cost.toString) + magenta(" cardinality ") + magenta_bold(cardinality.toString) + magenta(" (effective cardinality ") + magenta_bold(effectiveCardinality.toString) + magenta(")")
+      val costStr = magenta(" // cost ") + magenta_bold(cost.toString)
+      val cardStr = magenta(", cardinality ") + magenta_bold(cardinality.toString)
+      val effCardStr =  if (cardinality > effectiveCardinality) cyan(" (effective cardinality ") + cyan_bold(effectiveCardinality.toString) + cyan(")") else ""
+      costStr + cardStr + effCardStr
+    }
+
+    def planPrefixDotString(rootPlan: LogicalPlan)(plan: LogicalPlan) = {
+      val cardinality = context.planningAttributes.cardinalities.get(plan.id).amount
+      val effectiveCardinality = planEffectiveCardinality(rootPlan.id, plan.id).amount
+      if (cardinality > effectiveCardinality) cyan_background(".") else "."
     }
 
     val plansInOrder = input.toIndexedSeq.sorted(inputOrdering).map(projector)
@@ -97,15 +109,15 @@ object SystemOutCostLogger extends CostComparisonListener {
         context.cost.costFor(plan, context.input, context.semanticTable, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders, monitor)
     )
 
-    if (plansInOrder.size > 1) {
+    if (plansInOrder.nonEmpty) {
       val id = comparisonId.getAndIncrement()
-      println(cyan(s"$id: Resolving $resolved"))
+      println(blue_bold(s"$id: Resolving $resolved"))
       println(s"Get best of:")
       for ((plan, index) <- plansInOrder.zipWithIndex) {
         val winner = if (index == 0) green(" [winner]") else ""
         val resolvedStr = cyan(s" ${resolvedPerPlan(plan)}")
         val header = blue(s"$index: Plan #${plan.debugId}") + winner + resolvedStr
-        val planWithCosts = LogicalPlanToPlanBuilderString(plan, extra = costString(plan))
+        val planWithCosts = LogicalPlanToPlanBuilderString(plan, extra = costString(plan), planPrefixDot = planPrefixDotString(plan))
         val hints = s"(hints: ${context.planningAttributes.solveds.get(plan.id).numHints})"
 
         println(indent(1, header))
