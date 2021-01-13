@@ -88,7 +88,7 @@ case class indexScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with L
         }
 
       // MATCH (n:User) with existence/node key constraint on :User(prop) or aggregation on n.prop
-      case predicate@HasLabels(expr@Variable(name), labels) if !skipIDs.contains(name)  =>
+      case predicate@HasLabels(expr@Variable(name), labels) if !skipIDs.contains(name) && !qg.argumentIds.contains(name) =>
         val label = labels.head
         val labelName = label.name
         val constrainedProps = context.planContext.getPropertiesWithExistenceConstraint(labelName)
