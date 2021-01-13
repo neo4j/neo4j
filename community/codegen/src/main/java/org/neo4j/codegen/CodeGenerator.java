@@ -20,6 +20,7 @@
 package org.neo4j.codegen;
 
 import org.neo4j.util.Preconditions;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.codegen.ByteCodeVisitor.DO_NOTHING;
@@ -96,6 +97,7 @@ public abstract class CodeGenerator
         openClassCount--;
     }
 
+    @VisibleForTesting
     public void setByteCodeVisitor( ByteCodeVisitor visitor )
     {
         this.byteCodeVisitor = visitor;

@@ -41,7 +41,7 @@ import org.neo4j.codegen.FieldReference.staticField
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen.TypeReference
 import org.neo4j.codegen.TypeReference.OBJECT
-import org.neo4j.codegen.api.IntermediateRepresentation.estimateByteCodeSize
+import org.neo4j.codegen.api.SizeEstimation.estimateByteCodeSize
 import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
 import org.neo4j.codegen.bytecode.ByteCode.PRINT_BYTECODE
 import org.neo4j.codegen.source.SourceCode.PRINT_SOURCE
@@ -320,20 +320,17 @@ object CodeGeneration {
       codegen.Expression.EMPTY
 
     //lhs && rhs
+    case BooleanAnd(Seq(lhs, rhs)) =>
+        codegen.Expression.and(compileExpression(lhs, block), compileExpression(rhs, block))
     case BooleanAnd(as) =>
-      if (as.length == 2) {
-        codegen.Expression.and(compileExpression(as.head, block), compileExpression(as.tail.head, block))
-      } else {
         codegen.Expression.ands(as.map(a => compileExpression(a, block)).toArray)
-      }
 
     //lhs && rhs
+    case BooleanOr(Seq(lhs, rhs)) =>
+        codegen.Expression.or(compileExpression(lhs, block), compileExpression(rhs, block))
     case BooleanOr(as) =>
-      if (as.length == 2) {
-        codegen.Expression.or(compileExpression(as.head, block), compileExpression(as.tail.head, block))
-      } else {
         codegen.Expression.ors(as.map(a => compileExpression(a, block)).toArray)
-      }
+
     //new Foo(args[0], args[1], ...)
     case NewInstance(constructor, args) =>
       codegen.Expression.invoke(codegen.Expression.newInstance(constructor.owner), constructor.asReference, args.map(compileExpression(_, block)):_*)
@@ -437,7 +434,7 @@ object CodeGeneration {
     //the jvm doesn't allow methods bigger than 65535 bytes, this would have failed later
     //before actually loading the code, however it is faster to fail early here.
     if (estimateByteCodeSize(m) > 65535) {
-      throw new CantCompileQueryException(s"Method is ${m.methodName} is too big")
+      throw new CantCompileQueryException(s"Method '${m.methodName}' is too big")
     }
 
     val method = codegen.MethodDeclaration.method(m.returnType, m.methodName,

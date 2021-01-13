@@ -1013,7 +1013,7 @@ class SizeEstimationTest extends CypherFunSuite {
     sizeOf(instructions) should equal(computeSize(instructions))
   }
 
-  private def computeSize(ir: IntermediateRepresentation) = IntermediateRepresentation.estimateByteCodeSize(ir, 1)
+  private def computeSize(ir: IntermediateRepresentation) = SizeEstimation.estimateByteCodeSize(ir, 1)
 
   private def sizeOf(ir: IntermediateRepresentation) = {
     val handle = CodeGeneration.compileClass(clazz(ir), generator)
