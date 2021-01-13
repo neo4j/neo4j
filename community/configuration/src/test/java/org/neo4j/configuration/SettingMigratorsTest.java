@@ -56,6 +56,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_d
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
@@ -390,6 +391,21 @@ class SettingMigratorsTest
                         "It is replaced by unsupported.consistency_checker.fail_fast_threshold" );
 
         assertEquals( 1, config.get( GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold ) );
+    }
+
+    @Test
+    void refuseToBeLeaderShouldBeMigrated() throws IOException
+    {
+        //given
+        Path confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile, List.of( "causal_clustering.refuse_to_be_leader=true" ) );
+
+        //when
+        Config config = Config.newBuilder().fromFile( confFile ).build();
+
+        //then
+        assertThat( config.get( read_only_database_default ) ).isTrue();
+        assertThat( Config.defaults().get( read_only_database_default  ) ).isFalse();
     }
 
     private static void testQueryLogMigration( Boolean oldValue, LogQueryLevel newValue )

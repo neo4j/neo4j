@@ -52,6 +52,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_d
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
 import static org.neo4j.configuration.GraphDatabaseSettings.procedure_allowlist;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
@@ -408,6 +409,23 @@ public final class SettingMigrators
         public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
         {
             migrateSettingNameChange( values, log, "dbms.memory.transaction.datababase_max_size", memory_transaction_database_max_size );
+        }
+    }
+
+    @ServiceProvider
+    public static class RefuseToBeLeaderMigration implements SettingMigrator
+    {
+
+        @Override
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        {
+            final var refuseToBeLeader = "causal_clustering.refuse_to_be_leader";
+            final var refuseToBeLeaderValue = values.get( refuseToBeLeader );
+            if ( isNotBlank( refuseToBeLeaderValue ) )
+            {
+                log.warn( "The setting " + refuseToBeLeader + " is deprecated. Use please %s as a replacement", read_only_database_default.name() );
+            }
+            migrateSettingNameChange( values, log, refuseToBeLeader, read_only_database_default );
         }
     }
 
