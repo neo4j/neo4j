@@ -251,3 +251,21 @@ Feature: ReturnAcceptance
       | 5 |
       | 5 |
     And no side effects
+
+
+  Scenario: Graph projections with aggregation
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (a:Actor {name: "Actor 1"})
+      CREATE (a)-[:REL]->(:Movie {title: "Movie 1"}),
+             (a)-[:REL]->(:Movie {title: "Movie 2"})
+      """
+    When executing query:
+      """
+      MATCH (actor:Actor)-->(movie:Movie)
+      RETURN actor{ .name, movies: collect(movie{.title}) }
+      """
+    Then the result should be (ignoring element order for lists):
+      | actor                                                               |
+      | {name: 'Actor 1', movies: [{title: 'Movie 1'}, {title: 'Movie 2'}]} |

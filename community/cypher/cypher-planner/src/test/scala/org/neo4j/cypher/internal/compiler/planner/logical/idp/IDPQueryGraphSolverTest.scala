@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.exceptions.TestFailedException
+import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 
 class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   self =>
@@ -327,15 +328,15 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       )
     }.withLogicalPlanningContext { (cfg, ctx) =>
       val plan = queryGraphSolver.plan(cfg.qg, InterestingOrderConfig.empty, ctx).result
-      plan should equal(
+      plan should beLike {
+        case Expand(
         Expand(
-          Expand(
-            AllNodesScan("c", Set.empty),
-            "c", SemanticDirection.INCOMING, Seq.empty, "b", "r2", ExpandAll
-          ),
-          "b", SemanticDirection.INCOMING, Seq.empty, "a", "r1", ExpandAll
-        )
-      )
+        AllNodesScan(_, _),
+        _, _, Seq(), _, _, ExpandAll
+        ),
+        "b", _, Seq(), _, _, ExpandAll
+        ) => ()
+      }
 
       verify(monitor).initTableFor(cfg.qg)
       verify(monitor).startIDPIterationFor(cfg.qg)

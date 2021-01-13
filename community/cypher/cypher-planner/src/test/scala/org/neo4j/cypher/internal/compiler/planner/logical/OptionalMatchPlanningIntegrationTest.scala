@@ -209,7 +209,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         Apply(
         Limit(
         Expand(
-        AllNodesScan("b1", _), _, _, _, _, _, _), _),
+        AllNodesScan(_, _), _, _, _, _, _, _), _),
         Optional(
         ProjectEndpoints(
         Argument(args), "r", "b2", false, "a1", true, None, true, SimplePatternLength
@@ -223,7 +223,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   test("should build optional ProjectEndpoints with extra predicates") {
     planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2")._2 match {
       case Apply(
-      Limit(Expand(AllNodesScan("b1", _), _, _, _, _, _, _), _),
+      Limit(Expand(AllNodesScan(_, _), _, _, _, _, _, _), _),
       Optional(
       Selection(
       predicates,
@@ -243,7 +243,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   test("should build optional ProjectEndpoints with extra predicates 2") {
     planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2")._2 match {
       case Apply(
-      Limit(Expand(AllNodesScan("b1", _), _, _, _, _, _, _), _),
+      Limit(Expand(AllNodesScan(_, _), _, _, _, _, _, _), _),
       Optional(
       ProjectEndpoints(
       Argument(args),
@@ -366,9 +366,11 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
     }
 
     val plan = cfg.getLogicalPlanFor(query)._2
-    inside(plan) {
-      case Apply(_:Projection, Apply(_:AllNodesScan, Optional(Expand(Selection(_, AllNodesScan("c", arguments)), _, _, _, _, _, _), _))) =>
-        arguments should equal(Set("a", "x"))
+    withClue(plan) {
+      plan.treeExists {
+        case _: RightOuterHashJoin => true
+        case _: LeftOuterHashJoin => true
+      } should be(false)
     }
   }
 

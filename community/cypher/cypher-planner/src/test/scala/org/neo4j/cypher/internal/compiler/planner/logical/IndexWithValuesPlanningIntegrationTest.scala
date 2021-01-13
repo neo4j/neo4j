@@ -66,37 +66,44 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       indexOn("Awesome", "prop2").providesValues()
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 > 42 OR n.prop2 > 3 RETURN n.prop1, n.prop2"
 
-    plan._2 should equal(
-      Projection(
-        Distinct(
-          Union(
-            IndexSeek("n:Awesome(prop1 > 42)", GetValue),
-            IndexSeek("n:Awesome(prop2 > 3)", GetValue, propIds = Some(Map("prop2" -> 1)))
+    Seq(
+      IndexSeek("n:Awesome(prop1 > 42)", GetValue),
+      IndexSeek("n:Awesome(prop2 > 3)", GetValue, propIds = Some(Map("prop2" -> 1)))
+    ).permutations.map {
+      case Seq(seek1, seek2) =>
+        Projection(
+          Distinct(
+            Union(
+              seek1,
+              seek2
+            ),
+            Map("n" -> varFor("n"))
           ),
-          Map("n" -> varFor("n"))
-        ),
-        Map("n.prop1" -> cachedNodeProp("n", "prop1"), "n.prop2" -> cachedNodeProp("n", "prop2"))
-      )
-    )
+          Map("n.prop1" -> cachedNodeProp("n", "prop1"), "n.prop2" -> cachedNodeProp("n", "prop2"))
+        )
+    }.toSeq should contain(plan._2)
   }
 
   test("in an OR index plan should use cached values outside union for range predicates if they are on the same property") {
     val plan = new given {
       indexOn("Awesome", "prop1").providesValues()
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 > 42 OR n.prop1 < 3 RETURN n.prop1, n.prop2"
-
-    plan._2 should equal(
-      Projection(
-        Distinct(
-          Union(
-            IndexSeek("n:Awesome(prop1 > 42)", GetValue),
-            IndexSeek("n:Awesome(prop1 < 3)", GetValue)
+    Seq(
+      IndexSeek("n:Awesome(prop1 > 42)", GetValue),
+      IndexSeek("n:Awesome(prop1 < 3)", GetValue)
+    ).permutations.map {
+      case Seq(seek1, seek2) =>
+        Projection(
+          Distinct(
+            Union(
+              seek1,
+              seek2
+            ),
+            Map("n" -> varFor("n"))
           ),
-          Map("n" -> varFor("n"))
-        ),
-        Map(cachedNodePropertyProj("n", "prop1"), "n.prop2" -> prop("n", "prop2"))
-      )
-    )
+          Map(cachedNodePropertyProj("n", "prop1"), "n.prop2" -> prop("n", "prop2"))
+        )
+    }.toSeq should contain(plan._2)
   }
 
   test("in an OR index plan should not use cached values outside union for equality predicates") {
@@ -105,18 +112,22 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       indexOn("Awesome", "prop2").providesValues()
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 3 RETURN n.prop1, n.prop2"
 
-    plan._2 should equal(
-      Projection(
-        Distinct(
-          Union(
-            IndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1))),
-            IndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)))
+    Seq(
+      IndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1))),
+      IndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)))
+    ).permutations.map {
+      case Seq(seek1, seek2) =>
+        Projection(
+          Distinct(
+            Union(
+              seek1,
+              seek2
+            ),
+            Map("n" -> varFor("n"))
           ),
-          Map("n" -> varFor("n"))
-        ),
-        Map("n.prop1" -> cachedNodeProp("n", "prop1"), "n.prop2" -> cachedNodeProp("n", "prop2"))
-      )
-    )
+          Map("n.prop1" -> cachedNodeProp("n", "prop1"), "n.prop2" -> cachedNodeProp("n", "prop2"))
+        )
+    }.toSeq should contain(plan._2)
   }
 
   test("in an OR index plan with 4 indexes should not get values for equality predicates ") {
@@ -127,27 +138,34 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       indexOn("Awesome2", "prop2").providesValues()
     } getLogicalPlanFor "MATCH (n:Awesome:Awesome2) WHERE n.prop1 = 42 OR n.prop2 = 3 RETURN n.prop1, n.prop2"
 
-    plan._2 should equal(
-      Projection(
-        Selection(
-          Seq(hasLabels("n", "Awesome"), hasLabels("n", "Awesome2")),
-          Distinct(
-            Union(
+
+    Seq(
+      IndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1))),
+      IndexSeek("n:Awesome2(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1)), labelId = 1),
+      IndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0))),
+      IndexSeek("n:Awesome2(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)), labelId = 1)
+    ).permutations.map {
+      case Seq(seek1, seek2, seek3, seek4) =>
+        Projection(
+          Selection(
+            Seq(hasLabels("n", "Awesome"), hasLabels("n", "Awesome2")),
+            Distinct(
               Union(
                 Union(
-                  IndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1))),
-                  IndexSeek("n:Awesome2(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1)), labelId = 1)
+                  Union(
+                    seek1,
+                    seek2
+                  ),
+                  seek3
                 ),
-                IndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)))
+                seek4
               ),
-              IndexSeek("n:Awesome2(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)), labelId = 1)
-            ),
-            Map("n" -> varFor("n"))
-          )
-        ),
-        Map("n.prop1" -> cachedNodeProp("n", "prop1"), "n.prop2" -> cachedNodeProp("n", "prop2"))
-      )
-    )
+              Map("n" -> varFor("n"))
+            )
+          ),
+          Map("n.prop1" -> cachedNodeProp("n", "prop1"), "n.prop2" -> cachedNodeProp("n", "prop2"))
+        )
+    }.toSeq should contain(plan._2)
   }
 
   // Index exact seeks

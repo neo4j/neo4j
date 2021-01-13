@@ -603,10 +603,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     val seek1 = IndexSeek("n:Awesome(prop1 = 42)", DoNotGetValue)
     val seek2 = IndexSeek("n:Awesome(prop2 = 3)", DoNotGetValue, propIds = Some(Map("prop2" -> 1)))
-    val union: Union = Union(seek2, seek1)
-    val distinct = Distinct(union, Map("n" -> varFor("n")))
+    val alt1 = Distinct(Union(seek2, seek1), Map("n" -> varFor("n")))
+    val alt2 = Distinct(Union(seek1, seek2), Map("n" -> varFor("n")))
 
-    plan._2 should equal(distinct)
+    plan._2 should (equal(alt1) or equal(alt2))
   }
 
   test("should plan hinted unique index seek") {
@@ -699,10 +699,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     val seek1 = IndexSeek("n:Awesome(prop1 = 42)", DoNotGetValue)
     val seek2 = IndexSeek("n:Awesome(prop2 = 'apa')", DoNotGetValue, propIds = Some(Map("prop2" -> 1)))
-    val union: Union = Union(seek2, seek1)
-    val distinct = Distinct(union, Map("n" -> varFor("n")))
+    val alt1 = Distinct(Union(seek2, seek1), Map("n" -> varFor("n")))
+    val alt2 = Distinct(Union(seek1, seek2), Map("n" -> varFor("n")))
 
-    plan should equal(distinct)
+    plan should (equal(alt1) or equal(alt2))
   }
 
   test("should be able to OR together two label scans") {
@@ -732,10 +732,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     val seek1 = IndexSeek("n:Awesome(prop1 >= 42)")
     val seek2 = IndexSeek("n:Awesome(prop2 STARTS WITH 'apa')", propIds = Some(Map("prop2" -> 1)))
-    val union = Union(seek1, seek2)
-    val distinct = Distinct(union, Map("n" -> varFor("n")))
+    val alt1 = Distinct(Union(seek1, seek2), Map("n" -> varFor("n")))
+    val alt2 = Distinct(Union(seek2, seek1), Map("n" -> varFor("n")))
 
-    plan should equal(distinct)
+    plan should (equal(alt1) or equal(alt2))
   }
 
   test("should be able to OR together two index seeks with different labels") {
@@ -750,11 +750,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val seek1 = IndexSeek("n:Label1(prop1 = 'val')", DoNotGetValue)
     val seek2 = IndexSeek("n:Label2(prop2 = 'val')", DoNotGetValue, propIds = Some(Map("prop2" -> 1)), labelId = 1)
 
-    val union: Union = Union(seek2, seek1)
-    val distinct = Distinct(union, Map("n" -> varFor("n")))
-    val filter = Selection(Seq(labelPredicate1, labelPredicate2), distinct)
+    val alt1 = Selection(Seq(labelPredicate1, labelPredicate2), Distinct(Union(seek2, seek1), Map("n" -> varFor("n"))))
+    val alt2 = Selection(Seq(labelPredicate1, labelPredicate2), Distinct(Union(seek1, seek2), Map("n" -> varFor("n"))))
 
-    plan should equal(filter)
+    plan should (equal(alt1) or equal(alt2))
   }
 
   test("should be able to OR together four index seeks") {
@@ -773,11 +772,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val seek3 = IndexSeek("n:Label2(prop1 = 'val')", DoNotGetValue, labelId = 1)
     val seek4 = IndexSeek("n:Label2(prop2 = 'val')", DoNotGetValue, labelId = 1, propIds = Some(Map("prop2" -> 1)))
 
-    val union: Union = Union( Union( Union(seek2, seek4), seek1), seek3)
-    val distinct = Distinct(union, Map("n" -> varFor("n")))
-    val filter = Selection(Seq(labelPredicate1, labelPredicate2), distinct)
-
-    plan should equal(filter)
+    Seq(seek1, seek2, seek3, seek4).permutations.map {
+      case Seq(sk1, sk2, sk3, sk4) =>
+        val union: Union = Union( Union( Union(sk2, sk4), sk1), sk3)
+        val distinct = Distinct(union, Map("n" -> varFor("n")))
+        Selection(Seq(labelPredicate1, labelPredicate2), distinct)
+    }.toSeq should contain(plan)
   }
 
   test("should use transitive closure to figure out we can use index") {

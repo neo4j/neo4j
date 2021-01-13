@@ -256,7 +256,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
 
   test("Should treat variables with the same name but different scopes correctly") {
     // Here x and x are two different things
-    val query = "MATCH (x) CALL { MATCH (y)-[r]->(x) RETURN y } RETURN 5 AS five"
+    val query = "MATCH (x) CALL { MATCH (y)-[r]->(x:X) RETURN y } RETURN 5 AS five"
     val Seq(x1, x2) = namespaced("x", 7, 33)
 
     planFor(query, stripProduceResults = false)._2 should equal(
@@ -265,7 +265,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         .projection("5 AS five")
         .cartesianProduct()
         .|.expand(s"($x2)<-[r]-(y)")
-        .|.allNodeScan(x2)
+        .|.nodeByLabelScan(x2, "X")
         .allNodeScan(x1)
         .build()
     )
@@ -495,7 +495,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
 
   test("should not plan count store lookup in correlated subquery when relationship-variable is already bound") {
     val query =
-      """MATCH (n)-[r:REL]->(m)
+      """MATCH (n)-[r:REL]->(m:M)
         |CALL {
         | WITH r
         | MATCH (x)-[r:REL]->(y)
@@ -511,7 +511,7 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         .|.projectEndpoints("(x)-[r:REL]->(y)", startInScope = false, endInScope = false)
         .|.argument("r")
         .expand("(m)<-[r:REL]-(n)")
-        .allNodeScan("m")
+        .nodeByLabelScan("m", "M")
         .build()
     )
   }
