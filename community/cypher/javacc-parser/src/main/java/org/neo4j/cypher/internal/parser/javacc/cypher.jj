@@ -1140,7 +1140,7 @@ CLAUSE ReturnClause() :
 {
   t=<RETURN>
   (
-    t=<GRAPH> { return astFactory.newReturnGraphClause(pos(t)); }
+    LOOKAHEAD(2) t=<GRAPH> { return astFactory.newReturnGraphClause(pos(t)); }
   | clause=ReturnBody(t) { return clause; }
   )
 }
@@ -1847,7 +1847,7 @@ EXPRESSION Expression1() :
   | e=Parameter()
   | t=<TRUE> { e = astFactory.newTrueLiteral(pos(t)); }
   | t=<FALSE> { e = astFactory.newFalseLiteral(pos(t)); }
-  | t=<NULL> { e = astFactory.newNullLiteral(pos(t)); }
+  | LOOKAHEAD(2) t=<NULL> { e = astFactory.newNullLiteral(pos(t)); }
   | LOOKAHEAD(3) e=CaseExpression()
   | LOOKAHEAD(3) t=<COUNT> <LPAREN> <TIMES> <RPAREN> { e = astFactory.newCountStar(pos(t)); }
   | LOOKAHEAD(3) e=MapLiteral()
@@ -2078,7 +2078,7 @@ EXPRESSION Literal() :
   | e=Parameter()
   | t=<TRUE> { e = astFactory.newTrueLiteral(pos(t)); }
   | t=<FALSE> { e = astFactory.newFalseLiteral(pos(t)); }
-  | t=<NULL> { e = astFactory.newNullLiteral(pos(t)); }
+  | LOOKAHEAD(2) t=<NULL> { e = astFactory.newNullLiteral(pos(t)); }
   | e=ListLiteralOfLiterals()
   | e=MapLiteralOfLiterals()
   | e=FunctionInvocation() // for spatial and temporal constructors
