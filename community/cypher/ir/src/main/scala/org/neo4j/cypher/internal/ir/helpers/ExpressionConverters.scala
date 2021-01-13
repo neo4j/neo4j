@@ -24,8 +24,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.NodePatternExpression
-import org.neo4j.cypher.internal.expressions.Not
-import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Range
@@ -46,7 +44,6 @@ import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.util.topDown
 
 object ExpressionConverters {

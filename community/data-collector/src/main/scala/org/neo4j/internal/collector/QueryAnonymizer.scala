@@ -28,12 +28,6 @@ import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
-import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
-import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
-import org.neo4j.cypher.internal.options.CypherPlannerOption
-import org.neo4j.cypher.internal.options.CypherRuntimeOption
-import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.rewriting.rewriters.anonymizeQuery
 import org.neo4j.internal.kernel.api.TokenRead

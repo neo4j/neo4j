@@ -23,9 +23,7 @@ import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.ExplainMode
 import org.neo4j.cypher.internal.runtime.InternalQueryType
-import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.graphdb.Notification
-import org.neo4j.graphdb.Result
 
 abstract class EmptyExecutionResult(val fieldNames: Array[String],
                                     val planDescription: InternalPlanDescription,

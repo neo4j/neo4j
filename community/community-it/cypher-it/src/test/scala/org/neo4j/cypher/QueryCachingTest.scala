@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
-import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherExpressionEngine.ONLY_WHEN_HOT
 import org.neo4j.cypher.internal.CacheTracer
 import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap

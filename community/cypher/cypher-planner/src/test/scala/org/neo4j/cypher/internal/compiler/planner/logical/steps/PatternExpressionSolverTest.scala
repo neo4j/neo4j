@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
-import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 
 class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

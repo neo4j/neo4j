@@ -25,10 +25,7 @@ import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NoWait
-import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.TimeoutAfter
-import org.neo4j.cypher.internal.ast.Where
-import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.YieldOrWhere
 
 class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommandParserTestBase {

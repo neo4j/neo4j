@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.Notification
-import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.QuerySubscriber

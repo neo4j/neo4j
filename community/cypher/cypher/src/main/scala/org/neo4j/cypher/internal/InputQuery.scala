@@ -20,18 +20,9 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.frontend.phases.BaseState
-import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
-import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
-import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
-import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
-import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherQueryOptions
-import org.neo4j.cypher.internal.options.CypherReplanOption
-import org.neo4j.cypher.internal.options.CypherRuntimeOption
-import org.neo4j.cypher.internal.options.CypherUpdateStrategy
-import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.util.InputPosition
 
 /**

@@ -25,8 +25,6 @@ import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray
 import org.neo4j.memory.MemoryTracker
 
-import scala.reflect.ClassTag
-
 /**
  * Random access data structure which grows dynamically as elements are added.
  */
