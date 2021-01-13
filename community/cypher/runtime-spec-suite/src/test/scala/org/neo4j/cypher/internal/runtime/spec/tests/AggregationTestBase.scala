@@ -456,7 +456,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       consume(execute(logicalQuery, runtime, input))
     }
 
-    val batchSize = edition.getSetting(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big).getOrElse(10).asInstanceOf[Int]
+    val batchSize = edition.getSetting(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big).map(_.toInt).getOrElse(10)
     val numberBatches = (0 until batchSize * 10).map(_ => NUMBER)
     val durationBatches = (0 until batchSize * 10).map(_ => DURATION)
 
