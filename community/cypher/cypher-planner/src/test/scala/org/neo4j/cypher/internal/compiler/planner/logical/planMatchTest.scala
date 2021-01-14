@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
@@ -174,7 +175,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         queryGraph = QueryGraph(patternNodes = Set("n")),
         horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit)))),
         tail = Some(RegularSinglePlannerQuery(
-          queryGraph = QueryGraph(patternNodes = Set("m"))
+          queryGraph = QueryGraph(argumentIds = Set("n"), patternNodes = Set("m"))
         ))
       )
 
@@ -351,6 +352,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         queryGraph = QueryGraph(patternNodes = Set("n", "m")),
         horizon = ProcedureCallProjection(resolvedCall),
         tail = Some(RegularSinglePlannerQuery(
+          queryGraph = QueryGraph(argumentIds = Set("n", "m")),
           horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit))))
         ))
       )
@@ -360,6 +362,40 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       // THEN
       result shouldBe Selectivity.ONE
+    }
+  }
+
+  test("limitSelectivityForRestOfQuery: reading procedure call in first horizon, tail with LIMIT") {
+    val limit = 10
+    val nodes = 100
+
+    val ns = Namespace(List("my", "proc"))(pos)
+    val name = ProcedureName("foo")(pos)
+    val qualifiedName = QualifiedName(ns.parts, name.name)
+    val signature = ProcedureSignature(qualifiedName, IndexedSeq.empty, None, None, ProcedureReadOnlyAccess(Array.empty), id = 42)
+
+    val resolvedCall = ResolvedCall(signature, Seq.empty, IndexedSeq.empty)(pos)
+
+    // MATCH (n), (m) CALL my.proc.foo() RETURN * LIMIT 10
+    new given {
+      statistics = new TestGraphStatistics() {
+        override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
+      }
+    }.withLogicalPlanningContext { (_, context) =>
+      val query = RegularSinglePlannerQuery(
+        queryGraph = QueryGraph(patternNodes = Set("n", "m")),
+        horizon = ProcedureCallProjection(resolvedCall),
+        tail = Some(RegularSinglePlannerQuery(
+          queryGraph = QueryGraph(argumentIds = Set("n", "m")),
+          horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit))))
+        ))
+      )
+
+      // WHEN
+      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+
+      // THEN
+      result shouldBe Selectivity(limit / (nodes.toDouble * nodes.toDouble * PlannerDefaults.DEFAULT_MULTIPLIER.coefficient))
     }
   }
 
@@ -377,7 +413,9 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         queryGraph = QueryGraph(patternNodes = Set("n", "m")),
         horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit)))),
         tail = Some(RegularSinglePlannerQuery(
-          queryGraph = QueryGraph(mutatingPatterns = IndexedSeq(SetNodePropertyPattern("n", PropertyKeyName("foo")(pos), literalInt(1))))
+          queryGraph = QueryGraph(
+            argumentIds = Set("n", "m"),
+            mutatingPatterns = IndexedSeq(SetNodePropertyPattern("n", PropertyKeyName("foo")(pos), literalInt(1))))
         ))
       )
 
@@ -388,18 +426,4 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       result shouldBe Selectivity(limit / (nodes.toDouble * nodes.toDouble))
     }
   }
-
-  // MATCH (n)--(m)--(o) RETURN m.foo + n.foo AS x, count(*) AS c LIMIT 10
-  // Choose n-->m-->o over Join(n-->m, m<--o) because Join is eager
-  // But then aggregation is exhaustive anyway and join might have been better.
-
-  // MATCH (n)--(m) WHERE n.foo IS NOT NULL AND m.foo IS NOT NULL RETURN m.foo, count(*) LIMIT 10
-  // We want to favor an IndexSeek on m.foo over an IndexSeek on n.foo, because the m.foo index will enable OrderedAggregation, allowing us to be lazy all the way.
-  // n-->m, n<--m are both lazy though if viewed in isolation.
-  // Idea: Can we tell IDP/CostModel the rules of when a plan is Exhaustive vs Lazy? E.g., if(providedOrder==m.foo) Lazy else Exhaustive
-
-  // MATCH (n)--(m) ... RETURN * ORDER BY n.foo, m.bar LIMIT 1
-  // This will directly compare [n-->m, PartialSort] against [m-->n, Sort] during IDP
-  // So the laziness and eagerness of these plans get considered correctly.
-
 }
