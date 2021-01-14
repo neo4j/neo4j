@@ -246,7 +246,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       )
     )
 
-    val resolver = tokens.getResolver
+    val resolver = tokens.getResolver(procedures)
 
     val graphStatistics = new GraphStatistics {
       override def nodesAllCardinality(): Cardinality = cardinalities.allNodes.get

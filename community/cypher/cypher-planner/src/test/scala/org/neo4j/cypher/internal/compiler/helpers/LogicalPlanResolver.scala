@@ -37,17 +37,19 @@ case class TokenContainer(
   def addRelType(relType: String): TokenContainer = this.copy(relTypes = relTypes :+ relType)
   def addProperty(property: String): TokenContainer = this.copy(properties = properties :+ property)
 
-  def getResolver: LogicalPlanResolver = new LogicalPlanResolver(
+  def getResolver(procedures: Set[ProcedureSignature]): LogicalPlanResolver = new LogicalPlanResolver(
     labels.to[ArrayBuffer],
     properties.to[ArrayBuffer],
-    relTypes.to[ArrayBuffer]
+    relTypes.to[ArrayBuffer],
+    procedures
   )
 }
 
 class LogicalPlanResolver(
                            labels: ArrayBuffer[String] = new ArrayBuffer[String](),
                            properties: ArrayBuffer[String] = new ArrayBuffer[String](),
-                           relTypes: ArrayBuffer[String] = new ArrayBuffer[String]()
+                           relTypes: ArrayBuffer[String] = new ArrayBuffer[String](),
+                           procedures: Set[ProcedureSignature] = Set.empty
                          ) extends Resolver with TokenContext {
 
   override def getLabelId(label: String): Int = {
@@ -92,7 +94,7 @@ class LogicalPlanResolver(
 
   override def getOptRelTypeId(relType: String): Option[Int] = Some(getRelTypeId(relType))
 
-  override def procedureSignature(name: QualifiedName): ProcedureSignature = ???
+  override def procedureSignature(name: QualifiedName): ProcedureSignature = procedures.find(_.name == name).getOrElse(throw new IllegalStateException(s"No procedure signature for $name"))
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = ???
 }

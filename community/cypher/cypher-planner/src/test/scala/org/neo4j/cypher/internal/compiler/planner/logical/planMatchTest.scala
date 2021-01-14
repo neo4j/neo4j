@@ -365,6 +365,40 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     }
   }
 
+  test("limitSelectivityForRestOfQuery: eager procedure call in first horizon, tail with LIMIT") {
+    val limit = 10
+    val nodes = 100
+
+    val ns = Namespace(List("my", "proc"))(pos)
+    val name = ProcedureName("foo")(pos)
+    val qualifiedName = QualifiedName(ns.parts, name.name)
+    val signature = ProcedureSignature(qualifiedName, IndexedSeq.empty, None, None, ProcedureReadOnlyAccess(Array.empty), id = 42, eager = true)
+
+    val resolvedCall = ResolvedCall(signature, Seq.empty, IndexedSeq.empty)(pos)
+
+    // MATCH (n), (m) CALL my.proc.foo() RETURN * LIMIT 10
+    new given {
+      statistics = new TestGraphStatistics() {
+        override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
+      }
+    }.withLogicalPlanningContext { (_, context) =>
+      val query = RegularSinglePlannerQuery(
+        queryGraph = QueryGraph(patternNodes = Set("n", "m")),
+        horizon = ProcedureCallProjection(resolvedCall),
+        tail = Some(RegularSinglePlannerQuery(
+          queryGraph = QueryGraph(argumentIds = Set("n", "m")),
+          horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit))))
+        ))
+      )
+
+      // WHEN
+      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+
+      // THEN
+      result shouldBe Selectivity.ONE
+    }
+  }
+
   test("limitSelectivityForRestOfQuery: reading procedure call in first horizon, tail with LIMIT") {
     val limit = 10
     val nodes = 100

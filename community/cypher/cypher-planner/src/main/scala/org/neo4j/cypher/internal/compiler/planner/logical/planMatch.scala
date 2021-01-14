@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.util.Selectivity
 
 import scala.annotation.tailrec
@@ -98,6 +100,8 @@ case object planMatch extends MatchPlanner {
           val cardinalityWithLimit = cardinalityModel(query)
 
           CardinalityCostModel.limitingPlanSelectivity(cardinalityWithoutLimit, cardinalityWithLimit, parentLimitSelectivity)
+
+        case ProcedureCallProjection(ResolvedCall(signature, _, _, _, _)) if signature.eager => Selectivity.ONE
 
         case _ => parentLimitSelectivity
       }
