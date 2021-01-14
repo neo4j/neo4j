@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -81,7 +81,7 @@ class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( "nodes" ) );
             try ( NodeValueIndexCursor bobCursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
             {
-                ktx.dataRead().nodeIndexSeek( index, bobCursor, unconstrained(), IndexQuery.fulltextSearch( "bob" ) );
+                ktx.dataRead().nodeIndexSeek( index, bobCursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "bob" ) );
                 int bobCount = 0;
                 while ( bobCursor.next() )
                 {
@@ -91,7 +91,7 @@ class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             }
             try ( NodeValueIndexCursor aliceCursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
             {
-                ktx.dataRead().nodeIndexSeek( index, aliceCursor, unconstrained(), IndexQuery.fulltextSearch( "alice" ) );
+                ktx.dataRead().nodeIndexSeek( index, aliceCursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "alice" ) );
                 int aliceCount = 0;
                 while ( aliceCursor.next() )
                 {

@@ -26,7 +26,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -133,7 +133,7 @@ class KernelAPIParallelIndexScanStressIT
         {
             try
             {
-                IndexQuery.ExistsPredicate query = IndexQuery.exists( index.reference().schema().getPropertyIds()[0] );
+                PropertyIndexQuery.ExistsPredicate query = PropertyIndexQuery.exists( index.reference().schema().getPropertyIds()[0] );
                 read.nodeIndexSeek( index, cursor, unorderedValues(), query );
                 int n = 0;
                 while ( cursor.next() )

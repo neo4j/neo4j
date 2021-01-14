@@ -33,7 +33,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -262,7 +262,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
     {
         // when
         cursor.setTracer( tracer );
-        read.nodeIndexSeek( session, cursor, constrained( order, false ), IndexQuery.range( prop, 0, false, 10, false ) );
+        read.nodeIndexSeek( session, cursor, constrained( order, false ), PropertyIndexQuery.range( prop, 0, false, 10, false ) );
 
         tracer.assertEvents( OnIndexSeek() );
 
@@ -459,7 +459,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
     {
         // when
         cursor.setTracer( tracer );
-        read.relationshipIndexSeek( session, cursor, constrained( order, false ), IndexQuery.range( prop, 0, false, 10, false ) );
+        read.relationshipIndexSeek( session, cursor, constrained( order, false ), PropertyIndexQuery.range( prop, 0, false, 10, false ) );
 
         tracer.assertEvents( OnIndexSeek() );
 

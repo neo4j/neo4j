@@ -53,9 +53,9 @@ public interface Read
      * @param cursor the cursor to use for consuming the results.
      * @param constraints The requested constraints on the query result, such as the {@link IndexOrder}, or whether the index should fetch property values
      * together with node ids for index queries. The constraints must be satisfiable given the capabilities of the index.
-     * @param query Combination of {@link IndexQuery index queries} to run against referenced index.
+     * @param query Combination of {@link PropertyIndexQuery index queries} to run against referenced index.
      */
-    void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
+    void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, PropertyIndexQuery... query )
             throws KernelException;
 
     /**
@@ -64,9 +64,9 @@ public interface Read
      * @param cursor the cursor to use for consuming the results.
      * @param constraints The requested constraints on the query result, such as the {@link IndexOrder}, or whether the index should fetch property values
      * together with relationship ids for index queries. The constraints must be satisfiable given the capabilities of the index.
-     * @param query Combination of {@link IndexQuery index queries} to run against referenced index.
+     * @param query Combination of {@link PropertyIndexQuery index queries} to run against referenced index.
      */
-    void relationshipIndexSeek( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
+    void relationshipIndexSeek( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints, PropertyIndexQuery... query )
             throws KernelException;
 
     /**
@@ -81,11 +81,11 @@ public interface Read
      *
      * @param index {@link IndexDescriptor} for the index to query.
      * @param cursor cursor to use for performing the index seek
-     * @param predicates Combination of {@link IndexQuery.ExactPredicate index queries} to run against referenced index.
+     * @param predicates Combination of {@link PropertyIndexQuery.ExactPredicate index queries} to run against referenced index.
      */
     long lockingNodeUniqueIndexSeek( IndexDescriptor index,
                                      NodeValueIndexCursor cursor,
-                                     IndexQuery.ExactPredicate... predicates )
+                                     PropertyIndexQuery.ExactPredicate... predicates )
             throws KernelException;
 
     /**

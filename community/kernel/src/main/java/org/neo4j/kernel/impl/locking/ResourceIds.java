@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.locking;
 
 import org.neo4j.hashing.HashFunction;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.values.storable.Value;
 
 public final class ResourceIds
@@ -36,7 +36,7 @@ public final class ResourceIds
     /**
      * Produces a 64-bit hashcode for locking index entries.
      */
-    public static long indexEntryResourceId( long labelId, IndexQuery.ExactPredicate... predicates )
+    public static long indexEntryResourceId( long labelId, PropertyIndexQuery.ExactPredicate... predicates )
     {
         return indexEntryResourceId_4_x( labelId, predicates );
     }
@@ -58,12 +58,12 @@ public final class ResourceIds
      *
      * @see HashFunction#incrementalXXH64()
      */
-    static long indexEntryResourceId_4_x( long labelId, IndexQuery.ExactPredicate[] predicates )
+    static long indexEntryResourceId_4_x( long labelId, PropertyIndexQuery.ExactPredicate[] predicates )
     {
         long hash = HASH_40_INIT;
         hash = HASH_40.update( hash, labelId );
 
-        for ( IndexQuery.ExactPredicate predicate : predicates )
+        for ( PropertyIndexQuery.ExactPredicate predicate : predicates )
         {
             int propertyKeyId = predicate.propertyKeyId();
             hash = HASH_40.update( hash, propertyKeyId );

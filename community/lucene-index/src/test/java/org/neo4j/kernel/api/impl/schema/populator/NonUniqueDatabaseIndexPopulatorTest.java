@@ -29,7 +29,7 @@ import java.util.List;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -151,7 +151,7 @@ class NonUniqueDatabaseIndexPopulatorTest
               NodeValueIterator allEntities = new NodeValueIterator() )
         {
             int propertyKeyId = labelSchemaDescriptor.getPropertyId();
-            reader.query( NULL_CONTEXT, allEntities, unconstrained(), IndexQuery.exists( propertyKeyId ) );
+            reader.query( NULL_CONTEXT, allEntities, unconstrained(), PropertyIndexQuery.exists( propertyKeyId ) );
             assertArrayEquals( new long[]{1, 2, 42}, PrimitiveLongCollections.asArray( allEntities ) );
         }
     }

@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -188,8 +188,8 @@ abstract class IndexPopulationStressTest
         {
             SimpleNodeValueClient entries = new SimpleNodeValueClient();
             SimpleNodeValueClient referenceEntries = new SimpleNodeValueClient();
-            reader.query( NULL_CONTEXT, entries, unordered( hasValues ), IndexQuery.exists( 0 ) );
-            referenceReader.query( NULL_CONTEXT, referenceEntries, unordered( hasValues ), IndexQuery.exists( 0 ) );
+            reader.query( NULL_CONTEXT, entries, unordered( hasValues ), PropertyIndexQuery.exists( 0 ) );
+            referenceReader.query( NULL_CONTEXT, referenceEntries, unordered( hasValues ), PropertyIndexQuery.exists( 0 ) );
             while ( referenceEntries.next() )
             {
                 assertTrue( entries.next() );

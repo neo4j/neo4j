@@ -29,7 +29,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -99,7 +99,7 @@ class NonUniqueIndexTest
                 IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
                 try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
                 {
-                    ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.exact( 1, VALUE ) );
+                    ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), PropertyIndexQuery.exact( 1, VALUE ) );
                     assertTrue( cursor.next() );
                     assertEquals( node.getId(), cursor.nodeReference() );
                     assertFalse( cursor.next() );

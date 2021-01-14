@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -71,10 +71,10 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
  * </ul>
  * <li>For index queries:</li>
  * <ul>
- * <li>{@link IndexQuery#exists(int)}</li>
- * <li>{@link IndexQuery#exact(int, Object)}</li>
- * <li>{@link IndexQuery#range(int, Number, boolean, Number, boolean)}</li>
- * <li>{@link IndexQuery#range(int, String, boolean, String, boolean)}</li>
+ * <li>{@link PropertyIndexQuery#exists(int)}</li>
+ * <li>{@link PropertyIndexQuery#exact(int, Object)}</li>
+ * <li>{@link PropertyIndexQuery#range(int, Number, boolean, Number, boolean)}</li>
+ * <li>{@link PropertyIndexQuery#range(int, String, boolean, String, boolean)}</li>
  * </ul>
  * </ul>
  * Does NOT test
@@ -82,9 +82,9 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
  * <li>Single property unique number index</li>
  * <li>Single property unique string index</li>
  * <li>Composite property mixed index</li>
- * <li>{@link IndexQuery#stringPrefix(int, TextValue)}</li>
- * <li>{@link IndexQuery#stringSuffix(int, TextValue)}</li>
- * <li>{@link IndexQuery#stringContains(int, TextValue)}</li>
+ * <li>{@link PropertyIndexQuery#stringPrefix(int, TextValue)}</li>
+ * <li>{@link PropertyIndexQuery#stringSuffix(int, TextValue)}</li>
+ * <li>{@link PropertyIndexQuery#stringContains(int, TextValue)}</li>
  * <li>Composite property node key index (due to it being enterprise feature)</li>
  * <li>Label index iterators</li>
  * <li>Concurrency</li>
@@ -430,8 +430,8 @@ class MultipleOpenCursorsTest
         NodeValueIndexCursor queryExists( KernelTransaction ktx )
                 throws KernelException
         {
-            return indexQuery( ktx, indexDescriptor, IndexQuery.exists( stringPropId1 ),
-                    IndexQuery.exists( stringPropId2 ) );
+            return indexQuery( ktx, indexDescriptor, PropertyIndexQuery.exists( stringPropId1 ),
+                    PropertyIndexQuery.exists( stringPropId2 ) );
         }
 
         @Override
@@ -439,8 +439,8 @@ class MultipleOpenCursorsTest
                 throws KernelException
         {
             return indexQuery( ktx, indexDescriptor,
-                    IndexQuery.exact( stringPropId1, stringProp1Values[0] ),
-                    IndexQuery.exact( stringPropId2, stringProp2Values[0] ) );
+                    PropertyIndexQuery.exact( stringPropId1, stringProp1Values[0] ),
+                    PropertyIndexQuery.exact( stringPropId2, stringProp2Values[0] ) );
         }
 
         @Override
@@ -493,8 +493,8 @@ class MultipleOpenCursorsTest
         @Override
         NodeValueIndexCursor queryExists( KernelTransaction ktx ) throws KernelException
         {
-            return indexQuery( ktx, indexDescriptor, IndexQuery.exists( numberPropId1 ),
-                    IndexQuery.exists( numberPropId2 ) );
+            return indexQuery( ktx, indexDescriptor, PropertyIndexQuery.exists( numberPropId1 ),
+                    PropertyIndexQuery.exists( numberPropId2 ) );
         }
 
         @Override
@@ -502,8 +502,8 @@ class MultipleOpenCursorsTest
                 throws KernelException
         {
             return indexQuery( ktx, indexDescriptor,
-                    IndexQuery.exact( numberPropId1, numberProp1Values[0] ),
-                    IndexQuery.exact( numberPropId2, numberProp2Values[0] ) );
+                    PropertyIndexQuery.exact( numberPropId1, numberProp1Values[0] ),
+                    PropertyIndexQuery.exact( numberPropId2, numberProp2Values[0] ) );
         }
 
         @Override
@@ -553,7 +553,7 @@ class MultipleOpenCursorsTest
         {
             // query for half the range
             return indexQuery( ktx, indexDescriptor,
-                    IndexQuery
+                    PropertyIndexQuery
                             .range( numberPropId1, stringProp1Values[0], true, stringProp1Values[numberOfNodes / 2],
                                     false ) );
         }
@@ -562,14 +562,14 @@ class MultipleOpenCursorsTest
         NodeValueIndexCursor queryExists( KernelTransaction ktx )
                 throws KernelException
         {
-            return indexQuery( ktx, indexDescriptor, IndexQuery.exists( stringPropId1 ) );
+            return indexQuery( ktx, indexDescriptor, PropertyIndexQuery.exists( stringPropId1 ) );
         }
 
         @Override
         NodeValueIndexCursor queryExact( KernelTransaction ktx )
                 throws KernelException
         {
-            return indexQuery( ktx, indexDescriptor, IndexQuery.exact( stringPropId1, stringProp1Values[0] ) );
+            return indexQuery( ktx, indexDescriptor, PropertyIndexQuery.exact( stringPropId1, stringProp1Values[0] ) );
         }
 
         @Override
@@ -624,7 +624,7 @@ class MultipleOpenCursorsTest
         {
             // query for half the range
             return indexQuery( ktx, indexDescriptor,
-                    IndexQuery
+                    PropertyIndexQuery
                             .range( numberPropId1, numberProp1Values[0], true, numberProp1Values[numberOfNodes / 2],
                                     false ) );
         }
@@ -633,14 +633,14 @@ class MultipleOpenCursorsTest
         NodeValueIndexCursor queryExists( KernelTransaction ktx )
                 throws KernelException
         {
-            return indexQuery( ktx, indexDescriptor, IndexQuery.exists( numberPropId1 ) );
+            return indexQuery( ktx, indexDescriptor, PropertyIndexQuery.exists( numberPropId1 ) );
         }
 
         @Override
         NodeValueIndexCursor queryExact( KernelTransaction ktx )
                 throws KernelException
         {
-            return indexQuery( ktx, indexDescriptor, IndexQuery.exact( numberPropId1, numberProp1Values[0] ) );
+            return indexQuery( ktx, indexDescriptor, PropertyIndexQuery.exact( numberPropId1, numberProp1Values[0] ) );
         }
 
         @Override
@@ -802,7 +802,7 @@ class MultipleOpenCursorsTest
 
         abstract IndexDefinition doCreateIndex( Transaction tx );
 
-        NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor indexDescriptor, IndexQuery... indexQueries ) throws KernelException
+        NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor indexDescriptor, PropertyIndexQuery... indexQueries ) throws KernelException
         {
             NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() );
             IndexReadSession index = ktx.dataRead().indexReadSession( indexDescriptor );

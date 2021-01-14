@@ -49,7 +49,7 @@ import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -105,7 +105,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.kernel.api.IndexQuery.fulltextSearch;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
@@ -447,7 +447,7 @@ class FulltextIndexProviderTest
 
                 @Override
                 public void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
-                        IndexQuery[] query, IndexQueryConstraints constraints,
+                        PropertyIndexQuery[] query, IndexQueryConstraints constraints,
                         boolean indexIncludesTransactionState )
                 {
                     this.progressor = progressor;
@@ -1011,7 +1011,7 @@ class FulltextIndexProviderTest
             IndexNotApplicableKernelException e =
                     assertThrows( IndexNotApplicableKernelException.class, () -> assertQueryResult( ktx, exactQuery( containsPropertyId, 1 ) ) );
             assertThat( e.getMessage() ).contains(
-                    "A fulltext schema index cannot answer " + IndexQuery.IndexQueryType.exact + " queries on " + ValueCategory.NUMBER + " values." );
+                    "A fulltext schema index cannot answer " + PropertyIndexQuery.IndexQueryType.exact + " queries on " + ValueCategory.NUMBER + " values." );
         }
         controller.restartDbms();
         try ( Transaction tx = db.beginTx() )
@@ -1027,7 +1027,7 @@ class FulltextIndexProviderTest
             IndexNotApplicableKernelException e =
                     assertThrows( IndexNotApplicableKernelException.class, () -> assertQueryResult( ktx, exactQuery( containsPropertyId, 1 ) ) );
             assertThat( e.getMessage() ).contains(
-                    "A fulltext schema index cannot answer " + IndexQuery.IndexQueryType.exact + " queries on " + ValueCategory.NUMBER + " values." );
+                    "A fulltext schema index cannot answer " + PropertyIndexQuery.IndexQueryType.exact + " queries on " + ValueCategory.NUMBER + " values." );
         }
     }
 
@@ -1156,7 +1156,7 @@ class FulltextIndexProviderTest
         }
     }
 
-    private void assertQueryResult( KernelTransaction ktx, IndexQuery query, Long... expectedResultArray ) throws KernelException
+    private void assertQueryResult( KernelTransaction ktx, PropertyIndexQuery query, Long... expectedResultArray ) throws KernelException
     {
         List<Long> expectedResult = Arrays.asList( expectedResultArray );
         IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( NAME ) );
@@ -1174,29 +1174,29 @@ class FulltextIndexProviderTest
         }
     }
 
-    private IndexQuery.StringContainsPredicate containsQuery( int containsPropertyId, String string )
+    private PropertyIndexQuery.StringContainsPredicate containsQuery( int containsPropertyId, String string )
     {
-        return IndexQuery.stringContains( containsPropertyId, Values.stringValue( string ) );
+        return PropertyIndexQuery.stringContains( containsPropertyId, Values.stringValue( string ) );
     }
 
-    private IndexQuery.StringSuffixPredicate endsWithQuery( int containsPropertyId, String string )
+    private PropertyIndexQuery.StringSuffixPredicate endsWithQuery( int containsPropertyId, String string )
     {
-        return IndexQuery.stringSuffix( containsPropertyId, Values.stringValue( string ) );
+        return PropertyIndexQuery.stringSuffix( containsPropertyId, Values.stringValue( string ) );
     }
 
-    private IndexQuery.StringPrefixPredicate startsWithQuery( int containsPropertyId, String string )
+    private PropertyIndexQuery.StringPrefixPredicate startsWithQuery( int containsPropertyId, String string )
     {
-        return IndexQuery.stringPrefix( containsPropertyId, Values.stringValue( string ) );
+        return PropertyIndexQuery.stringPrefix( containsPropertyId, Values.stringValue( string ) );
     }
 
-    private IndexQuery.ExactPredicate exactQuery( int containsPropertyId, Object object )
+    private PropertyIndexQuery.ExactPredicate exactQuery( int containsPropertyId, Object object )
     {
-        return IndexQuery.exact( containsPropertyId, Values.of( object ) );
+        return PropertyIndexQuery.exact( containsPropertyId, Values.of( object ) );
     }
 
-    private IndexQuery.RangePredicate<?> rangeQuery( int containsPropertyId, Object from, boolean fromInclusive, Object to, boolean toInclusive )
+    private PropertyIndexQuery.RangePredicate<?> rangeQuery( int containsPropertyId, Object from, boolean fromInclusive, Object to, boolean toInclusive )
     {
-        return IndexQuery.range( containsPropertyId, Values.of( from ), fromInclusive, Values.of( to ), toInclusive );
+        return PropertyIndexQuery.range( containsPropertyId, Values.of( from ), fromInclusive, Values.of( to ), toInclusive );
     }
 
     private long createNode( Transaction tx, Label containsLabel, String containsProp, String propertyValue )

@@ -59,7 +59,7 @@ public interface KernelReadTracer extends ReadTracer
     void onRelationshipTypeScan( int type );
 
     /**
-     * Called on {@link Read#nodeIndexSeek(IndexReadSession, NodeValueIndexCursor, IndexQueryConstraints, IndexQuery...)}.
+     * Called on {@link Read#nodeIndexSeek(IndexReadSession, NodeValueIndexCursor, IndexQueryConstraints, PropertyIndexQuery...)}.
      */
     void onIndexSeek();
 

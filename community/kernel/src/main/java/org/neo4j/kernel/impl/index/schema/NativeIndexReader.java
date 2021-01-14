@@ -24,8 +24,8 @@ import java.io.UncheckedIOException;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -120,7 +120,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
 
     @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexQueryConstraints constraints,
-            IndexQuery... predicates )
+            PropertyIndexQuery... predicates )
     {
         validateQuery( constraints, predicates );
 
@@ -138,14 +138,14 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         treeKeyTo.initialize( Long.MAX_VALUE );
     }
 
-    abstract void validateQuery( IndexQueryConstraints constraints, IndexQuery[] predicates );
+    abstract void validateQuery( IndexQueryConstraints constraints, PropertyIndexQuery[] predicates );
 
     /**
      * @return true if query results from seek will need to be filtered through the predicates, else false
      */
-    abstract boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates );
+    abstract boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, PropertyIndexQuery[] predicates );
 
-    void startSeekForInitializedRange( IndexProgressor.EntityValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query,
+    void startSeekForInitializedRange( IndexProgressor.EntityValueClient client, KEY treeKeyFrom, KEY treeKeyTo, PropertyIndexQuery[] query,
             IndexQueryConstraints constraints, boolean needFilter, PageCursorTracer cursorTracer )
     {
         if ( isEmptyRange( treeKeyFrom, treeKeyTo ) )
@@ -176,7 +176,8 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         return tree.seek( treeKeyFrom, treeKeyTo, cursorTracer );
     }
 
-    private IndexProgressor getIndexProgressor( Seeker<KEY,VALUE> seeker, IndexProgressor.EntityValueClient client, boolean needFilter, IndexQuery[] query )
+    private IndexProgressor getIndexProgressor( Seeker<KEY,VALUE> seeker, IndexProgressor.EntityValueClient client, boolean needFilter,
+            PropertyIndexQuery[] query )
     {
         return needFilter ? new FilteringNativeHitIndexProgressor<>( seeker, client, query )
                           : new NativeHitIndexProgressor<>( seeker, client );

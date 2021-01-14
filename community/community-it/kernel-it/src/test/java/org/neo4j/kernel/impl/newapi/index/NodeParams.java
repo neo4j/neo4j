@@ -23,13 +23,12 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -87,7 +86,7 @@ public class NodeParams implements EntityParams<NodeValueIndexCursor>
 
     @Override
     public void entityIndexSeek( KernelTransaction tx, IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints,
-                                 IndexQuery... query ) throws KernelException
+                                 PropertyIndexQuery... query ) throws KernelException
     {
         tx.dataRead().nodeIndexSeek( index, cursor, constraints, query );
     }

@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.rule.RandomRule;
@@ -82,9 +82,9 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return fractionDuplicates;
     }
 
-    IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
+    PropertyIndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
     {
-        return IndexQuery.range( 0, from, fromInclusive, to, toInclusive );
+        return PropertyIndexQuery.range( 0, from, fromInclusive, to, toInclusive );
     }
 
     IndexDescriptor indexDescriptor()

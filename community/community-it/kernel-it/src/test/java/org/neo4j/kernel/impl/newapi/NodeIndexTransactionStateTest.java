@@ -25,9 +25,9 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -94,7 +94,7 @@ public class NodeIndexTransactionStateTest extends IndexTransactionStateTestBase
 
     @Override
     void assertEntityAndValueForSeek( Set<Pair<Long,Value>> expected, KernelTransaction tx, IndexDescriptor index, boolean needsValues,
-            Object anotherValueFoundByQuery, IndexQuery... queries ) throws Exception
+            Object anotherValueFoundByQuery, PropertyIndexQuery... queries ) throws Exception
     {
         try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() ) )
         {

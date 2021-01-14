@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExistsPredicate;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
@@ -69,9 +69,9 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
 
     @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexQueryConstraints constraints,
-            IndexQuery... predicates ) throws IndexNotApplicableKernelException
+            PropertyIndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
-        IndexSlot slot = slotSelector.selectSlot( predicates, IndexQuery::valueCategory );
+        IndexSlot slot = slotSelector.selectSlot( predicates, PropertyIndexQuery::valueCategory );
         if ( slot != null )
         {
             instanceSelector.select( slot ).query( context, cursor, constraints, predicates );

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Arrays;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
@@ -31,7 +31,7 @@ import static java.lang.String.format;
 
 class QueryValidator
 {
-    static void validateOrder( IndexCapability capability, IndexOrder indexOrder, IndexQuery[] predicates )
+    static void validateOrder( IndexCapability capability, IndexOrder indexOrder, PropertyIndexQuery[] predicates )
     {
         if ( indexOrder != IndexOrder.NONE )
         {
@@ -70,14 +70,14 @@ class QueryValidator
      *
      * @param predicates The query for which we want to check the composite validity.
      */
-    static void validateCompositeQuery( IndexQuery[] predicates )
+    static void validateCompositeQuery( PropertyIndexQuery[] predicates )
     {
-        IndexQuery prev = null;
-        for ( IndexQuery current : predicates )
+        PropertyIndexQuery prev = null;
+        for ( PropertyIndexQuery current : predicates )
         {
             String illegalQueryMessage = "Tried to query index with illegal composite query.";
-            if ( current instanceof IndexQuery.StringContainsPredicate ||
-                    current instanceof IndexQuery.StringSuffixPredicate )
+            if ( current instanceof PropertyIndexQuery.StringContainsPredicate ||
+                    current instanceof PropertyIndexQuery.StringSuffixPredicate )
             {
                 if ( predicates.length > 1 )
                 {
@@ -85,11 +85,11 @@ class QueryValidator
                             illegalQueryMessage, Arrays.toString( predicates ) ) );
                 }
             }
-            if ( prev instanceof IndexQuery.RangePredicate ||
-                    prev instanceof IndexQuery.StringPrefixPredicate ||
-                    prev instanceof IndexQuery.ExistsPredicate )
+            if ( prev instanceof PropertyIndexQuery.RangePredicate ||
+                    prev instanceof PropertyIndexQuery.StringPrefixPredicate ||
+                    prev instanceof PropertyIndexQuery.ExistsPredicate )
             {
-                if ( !(current instanceof IndexQuery.ExistsPredicate) )
+                if ( !(current instanceof PropertyIndexQuery.ExistsPredicate) )
                 {
                     throw new IllegalArgumentException( format( "%s Composite query must have decreasing precision. Query was: %s ",
                             illegalQueryMessage, Arrays.toString( predicates ) ) );

@@ -35,10 +35,10 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
-import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.stringValue
@@ -57,7 +57,7 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
 
     values.foreach {
       case (searchTerm, resultIterable) =>
-        val indexQueries = propertyKeys.zip(searchTerm).map(t => IndexQuery.exact(t._1.nameId.id, t._2))
+        val indexQueries = propertyKeys.zip(searchTerm).map(t => PropertyIndexQuery.exact(t._1.nameId.id, t._2))
         when(query.indexSeek(any(), any(), any(), ArgumentMatchers.eq(indexQueries))).thenReturn(PredefinedCursor(resultIterable))
         when(query.lockingUniqueIndexSeek(any(), ArgumentMatchers.eq(indexQueries))).thenReturn(PredefinedCursor(resultIterable))
     }

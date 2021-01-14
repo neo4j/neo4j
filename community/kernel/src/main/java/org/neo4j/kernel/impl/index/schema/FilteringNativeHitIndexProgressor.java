@@ -20,14 +20,14 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Seeker;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.values.storable.Value;
 
 class FilteringNativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeHitIndexProgressor<KEY,VALUE>
 {
-    private final IndexQuery[] filter;
+    private final PropertyIndexQuery[] filter;
 
-    FilteringNativeHitIndexProgressor( Seeker<KEY,VALUE> seeker, EntityValueClient client, IndexQuery[] filter )
+    FilteringNativeHitIndexProgressor( Seeker<KEY,VALUE> seeker, EntityValueClient client, PropertyIndexQuery[] filter )
     {
         super( seeker, client );
         this.filter = filter;

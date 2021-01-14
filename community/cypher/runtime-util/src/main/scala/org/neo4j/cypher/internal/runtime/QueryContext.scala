@@ -28,21 +28,21 @@ import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Path
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
-import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
+import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.Write
-import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
@@ -137,7 +137,7 @@ trait QueryContext extends TokenContext with DbAccess {
   def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
                                   needsValues: Boolean,
                                   indexOrder: IndexOrder,
-                                  queries: Seq[IndexQuery]): NodeValueIndexCursor
+                                  queries: Seq[PropertyIndexQuery]): NodeValueIndexCursor
 
   def indexSeekByContains[RESULT <: AnyRef](index: IndexReadSession,
                                             needsValues: Boolean,
@@ -153,7 +153,7 @@ trait QueryContext extends TokenContext with DbAccess {
                                   needsValues: Boolean,
                                   indexOrder: IndexOrder): NodeValueIndexCursor
 
-  def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor, queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor
+  def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor, queries: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor
 
   def getNodesByLabel(id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue]
 

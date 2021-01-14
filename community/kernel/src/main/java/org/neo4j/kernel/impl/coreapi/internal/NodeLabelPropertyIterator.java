@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.coreapi.internal;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -36,7 +36,7 @@ public class NodeLabelPropertyIterator extends PropertyFilteringIterator<Node,No
             NodeCursor nodeCursor,
             PropertyCursor propertyCursor,
             EntityFactory<Node> nodeFactory,
-            IndexQuery... queries )
+            PropertyIndexQuery... queries )
     {
         super( nodeLabelCursor, nodeCursor, propertyCursor, nodeFactory, queries );
         this.read = read;

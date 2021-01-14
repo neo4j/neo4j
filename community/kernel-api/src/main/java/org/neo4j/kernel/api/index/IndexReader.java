@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.index;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
@@ -44,13 +44,13 @@ public interface IndexReader extends Resource
     IndexSampler createSampler();
 
     /**
-     * Queries the index for the given {@link IndexQuery} predicates.
+     * Queries the index for the given {@link PropertyIndexQuery} predicates.
      * @param client the client which will control the progression though query results.
      * @param constraints constraints upon the query result, like ordering and whether the index should fetch property values alongside the entity ids.
      * @param query the query so serve.
      */
     void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-            IndexQuery... query ) throws IndexNotApplicableKernelException;
+            PropertyIndexQuery... query ) throws IndexNotApplicableKernelException;
 
     IndexReader EMPTY = new IndexReader()
     {
@@ -69,7 +69,7 @@ public interface IndexReader extends Resource
 
         @Override
         public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-                IndexQuery... query )
+                PropertyIndexQuery... query )
         {
             // do nothing
         }
@@ -96,7 +96,7 @@ public interface IndexReader extends Resource
 
         @Override
         public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-                IndexQuery... query )
+                PropertyIndexQuery... query )
         {
         }
 

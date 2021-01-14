@@ -39,7 +39,7 @@ import java.util.concurrent.Future;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.IOFunction;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -72,8 +72,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.internal.kernel.api.IndexQuery.exact;
-import static org.neo4j.internal.kernel.api.IndexQuery.range;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -167,7 +167,7 @@ public class DatabaseIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // WHEN
-        Set<Long> results = resultSet( reader, IndexQuery.exists( PROP_ID ) );
+        Set<Long> results = resultSet( reader, PropertyIndexQuery.exists( PROP_ID ) );
         Set<Long> results2 = resultSet( reader, exact( PROP_ID, value ) );
 
         // THEN
@@ -363,19 +363,19 @@ public class DatabaseIndexAccessorTest
         }
     }
 
-    private Set<Long> resultSet( IndexReader reader, IndexQuery... queries ) throws IndexNotApplicableKernelException
+    private Set<Long> resultSet( IndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         return toSet( results( reader, queries ) );
     }
 
-    private NodeValueIterator results( IndexReader reader, IndexQuery... queries ) throws IndexNotApplicableKernelException
+    private NodeValueIterator results( IndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator results = new NodeValueIterator();
         reader.query( NULL_CONTEXT, results, unconstrained(), queries );
         return results;
     }
 
-    private long[] resultsArray( IndexReader reader, IndexQuery... queries ) throws IndexNotApplicableKernelException
+    private long[] resultsArray( IndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         try ( NodeValueIterator iterator = results( reader, queries ) )
         {

@@ -31,7 +31,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -261,7 +261,7 @@ class GenericAccessorPointsTest
         {
             SimpleNodeValueClient client = new SimpleNodeValueClient();
 
-            var range = IndexQuery.range( descriptor.schema().getPropertyId(),
+            var range = PropertyIndexQuery.range( descriptor.schema().getPropertyId(),
                     Values.pointValue( WGS84, searchStart ),
                     true,
                     limitPoint,
@@ -316,7 +316,7 @@ class GenericAccessorPointsTest
             SimpleNodeValueClient client = new SimpleNodeValueClient();
             for ( Value value : values )
             {
-                IndexQuery.ExactPredicate exact = IndexQuery.exact( descriptor.schema().getPropertyId(), value );
+                PropertyIndexQuery.ExactPredicate exact = PropertyIndexQuery.exact( descriptor.schema().getPropertyId(), value );
                 indexReader.query( QueryContext.NULL_CONTEXT, client, unorderedValues(), exact );
 
                 // then

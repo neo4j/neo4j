@@ -27,7 +27,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Label;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -157,7 +157,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
     {
         cursor.setTracer( tracer );
 
-        tx.dataRead().nodeIndexSeek( session, cursor, constrained( order, needsValues ), IndexQuery.stringPrefix( user, Values.stringValue( "B" ) ) );
+        tx.dataRead().nodeIndexSeek( session, cursor, constrained( order, needsValues ), PropertyIndexQuery.stringPrefix( user, Values.stringValue( "B" ) ) );
         tracer.assertEvents( OnIndexSeek() );
 
         assertTrue( cursor.next() );
@@ -295,7 +295,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
         {
             cursor.setTracer( tracer );
             IndexReadSession indexReadSession = tx.dataRead().indexReadSession( index );
-            tx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), IndexQuery.fulltextSearch( "transformational" ) );
+            tx.dataRead().relationshipIndexSeek( indexReadSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "transformational" ) );
 
             assertTrue( cursor.next() );
             tracer.assertEvents( OnIndexSeek(), OnRelationship( cursor.relationshipReference() ) );

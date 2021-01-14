@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import org.neo4j.index.internal.gbptree.Seeker;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -67,7 +67,7 @@ class FilteringNativeHitIndexProgressorTest
                 return true;
             }
         };
-        IndexQuery[] predicates = new IndexQuery[]{mock( IndexQuery.class )};
+        PropertyIndexQuery[] predicates = new PropertyIndexQuery[]{mock( PropertyIndexQuery.class )};
         Predicate<String> filter = string -> string.contains( "a" );
         when( predicates[0].acceptsValue( any( Value.class ) ) ).then( invocation -> filter.test( ((TextValue) invocation.getArgument( 0 )).stringValue() ) );
         try ( FilteringNativeHitIndexProgressor<GenericKey,NativeIndexValue> progressor = new FilteringNativeHitIndexProgressor<>( cursor, valueClient,

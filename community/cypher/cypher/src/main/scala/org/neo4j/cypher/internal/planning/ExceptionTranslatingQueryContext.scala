@@ -42,14 +42,14 @@ import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryTransactionalContext
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Path
-import org.neo4j.internal.kernel.api.IndexQuery
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
+import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
-import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
@@ -152,7 +152,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder,
-                                           values: Seq[IndexQuery]): NodeValueIndexCursor =
+                                           values: Seq[PropertyIndexQuery]): NodeValueIndexCursor =
     translateException(tokenNameLookup, inner.indexSeek(index, needsValues, indexOrder, values))
 
   override def getNodesByLabel(id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue] =
@@ -268,7 +268,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     translateException(tokenNameLookup, inner.getRelTypeName(id))
 
   override def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor,
-                                              values: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor =
+                                              values: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor =
     translateException(tokenNameLookup, inner.lockingUniqueIndexSeek(index, values))
 
   override def getImportURL(url: URL): Either[String, URL] =

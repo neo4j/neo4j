@@ -23,9 +23,9 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.ValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -52,7 +52,7 @@ public interface EntityParams<CURSOR extends Cursor & ValueIndexCursor>
     long entityReference( CURSOR cursor );
 
     void entityIndexSeek( KernelTransaction tx, IndexReadSession index, CURSOR cursor,
-                          IndexQueryConstraints constraints, IndexQuery... query ) throws KernelException;
+                          IndexQueryConstraints constraints, PropertyIndexQuery... query ) throws KernelException;
 
     void entityIndexScan( KernelTransaction tx, IndexReadSession index, CURSOR cursor,
                           IndexQueryConstraints constraints ) throws KernelException;

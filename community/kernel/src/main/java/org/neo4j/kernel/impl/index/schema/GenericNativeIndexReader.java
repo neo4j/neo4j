@@ -24,10 +24,10 @@ import java.util.List;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.RangePredicate;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringPrefixPredicate;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -58,7 +58,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
     }
 
     @Override
-    void validateQuery( IndexQueryConstraints constraints, IndexQuery[] predicates )
+    void validateQuery( IndexQueryConstraints constraints, PropertyIndexQuery[] predicates )
     {
         QueryValidator.validateOrder( GenericNativeIndexProvider.CAPABILITY, constraints.order(), predicates );
         QueryValidator.validateCompositeQuery( predicates );
@@ -66,9 +66,9 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
 
     @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-            IndexQuery... query )
+            PropertyIndexQuery... query )
     {
-        IndexQuery.GeometryRangePredicate geometryRangePredicate = getGeometryRangePredicateIfAny( query );
+        PropertyIndexQuery.GeometryRangePredicate geometryRangePredicate = getGeometryRangePredicateIfAny( query );
         if ( geometryRangePredicate != null )
         {
             validateQuery( constraints, query );
@@ -107,29 +107,29 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
     }
 
     /**
-     * Initializes {@code treeKeyFrom} and {@code treeKeyTo} from the {@link IndexQuery query}.
+     * Initializes {@code treeKeyFrom} and {@code treeKeyTo} from the {@link PropertyIndexQuery query}.
      * Geometry range queries makes an otherwise straight-forward key construction complex in that a geometry range internally is performed
      * by executing multiple sub-range queries to the index. Each of those sub-range queries still needs to construct the full composite key -
      * in the case of a composite index. Therefore this method can be called either with null or non-null {@code crs} and {@code range} and
-     * constructing a key when coming across a {@link IndexQuery.GeometryRangePredicate} will use the provided crs/range instead
-     * of the predicate, where the specific range is one out of many sub-ranges calculated from the {@link IndexQuery.GeometryRangePredicate}
+     * constructing a key when coming across a {@link PropertyIndexQuery.GeometryRangePredicate} will use the provided crs/range instead
+     * of the predicate, where the specific range is one out of many sub-ranges calculated from the {@link PropertyIndexQuery.GeometryRangePredicate}
      * by the caller.
      *
      * @param treeKeyFrom the "from" key to construct from the query.
      * @param treeKeyTo the "to" key to construct from the query.
      * @param query the query to construct keys from to later send to {@link GBPTree} when reading.
      * @param crs {@link CoordinateReferenceSystem} for the specific {@code range}, if range is specified too.
-     * @param range sub-range of a larger {@link IndexQuery.GeometryRangePredicate} to use instead of {@link IndexQuery.GeometryRangePredicate}
+     * @param range sub-range of a larger {@link PropertyIndexQuery.GeometryRangePredicate} to use instead of {@link PropertyIndexQuery.GeometryRangePredicate}
      * in the query.
      * @return {@code true} if filtering is needed for the results from the reader, otherwise {@code false}.
      */
     private boolean initializeRangeForGeometrySubQuery( GenericKey treeKeyFrom, GenericKey treeKeyTo,
-            IndexQuery[] query, CoordinateReferenceSystem crs, SpaceFillingCurve.LongRange range )
+            PropertyIndexQuery[] query, CoordinateReferenceSystem crs, SpaceFillingCurve.LongRange range )
     {
         boolean needsFiltering = false;
         for ( int i = 0; i < query.length; i++ )
         {
-            IndexQuery predicate = query[i];
+            PropertyIndexQuery predicate = query[i];
             switch ( predicate.type() )
             {
             case exists:
@@ -178,7 +178,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
     }
 
     @Override
-    boolean initializeRangeForQuery( GenericKey treeKeyFrom, GenericKey treeKeyTo, IndexQuery[] query )
+    boolean initializeRangeForQuery( GenericKey treeKeyFrom, GenericKey treeKeyTo, PropertyIndexQuery[] query )
     {
         return initializeRangeForGeometrySubQuery( treeKeyFrom, treeKeyTo, query, null, null );
     }
@@ -221,21 +221,21 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
         return rangePredicate.toInclusive() ? HIGH : LOW;
     }
 
-    private IndexQuery.GeometryRangePredicate getGeometryRangePredicateIfAny( IndexQuery[] predicates )
+    private PropertyIndexQuery.GeometryRangePredicate getGeometryRangePredicateIfAny( PropertyIndexQuery[] predicates )
     {
-        for ( IndexQuery predicate : predicates )
+        for ( PropertyIndexQuery predicate : predicates )
         {
             if ( isGeometryRangeQuery( predicate ) )
             {
-                return (IndexQuery.GeometryRangePredicate) predicate;
+                return (PropertyIndexQuery.GeometryRangePredicate) predicate;
             }
         }
         return null;
     }
 
-    private boolean isGeometryRangeQuery( IndexQuery predicate )
+    private boolean isGeometryRangeQuery( PropertyIndexQuery predicate )
     {
-        return predicate instanceof IndexQuery.GeometryRangePredicate;
+        return predicate instanceof PropertyIndexQuery.GeometryRangePredicate;
     }
 
 }

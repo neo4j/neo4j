@@ -32,7 +32,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -128,7 +128,7 @@ class UniqueIndexSeekIT
             try ( NodeValueIndexCursor cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor( kernelTransaction.pageCursorTracer(),
                                                                                                           kernelTransaction.memoryTracker() ) )
             {
-                dataRead.lockingNodeUniqueIndexSeek( indexReference, cursor, IndexQuery.ExactPredicate.exact( propertyId, "value" ) );
+                dataRead.lockingNodeUniqueIndexSeek( indexReference, cursor, PropertyIndexQuery.ExactPredicate.exact( propertyId, "value" ) );
             }
             transaction.commit();
         }

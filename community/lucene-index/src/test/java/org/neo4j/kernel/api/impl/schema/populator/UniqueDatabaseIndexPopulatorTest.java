@@ -33,7 +33,7 @@ import java.util.concurrent.Executors;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -461,7 +461,7 @@ class UniqueDatabaseIndexPopulatorTest
         try ( IndexReader reader = index.getIndexReader();
               NodeValueIterator allEntities = new NodeValueIterator() )
         {
-            reader.query( NULL_CONTEXT, allEntities, unconstrained(), IndexQuery.exists( 1 ) );
+            reader.query( NULL_CONTEXT, allEntities, unconstrained(), PropertyIndexQuery.exists( 1 ) );
             assertArrayEquals( new long[]{1, 2, 3}, PrimitiveLongCollections.asArray( allEntities ) );
         }
     }

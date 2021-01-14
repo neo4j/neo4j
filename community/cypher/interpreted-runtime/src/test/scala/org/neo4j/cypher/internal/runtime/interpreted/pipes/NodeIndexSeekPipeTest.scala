@@ -35,9 +35,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.internal.kernel.api.IndexQuery
-import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor
+import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.internal.kernel.api.PropertyIndexQuery
 
 class NodeIndexSeekPipeTest extends CypherFunSuite {
   test("exhaust should close cursor") {
@@ -46,7 +46,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite {
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    when(state.query.indexSeek(any[IndexReadSession], any[Boolean], any[IndexOrder], any[Seq[IndexQuery]])).thenAnswer((_: InvocationOnMock) => {
+    when(state.query.indexSeek(any[IndexReadSession], any[Boolean], any[IndexOrder], any[Seq[PropertyIndexQuery]])).thenAnswer((_: InvocationOnMock) => {
       //NOTE: this is what is done in TransactionBoundQueryContext
       resourceManager.trace(cursor)
       cursor
@@ -70,7 +70,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite {
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    when(state.query.indexSeek(any[IndexReadSession], any[Boolean], any[IndexOrder], any[Seq[IndexQuery]])).thenAnswer((_: InvocationOnMock) => {
+    when(state.query.indexSeek(any[IndexReadSession], any[Boolean], any[IndexOrder], any[Seq[PropertyIndexQuery]])).thenAnswer((_: InvocationOnMock) => {
       //NOTE: this is what is done in TransactionBoundQueryContext
       resourceManager.trace(cursor)
       cursor

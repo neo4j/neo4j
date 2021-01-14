@@ -31,9 +31,9 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Cursor;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.ValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
@@ -238,97 +238,97 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, "zero" ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, "zero" ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, uniqueIds );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, "one" ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, "one" ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, uniqueIds, strOne );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, "two" ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, "two" ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, uniqueIds, strTwo1, strTwo2 );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, "three" ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, "three" ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, uniqueIds, strThree1, strThree2, strThree3 );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, 1 ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, 1 ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, 1, uniqueIds );
 
             //when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, 2 ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, 2 ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, 2, uniqueIds );
 
             //when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, 3 ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, 3 ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, 3, uniqueIds );
 
             //when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, 6 ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, 6 ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, uniqueIds, num6 );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, 12.0 ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, 12.0 ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, uniqueIds, num12a, num12b );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, true ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, true ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, uniqueIds, boolTrue );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, Values.pointValue( Cartesian, 0, 0 ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, Values.pointValue( Cartesian, 0, 0 ) ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, 3, uniqueIds );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, Values.pointValue( Cartesian_3D, 0, 0, 0 ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, Values.pointValue( Cartesian_3D, 0, 0, 0 ) ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, 1, uniqueIds );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, Values.pointValue( WGS84, 0, 0 ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, Values.pointValue( WGS84, 0, 0 ) ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, 1, uniqueIds );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, Values.pointValue( WGS84_3D, 0, 0, 0 ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, Values.pointValue( WGS84_3D, 0, 0, 0 ) ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, 1, uniqueIds );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, DateValue.date( 1989, 3, 24 ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, DateValue.date( 1989, 3, 24 ) ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, 2, uniqueIds );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( prop, DateValue.date( 1986, 11, 18 ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( prop, DateValue.date( 1986, 11, 18 ) ) );
 
             // then
             assertFoundEntitiesAndNoValue( cursor, 1, uniqueIds );
@@ -347,8 +347,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), IndexQuery.exact( firstName, "Joe" ),
-                                          IndexQuery.exact( surname, "Dalton" ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unconstrained(), PropertyIndexQuery.exact( firstName, "Joe" ),
+                                          PropertyIndexQuery.exact( surname, "Dalton" ) );
 
             // then
             assertThat( cursor.numberOfProperties() ).isEqualTo( 2 );
@@ -369,7 +369,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "t" ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.stringPrefix( prop, stringValue( "t" ) ) );
 
             // then
             assertThat( cursor.numberOfProperties() ).isEqualTo( 1 );
@@ -391,7 +391,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.stringSuffix( prop, stringValue( "e" ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.stringSuffix( prop, stringValue( "e" ) ) );
 
             // then
             assertThat( cursor.numberOfProperties() ).isEqualTo( 1 );
@@ -412,7 +412,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.stringContains( prop, stringValue( "o" ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.stringContains( prop, stringValue( "o" ) ) );
 
             // then
             assertThat( cursor.numberOfProperties() ).isEqualTo( 1 );
@@ -434,32 +434,32 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.range( prop, "one", true, "three", true ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, "one", true, "three", true ) );
 
             // then
 
             assertFoundEntitiesAndValue( cursor, uniqueIds, stringCapability, needsValues, strOne, strThree1, strThree2, strThree3 );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.range( prop, "one", true, "three", false ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, "one", true, "three", false ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, uniqueIds, stringCapability, needsValues, strOne );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.range( prop, "one", false, "three", true ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, "one", false, "three", true ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, uniqueIds, stringCapability, needsValues, strThree1, strThree2, strThree3 );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.range( prop, "one", false, "two", false ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, "one", false, "two", false ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, uniqueIds, stringCapability, needsValues, strThree1, strThree2, strThree3 );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.range( prop, "one", true, "two", true ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, "one", true, "two", true ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, uniqueIds, stringCapability, needsValues, strOne, strThree1, strThree2, strThree3,
@@ -481,25 +481,25 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.range( prop, 5, true, 12, true ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, 5, true, 12, true ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, uniqueIds, numberCapability, needsValues, num5, num6, num12a, num12b );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.range( prop, 5, true, 12, false ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, 5, true, 12, false ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, uniqueIds, numberCapability, needsValues, num5, num6 );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.range( prop, 5, false, 12, true ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, 5, false, 12, true ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, uniqueIds, numberCapability, needsValues, num6, num12a, num12b );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.range( prop, 5, false, 12, false ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, 5, false, 12, false ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, uniqueIds, numberCapability, needsValues, num6 );
@@ -521,28 +521,28 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
 
             // when
             entityParams.entityIndexSeek( tx, index, cursor, constraints,
-                                          IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
+                                          PropertyIndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, uniqueIds, temporalCapability, needsValues, date86, date891, date892 );
 
             // when
             entityParams.entityIndexSeek( tx, index, cursor, constraints,
-                                          IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), false ) );
+                                          PropertyIndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), false ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, uniqueIds, temporalCapability, needsValues, date86 );
 
             // when
             entityParams.entityIndexSeek( tx, index, cursor, constraints,
-                                          IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), false, DateValue.date( 1989, 3, 24 ), true ) );
+                                          PropertyIndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), false, DateValue.date( 1989, 3, 24 ), true ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, uniqueIds, temporalCapability, needsValues, date891, date892 );
 
             // when
             entityParams.entityIndexSeek( tx, index, cursor, constraints,
-                                          IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), false, DateValue.date( 1989, 3, 24 ), false ) );
+                                          PropertyIndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), false, DateValue.date( 1989, 3, 24 ), false ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, uniqueIds, temporalCapability, needsValues );
@@ -563,25 +563,25 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.range( prop, Cartesian ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, Cartesian ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 5, uniqueIds, spatialCapability, needsValues );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.range( prop, Cartesian_3D ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, Cartesian_3D ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, spatialCapability, needsValues );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.range( prop, WGS84 ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, WGS84 ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, spatialCapability, needsValues );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.range( prop, WGS84_3D ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.range( prop, WGS84_3D ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, spatialCapability, needsValues );
@@ -602,13 +602,13 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.exact( prop, false ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.exact( prop, false ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, capability, needsValues );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.exact( prop, true ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.exact( prop, true ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, capability, needsValues );
@@ -629,13 +629,14 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.exact( prop, new String[]{"first", "second", "third"} ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.exact( prop, new String[]{"first", "second", "third"} ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, capability, needsValues );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, IndexQuery.exact( prop, new String[]{"fourth", "fifth", "sixth", "seventh"} ) );
+            entityParams
+                    .entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.exact( prop, new String[]{"fourth", "fifth", "sixth", "seventh"} ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, capability, needsValues );
@@ -674,8 +675,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             if ( orderCapabilities.supportsAsc() )
             {
                 // when
-                entityParams
-                        .entityIndexSeek( tx, index, cursor, constrained( IndexOrder.ASCENDING, needsValues ), IndexQuery.range( prop, 1, true, 42, true ) );
+                entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.ASCENDING, needsValues ),
+                        PropertyIndexQuery.range( prop, 1, true, 42, true ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.ASCENDING );
@@ -683,8 +684,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             if ( orderCapabilities.supportsDesc() )
             {
                 // when
-                entityParams
-                        .entityIndexSeek( tx, index, cursor, constrained( IndexOrder.DESCENDING, needsValues ), IndexQuery.range( prop, 1, true, 42, true ) );
+                entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.DESCENDING, needsValues ),
+                        PropertyIndexQuery.range( prop, 1, true, 42, true ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.DESCENDING );
@@ -706,7 +707,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             {
                 // when
                 entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.ASCENDING, needsValues ),
-                                              IndexQuery.range( prop, "one", true, "two", true ) );
+                                              PropertyIndexQuery.range( prop, "one", true, "two", true ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.ASCENDING );
@@ -715,7 +716,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             {
                 // when
                 entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.DESCENDING, needsValues ),
-                                              IndexQuery.range( prop, "one", true, "two", true ) );
+                                              PropertyIndexQuery.range( prop, "one", true, "two", true ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.DESCENDING );
@@ -737,7 +738,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             {
                 // when
                 entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.ASCENDING, needsValues ),
-                                              IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
+                                              PropertyIndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.ASCENDING );
@@ -746,7 +747,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             {
                 // when
                 entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.DESCENDING, needsValues ),
-                                              IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
+                                              PropertyIndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.DESCENDING );
@@ -768,7 +769,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             {
                 // when
                 entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.ASCENDING, needsValues ),
-                                              IndexQuery.range( prop, CoordinateReferenceSystem.Cartesian ) );
+                                              PropertyIndexQuery.range( prop, CoordinateReferenceSystem.Cartesian ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.ASCENDING );
@@ -777,7 +778,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             {
                 // when
                 entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.DESCENDING, needsValues ),
-                                              IndexQuery.range( prop, CoordinateReferenceSystem.Cartesian ) );
+                                              PropertyIndexQuery.range( prop, CoordinateReferenceSystem.Cartesian ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.DESCENDING );
@@ -799,7 +800,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             {
                 // when
                 entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.ASCENDING, needsValues ),
-                                              IndexQuery.range( prop,
+                                              PropertyIndexQuery.range( prop,
                                                                 Values.of( new String[]{"first", "second", "third"} ), true,
                                                                 Values.of( new String[]{"fourth", "fifth", "sixth", "seventh"} ), true ) );
 
@@ -810,7 +811,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             {
                 // when
                 entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.DESCENDING, needsValues ),
-                                              IndexQuery.range( prop,
+                                              PropertyIndexQuery.range( prop,
                                                                 Values.of( new String[]{"first", "second", "third"} ), true,
                                                                 Values.of( new String[]{"fourth", "fifth", "sixth", "seventh"} ), true ) );
 
@@ -833,7 +834,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             if ( orderCapabilities.supportsAsc() )
             {
                 // when
-                entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.ASCENDING, needsValues ), IndexQuery.exists( prop ) );
+                entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.ASCENDING, needsValues ), PropertyIndexQuery.exists( prop ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.ASCENDING );
@@ -841,7 +842,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             if ( orderCapabilities.supportsDesc() )
             {
                 // when
-                entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.DESCENDING, needsValues ), IndexQuery.exists( prop ) );
+                entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.DESCENDING, needsValues ), PropertyIndexQuery.exists( prop ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.DESCENDING );
@@ -864,7 +865,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unorderedValues(), IndexQuery.range( prop, Cartesian ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unorderedValues(), PropertyIndexQuery.range( prop, Cartesian ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, uniqueIds, index.reference().getCapability().valueCapability( ValueCategory.GEOMETRY ), true, whateverPoint );
@@ -887,7 +888,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, unorderedValues(), IndexQuery.exists( prop ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unorderedValues(), PropertyIndexQuery.exists( prop ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, uniqueIds, valueCapability, true, entitiesOfAllPropertyTypes );
@@ -1077,7 +1078,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         {
             // when
             entityParams.entityDelete( tx, strOne );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.exact( prop, "one" ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.exact( prop, "one" ) );
 
             // then
             assertFalse( cursor.next() );
@@ -1099,7 +1100,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         {
             // when
             entityParams.entityRemoveToken( tx, strOne, label );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.exact( prop, "one" ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.exact( prop, "one" ) );
 
             // then
             assertFalse( cursor.next() );
@@ -1118,7 +1119,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         {
             // when
             entityParams.entitySetProperty( tx, strOne, prop, "ett" );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.exact( prop, "one" ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.exact( prop, "one" ) );
 
             // then
             assertFalse( cursor.next() );
@@ -1137,7 +1138,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         {
             // when
             entityParams.entitySetProperty( tx, strOne, prop, "ett" );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.exact( prop, "ett" ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.exact( prop, "ett" ) );
 
             // then
             assertTrue( cursor.next() );
@@ -1161,7 +1162,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             // when
             entityParams.entityRemoveToken( tx, strOne, label );
             entityParams.entityAddToken( tx, strOneNoLabel, label );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.exact( prop, "one" ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.exact( prop, "one" ) );
 
             // then
             assertTrue( cursor.next() );
@@ -1184,7 +1185,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             entityParams.entityDelete( tx, strThree1 );
             entityParams.entityDelete( tx, strThree2 );
             entityParams.entityDelete( tx, strThree3 );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.range( prop, "one", true, "three", true ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.range( prop, "one", true, "three", true ) );
 
             // then
             assertFalse( cursor.next() );
@@ -1208,7 +1209,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             entityParams.entityRemoveToken( tx, strThree1, label );
             entityParams.entityRemoveToken( tx, strThree2, label );
             entityParams.entityRemoveToken( tx, strThree3, label );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.range( prop, "one", true, "three", true ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.range( prop, "one", true, "three", true ) );
 
             // then
             assertFalse( cursor.next() );
@@ -1230,7 +1231,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             entityParams.entitySetProperty( tx, strThree1, prop, "tre" );
             entityParams.entitySetProperty( tx, strThree2, prop, "tre" );
             entityParams.entitySetProperty( tx, strThree3, prop, "tre" );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.range( prop, "one", true, "three", true ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.range( prop, "one", true, "three", true ) );
 
             // then
             assertFalse( cursor.next() );
@@ -1249,7 +1250,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         {
             // when
             entityParams.entitySetProperty( tx, strOne, prop, "ett" );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.range( prop, "ett", true, "tre", true ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.range( prop, "ett", true, "tre", true ) );
 
             // then
             assertTrue( cursor.next() );
@@ -1272,7 +1273,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             // when
             entityParams.entityRemoveToken( tx, strOne, label );
             entityParams.entityAddToken( tx, strOneNoLabel, label );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.range( prop, "one", true, "ones", true ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.range( prop, "one", true, "ones", true ) );
 
             // then
             assertTrue( cursor.next() );
@@ -1293,7 +1294,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         {
             // when
             entityParams.entityDelete( tx, strOne );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.stringPrefix( prop, stringValue( "on" ) ) );
 
             // then
             assertFalse( cursor.next() );
@@ -1314,7 +1315,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         {
             // when
             entityParams.entityRemoveToken( tx, strOne, label );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.stringPrefix( prop, stringValue( "on" ) ) );
 
             // then
             assertFalse( cursor.next() );
@@ -1333,7 +1334,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         {
             // when
             entityParams.entitySetProperty( tx, strOne, prop, "ett" );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.stringPrefix( prop, stringValue( "on" ) ) );
 
             // then
             assertFalse( cursor.next() );
@@ -1352,7 +1353,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         {
             // when
             entityParams.entitySetProperty( tx, strOne, prop, "ett" );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "et" ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.stringPrefix( prop, stringValue( "et" ) ) );
 
             // then
             assertTrue( cursor.next() );
@@ -1375,7 +1376,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             // when
             entityParams.entityRemoveToken( tx, strOne, label );
             entityParams.entityAddToken( tx, strOneNoLabel, label );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.stringPrefix( prop, stringValue( "on" ) ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.stringPrefix( prop, stringValue( "on" ) ) );
 
             // then
             assertTrue( cursor.next() );
@@ -1396,8 +1397,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         {
             // when
             entityParams.entityDelete( tx, jackDalton );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.exact( firstName, "Jack" ),
-                                          IndexQuery.exact( surname, "Dalton" ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.exact( firstName, "Jack" ),
+                                          PropertyIndexQuery.exact( surname, "Dalton" ) );
 
             // then
             assertFalse( cursor.next() );
@@ -1419,8 +1420,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
         {
             // when
             entityParams.entityRemoveToken( tx, joeDalton, label );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.exact( firstName, "Joe" ),
-                                          IndexQuery.exact( surname, "Dalton" ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.exact( firstName, "Joe" ),
+                                          PropertyIndexQuery.exact( surname, "Dalton" ) );
             // then
             assertFalse( cursor.next() );
         }
@@ -1440,8 +1441,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             // when
             entityParams.entitySetProperty( tx, jackDalton, firstName, "Jesse" );
             entityParams.entitySetProperty( tx, jackDalton, surname, "James" );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.exact( firstName, "Jack" ),
-                                          IndexQuery.exact( surname, "Dalton" ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.exact( firstName, "Jack" ),
+                                          PropertyIndexQuery.exact( surname, "Dalton" ) );
 
             // then
             assertFalse( cursor.next() );
@@ -1462,8 +1463,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             // when
             entityParams.entitySetProperty( tx, jackDalton, firstName, "Jesse" );
             entityParams.entitySetProperty( tx, jackDalton, surname, "James" );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.exact( firstName, "Jesse" ),
-                                          IndexQuery.exact( surname, "James" ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.exact( firstName, "Jesse" ),
+                                          PropertyIndexQuery.exact( surname, "James" ) );
 
             // then
             assertTrue( cursor.next() );
@@ -1489,8 +1490,8 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             entityParams.entityAddToken( tx, strOneNoLabel, label );
             entityParams.entitySetProperty( tx, strOneNoLabel, firstName, "Jesse" );
             entityParams.entitySetProperty( tx, strOneNoLabel, surname, "James" );
-            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), IndexQuery.exact( firstName, "Jesse" ),
-                                          IndexQuery.exact( surname, "James" ) );
+            entityParams.entityIndexSeek( tx, index, cursor, unordered( needsValues ), PropertyIndexQuery.exact( firstName, "Jesse" ),
+                                          PropertyIndexQuery.exact( surname, "James" ) );
 
             // then
             assertTrue( cursor.next() );

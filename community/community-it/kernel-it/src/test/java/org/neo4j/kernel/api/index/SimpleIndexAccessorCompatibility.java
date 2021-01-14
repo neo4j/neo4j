@@ -42,7 +42,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.annotations.documented.ReporterFactories;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -70,12 +70,12 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.internal.kernel.api.IndexQuery.exact;
-import static org.neo4j.internal.kernel.api.IndexQuery.exists;
-import static org.neo4j.internal.kernel.api.IndexQuery.range;
-import static org.neo4j.internal.kernel.api.IndexQuery.stringContains;
-import static org.neo4j.internal.kernel.api.IndexQuery.stringPrefix;
-import static org.neo4j.internal.kernel.api.IndexQuery.stringSuffix;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exists;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringContains;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringPrefix;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringSuffix;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -110,10 +110,10 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                 add( 4L, descriptor.schema(), "apA" ),
                 add( 5L, descriptor.schema(), "b" ) ) );
 
-        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "a" ) ) ) ).isEqualTo( asList( 1L, 3L, 4L ) );
-        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "A" ) ) ) ).isEqualTo( singletonList( 2L ) );
-        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "ba" ) ) ) ).isEqualTo( EMPTY_LIST );
-        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "" ) ) ) ).isEqualTo( asList( 1L, 2L, 3L, 4L, 5L ) );
+        assertThat( query( PropertyIndexQuery.stringPrefix( 1, stringValue( "a" ) ) ) ).isEqualTo( asList( 1L, 3L, 4L ) );
+        assertThat( query( PropertyIndexQuery.stringPrefix( 1, stringValue( "A" ) ) ) ).isEqualTo( singletonList( 2L ) );
+        assertThat( query( PropertyIndexQuery.stringPrefix( 1, stringValue( "ba" ) ) ) ).isEqualTo( EMPTY_LIST );
+        assertThat( query( PropertyIndexQuery.stringPrefix( 1, stringValue( "" ) ) ) ).isEqualTo( asList( 1L, 2L, 3L, 4L, 5L ) );
     }
 
     @Test
@@ -123,7 +123,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                 add( 1L, descriptor.schema(), "2a" ),
                 add( 2L, descriptor.schema(), 2L ),
                 add( 2L, descriptor.schema(), 20L ) ) );
-        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "2" ) ) ) ).isEqualTo( singletonList( 1L ) );
+        assertThat( query( PropertyIndexQuery.stringPrefix( 1, stringValue( "2" ) ) ) ).isEqualTo( singletonList( 1L ) );
     }
 
     @Test
@@ -191,7 +191,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         int propertyKeyId = descriptor.schema().getPropertyId();
         for ( NodeAndValue entry : valueSet1 )
         {
-            List<Long> result = query( IndexQuery.exact( propertyKeyId, entry.value ) );
+            List<Long> result = query( PropertyIndexQuery.exact( propertyKeyId, entry.value ) );
             assertThat( result ).isEqualTo( singletonList( entry.nodeId ) );
         }
     }
@@ -206,7 +206,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
 
         // THEN
         int propertyKeyId = descriptor.schema().getPropertyId();
-        List<Long> result = query( IndexQuery.exists( propertyKeyId ) );
+        List<Long> result = query( PropertyIndexQuery.exists( propertyKeyId ) );
         assertThat( result ).contains( allNodes );
     }
 
@@ -896,7 +896,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
 
     private void shouldRangeSeekInOrderWithExpectedSize( IndexOrder order, RangeSeekMode rangeSeekMode, int expectedSize, Object... objects ) throws Exception
     {
-        IndexQuery range;
+        PropertyIndexQuery range;
         switch ( rangeSeekMode )
         {
         case CLOSED:
@@ -944,7 +944,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             // given
             Value value = random.nextValue( valueType );
             updateAndCommit( singletonList( IndexEntryUpdate.add( entityId, descriptor.schema(), value ) ) );
-            assertEquals( singletonList( entityId ), query( IndexQuery.exact( 0, value ) ) );
+            assertEquals( singletonList( entityId ), query( PropertyIndexQuery.exact( 0, value ) ) );
 
             // when
             Value newValue;
@@ -956,8 +956,8 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             updateAndCommit( singletonList( IndexEntryUpdate.change( entityId, descriptor.schema(), value, newValue ) ) );
 
             // then
-            assertEquals( emptyList(), query( IndexQuery.exact( 0, value ) ) );
-            assertEquals( singletonList( entityId ), query( IndexQuery.exact( 0, newValue ) ) );
+            assertEquals( emptyList(), query( PropertyIndexQuery.exact( 0, value ) ) );
+            assertEquals( singletonList( entityId ), query( PropertyIndexQuery.exact( 0, newValue ) ) );
         }
     }
 
@@ -971,13 +971,13 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             // given
             Value value = random.nextValue( valueType );
             updateAndCommit( singletonList( IndexEntryUpdate.add( entityId, descriptor.schema(), value ) ) );
-            assertEquals( singletonList( entityId ), query( IndexQuery.exact( 0, value ) ) );
+            assertEquals( singletonList( entityId ), query( PropertyIndexQuery.exact( 0, value ) ) );
 
             // when
             updateAndCommit( singletonList( IndexEntryUpdate.remove( entityId, descriptor.schema(), value ) ) );
 
             // then
-            assertTrue( query( IndexQuery.exact( 0, value ) ).isEmpty() );
+            assertTrue( query( PropertyIndexQuery.exact( 0, value ) ).isEmpty() );
         }
     }
 
@@ -1255,7 +1255,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 3L, descriptor.schema(), "c" ) ) );
 
             assertThat( query( exact( 1, "a" ) ) ).containsExactly( 1L );
-            assertThat( query( IndexQuery.exists( 1 ) ) ).containsExactly( 1L, 2L, 3L );
+            assertThat( query( PropertyIndexQuery.exists( 1 ) ) ).containsExactly( 1L, 2L, 3L );
         }
     }
 

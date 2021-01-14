@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.schema.tracking;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
@@ -56,7 +56,7 @@ public class TrackingIndexReader implements IndexReader
 
     @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-            IndexQuery... query ) throws IndexNotApplicableKernelException
+            PropertyIndexQuery... query ) throws IndexNotApplicableKernelException
     {
         delegate.query( context, client, constraints, query );
     }

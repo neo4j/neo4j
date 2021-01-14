@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.NodeValueIndexProgressor;
@@ -51,10 +51,10 @@ public class NodeIdsIndexReaderQueryAnswer implements Answer
         return null;
     }
 
-    public static IndexQuery[] getIndexQueryArgument( InvocationOnMock invocation )
+    public static PropertyIndexQuery[] getIndexQueryArgument( InvocationOnMock invocation )
     {
         // Apparently vararg arguments from mockito can either be non-existent, a single value or an array...
         Object rawQuery = invocation.getArgument( 3 );
-        return rawQuery.getClass().isArray() ? (IndexQuery[]) rawQuery : array( (IndexQuery) rawQuery );
+        return rawQuery.getClass().isArray() ? (PropertyIndexQuery[]) rawQuery : array( (PropertyIndexQuery) rawQuery );
     }
 }

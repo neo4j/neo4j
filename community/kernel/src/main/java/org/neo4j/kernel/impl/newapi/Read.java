@@ -23,7 +23,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -91,7 +91,7 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
+    public final void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, PropertyIndexQuery... query )
             throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
@@ -109,7 +109,7 @@ abstract class Read implements TxStateHolder,
 
     @Override
     public final void relationshipIndexSeek( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints,
-            IndexQuery... query ) throws IndexNotApplicableKernelException
+            PropertyIndexQuery... query ) throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
@@ -144,7 +144,7 @@ abstract class Read implements TxStateHolder,
     @Override
     public long lockingNodeUniqueIndexSeek( IndexDescriptor index,
                                             NodeValueIndexCursor cursor,
-                                            IndexQuery.ExactPredicate... predicates )
+                                            PropertyIndexQuery.ExactPredicate... predicates )
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException, IndexBrokenKernelException
     {
         assertIndexOnline( index );
@@ -160,7 +160,7 @@ abstract class Read implements TxStateHolder,
     public void nodeIndexSeekWithFreshIndexReader(
             DefaultNodeValueIndexCursor cursor,
             IndexReader indexReader,
-            IndexQuery.ExactPredicate... query ) throws IndexNotApplicableKernelException
+            PropertyIndexQuery.ExactPredicate... query ) throws IndexNotApplicableKernelException
     {
         cursor.setRead( this );
         indexReader.query( this, cursor, unconstrained(), query );
@@ -206,7 +206,7 @@ abstract class Read implements TxStateHolder,
         int firstProperty = indexSession.reference.schema().getPropertyIds()[0];
 
         indexSeekClient.setRead( this );
-        indexSession.reader.query( this, indexSeekClient, constraints, IndexQuery.exists( firstProperty ) );
+        indexSession.reader.query( this, indexSeekClient, constraints, PropertyIndexQuery.exists( firstProperty ) );
     }
 
     @Override
@@ -473,7 +473,7 @@ abstract class Read implements TxStateHolder,
         throw new IndexBrokenKernelException( indexGetFailure( index ) );
     }
 
-    private static void assertPredicatesMatchSchema( IndexDescriptor index, IndexQuery.ExactPredicate[] predicates )
+    private static void assertPredicatesMatchSchema( IndexDescriptor index, PropertyIndexQuery.ExactPredicate[] predicates )
             throws IndexNotApplicableKernelException
     {
         int[] propertyIds = index.schema().getPropertyIds();

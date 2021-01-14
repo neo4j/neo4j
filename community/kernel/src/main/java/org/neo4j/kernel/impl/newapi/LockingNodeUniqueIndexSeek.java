@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -40,7 +40,7 @@ public class LockingNodeUniqueIndexSeek
                                                                     UniqueNodeIndexSeeker<CURSOR> nodeIndexSeeker,
                                                                     Read read,
                                                                     IndexDescriptor index,
-                                                                    IndexQuery.ExactPredicate... predicates )
+                                                                    PropertyIndexQuery.ExactPredicate... predicates )
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException
     {
         int[] entityTokenIds = index.schema().getEntityTokenIds();
@@ -83,6 +83,6 @@ public class LockingNodeUniqueIndexSeek
     {
         void nodeIndexSeekWithFreshIndexReader( CURSOR cursor,
                                                 IndexReader indexReader,
-                                                IndexQuery.ExactPredicate... predicates ) throws IndexNotApplicableKernelException;
+                                                PropertyIndexQuery.ExactPredicate... predicates ) throws IndexNotApplicableKernelException;
     }
 }

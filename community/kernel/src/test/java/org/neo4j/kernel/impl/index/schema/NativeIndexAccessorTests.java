@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexCapability;
@@ -289,7 +289,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
 
         // when
         IndexReader reader = accessor.newReader();
-        try ( NodeValueIterator result = query( reader, IndexQuery.exists( 0 ) ) )
+        try ( NodeValueIterator result = query( reader, PropertyIndexQuery.exists( 0 ) ) )
         {
             // then
             assertEntityIdHits( extractEntityIds( updates, alwaysTrue() ), result );
@@ -302,7 +302,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         // when
         IndexReader reader = accessor.newReader();
         long[] actual;
-        try ( NodeValueIterator result = query( reader, IndexQuery.exists( 0 ) ) )
+        try ( NodeValueIterator result = query( reader, PropertyIndexQuery.exists( 0 ) ) )
         {
             // then
             actual = PrimitiveLongCollections.asArray( result );
@@ -322,7 +322,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
         {
             Value value = update.values()[0];
-            try ( NodeValueIterator result = query( reader, IndexQuery.exact( 0, value ) ) )
+            try ( NodeValueIterator result = query( reader, PropertyIndexQuery.exact( 0, value ) ) )
             {
                 assertEntityIdHits( extractEntityIds( updates, in( value ) ), result );
             }
@@ -339,7 +339,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         // when
         IndexReader reader = accessor.newReader();
         Object value = generateUniqueValue( updates );
-        try ( NodeValueIterator result = query( reader, IndexQuery.exact( 0, value ) ) )
+        try ( NodeValueIterator result = query( reader, PropertyIndexQuery.exact( 0, value ) ) )
         {
             assertEntityIdHits( EMPTY_LONG_ARRAY, result );
         }
@@ -453,8 +453,8 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         // when
         IndexReader reader = accessor.newReader();
 
-        IndexQuery outerQuery = valueCreatorUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[3] ), true );
-        IndexQuery innerQuery = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[1] ), true );
+        PropertyIndexQuery outerQuery = valueCreatorUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[3] ), true );
+        PropertyIndexQuery innerQuery = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[1] ), true );
 
         long[] expectedOuter = {entityIdOf( updates[2] ), entityIdOf( updates[3] )};
         long[] expectedInner = {entityIdOf( updates[0] ), entityIdOf( updates[1] )};
@@ -492,9 +492,9 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         // when
         IndexReader reader = accessor.newReader();
 
-        IndexQuery query1 = valueCreatorUtil.rangeQuery( valueOf( updates[4] ), true, valueOf( updates[5] ), true );
-        IndexQuery query2 = valueCreatorUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[3] ), true );
-        IndexQuery query3 = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[1] ), true );
+        PropertyIndexQuery query1 = valueCreatorUtil.rangeQuery( valueOf( updates[4] ), true, valueOf( updates[5] ), true );
+        PropertyIndexQuery query2 = valueCreatorUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[3] ), true );
+        PropertyIndexQuery query3 = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[1] ), true );
 
         long[] expected1 = {entityIdOf( updates[4] ), entityIdOf( updates[5] )};
         long[] expected2 = {entityIdOf( updates[2] ), entityIdOf( updates[3] )};
@@ -645,8 +645,8 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         // when
         try ( NodeValueIterator iter = new NodeValueIterator() )
         {
-            IndexQuery.ExactPredicate filter = IndexQuery.exact( 0, valueOf( updates[1] ) );
-            IndexQuery rangeQuery = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[2] ), true );
+            PropertyIndexQuery.ExactPredicate filter = PropertyIndexQuery.exact( 0, valueOf( updates[1] ) );
+            PropertyIndexQuery rangeQuery = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[2] ), true );
             IndexProgressor.EntityValueClient filterClient = filterClient( iter, filter );
             reader.query( NULL_CONTEXT, filterClient, unconstrained(), rangeQuery );
 
@@ -678,7 +678,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         try ( IndexReader reader = accessor.newReader() )
         {
             ValueGroup valueGroup = random.among( allValues ).valueGroup();
-            IndexQuery.RangePredicate<?> supportedQuery = IndexQuery.range( 0, valueGroup );
+            PropertyIndexQuery.RangePredicate<?> supportedQuery = PropertyIndexQuery.range( 0, valueGroup );
 
             IndexOrderCapability supportedOrders = indexCapability().orderCapability( valueGroup.category() );
             if ( supportedOrders.supportsAsc() )
@@ -696,7 +696,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
                                    ValueGroup valueGroup,
                                    IndexReader reader,
                                    IndexOrder supportedOrder,
-                                   IndexQuery.RangePredicate<?> supportedQuery ) throws IndexNotApplicableKernelException
+                                   PropertyIndexQuery.RangePredicate<?> supportedQuery ) throws IndexNotApplicableKernelException
     {
         Value[] expectedValues = Arrays.stream( allValues )
                                        .filter( v -> v.valueGroup() == valueGroup )
@@ -727,7 +727,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         try ( IndexReader reader = accessor.newReader() )
         {
             IndexOrder unsupportedOrder = IndexOrder.DESCENDING;
-            IndexQuery.ExactPredicate unsupportedQuery = IndexQuery.exact( 0, PointValue.MAX_VALUE ); // <- Any spatial value would do
+            PropertyIndexQuery.ExactPredicate unsupportedQuery = PropertyIndexQuery.exact( 0, PointValue.MAX_VALUE ); // <- Any spatial value would do
 
             var e = assertThrows( UnsupportedOperationException.class, () ->
                 reader.query( NULL_CONTEXT, new SimpleNodeValueClient(), constrained( unsupportedOrder, false ), unsupportedQuery ) );
@@ -761,13 +761,13 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             return;
         }
 
-        IndexQuery.RangePredicate<?> supportedQuery;
+        PropertyIndexQuery.RangePredicate<?> supportedQuery;
         List<Value> expectedValues;
         if ( Values.isGeometryValue( value ) )
         {
             // Unless it's a point value in which case we query for the specific coordinate reference system instead
             CoordinateReferenceSystem crs = ((PointValue) value).getCoordinateReferenceSystem();
-            supportedQuery = IndexQuery.range( 0, crs );
+            supportedQuery = PropertyIndexQuery.range( 0, crs );
             expectedValues = Arrays.stream( allValues )
                     .filter( v -> v.valueGroup() == ValueGroup.GEOMETRY )
                     .filter( v -> ((PointValue) v).getCoordinateReferenceSystem() == crs )
@@ -775,7 +775,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         }
         else
         {
-            supportedQuery = IndexQuery.range( 0, valueGroup );
+            supportedQuery = PropertyIndexQuery.range( 0, valueGroup );
             expectedValues = Arrays.stream( allValues )
                     .filter( v -> v.valueGroup() == valueGroup )
                     .collect( Collectors.toList() );
@@ -822,13 +822,13 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         return update.values()[0];
     }
 
-    private static IndexProgressor.EntityValueClient filterClient( final NodeValueIterator iter, final IndexQuery filter )
+    private static IndexProgressor.EntityValueClient filterClient( final NodeValueIterator iter, final PropertyIndexQuery filter )
     {
         return new IndexProgressor.EntityValueClient()
         {
             @Override
             public void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
-                    IndexQuery[] query, IndexQueryConstraints constraints, boolean indexIncludesTransactionState )
+                    PropertyIndexQuery[] query, IndexQueryConstraints constraints, boolean indexIncludesTransactionState )
             {
                 iter.initialize( descriptor, progressor, query, constraints, indexIncludesTransactionState );
             }
@@ -852,7 +852,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         };
     }
 
-    private static NodeValueIterator query( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException
+    private static NodeValueIterator query( IndexReader reader, PropertyIndexQuery query ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator client = new NodeValueIterator();
         reader.query( NULL_CONTEXT, client, unconstrained(), query );

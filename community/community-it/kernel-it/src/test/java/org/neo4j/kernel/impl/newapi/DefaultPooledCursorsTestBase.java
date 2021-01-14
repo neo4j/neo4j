@@ -26,7 +26,7 @@ import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -208,7 +208,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         IndexReadSession indexSession = tx.dataRead().indexReadSession( indexDescriptor );
 
         NodeValueIndexCursor c1 = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE);
-        read.nodeIndexSeek( indexSession, c1, IndexQueryConstraints.unconstrained(), IndexQuery.exact( prop, "zero" ) );
+        read.nodeIndexSeek( indexSession, c1, IndexQueryConstraints.unconstrained(), PropertyIndexQuery.exact( prop, "zero" ) );
         c1.close();
 
         NodeValueIndexCursor c2 = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE);
@@ -225,7 +225,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
         IndexReadSession indexSession = tx.dataRead().indexReadSession( indexDescriptor );
 
         NodeValueIndexCursor c1 = cursors.allocateFullAccessNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE);
-        read.nodeIndexSeek( indexSession, c1, IndexQueryConstraints.unconstrained(), IndexQuery.exact( prop, "zero" ) );
+        read.nodeIndexSeek( indexSession, c1, IndexQueryConstraints.unconstrained(), PropertyIndexQuery.exact( prop, "zero" ) );
         c1.close();
 
         NodeValueIndexCursor c2 = cursors.allocateFullAccessNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE);
@@ -291,7 +291,7 @@ public abstract class DefaultPooledCursorsTestBase<G extends KernelAPIReadTestSu
 
         RelationshipValueIndexCursor c1 = cursors.allocateRelationshipValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE );
         IndexReadSession indexSession = tx.dataRead().indexReadSession( index );
-        read.relationshipIndexSeek( indexSession, c1, IndexQueryConstraints.unconstrained(), IndexQuery.fulltextSearch( "hello" ) );
+        read.relationshipIndexSeek( indexSession, c1, IndexQueryConstraints.unconstrained(), PropertyIndexQuery.fulltextSearch( "hello" ) );
         c1.close();
 
         RelationshipValueIndexCursor c2 = cursors.allocateRelationshipValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE );

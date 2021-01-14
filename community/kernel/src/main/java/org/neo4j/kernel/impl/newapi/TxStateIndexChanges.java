@@ -33,7 +33,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
@@ -75,7 +75,7 @@ class TxStateIndexChanges
 
     static AddedAndRemoved indexUpdatesForSuffixOrContains( ReadableTransactionState txState,
                                                             IndexDescriptor descriptor,
-                                                            IndexQuery query,
+                                                            PropertyIndexQuery query,
                                                             IndexOrder indexOrder )
     {
         if ( descriptor.schema().getPropertyIds().length != 1 )
@@ -88,7 +88,7 @@ class TxStateIndexChanges
 
     static AddedWithValuesAndRemoved indexUpdatesWithValuesForSuffixOrContains( ReadableTransactionState txState,
                                                                                 IndexDescriptor descriptor,
-                                                                                IndexQuery query,
+                                                                                PropertyIndexQuery query,
                                                                                 IndexOrder indexOrder )
     {
         if ( descriptor.schema().getPropertyIds().length != 1 )
@@ -120,7 +120,7 @@ class TxStateIndexChanges
     static AddedAndRemoved indexUpdatesForRangeSeek( ReadableTransactionState txState,
                                                      IndexDescriptor descriptor,
                                                      Value[] equalityPrefix,
-                                                     IndexQuery.RangePredicate<?> predicate,
+                                                     PropertyIndexQuery.RangePredicate<?> predicate,
                                                      IndexOrder indexOrder )
     {
         NavigableMap<ValueTuple,? extends LongDiffSets> sortedUpdates = txState.getSortedIndexUpdates( descriptor.schema() );
@@ -161,7 +161,7 @@ class TxStateIndexChanges
     static AddedWithValuesAndRemoved indexUpdatesWithValuesForRangeSeek( ReadableTransactionState txState,
                                                                          IndexDescriptor descriptor,
                                                                          Value[] equalityPrefix,
-                                                                         IndexQuery.RangePredicate<?> predicate,
+                                                                         PropertyIndexQuery.RangePredicate<?> predicate,
                                                                          IndexOrder indexOrder )
     {
         NavigableMap<ValueTuple, ? extends LongDiffSets> sortedUpdates = txState.getSortedIndexUpdates( descriptor.schema() );
@@ -280,7 +280,7 @@ class TxStateIndexChanges
 
     private static AddedAndRemoved indexUpdatesForScanAndFilter( ReadableTransactionState txState,
                                                                  IndexDescriptor descriptor,
-                                                                 IndexQuery filter,
+                                                                 PropertyIndexQuery filter,
                                                                  IndexOrder indexOrder )
     {
         Map<ValueTuple,? extends LongDiffSets> updates = getUpdates( txState, descriptor, indexOrder );
@@ -308,7 +308,7 @@ class TxStateIndexChanges
 
     private static AddedWithValuesAndRemoved indexUpdatesWithValuesScanAndFilter( ReadableTransactionState txState,
                                                                                   IndexDescriptor descriptor,
-                                                                                  IndexQuery filter,
+                                                                                  PropertyIndexQuery filter,
                                                                                   IndexOrder indexOrder )
     {
         Map<ValueTuple,? extends LongDiffSets> updates = getUpdates( txState, descriptor, indexOrder );
@@ -426,7 +426,7 @@ class TxStateIndexChanges
             this.includeUpper = includeUpper;
         }
 
-        private static RangeFilterValues fromRange( int size, Value[] equalityValues, IndexQuery.RangePredicate<?> predicate )
+        private static RangeFilterValues fromRange( int size, Value[] equalityValues, PropertyIndexQuery.RangePredicate<?> predicate )
         {
             Value lower = predicate.fromValue();
             Value upper = predicate.toValue();

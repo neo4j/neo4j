@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -34,7 +34,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.ValueTuple;
 
-import static org.neo4j.internal.kernel.api.IndexQuery.exact;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.storageengine.api.UpdateMode.REMOVED;
@@ -117,9 +117,9 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater
         }
     }
 
-    private IndexQuery[] queryOf( ValueTuple tuple )
+    private PropertyIndexQuery[] queryOf( ValueTuple tuple )
     {
-        IndexQuery[] predicates = new IndexQuery[tuple.size()];
+        PropertyIndexQuery[] predicates = new PropertyIndexQuery[tuple.size()];
         int[] propertyIds = indexDescriptor.schema().getPropertyIds();
         for ( int i = 0; i < predicates.length; i++ )
         {

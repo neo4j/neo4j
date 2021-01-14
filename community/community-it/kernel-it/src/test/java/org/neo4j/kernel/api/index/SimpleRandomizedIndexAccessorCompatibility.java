@@ -31,7 +31,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -74,7 +74,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
         for ( ValueIndexEntryUpdate<?> update : updates )
         {
             // then
-            List<Long> hits = query( IndexQuery.exact( 0, update.values()[0] ) );
+            List<Long> hits = query( PropertyIndexQuery.exact( 0, update.values()[0] ) );
             assertEquals( hits.toString(), 1, hits.size() );
             assertThat( single( hits ) ).isEqualTo( update.getEntityId() );
         }
@@ -154,7 +154,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
             boolean toInclusive = random.nextBoolean();
 
             // Expected result based on query
-            IndexQuery.RangePredicate<?> predicate = IndexQuery.range( 0, from, fromInclusive, to, toInclusive );
+            PropertyIndexQuery.RangePredicate<?> predicate = PropertyIndexQuery.range( 0, from, fromInclusive, to, toInclusive );
             List<Long> expectedIds = expectedIds( sortedValues, from, to, fromInclusive, toInclusive );
 
             // Depending on order capabilities we verify ids or order and ids.

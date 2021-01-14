@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.coreapi.internal;
 
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
@@ -36,7 +36,7 @@ public class RelationshipTypePropertyIterator extends PropertyFilteringIterator<
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor,
             EntityFactory<Relationship> relationshipFactory,
-            IndexQuery... queries )
+            PropertyIndexQuery... queries )
     {
         super( relationshipTypeIndexCursor, relationshipScanCursor, propertyCursor, relationshipFactory, queries );
         this.read = read;

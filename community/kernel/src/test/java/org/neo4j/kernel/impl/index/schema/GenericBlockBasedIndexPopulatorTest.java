@@ -30,7 +30,7 @@ import java.util.concurrent.Callable;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -315,7 +315,7 @@ class GenericBlockBasedIndexPopulatorTest
         try ( NativeIndexReader<GenericKey, NativeIndexValue> reader = populator.newReader() )
         {
             SimpleNodeValueClient valueClient = new SimpleNodeValueClient();
-            IndexQuery.ExactPredicate exact = IndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), entry );
+            PropertyIndexQuery.ExactPredicate exact = PropertyIndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), entry );
             reader.query( NULL_CONTEXT, valueClient, unconstrained(), exact );
             assertTrue( valueClient.next() );
             long id = valueClient.reference;
@@ -338,7 +338,7 @@ class GenericBlockBasedIndexPopulatorTest
         try ( NativeIndexReader<GenericKey, NativeIndexValue> reader = populator.newReader() )
         {
             SimpleNodeValueClient cursor = new SimpleNodeValueClient();
-            reader.query( NULL_CONTEXT, cursor, unorderedValues(), IndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), value ) );
+            reader.query( NULL_CONTEXT, cursor, unorderedValues(), PropertyIndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), value ) );
             assertTrue( cursor.next() );
             assertEquals( id, cursor.reference );
             assertEquals( value, cursor.values[0] );

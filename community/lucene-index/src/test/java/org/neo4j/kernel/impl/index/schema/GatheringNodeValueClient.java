@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -34,11 +34,11 @@ public class GatheringNodeValueClient implements IndexProgressor.EntityValueClie
     public Value[] values;
     public IndexDescriptor descriptor;
     public IndexProgressor progressor;
-    public IndexQuery[] query;
+    public PropertyIndexQuery[] query;
     public IndexQueryConstraints constraints;
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexQueryConstraints constraints,
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, PropertyIndexQuery[] query, IndexQueryConstraints constraints,
             boolean indexIncludesTransactionState )
     {
         this.descriptor = descriptor;

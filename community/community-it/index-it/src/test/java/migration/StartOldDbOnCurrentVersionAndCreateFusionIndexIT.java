@@ -42,7 +42,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -504,10 +504,10 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
             {
                 propertyKeyIds[i] = tokenRead.propertyKey( keys[i] );
             }
-            IndexQuery[] predicates = new IndexQuery[propertyKeyIds.length];
+            PropertyIndexQuery[] predicates = new PropertyIndexQuery[propertyKeyIds.length];
             for ( int i = 0; i < propertyKeyIds.length; i++ )
             {
-                predicates[i] = IndexQuery.exists( propertyKeyIds[i] );
+                predicates[i] = PropertyIndexQuery.exists( propertyKeyIds[i] );
             }
             IndexDescriptor index = single( ktx.schemaRead().index( SchemaDescriptor.forLabel( labelId, propertyKeyIds ) ) );
             IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );

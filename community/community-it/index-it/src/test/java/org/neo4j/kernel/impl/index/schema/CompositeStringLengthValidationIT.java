@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -116,8 +116,8 @@ class CompositeStringLengthValidationIT
             {
                 IndexReadSession indexReadSession = ktx.dataRead().indexReadSession( index );
                 ktx.dataRead().nodeIndexSeek( indexReadSession,
-                                              cursor, unconstrained(), IndexQuery.exact( propertyKeyId1, firstSlot ),
-                                              IndexQuery.exact( propertyKeyId2, secondSlot ) );
+                                              cursor, unconstrained(), PropertyIndexQuery.exact( propertyKeyId1, firstSlot ),
+                                              PropertyIndexQuery.exact( propertyKeyId2, secondSlot ) );
                 assertTrue( cursor.next() );
                 assertEquals( node.getId(), cursor.nodeReference() );
                 assertFalse( cursor.next() );

@@ -46,11 +46,11 @@ import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Path
-import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
+import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
@@ -209,7 +209,7 @@ object StaticEvaluation {
 
     override def indexReference(label: Int, properties: Int*): IndexDescriptor = notAvailable()
 
-    override def indexSeek[RESULT <: AnyRef](index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder, queries: Seq[IndexQuery]): NodeValueIndexCursor = notAvailable()
+    override def indexSeek[RESULT <: AnyRef](index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder, queries: Seq[PropertyIndexQuery]): NodeValueIndexCursor = notAvailable()
 
     override def indexSeekByContains[RESULT <: AnyRef](index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder, value: TextValue): NodeValueIndexCursor = notAvailable()
 
@@ -217,7 +217,7 @@ object StaticEvaluation {
 
     override def indexScan[RESULT <: AnyRef](index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder): NodeValueIndexCursor = notAvailable()
 
-    override def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor, queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor = notAvailable()
+    override def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor, queries: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor = notAvailable()
 
     override def getNodesByLabel(id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue] = notAvailable()
 

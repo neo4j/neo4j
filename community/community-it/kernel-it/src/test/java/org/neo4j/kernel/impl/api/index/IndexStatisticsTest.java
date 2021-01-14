@@ -44,7 +44,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -383,7 +383,7 @@ public class IndexStatisticsTest
                 {
                     nodesInStore++;
                     String name = (String) node.getProperty( NAME_PROPERTY );
-                    ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.exact( propertyKeyId, name ) );
+                    ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), PropertyIndexQuery.exact( propertyKeyId, name ) );
                     boolean found = false;
                     while ( cursor.next() )
                     {
@@ -407,7 +407,7 @@ public class IndexStatisticsTest
                     fail( String.join( format( "%n" ), mismatches ) );
                 }
                 // Node count == indexed node count
-                ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.exists( propertyKeyId ) );
+                ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), PropertyIndexQuery.exists( propertyKeyId ) );
                 int nodesInIndex = 0;
                 while ( cursor.next() )
                 {

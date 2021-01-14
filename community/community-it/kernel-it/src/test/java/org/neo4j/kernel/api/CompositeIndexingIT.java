@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -357,14 +357,14 @@ class CompositeIndexingIT
         return cursor;
     }
 
-    private IndexQuery[] exactQuery()
+    private PropertyIndexQuery[] exactQuery()
     {
         int[] propertyIds = index.schema().getPropertyIds();
-        IndexQuery[] query = new IndexQuery[propertyIds.length];
+        PropertyIndexQuery[] query = new PropertyIndexQuery[propertyIds.length];
         for ( int i = 0; i < query.length; i++ )
         {
             int propID = propertyIds[i];
-            query[i] = IndexQuery.exact( propID, Values.of( propID ) );
+            query[i] = PropertyIndexQuery.exact( propID, Values.of( propID ) );
         }
         return query;
     }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -84,7 +84,7 @@ public interface IndexProgressor extends AutoCloseable
          * Otherwise, if this parameter is {@code false}, then the client needs to filter and merge the transaction state in on their own.
          */
         void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
-                         IndexQuery[] query, IndexQueryConstraints constraints, boolean indexIncludesTransactionState );
+                         PropertyIndexQuery[] query, IndexQueryConstraints constraints, boolean indexIncludesTransactionState );
 
         /**
          * Accept the entity id and values of a candidate index entry. Return true if the entry is

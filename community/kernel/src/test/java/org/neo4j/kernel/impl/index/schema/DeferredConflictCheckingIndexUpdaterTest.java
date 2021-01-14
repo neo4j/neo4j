@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -84,10 +84,10 @@ class DeferredConflictCheckingIndexUpdaterTest
             if ( update.updateMode() == UpdateMode.ADDED || update.updateMode() == UpdateMode.CHANGED )
             {
                 Value[] tuple = update.values();
-                IndexQuery[] query = new IndexQuery[tuple.length];
+                PropertyIndexQuery[] query = new PropertyIndexQuery[tuple.length];
                 for ( int i = 0; i < tuple.length; i++ )
                 {
-                    query[i] = IndexQuery.exact( propertyKeyIds[i], tuple[i] );
+                    query[i] = PropertyIndexQuery.exact( propertyKeyIds[i], tuple[i] );
                 }
                 verify( reader ).query( any(), any(), any(), eq( query[0] ), eq( query[1] ) );
             }

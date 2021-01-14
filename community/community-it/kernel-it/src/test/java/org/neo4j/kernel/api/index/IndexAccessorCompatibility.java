@@ -33,7 +33,7 @@ import java.util.Map;
 
 import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -115,7 +115,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
                 .toArray( ValueType[]::new );
     }
 
-    protected List<Long> query( IndexQuery... predicates ) throws Exception
+    protected List<Long> query( PropertyIndexQuery... predicates ) throws Exception
     {
         try ( IndexReader reader = accessor.newReader() )
         {
@@ -135,14 +135,14 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         }
     }
 
-    protected AutoCloseable query( SimpleNodeValueClient client, IndexOrder order, IndexQuery... predicates ) throws Exception
+    protected AutoCloseable query( SimpleNodeValueClient client, IndexOrder order, PropertyIndexQuery... predicates ) throws Exception
     {
         IndexReader reader = accessor.newReader();
         reader.query( NULL_CONTEXT, client, constrained( order, false ), predicates );
         return reader;
     }
 
-    List<Long> assertInOrder( IndexOrder order, IndexQuery... predicates ) throws Exception
+    List<Long> assertInOrder( IndexOrder order, PropertyIndexQuery... predicates ) throws Exception
     {
         List<Long> actualIds;
         if ( order == IndexOrder.NONE )
@@ -188,7 +188,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         return seenIds;
     }
 
-    IndexOrderCapability orderCapability( IndexQuery... predicates )
+    IndexOrderCapability orderCapability( PropertyIndexQuery... predicates )
     {
         ValueCategory[] categories = new ValueCategory[predicates.length];
         for ( int i = 0; i < predicates.length; i++ )
@@ -221,9 +221,9 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     /**
      * Run the Value[] from a particular entityId through the list of IndexQuery[] predicates to see if they all accept the value.
      */
-    private boolean passesFilter( long entityId, IndexQuery[] predicates )
+    private boolean passesFilter( long entityId, PropertyIndexQuery[] predicates )
     {
-        if ( predicates.length == 1 && predicates[0] instanceof IndexQuery.ExistsPredicate )
+        if ( predicates.length == 1 && predicates[0] instanceof PropertyIndexQuery.ExistsPredicate )
         {
             return true;
         }
@@ -231,7 +231,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         Value[] values = committedValues.get( entityId );
         for ( int i = 0; i < values.length; i++ )
         {
-            IndexQuery predicate = predicates[i];
+            PropertyIndexQuery predicate = predicates[i];
             if ( predicate.valueGroup() == ValueGroup.GEOMETRY || predicate.valueGroup() == ValueGroup.GEOMETRY_ARRAY ||
                     (predicate.valueGroup() == ValueGroup.NUMBER && !testSuite.supportFullValuePrecisionForNumbers()) )
             {

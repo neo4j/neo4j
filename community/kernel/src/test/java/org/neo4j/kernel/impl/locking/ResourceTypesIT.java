@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.internal.kernel.api.IndexQuery.exact;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
 
 /**

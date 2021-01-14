@@ -30,7 +30,7 @@ import java.util.Set;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -69,7 +69,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             expected.add( entityWithProp( tx, "2suff" ) );
             entityWithPropId( tx, "skruff" );
             IndexDescriptor index = tx.schemaRead().indexGetForName( INDEX_NAME );
-            assertEntityAndValueForSeek( expected, tx, index, needsValues, "pasuff", IndexQuery.stringSuffix( prop, stringValue( "suff" ) ) );
+            assertEntityAndValueForSeek( expected, tx, index, needsValues, "pasuff", PropertyIndexQuery.stringSuffix( prop, stringValue( "suff" ) ) );
         }
     }
 
@@ -127,7 +127,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             IndexDescriptor index = tx.schemaRead().indexGetForName( INDEX_NAME );
             // Equality seek does never provide values
             int prop = tx.tokenRead().propertyKey( DEFAULT_PROPERTY_NAME );
-            assertEntityAndValueForSeek( expected, tx, index, false, "banana", IndexQuery.exact( prop, "banana" ) );
+            assertEntityAndValueForSeek( expected, tx, index, false, "banana", PropertyIndexQuery.exact( prop, "banana" ) );
         }
     }
 
@@ -154,7 +154,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             entityWithPropId( tx, "skruff" );
             IndexDescriptor index = tx.schemaRead().indexGetForName( INDEX_NAME );
 
-            assertEntityAndValueForSeek( expected, tx, index,  needsValues, "suffpa", IndexQuery.stringPrefix( prop, stringValue( "suff" ) ) );
+            assertEntityAndValueForSeek( expected, tx, index,  needsValues, "suffpa", PropertyIndexQuery.stringPrefix( prop, stringValue( "suff" ) ) );
         }
     }
 
@@ -180,7 +180,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             expected.add( entityWithProp( tx, "cherry" ) );
             entityWithProp( tx, "dragonfruit" );
             IndexDescriptor index = tx.schemaRead().indexGetForName( INDEX_NAME );
-            assertEntityAndValueForSeek( expected, tx, index, needsValues, "berry", IndexQuery.range( prop, "b", true, "d", false ) );
+            assertEntityAndValueForSeek( expected, tx, index, needsValues, "berry", PropertyIndexQuery.range( prop, "b", true, "d", false ) );
         }
     }
 
@@ -212,7 +212,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             expected.add(Pair.of(entityToChange, newProperty ));
 
             int prop = tx.tokenRead().propertyKey( DEFAULT_PROPERTY_NAME );
-            assertEntityAndValueForSeek( expected, tx, index, needsValues, "berry", IndexQuery.range( prop, "b", true, "d", false ) );
+            assertEntityAndValueForSeek( expected, tx, index, needsValues, "berry", PropertyIndexQuery.range( prop, "b", true, "d", false ) );
         }
     }
 
@@ -242,7 +242,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             setProperty( tx, entityToChange, newProperty );
 
             int prop = tx.tokenRead().propertyKey( DEFAULT_PROPERTY_NAME );
-            assertEntityAndValueForSeek( expected, tx, index, needsValues, "berry", IndexQuery.range( prop, "b", true, "d", false ) );
+            assertEntityAndValueForSeek( expected, tx, index, needsValues, "berry", PropertyIndexQuery.range( prop, "b", true, "d", false ) );
         }
     }
 
@@ -271,7 +271,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             removeProperty( tx, entityToChange );
 
             int prop = tx.tokenRead().propertyKey( DEFAULT_PROPERTY_NAME );
-            assertEntityAndValueForSeek( expected, tx, index, needsValues, "berry", IndexQuery.range( prop, "b", true, "d", false ) );
+            assertEntityAndValueForSeek( expected, tx, index, needsValues, "berry", PropertyIndexQuery.range( prop, "b", true, "d", false ) );
         }
     }
 
@@ -300,7 +300,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             IndexDescriptor index = tx.schemaRead().indexGetForName( INDEX_NAME );
             deleteEntity( tx, entityToChange );
 
-            assertEntityAndValueForSeek( expected, tx, index, needsValues, "berry", IndexQuery.range( prop, "b", true, "d", false ) );
+            assertEntityAndValueForSeek( expected, tx, index, needsValues, "berry", PropertyIndexQuery.range( prop, "b", true, "d", false ) );
         }
     }
 
@@ -327,7 +327,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
             IndexDescriptor index = tx.schemaRead().indexGetForName( INDEX_NAME );
 
             int prop = tx.tokenRead().propertyKey( DEFAULT_PROPERTY_NAME );
-            assertEntityAndValueForSeek( expected, tx, index, needsValues, "immense", IndexQuery.stringContains( prop, stringValue( "me" ) ) );
+            assertEntityAndValueForSeek( expected, tx, index, needsValues, "immense", PropertyIndexQuery.stringContains( prop, stringValue( "me" ) ) );
         }
     }
 
@@ -420,7 +420,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
      * @param queries the index queries
      */
     abstract void assertEntityAndValueForSeek( Set<Pair<Long,Value>> expected, KernelTransaction tx, IndexDescriptor index, boolean needsValues,
-            Object anotherValueFoundByQuery, IndexQuery... queries ) throws Exception;
+            Object anotherValueFoundByQuery, PropertyIndexQuery... queries ) throws Exception;
 
     /**
      * Perform an index scan and assert that the correct entities and values were found.

@@ -52,7 +52,7 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -350,7 +350,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( myLabel.name() );
         int propertyId = tokenRead.propertyKey( key );
-        return nodesByLabelAndProperty( transaction, labelId, IndexQuery.exact( propertyId, Values.of( value, false ) ) );
+        return nodesByLabelAndProperty( transaction, labelId, PropertyIndexQuery.exact( propertyId, Values.of( value, false ) ) );
     }
 
     @Override
@@ -364,26 +364,26 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( myLabel.name() );
         int propertyId = tokenRead.propertyKey( key );
-        IndexQuery query = getIndexQuery( value, searchMode, propertyId );
+        PropertyIndexQuery query = getIndexQuery( value, searchMode, propertyId );
         return nodesByLabelAndProperty( transaction, labelId, query );
     }
 
-    private IndexQuery getIndexQuery( String value, StringSearchMode searchMode, int propertyId )
+    private PropertyIndexQuery getIndexQuery( String value, StringSearchMode searchMode, int propertyId )
     {
-        IndexQuery query;
+        PropertyIndexQuery query;
         switch ( searchMode )
         {
         case EXACT:
-            query = IndexQuery.exact( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
+            query = PropertyIndexQuery.exact( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
             break;
         case PREFIX:
-            query = IndexQuery.stringPrefix( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
+            query = PropertyIndexQuery.stringPrefix( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
             break;
         case SUFFIX:
-            query = IndexQuery.stringSuffix( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
+            query = PropertyIndexQuery.stringSuffix( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
             break;
         case CONTAINS:
-            query = IndexQuery.stringContains( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
+            query = PropertyIndexQuery.stringContains( propertyId, utf8Value( value.getBytes( UTF_8 ) ) );
             break;
         default:
             throw new IllegalStateException( "Unknown string search mode: " + searchMode );
@@ -403,9 +403,9 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( label.name() );
         return nodesByLabelAndProperties( transaction, labelId,
-                                          IndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1, false ) ),
-                                          IndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2, false ) ),
-                                          IndexQuery.exact( tokenRead.propertyKey( key3 ), Values.of( value3, false ) ) );
+                                          PropertyIndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1, false ) ),
+                                          PropertyIndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2, false ) ),
+                                          PropertyIndexQuery.exact( tokenRead.propertyKey( key3 ), Values.of( value3, false ) ) );
     }
 
     @Override
@@ -418,8 +418,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( label.name() );
         return nodesByLabelAndProperties( transaction, labelId,
-                                          IndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1, false ) ),
-                                          IndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2, false ) ) );
+                                          PropertyIndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1, false ) ),
+                                          PropertyIndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2, false ) ) );
     }
 
     @Override
@@ -430,7 +430,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         KernelTransaction transaction = kernelTransaction();
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( label.name() );
-        IndexQuery.ExactPredicate[] queries = convertToQueries( propertyValues, tokenRead );
+        PropertyIndexQuery.ExactPredicate[] queries = convertToQueries( propertyValues, tokenRead );
         return nodesByLabelAndProperties( transaction, labelId, queries );
     }
 
@@ -477,7 +477,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         TokenRead tokenRead = transaction.tokenRead();
         int typeId = tokenRead.relationshipType( relationshipType.name() );
         int propertyId = tokenRead.propertyKey( key );
-        IndexQuery query = getIndexQuery( template, searchMode, propertyId );
+        PropertyIndexQuery query = getIndexQuery( template, searchMode, propertyId );
         return relationshipsByTypeAndProperty( transaction, typeId, query );
     }
 
@@ -489,7 +489,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         KernelTransaction transaction = kernelTransaction();
         TokenRead tokenRead = transaction.tokenRead();
         int typeId = tokenRead.relationshipType( relationshipType.name() );
-        IndexQuery.ExactPredicate[] queries = convertToQueries( propertyValues, tokenRead );
+        PropertyIndexQuery.ExactPredicate[] queries = convertToQueries( propertyValues, tokenRead );
         return relationshipsByTypeAndProperties( transaction, typeId, queries );
     }
 
@@ -505,9 +505,9 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         TokenRead tokenRead = transaction.tokenRead();
         int typeId = tokenRead.relationshipType( relationshipType.name() );
         return relationshipsByTypeAndProperties( transaction, typeId,
-                                                 IndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1, false ) ),
-                                                 IndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2, false ) ),
-                                                 IndexQuery.exact( tokenRead.propertyKey( key3 ), Values.of( value3, false ) ) );
+                                                 PropertyIndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1, false ) ),
+                                                 PropertyIndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2, false ) ),
+                                                 PropertyIndexQuery.exact( tokenRead.propertyKey( key3 ), Values.of( value3, false ) ) );
     }
 
     @Override
@@ -520,8 +520,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         TokenRead tokenRead = transaction.tokenRead();
         int typeId = tokenRead.relationshipType( relationshipType.name() );
         return relationshipsByTypeAndProperties( transaction, typeId,
-                                                 IndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1, false ) ),
-                                                 IndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2, false ) ) );
+                                                 PropertyIndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1, false ) ),
+                                                 PropertyIndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2, false ) ) );
     }
 
     @Override
@@ -553,7 +553,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.relationshipType( relationshipType.name() );
         int propertyId = tokenRead.propertyKey( key );
-        return relationshipsByTypeAndProperty( transaction, labelId, IndexQuery.exact( propertyId, Values.of( value, false ) ) );
+        return relationshipsByTypeAndProperty( transaction, labelId, PropertyIndexQuery.exact( propertyId, Values.of( value, false ) ) );
     }
 
     @Override
@@ -786,7 +786,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return new SchemaImpl( kernelTransaction() );
     }
 
-    private ResourceIterator<Node> nodesByLabelAndProperty( KernelTransaction transaction, int labelId, IndexQuery query )
+    private ResourceIterator<Node> nodesByLabelAndProperty( KernelTransaction transaction, int labelId, PropertyIndexQuery query )
     {
         Read read = transaction.dataRead();
 
@@ -816,7 +816,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return getNodesByLabelAndPropertyWithoutIndex( labelId, query );
     }
 
-    private ResourceIterator<Relationship> relationshipsByTypeAndProperty( KernelTransaction transaction, int typeId, IndexQuery query )
+    private ResourceIterator<Relationship> relationshipsByTypeAndProperty( KernelTransaction transaction, int typeId, PropertyIndexQuery query )
     {
         Read read = transaction.dataRead();
 
@@ -866,7 +866,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return !closed;
     }
 
-    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int labelId, IndexQuery... queries )
+    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int labelId, PropertyIndexQuery... queries )
     {
         KernelTransaction transaction = kernelTransaction();
 
@@ -884,7 +884,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 queries );
     }
 
-    private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyWithoutIndex( int labelId, IndexQuery... queries )
+    private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyWithoutIndex( int labelId, PropertyIndexQuery... queries )
     {
         KernelTransaction transaction = kernelTransaction();
 
@@ -903,7 +903,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     }
 
     private ResourceIterator<Node> nodesByLabelAndProperties(
-            KernelTransaction transaction, int labelId, IndexQuery.ExactPredicate... queries )
+            KernelTransaction transaction, int labelId, PropertyIndexQuery.ExactPredicate... queries )
     {
         Read read = transaction.dataRead();
 
@@ -933,13 +933,13 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return getNodesByLabelAndPropertyWithoutIndex( labelId, queries );
     }
 
-    private static IndexQuery[] getReorderedIndexQueries( int[] indexPropertyIds, IndexQuery[] queries )
+    private static PropertyIndexQuery[] getReorderedIndexQueries( int[] indexPropertyIds, PropertyIndexQuery[] queries )
     {
-        IndexQuery[] orderedQueries = new IndexQuery[queries.length];
+        PropertyIndexQuery[] orderedQueries = new PropertyIndexQuery[queries.length];
         for ( int i = 0; i < indexPropertyIds.length; i++ )
         {
             int propertyKeyId = indexPropertyIds[i];
-            for ( IndexQuery query : queries )
+            for ( PropertyIndexQuery query : queries )
             {
                 if ( query.propertyKeyId() == propertyKeyId )
                 {
@@ -981,7 +981,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return new RelationshipCursorResourceIterator<>( cursor, this::newRelationshipEntity );
     }
 
-    private ResourceIterator<Relationship> relationshipsByTypeAndProperties( KernelTransaction tx, int typeId, IndexQuery.ExactPredicate... queries )
+    private ResourceIterator<Relationship> relationshipsByTypeAndProperties( KernelTransaction tx, int typeId, PropertyIndexQuery.ExactPredicate... queries )
     {
         Read read = tx.dataRead();
 
@@ -1011,13 +1011,13 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return getRelationshipsByTypeAndPropertyWithoutIndex( typeId, queries );
     }
 
-    private IndexQuery.ExactPredicate[] convertToQueries( Map<String,Object> propertyValues, TokenRead tokenRead )
+    private PropertyIndexQuery.ExactPredicate[] convertToQueries( Map<String,Object> propertyValues, TokenRead tokenRead )
     {
-        IndexQuery.ExactPredicate[] queries = new IndexQuery.ExactPredicate[propertyValues.size()];
+        PropertyIndexQuery.ExactPredicate[] queries = new PropertyIndexQuery.ExactPredicate[propertyValues.size()];
         int i = 0;
         for ( Map.Entry<String,Object> entry : propertyValues.entrySet() )
         {
-            queries[i++] = IndexQuery.exact( tokenRead.propertyKey( entry.getKey() ), Values.of( entry.getValue(), false ) );
+            queries[i++] = PropertyIndexQuery.exact( tokenRead.propertyKey( entry.getKey() ), Values.of( entry.getValue(), false ) );
         }
         return queries;
     }
@@ -1095,7 +1095,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return false;
     }
 
-    private static int[] getPropertyIds( IndexQuery[] queries )
+    private static int[] getPropertyIds( PropertyIndexQuery[] queries )
     {
         int[] propertyIds = new int[queries.length];
         for ( int i = 0; i < queries.length; i++ )
@@ -1105,13 +1105,13 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return propertyIds;
     }
 
-    private static boolean isInvalidQuery( int tokenId, IndexQuery[] queries )
+    private static boolean isInvalidQuery( int tokenId, PropertyIndexQuery[] queries )
     {
         if ( tokenId == TokenRead.NO_TOKEN )
         {
             return true;
         }
-        return stream( queries ).mapToInt( IndexQuery::propertyKeyId ).anyMatch( propertyKeyId -> propertyKeyId == TokenRead.NO_TOKEN );
+        return stream( queries ).mapToInt( PropertyIndexQuery::propertyKeyId ).anyMatch( propertyKeyId -> propertyKeyId == TokenRead.NO_TOKEN );
     }
 
     private <T> Iterable<T> allInUse( final TokenAccess<T> tokens )

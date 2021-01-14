@@ -33,9 +33,9 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.Cursor;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.ValueIndexCursor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -108,7 +108,7 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
                 expected.add( entityWithProp( tx, "jello" ) );
                 entityWithProp( tx, "willow" );
 
-                IndexQuery query = IndexQuery.range( prop, "hello", true, "trello", true );
+                PropertyIndexQuery query = PropertyIndexQuery.range( prop, "hello", true, "trello", true );
 
                 entityIndexSeek( tx, index, cursor, constrained( indexOrder, true ), query );
 
@@ -151,7 +151,7 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
                 expected.add( entityWithProp( tx, "bully" ) );
                 entityWithProp( tx, "willow" );
 
-                IndexQuery query = IndexQuery.stringPrefix( prop, stringValue( "b" ) );
+                PropertyIndexQuery query = PropertyIndexQuery.stringPrefix( prop, stringValue( "b" ) );
                 entityIndexSeek( tx, index, cursor, constrained( indexOrder, true ), query );
 
                 assertResultsInOrder( expected, cursor, indexOrder );
@@ -580,7 +580,7 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
             try ( var cursor = getEntityValueIndexCursor( tx ) )
             {
 
-                IndexQuery query = IndexQuery.stringPrefix( prop, stringValue( "" ) );
+                PropertyIndexQuery query = PropertyIndexQuery.stringPrefix( prop, stringValue( "" ) );
                 entityIndexSeek( tx, index, cursor, constrained( indexOrder, true ), query );
 
                 assertTrue( cursor.next() );
@@ -603,7 +603,7 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
             IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
             try ( var cursor = getEntityValueIndexCursor( tx ) )
             {
-                IndexQuery query = IndexQuery.stringPrefix( prop, stringValue( "" ) );
+                PropertyIndexQuery query = PropertyIndexQuery.stringPrefix( prop, stringValue( "" ) );
                 entityIndexSeek( tx, index, cursor, constrained( indexOrder, true ), query );
                 assertTrue( cursor.next() );
                 assertThat( cursor.propertyValue( 0 ) ).isEqualTo( expectedFirst );
@@ -721,6 +721,6 @@ abstract class IndexOrderTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & Val
                                              IndexQueryConstraints constraints ) throws KernelException;
 
     protected abstract void entityIndexSeek( KernelTransaction tx, IndexReadSession index, ENTITY_VALUE_INDEX_CURSOR cursor,
-                                             IndexQueryConstraints constraints, IndexQuery query ) throws KernelException;
+                                             IndexQueryConstraints constraints, PropertyIndexQuery query ) throws KernelException;
 
 }

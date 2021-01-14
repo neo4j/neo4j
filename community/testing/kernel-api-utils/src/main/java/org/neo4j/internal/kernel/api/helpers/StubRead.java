@@ -19,13 +19,13 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -51,13 +51,14 @@ public class StubRead implements Read
     }
 
     @Override
-    public void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
+    public void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexQueryConstraints constraints, PropertyIndexQuery... query )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void relationshipIndexSeek( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints, IndexQuery... query )
+    public void relationshipIndexSeek( IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints,
+            PropertyIndexQuery... query )
     {
         throw new UnsupportedOperationException();
     }
@@ -65,7 +66,7 @@ public class StubRead implements Read
     @Override
     public long lockingNodeUniqueIndexSeek( IndexDescriptor index,
                                             NodeValueIndexCursor cursor,
-                                            IndexQuery.ExactPredicate... predicates )
+                                            PropertyIndexQuery.ExactPredicate... predicates )
     {
         throw new UnsupportedOperationException();
     }

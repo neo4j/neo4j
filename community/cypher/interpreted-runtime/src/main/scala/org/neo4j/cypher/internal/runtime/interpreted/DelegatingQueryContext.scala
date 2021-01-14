@@ -40,19 +40,19 @@ import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Path
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.CursorFactory
-import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
+import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.Write
-import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
@@ -181,7 +181,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder,
-                                           queries: Seq[IndexQuery]): NodeValueIndexCursor =
+                                           queries: Seq[PropertyIndexQuery]): NodeValueIndexCursor =
     manyDbHits(inner.indexSeek(index, needsValues, indexOrder, queries))
 
   override def indexScan[RESULT <: AnyRef](index: IndexReadSession,
@@ -250,7 +250,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] = singleDbHit(inner.getAllConstraints())
 
   override def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor,
-                                              queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor =
+                                              queries: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor =
     singleDbHit(inner.lockingUniqueIndexSeek(index, queries))
 
   override def getRelTypeId(relType: String): Int = singleDbHit(inner.getRelTypeId(relType))

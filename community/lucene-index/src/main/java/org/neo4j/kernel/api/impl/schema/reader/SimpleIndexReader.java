@@ -29,8 +29,8 @@ import org.apache.lucene.search.TotalHitCountCollector;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.IndexQueryType;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
@@ -50,7 +50,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
-import static org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType.exact;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.IndexQueryType.exact;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
 
 /**
@@ -92,7 +92,7 @@ public class SimpleIndexReader extends AbstractIndexReader
 
     @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-            IndexQuery... predicates ) throws IndexNotApplicableKernelException
+            PropertyIndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         Query query = toLuceneQuery( predicates );
         client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), predicates, constraints, false );
@@ -112,9 +112,9 @@ public class SimpleIndexReader extends AbstractIndexReader
         }
     }
 
-    private Query toLuceneQuery( IndexQuery... predicates ) throws IndexNotApplicableKernelException
+    private Query toLuceneQuery( PropertyIndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
-        IndexQuery predicate = predicates[0];
+        PropertyIndexQuery predicate = predicates[0];
         switch ( predicate.type() )
         {
         case exact:
@@ -123,11 +123,11 @@ public class SimpleIndexReader extends AbstractIndexReader
             {
                 assert predicates[i].type() == exact :
                         "Exact followed by another query predicate type is not supported at this moment.";
-                values[i] = ((IndexQuery.ExactPredicate) predicates[i]).value();
+                values[i] = ((PropertyIndexQuery.ExactPredicate) predicates[i]).value();
             }
             return LuceneDocumentStructure.newSeekQuery( values );
         case exists:
-            for ( IndexQuery p : predicates )
+            for ( PropertyIndexQuery p : predicates )
             {
                 if ( p.type() != IndexQueryType.exists )
                 {
@@ -140,22 +140,22 @@ public class SimpleIndexReader extends AbstractIndexReader
             assertNotComposite( predicates );
             if ( predicate.valueGroup() == ValueGroup.TEXT )
             {
-                IndexQuery.TextRangePredicate sp = (IndexQuery.TextRangePredicate) predicate;
+                PropertyIndexQuery.TextRangePredicate sp = (PropertyIndexQuery.TextRangePredicate) predicate;
                 return LuceneDocumentStructure.newRangeSeekByStringQuery( sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
             }
             throw new UnsupportedOperationException( format( "Range scans of value group %s are not supported", predicate.valueGroup() ) );
 
         case stringPrefix:
             assertNotComposite( predicates );
-            IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) predicate;
+            PropertyIndexQuery.StringPrefixPredicate spp = (PropertyIndexQuery.StringPrefixPredicate) predicate;
             return LuceneDocumentStructure.newRangeSeekByPrefixQuery( spp.prefix().stringValue() );
         case stringContains:
             assertNotComposite( predicates );
-            IndexQuery.StringContainsPredicate scp = (IndexQuery.StringContainsPredicate) predicate;
+            PropertyIndexQuery.StringContainsPredicate scp = (PropertyIndexQuery.StringContainsPredicate) predicate;
             return LuceneDocumentStructure.newWildCardStringQuery( scp.contains().stringValue() );
         case stringSuffix:
             assertNotComposite( predicates );
-            IndexQuery.StringSuffixPredicate ssp = (IndexQuery.StringSuffixPredicate) predicate;
+            PropertyIndexQuery.StringSuffixPredicate ssp = (PropertyIndexQuery.StringSuffixPredicate) predicate;
             return LuceneDocumentStructure.newSuffixStringQuery( ssp.suffix().stringValue() );
         default:
             // todo figure out a more specific exception
@@ -163,7 +163,7 @@ public class SimpleIndexReader extends AbstractIndexReader
         }
     }
 
-    private void assertNotComposite( IndexQuery[] predicates )
+    private void assertNotComposite( PropertyIndexQuery[] predicates )
     {
         assert predicates.length == 1 : "composite indexes not yet supported for this operation";
     }

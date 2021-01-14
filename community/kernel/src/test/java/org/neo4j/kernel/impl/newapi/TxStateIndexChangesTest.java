@@ -37,7 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -287,9 +287,9 @@ class TxStateIndexChangesTest
             assert lo != NO_VALUE;
             assert hi != NO_VALUE;
             final AddedAndRemoved changes =
-                    indexUpdatesForRangeSeek( state, index, new Value[0], IndexQuery.range( -1, lo, includeLo, hi, includeHi ), indexOrder );
+                    indexUpdatesForRangeSeek( state, index, new Value[0], PropertyIndexQuery.range( -1, lo, includeLo, hi, includeHi ), indexOrder );
             final AddedWithValuesAndRemoved changesWithValues =
-                    indexUpdatesWithValuesForRangeSeek( state, index, new Value[0], IndexQuery.range( -1, lo, includeLo, hi, includeHi ), indexOrder );
+                    indexUpdatesWithValuesForRangeSeek( state, index, new Value[0], PropertyIndexQuery.range( -1, lo, includeLo, hi, includeHi ), indexOrder );
 
             assertContains( indexOrder, changes, changesWithValues, expected );
         } );
@@ -309,7 +309,7 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            IndexQuery.StringContainsPredicate indexQuery = IndexQuery.stringContains( index.schema().getPropertyId(), stringValue( "eulav" ) );
+            PropertyIndexQuery.StringContainsPredicate indexQuery = PropertyIndexQuery.stringContains( index.schema().getPropertyId(), stringValue( "eulav" ) );
             AddedAndRemoved changes = indexUpdatesForSuffixOrContains( state, index, indexQuery, IndexOrder.NONE );
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, IndexOrder.NONE );
 
@@ -334,7 +334,7 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            IndexQuery.StringSuffixPredicate indexQuery = IndexQuery.stringSuffix( index.schema().getPropertyId(), stringValue( "ella" ) );
+            PropertyIndexQuery.StringSuffixPredicate indexQuery = PropertyIndexQuery.stringSuffix( index.schema().getPropertyId(), stringValue( "ella" ) );
             AddedAndRemoved changes = indexUpdatesForSuffixOrContains( state, index, indexQuery, IndexOrder.NONE );
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, IndexOrder.NONE );
 
@@ -374,7 +374,7 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            IndexQuery indexQuery = IndexQuery.stringSuffix( index.schema().getPropertyId(), stringValue( "on" ));
+            PropertyIndexQuery indexQuery = PropertyIndexQuery.stringSuffix( index.schema().getPropertyId(), stringValue( "on" ));
             AddedAndRemoved changes = indexUpdatesForSuffixOrContains( state, index, indexQuery, indexOrder );
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, indexOrder );
 
@@ -404,7 +404,7 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            IndexQuery.StringContainsPredicate indexQuery = IndexQuery.stringContains( index.schema().getPropertyId(), stringValue( "arbar" ) );
+            PropertyIndexQuery.StringContainsPredicate indexQuery = PropertyIndexQuery.stringContains( index.schema().getPropertyId(), stringValue( "arbar" ) );
             AddedAndRemoved changes = indexUpdatesForSuffixOrContains( state, index, indexQuery, IndexOrder.NONE );
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, IndexOrder.NONE );
 
@@ -444,7 +444,7 @@ class TxStateIndexChangesTest
                     .build();
 
             // WHEN
-            IndexQuery indexQuery = IndexQuery.stringContains( index.schema().getPropertyId(), stringValue( "ash" ) );
+            PropertyIndexQuery indexQuery = PropertyIndexQuery.stringContains( index.schema().getPropertyId(), stringValue( "ash" ) );
             AddedAndRemoved changes = indexUpdatesForSuffixOrContains( state, index, indexQuery, indexOrder );
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, indexOrder );
 
@@ -590,8 +590,8 @@ class TxStateIndexChangesTest
                     .withAdded( 42L, "42value1", "42value2" )
                     .withAdded( 43L, "43value1", "43value2" )
                     .build();
-            IndexQuery.RangePredicate<?> predicate =
-                    IndexQuery.range( -1, null, false, stringValue( "44val" ), true );
+            PropertyIndexQuery.RangePredicate<?> predicate =
+                    PropertyIndexQuery.range( -1, null, false, stringValue( "44val" ), true );
 
             // WHEN
             AddedAndRemoved changes = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( "43value1", "43value2" ) );
@@ -611,8 +611,8 @@ class TxStateIndexChangesTest
                     .withAdded( 42L, 42001.0, 42002.0 )
                     .withAdded( 43L, 43001.0, 43002.0 )
                     .build();
-            IndexQuery.RangePredicate<?> predicate =
-                    IndexQuery.range( -1, doubleValue( 43000.0 ), true, null, false );
+            PropertyIndexQuery.RangePredicate<?> predicate =
+                    PropertyIndexQuery.range( -1, doubleValue( 43000.0 ), true, null, false );
 
             // WHEN
             AddedAndRemoved changes = indexUpdatesForSeek( state, compositeIndex, ValueTuple.of( 43001.0, 43002.0 ) );
@@ -782,16 +782,16 @@ class TxStateIndexChangesTest
 
             AddedAndRemoved changesInt =
                     indexUpdatesForRangeSeek( state, compositeIndex, new Value[0],
-                            IndexQuery.range( -1, intValue( 500 ), false, intValue( 600 ), false ), indexOrder );
+                            PropertyIndexQuery.range( -1, intValue( 500 ), false, intValue( 600 ), false ), indexOrder );
             AddedAndRemoved changesString =
                     indexUpdatesForRangeSeek( state, compositeIndex, new Value[0],
-                            IndexQuery.range( -1, stringValue( "530" ), false, null, false ), indexOrder );
+                            PropertyIndexQuery.range( -1, stringValue( "530" ), false, null, false ), indexOrder );
             AddedWithValuesAndRemoved changesWithValuesInt =
                     indexUpdatesWithValuesForRangeSeek( state, compositeIndex, new Value[0],
-                            IndexQuery.range( -1, intValue( 500 ), false, intValue( 600 ), false ), indexOrder );
+                            PropertyIndexQuery.range( -1, intValue( 500 ), false, intValue( 600 ), false ), indexOrder );
             AddedWithValuesAndRemoved changesWithValuesString =
                     indexUpdatesWithValuesForRangeSeek( state, compositeIndex, new Value[0],
-                            IndexQuery.range( -1, stringValue( "530" ), false, null, false ), indexOrder );
+                            PropertyIndexQuery.range( -1, stringValue( "530" ), false, null, false ), indexOrder );
 
             assertContains( indexOrder, changesInt, changesWithValuesInt, expectedInt );
             assertContains( indexOrder, changesString, changesWithValuesString, expectedString );

@@ -32,7 +32,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -50,7 +50,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
-import static org.neo4j.internal.kernel.api.IndexQuery.exact;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
@@ -207,9 +207,9 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
                 List<Long> expectedIds = expectedIds( sortedValues, booleanValue, from, to, fromInclusive, toInclusive );
 
                 // Depending on order capabilities we verify ids or order and ids.
-                IndexQuery[] predicates = new IndexQuery[]{
+                PropertyIndexQuery[] predicates = new PropertyIndexQuery[]{
                         exact( 100, booleanValue ),
-                        IndexQuery.range( 101, from, fromInclusive, to, toInclusive )};
+                        PropertyIndexQuery.range( 101, from, fromInclusive, to, toInclusive )};
                 ValueCategory[] valueCategories = getValueCategories( predicates );
                 IndexOrderCapability indexOrders = descriptor.getCapability().orderCapability( valueCategories );
                 if ( indexOrders.supportsAsc() )
@@ -229,7 +229,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
             }
         }
 
-        ValueCategory[] getValueCategories( IndexQuery[] predicates )
+        ValueCategory[] getValueCategories( PropertyIndexQuery[] predicates )
         {
             return Arrays.stream( predicates )
                                 .map( iq -> iq.valueGroup().category() )

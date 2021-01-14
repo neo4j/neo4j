@@ -27,8 +27,8 @@ import java.util.EnumMap;
 import java.util.function.Function;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -151,7 +151,7 @@ abstract class FusionIndexReaderTest
         // when
         try ( NodeValueIterator iterator = new NodeValueIterator() )
         {
-            fusionIndexReader.query( NULL_CONTEXT, iterator, unconstrained(), IndexQuery.exists( PROP_KEY ) );
+            fusionIndexReader.query( NULL_CONTEXT, iterator, unconstrained(), PropertyIndexQuery.exists( PROP_KEY ) );
         }
 
         // then
@@ -207,7 +207,7 @@ abstract class FusionIndexReaderTest
     void mustSelectLuceneForCompositePredicate() throws Exception
     {
         // then
-        verifyQueryWithCorrectReader( readers.get( GENERIC ), IndexQuery.exists( 0 ), IndexQuery.exists( 1 ) );
+        verifyQueryWithCorrectReader( readers.get( GENERIC ), PropertyIndexQuery.exists( 0 ), PropertyIndexQuery.exists( 1 ) );
     }
 
     @Test
@@ -216,7 +216,7 @@ abstract class FusionIndexReaderTest
         // given
         for ( Object value : FusionIndexTestHelp.valuesSupportedByLucene() )
         {
-            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, value );
+            PropertyIndexQuery indexQuery = PropertyIndexQuery.exact( PROP_KEY, value );
 
             // then
             verifyQueryWithCorrectReader( readers.get( LUCENE ), indexQuery );
@@ -229,7 +229,7 @@ abstract class FusionIndexReaderTest
         // given
         for ( Object value : FusionIndexTestHelp.valuesNotSupportedBySpecificIndex() )
         {
-            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, value );
+            PropertyIndexQuery indexQuery = PropertyIndexQuery.exact( PROP_KEY, value );
 
             // then
             verifyQueryWithCorrectReader( readers.get( GENERIC ), indexQuery );
@@ -240,7 +240,7 @@ abstract class FusionIndexReaderTest
     void mustSelectLuceneForRangeStringPredicate() throws Exception
     {
         // given
-        RangePredicate<?> numberRange = IndexQuery.range( PROP_KEY, "a", true, "b", false );
+        RangePredicate<?> numberRange = PropertyIndexQuery.range( PROP_KEY, "a", true, "b", false );
 
         // then
         verifyQueryWithCorrectReader( readers.get( LUCENE ), numberRange );
@@ -250,7 +250,7 @@ abstract class FusionIndexReaderTest
     void mustCombineResultFromExistsPredicate() throws Exception
     {
         // given
-        IndexQuery.ExistsPredicate exists = IndexQuery.exists( PROP_KEY );
+        PropertyIndexQuery.ExistsPredicate exists = PropertyIndexQuery.exists( PROP_KEY );
         long lastId = 0;
         for ( IndexReader aliveReader : aliveReaders )
         {
@@ -286,7 +286,7 @@ abstract class FusionIndexReaderTest
                 Value value = values.get( i )[0];
                 try ( NodeValueIterator cursor = new NodeValueIterator() )
                 {
-                    fusionIndexReader.query( NULL_CONTEXT, cursor, unconstrained(), IndexQuery.exact( 0, value ) );
+                    fusionIndexReader.query( NULL_CONTEXT, cursor, unconstrained(), PropertyIndexQuery.exact( 0, value ) );
                 }
                 for ( IndexSlot j : IndexSlot.values() )
                 {
@@ -309,7 +309,7 @@ abstract class FusionIndexReaderTest
         }
     }
 
-    private void verifyQueryWithCorrectReader( IndexReader expectedReader, IndexQuery... indexQuery )
+    private void verifyQueryWithCorrectReader( IndexReader expectedReader, PropertyIndexQuery... indexQuery )
             throws IndexNotApplicableKernelException
     {
         // when

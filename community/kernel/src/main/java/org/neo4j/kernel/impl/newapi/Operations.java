@@ -37,7 +37,7 @@ import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.function.ThrowingIntFunction;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -320,7 +320,7 @@ public class Operations implements Write, SchemaWrite
             for ( IndexBackedConstraintDescriptor uniquenessConstraint : storageReader.uniquenessConstraintsGetRelated( new long[]{nodeLabel},
                     existingPropertyKeyIds, NODE ) )
             {
-                IndexQuery.ExactPredicate[] propertyValues = getAllPropertyValues( uniquenessConstraint.schema(),
+                PropertyIndexQuery.ExactPredicate[] propertyValues = getAllPropertyValues( uniquenessConstraint.schema(),
                         StatementConstants.NO_SUCH_PROPERTY_KEY, Values.NO_VALUE );
                 if ( propertyValues != null )
                 {
@@ -490,11 +490,11 @@ public class Operations implements Write, SchemaWrite
      * Fetch the property values for all properties in schema for a given node. Return these as an exact predicate
      * array. This is run with no security check.
      */
-    private IndexQuery.ExactPredicate[] getAllPropertyValues( SchemaDescriptor schema, int changedPropertyKeyId,
+    private PropertyIndexQuery.ExactPredicate[] getAllPropertyValues( SchemaDescriptor schema, int changedPropertyKeyId,
             Value changedValue )
     {
         int[] schemaPropertyIds = schema.getPropertyIds();
-        IndexQuery.ExactPredicate[] values = new IndexQuery.ExactPredicate[schemaPropertyIds.length];
+        PropertyIndexQuery.ExactPredicate[] values = new PropertyIndexQuery.ExactPredicate[schemaPropertyIds.length];
 
         int nMatched = 0;
         nodeCursor.properties( propertyCursor );
@@ -506,7 +506,7 @@ public class Operations implements Write, SchemaWrite
             {
                 if ( nodePropertyId != StatementConstants.NO_SUCH_PROPERTY_KEY )
                 {
-                    values[k] = IndexQuery.exact( nodePropertyId, propertyCursor.propertyValue() );
+                    values[k] = PropertyIndexQuery.exact( nodePropertyId, propertyCursor.propertyValue() );
                 }
                 nMatched++;
             }
@@ -518,7 +518,7 @@ public class Operations implements Write, SchemaWrite
             int k = ArrayUtils.indexOf( schemaPropertyIds, changedPropertyKeyId );
             if ( k >= 0 )
             {
-                values[k] = IndexQuery.exact( changedPropertyKeyId, changedValue );
+                values[k] = PropertyIndexQuery.exact( changedPropertyKeyId, changedValue );
                 nMatched++;
             }
         }
@@ -534,7 +534,7 @@ public class Operations implements Write, SchemaWrite
      * Check so that there is not an existing node with the exact match of label and property
      */
     private void validateNoExistingNodeWithExactValues( IndexBackedConstraintDescriptor constraint,
-            IndexQuery.ExactPredicate[] propertyValues, long modifiedNode )
+            PropertyIndexQuery.ExactPredicate[] propertyValues, long modifiedNode )
             throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
         IndexDescriptor index = allStoreHolder.indexGetForName( constraint.getName() );
@@ -563,7 +563,7 @@ public class Operations implements Write, SchemaWrite
             {
                 throw new UniquePropertyValueValidationException( constraint, VALIDATION,
                         new IndexEntryConflictException( valueCursor.nodeReference(), NO_SUCH_NODE,
-                                IndexQuery.asValueTuple( propertyValues ) ), token );
+                                PropertyIndexQuery.asValueTuple( propertyValues ) ), token );
             }
         }
         catch ( IndexNotFoundKernelException | IndexBrokenKernelException | IndexNotApplicableKernelException e )

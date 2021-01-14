@@ -39,13 +39,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.utf8Value;
 
-public abstract class IndexQuery
+public abstract class PropertyIndexQuery
 {
     /**
      * Searches the index for all entries that has the given property.
      *
      * @param propertyKeyId the property ID to match.
-     * @return an {@link IndexQuery} instance to be used for querying an index.
+     * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
      */
     public static ExistsPredicate exists( int propertyKeyId )
     {
@@ -57,7 +57,7 @@ public abstract class IndexQuery
      *
      * @param propertyKeyId the property ID to match.
      * @param value the property value to search for.
-     * @return an {@link IndexQuery} instance to be used for querying an index.
+     * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
      */
     public static ExactPredicate exact( int propertyKeyId, Object value )
     {
@@ -72,7 +72,7 @@ public abstract class IndexQuery
      * @param fromInclusive the lower bound is inclusive if true.
      * @param to upper bound of the range or null if unbounded
      * @param toInclusive the upper bound is inclusive if true.
-     * @return an {@link IndexQuery} instance to be used for querying an index.
+     * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
      */
     public static RangePredicate<?> range( int propertyKeyId,
                                         Number from, boolean fromInclusive,
@@ -151,7 +151,7 @@ public abstract class IndexQuery
      *
      * @param propertyKeyId the property ID to match.
      * @param prefix the string prefix to search for.
-     * @return an {@link IndexQuery} instance to be used for querying an index.
+     * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
      */
     public static StringPrefixPredicate stringPrefix( int propertyKeyId, TextValue prefix )
     {
@@ -163,7 +163,7 @@ public abstract class IndexQuery
      *
      * @param propertyKeyId the property ID to match.
      * @param contains the string to search for.
-     * @return an {@link IndexQuery} instance to be used for querying an index.
+     * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
      */
     public static StringContainsPredicate stringContains( int propertyKeyId, TextValue contains )
     {
@@ -175,19 +175,19 @@ public abstract class IndexQuery
      *
      * @param propertyKeyId the property ID to match.
      * @param suffix the string suffix to search for.
-     * @return an {@link IndexQuery} instance to be used for querying an index.
+     * @return an {@link PropertyIndexQuery} instance to be used for querying an index.
      */
     public static StringSuffixPredicate stringSuffix( int propertyKeyId, TextValue suffix )
     {
         return new StringSuffixPredicate( propertyKeyId, suffix );
     }
 
-    public static IndexQuery fulltextSearch( String query )
+    public static PropertyIndexQuery fulltextSearch( String query )
     {
         return new FulltextSearchPredicate( query );
     }
 
-    public static ValueTuple asValueTuple( IndexQuery.ExactPredicate... query )
+    public static ValueTuple asValueTuple( PropertyIndexQuery.ExactPredicate... query )
     {
         Value[] values = new Value[query.length];
         for ( int i = 0; i < query.length; i++ )
@@ -199,7 +199,7 @@ public abstract class IndexQuery
 
     private final int propertyKeyId;
 
-    protected IndexQuery( int propertyKeyId )
+    protected PropertyIndexQuery( int propertyKeyId )
     {
         this.propertyKeyId = propertyKeyId;
     }
@@ -261,7 +261,7 @@ public abstract class IndexQuery
         fulltextSearch
     }
 
-    public static final class ExistsPredicate extends IndexQuery
+    public static final class ExistsPredicate extends PropertyIndexQuery
     {
         private ExistsPredicate( int propertyKeyId )
         {
@@ -293,7 +293,7 @@ public abstract class IndexQuery
         }
     }
 
-    public static final class ExactPredicate extends IndexQuery
+    public static final class ExactPredicate extends PropertyIndexQuery
     {
         private final Value exactValue;
 
@@ -327,7 +327,7 @@ public abstract class IndexQuery
         }
     }
 
-    public static class RangePredicate<T extends Value> extends IndexQuery
+    public static class RangePredicate<T extends Value> extends PropertyIndexQuery
     {
         protected final T from;
         protected final boolean fromInclusive;
@@ -490,7 +490,7 @@ public abstract class IndexQuery
         }
     }
 
-    public abstract static class StringPredicate extends IndexQuery
+    public abstract static class StringPredicate extends PropertyIndexQuery
     {
         private StringPredicate( int propertyKeyId )
         {

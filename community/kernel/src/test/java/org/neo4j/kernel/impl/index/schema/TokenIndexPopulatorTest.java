@@ -158,7 +158,8 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
         updater.close();
 
         IllegalStateException e = assertThrows( IllegalStateException.class,
-                () -> updater.process( IndexEntryUpdate.change( random.nextInt(), null, EMPTY_LONG_ARRAY, TokenIndexUtility.generateRandomTokens( random ) ) ) );
+                () -> updater
+                        .process( IndexEntryUpdate.change( random.nextInt(), null, EMPTY_LONG_ARRAY, TokenIndexUtility.generateRandomTokens( random ) ) ) );
         assertThat( e ).hasMessageContaining( "Updater has been closed" );
         populator.close( true, NULL );
     }

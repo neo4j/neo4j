@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -52,7 +52,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.IndexQuery.range;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -87,7 +87,7 @@ class SimpleIndexReaderTest
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        doQuery( simpleIndexReader, IndexQuery.exact( 1, "test" ) );
+        doQuery( simpleIndexReader, PropertyIndexQuery.exact( 1, "test" ) );
 
         verify( indexSearcher ).search( any( BooleanQuery.class ), any( DocValuesCollector.class ) );
     }
@@ -97,7 +97,7 @@ class SimpleIndexReaderTest
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        doQuery( simpleIndexReader, IndexQuery.exists( 1 ) );
+        doQuery( simpleIndexReader, PropertyIndexQuery.exists( 1 ) );
 
         verify( indexSearcher ).search( any( MatchAllDocsQuery.class ), any( DocValuesCollector.class ) );
     }
@@ -117,7 +117,7 @@ class SimpleIndexReaderTest
     {
         IndexReader simpleIndexReader = getUniqueSimpleReader();
 
-        doQuery( simpleIndexReader, IndexQuery.stringPrefix( 1, stringValue( "bb" ) ));
+        doQuery( simpleIndexReader, PropertyIndexQuery.stringPrefix( 1, stringValue( "bb" ) ));
 
         verify( indexSearcher ).search( any( MultiTermQuery.class ), any( DocValuesCollector.class ) );
     }
@@ -154,7 +154,7 @@ class SimpleIndexReaderTest
         assertThat( uniqueSimpleReader.createSampler() ).isInstanceOf( NonUniqueLuceneIndexSampler.class );
     }
 
-    private void doQuery( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException
+    private void doQuery( IndexReader reader, PropertyIndexQuery query ) throws IndexNotApplicableKernelException
     {
         reader.query( NULL_CONTEXT, new NodeValueIterator(), unconstrained(), query );
     }

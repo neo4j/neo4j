@@ -23,7 +23,7 @@ import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-public final class NumberRangePredicate extends IndexQuery.RangePredicate<NumberValue>
+public final class NumberRangePredicate extends PropertyIndexQuery.RangePredicate<NumberValue>
 {
     private NumberRangePredicate( int propertyKeyId, NumberValue from, boolean fromInclusive, NumberValue to,
             boolean toInclusive )

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
@@ -32,14 +32,14 @@ public final class IndexQueryHelper
     {
     }
 
-    public static IndexQuery exact( int propertyKeyId, Object value )
+    public static PropertyIndexQuery exact( int propertyKeyId, Object value )
     {
         return exact( propertyKeyId, Values.of( value ) );
     }
 
-    public static IndexQuery exact( int propertyKeyId, Value value )
+    public static PropertyIndexQuery exact( int propertyKeyId, Value value )
     {
-        return IndexQuery.exact( propertyKeyId, value );
+        return PropertyIndexQuery.exact( propertyKeyId, value );
     }
 
     public static ValueIndexEntryUpdate<SchemaDescriptor> add(

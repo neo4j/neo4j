@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -40,7 +40,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.IndexQuery.exact;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
 import static org.neo4j.lock.ResourceTypes.INDEX_ENTRY;
 
@@ -52,7 +52,7 @@ class LockingNodeUniqueIndexSeekTest
             .withName( "index_12" ).materialise( 12 );
 
     private final Value value = Values.of( "value" );
-    private final IndexQuery.ExactPredicate predicate = exact( propertyKeyId, value );
+    private final PropertyIndexQuery.ExactPredicate predicate = exact( propertyKeyId, value );
     private final long resourceId = indexEntryResourceId( labelId, predicate );
     private UniqueNodeIndexSeeker<NodeValueIndexCursor> uniqueNodeIndexSeeker = mock( UniqueNodeIndexSeeker.class );
 

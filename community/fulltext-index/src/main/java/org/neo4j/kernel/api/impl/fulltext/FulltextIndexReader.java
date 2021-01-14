@@ -44,7 +44,7 @@ import java.util.function.LongPredicate;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
@@ -97,14 +97,14 @@ public class FulltextIndexReader implements IndexReader
 
     @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
-            IndexQuery... queries ) throws IndexNotApplicableKernelException
+            PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
-        for ( IndexQuery indexQuery : queries )
+        for ( PropertyIndexQuery indexQuery : queries )
         {
-            if ( indexQuery.type() == IndexQuery.IndexQueryType.fulltextSearch )
+            if ( indexQuery.type() == PropertyIndexQuery.IndexQueryType.fulltextSearch )
             {
-                IndexQuery.FulltextSearchPredicate fulltextSearch = (IndexQuery.FulltextSearchPredicate) indexQuery;
+                PropertyIndexQuery.FulltextSearchPredicate fulltextSearch = (PropertyIndexQuery.FulltextSearchPredicate) indexQuery;
                 try
                 {
                     queryBuilder.add( parseFulltextQuery( fulltextSearch.query() ), BooleanClause.Occur.SHOULD );
@@ -120,37 +120,37 @@ public class FulltextIndexReader implements IndexReader
                 assertNotComposite( queries );
                 assertCypherCompatible();
                 Query query;
-                if ( indexQuery.type() == IndexQuery.IndexQueryType.stringContains )
+                if ( indexQuery.type() == PropertyIndexQuery.IndexQueryType.stringContains )
                 {
-                    IndexQuery.StringContainsPredicate scp = (IndexQuery.StringContainsPredicate) indexQuery;
+                    PropertyIndexQuery.StringContainsPredicate scp = (PropertyIndexQuery.StringContainsPredicate) indexQuery;
                     String searchTerm = QueryParser.escape( scp.contains().stringValue() );
                     Term term = new Term( propertyNames[0], "*" + searchTerm + "*" );
                     query = new WildcardQuery( term );
                 }
-                else if ( indexQuery.type() == IndexQuery.IndexQueryType.stringSuffix )
+                else if ( indexQuery.type() == PropertyIndexQuery.IndexQueryType.stringSuffix )
                 {
-                    IndexQuery.StringSuffixPredicate ssp = (IndexQuery.StringSuffixPredicate) indexQuery;
+                    PropertyIndexQuery.StringSuffixPredicate ssp = (PropertyIndexQuery.StringSuffixPredicate) indexQuery;
                     String searchTerm = QueryParser.escape( ssp.suffix().stringValue() );
                     Term term = new Term( propertyNames[0], "*" + searchTerm );
                     query = new WildcardQuery( term );
                 }
-                else if ( indexQuery.type() == IndexQuery.IndexQueryType.stringPrefix )
+                else if ( indexQuery.type() == PropertyIndexQuery.IndexQueryType.stringPrefix )
                 {
-                    IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) indexQuery;
+                    PropertyIndexQuery.StringPrefixPredicate spp = (PropertyIndexQuery.StringPrefixPredicate) indexQuery;
                     String searchTerm = spp.prefix().stringValue();
                     Term term = new Term( propertyNames[0], searchTerm );
                     query = new LuceneDocumentStructure.PrefixMultiTermsQuery( term );
                 }
-                else if ( indexQuery.getClass() == IndexQuery.ExactPredicate.class && indexQuery.valueGroup() == ValueGroup.TEXT )
+                else if ( indexQuery.getClass() == PropertyIndexQuery.ExactPredicate.class && indexQuery.valueGroup() == ValueGroup.TEXT )
                 {
-                    IndexQuery.ExactPredicate exact = (IndexQuery.ExactPredicate) indexQuery;
+                    PropertyIndexQuery.ExactPredicate exact = (PropertyIndexQuery.ExactPredicate) indexQuery;
                     String searchTerm = ((TextValue) exact.value()).stringValue();
                     Term term = new Term( propertyNames[0], searchTerm );
                     query = new ConstantScoreQuery( new TermQuery( term ) );
                 }
-                else if ( indexQuery.getClass() == IndexQuery.TextRangePredicate.class )
+                else if ( indexQuery.getClass() == PropertyIndexQuery.TextRangePredicate.class )
                 {
-                    IndexQuery.TextRangePredicate sp = (IndexQuery.TextRangePredicate) indexQuery;
+                    PropertyIndexQuery.TextRangePredicate sp = (PropertyIndexQuery.TextRangePredicate) indexQuery;
                     query = newRangeSeekByStringQuery( propertyNames[0], sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
                 }
                 else
@@ -270,7 +270,7 @@ public class FulltextIndexReader implements IndexReader
         return propertyKeyTokenHolder.getTokenById( propertyKey ).name();
     }
 
-    private static void assertNotComposite( IndexQuery[] predicates )
+    private static void assertNotComposite( PropertyIndexQuery[] predicates )
     {
         if ( predicates.length != 1 )
         {

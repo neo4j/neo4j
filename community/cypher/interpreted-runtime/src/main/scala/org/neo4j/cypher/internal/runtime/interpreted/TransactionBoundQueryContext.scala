@@ -65,25 +65,25 @@ import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api
-import org.neo4j.internal.kernel.api.IndexQuery
-import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
-import org.neo4j.internal.kernel.api.IndexQueryConstraints
-import org.neo4j.internal.kernel.api.IndexReadSession
-import org.neo4j.internal.kernel.api.InternalIndexState
-import org.neo4j.internal.kernel.api.NodeCursor
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor
-import org.neo4j.internal.kernel.api.PropertyCursor
-import org.neo4j.internal.kernel.api.Read
-import org.neo4j.internal.kernel.api.RelationshipScanCursor
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
-import org.neo4j.internal.kernel.api.SchemaReadCore
-import org.neo4j.internal.kernel.api.TokenRead
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.internal.kernel.api.helpers.Nodes
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCursor
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.kernel.api.IndexQueryConstraints
+import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.internal.kernel.api.InternalIndexState
+import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.internal.kernel.api.PropertyCursor
+import org.neo4j.internal.kernel.api.PropertyIndexQuery
+import org.neo4j.internal.kernel.api.Read
+import org.neo4j.internal.kernel.api.RelationshipScanCursor
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.SchemaReadCore
+import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.ConstraintType
@@ -299,13 +299,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder,
-                                           predicates: Seq[IndexQuery]): NodeValueIndexCursor = {
+                                           predicates: Seq[PropertyIndexQuery]): NodeValueIndexCursor = {
 
     val impossiblePredicate =
       predicates.exists {
-        case p: IndexQuery.ExactPredicate => (p.value() eq Values.NO_VALUE) || (p.value().isInstanceOf[FloatingPointValue] && p.value().asInstanceOf[FloatingPointValue].isNaN)
-        case _: IndexQuery.ExistsPredicate => predicates.length <= 1
-        case p: IndexQuery.RangePredicate[_] =>
+        case p: PropertyIndexQuery.ExactPredicate => (p.value() eq Values.NO_VALUE) || (p.value().isInstanceOf[FloatingPointValue] && p.value().asInstanceOf[FloatingPointValue].isNaN)
+        case _: PropertyIndexQuery.ExistsPredicate => predicates.length <= 1
+        case p: PropertyIndexQuery.RangePredicate[_] =>
           !RANGE_SEEKABLE_VALUE_GROUPS.contains(p.valueGroup())
         case _ => false
       }
@@ -322,7 +322,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   private def seek[RESULT <: AnyRef](index: IndexReadSession,
                                      needsValues: Boolean,
                                      indexOrder: IndexOrder,
-                                     queries: IndexQuery*): NodeValueIndexCursor = {
+                                     queries: PropertyIndexQuery*): NodeValueIndexCursor = {
 
     val nodeCursor: NodeValueIndexCursor = allocateAndTraceNodeValueIndexCursor()
     val actualValues =
@@ -353,16 +353,16 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                                      indexOrder: IndexOrder,
                                                      value: TextValue): NodeValueIndexCursor =
     seek(index, needsValues, indexOrder,
-      IndexQuery.stringContains(index.reference().schema().getPropertyIds()(0), value))
+      PropertyIndexQuery.stringContains(index.reference().schema().getPropertyIds()(0), value))
 
   override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReadSession,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
                                                      value: TextValue): NodeValueIndexCursor =
-    seek(index, needsValues, indexOrder, IndexQuery.stringSuffix(index.reference().schema().getPropertyIds()(0), value))
+    seek(index, needsValues, indexOrder, PropertyIndexQuery.stringSuffix(index.reference().schema().getPropertyIds()(0), value))
 
   override def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor,
-                                              queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor = {
+                                              queries: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor = {
 
     val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer, transactionalContext.tc.kernelTransaction().memoryTracker())
     try {

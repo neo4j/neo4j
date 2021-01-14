@@ -35,7 +35,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -183,7 +183,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
         }
         boolean fromInclusive = randomValues.nextBoolean();
         boolean toInclusive = randomValues.nextBoolean();
-        IndexQuery.RangePredicate<?> range = IndexQuery.range( prop, from.getOnlyValue(), fromInclusive, to.getOnlyValue(), toInclusive );
+        PropertyIndexQuery.RangePredicate<?> range = PropertyIndexQuery.range( prop, from.getOnlyValue(), fromInclusive, to.getOnlyValue(), toInclusive );
 
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
         {

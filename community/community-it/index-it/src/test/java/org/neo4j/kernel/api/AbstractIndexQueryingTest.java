@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
@@ -65,7 +65,7 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
         try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
             assertThrows( IndexNotApplicableKernelException.class, () ->
-                    read.nodeIndexSeek( index, cursor, unconstrained(), IndexQuery.fulltextSearch( "search" ) ) );
+                    read.nodeIndexSeek( index, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "search" ) ) );
         }
     }
 
@@ -77,7 +77,7 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
         try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
         {
             assertThrows( IndexNotApplicableKernelException.class, () ->
-                    read.relationshipIndexSeek( indexReadSession, cursor, unconstrained(), IndexQuery.fulltextSearch( "search" ) ) );
+                    read.relationshipIndexSeek( indexReadSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( "search" ) ) );
         }
     }
 }

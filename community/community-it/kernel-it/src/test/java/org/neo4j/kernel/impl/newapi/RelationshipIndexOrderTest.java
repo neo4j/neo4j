@@ -24,9 +24,9 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -96,7 +96,7 @@ public class RelationshipIndexOrderTest extends IndexOrderTestBase<RelationshipV
 
     @Override
     protected void entityIndexSeek( KernelTransaction tx, IndexReadSession index, RelationshipValueIndexCursor cursor,
-                                    IndexQueryConstraints constraints, IndexQuery query )
+                                    IndexQueryConstraints constraints, PropertyIndexQuery query )
             throws KernelException
     {
         tx.dataRead().relationshipIndexSeek( index, cursor, constraints, query );

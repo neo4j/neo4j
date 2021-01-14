@@ -28,7 +28,7 @@ import java.nio.file.Path;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -107,7 +107,7 @@ class LuceneSchemaIndexPopulationIT
                       NodeValueIterator results = new NodeValueIterator();
                       IndexSampler indexSampler = indexReader.createSampler() )
                 {
-                    indexReader.query( NULL_CONTEXT, results, unconstrained(), IndexQuery.exists( 1 ) );
+                    indexReader.query( NULL_CONTEXT, results, unconstrained(), PropertyIndexQuery.exists( 1 ) );
                     long[] nodes = PrimitiveLongCollections.asArray( results );
                     assertEquals( affectedNodes, nodes.length );
 

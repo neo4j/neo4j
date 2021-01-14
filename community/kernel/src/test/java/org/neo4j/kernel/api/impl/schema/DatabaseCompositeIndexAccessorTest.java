@@ -43,7 +43,7 @@ import java.util.function.Predicate;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -94,7 +94,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.internal.kernel.api.IndexQuery.exact;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.IOUtils.closeAll;
@@ -174,7 +174,7 @@ public class DatabaseCompositeIndexAccessorTest
                 {
 
                     // WHEN
-                    Set<Long> results = resultSet( reader, IndexQuery.exists( PROP_ID1 ), IndexQuery.exists( PROP_ID2 ) );
+                    Set<Long> results = resultSet( reader, PropertyIndexQuery.exists( PROP_ID1 ), PropertyIndexQuery.exists( PROP_ID2 ) );
                     Set<Long> results2 = resultSet( reader, exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) );
 
                     // THEN
@@ -341,7 +341,7 @@ public class DatabaseCompositeIndexAccessorTest
         return provider.getOnlineAccessor( descriptor, SAMPLING_CONFIG, SIMPLE_NAME_LOOKUP );
     }
 
-    private Set<Long> resultSet( IndexReader reader, IndexQuery... queries ) throws IndexNotApplicableKernelException
+    private Set<Long> resultSet( IndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         try ( NodeValueIterator results = new NodeValueIterator() )
         {

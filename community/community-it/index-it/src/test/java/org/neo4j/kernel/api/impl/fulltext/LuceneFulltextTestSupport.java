@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -152,7 +152,7 @@ public class LuceneFulltextTestSupport
         {
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
             {
-                ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.fulltextSearch( query ) );
+                ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( query ) );
                 while ( cursor.next() )
                 {
                     long nodeId = cursor.nodeReference();
@@ -164,7 +164,7 @@ public class LuceneFulltextTestSupport
         {
             try ( RelationshipValueIndexCursor cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
             {
-                ktx.dataRead().relationshipIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.fulltextSearch( query ) );
+                ktx.dataRead().relationshipIndexSeek( indexSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( query ) );
                 while ( cursor.next() )
                 {
                     long relationshipId = cursor.relationshipReference();
@@ -190,7 +190,7 @@ public class LuceneFulltextTestSupport
         {
             int num = 0;
             float score = Float.MAX_VALUE;
-            ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), IndexQuery.fulltextSearch( query ) );
+            ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), PropertyIndexQuery.fulltextSearch( query ) );
             while ( cursor.next() )
             {
                 long nextId = cursor.nodeReference();

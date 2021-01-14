@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.coreapi.internal;
 
 import org.neo4j.graphdb.Entity;
 import org.neo4j.internal.kernel.api.Cursor;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.io.IOUtils;
 
 public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR extends Cursor, ENTITY_CURSOR extends Cursor>
@@ -32,13 +32,13 @@ public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR e
     private final TOKEN_CURSOR entityTokenCursor;
     private final ENTITY_CURSOR entityCursor;
     private final PropertyCursor propertyCursor;
-    private final IndexQuery[] queries;
+    private final PropertyIndexQuery[] queries;
 
     protected PropertyFilteringIterator( TOKEN_CURSOR entityTokenCursor,
                                          ENTITY_CURSOR entityCursor,
                                          PropertyCursor propertyCursor,
                                          EntityFactory<T> entityFactory,
-                                         IndexQuery[] queries )
+                                         PropertyIndexQuery[] queries )
     {
         super( entityFactory );
         this.entityTokenCursor = entityTokenCursor;
@@ -83,7 +83,7 @@ public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR e
             properties( entityCursor, propertyCursor );
             while ( propertyCursor.next() )
             {
-                for ( IndexQuery query : queries )
+                for ( PropertyIndexQuery query : queries )
                 {
                     if ( propertyCursor.propertyKey() == query.propertyKeyId() )
                     {

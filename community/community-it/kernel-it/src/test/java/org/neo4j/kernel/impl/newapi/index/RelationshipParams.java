@@ -25,9 +25,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -99,7 +99,7 @@ public class RelationshipParams implements EntityParams<RelationshipValueIndexCu
 
     @Override
     public void entityIndexSeek( KernelTransaction tx, IndexReadSession index, RelationshipValueIndexCursor cursor, IndexQueryConstraints constraints,
-                                 IndexQuery... query ) throws KernelException
+                                 PropertyIndexQuery... query ) throws KernelException
     {
         tx.dataRead().relationshipIndexSeek( index, cursor, constraints, query );
     }

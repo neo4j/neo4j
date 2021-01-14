@@ -31,7 +31,7 @@ import java.util.function.Function;
 
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -116,7 +116,7 @@ class SchemaComplianceChecker implements AutoCloseable
             IndexReader reader, Function<ENTITY,ConsistencyReport.PrimitiveConsistencyReport> reportSupplier )
     {
         long nodeId = entity.getId();
-        IndexQuery[] query = seek( indexRule.schema(), propertyValues );
+        PropertyIndexQuery[] query = seek( indexRule.schema(), propertyValues );
         LongIterator indexedNodeIds = queryIndexOrEmpty( reader, query );
         long count = 0;
         while ( indexedNodeIds.hasNext() )
@@ -135,19 +135,19 @@ class SchemaComplianceChecker implements AutoCloseable
         reportIncorrectIndexCount( entity, propertyValues, indexRule, count, reportSupplier );
     }
 
-    private IndexQuery[] seek( SchemaDescriptor schema, Value[] propertyValues )
+    private PropertyIndexQuery[] seek( SchemaDescriptor schema, Value[] propertyValues )
     {
         int[] propertyIds = schema.getPropertyIds();
         assert propertyIds.length == propertyValues.length;
-        IndexQuery[] query = new IndexQuery[propertyValues.length];
+        PropertyIndexQuery[] query = new PropertyIndexQuery[propertyValues.length];
         for ( int i = 0; i < query.length; i++ )
         {
-            query[i] = IndexQuery.exact( propertyIds[i], propertyValues[i] );
+            query[i] = PropertyIndexQuery.exact( propertyIds[i], propertyValues[i] );
         }
         return query;
     }
 
-    private LongIterator queryIndexOrEmpty( IndexReader reader, IndexQuery[] query )
+    private LongIterator queryIndexOrEmpty( IndexReader reader, PropertyIndexQuery[] query )
     {
         try
         {

@@ -23,7 +23,7 @@ import org.eclipse.collections.api.iterator.LongIterator;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -54,7 +54,7 @@ public class NodeValueIterator extends PrimitiveLongCollections.AbstractPrimitiv
     @Override
     public void initialize( IndexDescriptor descriptor,
                             IndexProgressor progressor,
-                            IndexQuery[] query,
+                            PropertyIndexQuery[] query,
                             IndexQueryConstraints constraints,
                             boolean indexIncludesTransactionState )
     {

@@ -25,7 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -84,7 +84,7 @@ class ConstraintIndexConcurrencyTest
                 IndexDescriptor index = ktx.schemaRead().indexGetForName( constraintName );
                 IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, unconstrained(),
-                        IndexQuery.exact( propertyKeyId,
+                        PropertyIndexQuery.exact( propertyKeyId,
                                 "The value is irrelevant, we just want to perform some sort of lookup against this " + "index" ) );
             }
             // then let another thread come in and create a node

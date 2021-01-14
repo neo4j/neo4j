@@ -26,13 +26,13 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
-import static org.neo4j.internal.kernel.api.IndexQuery.exact;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 
 public class IndexEntryResourceTypesTest
 {

@@ -38,7 +38,7 @@ import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.ResourceClosingIterator;
-import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexResultScore;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
@@ -79,7 +79,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     private Read read;
     private long entity;
     private float score;
-    private IndexQuery[] query;
+    private PropertyIndexQuery[] query;
     private Value[] values;
     private LongObjectPair<Value[]> cachedValues;
     private ResourceIterator<LongObjectPair<Value[]>> eagerPointIterator;
@@ -105,7 +105,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     @Override
     public final void initialize( IndexDescriptor descriptor,
             IndexProgressor progressor,
-            IndexQuery[] query,
+            PropertyIndexQuery[] query,
             IndexQueryConstraints constraints,
             boolean indexIncludesTransactionState )
     {
@@ -129,9 +129,9 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
             // Extract out the equality queries
             List<Value> exactQueryValues = new ArrayList<>( query.length );
             int i = 0;
-            while ( i < query.length && query[i] instanceof IndexQuery.ExactPredicate )
+            while ( i < query.length && query[i] instanceof PropertyIndexQuery.ExactPredicate )
             {
-                exactQueryValues.add( ((IndexQuery.ExactPredicate) query[i]).value() );
+                exactQueryValues.add( ((PropertyIndexQuery.ExactPredicate) query[i]).value() );
                 i++;
             }
             Value[] exactValues = exactQueryValues.toArray( new Value[0] );
@@ -145,7 +145,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
             }
             else
             {
-                IndexQuery nextQuery = query[i];
+                PropertyIndexQuery nextQuery = query[i];
                 switch ( nextQuery.type() )
                 {
                 case exists:
@@ -167,14 +167,14 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
                     // This case covers first query to be range or exact followed by range
                     // If composite index all following will be exists as well so no need to consider those
                     setNeedsValuesIfRequiresOrder();
-                    rangeQuery( descriptor, exactValues, (IndexQuery.RangePredicate<?>) nextQuery );
+                    rangeQuery( descriptor, exactValues, (PropertyIndexQuery.RangePredicate<?>) nextQuery );
                     break;
 
                 case stringPrefix:
                     // This case covers first query to be prefix or exact followed by prefix
                     // If composite index all following will be exists as well so no need to consider those
                     setNeedsValuesIfRequiresOrder();
-                    prefixQuery( descriptor, exactValues, (IndexQuery.StringPrefixPredicate) nextQuery );
+                    prefixQuery( descriptor, exactValues, (PropertyIndexQuery.StringPrefixPredicate) nextQuery );
                     break;
 
                 case stringSuffix:
@@ -506,13 +506,13 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
         }
         else
         {
-            String keys = query == null ? "unknown" : Arrays.toString( stream( query ).map( IndexQuery::propertyKeyId ).toArray( Integer[]::new ) );
+            String keys = query == null ? "unknown" : Arrays.toString( stream( query ).map( PropertyIndexQuery::propertyKeyId ).toArray( Integer[]::new ) );
             return implementationName() + "[entity=" + entity + ", open state with: keys=" + keys +
                     ", values=" + Arrays.toString( values ) + "]";
         }
     }
 
-    private void prefixQuery( IndexDescriptor descriptor, Value[] equalityPrefix, IndexQuery.StringPrefixPredicate predicate )
+    private void prefixQuery( IndexDescriptor descriptor, Value[] equalityPrefix, PropertyIndexQuery.StringPrefixPredicate predicate )
     {
         TransactionState txState = read.txState();
 
@@ -532,7 +532,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
         }
     }
 
-    private void rangeQuery( IndexDescriptor descriptor, Value[] equalityPrefix, IndexQuery.RangePredicate<?> predicate )
+    private void rangeQuery( IndexDescriptor descriptor, Value[] equalityPrefix, PropertyIndexQuery.RangePredicate<?> predicate )
     {
         TransactionState txState = read.txState();
 
@@ -569,7 +569,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
         }
     }
 
-    private void suffixOrContainsQuery( IndexDescriptor descriptor, IndexQuery query )
+    private void suffixOrContainsQuery( IndexDescriptor descriptor, PropertyIndexQuery query )
     {
         TransactionState txState = read.txState();
 
