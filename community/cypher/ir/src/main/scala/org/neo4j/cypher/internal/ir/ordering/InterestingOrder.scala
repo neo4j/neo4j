@@ -137,22 +137,22 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
       }
     }
 
-    def rename(columns: Seq[ColumnOrder]): Seq[ColumnOrder] = {
-      columns.flatMap { column: ColumnOrder =>
-        // expression with all incoming projections applied
-        val projected = projectExpression(column.expression, column.projections)
-        projected match {
-          case Property(Variable(prevVarName), _) if projectExpressions.contains(prevVarName) => projectedColumnOrder(column, projected, prevVarName)
-          case Variable(prevVarName) if projectExpressions.contains(prevVarName) => projectedColumnOrder(column, projected, prevVarName)
-          case _ =>
-            columnIfArgument(projected, column)
-        }
+    def renameColumn(column: ColumnOrder): Option[ColumnOrder] = {
+      // expression with all incoming projections applied
+      val projected = projectExpression(column.expression, column.projections)
+      projected match {
+        case Property(Variable(prevVarName), _) if projectExpressions.contains(prevVarName) => projectedColumnOrder(column, projected, prevVarName)
+        case Variable(prevVarName) if projectExpressions.contains(prevVarName) => projectedColumnOrder(column, projected, prevVarName)
+        case _ =>
+          columnIfArgument(projected, column)
       }
-
     }
 
-    InterestingOrder(requiredOrderCandidate.renameColumns(rename),
-      interestingOrderCandidates.map(_.renameColumns(rename)).filter(!_.isEmpty))
+    def renamePrefix(columns: Seq[ColumnOrder]): Seq[ColumnOrder] =
+      columns.map(renameColumn).takeWhile(_.isDefined).flatten
+
+    InterestingOrder(requiredOrderCandidate.renameColumns(renamePrefix),
+      interestingOrderCandidates.map(_.renameColumns(renamePrefix)).filter(!_.isEmpty))
   }
 
   /**

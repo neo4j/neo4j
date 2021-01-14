@@ -489,6 +489,50 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     )
   }
 
+  test("should find required order prefix in tail with multiple columns") {
+    val q = buildSinglePlannerQuery {
+      """MATCH (n)
+        |WITH DISTINCT n AS x
+        |MATCH (x)-->(y)
+        |RETURN x, y
+        |ORDER BY x.prop, x.otherProp, y.yetAnotherProp""".stripMargin
+    }
+    q.findFirstRequiredOrder shouldBe Some(
+      InterestingOrder.required(
+        RequiredOrderCandidate
+          .asc(prop("x", "prop"), Map("x" -> varFor("n")))
+          .asc(prop("x", "otherProp"), Map("x" -> varFor("n")))
+      )
+    )
+  }
+
+  test("should not find required order in tail when the first ordering column is not usable") {
+    val q = buildSinglePlannerQuery {
+      """MATCH (n)
+        |WITH DISTINCT n AS x
+        |MATCH (x)-->(y)
+        |RETURN x, y
+        |ORDER BY y.prop, x.prop""".stripMargin
+    }
+    q.findFirstRequiredOrder shouldBe empty
+  }
+
+  test("should find required order prefix in tail until the first unusable column only") {
+    val q = buildSinglePlannerQuery {
+      """MATCH (n)
+        |WITH DISTINCT n AS x
+        |MATCH (x)-->(y)
+        |RETURN x, y
+        |ORDER BY x.prop, y.otherProp, x.yetAnotherProp""".stripMargin
+    }
+    q.findFirstRequiredOrder shouldBe Some(
+      InterestingOrder.required(
+        RequiredOrderCandidate
+          .asc(prop("x", "prop"), Map("x" -> varFor("n")))
+      )
+    )
+  }
+
   private def interestingOrders(plannerQuery: SinglePlannerQuery): List[InterestingOrder] =
     plannerQuery.tail match {
       case None => List(plannerQuery.interestingOrder)
