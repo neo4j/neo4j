@@ -44,7 +44,7 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
+import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -259,7 +259,7 @@ class GenericAccessorPointsTest
 
         try ( IndexReader indexReader = accessor.newReader() )
         {
-            SimpleNodeValueClient client = new SimpleNodeValueClient();
+            SimpleEntityValueClient client = new SimpleEntityValueClient();
 
             var range = PropertyIndexQuery.range( descriptor.schema().getPropertyId(),
                     Values.pointValue( WGS84, searchStart ),
@@ -313,7 +313,7 @@ class GenericAccessorPointsTest
     {
         try ( IndexReader indexReader = accessor.newReader() )
         {
-            SimpleNodeValueClient client = new SimpleNodeValueClient();
+            SimpleEntityValueClient client = new SimpleEntityValueClient();
             for ( Value value : values )
             {
                 PropertyIndexQuery.ExactPredicate exact = PropertyIndexQuery.exact( descriptor.schema().getPropertyId(), value );

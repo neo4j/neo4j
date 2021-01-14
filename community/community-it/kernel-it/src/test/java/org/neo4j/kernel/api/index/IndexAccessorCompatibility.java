@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
+import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
@@ -119,7 +119,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     {
         try ( IndexReader reader = accessor.newReader() )
         {
-            SimpleNodeValueClient nodeValueClient = new SimpleNodeValueClient();
+            SimpleEntityValueClient nodeValueClient = new SimpleEntityValueClient();
             reader.query( NULL_CONTEXT, nodeValueClient, unconstrained(), predicates );
             List<Long> list = new LinkedList<>();
             while ( nodeValueClient.next() )
@@ -135,7 +135,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         }
     }
 
-    protected AutoCloseable query( SimpleNodeValueClient client, IndexOrder order, PropertyIndexQuery... predicates ) throws Exception
+    protected AutoCloseable query( SimpleEntityValueClient client, IndexOrder order, PropertyIndexQuery... predicates ) throws Exception
     {
         IndexReader reader = accessor.newReader();
         reader.query( NULL_CONTEXT, client, constrained( order, false ), predicates );
@@ -151,7 +151,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         }
         else
         {
-            SimpleNodeValueClient client = new SimpleNodeValueClient();
+            SimpleEntityValueClient client = new SimpleEntityValueClient();
             try ( AutoCloseable ignore = query( client, order, predicates ) )
             {
                 actualIds = assertClientReturnValuesInOrder( client, order );
@@ -160,7 +160,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         return actualIds;
     }
 
-    List<Long> assertClientReturnValuesInOrder( SimpleNodeValueClient client, IndexOrder order )
+    List<Long> assertClientReturnValuesInOrder( SimpleEntityValueClient client, IndexOrder order )
     {
         List<Long> seenIds = new ArrayList<>();
         Value[] prevValues = null;

@@ -48,7 +48,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
+import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
@@ -1142,7 +1142,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 add( 1, descriptor.schema(), baseValue, o3 )
         ) );
 
-        SimpleNodeValueClient client = new SimpleNodeValueClient();
+        SimpleEntityValueClient client = new SimpleEntityValueClient();
         try ( AutoCloseable ignored = query( client, order, exact, range ) )
         {
             List<Long> seenIds = assertClientReturnValuesInOrder( client, order );
@@ -1242,7 +1242,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 of( new PropertyIndexQuery[]{firstContains, secondContains}, false )
         );
 
-        SimpleNodeValueClient client = new SimpleNodeValueClient();
+        SimpleEntityValueClient client = new SimpleEntityValueClient();
         try ( IndexReader reader = accessor.newReader() )
         {
             for ( Pair<PropertyIndexQuery[],Boolean> pair : queries )

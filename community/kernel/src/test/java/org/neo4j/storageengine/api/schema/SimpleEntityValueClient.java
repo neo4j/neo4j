@@ -25,7 +25,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-public class SimpleNodeValueClient implements IndexProgressor.EntityValueClient
+public class SimpleEntityValueClient implements IndexProgressor.EntityValueClient
 {
     public long reference;
     public Value[] values;

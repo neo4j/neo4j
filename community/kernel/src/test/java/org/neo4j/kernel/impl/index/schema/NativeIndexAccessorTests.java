@@ -54,7 +54,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
+import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -709,7 +709,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         {
             Arrays.sort( expectedValues, Values.COMPARATOR.reversed() );
         }
-        SimpleNodeValueClient client = new SimpleNodeValueClient();
+        SimpleEntityValueClient client = new SimpleEntityValueClient();
         reader.query( NULL_CONTEXT, client, constrained( supportedOrder, true ), supportedQuery );
         int i = 0;
         while ( client.next() )
@@ -730,7 +730,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
             PropertyIndexQuery.ExactPredicate unsupportedQuery = PropertyIndexQuery.exact( 0, PointValue.MAX_VALUE ); // <- Any spatial value would do
 
             var e = assertThrows( UnsupportedOperationException.class, () ->
-                reader.query( NULL_CONTEXT, new SimpleNodeValueClient(), constrained( unsupportedOrder, false ), unsupportedQuery ) );
+                reader.query( NULL_CONTEXT, new SimpleEntityValueClient(), constrained( unsupportedOrder, false ), unsupportedQuery ) );
             assertThat( e.getMessage() ).contains( "unsupported order" ).contains( unsupportedOrder.toString() ).contains( unsupportedQuery.toString() );
         }
     }
@@ -784,7 +784,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         // when
         try ( IndexReader reader = accessor.newReader() )
         {
-                SimpleNodeValueClient client = new SimpleNodeValueClient();
+                SimpleEntityValueClient client = new SimpleEntityValueClient();
                 reader.query( NULL_CONTEXT, client, unorderedValues(), supportedQuery );
 
                 // then

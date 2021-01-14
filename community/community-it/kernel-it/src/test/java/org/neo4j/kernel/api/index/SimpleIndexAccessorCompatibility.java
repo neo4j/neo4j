@@ -49,7 +49,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
+import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
@@ -926,7 +926,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         Collections.shuffle( additions, random.random() );
         updateAndCommit( additions );
 
-        SimpleNodeValueClient client = new SimpleNodeValueClient();
+        SimpleEntityValueClient client = new SimpleEntityValueClient();
         try ( AutoCloseable ignored = query( client, order, range ) )
         {
             List<Long> seenIds = assertClientReturnValuesInOrder( client, order );

@@ -54,7 +54,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
+import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -186,8 +186,8 @@ abstract class IndexPopulationStressTest
               IndexReader reader = accessor.newReader();
               IndexReader referenceReader = referenceAccessor.newReader() )
         {
-            SimpleNodeValueClient entries = new SimpleNodeValueClient();
-            SimpleNodeValueClient referenceEntries = new SimpleNodeValueClient();
+            SimpleEntityValueClient entries = new SimpleEntityValueClient();
+            SimpleEntityValueClient referenceEntries = new SimpleEntityValueClient();
             reader.query( NULL_CONTEXT, entries, unordered( hasValues ), PropertyIndexQuery.exists( 0 ) );
             referenceReader.query( NULL_CONTEXT, referenceEntries, unordered( hasValues ), PropertyIndexQuery.exists( 0 ) );
             while ( referenceEntries.next() )

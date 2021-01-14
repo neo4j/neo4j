@@ -47,7 +47,7 @@ import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
+import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -314,7 +314,7 @@ class GenericBlockBasedIndexPopulatorTest
     {
         try ( NativeIndexReader<GenericKey, NativeIndexValue> reader = populator.newReader() )
         {
-            SimpleNodeValueClient valueClient = new SimpleNodeValueClient();
+            SimpleEntityValueClient valueClient = new SimpleEntityValueClient();
             PropertyIndexQuery.ExactPredicate exact = PropertyIndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), entry );
             reader.query( NULL_CONTEXT, valueClient, unconstrained(), exact );
             assertTrue( valueClient.next() );
@@ -337,7 +337,7 @@ class GenericBlockBasedIndexPopulatorTest
     {
         try ( NativeIndexReader<GenericKey, NativeIndexValue> reader = populator.newReader() )
         {
-            SimpleNodeValueClient cursor = new SimpleNodeValueClient();
+            SimpleEntityValueClient cursor = new SimpleEntityValueClient();
             reader.query( NULL_CONTEXT, cursor, unorderedValues(), PropertyIndexQuery.exact( INDEX_DESCRIPTOR.schema().getPropertyId(), value ) );
             assertTrue( cursor.next() );
             assertEquals( id, cursor.reference );
