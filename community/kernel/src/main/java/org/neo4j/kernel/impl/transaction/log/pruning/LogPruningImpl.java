@@ -116,7 +116,7 @@ public class LogPruningImpl implements LogPruning
                     filesDeleted++;
                 }
             }
-            log.info( "Pruned " + filesDeleted + " checkpoint log files. Lowest preserved version: " + highestVersionToRemove + 1 );
+            log.info( "Pruned " + filesDeleted + " checkpoint log files. Lowest preserved version: " + (highestVersionToRemove + 1) );
         }
     }
 
