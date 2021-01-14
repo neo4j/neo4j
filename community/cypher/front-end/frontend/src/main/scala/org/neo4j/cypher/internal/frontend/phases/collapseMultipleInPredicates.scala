@@ -14,13 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.rewriting.rewriters
+package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -35,13 +37,12 @@ case object InPredicatesCollapsed extends StepSequencer.Condition
 This class merges multiple IN predicates into larger ones.
 These can later be turned into index lookups or node-by-id ops
  */
-case object collapseMultipleInPredicates extends Rewriter with StepSequencer.Step {
-
-  override def apply(that: AnyRef) = instance(that)
+case object collapseMultipleInPredicates extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
+  override def description: String = "merge multiple IN predicates into larger ones"
 
   case class InValue(lhs: Expression, expr: Expression)
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
+  override def instance(ignored: BaseContext): Rewriter = bottomUp(Rewriter.lift {
     case predicate@Ors(exprs) =>
       // Find all the expressions we want to rewrite
       val (const: Seq[Expression], nonRewritable: Seq[Expression]) = exprs.toList.partition {
@@ -70,9 +71,12 @@ case object collapseMultipleInPredicates extends Rewriter with StepSequencer.Ste
       }
   })
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(EqualityRewrittenToIn)
+  override def preConditions: Set[StepSequencer.Condition] = Set(EqualityRewrittenToIn, BooleanPredicatesInCNF)
 
   override def postConditions: Set[StepSequencer.Condition] = Set(InPredicatesCollapsed)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
+
+  override def getTransformer(pushdownPropertyReads: Boolean,
+                              semanticFeatures: Seq[SemanticFeature]): Transformer[BaseContext, BaseState, BaseState] = this
 }

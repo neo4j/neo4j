@@ -42,6 +42,6 @@ object CompilationPhases {
       transitiveClosure andThen
       rewriteEqualityToInPredicate andThen
       CNFNormalizer andThen
-      LateAstRewriting andThen
+      collapseMultipleInPredicates andThen
       SemanticAnalysis(warn = false)
 }

@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.phases.ExpandStarRewriter
 import org.neo4j.cypher.internal.frontend.phases.If
-import org.neo4j.cypher.internal.frontend.phases.LateAstRewriting
+import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.phases.LiteralExtraction
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
@@ -84,7 +84,7 @@ object CompilationPhases {
     transitiveClosure,
     rewriteEqualityToInPredicate,
     CNFNormalizer,
-    LateAstRewriting,
+    collapseMultipleInPredicates,
     ResolveTokens,
     CreatePlannerQuery,
     OptionalMatchRemover,

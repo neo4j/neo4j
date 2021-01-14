@@ -60,7 +60,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.frontend.phases.ASTRewriter
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.CNFNormalizer
-import org.neo4j.cypher.internal.frontend.phases.LateAstRewriting
+import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.Parsing
@@ -320,7 +320,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       Namespacer andThen
       rewriteEqualityToInPredicate andThen
       CNFNormalizer andThen
-      LateAstRewriting andThen
+      collapseMultipleInPredicates andThen
       CreatePlannerQuery
 
   def buildPlannerQuery(query: String,
