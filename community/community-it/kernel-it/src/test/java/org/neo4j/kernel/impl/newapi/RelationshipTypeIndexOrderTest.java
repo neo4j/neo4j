@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.index.label.RelationshipTypeScanStoreSettings;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 public class RelationshipTypeIndexOrderTest extends TokenIndexOrderTestBase<RelationshipTypeIndexCursor>
