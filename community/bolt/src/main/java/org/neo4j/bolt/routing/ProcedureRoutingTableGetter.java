@@ -22,9 +22,11 @@ package org.neo4j.bolt.routing;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.bolt.messaging.ResultConsumer;
+import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
@@ -51,7 +53,8 @@ public class ProcedureRoutingTableGetter implements RoutingTableGetter
 
         try
         {
-            StatementMetadata statementMetadata = statementProcessor.run( GET_ROUTING_TABLE_STATEMENT, params );
+            StatementMetadata statementMetadata =
+                    statementProcessor.run( GET_ROUTING_TABLE_STATEMENT, params, List.of(), null, AccessMode.READ, Map.of() );
 
             statementProcessor.streamResult( statementMetadata.queryId(), new RoutingTableConsumer( future ) );
         }

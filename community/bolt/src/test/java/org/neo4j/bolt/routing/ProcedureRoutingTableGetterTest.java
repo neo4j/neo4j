@@ -21,10 +21,13 @@ package org.neo4j.bolt.routing;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.messaging.ResultConsumer;
+import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
@@ -63,12 +66,13 @@ class ProcedureRoutingTableGetterTest
         var routingTableContext = getRoutingTableContext();
         var databaseName = "dbName";
 
-        doReturn( mock( StatementMetadata.class ) ).when( statementProcessor ).run( anyString(), any() );
+        doReturn( mock( StatementMetadata.class ) ).when( statementProcessor ).run( anyString(), any(), any(), any(), any(), any() );
 
         getter.get( statementProcessor, routingTableContext, databaseName );
 
         verify( statementProcessor )
-                .run( "CALL dbms.routing.getRoutingTable($routingContext, $databaseName)", getExpectedParams( routingTableContext, databaseName ) );
+                .run( "CALL dbms.routing.getRoutingTable($routingContext, $databaseName)",
+                      getExpectedParams( routingTableContext, databaseName ), List.of(), null, AccessMode.READ, Map.of() );
     }
 
     @Test
@@ -80,7 +84,7 @@ class ProcedureRoutingTableGetterTest
         var boltResult = mock( BoltResult.class );
         var expectedRoutingTable = routingTable();
 
-        doReturn( statementMetadata ).when( statementProcessor ).run( anyString(), any() );
+        doReturn( statementMetadata ).when( statementProcessor ).run( anyString(), any(), any(), any(), any(), any() );
         doReturn( queryId ).when( statementMetadata ).queryId();
         doReturn( getFieldNames() ).when( boltResult ).fieldNames();
         mockStreamResult( statementProcessor, queryId, boltResult, recordConsumer ->
@@ -106,7 +110,7 @@ class ProcedureRoutingTableGetterTest
         var statementMetadata = mock( StatementMetadata.class );
         var boltResult = mock( BoltResult.class );
 
-        doReturn( statementMetadata ).when( statementProcessor ).run( anyString(), any() );
+        doReturn( statementMetadata ).when( statementProcessor ).run( anyString(), any(), any(), any(), any(), any() );
         doReturn( queryId ).when( statementMetadata ).queryId();
         doReturn( getFieldNames() ).when( boltResult ).fieldNames();
         mockStreamResult( statementProcessor, queryId, boltResult, recordConsumer ->
@@ -134,7 +138,7 @@ class ProcedureRoutingTableGetterTest
         var statementProcessor = mock( StatementProcessor.class );
         var expectedException = new TransactionFailureException( "Something wrong", new RuntimeException() );
 
-        doThrow( expectedException ).when( statementProcessor ).run( anyString(), any() );
+        doThrow( expectedException ).when( statementProcessor ).run( anyString(), any(), any(), any(), any(), any() );
 
         var future = getter.get( statementProcessor, getRoutingTableContext(), "dbName" );
 
@@ -157,7 +161,7 @@ class ProcedureRoutingTableGetterTest
         var statementMetadata = mock( StatementMetadata.class );
         var expectedException = new TransactionFailureException( "Something wrong", new RuntimeException() );
 
-        doReturn( statementMetadata ).when( statementProcessor ).run( anyString(), any() );
+        doReturn( statementMetadata ).when( statementProcessor ).run( anyString(), any(), any(), any(), any(), any() );
         doReturn( queryId ).when( statementMetadata ).queryId();
         doThrow( expectedException ).when( statementProcessor ).streamResult( anyInt(), any() );
         var future = getter.get( statementProcessor, getRoutingTableContext(), "dbName" );
