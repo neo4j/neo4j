@@ -31,7 +31,7 @@ case class PartialTop(source: LogicalPlan,
                       alreadySortedPrefix: Seq[ColumnOrder],
                       stillToSortSuffix: Seq[ColumnOrder],
                       limit: Expression,
-                      skipSortingPrefixLength: Option[Expression] = None)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan with LimitingLogicalPlan {
+                      skipSortingPrefixLength: Option[Expression] = None)(implicit idGen: IdGen) extends LogicalPlan(idGen)  with LimitingLogicalPlan {
   override def lhs: Option[LogicalPlan] = Some(source)
 
   override def rhs: Option[LogicalPlan] = None

@@ -23,7 +23,7 @@ package org.neo4j.cypher.internal.logical.plans
  * A plan that limits selectivity on child plans.
  */
 trait LimitingLogicalPlan {
-  self: LazyLogicalPlan =>
+  self: LogicalPlan =>
 
   val source: LogicalPlan
 }
@@ -35,12 +35,7 @@ trait ExhaustiveLogicalPlan {
   self: LogicalPlan =>
 }
 
-/**
- * A plan that does not necessarily consume all input from LHS.
- */
-trait LazyLogicalPlan {
-  self: LogicalPlan =>
-}
+
 
 /**
  * A plan that exhausts all input from LHS before producing it's first output.

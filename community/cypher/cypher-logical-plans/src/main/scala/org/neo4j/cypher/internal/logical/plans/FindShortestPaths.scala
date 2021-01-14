@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -33,7 +33,7 @@ case class FindShortestPaths(source: LogicalPlan,
                              withFallBack: Boolean = false,
                              disallowSameNode: Boolean = true)
                             (implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+  extends LogicalPlan(idGen)  {
 
   val lhs = Some(source)
   def rhs = None

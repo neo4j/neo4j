@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * For every source row, the nodes assigned to each of the 'nodesToLock' are locked exclusively.
  */
 case class LockNodes(source: LogicalPlan, nodesToLock: Set[String])(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+  extends LogicalPlan(idGen)  {
   override def lhs: Option[LogicalPlan] = Some(source)
 
   override def rhs: Option[LogicalPlan] = None

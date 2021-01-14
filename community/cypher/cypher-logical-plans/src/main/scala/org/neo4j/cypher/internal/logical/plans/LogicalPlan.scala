@@ -209,7 +209,7 @@ trait AggregatingPlan extends LogicalPlan {
 // Marker interface for all plans that performs updates
 trait UpdatingPlan extends LogicalPlan
 
-abstract class LogicalLeafPlan(idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+abstract class LogicalLeafPlan(idGen: IdGen) extends LogicalPlan(idGen)  {
   final val lhs = None
   final val rhs = None
   def argumentIds: Set[String]

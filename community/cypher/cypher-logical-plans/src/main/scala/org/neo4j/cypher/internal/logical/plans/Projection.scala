@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * the expression.
  */
 case class Projection(source: LogicalPlan, projectExpressions: Map[String, Expression])
-                     (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan with ProjectingPlan {
+                     (implicit idGen: IdGen) extends LogicalPlan(idGen)  with ProjectingPlan {
 
   val availableSymbols: Set[String] = source.availableSymbols ++ projectExpressions.keySet
 }

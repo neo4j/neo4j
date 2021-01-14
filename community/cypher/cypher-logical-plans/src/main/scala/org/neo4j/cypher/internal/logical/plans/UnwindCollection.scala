@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * If 'expression' does not evaluate to a list, produce a single row with the value.
  */
 case class UnwindCollection(source: LogicalPlan, variable: String, expression: Expression)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+  extends LogicalPlan(idGen)  {
   val lhs = Some(source)
   def rhs = None
 

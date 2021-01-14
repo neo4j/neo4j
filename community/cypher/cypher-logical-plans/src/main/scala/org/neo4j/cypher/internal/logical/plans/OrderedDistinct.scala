@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 case class OrderedDistinct(source: LogicalPlan,
                            override val groupingExpressions: Map[String, Expression],
                            orderToLeverage: Seq[Expression])
-                          (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan with ProjectingPlan with AggregatingPlan {
+                          (implicit idGen: IdGen) extends LogicalPlan(idGen)  with ProjectingPlan with AggregatingPlan {
 
   override val projectExpressions: Map[String, Expression] = groupingExpressions
   override val availableSymbols: Set[String] = groupingExpressions.keySet

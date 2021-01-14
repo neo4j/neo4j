@@ -28,7 +28,7 @@ import org.neo4j.values.virtual.MapValue
  * Check that the query is an allowed system-only query BEFORE creating a SystemProcedureCall
  */
 case class SystemProcedureCall(procedureName: String, call: ResolvedCall, returns: Return, params: MapValue, checkCredentialsExpired: Boolean)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+  extends LogicalPlan(idGen)  {
 
   override def lhs: Option[LogicalPlan] = None
   override def rhs: Option[LogicalPlan] = None

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.expressions.RelTypeName
 
 /**
  * For every source row, consider the path described by the relationships in 'rel'
@@ -41,7 +41,7 @@ case class ProjectEndpoints(source: LogicalPlan,
                             types: Option[Seq[RelTypeName]],
                             directed: Boolean,
                             length: PatternLength)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+  extends LogicalPlan(idGen)  {
 
   val lhs = Some(source)
   def rhs = None

@@ -82,7 +82,7 @@ case class TriadicBuild(source: LogicalPlan,
                         seenId: String,
                         triadicSelectionId: Some[Id]) // wrapped in Some because Id is a value class and doesn't play well with rewriting
                        (implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+  extends LogicalPlan(idGen)  {
 
   override def lhs: Option[LogicalPlan] = Some(source)
   override def rhs: Option[LogicalPlan] = None
@@ -95,7 +95,7 @@ case class TriadicFilter(source: LogicalPlan,
                          targetId: String,
                          triadicSelectionId: Some[Id]) // wrapped in Some because Id is a value class and doesn't play well with rewriting
                         (implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+  extends LogicalPlan(idGen)  {
 
   override def lhs: Option[LogicalPlan] = Some(source)
   override def rhs: Option[LogicalPlan] = None

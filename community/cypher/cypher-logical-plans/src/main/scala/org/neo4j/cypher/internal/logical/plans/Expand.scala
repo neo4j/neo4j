@@ -39,7 +39,7 @@ case class Expand(source: LogicalPlan,
                   relName: String,
                   mode: ExpansionMode = ExpandAll)
                  (implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+  extends LogicalPlan(idGen) {
 
   override val lhs: Option[LogicalPlan] = Some(source)
   override def rhs: Option[LogicalPlan] = None
@@ -60,7 +60,7 @@ case class OptionalExpand(source: LogicalPlan,
                           mode: ExpansionMode = ExpandAll,
                           predicate: Option[Expression] = None)
                          (implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+  extends LogicalPlan(idGen) {
 
   override val lhs: Option[LogicalPlan] = Some(source)
   override def rhs: Option[LogicalPlan] = None
@@ -86,7 +86,7 @@ case class VarExpand(source: LogicalPlan,
                      mode: ExpansionMode = ExpandAll,
                      nodePredicate: Option[VariablePredicate] = None,
                      relationshipPredicate: Option[VariablePredicate] = None)
-                    (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+                    (implicit idGen: IdGen) extends LogicalPlan(idGen) {
   override val lhs: Option[LogicalPlan] = Some(source)
   override def rhs: Option[LogicalPlan] = None
   override val availableSymbols: Set[String] = source.availableSymbols + relName + to
@@ -110,7 +110,7 @@ case class PruningVarExpand(source: LogicalPlan,
                             nodePredicate: Option[VariablePredicate] = None,
                             relationshipPredicate: Option[VariablePredicate] = None)
                            (implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+  extends LogicalPlan(idGen)  {
 
   override val lhs: Option[LogicalPlan] = Some(source)
   override def rhs: Option[LogicalPlan] = None

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *   If the procedure returns a stream, produce one row per result in this stream with result appended to the row
  *   If the procedure returns void, produce the source row
  */
-case class ProcedureCall(source: LogicalPlan, call: ResolvedCall)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+case class ProcedureCall(source: LogicalPlan, call: ResolvedCall)(implicit idGen: IdGen) extends LogicalPlan(idGen)  {
 
   override val lhs = Some(source)
   override def rhs = None

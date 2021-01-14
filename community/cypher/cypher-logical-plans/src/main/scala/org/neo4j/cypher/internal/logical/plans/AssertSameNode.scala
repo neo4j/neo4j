@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *
  * This operator is planned for merges using unique index seeks.
  */
-case class AssertSameNode(node: String, left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+case class AssertSameNode(node: String, left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   val lhs = Some(left)
   val rhs = Some(right)

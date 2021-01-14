@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * If a row is produced, that row will only contain values in the argument columns.
  * Anti can only be planned on the RHS of an Apply.
  */
-case class Anti(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+case class Anti(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
 
   val lhs = Some(source)
   val rhs = None

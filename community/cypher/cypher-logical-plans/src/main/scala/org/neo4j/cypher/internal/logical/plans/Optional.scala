@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * Produces source rows, unless source is empty. In that case, a single row is produced containing argument and any
  * non-argument variables set to NO_VALUE.
  */
-case class Optional(source: LogicalPlan, protectedSymbols: Set[String] = Set.empty)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+case class Optional(source: LogicalPlan, protectedSymbols: Set[String] = Set.empty)(implicit idGen: IdGen) extends LogicalPlan(idGen)  {
 
   val lhs = Some(source)
   val rhs = None

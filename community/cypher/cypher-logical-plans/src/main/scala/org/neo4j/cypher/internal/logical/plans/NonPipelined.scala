@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * NOTE: This plan is only for testing
  */
-case class NonPipelined(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+case class NonPipelined(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen)  {
 
   val lhs: Option[LogicalPlan] = Some(source)
   def rhs: Option[LogicalPlan] = None

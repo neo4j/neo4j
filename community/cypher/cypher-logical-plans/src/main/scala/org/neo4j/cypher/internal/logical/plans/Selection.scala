@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  */
 case class Selection(predicate: Ands,
                      source: LogicalPlan
-                    )(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+                    )(implicit idGen: IdGen) extends LogicalPlan(idGen)  {
   assert(predicate.exprs.nonEmpty, "A selection plan should never be created without predicates")
 
   val lhs = Some(source)
