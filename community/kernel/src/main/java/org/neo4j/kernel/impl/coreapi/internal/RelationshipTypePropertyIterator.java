@@ -19,44 +19,44 @@
  */
 package org.neo4j.kernel.impl.coreapi.internal;
 
-import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 
-public class NodeLabelPropertyIterator extends PropertyFilteringIterator<Node,NodeLabelIndexCursor,NodeCursor>
+public class RelationshipTypePropertyIterator extends PropertyFilteringIterator<Relationship,RelationshipTypeIndexCursor,RelationshipScanCursor>
 {
     private final Read read;
 
-    public NodeLabelPropertyIterator(
+    public RelationshipTypePropertyIterator(
             Read read,
-            NodeLabelIndexCursor nodeLabelCursor,
-            NodeCursor nodeCursor,
+            RelationshipTypeIndexCursor relationshipTypeIndexCursor,
+            RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor,
-            EntityFactory<Node> nodeFactory,
+            EntityFactory<Relationship> relationshipFactory,
             IndexQuery... queries )
     {
-        super( nodeLabelCursor, nodeCursor, propertyCursor, nodeFactory, queries );
+        super( relationshipTypeIndexCursor, relationshipScanCursor, propertyCursor, relationshipFactory, queries );
         this.read = read;
     }
 
     @Override
-    protected long entityReference( NodeLabelIndexCursor cursor )
+    protected long entityReference( RelationshipTypeIndexCursor cursor )
     {
-        return cursor.nodeReference();
+        return cursor.relationshipReference();
     }
 
     @Override
-    protected void singleEntity( long id, NodeCursor cursor )
+    protected void singleEntity( long id, RelationshipScanCursor cursor )
     {
-        read.singleNode( id, cursor );
+        read.singleRelationship( id, cursor );
     }
 
     @Override
-    protected void properties( NodeCursor nodeCursor, PropertyCursor propertyCursor )
+    protected void properties( RelationshipScanCursor relationshipScanCursor, PropertyCursor propertyCursor )
     {
-        nodeCursor.properties( propertyCursor );
+        relationshipScanCursor.properties( propertyCursor );
     }
 }

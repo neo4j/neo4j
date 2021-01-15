@@ -83,6 +83,7 @@ import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.internal.NodeCursorResourceIterator;
 import org.neo4j.kernel.impl.coreapi.internal.NodeLabelPropertyIterator;
 import org.neo4j.kernel.impl.coreapi.internal.RelationshipCursorResourceIterator;
+import org.neo4j.kernel.impl.coreapi.internal.RelationshipTypePropertyIterator;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
@@ -463,6 +464,38 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     }
 
     @Override
+    public Relationship findRelationship( RelationshipType relationshipType, String key, Object value )
+    {
+        try ( var iterator = findRelationships( relationshipType, key, value ) )
+        {
+            if ( !iterator.hasNext() )
+            {
+                return null;
+            }
+            var rel = iterator.next();
+            if ( iterator.hasNext() )
+            {
+                throw new MultipleFoundException(
+                        format( "Found multiple relationships with type: '%s', property name: '%s' and property " +
+                                "value: '%s' while only one was expected.", relationshipType, key, value ) );
+            }
+            return rel;
+        }
+    }
+
+    @Override
+    public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key, Object value )
+    {
+        checkRelationshipType( relationshipType );
+        checkPropertyKey( key );
+        KernelTransaction transaction = kernelTransaction();
+        TokenRead tokenRead = transaction.tokenRead();
+        int labelId = tokenRead.relationshipType( relationshipType.name() );
+        int propertyId = tokenRead.propertyKey( key );
+        return relationshipsByTypeAndProperty( transaction, labelId, IndexQuery.exact( propertyId, Values.of( value, false ) ) );
+    }
+
+    @Override
     public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType )
     {
         return allRelationshipsWithType( relationshipType );
@@ -700,15 +733,10 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         {
             return emptyResourceIterator();
         }
-        Iterator<IndexDescriptor> iterator = transaction.schemaRead().index( SchemaDescriptor.forLabel( labelId, query.propertyKeyId() ) );
-        while ( iterator.hasNext() )
+
+        var index = findMatchingIndex( transaction, SchemaDescriptor.forLabel( labelId, query.propertyKeyId() ) );
+        if ( index != IndexDescriptor.NO_INDEX )
         {
-            IndexDescriptor index = iterator.next();
-            if ( index.getIndexType() != IndexType.BTREE )
-            {
-                // Skip special indexes, such as the full-text indexes, because they can't handle all the queries we might throw at them.
-                continue;
-            }
             // Ha! We found an index - let's use it to find matching nodes
             try
             {
@@ -725,6 +753,36 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         }
 
         return getNodesByLabelAndPropertyWithoutIndex( labelId, query );
+    }
+
+    private ResourceIterator<Relationship> relationshipsByTypeAndProperty( KernelTransaction transaction, int typeId, IndexQuery query )
+    {
+        Read read = transaction.dataRead();
+
+        if ( query.propertyKeyId() == TokenRead.NO_TOKEN || typeId == TokenRead.NO_TOKEN )
+        {
+            return emptyResourceIterator();
+        }
+
+        var index = findMatchingIndex( transaction, SchemaDescriptor.forRelType( typeId, query.propertyKeyId() ) );
+        if ( index != IndexDescriptor.NO_INDEX )
+        {
+            // Ha! We found an index - let's use it to find matching relationships
+            try
+            {
+                var cursor = transaction.cursors().allocateRelationshipValueIndexCursor( transaction.pageCursorTracer(), transaction.memoryTracker() );
+                IndexReadSession indexSession = read.indexReadSession( index );
+                read.relationshipIndexSeek( indexSession, cursor, unconstrained(), query );
+
+                return new RelationshipCursorResourceIterator<>( cursor, this::newRelationshipEntity );
+            }
+            catch ( KernelException e )
+            {
+                // weird at this point but ignore and fallback to a type scan
+            }
+        }
+
+        return getRelationshipsByTypeAndPropertyWithoutIndex( typeId, query );
     }
 
     @Override
@@ -763,6 +821,24 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 propertyCursor,
                 this::newNodeEntity,
                 queries );
+    }
+
+    private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyWithoutIndex( int labelId, IndexQuery... queries )
+    {
+        KernelTransaction transaction = kernelTransaction();
+
+        RelationshipTypeIndexCursor relationshipTypeIndexCursor = transaction.cursors().allocateRelationshipTypeIndexCursor( );
+        RelationshipScanCursor relationshipScanCursor = transaction.cursors().allocateRelationshipScanCursor( transaction.pageCursorTracer() );
+        PropertyCursor propertyCursor = transaction.cursors().allocatePropertyCursor( transaction.pageCursorTracer(), transaction.memoryTracker() );
+
+        transaction.dataRead().relationshipTypeScan( labelId, relationshipTypeIndexCursor, IndexOrder.NONE );
+
+        return new RelationshipTypePropertyIterator( transaction.dataRead(),
+                                                     relationshipTypeIndexCursor,
+                                                     relationshipScanCursor,
+                                                     propertyCursor,
+                                                     this::newRelationshipEntity,
+                                                     queries );
     }
 
     private ResourceIterator<Node> nodesByLabelAndProperties(
@@ -878,6 +954,20 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return IndexDescriptor.NO_INDEX;
     }
 
+    private static IndexDescriptor findMatchingIndex( KernelTransaction transaction, SchemaDescriptor schemaDescriptor )
+    {
+        Iterator<IndexDescriptor> iterator = transaction.schemaRead().index( schemaDescriptor );
+        while ( iterator.hasNext() )
+        {
+            IndexDescriptor index = iterator.next();
+            if ( index.getIndexType() == IndexType.BTREE )
+            {
+                return index;
+            }
+        }
+        return IndexDescriptor.NO_INDEX;
+    }
+
     private static void assertNoDuplicates( int[] propertyIds, TokenRead tokenRead )
     {
         int prev = propertyIds[0];
@@ -952,5 +1042,10 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     private static void checkLabel( Label label )
     {
         checkArgument( label != null, "Label can not be null" );
+    }
+
+    private static void checkRelationshipType( RelationshipType type )
+    {
+        checkArgument( type != null, "Relationship type can not be null" );
     }
 }

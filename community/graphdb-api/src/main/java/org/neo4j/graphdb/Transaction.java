@@ -374,6 +374,43 @@ public interface Transaction extends AutoCloseable
     ResourceIterator<Node> findNodes( Label label );
 
     /**
+     * Equivalent to {@link #findRelationships(RelationshipType, String, Object)}, however it must find no more than one
+     * {@link Relationship relationship} or it will throw an exception.
+     *
+     * @param relationshipType consider relationships with this type
+     * @param key   required property key
+     * @param value required property value
+     * @return the matching relatioonship or <code>null</code> if none could be found
+     * @throws MultipleFoundException if more than one matching {@link Relationship relationship} is found
+     */
+    Relationship findRelationship( RelationshipType relationshipType, String key, Object value );
+
+    /**
+     * Returns all {@link Relationship relationships} having the {@link RelationshipType type}, and the wanted property value.
+     * If an online index is found, it will be used to look up the requested
+     * relationships.
+     * <p>
+     * If no indexes exist for the type/property combination, the database will
+     * scan all relationships of a specific type looking for the property value.
+     * <p>
+     * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
+     * other 42 numbers, regardless of whether they are encoded as Integer, Long, Float, Short, Byte or Double.
+     * <p>
+     * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
+     * <p>
+     * Finally - arrays also follow these rules. An int[] {1,2,3} is equal to a double[] {1.0, 2.0, 3.0}
+     * <p>
+     * Please ensure that the returned {@link ResourceIterator} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @param relationshipType consider relationships with this type
+     * @param key   required property key
+     * @param value required property value
+     * @return an iterator containing all matching relationships. See {@link ResourceIterator} for responsibilities.
+     */
+    ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key, Object value );
+
+    /**
      * Returns all {@link Relationship relationships} of a specific {@link RelationshipType type}.
      *
      * Please take care that the returned {@link ResourceIterator} is closed correctly and as soon as possible
