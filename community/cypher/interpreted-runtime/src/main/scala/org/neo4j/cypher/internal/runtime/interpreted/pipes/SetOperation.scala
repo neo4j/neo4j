@@ -202,8 +202,7 @@ abstract class AbstractSetPropertyFromMapOperation() extends SetOperation {
                                                  ops: Operations[T, CURSOR],
                                                  itemId: Long,
                                                  map: MapValue,
-                                                 removeOtherProps: Boolean,
-                                                 onUpdate: () => Unit): Long = {
+                                                 removeOtherProps: Boolean): Long = {
     val setKeys = new ArrayBuffer[String]()
     val setValues = new ArrayBuffer[AnyValue]()
     var setCount = 0L
@@ -227,7 +226,6 @@ abstract class AbstractSetPropertyFromMapOperation() extends SetOperation {
     // batch creation is way faster is graphs with many propertyKeyIds
     val propertyIds = qtx.getOrCreatePropertyKeyIds(setKeys.toArray)
     for (i <- propertyIds.indices) {
-      onUpdate()
       ops.setProperty(itemId, propertyIds(i), runtime.makeValueNeoSafe(setValues(i)))
       setCount += 1
     }
@@ -261,7 +259,7 @@ abstract class SetNodeOrRelPropertyFromMapOperation[T, CURSOR](itemName: String,
       try {
         val map = SetOperation.toMap(executionContext, state, expression)
 
-        setPropertiesFromMap(state.cursors.propertyCursor, state.query, entityCursor(state.cursors), ops, itemId, map, removeOtherProps, onUpdate)
+        setPropertiesFromMap(state.cursors.propertyCursor, state.query, entityCursor(state.cursors), ops, itemId, map, removeOtherProps)
       } finally if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
     } else {
       0L
@@ -329,7 +327,7 @@ case class SetPropertyFromMapOperation(entityExpr: Expression,
         try {
           val map = SetOperation.toMap(executionContext, state, expression)
 
-          setPropertiesFromMap(state.cursors.propertyCursor, state.query, cursor, ops, entityId, map, removeOtherProps, onUpdate)
+          setPropertiesFromMap(state.cursors.propertyCursor, state.query, cursor, ops, entityId, map, removeOtherProps)
         } finally ops.releaseExclusiveLock(entityId)
       }
 
