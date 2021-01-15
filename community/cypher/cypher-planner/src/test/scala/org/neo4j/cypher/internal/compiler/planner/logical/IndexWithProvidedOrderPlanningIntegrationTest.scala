@@ -542,6 +542,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     }
 
     test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with an outer join") {
+      // Left outer hash join can only maintain ASC order
+      assume(sortOrder == Ascending)
       val plan = new given {
         indexOn("A", "prop").providesOrder(orderCapability)
         cardinality = mapCardinality {
