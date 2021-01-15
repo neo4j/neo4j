@@ -273,9 +273,8 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    val property = Iterables.single(tx.getAllPropertyKeys)
+    tx.getAllPropertyKeys.iterator().hasNext shouldBe false
     runtimeResult should beColumns("p").withSingleRow(null).withNoUpdates()
-    property shouldBe "prop"
   }
 
   test("should set node property on null node") {
@@ -319,9 +318,8 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    val property = Iterables.single(tx.getAllPropertyKeys)
     runtimeResult should beColumns("p").withSingleRow(null).withNoUpdates()
-    property shouldBe "prop"
+    tx.getAllPropertyKeys.iterator().hasNext shouldBe false
   }
 
   test("should count node property updates even if values are not changed") {
