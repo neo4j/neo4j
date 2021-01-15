@@ -42,7 +42,6 @@ abstract class LegacyDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[
                                 costOfGetPropertyChain = 0,
                                 costOfPropertyJumpedOverInChain = 0,
                                 costOfProperty = 1,
-                                costOfPropertyToken = 1,
                                 costOfExpandGetRelCursor = LegacyDbHitsTestBase.costOfExpandOneRel,
                                 costOfExpandOneRel = LegacyDbHitsTestBase.costOfExpandOneRel,
                                 costOfRelationshipTypeLookup = 1,

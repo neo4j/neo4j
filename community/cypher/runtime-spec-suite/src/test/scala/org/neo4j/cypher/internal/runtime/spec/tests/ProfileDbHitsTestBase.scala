@@ -38,7 +38,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                                                  val costOfSetProperty: Long, // the reported dbHits for setting a property token
                                                                  costOfPropertyJumpedOverInChain: Long, // the reported dbHits for a property in the chain that needs to be traversed in order to read another property in the chain
                                                                  val costOfProperty: Long, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
-                                                                 val costOfPropertyToken: Long, // the reported dbHits for a single property lookup, after getting the property chain and getting to the right position
                                                                  costOfLabelLookup: Long, // the reported dbHits for finding the id of a label
                                                                  costOfExpandGetRelCursor: Long, // the reported dbHits for obtaining a relationship cursor for expanding
                                                                  costOfExpandOneRel: Long, // the reported dbHits for expanding one relationship
