@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
+import org.neo4j.cypher.internal.ast.AlterRole
+import org.neo4j.cypher.internal.ast.AlterRoleAction
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
@@ -212,6 +214,11 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
               roleName, fromName, "GRANTED"),
             roleName, fromName, "DENIED"),
           prettifier.asString(c)))
+
+      // ALTER ROLE foo SET NAME bar
+      case c@AlterRole(fromRoleName, toRoleName) =>
+        val source = plans.AssertDbmsAdmin(AlterRoleAction)
+        Some(plans.LogSystemCommand(plans.AlterRole(source, fromRoleName, toRoleName), prettifier.asString(c)))
 
       // DROP ROLE foo [IF EXISTS]
       case c@DropRole(roleName, ifExists) =>

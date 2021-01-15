@@ -81,6 +81,7 @@ public enum PrivilegeAction
 
     SHOW_ROLE,
     CREATE_ROLE,
+    ALTER_ROLE,
     DROP_ROLE,
     ASSIGN_ROLE,
     REMOVE_ROLE,
@@ -232,6 +233,7 @@ public enum PrivilegeAction
                     {
                     case SHOW_ROLE:
                     case CREATE_ROLE:
+                    case ALTER_ROLE:
                     case DROP_ROLE:
                     case ASSIGN_ROLE:
                     case REMOVE_ROLE:

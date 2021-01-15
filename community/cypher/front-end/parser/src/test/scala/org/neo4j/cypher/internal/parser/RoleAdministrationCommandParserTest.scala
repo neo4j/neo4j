@@ -234,6 +234,52 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
+  // Altering role
+
+  test("ALTER ROLE foo SET NAME bar") {
+    yields(ast.AlterRole(literalFoo, literalBar))
+  }
+
+  test("ALTER ROLE foo SET NAME $bar") {
+    yields(ast.AlterRole(literalFoo, param("bar")))
+  }
+
+  test("ALTER ROLE $foo SET NAME bar") {
+    yields(ast.AlterRole(param("foo"), literalBar))
+  }
+
+  test("ALTER ROLE $foo SET NAME $bar") {
+    yields(ast.AlterRole(param("foo"), param("bar")))
+  }
+
+  test("ALTER ROLE foo SET NAME ``") {
+    yields(ast.AlterRole(literalFoo, literalEmpty))
+  }
+
+  test("ALTER ROLE `` SET NAME bar") {
+    yields(ast.AlterRole(literalEmpty, literalBar))
+  }
+
+  test("ALTER ROLE foo SET NAME") {
+    failsToParse
+  }
+
+  test("ALTER ROLE SET NAME bar") {
+    failsToParse
+  }
+
+  test("ALTER ROLE SET NAME") {
+    failsToParse
+  }
+
+  test("ALTER ROLE foo SET NAME TO bar") {
+    failsToParse
+  }
+
+  test("RENAME ROLE foo SET NAME bar") {
+    failsToParse
+  }
+
   //  Dropping role
 
   test("DROP ROLE foo") {

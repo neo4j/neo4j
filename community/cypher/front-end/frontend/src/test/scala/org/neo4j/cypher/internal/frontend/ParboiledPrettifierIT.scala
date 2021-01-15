@@ -866,6 +866,21 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "create or replace role `ab%$c` as copy of `$d3f`" ->
       "CREATE OR REPLACE ROLE `ab%$c` AS COPY OF `$d3f`",
 
+    "alter role abc set name cba" ->
+      "ALTER ROLE abc SET NAME cba",
+
+    "alter role `a%b$c` set name `c!b?a`" ->
+      "ALTER ROLE `a%b$c` SET NAME `c!b?a`",
+
+    "alter role $param set name cba" ->
+      "ALTER ROLE $param SET NAME cba",
+
+    "alter role abc set name $other" ->
+      "ALTER ROLE abc SET NAME $other",
+
+    "alter role $param set name $other" ->
+      "ALTER ROLE $param SET NAME $other",
+
     "drop role abc" ->
       "DROP ROLE abc",
 

@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.ast.AllRoleActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
+import org.neo4j.cypher.internal.ast.AlterRole
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
@@ -1359,6 +1360,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     ifExistsDo   <- _ifExistsDo
   } yield CreateRole(roleName, fromRoleName, ifExistsDo)(pos)
 
+  def _alterRole: Gen[AlterRole] = for {
+    fromRoleName     <- _nameAsEither
+    toRoleName       <- _nameAsEither
+  } yield AlterRole(fromRoleName, toRoleName)(pos)
+
   def _dropRole: Gen[DropRole] = for {
     roleName <- _nameAsEither
     ifExists <- boolean
@@ -1377,6 +1383,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _roleCommand: Gen[AdministrationCommand] = oneOf(
     _showRoles,
     _createRole,
+    _alterRole,
     _dropRole,
     _grantRole,
     _revokeRole

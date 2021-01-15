@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ast.AllRoleActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
+import org.neo4j.cypher.internal.ast.AlterRoleAction
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
@@ -132,6 +133,7 @@ object ActionMapper {
     case AllRoleActions   => security.PrivilegeAction.ROLE_MANAGEMENT
     case ShowRoleAction   => security.PrivilegeAction.SHOW_ROLE
     case CreateRoleAction => security.PrivilegeAction.CREATE_ROLE
+    case AlterRoleAction => security.PrivilegeAction.ALTER_ROLE
     case DropRoleAction   => security.PrivilegeAction.DROP_ROLE
     case AssignRoleAction => security.PrivilegeAction.ASSIGN_ROLE
     case RemoveRoleAction => security.PrivilegeAction.REMOVE_ROLE

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ast.AllNodes
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AllQualifier
 import org.neo4j.cypher.internal.ast.AllRelationships
+import org.neo4j.cypher.internal.ast.AlterRole
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
@@ -359,6 +360,9 @@ case class Prettifier(
           case IfExistsDoNothing | IfExistsInvalidSyntax => s"${x.name} ${Prettifier.escapeName(roleName)} IF NOT EXISTS AS COPY OF ${Prettifier.escapeName(fromRole)}"
           case _                    => s"${x.name} ${Prettifier.escapeName(roleName)} AS COPY OF ${Prettifier.escapeName(fromRole)}"
         }
+
+      case x @ AlterRole(fromRoleName, toRoleName) =>
+        s"${x.name} ${Prettifier.escapeName(fromRoleName)} SET NAME ${Prettifier.escapeName(toRoleName)}"
 
       case x @ DropRole(roleName, ifExists) =>
         if (ifExists) s"${x.name} ${Prettifier.escapeName(roleName)} IF EXISTS"
