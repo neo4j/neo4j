@@ -355,50 +355,62 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     runtimeResult should beColumns("n", "l", "r").withRows(expectedRows)
   }
 
-  test("should work when LHS and RHS produce nulls in the join column") {
+  List("", " with aggregation on top").foreach { t =>
+    test(s"should work when LHS and RHS produce nulls in the join column $t") {
 
-    val randomSmallIntProps: PartialFunction[Int, Map[String, Any]] = {
-      case _ => Map("leftProp" -> Random.nextInt(4), "rightProp" -> Random.nextInt(4))
+      val randomSmallIntProps: PartialFunction[Int, Map[String, Any]] = {
+        case _ => Map("leftProp" -> Random.nextInt(4), "rightProp" -> Random.nextInt(4))
+      }
+
+      val nodes = given {
+        nodePropertyGraph(sizeHint, randomSmallIntProps, "Left") ++
+          nodePropertyGraph(sizeHint, randomSmallIntProps, "Right") ++
+          nodePropertyGraph(sizeHint, randomSmallIntProps, "Right", "Left")
+      }
+
+      val logicalQueryTop = if (t.isEmpty) {
+        new LogicalQueryBuilder(this)
+          .produceResults("n", "l", "r")
+      } else {
+        new LogicalQueryBuilder(this)
+          .produceResults("n", "l", "r")
+          .projection("row[0] as n", "row[1] as l", "row[2] as r")
+          .unwind("c as row")
+          .aggregation(Seq.empty, Seq("collect([n, l, r]) as c"))
+      }
+
+      val logicalQuery = logicalQueryTop
+        .leftOuterHashJoin("n")
+        .|.unwind("tail(range(0, coalesce(n.rightProp, 1))) AS r")
+        .|.injectValue("n", "null")
+        .|.nodeByLabelScan("n", "Right")
+        .unwind("tail(range(0, coalesce(n.leftProp, 1))) AS l")
+        .injectValue("n", "null")
+        .nodeByLabelScan("n", "Left")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      val lhsRows = for {
+        n <- nodes.filter(_.hasLabel(Label.label("Left"))) ++ Seq(null)
+        lp = if (n == null) 1 else n.getProperty("leftProp").asInstanceOf[Int]
+        l <- Range.inclusive(0, lp).tail
+      } yield (n, l)
+
+      val rhsRows = for {
+        n <- nodes.filter(_.hasLabel(Label.label("Right"))) ++ Seq(null)
+        rp = if (n == null) 1 else n.getProperty("rightProp").asInstanceOf[Int]
+        r <- Range.inclusive(0, rp).tail
+      } yield (n, r)
+
+      val expectedRows = for {
+        (n, l) <- lhsRows
+        (_, r) <- matchingRowsOuter(rhsRows, n)
+      } yield Array(n, l, r)
+
+      runtimeResult should beColumns("n", "l", "r").withRows(expectedRows)
     }
-
-    val nodes = given {
-      nodePropertyGraph(sizeHint, randomSmallIntProps, "Left") ++
-        nodePropertyGraph(sizeHint, randomSmallIntProps, "Right") ++
-        nodePropertyGraph(sizeHint, randomSmallIntProps, "Right", "Left")
-    }
-
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("n", "l", "r")
-      .leftOuterHashJoin("n")
-      .|.unwind("tail(range(0, coalesce(n.rightProp, 1))) AS r")
-      .|.injectValue("n", "null")
-      .|.nodeByLabelScan("n", "Right")
-      .unwind("tail(range(0, coalesce(n.leftProp, 1))) AS l")
-      .injectValue("n", "null")
-      .nodeByLabelScan("n", "Left")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val lhsRows = for {
-      n <- nodes.filter(_.hasLabel(Label.label("Left"))) ++ Seq(null)
-      lp = if (n == null) 1 else n.getProperty("leftProp").asInstanceOf[Int]
-      l <- Range.inclusive(0, lp).tail
-    } yield (n, l)
-
-    val rhsRows = for {
-      n <- nodes.filter(_.hasLabel(Label.label("Right"))) ++ Seq(null)
-      rp = if (n == null) 1 else n.getProperty("rightProp").asInstanceOf[Int]
-      r <- Range.inclusive(0, rp).tail
-    } yield (n, r)
-
-    val expectedRows = for {
-      (n, l) <- lhsRows
-      (_, r) <- matchingRowsOuter(rhsRows, n)
-    } yield Array(n, l, r)
-
-    runtimeResult should beColumns("n", "l", "r").withRows(expectedRows)
   }
 
   test("should work when LHS and RHS have nodes in ref slots") {
