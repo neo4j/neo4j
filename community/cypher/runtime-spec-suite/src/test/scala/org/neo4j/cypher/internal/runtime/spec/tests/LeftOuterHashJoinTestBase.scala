@@ -25,7 +25,10 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.RelationshipType
 
+import java.util.Collections
+import scala.collection.JavaConverters.asJavaIterableConverter
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.util.Random
 
@@ -557,6 +560,37 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
 
     // final projection should only need to look up n.leftProp for :Right nodes
     runtimeResult.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe rhsFilterDbHits/2
+  }
+
+  test("should handle aggregation on top of left-outer hash join") {
+    //given
+    val exposures = given {
+      //create some unattached nodes
+      tx.createNode(Label.label("OB"))
+      tx.createNode(Label.label("OB"))
+      tx.createNode(Label.label("OB"))
+      //...and one attached
+      val node = tx.createNode(Label.label("OB"))
+      val exposures = (1 to 4).map(_ => tx.createNode(Label.label("Exposure")))
+
+      exposures.foreach(e => node.createRelationshipTo(e, RelationshipType.withName("R")))
+      exposures
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("exposures")
+      .aggregation(Seq("ob AS ob"), Seq("collect(e) AS exposures"))
+      .leftOuterHashJoin("ob")
+      .|.expand("(e)<-[:R]-(ob)")
+      .|.nodeByLabelScan("e", "Exposure")
+      .nodeByLabelScan("ob", "OB")
+      .build()
+
+    //when
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    //then
+    runtimeResult should beColumns("exposures").withRows(Seq(Array(exposures.asJava), Array(Collections.emptyList()), Array(Collections.emptyList()), Array(Collections.emptyList())))
   }
 
   // Emulates outer join.
