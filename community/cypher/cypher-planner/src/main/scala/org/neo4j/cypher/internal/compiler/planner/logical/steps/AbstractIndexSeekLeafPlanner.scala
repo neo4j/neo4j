@@ -162,15 +162,6 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                                 providedOrder: ProvidedOrder,
                                 context: LogicalPlanningContext,
                                 semanticTable: SemanticTable): LogicalPlan = {
-    val hint = {
-      val name = idName
-      val propertyNames = indexCompatiblePredicates.map(_.propertyKeyName.name)
-      hints.collectFirst {
-        case hint@UsingIndexHint(Variable(`name`), `labelName`, propertyKeyName, _)
-          if propertyKeyName.map(_.name) == propertyNames => hint
-      }
-    }
-
     val equalityPredicates = indexCompatiblePredicates.takeWhile(_.exactPredicate)
     val equalityAndNextPredicates =
       if (equalityPredicates == indexCompatiblePredicates) equalityPredicates
@@ -183,8 +174,21 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     val properties = indexCompatiblePredicates.map(p => p.propertyKeyName).zip(canGetValues).map {
       case (propertyName, getValue) => IndexedProperty(PropertyKeyToken(propertyName, semanticTable.id(propertyName).head), getValue)
     }
+
+    val onlyExists = indexedPredicates.head.isExists
+    val hint: Option[UsingIndexHint] = {
+      val propertyNames = indexCompatiblePredicates.map(_.propertyKeyName.name)
+      val relevantHint = hints.collectFirst {
+        case hint@UsingIndexHint(Variable(`idName`), `labelName`, propertyKeyName, _)
+          if propertyKeyName.map(_.name) == propertyNames => hint
+      }
+
+      // Although this is the AbstractIndexSeekLeafPlanner, if `onlyExists == true` we plan a scan in `constructPlan()`. And if `hint.spec.fulfilledByScan == false`, that hint is not solve in that case.
+      relevantHint.filter{case h if h.spec.fulfilledByScan || !onlyExists => true; case _ => false}
+    }
+
     val entryConstructor: (Seq[Expression], Seq[Expression]) => LogicalPlan =
-      constructPlan(idName, LabelToken(labelName, labelId), properties, isUnique, queryExpression, hint, argumentIds, providedOrder, context, indexedPredicates.head.isExists)
+      constructPlan(idName, LabelToken(labelName, labelId), properties, isUnique, queryExpression, hint, argumentIds, providedOrder, context, onlyExists)
 
     val solvedPredicates = indexedPredicates.zip(indexCompatiblePredicates).filter(p => p._1 == p._2).map(_._1)
       .filter(_.solvesPredicate).map(p => p.propertyPredicate) :+ labelPredicate
