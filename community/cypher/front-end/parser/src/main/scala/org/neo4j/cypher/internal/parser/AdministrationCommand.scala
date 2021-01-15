@@ -79,10 +79,17 @@ trait AdministrationCommand extends Parser
   }
 
   def CreateUser: Rule1[ast.CreateUser] = rule("CREATE USER") {
-    // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [(SET PASSWORD CHANGE [NOT] REQUIRED) | (SET STATUS SUSPENDED|ACTIVE) | (SET DEFAULT DATABASE name)]*
+    // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE} | {SET DEFAULT DATABASE name}]*
     group(CreateUserStart ~~ SetPassword ~~ optional(UserOptions)) ~~>>
-      ((userName, ifExistsDo, isEncryptedPassword, initialPassword, userOptions) =>
-        ast.CreateUser(userName, isEncryptedPassword, initialPassword, userOptions.getOrElse(ast.UserOptions(None, None, None)), ifExistsDo))
+      ((userName, ifExistsDo, isEncryptedPassword, initialPassword, userOptions) => {
+        val createUserOptions = userOptions.map {
+          // Since we in the prettifier adds `CHANGE REQUIRED` if omitted,
+          // we should parse them to the same thing (as we did before adding UserOptions)
+          case ast.UserOptions(None, s, d) => ast.UserOptions(Some(true), s, d)
+          case u => u
+        }.getOrElse(ast.UserOptions(Some(true), None, None))
+        ast.CreateUser(userName, isEncryptedPassword, initialPassword, createUserOptions, ifExistsDo)
+      })
   }
 
   def CreateUserStart: Rule2[Either[String, Parameter], ast.IfExistsDo] = {
@@ -99,11 +106,11 @@ trait AdministrationCommand extends Parser
   }
 
   def AlterUser: Rule1[ast.AlterUser] = rule("ALTER USER") {
-    // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [(SET PASSWORD CHANGE [NOT] REQUIRED) | (SET STATUS SUSPENDED|ACTIVE) | (SET DEFAULT DATABASE name)]*
+    // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE} | {SET DEFAULT DATABASE name}]*
     group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetPassword ~~ optional(UserOptions)) ~~>>
       ((userName, isEncryptedPassword, initialPassword, userOptions) => ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), userOptions.getOrElse(ast.UserOptions(None, None, None)))) |
     //
-    // ALTER USER username [(SET PASSWORD CHANGE [NOT] REQUIRED)|(SET STATUS SUSPENDED|ACTIVE)|(SET DEFAULT DATABASE name)]+
+    // ALTER USER username [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE} | {SET DEFAULT DATABASE name}]+
     group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ UserOptionsWithSetPart) ~~>>
       ((userName, userOptions) => ast.AlterUser(userName, None, None, userOptions))
   }
