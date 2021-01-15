@@ -30,6 +30,9 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 
+import org.neo4j.graphdb.RelationshipType
+
+import java.util.Collections
 import scala.collection.JavaConverters.asJavaIterableConverter
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.util.Random
@@ -544,7 +547,6 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
 
   //see https://github.com/neo4j/neo4j/issues/12657
   test("should handle aggregation on top of left-outer hash join") {
-
     //given
     val exposures = given {
       //create some unattached nodes
@@ -555,7 +557,7 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
       val node = tx.createNode(Label.label("OB"))
       val exposures = (1 to 4).map(_ => tx.createNode(Label.label("Exposure")))
 
-      exposures.foreach(e =>  node.createRelationshipTo(e, RelationshipType.withName("R")))
+      exposures.foreach(e => node.createRelationshipTo(e, RelationshipType.withName("R")))
       exposures
     }
 
@@ -572,7 +574,7 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     val runtimeResult = execute(logicalQuery, runtime)
 
     //then
-    runtimeResult should beColumns("exposures").withRows(Seq(Array(exposures.asJava), Array(Collections.emptyList()), Array(Collections.emptyList()),  Array(Collections.emptyList())))
+    runtimeResult should beColumns("exposures").withRows(Seq(Array(exposures.asJava), Array(Collections.emptyList()), Array(Collections.emptyList()), Array(Collections.emptyList())))
   }
 
   // Emulates outer join.
