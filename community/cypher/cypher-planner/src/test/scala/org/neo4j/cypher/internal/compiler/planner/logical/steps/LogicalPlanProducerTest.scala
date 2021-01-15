@@ -278,7 +278,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lhs = fakeLogicalPlanFor(context.planningAttributes, "x", "z.bar")
       context.planningAttributes.providedOrders.set(lhs.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("z","bar")), ProvidedOrder.Desc(varFor("x")))))
       val rhs = fakeLogicalPlanFor(context.planningAttributes, "x", "y.bar", "x.foo")
-      context.planningAttributes.providedOrders.set(rhs.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("y","bar")), ProvidedOrder.Asc(varFor("x")), ProvidedOrder.Desc(prop("x","foo")))))
+      context.planningAttributes.providedOrders.set(rhs.id, ProvidedOrder.asc(prop("y","bar")).asc(varFor("x")).asc(prop("x","foo")))
 
       val joinColumns = Set("x")
 
