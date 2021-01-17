@@ -343,4 +343,24 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p").withRows(n.map(_ => Array(100))).withStatistics(propertiesSet = 1)
     property shouldBe "prop"
   }
+
+  test("should lock node") {
+    // given a single node
+    val n = given {
+      nodeGraph(1).head
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .projection("n.prop as p")
+      .setNodeProperty("n", "prop", "1")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("p").withSingleRow(1).withStatistics(propertiesSet = 1).withLockedNodes(Set(n.getId))
+  }
 }
