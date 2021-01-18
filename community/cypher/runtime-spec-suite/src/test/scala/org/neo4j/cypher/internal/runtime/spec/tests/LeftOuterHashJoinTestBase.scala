@@ -574,7 +574,7 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     val runtimeResult = execute(logicalQuery, runtime)
 
     //then
-    runtimeResult should beColumns("exposures").withRows(Seq(Array(exposures.asJava), Array(Collections.emptyList()), Array(Collections.emptyList()), Array(Collections.emptyList())))
+    runtimeResult should beColumns("exposures").withRows(Seq(Array(exposures.asJava), Array(Collections.emptyList()), Array(Collections.emptyList()), Array(Collections.emptyList())), listInAnyOrder = true)
   }
 
   // Emulates outer join.
