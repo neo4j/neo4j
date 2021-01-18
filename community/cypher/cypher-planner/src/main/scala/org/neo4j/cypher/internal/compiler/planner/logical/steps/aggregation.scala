@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.leverageOrder.Or
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.Asc
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object aggregation {
@@ -53,13 +53,13 @@ object aggregation {
 
         def minFunc(expr: Expression) = {
           providedOrder.columns.headOption match {
-            case Some(Asc(providedExpr)) => providedExpr == expr
+            case Some(Asc(providedExpr, _)) => providedExpr == expr
             case _ => false
           }
         }
         def maxFunc(expr: Expression) = {
           providedOrder.columns.headOption match {
-            case Some(Desc(providedExpr)) => providedExpr == expr
+            case Some(Desc(providedExpr, _)) => providedExpr == expr
             case _ => false
           }
         }

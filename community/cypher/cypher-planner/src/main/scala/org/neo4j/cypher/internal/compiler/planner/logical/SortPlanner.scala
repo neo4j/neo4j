@@ -23,11 +23,12 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.projection
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
+import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.NoSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.Descending
@@ -76,6 +77,11 @@ object SortPlanner {
     }
   }
 
+  /**
+   * Given a plan and an interesting order, plan a Sort if necessary.
+   * Update the Solveds attribute if no Sort planning was necessery.
+   * Throw an exception if no plan that can solve the interesting order could be found.
+   */
   def ensureSortedPlanWithSolved(plan: LogicalPlan, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): LogicalPlan =
     maybeSortedPlan(plan, interestingOrderConfig, context) match {
       case Some(sortedPlan) =>
@@ -86,6 +92,9 @@ object SortPlanner {
       case _ => plan
     }
 
+  /**
+   * Given an interesting order and a plan with a provided order, return the Satisfaction of the interesting order given that provided order.
+   */
   def orderSatisfaction(interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext, plan: LogicalPlan): Satisfaction =
     interestingOrderConfig.orderToSolve.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id))
 
@@ -93,12 +102,12 @@ object SortPlanner {
     def unapply(arg: Satisfaction): Boolean = {
       arg.satisfiedPrefix.nonEmpty && (arg.missingSuffix.isEmpty || {
         val dependenciesOfMissingSuffix: Set[String] = for {
-          columnOrder <- arg.missingSuffix.toSet[InterestingOrder.ColumnOrder]
+          columnOrder <- arg.missingSuffix.toSet[ir.ordering.ColumnOrder]
           dependency <- columnOrder.dependencies
         } yield dependency.name
 
         // If all dependencies of the not sorted suffix are available,
-        // we could be sorted by all columns (instead of just by the satisfied prefix)
+        // we could be sorted by all columns (instead of just by the satisfied prefix).
         // If only some of those dependencies are available, we could theoretically be sorted
         // by a larger prefix, but we don't currently inject PartialSort plans in the middle
         // of IDP so that will never happen.
@@ -108,7 +117,7 @@ object SortPlanner {
   }
 
   private def planSort(plan: LogicalPlan,
-                       satisfiedPrefix: Seq[InterestingOrder.ColumnOrder],
+                       satisfiedPrefix: Seq[ir.ordering.ColumnOrder],
                        interestingOrderConfig: InterestingOrderConfig,
                        context: LogicalPlanningContext): Option[LogicalPlan] = {
 
@@ -125,22 +134,24 @@ object SortPlanner {
     }
 
     case class SortColumnsWithProjections(columnOrder: ColumnOrder,
-                                          providedOrderColumn: ProvidedOrder.Column,
+                                          providedOrderColumn: ir.ordering.ColumnOrder,
                                           projections: Map[String, Expression],
                                           unaliasedProjections: Option[(String, Expression)])
 
     val sortItems: Seq[SortColumnsWithProjections] = interestingOrderConfig.orderToSolve.requiredOrderCandidate.order.map {
       // Aliased sort expressions
-      case InterestingOrder.Asc(v@Variable(key), projection) => SortColumnsWithProjections(Ascending(key), ProvidedOrder.Asc(v), projection, None)
-      case InterestingOrder.Desc(v@Variable(key), projection) => SortColumnsWithProjections(Descending(key), ProvidedOrder.Desc(v), projection, None)
+      case Asc(v@Variable(key), projections) =>
+        SortColumnsWithProjections(Ascending(key), Asc(v, projections), projections, None)
+      case Desc(v@Variable(key), projections) =>
+        SortColumnsWithProjections(Descending(key), Desc(v, projections), projections, None)
 
       // Unaliased sort expressions
-      case InterestingOrder.Asc(expression, projection) =>
-        val columnId = idFrom(expression, projection)
-        SortColumnsWithProjections(Ascending(columnId), ProvidedOrder.Asc(expression), projection, Some(columnId -> expression))
-      case InterestingOrder.Desc(expression, projection) =>
-        val columnId = idFrom(expression, projection)
-        SortColumnsWithProjections(Descending(columnId), ProvidedOrder.Desc(expression), projection, Some(columnId -> expression))
+      case Asc(expression, projections) =>
+        val columnId = idFrom(expression, projections)
+        SortColumnsWithProjections(Ascending(columnId), Asc(expression, projections), projections, Some(columnId -> expression))
+      case Desc(expression, projections) =>
+        val columnId = idFrom(expression, projections)
+        SortColumnsWithProjections(Descending(columnId), Desc(expression, projections), projections, Some(columnId -> expression))
     }
 
     // Project all variables needed for sort in two steps

@@ -19,50 +19,18 @@
  */
 package org.neo4j.cypher.internal.ir.ordering
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Asc
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.NoSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
-import org.neo4j.cypher.internal.util.DummyPosition
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class InterestingOrderTest extends CypherFunSuite {
-
-  test("Column Order should return correct dependencies when no projections") {
-    val columnOrder = InterestingOrder.Asc(varFor("a"), projections = Map.empty)
-
-    columnOrder.dependencies shouldBe Set(varFor("a"))
-  }
-
-  test("Column Order on variable, with non empty projection list, should return correct dependencies") {
-    val projections = Map(
-      "a3" -> varFor("a2"),
-      "a2" -> prop("a1", "prop1"),
-      "b" -> varFor("b1")
-    )
-    val columnOrder = InterestingOrder.Asc(varFor("a3"), projections)
-
-    columnOrder.dependencies shouldBe Set(varFor("a1"))
-  }
-
-  test("Column Order on property, with non empty projection list, should return correct dependencies") {
-    val projections = Map(
-      "a3" -> varFor("a2"),
-      "a2" -> varFor("a1"),
-      "b" -> varFor("b1")
-    )
-    val columnOrder = InterestingOrder.Asc(prop("a3", "prop1"), projections)
-
-    columnOrder.dependencies shouldBe Set(varFor("a1"))
-  }
+class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should reverse project property to variable") {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("xfoo")))
@@ -452,7 +420,4 @@ class InterestingOrderTest extends CypherFunSuite {
     interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("a")).asc(varFor("x")).desc(varFor("y")).asc(varFor("z"))) should matchPattern { case NoSatisfaction() => }
   }
 
-  private val pos: InputPosition = DummyPosition(0)
-  private def varFor(name: String): Variable = Variable(name)(pos)
-  private def prop(varName: String, propName: String): Property = Property(varFor(varName), PropertyKeyName(propName)(pos))(pos)
 }

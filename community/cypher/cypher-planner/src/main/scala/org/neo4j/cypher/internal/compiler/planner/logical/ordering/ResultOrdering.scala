@@ -24,11 +24,11 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Asc
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.OrderCandidate
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.Column
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
@@ -64,9 +64,9 @@ object ResultOrdering {
     def satisfies(indexProperty: Property, expression: Expression, projections: Map[String, Expression]): Boolean =
       AggregationHelper.extractPropertyForValue(expression, projections).contains(indexProperty)
 
-    def getNewProvidedOrderColumn(orderColumn: InterestingOrder.ColumnOrder, prop: Property): Column = orderColumn match {
-      case _: Asc  => ProvidedOrder.Asc(prop)
-      case _: Desc => ProvidedOrder.Desc(prop)
+    def getNewProvidedOrderColumn(orderColumn: ColumnOrder, prop: Property): ColumnOrder = orderColumn match {
+      case _: Asc  => Asc(prop)
+      case _: Desc => Desc(prop)
     }
 
     if (indexProperties.isEmpty || interestingOrder == InterestingOrder.empty) {
@@ -77,9 +77,9 @@ object ResultOrdering {
 
       // Accumulator for the foldLeft
       sealed trait Acc
-      case class OrderNotYetDecided(providedOrderColumns: Seq[Column]) extends Acc
-      case class IndexOrderDecided(indexOrder: IndexOrder, providedOrderColumns: Seq[Column]) extends Acc
-      case object IndexNotHelpful extends Acc
+      case class OrderNotYetDecided(providedOrderColumns: Seq[ColumnOrder]) extends Acc
+      case class IndexOrderDecided(indexOrder: IndexOrder, providedOrderColumns: Seq[ColumnOrder]) extends Acc
+      final case object IndexNotHelpful extends Acc
 
       def possibleOrdersForCandidate(candidate: OrderCandidate[_]): Acc =
         candidate.order.zipAll(indexProperties, null, null).foldLeft[Acc](OrderNotYetDecided(Seq.empty)) {
@@ -88,7 +88,7 @@ object ResultOrdering {
           case (IndexOrderDecided(IndexOrderDescending, poColumns),
                 (Desc(expression, projection), PropertyAndPredicateType(prop, _)))
                 if satisfies(prop, expression, projection) && indexOrderCapability.desc =>
-            IndexOrderDecided(IndexOrderDescending, poColumns :+ ProvidedOrder.Desc(prop))
+            IndexOrderDecided(IndexOrderDescending, poColumns :+ Desc(prop))
 
           // We have not yet decided on the index order and find a DESC column in the ORDER BY
           case (OrderNotYetDecided(providedOrderColumns),
@@ -96,16 +96,16 @@ object ResultOrdering {
                 if satisfies(prop, expression, projection) && indexOrderCapability.desc =>
             // If we have an exact predicate here, we do not want to make a decision on the index order yet.
             if (isSingleExactPredicate) {
-              OrderNotYetDecided(providedOrderColumns :+ ProvidedOrder.Desc(prop))
+              OrderNotYetDecided(providedOrderColumns :+ Desc(prop))
             } else {
-              IndexOrderDecided(IndexOrderDescending, providedOrderColumns :+ ProvidedOrder.Desc(prop))
+              IndexOrderDecided(IndexOrderDescending, providedOrderColumns :+ Desc(prop))
             }
 
           // We decided to use IndexOrderAscending and find another ASC column in the ORDER BY
           case (IndexOrderDecided(IndexOrderAscending, poColumns),
                 (Asc(expression, projection), PropertyAndPredicateType(prop, _)))
                 if satisfies(prop, expression, projection) && indexOrderCapability.asc =>
-            IndexOrderDecided(IndexOrderAscending, poColumns :+ ProvidedOrder.Asc(prop))
+            IndexOrderDecided(IndexOrderAscending, poColumns :+ Asc(prop))
 
           // We have not yet decided on the index order and find an ASC column in the ORDER BY
           case (OrderNotYetDecided(providedOrderColumns),
@@ -113,9 +113,9 @@ object ResultOrdering {
                 if satisfies(prop, expression, projection) && indexOrderCapability.asc =>
             // If we have an exact predicate here, we do not want to make a decision on the index order yet.
             if (isSingleExactPredicate) {
-              OrderNotYetDecided(providedOrderColumns :+ ProvidedOrder.Asc(prop))
+              OrderNotYetDecided(providedOrderColumns :+ Asc(prop))
             } else {
-              IndexOrderDecided(IndexOrderAscending, providedOrderColumns :+ ProvidedOrder.Asc(prop))
+              IndexOrderDecided(IndexOrderAscending, providedOrderColumns :+ Asc(prop))
             }
 
           // We find a contradicting order with single exact predicate
@@ -131,8 +131,8 @@ object ResultOrdering {
           case (IndexOrderDecided(indexOrder, poColumns),
                 (_, PropertyAndPredicateType(prop, _))) =>
             val nextCol = indexOrder match {
-              case IndexOrderAscending => ProvidedOrder.Asc(prop)
-              case IndexOrderDescending => ProvidedOrder.Desc(prop)
+              case IndexOrderAscending => Asc(prop)
+              case IndexOrderDescending => Desc(prop)
             }
             IndexOrderDecided(indexOrder, poColumns :+ nextCol)
 
@@ -151,8 +151,8 @@ object ResultOrdering {
           case (OrderNotYetDecided(providedOrderColumns),
                 (_, PropertyAndPredicateType(prop, _))) if indexOrderCapability != NONE && providedOrderColumns.nonEmpty =>
             if (indexOrderCapability.asc)
-              IndexOrderDecided(IndexOrderAscending, providedOrderColumns :+ ProvidedOrder.Asc(prop))
-            else IndexOrderDecided(IndexOrderDescending, providedOrderColumns :+ ProvidedOrder.Desc(prop))
+              IndexOrderDecided(IndexOrderAscending, providedOrderColumns :+ Asc(prop))
+            else IndexOrderDecided(IndexOrderDescending, providedOrderColumns :+ Desc(prop))
 
           // Either there is no order candidate column or the first column either
           // * has a non-matching property or

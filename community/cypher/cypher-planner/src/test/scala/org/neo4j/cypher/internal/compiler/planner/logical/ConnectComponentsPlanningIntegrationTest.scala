@@ -819,10 +819,10 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
 
     def shouldPlanSortBeforeOptionalMatch(plan: LogicalPlan): Unit = {
       sealed trait State
-      case object Init extends State
-      case object BeforeOptionalMatch extends State
-      case object SortBeforeOptionalMatch extends State
-      case object SortAfterOptionalMatch extends State
+      final case object Init extends State
+      final case object BeforeOptionalMatch extends State
+      final case object SortBeforeOptionalMatch extends State
+      final case object SortAfterOptionalMatch extends State
 
       plan.treeFold[State](Init) {
         case _: Sort => {

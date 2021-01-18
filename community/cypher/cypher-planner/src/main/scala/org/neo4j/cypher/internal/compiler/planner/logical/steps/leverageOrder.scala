@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 
 object leverageOrder {
@@ -54,8 +56,8 @@ object leverageOrder {
     val orderToLeverage = {
       // To find out if there are order columns of which we can leverage the order, we have to use the same aliases in the provided order.
       val aliasedInputProvidedOrder = inputProvidedOrder.mapColumns {
-        case c@ProvidedOrder.Asc(expression) => c.copy(aliasMap.getOrElse(expression, expression))
-        case c@ProvidedOrder.Desc(expression) => c.copy(aliasMap.getOrElse(expression, expression))
+        case c@Asc(expression, _) => c.copy(aliasMap.getOrElse(expression, expression))
+        case c@Desc(expression, _) => c.copy(aliasMap.getOrElse(expression, expression))
       }
 
       providedOrderPrefix(aliasedInputProvidedOrder, newGroupingExpressionsMap.values.toSet)
