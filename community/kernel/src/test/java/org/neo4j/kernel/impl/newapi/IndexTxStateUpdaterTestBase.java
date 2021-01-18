@@ -42,8 +42,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.internal.helpers.collection.Iterators.filter;
-import static org.neo4j.internal.schema.SchemaDescriptorPredicates.hasLabel;
 
 public class IndexTxStateUpdaterTestBase
 {
@@ -65,22 +63,15 @@ public class IndexTxStateUpdaterTestBase
         when( txState.memoryTracker() ).thenReturn( EmptyMemoryTracker.INSTANCE );
 
         StorageReader storageReader = mock( StorageReader.class );
-        when( storageReader.indexesGetAll() ).thenAnswer( x -> indexes.iterator() );
-        when( storageReader.indexesGetForLabel( anyInt() ) )
-                .thenAnswer( x ->
-                {
-                    Integer argument = x.getArgument( 0 );
-                    return filter( hasLabel( argument ), indexes.iterator() );
-                } );
         when( storageReader.indexesGetRelated( any(), anyInt(), any() ) ).thenAnswer( invocationOnMock ->
         {
-            long[] labels = invocationOnMock.getArgument( 0 );
+            long[] tokens = invocationOnMock.getArgument( 0 );
             int propertyKeyId = invocationOnMock.getArgument( 1 );
             Set<IndexDescriptor> descriptors = new HashSet<>();
             for ( IndexDescriptor index : indexes )
             {
                 SchemaDescriptor schema = index.schema();
-                if ( schema.isAffected( labels ) && contains( schema.getPropertyIds(), propertyKeyId ) )
+                if ( schema.isAffected( tokens ) && contains( schema.getPropertyIds(), propertyKeyId ) )
                 {
                     if ( schema.propertySchemaType() == PropertySchemaType.COMPLETE_ALL_TOKENS )
                     {
@@ -92,12 +83,12 @@ public class IndexTxStateUpdaterTestBase
         } );
         when( storageReader.indexesGetRelated( any(), any( int[].class ), any() ) ).thenAnswer( invocationOnMock ->
         {
-            long[] labels = invocationOnMock.getArgument( 0 );
+            long[] tokens = invocationOnMock.getArgument( 0 );
             int[] propertyKeyIds = invocationOnMock.getArgument( 1 );
             Set<IndexDescriptor> descriptors = new HashSet<>();
             for ( IndexDescriptor index : indexes )
             {
-                if ( index.schema().isAffected( labels ) )
+                if ( index.schema().isAffected( tokens ) )
                 {
                     boolean containsAll = true;
                     for ( int propertyId : index.schema().getPropertyIds() )
@@ -128,8 +119,8 @@ public class IndexTxStateUpdaterTestBase
         return ValueTuple.of( values );
     }
 
-    void verifyIndexUpdate( SchemaDescriptor schema, long nodeId, ValueTuple before, ValueTuple after )
+    void verifyIndexUpdate( SchemaDescriptor schema, long entityId, ValueTuple before, ValueTuple after )
     {
-        verify( txState ).indexDoUpdateEntry( eq( schema ), eq( nodeId ), eq( before ), eq( after ) );
+        verify( txState ).indexDoUpdateEntry( eq( schema ), eq( entityId ), eq( before ), eq( after ) );
     }
 }
