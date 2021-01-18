@@ -20,35 +20,12 @@
 package org.neo4j.cypher.internal.ir.ordering
 
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.Asc
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.OrderOrigin
 import org.neo4j.cypher.internal.util.NonEmptyList
 
 object ProvidedOrder {
-
-  object Column {
-    def unapply(arg: Column): Option[Expression] = {
-      Some(arg.expression)
-    }
-    def apply(expression: Expression, ascending: Boolean): Column = {
-      if (ascending) Asc(expression) else Desc(expression)
-    }
-  }
-
-  sealed trait Column {
-    def expression: Expression
-    def isAscending: Boolean
-  }
-
-  case class Asc(expression: Expression) extends Column {
-    override val isAscending: Boolean = true
-  }
-  case class Desc(expression: Expression) extends Column {
-    override val isAscending: Boolean = false
-  }
-
-  // ---
 
   /**
    * The origin of a provided order.
@@ -56,26 +33,24 @@ object ProvidedOrder {
    * If it kept or modified a provided order from the left or right, [[Left]] or [[Right]].
    */
   sealed trait OrderOrigin
-  case object Self extends OrderOrigin
-  case object Left  extends OrderOrigin
-  case object Right extends OrderOrigin
+  final case object Self extends OrderOrigin
+  final case object Left extends OrderOrigin
+  final case object Right extends OrderOrigin
 
-  // ---
-
-  def apply(columns: Seq[ProvidedOrder.Column], orderOrigin: OrderOrigin): ProvidedOrder = {
+  def apply(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder = {
     if (columns.isEmpty) NoProvidedOrder
     else NonEmptyProvidedOrder(NonEmptyList.from(columns), orderOrigin)
   }
 
-  def unapply(arg: ProvidedOrder): Option[Seq[ProvidedOrder.Column]] = arg match {
+  def unapply(arg: ProvidedOrder): Option[Seq[ColumnOrder]] = arg match {
     case NoProvidedOrder => Some(Seq.empty)
     case NonEmptyProvidedOrder(allColumns, _) => Some(allColumns.toIndexedSeq)
   }
 
   val empty: ProvidedOrder = NoProvidedOrder
 
-  def asc(expression: Expression): NonEmptyProvidedOrder = NonEmptyProvidedOrder(NonEmptyList(Asc(expression)), Self)
-  def desc(expression: Expression): NonEmptyProvidedOrder = NonEmptyProvidedOrder(NonEmptyList(Desc(expression)), Self)
+  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder = NonEmptyProvidedOrder(NonEmptyList(Asc(expression, projections)), Self)
+  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder = NonEmptyProvidedOrder(NonEmptyList(Desc(expression, projections)), Self)
 }
 
 /**
@@ -87,7 +62,7 @@ sealed trait ProvidedOrder {
   /**
    * @return sequence of columns with sort direction
    */
-  def columns: Seq[ProvidedOrder.Column]
+  def columns: Seq[ColumnOrder]
 
   /**
    * @return whether this ProvidedOrder is empty
@@ -117,7 +92,7 @@ sealed trait ProvidedOrder {
   /**
    * Map the columns with some mapping function
    */
-  def mapColumns(f: ProvidedOrder.Column => ProvidedOrder.Column): ProvidedOrder
+  def mapColumns(f: ColumnOrder => ColumnOrder): ProvidedOrder
 
   /**
    * The same order columns, but with OrderOrigin = [[Left]]
@@ -131,38 +106,38 @@ sealed trait ProvidedOrder {
 }
 
 case object NoProvidedOrder extends ProvidedOrder {
-  override def columns: Seq[ProvidedOrder.Column] = Seq.empty
+  override def columns: Seq[ColumnOrder] = Seq.empty
   override def isEmpty: Boolean = true
   override def orderOrigin: Option[OrderOrigin] = None
   override def followedBy(nextOrder: ProvidedOrder): ProvidedOrder = this
   override def upToExcluding(args: Set[String]): ProvidedOrder = this
-  override def mapColumns(f: ProvidedOrder.Column => ProvidedOrder.Column): ProvidedOrder = this
+  override def mapColumns(f: ColumnOrder => ColumnOrder): ProvidedOrder = this
   override def fromLeft: ProvidedOrder = this
   override def fromRight: ProvidedOrder = this
 }
 
-case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ProvidedOrder.Column], theOrderOrigin: OrderOrigin) extends ProvidedOrder {
+case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrderOrigin: OrderOrigin) extends ProvidedOrder {
 
-  override def columns: Seq[ProvidedOrder.Column] = allColumns.toIndexedSeq
+  override def columns: Seq[ColumnOrder] = allColumns.toIndexedSeq
 
   override def isEmpty: Boolean = false
 
   override def orderOrigin: Option[OrderOrigin] = Some(theOrderOrigin)
 
-  def asc(expression: Expression): NonEmptyProvidedOrder = NonEmptyProvidedOrder(allColumns :+ Asc(expression), theOrderOrigin)
-  def desc(expression: Expression): NonEmptyProvidedOrder = NonEmptyProvidedOrder(allColumns :+ Desc(expression), theOrderOrigin)
+  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder = NonEmptyProvidedOrder(allColumns :+ Asc(expression, projections), theOrderOrigin)
+  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder = NonEmptyProvidedOrder(allColumns :+ Desc(expression, projections), theOrderOrigin)
 
   override def fromLeft: NonEmptyProvidedOrder = copy(theOrderOrigin = ProvidedOrder.Left)
   override def fromRight: NonEmptyProvidedOrder = copy(theOrderOrigin = ProvidedOrder.Right)
 
-  override def mapColumns(f: ProvidedOrder.Column => ProvidedOrder.Column): NonEmptyProvidedOrder = copy(allColumns = allColumns.map(f))
+  override def mapColumns(f: ColumnOrder => ColumnOrder): NonEmptyProvidedOrder = copy(allColumns = allColumns.map(f))
 
   override def followedBy(nextOrder: ProvidedOrder): NonEmptyProvidedOrder = {
     NonEmptyProvidedOrder(allColumns :++ nextOrder.columns, theOrderOrigin)
   }
 
   override def upToExcluding(args: Set[String]): ProvidedOrder = {
-    val (_, trimmed) = columns.foldLeft((false,Seq.empty[ProvidedOrder.Column])) {
+    val (_, trimmed) = columns.foldLeft((false,Seq.empty[ColumnOrder])) {
       case (acc, _) if acc._1 => acc
       case (acc, col) if args.contains(col.expression.asCanonicalStringVal) => (true, acc._2)
       case (acc, col) => (acc._1, acc._2 :+ col)

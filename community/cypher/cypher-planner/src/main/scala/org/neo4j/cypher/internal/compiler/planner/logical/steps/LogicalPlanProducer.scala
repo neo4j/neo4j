@@ -81,6 +81,8 @@ import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.ir.ordering
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -604,7 +606,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solved = solveds.get(left.id).asSinglePlannerQuery.amendQueryGraph(_.withAddedOptionalMatch(solveds.get(right.id).asSinglePlannerQuery.queryGraph.addHints(hints)))
     val inputOrder = providedOrders.get(right.id)
     val providedOrder = if (inputOrder.columns.exists {
-      case _: ProvidedOrder.Desc => true
+      case _: Desc => true
       case _ => false
     }) {
       // Join nodes that are not matched from the RHS will result in rows with null in the Sort column.
@@ -918,7 +920,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planSort(inner: LogicalPlan,
                sortColumns: Seq[ColumnOrder],
-               orderColumns: Seq[ProvidedOrder.Column],
+               orderColumns: Seq[ordering.ColumnOrder],
                interestingOrder: InterestingOrder,
                context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder))
@@ -928,7 +930,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planPartialSort(inner: LogicalPlan,
                       alreadySortedPrefix: Seq[ColumnOrder],
                       stillToSortSuffix: Seq[ColumnOrder],
-                      orderColumns: Seq[ProvidedOrder.Column],
+                      orderColumns: Seq[ordering.ColumnOrder],
                       interestingOrder: InterestingOrder,
                       context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder))
@@ -1361,32 +1363,32 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   /**
    * Rename sort columns if they are renamed in a projection.
    */
-  private def renameProvidedOrderColumns(columns: Seq[ProvidedOrder.Column], projectExpressions: Map[String, Expression]): Seq[ProvidedOrder.Column] = {
+  private def renameProvidedOrderColumns(columns: Seq[ordering.ColumnOrder], projectExpressions: Map[String, Expression]): Seq[ordering.ColumnOrder] = {
     columns.map {
-      case columnOrder@ProvidedOrder.Column(e@Property(v@Variable(varName), p@PropertyKeyName(propName))) =>
+      case columnOrder@ordering.ColumnOrder(e@Property(v@Variable(varName), p@PropertyKeyName(propName))) =>
         projectExpressions.collectFirst {
           case (newName, Property(Variable(`varName`), PropertyKeyName(`propName`)) | CachedProperty(`varName`, _, PropertyKeyName(`propName`), _)) =>
-            ProvidedOrder.Column(Variable(newName)(v.position), columnOrder.isAscending)
+            ordering.ColumnOrder(Variable(newName)(v.position), columnOrder.isAscending)
           case (newName, Variable(`varName`)) =>
-            ProvidedOrder.Column(Property(Variable(newName)(v.position), PropertyKeyName(propName)(p.position))(e.position), columnOrder.isAscending)
+            ordering.ColumnOrder(Property(Variable(newName)(v.position), PropertyKeyName(propName)(p.position))(e.position), columnOrder.isAscending)
         }.getOrElse(columnOrder)
-      case columnOrder@ProvidedOrder.Column(expression) =>
+      case columnOrder@ordering.ColumnOrder(expression) =>
         projectExpressions.collectFirst {
-          case (newName, `expression`) => ProvidedOrder.Column(Variable(newName)(expression.position), columnOrder.isAscending)
+          case (newName, `expression`) => ordering.ColumnOrder(Variable(newName)(expression.position), columnOrder.isAscending)
         }.getOrElse(columnOrder)
     }
   }
 
-  private def trimAndRenameProvidedOrder(providedOrder: ProvidedOrder, grouping: Map[String, Expression]): Seq[ProvidedOrder.Column] = {
+  private def trimAndRenameProvidedOrder(providedOrder: ProvidedOrder, grouping: Map[String, Expression]): Seq[ordering.ColumnOrder] = {
     // Trim provided order for each sort column, if it is a non-grouping column
     val trimmed = providedOrder.columns.takeWhile {
-      case ProvidedOrder.Column(Property(Variable(varName), PropertyKeyName(propName))) =>
+      case ordering.ColumnOrder(Property(Variable(varName), PropertyKeyName(propName))) =>
         grouping.values.exists {
           case CachedProperty(`varName`, _, PropertyKeyName(`propName`), _) => true
           case Property(Variable(`varName`), PropertyKeyName(`propName`)) => true
           case _ => false
         }
-      case ProvidedOrder.Column(expression) =>
+      case ordering.ColumnOrder(expression) =>
         grouping.values.exists {
           case `expression` => true
           case _ => false

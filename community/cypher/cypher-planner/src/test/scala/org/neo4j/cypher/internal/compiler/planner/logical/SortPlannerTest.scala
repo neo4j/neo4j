@@ -76,6 +76,45 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       // Then
       sortedPlan should equal(Some(Sort(Projection(inputPlan, Map("x.foo" -> prop("x", "foo"))), Seq(Ascending("x.foo")))))
       context.planningAttributes.solveds.get(sortedPlan.get.id) should equal(RegularSinglePlannerQuery(interestingOrder = io))
+      println(context.planningAttributes.providedOrders.get(sortedPlan.get.id))
+    }
+  }
+
+  test("should copy projections from interesting order to provided order: aliased sort expression") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val io = InterestingOrder.required(RequiredOrderCandidate
+        .asc(varFor("xfoo"), Map("xfoo" -> prop("x", "foo")))
+        .desc(varFor("yprop"), Map("yprop" -> prop("y", "prop")))
+      )
+      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x", "y")
+
+      // When
+      val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, io, context)
+
+      // Then
+      context.planningAttributes.providedOrders.get(sortedPlan.get.id) should equal(ProvidedOrder
+        .asc(varFor("xfoo"), Map("xfoo" -> prop("x", "foo")))
+        .desc(varFor("yprop"), Map("yprop" -> prop("y", "prop")))
+      )
+    }
+  }
+
+  test("should copy projections from interesting order to provided order: unaliased sort expression") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val io = InterestingOrder.required(RequiredOrderCandidate
+        .asc(prop("x", "foo"), Map("x" -> varFor("xx")))
+        .desc(prop("y", "prop"), Map("y" -> varFor("yy")))
+      )
+      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x", "y")
+
+      // When
+      val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, io, context)
+
+      // Then
+      context.planningAttributes.providedOrders.get(sortedPlan.get.id) should equal(ProvidedOrder
+        .asc(prop("x", "foo"), Map("x" -> varFor("xx")))
+        .desc(prop("y", "prop"), Map("y" -> varFor("yy")))
+      )
     }
   }
 

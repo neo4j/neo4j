@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Asc
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.symbols.CypherType
@@ -65,18 +65,18 @@ object ResultOrdering {
 
       val maybeProvidedOrder = candidates.map(_.headOption).collectFirst {
         case Some(Desc(expression, projection)) if indexOrderCapability.desc && satisfies(indexProperties.head, expression, projection) =>
-          ProvidedOrder(indexProperties.map { prop => ProvidedOrder.Desc(prop) }, ProvidedOrder.Self)
+          ProvidedOrder(indexProperties.map { prop => Desc(prop) }, ProvidedOrder.Self)
 
         case Some(Asc(expression, projection)) if indexOrderCapability.asc && satisfies(indexProperties.head, expression, projection) =>
-          ProvidedOrder(indexProperties.map { prop => ProvidedOrder.Asc(prop) }, ProvidedOrder.Self)
+          ProvidedOrder(indexProperties.map { prop => Asc(prop) }, ProvidedOrder.Self)
       }
 
       // If the required order cannot be satisfied, return the index guaranteed order
       maybeProvidedOrder.getOrElse {
         if (indexOrderCapability.asc)
-          ProvidedOrder(indexProperties.map { prop => ProvidedOrder.Asc(prop) }, ProvidedOrder.Self)
+          ProvidedOrder(indexProperties.map { prop => Asc(prop) }, ProvidedOrder.Self)
         else if (indexOrderCapability.desc)
-          ProvidedOrder(indexProperties.map { prop => ProvidedOrder.Desc(prop) }, ProvidedOrder.Self)
+          ProvidedOrder(indexProperties.map { prop => Desc(prop) }, ProvidedOrder.Self)
         else ProvidedOrder.empty
       }
     }
