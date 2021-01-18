@@ -440,7 +440,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
   }
 
-  test("should deallocate memory between single primitive distinct on RHS of apply") {
+  test("should deallocate memory for single primitive distinct on RHS of apply") {
     given {
       nodeGraph(5)
     }
@@ -462,11 +462,67 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
   }
 
-  test("should deallocate memory between multiple primitive distinct on RHS of apply") {
+  test("should deallocate memory for multiple primitive distinct on RHS of apply") {
     given {
       nodeGraph(5)
     }
 
+    val nRows = sizeHint
+    val input1 = finiteInput(nRows)
+    val input2 = finiteInput(nRows*3)
+
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y", "z")
+      .apply()
+      .|.distinct("y as y", "y as z")
+      .|.allNodeScan("y")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
+  }
+
+  test("should deallocate memory for empty distinct on RHS of apply") {
+    val ys = Seq()
+    val nRows = sizeHint
+    val input1 = finiteInput(nRows)
+    val input2 = finiteInput(nRows*3)
+
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .apply()
+      .|.distinct("y as y")
+      .|.unwind(s"[${ys.mkString(",")}] AS y")
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
+  }
+
+  test("should deallocate memory for empty single primitive distinct on RHS of apply") {
+    val nRows = sizeHint
+    val input1 = finiteInput(nRows)
+    val input2 = finiteInput(nRows*3)
+
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .apply()
+      .|.distinct("y as y")
+      .|.allNodeScan("y")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
+  }
+
+  test("should deallocate memory for empty multiple primitive distinct on RHS of apply") {
     val nRows = sizeHint
     val input1 = finiteInput(nRows)
     val input2 = finiteInput(nRows*3)
