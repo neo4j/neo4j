@@ -68,7 +68,7 @@ case class ProvidedOrder(columns: Seq[ColumnOrder]) {
   def upToExcluding(args: Set[String]): ProvidedOrder = {
     val trimmed = columns.foldLeft((false,Seq.empty[ColumnOrder])) {
       case (acc, _) if acc._1 => acc
-      case (acc, col) if args.contains(col.expression.asCanonicalStringVal) => (true, acc._2)
+      case (acc, col) if args.intersect(col.dependencies.map(_.name)).nonEmpty => (true, acc._2)
       case (acc, col) => (acc._1, acc._2 :+ col)
     }
     ProvidedOrder(trimmed._2)

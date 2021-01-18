@@ -271,7 +271,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     }
   }
 
-  test("should trim provided order (3 columns) in left outer hash join") {
+  test("should trim provided order in left outer hash join after variable access") {
     new given().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
@@ -279,6 +279,44 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       context.planningAttributes.providedOrders.set(lhs.id, ProvidedOrder.asc(prop("z","bar")).desc(varFor("x")))
       val rhs = fakeLogicalPlanFor(context.planningAttributes, "x", "y.bar", "x.foo")
       context.planningAttributes.providedOrders.set(rhs.id, ProvidedOrder.asc(prop("y","bar")).asc(varFor("x")).asc(prop("x","foo")))
+
+      val joinColumns = Set("x")
+
+      //when
+      val result = lpp.planLeftOuterHashJoin(joinColumns, lhs, rhs, Set.empty, context)
+
+      // then
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(prop("y","bar")))
+    }
+  }
+
+  test("should trim provided order in left outer hash join after property access") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
+      // plan with provided order
+      val lhs = fakeLogicalPlanFor(context.planningAttributes, "x", "z.bar")
+      context.planningAttributes.providedOrders.set(lhs.id, ProvidedOrder.asc(prop("z","bar")).desc(varFor("x")))
+      val rhs = fakeLogicalPlanFor(context.planningAttributes, "x", "y.bar", "x.foo")
+      context.planningAttributes.providedOrders.set(rhs.id, ProvidedOrder.asc(prop("y","bar")).asc(prop("x","foo")).asc(prop("y","foo")))
+
+      val joinColumns = Set("x")
+
+      //when
+      val result = lpp.planLeftOuterHashJoin(joinColumns, lhs, rhs, Set.empty, context)
+
+      // then
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.asc(prop("y","bar")))
+    }
+  }
+
+  test("should trim provided order in left outer hash join after complex property access") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
+      // plan with provided order
+      val lhs = fakeLogicalPlanFor(context.planningAttributes, "x", "z.bar")
+      context.planningAttributes.providedOrders.set(lhs.id, ProvidedOrder.asc(prop("z","bar")).desc(varFor("x")))
+      val rhs = fakeLogicalPlanFor(context.planningAttributes, "x", "y.bar", "x.foo")
+      context.planningAttributes.providedOrders.set(rhs.id, ProvidedOrder.asc(prop("y","bar")).asc(add(literalInt(10), prop("x","foo"))).asc(prop("y","foo")))
 
       val joinColumns = Set("x")
 

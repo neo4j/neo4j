@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.v4_0.expressions.Variable
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
+import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class ProvidedOrderTest extends CypherFunSuite {
+class ProvidedOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should append provided order") {
     val left = ProvidedOrder.asc(varFor("a")).asc(varFor("b"))
@@ -46,16 +45,21 @@ class ProvidedOrderTest extends CypherFunSuite {
   }
 
   test("should trim provided order to before any matching function arguments") {
-    val left = ProvidedOrder.asc(varFor("a")).asc(varFor("b")).asc(varFor("c")).asc(varFor("d"))
+    val left = ProvidedOrder
+      .asc(varFor("a"))
+      .asc(varFor("b"))
+      .asc(varFor("c"))
+      .desc(prop("d", "prop"))
+      .desc(add(literalInt(10), prop("e", "prop")))
 
     left.upToExcluding(Set("x")).columns should be(left.columns)
 
     left.upToExcluding(Set("a")).columns should be(Seq.empty)
 
     left.upToExcluding(Set("c")).columns should be(left.columns.slice(0, 2))
+    left.upToExcluding(Set("d")).columns should be(left.columns.slice(0, 3))
+    left.upToExcluding(Set("e")).columns should be(left.columns.slice(0, 4))
 
     ProvidedOrder.empty.upToExcluding(Set("c")).columns should be(Seq.empty)
   }
-
-  private def varFor(name: String) = Variable(name)(DummyPosition(0))
 }
