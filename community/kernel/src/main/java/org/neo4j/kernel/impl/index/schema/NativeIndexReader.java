@@ -138,9 +138,6 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         treeKeyTo.initialize( Long.MAX_VALUE );
     }
 
-    @Override
-    public abstract boolean hasFullValuePrecision( IndexQuery... predicates );
-
     abstract void validateQuery( IndexQueryConstraints constraints, IndexQuery[] predicates );
 
     /**

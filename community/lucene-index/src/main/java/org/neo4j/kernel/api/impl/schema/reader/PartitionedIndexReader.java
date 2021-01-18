@@ -93,12 +93,6 @@ public class PartitionedIndexReader extends AbstractIndexReader
         }
     }
 
-    @Override
-    public boolean hasFullValuePrecision( IndexQuery... predicates )
-    {
-        return false;
-    }
-
     private static final class InnerException extends RuntimeException
     {
         private InnerException( IndexNotApplicableKernelException e )

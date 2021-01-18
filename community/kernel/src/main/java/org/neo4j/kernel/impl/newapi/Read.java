@@ -61,14 +61,9 @@ import org.neo4j.lock.ResourceTypes;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
-import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.values.storable.ValueGroup.GEOMETRY;
-import static org.neo4j.values.storable.ValueGroup.NUMBER;
 
 abstract class Read implements TxStateHolder,
         org.neo4j.internal.kernel.api.Read,
@@ -109,8 +104,7 @@ abstract class Read implements TxStateHolder,
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead( this );
-        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, indexSession.reader );
-        indexSession.reader.query( this, withFullPrecision, constraints, query );
+        indexSession.reader.query( this, client, constraints, query );
     }
 
     @Override
@@ -126,55 +120,7 @@ abstract class Read implements TxStateHolder,
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead( this );
-        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, indexSession.reader );
-        indexSession.reader.query( this, withFullPrecision, constraints, query );
-    }
-
-    private IndexProgressor.EntityValueClient injectFullValuePrecision( IndexProgressor.EntityValueClient cursor,
-            IndexQuery[] query, IndexReader reader )
-    {
-        IndexProgressor.EntityValueClient target = cursor;
-        if ( !reader.hasFullValuePrecision( query ) )
-        {
-            IndexQuery[] filters = new IndexQuery[query.length];
-            int count = 0;
-            for ( int i = 0; i < query.length; i++ )
-            {
-                IndexQuery q = query[i];
-                switch ( q.type() )
-                {
-                case range:
-                    ValueGroup valueGroup = q.valueGroup();
-                    if ( ( valueGroup == NUMBER || valueGroup == GEOMETRY) && !reader.hasFullValuePrecision( q ) )
-                    {
-                        filters[i] = q;
-                        count++;
-                    }
-                    break;
-                case exact:
-                    Value value = ((IndexQuery.ExactPredicate) q).value();
-                    if ( value.valueGroup() == ValueGroup.NUMBER || Values.isArrayValue( value ) || value.valueGroup() == ValueGroup.GEOMETRY )
-                    {
-                        if ( !reader.hasFullValuePrecision( q ) )
-                        {
-                            filters[i] = q;
-                            count++;
-                        }
-                    }
-                    break;
-                default:
-                    break;
-                }
-            }
-            if ( count > 0 )
-            {
-                // filters[] can contain null elements. The non-null elements are the filters and each sit in the designated slot
-                // matching the values from the index.
-                target = new NodeValueClientFilter( target, cursors.allocateNodeCursor( cursorTracer ),
-                        cursors.allocatePropertyCursor( cursorTracer, memoryTracker() ), this, filters );
-            }
-        }
-        return target;
+        indexSession.reader.query( this, client, constraints, query );
     }
 
     @Override
@@ -217,9 +163,7 @@ abstract class Read implements TxStateHolder,
             IndexQuery.ExactPredicate... query ) throws IndexNotApplicableKernelException
     {
         cursor.setRead( this );
-        IndexProgressor.EntityValueClient target = injectFullValuePrecision( cursor, query, indexReader );
-        // we never need values for exact predicates
-        indexReader.query( this, target, unconstrained(), query );
+        indexReader.query( this, cursor, unconstrained(), query );
     }
 
     @Override

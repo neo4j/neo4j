@@ -58,20 +58,6 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
     }
 
     @Override
-    public boolean hasFullValuePrecision( IndexQuery... predicates )
-    {
-        for ( IndexQuery predicate : predicates )
-        {
-            ValueGroup valueGroup = predicate.valueGroup();
-            if ( valueGroup == ValueGroup.GEOMETRY_ARRAY || valueGroup == ValueGroup.GEOMETRY )
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Override
     void validateQuery( IndexQueryConstraints constraints, IndexQuery[] predicates )
     {
         QueryValidator.validateOrder( GenericNativeIndexProvider.CAPABILITY, constraints.order(), predicates );
@@ -164,6 +150,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
                     // Inclusion.LOW / HIGH respectively and filter out points later on.
                     treeKeyFrom.stateSlot( i ).writePointDerived( crs, range.min, LOW );
                     treeKeyTo.stateSlot( i ).writePointDerived( crs, range.max + 1, HIGH );
+                    needsFiltering = true;
                 }
                 else
                 {

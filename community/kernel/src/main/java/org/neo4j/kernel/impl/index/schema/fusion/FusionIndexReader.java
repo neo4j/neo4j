@@ -120,23 +120,4 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
             return (IndexNotApplicableKernelException) super.getCause();
         }
     }
-
-    @Override
-    public boolean hasFullValuePrecision( IndexQuery... predicates )
-    {
-        IndexSlot slot = slotSelector.selectSlot( predicates, IndexQuery::valueCategory );
-        if ( slot != null )
-        {
-            return instanceSelector.select( slot ).hasFullValuePrecision( predicates );
-        }
-        else
-        {
-            // UNKNOWN slot which basically means the EXISTS predicate
-            if ( !(predicates.length == 1 && predicates[0] instanceof ExistsPredicate) )
-            {
-                throw new IllegalStateException( "Selected IndexReader null for predicates " + Arrays.toString( predicates ) );
-            }
-            return true;
-        }
-    }
 }

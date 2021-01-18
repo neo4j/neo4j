@@ -52,16 +52,6 @@ public interface IndexReader extends Resource
     void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
             IndexQuery... query ) throws IndexNotApplicableKernelException;
 
-    /**
-     * @param predicates query to determine whether index has full value precision for.
-     * @return whether or not this reader will only return 100% matching results from
-     * {@link #query(QueryContext, IndexProgressor.EntityValueClient, IndexQueryConstraints, IndexQuery...)}.
-     * If {@code false} is returned this means that the caller of
-     * {@link #query(QueryContext, IndexProgressor.EntityValueClient, IndexQueryConstraints, IndexQuery...)} will have to
-     * do additional filtering, double-checking of actual property values, externally.
-     */
-    boolean hasFullValuePrecision( IndexQuery... predicates );
-
     IndexReader EMPTY = new IndexReader()
     {
         // Used for checking index correctness
@@ -88,12 +78,6 @@ public interface IndexReader extends Resource
         public void close()
         {
         }
-
-        @Override
-        public boolean hasFullValuePrecision( IndexQuery... predicates )
-        {
-            return true;
-        }
     };
 
     class Adaptor implements IndexReader
@@ -114,12 +98,6 @@ public interface IndexReader extends Resource
         public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
                 IndexQuery... query )
         {
-        }
-
-        @Override
-        public boolean hasFullValuePrecision( IndexQuery... predicates )
-        {
-            return false;
         }
 
         @Override

@@ -56,6 +56,7 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -214,6 +215,67 @@ class GenericAccessorPointsTest
 
         long derivedValueForFaultyCoords = curve.derivedValueFor( faultyCoords );
         assertEquals( derivedValueForCenterPoint, derivedValueForFaultyCoords, "expected same derived value" );
+    }
+
+    /**
+     * Given how the spatial index works, if a point is on a tile that intersect with the search area,
+     * but the point itself is outside the search area, it is a candidate for a false positive.
+     * The reason is that such a point is returned from the index itself,
+     * because a space index compares (and generally works with) only values of a space-filling curve
+     * and not the points themselves.
+     * Therefore {@link IndexReader} implementation must post-process raw index results and filter out such false positives.
+     */
+    @Test
+    void shouldNotGetFalsePositivesForRangesSpanningMultipleTiles() throws IndexNotApplicableKernelException, IndexEntryConflictException
+    {
+        PointValue origin = Values.pointValue( WGS84, 0.0, 0.0 );
+        long derivedValueForCenterPoint = curve.derivedValueFor( origin.coordinate() );
+        double[] searchStart = curve.centerPointFor( derivedValueForCenterPoint );
+
+        double xTileWidth = curve.getTileWidth( 0, curve.getMaxLevel() );
+
+        // to make it easier to imagine this, the search start is a center point of one tile and the limit is a center point of the next tile on the x-axis
+        PointValue limitPoint = Values.pointValue( WGS84, searchStart[0] + xTileWidth, searchStart[1] );
+
+        int nbrOfValues = 10_000;
+
+        List<PointValue> pointsInside = new ArrayList<>();
+        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
+
+        for ( int i = 0; i < nbrOfValues; i++ )
+        {
+            double distanceMultiplier = random.nextDouble() * 2;
+            PointValue point = Values.pointValue( WGS84, searchStart[0] + distanceMultiplier * xTileWidth, searchStart[1] );
+
+            updates.add( IndexEntryUpdate.add( 0, descriptor, point ) );
+
+            if ( distanceMultiplier <= 1 )
+            {
+                pointsInside.add( point );
+            }
+        }
+
+        processAll( updates );
+
+        try ( IndexReader indexReader = accessor.newReader() )
+        {
+            SimpleNodeValueClient client = new SimpleNodeValueClient();
+
+            var range = IndexQuery.range( descriptor.schema().getPropertyId(),
+                    Values.pointValue( WGS84, searchStart ),
+                    true,
+                    limitPoint,
+                    true );
+            indexReader.query( QueryContext.NULL_CONTEXT, client, unorderedValues(), range );
+
+            List<Value> queryResult = new ArrayList<>();
+            while ( client.next() )
+            {
+                queryResult.add( client.values[0] );
+            }
+
+            assertThat( queryResult ).containsExactlyInAnyOrderElementsOf( pointsInside );
+        }
     }
 
     private long addPointsToLists( List<Value> pointValues, List<IndexEntryUpdate<?>> updates, long nodeId, PointValue... values )

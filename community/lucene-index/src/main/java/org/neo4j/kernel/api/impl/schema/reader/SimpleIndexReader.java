@@ -163,12 +163,6 @@ public class SimpleIndexReader extends AbstractIndexReader
         }
     }
 
-    @Override
-    public boolean hasFullValuePrecision( IndexQuery... predicates )
-    {
-        return false;
-    }
-
     private void assertNotComposite( IndexQuery[] predicates )
     {
         assert predicates.length == 1 : "composite indexes not yet supported for this operation";

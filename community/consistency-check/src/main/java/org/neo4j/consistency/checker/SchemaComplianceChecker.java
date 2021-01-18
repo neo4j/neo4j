@@ -39,7 +39,6 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.transaction.state.storeview.DefaultNodePropertyAccessor;
@@ -150,19 +149,16 @@ class SchemaComplianceChecker implements AutoCloseable
 
     private LongIterator queryIndexOrEmpty( IndexReader reader, IndexQuery[] query )
     {
-        final LongIterator indexedNodeIds;
         try
         {
-            NodeValueIterator iterator = new NodeValueIterator();
-            reader.query( NULL_CONTEXT, iterator, unconstrained(), query );
-            indexedNodeIds = iterator;
+            NodeValueIterator indexedNodeIds = new NodeValueIterator();
+            reader.query( NULL_CONTEXT, indexedNodeIds, unconstrained(), query );
+            return indexedNodeIds;
         }
         catch ( IndexNotApplicableKernelException e )
         {
             throw new RuntimeException( format( "Consistency checking error: index provider does not support exact query %s", Arrays.toString( query ) ), e );
         }
-
-        return reader.hasFullValuePrecision( query ) ? indexedNodeIds : LookupFilter.exactIndexMatches( propertyAccessor, indexedNodeIds, cursorTracer, query );
     }
 
     private <ENTITY extends PrimitiveRecord> void reportIncorrectIndexCount( ENTITY entity, Value[] propertyValues, IndexDescriptor indexRule,

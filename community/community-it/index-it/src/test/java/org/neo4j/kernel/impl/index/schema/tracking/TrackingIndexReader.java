@@ -62,12 +62,6 @@ public class TrackingIndexReader implements IndexReader
     }
 
     @Override
-    public boolean hasFullValuePrecision( IndexQuery... predicates )
-    {
-        return delegate.hasFullValuePrecision( predicates );
-    }
-
-    @Override
     public void close()
     {
         delegate.close();
