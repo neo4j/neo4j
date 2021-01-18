@@ -612,6 +612,8 @@ case class LocalVariable(typ: codegen.TypeReference, name: String, value: Interm
  */
 object IntermediateRepresentation {
   def typeRef(manifest: Manifest[_]): codegen.TypeReference = {
+    //this is a sign that we forgot to provide the type in e.g. load[C]("foo")
+    require(manifest.runtimeClass != classOf[Nothing], "missing type information")
     val arguments = manifest.typeArguments
     val base = codegen.TypeReference.typeReference(manifest.runtimeClass)
     if (arguments.nonEmpty && !manifest.runtimeClass.isArray) {
