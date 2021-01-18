@@ -366,7 +366,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val cardinalities = new Cardinalities
     val providedOrders = new ProvidedOrders
     providedOrders.set(expandPlan.id, ProvidedOrder.asc(varFor("  FRESHID42")))
-    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders, StubExecutionPlan())
+    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, withRawCardinalities = false, providedOrders, StubExecutionPlan())
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
       """+--------------+--------------------+-------------+
@@ -427,6 +427,41 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         || Operator         | Details | Estimated Rows |
         |+------------------+---------+----------------+
         || +NodeByLabelScan | n:Foo   |              1 |
+        |+------------------+---------+----------------+
+        |""".stripMargin )
+  }
+
+  test("Don't round estimated rows when using rawCardinalities") {
+    val planDescr1 = planDescription(
+      id,
+      "NodeByLabelScan",
+      NoChildren,
+      Seq(
+        details("n:Foo"),
+        EstimatedRows(0.00123456789)),
+      Set.empty)
+    val planDescr2 = planDescription(
+      id,
+      "NodeByLabelScan",
+      NoChildren,
+      Seq(
+        details("n:Foo"),
+        EstimatedRows(1.23456789)),
+      Set.empty)
+
+    renderAsTreeTable(planDescr1, withRawCardinalities = true) should equal(
+      """+------------------+---------+----------------+
+        || Operator         | Details | Estimated Rows |
+        |+------------------+---------+----------------+
+        || +NodeByLabelScan | n:Foo   |  0.00123456789 |
+        |+------------------+---------+----------------+
+        |""".stripMargin )
+
+    renderAsTreeTable(planDescr2, withRawCardinalities = true) should equal(
+      """+------------------+---------+----------------+
+        || Operator         | Details | Estimated Rows |
+        |+------------------+---------+----------------+
+        || +NodeByLabelScan | n:Foo   |     1.23456789 |
         |+------------------+---------+----------------+
         |""".stripMargin )
   }
@@ -824,7 +859,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val logicalPlan = MultiNodeIndexSeek(Seq(IndexSeek("x:Label(Prop = 10,Foo = 1,Distance = 6,Name = 'Karoline Getinge')", unique = true).asInstanceOf[IndexSeekLeafPlan], IndexSeek("y:Label(Prop = 12, Name = 'Foo')").asInstanceOf[IndexSeekLeafPlan], IndexSeek("z:Label(Prop > 100, Name = 'Bar')").asInstanceOf[IndexSeekLeafPlan]))
     val cardinalities = new Cardinalities
     cardinalities.set(logicalPlan.id, 2.0)
-    val plan = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly = true, cardinalities , new ProvidedOrders, StubExecutionPlan())
+    val plan = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly = true, cardinalities, withRawCardinalities = false, new ProvidedOrders, StubExecutionPlan())
 
     renderAsTreeTable(plan) should equal(
       """+---------------------+------------------------------------------------------------------------------------------------------+----------------+

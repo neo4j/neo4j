@@ -45,7 +45,7 @@ import scala.collection.Map
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-object renderAsTreeTable extends (InternalPlanDescription => String) {
+object renderAsTreeTable extends ((InternalPlanDescription, Boolean) => String) {
   val UNNAMED_PATTERN = """  (REL|NODE|UNNAMED|FRESHID|AGGREGATION)(\d+)"""
   val UNNAMED_PARAMS_PATTERN = """  (AUTOINT|AUTODOUBLE|AUTOSTRING|AUTOLIST)(\d+)"""
   val OPERATOR = "Operator"
@@ -66,9 +66,9 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   private val MERGABLE_COLUMNS = Set(PAGE_CACHE, TIME)
   private val MERGE_COLUMN_PADDING = ' '
 
-  def apply(plan: InternalPlanDescription): String = {
+  def apply(plan: InternalPlanDescription, withRawCardinalities: Boolean = false): String = {
 
-    val rows = accumulate(plan)
+    val rows = accumulate(plan, withRawCardinalities)
     val lengthByColumnName = columnLengths(rows)
     val headers = HEADERS.filter(lengthByColumnName.contains)
 
@@ -131,7 +131,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
 
   case class LevelledPlan(plan: InternalPlanDescription, level: Level)
 
-  private def accumulate(incoming: InternalPlanDescription): Seq[TableRow] = {
+  private def accumulate(incoming: InternalPlanDescription, withRawCardinalities: Boolean): Seq[TableRow] = {
     var lastSeenPipelineInfo: Option[PipelineInfo] = None
     val plansWithoutPipelineInfo = mutable.ArrayBuffer.empty[(LevelledPlan, Option[String])]
     var previousLevelledPlan: Option[LevelledPlan] = None
@@ -142,7 +142,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     def appendRow(levelledPlan: LevelledPlan, childConnector: Option[String], mergeColumns: Boolean): Unit = {
       val planTreeValue = levelledPlan.level.line + levelledPlan.plan.name
       val mergedColumns = if (mergeColumns) MERGABLE_COLUMNS else Set.empty[String]
-      val cells = tableRow(levelledPlan.plan, mergedColumns)
+      val cells = tableRow(levelledPlan.plan, mergedColumns, withRawCardinalities)
 
       val childConnection = childConnector.map(_.replace("\\", ""))
       val row = TableRow(planTreeValue, cells, levelledPlan.level.connector, childConnection, mergedColumns)
@@ -227,14 +227,14 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     CompactedPlanDescription.create(similar)
   }
 
-  private def tableRow(description: InternalPlanDescription, mergedColumns: Set[String]): Map[String, Cell] = {
+  private def tableRow(description: InternalPlanDescription, mergedColumns: Set[String], withRawCardinalities: Boolean): Map[String, Cell] = {
     def leftJustifiedMapping(key: String, lines: String*): (String, Cell) =
       key -> LeftJustifiedCell(mergedColumns.contains(key), lines:_*)
     def rightJustifiedMapping(key: String, lines: String*): (String, Cell) =
       key -> RightJustifiedCell(mergedColumns.contains(key), lines:_*)
 
     val argumentColumns = description.arguments.collect {
-      case EstimatedRows(count) => rightJustifiedMapping(ESTIMATED_ROWS, format(count))
+      case EstimatedRows(count) => rightJustifiedMapping(ESTIMATED_ROWS, format(count, withRawCardinalities))
       case Rows(count) => rightJustifiedMapping(ROWS, count.toString)
       case DbHits(count) => rightJustifiedMapping(HITS, count.toString)
       case Memory(count) => rightJustifiedMapping(MEMORY, count.toString)
@@ -330,7 +330,14 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
     otherFields(description).mkString("; ").replaceAll(UNNAMED_PATTERN, "")
   }
 
-  private def format(v: Double) = if (v.isNaN) v.toString else math.round(v).toString
+  private def format(v: Double, withRawCardinalities: Boolean) =
+    if (v.isNaN) {
+      v.toString
+    } else if (withRawCardinalities) {
+      v.toString
+    } else {
+      math.round(v).toString
+    }
 
   private def columnLengths(rows: Seq[TableRow]): Map[String, Int] = {
     rows

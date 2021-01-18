@@ -166,6 +166,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       logicalPlan,
       logicalQuery.readOnly,
       planningAttributesCopy.cardinalities,
+      logicalPlanResult.plannerContext.debugOptions.rawCardinalitiesEnabled,
       planningAttributesCopy.providedOrders,
       executionPlan,
       preParsingNotifications,
@@ -227,6 +228,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
   protected class CypherExecutableQuery(logicalPlan: LogicalPlan,
                                         readOnly: Boolean,
                                         cardinalities: Cardinalities,
+                                        rawCardinalitiesInPlanDescription: Boolean,
                                         providedOrders: ProvidedOrders,
                                         executionPlan: ExecutionPlan,
                                         preParsingNotifications: Set[Notification],
@@ -253,6 +255,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         cypherVersion,
         readOnly,
         cardinalities,
+        rawCardinalitiesInPlanDescription,
         providedOrders,
         executionPlan)
 

@@ -36,12 +36,13 @@ class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
                              cypherVersion: CypherVersion,
                              readOnly: Boolean,
                              cardinalities: Cardinalities,
+                             withRawCardinalities: Boolean,
                              providedOrders: ProvidedOrders,
                              executionPlan: ExecutionPlan) {
 
   def explain(): InternalPlanDescription = {
     val description =
-      LogicalPlan2PlanDescription(logicalPlan, plannerName, cypherVersion, readOnly, cardinalities, providedOrders, executionPlan)
+      LogicalPlan2PlanDescription(logicalPlan, plannerName, cypherVersion, readOnly, cardinalities, withRawCardinalities, providedOrders, executionPlan)
         .addArgument(Runtime(executionPlan.runtimeName.toTextOutput))
         .addArgument(RuntimeImpl(executionPlan.runtimeName.name))
 

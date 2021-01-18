@@ -352,6 +352,7 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
   case object fabricLogPlan extends CypherDebugOption("fabriclogplan")
   case object fabricLogRecords extends CypherDebugOption("fabriclogrecords")
   case object logicalPlanBuilder extends CypherDebugOption("logicalplanbuilder")
+  case object rawCardinalities extends CypherDebugOption("rawcardinalities")
 
   def values: Set[CypherDebugOption] = Set(
     tostring,
@@ -367,7 +368,8 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
     logicalPlan,
     fabricLogPlan,
     fabricLogRecords,
-    logicalPlanBuilder
+    logicalPlanBuilder,
+    rawCardinalities
   )
 
   implicit val hasDefault: OptionDefault[CypherDebugOption] = OptionDefault.create(default)
@@ -411,4 +413,5 @@ case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
   val fabricLogPlanEnabled: Boolean = isEnabled(CypherDebugOption.fabricLogPlan)
   val fabricLogRecordsEnabled: Boolean = isEnabled(CypherDebugOption.fabricLogRecords)
   val logicalPlanBuilderEnabled: Boolean = isEnabled(CypherDebugOption.logicalPlanBuilder)
+  val rawCardinalitiesEnabled: Boolean = isEnabled(CypherDebugOption.rawCardinalities)
 }

@@ -191,7 +191,8 @@ final case class PlanDescriptionImpl(id: Id,
                                      name: String,
                                      children: Children,
                                      arguments: Seq[Argument],
-                                     variables: Set[PrettyString]) extends InternalPlanDescription {
+                                     variables: Set[PrettyString],
+                                     withRawCardinalities: Boolean = false) extends InternalPlanDescription {
 
   checkOnlyWhenAssertionsAreEnabled(arguments.count(_.isInstanceOf[Details]) < 2)
 
@@ -227,7 +228,7 @@ final case class PlanDescriptionImpl(id: Id,
       case RuntimeVersion(n) => s"Runtime version ${n.toUpperCase}$NL"
     }
     val prefix = version ++ planner ++ runtime ++ runtimeVersion
-    s"${prefix.mkString("", NL, NL)}${renderAsTreeTable(this)}$NL${renderSummary(this)}$renderSources"
+    s"${prefix.mkString("", NL, NL)}${renderAsTreeTable(this, withRawCardinalities)}$NL${renderSummary(this)}$renderSources"
   }
 
   private def renderSources = {

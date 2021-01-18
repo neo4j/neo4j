@@ -201,9 +201,10 @@ object LogicalPlan2PlanDescription {
             cypherVersion: CypherVersion,
             readOnly: Boolean,
             cardinalities: Cardinalities,
+            withRawCardinalities: Boolean,
             providedOrders: ProvidedOrders,
             executionPlan: ExecutionPlan): InternalPlanDescription = {
-    new LogicalPlan2PlanDescription(readOnly, cardinalities, providedOrders, executionPlan).create(input)
+    new LogicalPlan2PlanDescription(readOnly, cardinalities, withRawCardinalities, providedOrders, executionPlan).create(input)
       .addArgument(Version("CYPHER " + cypherVersion.name))
       .addArgument(RuntimeVersion("4.3"))
       .addArgument(Planner(plannerName.toTextOutput))
@@ -212,7 +213,7 @@ object LogicalPlan2PlanDescription {
   }
 }
 
-case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardinalities, providedOrders: ProvidedOrders, executionPlan: ExecutionPlan)
+case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardinalities, withRawCardinalities: Boolean, providedOrders: ProvidedOrders, executionPlan: ExecutionPlan)
   extends LogicalPlans.Mapper[InternalPlanDescription] {
   private val SEPARATOR = ", "
 
@@ -227,103 +228,103 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
     val result: InternalPlanDescription = plan match {
       case _:AdministrationCommandLogicalPlan =>
-      PlanDescriptionImpl(id, "AdministrationCommand", NoChildren, Seq.empty, Set.empty)
+      PlanDescriptionImpl(id, "AdministrationCommand", NoChildren, Seq.empty, Set.empty, withRawCardinalities)
 
       case AllNodesScan(idName, _) =>
-        PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(Details(asPrettyString(idName))), variables)
+        PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(Details(asPrettyString(idName))), variables, withRawCardinalities)
 
       case NodeByLabelScan(idName, label, _, _) =>
         val prettyDetails = pretty"${asPrettyString(idName)}:${asPrettyString(label.name)}"
-        PlanDescriptionImpl(id, "NodeByLabelScan", NoChildren, Seq(Details(prettyDetails)), variables)
+        PlanDescriptionImpl(id, "NodeByLabelScan", NoChildren, Seq(Details(prettyDetails)), variables, withRawCardinalities)
 
       case NodeByIdSeek(idName, nodeIds: SeekableArgs, _) =>
         val prettyDetails = pretty"${asPrettyString(idName)} WHERE id(${asPrettyString(idName)}) ${seekableArgsInfo(nodeIds)}"
-        PlanDescriptionImpl(id, "NodeByIdSeek", NoChildren, Seq(Details(prettyDetails)), variables)
+        PlanDescriptionImpl(id, "NodeByIdSeek", NoChildren, Seq(Details(prettyDetails)), variables, withRawCardinalities)
 
       case p@NodeIndexSeek(idName, label, properties, valueExpr, _, _) =>
         val (indexMode, indexDesc) = getDescriptions(idName, label, properties.map(_.propertyKeyToken), valueExpr, unique = false, readOnly, p.cachedProperties)
-        PlanDescriptionImpl(id, indexMode, NoChildren, Seq(Details(indexDesc)), variables)
+        PlanDescriptionImpl(id, indexMode, NoChildren, Seq(Details(indexDesc)), variables, withRawCardinalities)
 
       case p@NodeUniqueIndexSeek(idName, label, properties, valueExpr, _, _) =>
         val (indexMode, indexDesc) = getDescriptions(idName, label, properties.map(_.propertyKeyToken), valueExpr, unique = true, readOnly, p.cachedProperties)
-        PlanDescriptionImpl(id, indexMode, NoChildren, Seq(Details(indexDesc)), variables)
+        PlanDescriptionImpl(id, indexMode, NoChildren, Seq(Details(indexDesc)), variables, withRawCardinalities)
 
       case p@MultiNodeIndexSeek(indexLeafPlans) =>
         val (_, indexDescs) = indexLeafPlans.map(l => getDescriptions(l.idName, l.label, l.properties.map(_.propertyKeyToken), l.valueExpr, unique = l.isInstanceOf[NodeUniqueIndexSeek], readOnly, p.cachedProperties)).unzip
-        PlanDescriptionImpl(id = plan.id, "MultiNodeIndexSeek", NoChildren, Seq(Details(indexDescs)), variables)
+        PlanDescriptionImpl(id = plan.id, "MultiNodeIndexSeek", NoChildren, Seq(Details(indexDescs)), variables, withRawCardinalities)
 
       case p@AssertingMultiNodeIndexSeek(_, indexLeafPlans) =>
         val (_, indexDescs) = indexLeafPlans.map(l => getDescriptions(l.idName, l.label, l.properties.map(_.propertyKeyToken), l.valueExpr, unique = l.isInstanceOf[NodeUniqueIndexSeek], readOnly, p.cachedProperties)).unzip
-        PlanDescriptionImpl(id = plan.id, "AssertingMultiNodeIndexSeek", NoChildren, Seq(Details(indexDescs)), variables)
+        PlanDescriptionImpl(id = plan.id, "AssertingMultiNodeIndexSeek", NoChildren, Seq(Details(indexDescs)), variables, withRawCardinalities)
 
       case plans.Argument(argumentIds) if argumentIds.nonEmpty =>
         val details = if (argumentIds.nonEmpty) Seq(Details(argumentIds.map(asPrettyString(_)).mkPrettyString(SEPARATOR))) else Seq.empty
-        PlanDescriptionImpl(id, "Argument", NoChildren, details, variables)
+        PlanDescriptionImpl(id, "Argument", NoChildren, details, variables, withRawCardinalities)
 
       case _: plans.Argument =>
         ArgumentPlanDescription(id, Seq.empty, variables)
 
       case DirectedRelationshipByIdSeek(idName, relIds, startNode, endNode, _) =>
         val details = Details(relationshipByIdSeekInfo(idName, relIds, startNode, endNode, true))
-        PlanDescriptionImpl(id, "DirectedRelationshipByIdSeek", NoChildren, Seq(details), variables)
+        PlanDescriptionImpl(id, "DirectedRelationshipByIdSeek", NoChildren, Seq(details), variables, withRawCardinalities)
 
       case UndirectedRelationshipByIdSeek(idName, relIds, startNode, endNode, _) =>
         val details = Details(relationshipByIdSeekInfo(idName, relIds, startNode, endNode, false))
-        PlanDescriptionImpl(id, "UndirectedRelationshipByIdSeek", NoChildren, Seq(details), variables)
+        PlanDescriptionImpl(id, "UndirectedRelationshipByIdSeek", NoChildren, Seq(details), variables, withRawCardinalities)
 
       case DirectedRelationshipTypeScan(idName, _, typeName, _, _) =>
         val prettyDetails = pretty"${asPrettyString(idName)}:${asPrettyString(typeName.name)}"
-        PlanDescriptionImpl(id, "DirectedRelationshipTypeScan", NoChildren, Seq(Details(prettyDetails)), variables)
+        PlanDescriptionImpl(id, "DirectedRelationshipTypeScan", NoChildren, Seq(Details(prettyDetails)), variables, withRawCardinalities)
 
       case UndirectedRelationshipTypeScan(idName, _, typeName, _, _) =>
         val prettyDetails = pretty"${asPrettyString(idName)}:${asPrettyString(typeName.name)}"
-        PlanDescriptionImpl(id, "UndirectedRelationshipTypeScan", NoChildren, Seq(Details(prettyDetails)), variables)
+        PlanDescriptionImpl(id, "UndirectedRelationshipTypeScan", NoChildren, Seq(Details(prettyDetails)), variables, withRawCardinalities)
 
       case Input(nodes, rels, inputVars, _) =>
-        PlanDescriptionImpl(id, "Input", NoChildren, Seq(Details((nodes ++ rels ++ inputVars).map(asPrettyString(_)))), variables)
+        PlanDescriptionImpl(id, "Input", NoChildren, Seq(Details((nodes ++ rels ++ inputVars).map(asPrettyString(_)))), variables, withRawCardinalities)
 
       case NodeCountFromCountStore(ident, labelNames, _) =>
         val info = nodeCountFromCountStoreInfo(ident, labelNames)
-        PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, Seq(Details(info)), variables)
+        PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
       case p@NodeIndexContainsScan(idName, label, property, valueExpr, _, _) =>
         val predicate = pretty"${asPrettyString(property.propertyKeyToken.name)} CONTAINS ${asPrettyString(valueExpr)}"
         val info = indexInfoString(idName, unique = false, label, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
-        PlanDescriptionImpl(id, "NodeIndexContainsScan", NoChildren, Seq(Details(info)), variables)
+        PlanDescriptionImpl(id, "NodeIndexContainsScan", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
       case p@NodeIndexEndsWithScan(idName, label, property, valueExpr, _, _) =>
         val predicate = pretty"${asPrettyString(property.propertyKeyToken.name)} ENDS WITH ${asPrettyString(valueExpr)}"
         val info = indexInfoString(idName, unique = false, label, Seq(property.propertyKeyToken), predicate, p.cachedProperties)
-        PlanDescriptionImpl(id, "NodeIndexEndsWithScan", NoChildren, Seq(Details(info)), variables)
+        PlanDescriptionImpl(id, "NodeIndexEndsWithScan", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
       case p@NodeIndexScan(idName, label, properties, _, _) =>
         val tokens = properties.map(_.propertyKeyToken)
         val props = tokens.map(x => asPrettyString(x.name))
         val predicates = props.map(p => pretty"$p IS NOT NULL").mkPrettyString(" AND ")
         val info = indexInfoString(idName, unique = false, label, tokens, predicates, p.cachedProperties)
-        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Details(info)), variables)
+        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
       case ProcedureCall(_, call) =>
-        PlanDescriptionImpl(id, "ProcedureCall", NoChildren, Seq(Details(signatureInfo(call))), variables)
+        PlanDescriptionImpl(id, "ProcedureCall", NoChildren, Seq(Details(signatureInfo(call))), variables, withRawCardinalities)
 
       case RelationshipCountFromCountStore(ident, startLabel, typeNames, endLabel, _) =>
         val info = relationshipCountFromCountStoreInfo(ident, startLabel, typeNames, endLabel)
-        PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(Details(info)), variables)
+        PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
       case DoNothingIfExistsForIndex(labelName, propertyKeyNames, nameOption) =>
-        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(indexInfo(nameOption, labelName, propertyKeyNames, Map.empty))), variables)
+        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(indexInfo(nameOption, labelName, propertyKeyNames, Map.empty))), variables, withRawCardinalities)
 
       case CreateIndex(_, labelName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(indexInfo(nameOption, labelName, propertyKeyNames, options))), variables)
+        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(indexInfo(nameOption, labelName, propertyKeyNames, options))), variables, withRawCardinalities)
 
       case DropIndex(labelName, propertyKeyNames) =>
-        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(indexInfo(None, labelName, propertyKeyNames, Map.empty))), variables)
+        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(indexInfo(None, labelName, propertyKeyNames, Map.empty))), variables, withRawCardinalities)
 
       case DropIndexOnName(name, _) =>
-        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(pretty"INDEX ${asPrettyString(name)}")), variables)
+        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(pretty"INDEX ${asPrettyString(name)}")), variables, withRawCardinalities)
 
       case ShowIndexes(_, _, _) =>
-        PlanDescriptionImpl(id, "ShowIndexes", NoChildren, Seq(), variables)
+        PlanDescriptionImpl(id, "ShowIndexes", NoChildren, Seq(), variables, withRawCardinalities)
 
       case DoNothingIfExistsForConstraint(entity, entityType, props, assertion, name) =>
         val a = assertion match {
@@ -331,55 +332,55 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
           case Uniqueness => scala.util.Right("IS UNIQUE")
           case _          => scala.util.Right("IS NOT NULL")
         }
-        PlanDescriptionImpl(id, s"DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(Details(constraintInfo(name, entity, entityType, props, a))), variables)
+        PlanDescriptionImpl(id, s"DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(Details(constraintInfo(name, entity, entityType, props, a))), variables, withRawCardinalities)
 
       case CreateUniquePropertyConstraint(_, node, label, properties: Seq[Property], nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), properties, scala.util.Right("IS UNIQUE"), options))
-        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables)
+        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
 
       case CreateNodeKeyConstraint(_, node, label, properties: Seq[Property], nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), properties, scala.util.Right("IS NODE KEY"), options))
-        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables)
+        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
 
       case CreateNodePropertyExistenceConstraint(_, label, prop, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
         val node = prop.map.asCanonicalStringVal
         val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), Seq(prop), scala.util.Right("IS NOT NULL")))
-        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables)
+        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
 
       case CreateRelationshipPropertyExistenceConstraint(_, relTypeName, prop, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
         val relationship = prop.map.asCanonicalStringVal
         val details = Details(constraintInfo(nameOption, relationship, scala.util.Right(relTypeName), Seq(prop), scala.util.Right("IS NOT NULL")))
-        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables)
+        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
 
       case DropUniquePropertyConstraint(label, props) =>
         val node = props.head.map.asCanonicalStringVal
         val details = Details(constraintInfo(None, node, scala.util.Left(label), props, scala.util.Right("IS UNIQUE")))
-        PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables)
+        PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
 
       case DropNodeKeyConstraint(label, props) =>
         val node = props.head.map.asCanonicalStringVal
         val details = Details(constraintInfo(None, node, scala.util.Left(label), props, scala.util.Right("IS NODE KEY")))
-        PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables)
+        PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
 
       case DropNodePropertyExistenceConstraint(label, prop) =>
         val node = prop.map.asCanonicalStringVal
         val details = Details(constraintInfo(None, node, scala.util.Left(label), Seq(prop), scala.util.Left("exists")))
-        PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables)
+        PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
 
       case DropRelationshipPropertyExistenceConstraint(relTypeName, prop) =>
         val relationship = prop.map.asCanonicalStringVal
         val details = Details(constraintInfo(None, relationship,scala.util.Right(relTypeName), Seq(prop), scala.util.Left("exists")))
-        PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables)
+        PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
 
       case DropConstraintOnName(name, _) =>
         val constraintName = Details(pretty"CONSTRAINT ${asPrettyString(name)}")
-        PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(constraintName), variables)
+        PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(constraintName), variables, withRawCardinalities)
 
       case ShowConstraints(_, _, _) =>
-        PlanDescriptionImpl(id, "ShowConstraints", NoChildren, Seq(), variables)
+        PlanDescriptionImpl(id, "ShowConstraints", NoChildren, Seq(), variables, withRawCardinalities)
 
       case SystemProcedureCall(procedureName, _, _, _, _) =>
-        PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables)
+        PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables, withRawCardinalities)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
@@ -397,22 +398,22 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
     val result: InternalPlanDescription = plan match {
       case _:AdministrationCommandLogicalPlan =>
-        PlanDescriptionImpl(id, "AdministrationCommand", NoChildren, Seq.empty, Set.empty)
+        PlanDescriptionImpl(id, "AdministrationCommand", NoChildren, Seq.empty, Set.empty, withRawCardinalities)
 
       case Distinct(_, groupingExpressions) =>
-        PlanDescriptionImpl(id, "Distinct", children, Seq(Details(aggregationInfo(groupingExpressions, Map.empty))), variables)
+        PlanDescriptionImpl(id, "Distinct", children, Seq(Details(aggregationInfo(groupingExpressions, Map.empty))), variables, withRawCardinalities)
 
       case OrderedDistinct(_, groupingExpressions, orderToLeverage) =>
         val details = aggregationInfo(groupingExpressions, Map.empty, orderToLeverage)
-        PlanDescriptionImpl(id, "OrderedDistinct", children, Seq(Details(details)), variables)
+        PlanDescriptionImpl(id, "OrderedDistinct", children, Seq(Details(details)), variables, withRawCardinalities)
 
       case Aggregation(_, groupingExpressions, aggregationExpressions) =>
         val details = aggregationInfo(groupingExpressions, aggregationExpressions)
-        PlanDescriptionImpl(id, "EagerAggregation", children, Seq(Details(details)), variables)
+        PlanDescriptionImpl(id, "EagerAggregation", children, Seq(Details(details)), variables, withRawCardinalities)
 
       case OrderedAggregation(_, groupingExpressions, aggregationExpressions, orderToLeverage) =>
         val details = aggregationInfo(groupingExpressions, aggregationExpressions, orderToLeverage)
-        PlanDescriptionImpl(id, "OrderedAggregation", children, Seq(Details(details)), variables)
+        PlanDescriptionImpl(id, "OrderedAggregation", children, Seq(Details(details)), variables, withRawCardinalities)
 
       case Create(_, nodes, relationships) =>
         val relationshipDetails = relationships.map {
@@ -423,45 +424,45 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
           case CreateNode(idName, labels, _) =>
             pretty"(${asPrettyString(idName)}${if (labels.nonEmpty) labels.map(x => asPrettyString(x.name)).mkPrettyString(":", ":", "") else pretty""})"
         }
-        PlanDescriptionImpl(id, "Create", children, Seq(Details(nodeDetails ++ relationshipDetails)), variables)
+        PlanDescriptionImpl(id, "Create", children, Seq(Details(nodeDetails ++ relationshipDetails)), variables, withRawCardinalities)
 
       case DeleteExpression(_, expression) =>
-        PlanDescriptionImpl(id, "Delete", children, Seq(Details(asPrettyString(expression))), variables)
+        PlanDescriptionImpl(id, "Delete", children, Seq(Details(asPrettyString(expression))), variables, withRawCardinalities)
 
       case DeleteNode(_, expression) =>
-        PlanDescriptionImpl(id, "Delete", children, Seq(Details(asPrettyString(expression))), variables)
+        PlanDescriptionImpl(id, "Delete", children, Seq(Details(asPrettyString(expression))), variables, withRawCardinalities)
 
       case DeletePath(_, expression) =>
-        PlanDescriptionImpl(id, "Delete", children, Seq(Details(asPrettyString(expression))), variables)
+        PlanDescriptionImpl(id, "Delete", children, Seq(Details(asPrettyString(expression))), variables, withRawCardinalities)
 
       case DeleteRelationship(_, expression) =>
-        PlanDescriptionImpl(id, "Delete", children, Seq(Details(asPrettyString(expression))), variables)
+        PlanDescriptionImpl(id, "Delete", children, Seq(Details(asPrettyString(expression))), variables, withRawCardinalities)
 
       case DetachDeleteExpression(_, expression) =>
-        PlanDescriptionImpl(id, "DetachDelete", children, Seq(Details(asPrettyString(expression))), variables)
+        PlanDescriptionImpl(id, "DetachDelete", children, Seq(Details(asPrettyString(expression))), variables, withRawCardinalities)
 
       case DetachDeleteNode(_, expression) =>
-        PlanDescriptionImpl(id, "DetachDelete", children, Seq(Details(asPrettyString(expression))), variables)
+        PlanDescriptionImpl(id, "DetachDelete", children, Seq(Details(asPrettyString(expression))), variables, withRawCardinalities)
 
       case DetachDeletePath(_, expression) =>
-        PlanDescriptionImpl(id, "DetachDelete", children, Seq(Details(asPrettyString(expression))), variables)
+        PlanDescriptionImpl(id, "DetachDelete", children, Seq(Details(asPrettyString(expression))), variables, withRawCardinalities)
 
       case _: Eager =>
-        PlanDescriptionImpl(id, "Eager", children, Seq.empty, variables)
+        PlanDescriptionImpl(id, "Eager", children, Seq.empty, variables, withRawCardinalities)
 
       case _: EmptyResult =>
-        PlanDescriptionImpl(id, "EmptyResult", children, Seq.empty, variables)
+        PlanDescriptionImpl(id, "EmptyResult", children, Seq.empty, variables, withRawCardinalities)
 
       case NodeCountFromCountStore(idName, labelName, _) =>
         val info = nodeCountFromCountStoreInfo(idName, labelName)
-        PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, Seq(Details(info)), variables)
+        PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
       case RelationshipCountFromCountStore(idName, start, types, end, _) =>
         val info = relationshipCountFromCountStoreInfo(idName, start, types, end)
-        PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(Details(info)), variables)
+        PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
       case _: ErrorPlan =>
-        PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)
+        PlanDescriptionImpl(id, "Error", children, Seq.empty, variables, withRawCardinalities)
 
       case Expand(_, fromName, dir, typeNames, toName, relName, mode) =>
         val expression = Details(expandExpressionDescription(fromName, Some(relName), typeNames.map(_.name), toName, dir, 1, Some(1)))
@@ -469,19 +470,19 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
           case ExpandAll => "Expand(All)"
           case ExpandInto => "Expand(Into)"
         }
-        PlanDescriptionImpl(id, modeText, children, Seq(expression), variables)
+        PlanDescriptionImpl(id, modeText, children, Seq(expression), variables, withRawCardinalities)
 
       case Limit(_, count) =>
-        PlanDescriptionImpl(id, "Limit", children, Seq(Details(asPrettyString(count))), variables)
+        PlanDescriptionImpl(id, "Limit", children, Seq(Details(asPrettyString(count))), variables, withRawCardinalities)
 
       case ExhaustiveLimit(_, count) =>
-        PlanDescriptionImpl(id, "ExhaustiveLimit", children, Seq(Details(asPrettyString(count))), variables)
+        PlanDescriptionImpl(id, "ExhaustiveLimit", children, Seq(Details(asPrettyString(count))), variables, withRawCardinalities)
 
       case CacheProperties(_, properties) =>
-        PlanDescriptionImpl(id, "CacheProperties", children, Seq(Details(properties.toSeq.map(asPrettyString(_)))), variables)
+        PlanDescriptionImpl(id, "CacheProperties", children, Seq(Details(properties.toSeq.map(asPrettyString(_)))), variables, withRawCardinalities)
 
       case LockNodes(_, nodesToLock) =>
-        PlanDescriptionImpl(id, name = "LockNodes", children, Seq(Details(keyNamesInfo(nodesToLock.toSeq))), variables)
+        PlanDescriptionImpl(id, name = "LockNodes", children, Seq(Details(keyNamesInfo(nodesToLock.toSeq))), variables, withRawCardinalities)
 
       case OptionalExpand(_, fromName, dir, typeNames, toName, relName, mode, predicates) =>
         val predicate = predicates.map(p => pretty" WHERE ${asPrettyString(p)}").getOrElse(pretty"")
@@ -491,21 +492,21 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
           case ExpandAll => "OptionalExpand(All)"
           case ExpandInto => "OptionalExpand(Into)"
         }
-        PlanDescriptionImpl(id, modeText, children, Seq(details), variables)
+        PlanDescriptionImpl(id, modeText, children, Seq(details), variables, withRawCardinalities)
 
       case ProduceResult(_, columns) =>
-        PlanDescriptionImpl(id, "ProduceResults", children, Seq(Details(columns.map(asPrettyString(_)))), variables)
+        PlanDescriptionImpl(id, "ProduceResults", children, Seq(Details(columns.map(asPrettyString(_)))), variables, withRawCardinalities)
 
       case Projection(_, expr) =>
         val expressions = Details(projectedExpressionInfo(expr))
-        PlanDescriptionImpl(id, "Projection", children, Seq(expressions), variables)
+        PlanDescriptionImpl(id, "Projection", children, Seq(expressions), variables, withRawCardinalities)
 
       case Selection(predicate, _) =>
         val details = Details(asPrettyString(predicate))
-        PlanDescriptionImpl(id, "Filter", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "Filter", children, Seq(details), variables, withRawCardinalities)
 
       case Skip(_, count) =>
-        PlanDescriptionImpl(id, name = "Skip", children, Seq(Details(asPrettyString(count))), variables)
+        PlanDescriptionImpl(id, name = "Skip", children, Seq(Details(asPrettyString(count))), variables, withRawCardinalities)
 
       case FindShortestPaths(_, ShortestPathPattern(maybePathName, PatternRelationship(relName, (fromName, toName), dir, relTypes, patternLength: PatternLength), isSingle), predicates, _, _) =>
         val patternRelationshipInfo = expandExpressionDescription(fromName, Some(relName), relTypes.map(_.name), toName, dir, patternLength)
@@ -521,33 +522,33 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
           case _ => pretty""
         }
 
-        PlanDescriptionImpl(id, "ShortestPath", children, Seq(Details(pretty"$pathName$patternRelationshipInfo$predicatesInfo")), variables)
+        PlanDescriptionImpl(id, "ShortestPath", children, Seq(Details(pretty"$pathName$patternRelationshipInfo$predicatesInfo")), variables, withRawCardinalities)
 
       case LoadCSV(_, _, variableName, _, _, _, _) =>
-        PlanDescriptionImpl(id, "LoadCSV", children, Seq(Details(asPrettyString(variableName))), variables)
+        PlanDescriptionImpl(id, "LoadCSV", children, Seq(Details(asPrettyString(variableName))), variables, withRawCardinalities)
 
       case MergeCreateNode(_, idName, _, _) =>
-        PlanDescriptionImpl(id, "MergeCreateNode", children, Seq(Details(asPrettyString(idName))), variables)
+        PlanDescriptionImpl(id, "MergeCreateNode", children, Seq(Details(asPrettyString(idName))), variables, withRawCardinalities)
 
       case MergeCreateRelationship(_, idName, startNode, relTypeName, endNode, _) =>
         val details = expandExpressionDescription(startNode, Some(idName), Seq(relTypeName.name), endNode, SemanticDirection.OUTGOING, 1, Some(1))
-        PlanDescriptionImpl(id, "MergeCreateRelationship", children, Seq(Details(details)), variables)
+        PlanDescriptionImpl(id, "MergeCreateRelationship", children, Seq(Details(details)), variables, withRawCardinalities)
 
       case Optional(_, protectedSymbols) =>
-        PlanDescriptionImpl(id, "Optional", children, Seq(Details(keyNamesInfo(protectedSymbols.toSeq))), variables)
+        PlanDescriptionImpl(id, "Optional", children, Seq(Details(keyNamesInfo(protectedSymbols.toSeq))), variables, withRawCardinalities)
 
       case _: Anti =>
-        PlanDescriptionImpl(id, "Anti", children, Seq.empty, variables)
+        PlanDescriptionImpl(id, "Anti", children, Seq.empty, variables, withRawCardinalities)
 
       case ProcedureCall(_, call) =>
-        PlanDescriptionImpl(id, "ProcedureCall", children, Seq(Details(signatureInfo(call))), variables)
+        PlanDescriptionImpl(id, "ProcedureCall", children, Seq(Details(signatureInfo(call))), variables, withRawCardinalities)
 
       case ProjectEndpoints(_, relName, start, _, end, _, relTypes, directed, patternLength) =>
         val name = if (directed) "ProjectEndpoints" else "ProjectEndpoints(BOTH)"
         val direction = if (directed) SemanticDirection.OUTGOING else SemanticDirection.BOTH
         val relTypeNames = relTypes.toSeq.flatten.map(_.name)
         val details = expandExpressionDescription(start, Some(relName), relTypeNames, end, direction, patternLength)
-        PlanDescriptionImpl(id, name, children, Seq(Details(details)), variables)
+        PlanDescriptionImpl(id, name, children, Seq(Details(details)), variables, withRawCardinalities)
 
       case PruningVarExpand(_, fromName, dir, types, toName, min, max, maybeNodePredicate, maybeRelationshipPredicate) =>
         val maybeRelName = maybeRelationshipPredicate.map(_.variable.name)
@@ -556,67 +557,67 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
           case Some(predicateInfo) => pretty" WHERE $predicateInfo"
           case _ => pretty""
         }
-        PlanDescriptionImpl(id, s"VarLengthExpand(Pruning)", children, Seq(Details(pretty"$expandInfo$predicatesDescription")), variables)
+        PlanDescriptionImpl(id, s"VarLengthExpand(Pruning)", children, Seq(Details(pretty"$expandInfo$predicatesDescription")), variables, withRawCardinalities)
 
       case RemoveLabels(_, idName, labelNames) =>
         val prettyId = asPrettyString(idName)
         val prettyLabels = labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")
         val details = Details(pretty"$prettyId$prettyLabels")
-        PlanDescriptionImpl(id, "RemoveLabels", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "RemoveLabels", children, Seq(details), variables, withRawCardinalities)
 
       case SetLabels(_, idName, labelNames) =>
 
         val prettyId = asPrettyString(idName)
         val prettyLabels = labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")
         val details = Details(pretty"$prettyId$prettyLabels")
-        PlanDescriptionImpl(id, "SetLabels", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "SetLabels", children, Seq(details), variables, withRawCardinalities)
 
       case SetNodePropertiesFromMap(_, idName, expression, removeOtherProps) =>
         val details = Details(setPropertyInfo(asPrettyString(idName), expression, removeOtherProps))
-        PlanDescriptionImpl(id, "SetNodePropertiesFromMap", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "SetNodePropertiesFromMap", children, Seq(details), variables, withRawCardinalities)
 
       case SetPropertiesFromMap(_, entity, expression, removeOtherProps) =>
         val details = Details(setPropertyInfo(asPrettyString(entity), expression, removeOtherProps))
-        PlanDescriptionImpl(id, "SetPropertiesFromMap", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "SetPropertiesFromMap", children, Seq(details), variables, withRawCardinalities)
 
       case SetProperty(_, entity, propertyKey, expression) =>
         val entityString = pretty"${asPrettyString(entity)}.${asPrettyString(propertyKey.name)}"
         val details = Details(setPropertyInfo(entityString, expression, true))
-        PlanDescriptionImpl(id, "SetProperty", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "SetProperty", children, Seq(details), variables, withRawCardinalities)
 
       case SetNodeProperty(_, idName, propertyKey, expression) =>
         val details = Details(setPropertyInfo(pretty"${asPrettyString(idName)}.${asPrettyString(propertyKey.name)}", expression, true))
-        PlanDescriptionImpl(id, "SetProperty", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "SetProperty", children, Seq(details), variables, withRawCardinalities)
 
       case SetRelationshipProperty(_, idName, propertyKey, expression) =>
         val details = Details(setPropertyInfo(pretty"${asPrettyString(idName)}.${asPrettyString(propertyKey.name)}", expression, true))
-        PlanDescriptionImpl(id, "SetProperty", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "SetProperty", children, Seq(details), variables, withRawCardinalities)
 
       case SetRelationshipPropertiesFromMap(_, idName, expression, removeOtherProps) =>
         val details = Details(setPropertyInfo(asPrettyString(idName), expression, removeOtherProps))
-        PlanDescriptionImpl(id, "SetRelationshipPropertiesFromMap", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "SetRelationshipPropertiesFromMap", children, Seq(details), variables, withRawCardinalities)
 
       case Sort(_, orderBy) =>
-        PlanDescriptionImpl(id, "Sort", children, Seq(Details(orderInfo(orderBy))), variables)
+        PlanDescriptionImpl(id, "Sort", children, Seq(Details(orderInfo(orderBy))), variables, withRawCardinalities)
 
       case PartialSort(_, alreadySortedPrefix, stillToSortSuffix, _) =>
-        PlanDescriptionImpl(id, "PartialSort", children, Seq(Details(orderInfo(alreadySortedPrefix ++ stillToSortSuffix))), variables)
+        PlanDescriptionImpl(id, "PartialSort", children, Seq(Details(orderInfo(alreadySortedPrefix ++ stillToSortSuffix))), variables, withRawCardinalities)
 
       case Top(_, orderBy, limit) =>
         val details = pretty"${orderInfo(orderBy)} LIMIT ${asPrettyString(limit)}"
-        PlanDescriptionImpl(id, "Top", children, Seq(Details(details)), variables)
+        PlanDescriptionImpl(id, "Top", children, Seq(Details(details)), variables, withRawCardinalities)
 
       case Top1WithTies(_, orderBy) =>
         val details = pretty"${orderInfo(orderBy)}"
-        PlanDescriptionImpl(id, "Top1WithTies", children, Seq(Details(details)), variables)
+        PlanDescriptionImpl(id, "Top1WithTies", children, Seq(Details(details)), variables, withRawCardinalities)
 
       case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, limit, _) =>
         val details = pretty"${orderInfo(alreadySortedPrefix ++ stillToSortSuffix)} LIMIT ${asPrettyString(limit)}"
-        PlanDescriptionImpl(id, "PartialTop", children, Seq(Details(details)), variables)
+        PlanDescriptionImpl(id, "PartialTop", children, Seq(Details(details)), variables, withRawCardinalities)
 
       case UnwindCollection(_, variable, expression) =>
         val details = Details(projectedExpressionInfo(Map(variable -> expression)).mkPrettyString(SEPARATOR))
-        PlanDescriptionImpl(id, "Unwind", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "Unwind", children, Seq(details), variables, withRawCardinalities)
 
       case VarExpand(_, fromName, dir, _, types, toName, relName, length, mode, maybeNodePredicate, maybeRelationshipPredicate) =>
         val expandDescription = expandExpressionDescription(fromName, Some(relName), types.map(_.name), toName, dir, minLength = length.min, maxLength = length.max)
@@ -628,40 +629,40 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
           case ExpandAll => "All"
           case ExpandInto => "Into"
         }
-        PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children, Seq(Details(pretty"$expandDescription$predicatesDescription")), variables)
+        PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children, Seq(Details(pretty"$expandDescription$predicatesDescription")), variables, withRawCardinalities)
 
       case CreateIndex(_, labelName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(indexInfo(nameOption, labelName, propertyKeyNames, options))), variables)
+        PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(indexInfo(nameOption, labelName, propertyKeyNames, options))), variables, withRawCardinalities)
 
       case CreateUniquePropertyConstraint(_, node, label, properties: Seq[Property], nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), properties, scala.util.Right("IS UNIQUE"), options))
-        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
 
       case CreateNodeKeyConstraint(_, node, label, properties: Seq[Property], nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), properties, scala.util.Right("IS NODE KEY"), options))
-        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
 
       case CreateNodePropertyExistenceConstraint(_, label, prop, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
         val node = prop.map.asCanonicalStringVal
         val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), Seq(prop), scala.util.Right("IS NOT NULL")))
-        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
 
       case CreateRelationshipPropertyExistenceConstraint(_, relTypeName, prop, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
         val relationship = prop.map.asCanonicalStringVal
         val details = Details(constraintInfo(nameOption, relationship, scala.util.Right(relTypeName), Seq(prop), scala.util.Right("IS NOT NULL")))
-        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
 
       case TriadicBuild(_, sourceId, seenId, _) =>
         val details = Details(pretty"(${asPrettyString(sourceId)})--(${asPrettyString(seenId)})")
-        PlanDescriptionImpl(id, "TriadicBuild", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "TriadicBuild", children, Seq(details), variables, withRawCardinalities)
 
       case TriadicFilter(_, positivePredicate, sourceId, targetId, _) =>
         val positivePredicateString = if (positivePredicate) pretty"" else pretty"NOT "
         val details = Details(pretty"WHERE $positivePredicateString(${asPrettyString(sourceId)})--(${asPrettyString(targetId)})")
-        PlanDescriptionImpl(id, "TriadicFilter", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "TriadicFilter", children, Seq(details), variables, withRawCardinalities)
 
       case PreserveOrder(_) =>
-        PlanDescriptionImpl(id, "PreserveOrder", children, Seq.empty[Argument], variables)
+        PlanDescriptionImpl(id, "PreserveOrder", children, Seq.empty[Argument], variables, withRawCardinalities)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
@@ -680,71 +681,71 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
     val result: InternalPlanDescription = plan match {
       case _: AntiConditionalApply =>
-        PlanDescriptionImpl(id, "AntiConditionalApply", children, Seq.empty, variables)
+        PlanDescriptionImpl(id, "AntiConditionalApply", children, Seq.empty, variables, withRawCardinalities)
 
       case _: AntiSemiApply =>
-        PlanDescriptionImpl(id, "AntiSemiApply", children, Seq.empty, variables)
+        PlanDescriptionImpl(id, "AntiSemiApply", children, Seq.empty, variables, withRawCardinalities)
 
       case _: ConditionalApply =>
-        PlanDescriptionImpl(id, "ConditionalApply", children, Seq.empty, variables)
+        PlanDescriptionImpl(id, "ConditionalApply", children, Seq.empty, variables, withRawCardinalities)
 
       case _: Apply =>
-        PlanDescriptionImpl(id, "Apply", children, Seq.empty, variables)
+        PlanDescriptionImpl(id, "Apply", children, Seq.empty, variables, withRawCardinalities)
 
       case AssertSameNode(node, _, _) =>
-        PlanDescriptionImpl(id, "AssertSameNode", children, Seq(Details(asPrettyString(node))), variables)
+        PlanDescriptionImpl(id, "AssertSameNode", children, Seq(Details(asPrettyString(node))), variables, withRawCardinalities)
 
       case CartesianProduct(_, _) =>
-        PlanDescriptionImpl(id, "CartesianProduct", children, Seq.empty, variables)
+        PlanDescriptionImpl(id, "CartesianProduct", children, Seq.empty, variables, withRawCardinalities)
 
       case NodeHashJoin(nodes, _, _) =>
-        PlanDescriptionImpl(id, "NodeHashJoin", children, Seq(Details(keyNamesInfo(nodes.toSeq))), variables)
+        PlanDescriptionImpl(id, "NodeHashJoin", children, Seq(Details(keyNamesInfo(nodes.toSeq))), variables, withRawCardinalities)
 
       case ForeachApply(_, _, variable, expression) =>
         val details = pretty"${asPrettyString(variable)} IN ${asPrettyString(expression)}"
-        PlanDescriptionImpl(id, "Foreach", children, Seq(Details(details)), variables)
+        PlanDescriptionImpl(id, "Foreach", children, Seq(Details(details)), variables, withRawCardinalities)
 
       case LetSelectOrSemiApply(_, _, _, predicate) =>
-        PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Details(asPrettyString(predicate))), variables)
+        PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Details(asPrettyString(predicate))), variables, withRawCardinalities)
 
       case row: plans.Argument =>
         ArgumentPlanDescription(id = plan.id, Seq.empty, variables)
 
       case LetSelectOrAntiSemiApply(_, _, _, predicate) =>
-        PlanDescriptionImpl(id, "LetSelectOrAntiSemiApply", children, Seq(Details(asPrettyString(predicate))), variables)
+        PlanDescriptionImpl(id, "LetSelectOrAntiSemiApply", children, Seq(Details(asPrettyString(predicate))), variables, withRawCardinalities)
 
       case _: LetSemiApply =>
-        PlanDescriptionImpl(id, "LetSemiApply", children, Seq.empty, variables)
+        PlanDescriptionImpl(id, "LetSemiApply", children, Seq.empty, variables, withRawCardinalities)
 
       case _: LetAntiSemiApply =>
-        PlanDescriptionImpl(id, "LetAntiSemiApply", children, Seq.empty, variables)
+        PlanDescriptionImpl(id, "LetAntiSemiApply", children, Seq.empty, variables, withRawCardinalities)
 
       case LeftOuterHashJoin(nodes, _, _) =>
-        PlanDescriptionImpl(id, "NodeLeftOuterHashJoin", children, Seq(Details(keyNamesInfo(nodes.toSeq))), variables)
+        PlanDescriptionImpl(id, "NodeLeftOuterHashJoin", children, Seq(Details(keyNamesInfo(nodes.toSeq))), variables, withRawCardinalities)
 
       case RightOuterHashJoin(nodes, _, _) =>
-        PlanDescriptionImpl(id, "NodeRightOuterHashJoin", children, Seq(Details(keyNamesInfo(nodes.toSeq))), variables)
+        PlanDescriptionImpl(id, "NodeRightOuterHashJoin", children, Seq(Details(keyNamesInfo(nodes.toSeq))), variables, withRawCardinalities)
 
       case RollUpApply(_, _, collectionName, variableToCollect) =>
         val detailsList = Seq(collectionName, variableToCollect).map(e => keyNamesInfo(Seq(e)))
-        PlanDescriptionImpl(id, "RollUpApply", children, Seq(Details(detailsList)), variables)
+        PlanDescriptionImpl(id, "RollUpApply", children, Seq(Details(detailsList)), variables, withRawCardinalities)
 
       case SelectOrAntiSemiApply(_, _, predicate) =>
-        PlanDescriptionImpl(id, "SelectOrAntiSemiApply", children, Seq(Details(asPrettyString(predicate))), variables)
+        PlanDescriptionImpl(id, "SelectOrAntiSemiApply", children, Seq(Details(asPrettyString(predicate))), variables, withRawCardinalities)
 
       case SelectOrSemiApply(_, _, predicate) =>
-        PlanDescriptionImpl(id, "SelectOrSemiApply", children, Seq(Details(asPrettyString(predicate))), variables)
+        PlanDescriptionImpl(id, "SelectOrSemiApply", children, Seq(Details(asPrettyString(predicate))), variables, withRawCardinalities)
 
       case _: SemiApply =>
-        PlanDescriptionImpl(id, "SemiApply", children, Seq.empty, variables)
+        PlanDescriptionImpl(id, "SemiApply", children, Seq.empty, variables, withRawCardinalities)
 
       case TriadicSelection(_, _, positivePredicate, source, seen, target) =>
         val positivePredicateString = if (positivePredicate) pretty"" else pretty"NOT "
         val details = Details(pretty"WHERE $positivePredicateString(${asPrettyString(source)})--(${asPrettyString(target)})")
-        PlanDescriptionImpl(id, "TriadicSelection", children, Seq(details), variables)
+        PlanDescriptionImpl(id, "TriadicSelection", children, Seq(details), variables, withRawCardinalities)
 
       case _: Union =>
-        PlanDescriptionImpl(id, "Union", children, Seq.empty, variables)
+        PlanDescriptionImpl(id, "Union", children, Seq.empty, variables, withRawCardinalities)
 
       case ValueHashJoin(_, _, predicate) =>
         PlanDescriptionImpl(
@@ -752,14 +753,14 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
           name = "ValueHashJoin",
           children = children,
           arguments = Seq(Details(asPrettyString(predicate))),
-          variables
-        )
+          variables,
+          withRawCardinalities)
 
       case _: MultiNodeIndexSeek =>
-        PlanDescriptionImpl(id = plan.id, "MultiNodeIndexSeek", children, Seq.empty, variables)
+        PlanDescriptionImpl(id = plan.id, "MultiNodeIndexSeek", children, Seq.empty, variables, withRawCardinalities)
 
       case _: AssertingMultiNodeIndexSeek =>
-        PlanDescriptionImpl(id = plan.id, "AssertingMultiNodeIndexSeek", children, Seq.empty, variables)
+        PlanDescriptionImpl(id = plan.id, "AssertingMultiNodeIndexSeek", children, Seq.empty, variables, withRawCardinalities)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
