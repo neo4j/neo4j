@@ -230,14 +230,16 @@ class HeapTrackingLongEnumerationListTest
 
         // remove until 9000
         final long[] ia = new long[]{0L};
-        table.removeUntil(9000, (removedKey, removedValue) -> {
+        table.removeUntil( 9000, ( removedKey, removedValue ) ->
+        {
             assertEquals( ia[0], removedKey );
-            assertEquals(ia[0] + 100000, removedValue );
+            assertEquals( ia[0] + 100000, removedValue );
             ia[0]++;
-            if (ia[0] == 2500) {
+            if ( ia[0] == 2500 )
+            {
                 ia[0] += 5000;
             }
-        });
+        } );
         assertEquals( 9999L, table.lastKey() );
         assertHeapUsageWithNumberOfLongs( 1000 );
     }

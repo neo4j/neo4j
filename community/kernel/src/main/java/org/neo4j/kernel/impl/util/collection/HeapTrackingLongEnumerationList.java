@@ -433,7 +433,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable
      * and apply the given function to each removed value, skipping over null values.
      */
     @SuppressWarnings( "unchecked" )
-    public void removeUntil( long untilKey, BiConsumer<Long, V> fun )
+    public void removeUntil( long untilKey, BiConsumer<Long,V> fun )
     {
         while ( firstKey < untilKey )
         {
