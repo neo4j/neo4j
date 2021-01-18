@@ -31,9 +31,11 @@ import java.util.List;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.StructType;
 import org.neo4j.bolt.messaging.util.PrimitiveLongIntKeyValueArray;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
@@ -47,6 +49,7 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.bolt.packstream.PackStream.UNKNOWN_SIZE;
 import static org.neo4j.values.storable.Values.byteArray;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 /**
  * Extended PackStream packer and unpacker classes for working
@@ -292,7 +295,16 @@ public class Neo4jPackV1 implements Neo4jPack
                         packStructHeader( UNBOUND_RELATIONSHIP_SIZE, UNBOUND_RELATIONSHIP );
                         pack( edge.id() );
                         edge.type().writeTo( this );
-                        edge.properties().writeTo( this );
+                        //note if relationship has been deleted we might throw here, if deleted
+                        //we just return empty properties map.
+                        try
+                        {
+                            edge.properties().writeTo( this );
+                        }
+                        catch ( NotFoundException ignore )
+                        {
+                            EMPTY_MAP.writeTo( this );
+                        }
                     }
                 }
             }
@@ -547,7 +559,7 @@ public class Neo4jPackV1 implements Neo4jPack
             int size = (int) unpackMapHeader();
             if ( size == 0 )
             {
-                return VirtualValues.EMPTY_MAP;
+                return EMPTY_MAP;
             }
             MapValueBuilder map;
             if ( size == UNKNOWN_SIZE )
