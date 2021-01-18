@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.ir.ordering
 
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Asc
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.ColumnOrder
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 
 /**
  * A candidate for how the rows in a query can be sorted, defined by OrderCandidate.order.
@@ -46,10 +45,7 @@ trait OrderCandidate[T <: OrderCandidate[T]] {
 
   def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): T
 
-  def asProvidedOrder: ProvidedOrder = ProvidedOrder(order.map {
-    case Asc(expression, _) => ProvidedOrder.Asc(expression)
-    case Desc(expression, _) => ProvidedOrder.Desc(expression)
-  }, ProvidedOrder.Self)
+  def asProvidedOrder: ProvidedOrder = ProvidedOrder(order, ProvidedOrder.Self)
 }
 
 case class RequiredOrderCandidate(order: Seq[ColumnOrder]) extends OrderCandidate[RequiredOrderCandidate] {

@@ -20,63 +20,17 @@
 package org.neo4j.cypher.internal.ir.ordering
 
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Asc
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.ColumnOrder
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.projectExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.projectExpression
 
 import scala.annotation.tailrec
 
 object InterestingOrder {
-
-  sealed trait ColumnOrder {
-    // Expression to sort by
-    def expression: Expression
-
-    // Projections needed to apply the sort of the expression
-    def projections: Map[String, Expression]
-
-    /**
-     * @return all dependencies from the  expression.
-     *         The expression is first converted to the first expressions that was projected to form this expression.
-     *         That way we get all the dependencies with "original" names.
-     */
-    def dependencies: Set[LogicalVariable] = {
-      var currExpr = expression
-      var prevExpr = projectExpression(expression, projections)
-      while(currExpr != prevExpr) {
-        currExpr = prevExpr
-        prevExpr = projectExpression(currExpr, projections)
-      }
-      currExpr.dependencies
-    }
-
-  }
-
-  // finds the projected expression if it exists, otherwise returns expression
-  private def projectExpression(expression: Expression, projections: Map[String, Expression]): Expression = {
-    expression match {
-      case Variable(varName) =>
-        projections.getOrElse(varName, expression)
-
-      case Property(Variable(varName), propertyKeyName) =>
-        if (projections.contains(varName))
-          Property(projections(varName), propertyKeyName)(expression.position)
-        else
-          expression
-
-      case _ => expression
-    }
-  }
-
-  case class Asc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder
-
-  case class Desc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder
 
   /**
    * An [[InterestingOrder]] can be fully, partially, or not all all satisfied by a [[ProvidedOrder]].
@@ -95,7 +49,7 @@ object InterestingOrder {
     def unapply(s: Satisfaction): Boolean = s.satisfiedPrefix.isEmpty && s.missingSuffix.nonEmpty
   }
 
-  val empty = InterestingOrder(RequiredOrderCandidate.empty, Seq.empty)
+  val empty: InterestingOrder = InterestingOrder(RequiredOrderCandidate.empty, Seq.empty)
 
   def required(candidate: RequiredOrderCandidate): InterestingOrder = InterestingOrder(candidate, Seq.empty)
 
@@ -172,8 +126,8 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
     }
     requiredOrderCandidate.order.zipAll(providedOrder.columns, null, null).foldLeft(Satisfaction(Seq.empty, Seq.empty)){
       case (s, (null, _)) => s // no required order left
-      case (s@FullSatisfaction(), (satisfiedColumn@InterestingOrder.Asc(requiredExp, projections), ProvidedOrder.Asc(providedExpr))) if satisfied(providedExpr, requiredExp, projections)  => s.withSatisfied(satisfiedColumn)
-      case (s@FullSatisfaction(), (satisfiedColumn@InterestingOrder.Desc(requiredExp, projections), ProvidedOrder.Desc(providedExpr))) if satisfied(providedExpr, requiredExp, projections) => s.withSatisfied(satisfiedColumn)
+      case (s@FullSatisfaction(), (satisfiedColumn@Asc(requiredExp, projections), Asc(providedExpr, _))) if satisfied(providedExpr, requiredExp, projections)  => s.withSatisfied(satisfiedColumn)
+      case (s@FullSatisfaction(), (satisfiedColumn@Desc(requiredExp, projections), Desc(providedExpr, _))) if satisfied(providedExpr, requiredExp, projections) => s.withSatisfied(satisfiedColumn)
       case (s, (unsatisfiedColumn, _)) => s.withMissing(unsatisfiedColumn) // required order left but no provided or provided not matching or previous column not matching
     }
   }
