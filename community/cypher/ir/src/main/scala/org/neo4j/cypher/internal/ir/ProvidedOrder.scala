@@ -19,37 +19,17 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.ir.ProvidedOrder.{Asc, Desc}
+import org.neo4j.cypher.internal.ir.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ColumnOrder.Desc
 import org.neo4j.cypher.internal.v4_0.expressions._
 
 
 object ProvidedOrder {
 
-  object Column {
-    def unapply(arg: Column): Option[Expression] = {
-      Some(arg.expression)
-    }
-    def apply(expression: Expression, ascending: Boolean): Column = {
-      if (ascending) Asc(expression) else Desc(expression)
-    }
-  }
+  val empty: ProvidedOrder = ProvidedOrder(Seq.empty[ColumnOrder])
 
-  sealed trait Column {
-    def expression: Expression
-    def isAscending: Boolean
-  }
-
-  case class Asc(expression: Expression) extends Column {
-    override val isAscending: Boolean = true
-  }
-  case class Desc(expression: Expression) extends Column {
-    override val isAscending: Boolean = false
-  }
-
-  val empty: ProvidedOrder = ProvidedOrder(Seq.empty[Column])
-
-  def asc(expression: Expression): ProvidedOrder = empty.asc(expression)
-  def desc(expression: Expression): ProvidedOrder = empty.desc(expression)
+  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder = empty.asc(expression, projections)
+  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder = empty.desc(expression, projections)
 }
 
 /**
@@ -59,12 +39,12 @@ object ProvidedOrder {
   *
   * @param columns a sequence of columns with sort direction
   */
-case class ProvidedOrder(columns: Seq[ProvidedOrder.Column]) {
+case class ProvidedOrder(columns: Seq[ColumnOrder]) {
 
   val isEmpty: Boolean = columns.isEmpty
 
-  def asc(expression: Expression): ProvidedOrder = ProvidedOrder(columns :+ Asc(expression))
-  def desc(expression: Expression): ProvidedOrder = ProvidedOrder(columns :+ Desc(expression))
+  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder = ProvidedOrder(columns :+ Asc(expression, projections))
+  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder = ProvidedOrder(columns :+ Desc(expression, projections))
 
   /**
     * Returns a new provided order where the order columns of this are concatenated with
@@ -86,7 +66,7 @@ case class ProvidedOrder(columns: Seq[ProvidedOrder.Column]) {
     * Trim provided order up until a sort column that matches any of the given args.
     */
   def upToExcluding(args: Set[String]): ProvidedOrder = {
-    val trimmed = columns.foldLeft((false,Seq.empty[ProvidedOrder.Column])) {
+    val trimmed = columns.foldLeft((false,Seq.empty[ColumnOrder])) {
       case (acc, _) if acc._1 => acc
       case (acc, col) if args.contains(col.expression.asCanonicalStringVal) => (true, acc._2)
       case (acc, col) => (acc._1, acc._2 :+ col)

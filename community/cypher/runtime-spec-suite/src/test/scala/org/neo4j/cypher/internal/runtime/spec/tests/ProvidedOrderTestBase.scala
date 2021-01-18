@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.builder.Parser
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.{DoNotGetValue, IndexOrder, IndexOrderAscending, IndexOrderDescending}
 import org.neo4j.cypher.internal.runtime.spec._
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
 abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
@@ -41,13 +42,17 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
   trait SeqMutator { def apply[X](in: Seq[X]): Seq[X]}
   case class ProvidedOrderTest(orderString: String, indexOrder: IndexOrder, providedOrderFactory: String => ProvidedOrder, expectedMutation: SeqMutator)
 
+  private[this] val parse: String => Expression = Parser.parseExpression
+  private[this] val asc: Expression => ProvidedOrder = ProvidedOrder.asc(_: Expression)
+  private[this] val desc: Expression => ProvidedOrder = ProvidedOrder.desc(_: Expression)
+
   for (
     ProvidedOrderTest(orderString, indexOrder, providedOrderFactory, expectedMutation) <- Seq(
-      ProvidedOrderTest("ascending", IndexOrderAscending, Parser.parseExpression _ andThen ProvidedOrder.asc,
+      ProvidedOrderTest("ascending", IndexOrderAscending, parse andThen asc,
         new SeqMutator {
           override def apply[X](in: Seq[X]): Seq[X] = in
         }),
-      ProvidedOrderTest("descending", IndexOrderDescending, Parser.parseExpression _ andThen ProvidedOrder.desc,
+      ProvidedOrderTest("descending", IndexOrderDescending, parse andThen desc,
         new SeqMutator {
           override def apply[X](in: Seq[X]): Seq[X] = in.reverse
         })
@@ -361,13 +366,17 @@ abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
 trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
   self: ProvidedOrderTestBase[CONTEXT] =>
 
+  private[this] val parse: String => Expression = Parser.parseExpression
+  private[this] val asc: Expression => ProvidedOrder = ProvidedOrder.asc(_: Expression)
+  private[this] val desc: Expression => ProvidedOrder = ProvidedOrder.desc(_: Expression)
+
   for (
     ProvidedOrderTest(orderString, indexOrder, providedOrderFactory, expectedMutation) <- Seq(
-      ProvidedOrderTest("ascending", IndexOrderAscending, Parser.parseExpression _ andThen ProvidedOrder.asc,
+      ProvidedOrderTest("ascending", IndexOrderAscending, parse andThen asc,
         new SeqMutator {
           override def apply[X](in: Seq[X]): Seq[X] = in
         }),
-      ProvidedOrderTest("descending", IndexOrderDescending, Parser.parseExpression _ andThen ProvidedOrder.desc,
+      ProvidedOrderTest("descending", IndexOrderDescending, parse andThen desc,
         new SeqMutator {
           override def apply[X](in: Seq[X]): Seq[X] = in.reverse
         })

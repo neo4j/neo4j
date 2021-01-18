@@ -24,8 +24,42 @@ import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper.coercePredicat
 import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
-import org.neo4j.cypher.internal.ir._
+import org.neo4j.cypher.internal.ir
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.CSVFormat
+import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
+import org.neo4j.cypher.internal.ir.ColumnOrder.Desc
+import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreatePattern
+import org.neo4j.cypher.internal.ir.CreateRelationship
+import org.neo4j.cypher.internal.ir.DeleteExpression
+import org.neo4j.cypher.internal.ir.DistinctQueryProjection
+import org.neo4j.cypher.internal.ir.ForeachPattern
+import org.neo4j.cypher.internal.ir.InterestingOrder
+import org.neo4j.cypher.internal.ir.LoadCSVProjection
+import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.ProvidedOrder
+import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.QueryProjection
+import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertyPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
+import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.cypher.internal.ir.UnwindProjection
+import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.{Union, UnwindCollection, ValueHashJoin, DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.v4_0.ast.Union.UnionMapping
@@ -457,7 +491,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solved = solveds.get(left.id).asSinglePlannerQuery.amendQueryGraph(_.withAddedOptionalMatch(solveds.get(right.id).asSinglePlannerQuery.queryGraph.addHints(hints)))
     val inputOrder = providedOrders.get(right.id)
     val providedOrder = if (inputOrder.columns.exists {
-      case _: ProvidedOrder.Desc => true
+      case _: Desc => true
       case _ => false
     }) {
       // Join nodes that are not matched from the RHS will result in rows with null in the Sort column.
@@ -1153,32 +1187,32 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   /**
     * Rename sort columns if they are renamed in a projection.
     */
-  private def renameProvidedOrderColumns(columns: Seq[ProvidedOrder.Column], projectExpressions: Map[String, Expression]): Seq[ProvidedOrder.Column] = {
+  private def renameProvidedOrderColumns(columns: Seq[ir.ColumnOrder], projectExpressions: Map[String, Expression]): Seq[ir.ColumnOrder] = {
     columns.map {
-      case columnOrder@ProvidedOrder.Column(e@Property(v@Variable(varName), p@PropertyKeyName(propName))) =>
+      case columnOrder@ir.ColumnOrder(e@Property(v@Variable(varName), p@PropertyKeyName(propName))) =>
           projectExpressions.collectFirst {
             case (newName, Property(Variable(`varName`), PropertyKeyName(`propName`)) | CachedProperty(`varName`, _, PropertyKeyName(`propName`), _)) =>
-              ProvidedOrder.Column(Variable(newName)(v.position), columnOrder.isAscending)
+              ir.ColumnOrder(Variable(newName)(v.position), columnOrder.isAscending)
             case (newName, Variable(`varName`)) =>
-              ProvidedOrder.Column(Property(Variable(newName)(v.position), PropertyKeyName(propName)(p.position))(e.position), columnOrder.isAscending)
+              ir.ColumnOrder(Property(Variable(newName)(v.position), PropertyKeyName(propName)(p.position))(e.position), columnOrder.isAscending)
           }.getOrElse(columnOrder)
-      case columnOrder@ProvidedOrder.Column(expression) =>
+      case columnOrder@ir.ColumnOrder(expression) =>
         projectExpressions.collectFirst {
-          case (newName, `expression`) => ProvidedOrder.Column(Variable(newName)(expression.position), columnOrder.isAscending)
+          case (newName, `expression`) => ir.ColumnOrder(Variable(newName)(expression.position), columnOrder.isAscending)
         }.getOrElse(columnOrder)
     }
   }
 
-  private def trimAndRenameProvidedOrder(providedOrder: ProvidedOrder, grouping: Map[String, Expression]): Seq[ProvidedOrder.Column] = {
+  private def trimAndRenameProvidedOrder(providedOrder: ProvidedOrder, grouping: Map[String, Expression]): Seq[ir.ColumnOrder] = {
     // Trim provided order for each sort column, if it is a non-grouping column
     val trimmed = providedOrder.columns.takeWhile {
-      case ProvidedOrder.Column(Property(Variable(varName), PropertyKeyName(propName))) =>
+      case ir.ColumnOrder(Property(Variable(varName), PropertyKeyName(propName))) =>
         grouping.values.exists {
           case CachedProperty(`varName`, _, PropertyKeyName(`propName`), _) => true
           case Property(Variable(`varName`), PropertyKeyName(`propName`)) => true
           case _ => false
         }
-      case ProvidedOrder.Column(expression) =>
+      case ir.ColumnOrder(expression) =>
         grouping.values.exists {
           case `expression` => true
           case _ => false

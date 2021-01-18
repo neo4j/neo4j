@@ -19,12 +19,17 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.ir.InterestingOrder.{Asc, Desc, FullSatisfaction, NoSatisfaction, Satisfaction}
+import org.neo4j.cypher.internal.ir.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ColumnOrder.Desc
+import org.neo4j.cypher.internal.ir.InterestingOrder.FullSatisfaction
+import org.neo4j.cypher.internal.ir.InterestingOrder.NoSatisfaction
+import org.neo4j.cypher.internal.ir.InterestingOrder.Satisfaction
+import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class InterestingOrderTest extends CypherFunSuite {
+class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSupport {
+
   test("should reverse project property to variable") {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("xfoo")))
     // projection
@@ -413,7 +418,4 @@ class InterestingOrderTest extends CypherFunSuite {
     interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("a")).asc(varFor("x")).desc(varFor("y")).asc(varFor("z"))) should matchPattern { case NoSatisfaction() => }
   }
 
-  private val pos: InputPosition = DummyPosition(0)
-  private def varFor(name: String): Variable = Variable(name)(pos)
-  private def prop(varName: String, propName: String): Property = Property(varFor(varName), PropertyKeyName(propName)(pos))(pos)
 }

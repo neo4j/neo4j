@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.planner._
+import org.neo4j.cypher.internal.ir.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters._
 import org.neo4j.cypher.internal.ir.{NoHeaders, _}
@@ -108,7 +110,7 @@ object ClauseConverters {
 
   def findRequiredOrder(horizon: QueryHorizon, optOrderBy: Option[OrderBy]): InterestingOrder = {
     import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
-    import org.neo4j.cypher.internal.ir.InterestingOrder.{Asc, ColumnOrder, Desc}
+    import org.neo4j.cypher.internal.ir.ColumnOrder.{Asc, Desc}
 
     val sortItems = if(optOrderBy.isDefined) optOrderBy.get.sortItems else Seq.empty
     val (requiredOrderColumns, interestingOrderColumns) = horizon match {
@@ -136,9 +138,7 @@ object ClauseConverters {
       InterestingOrder(RequiredOrderCandidate(requiredOrderColumns), Seq(InterestingOrderCandidate(interestingOrderColumns)))
   }
 
-  private def extractColumnOrderFromOrderBy(sortItems: Seq[SortItem], projections: Map[String, Expression]): Seq[InterestingOrder.ColumnOrder] = {
-
-    import InterestingOrder._
+  private def extractColumnOrderFromOrderBy(sortItems: Seq[SortItem], projections: Map[String, Expression]): Seq[ColumnOrder] = {
 
     sortItems.map {
       // RETURN a AS b ORDER BY b.prop

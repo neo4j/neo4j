@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ir.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ProvidedOrder
-import org.neo4j.cypher.internal.ir.ProvidedOrder.{Asc, Desc}
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 

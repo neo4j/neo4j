@@ -19,23 +19,14 @@
  */
 package org.neo4j.cypher.internal.ir
 
+import org.neo4j.cypher.internal.ir.ColumnOrder
+import org.neo4j.cypher.internal.ir.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ColumnOrder.Desc
 import org.neo4j.cypher.internal.v4_0.expressions._
 
 import scala.annotation.tailrec
 
 object InterestingOrder {
-
-  sealed trait ColumnOrder {
-    // Expression to sort by
-    def expression: Expression
-
-    // Projections needed to apply the sort of the expression
-    def projections: Map[String, Expression]
-  }
-
-  case class Asc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder
-
-  case class Desc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder
 
   /**
     * An [[InterestingOrder]] can be fully, partially, or not all all satisfied by a [[ProvidedOrder]].
@@ -54,7 +45,7 @@ object InterestingOrder {
     def unapply(s: Satisfaction): Boolean = s.satisfiedPrefix.isEmpty && s.missingSuffix.nonEmpty
   }
 
-  val empty = InterestingOrder(RequiredOrderCandidate.empty, Seq.empty)
+  val empty: InterestingOrder = InterestingOrder(RequiredOrderCandidate.empty, Seq.empty)
 
   def required(candidate: RequiredOrderCandidate): InterestingOrder = InterestingOrder(candidate, Seq.empty)
 
@@ -150,8 +141,8 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
     }
     requiredOrderCandidate.order.zipAll(providedOrder.columns, null, null).foldLeft(Satisfaction(Seq.empty, Seq.empty)){
       case (s, (null, _)) => s // no required order left
-      case (s@FullSatisfaction(), (satisfiedColumn@InterestingOrder.Asc(requiredExp, projections), ProvidedOrder.Asc(providedExpr))) if satisfied(providedExpr, requiredExp, projections)  => s.withSatisfied(satisfiedColumn)
-      case (s@FullSatisfaction(), (satisfiedColumn@InterestingOrder.Desc(requiredExp, projections), ProvidedOrder.Desc(providedExpr))) if satisfied(providedExpr, requiredExp, projections) => s.withSatisfied(satisfiedColumn)
+      case (s@FullSatisfaction(), (satisfiedColumn@Asc(requiredExp, projections), Asc(providedExpr, _))) if satisfied(providedExpr, requiredExp, projections)  => s.withSatisfied(satisfiedColumn)
+      case (s@FullSatisfaction(), (satisfiedColumn@Desc(requiredExp, projections), Desc(providedExpr, _))) if satisfied(providedExpr, requiredExp, projections) => s.withSatisfied(satisfiedColumn)
       case (s, (unsatisfiedColumn, _)) => s.withMissing(unsatisfiedColumn) // required order left but no provided or provided not matching or previous column not matching
     }
   }

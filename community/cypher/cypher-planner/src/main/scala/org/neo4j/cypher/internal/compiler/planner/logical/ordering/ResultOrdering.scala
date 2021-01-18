@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.ordering
 
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
+import org.neo4j.cypher.internal.ir.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.{InterestingOrder, ProvidedOrder}
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property}
@@ -59,18 +61,18 @@ object ResultOrdering {
 
       val maybeProvidedOrder = candidates.map(_.headOption).collectFirst {
         case Some(Desc(expression, projection)) if indexOrderCapability.desc && satisfies(indexProperties.head, expression, projection) =>
-          ProvidedOrder(indexProperties.map { prop => ProvidedOrder.Desc(prop) })
+          ProvidedOrder(indexProperties.map { prop => Desc(prop) })
 
         case Some(Asc(expression, projection)) if indexOrderCapability.asc && satisfies(indexProperties.head, expression, projection) =>
-          ProvidedOrder(indexProperties.map { prop => ProvidedOrder.Asc(prop) })
+          ProvidedOrder(indexProperties.map { prop => Asc(prop) })
       }
 
       // If the required order cannot be satisfied, return the index guaranteed order
       maybeProvidedOrder.getOrElse {
         if (indexOrderCapability.asc)
-          ProvidedOrder(indexProperties.map { prop => ProvidedOrder.Asc(prop) })
+          ProvidedOrder(indexProperties.map { prop => Asc(prop) })
         else if (indexOrderCapability.desc)
-          ProvidedOrder(indexProperties.map { prop => ProvidedOrder.Desc(prop) })
+          ProvidedOrder(indexProperties.map { prop => Desc(prop) })
         else ProvidedOrder.empty
       }
     }

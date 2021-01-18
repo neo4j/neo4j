@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.ir.InterestingOrder.{Asc, Desc}
+import org.neo4j.cypher.internal.ir.ColumnOrder.{Asc, Desc}
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.v4_0.expressions.CountStar
 import org.neo4j.cypher.internal.logical.plans.{QualifiedName, ResolvedFunctionInvocation}

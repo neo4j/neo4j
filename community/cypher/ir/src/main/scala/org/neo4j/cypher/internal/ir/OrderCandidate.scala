@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.ir.InterestingOrder.{Asc, ColumnOrder, Desc}
+import org.neo4j.cypher.internal.ir.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ColumnOrder.Desc
 import org.neo4j.cypher.internal.v4_0.expressions._
 
 /**
@@ -43,6 +44,8 @@ trait OrderCandidate {
   def asc(expression: Expression, projections: Map[String, Expression]): OrderCandidate
 
   def desc(expression: Expression, projections: Map[String, Expression]): OrderCandidate
+
+  def asProvidedOrder: ProvidedOrder = ProvidedOrder(order)
 }
 
 case class RequiredOrderCandidate(order: Seq[ColumnOrder]) extends OrderCandidate {

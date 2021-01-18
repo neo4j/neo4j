@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.ir.ProvidedOrder.{Asc, Desc}
 import org.neo4j.cypher.internal.ir.{AggregatingQueryProjection, InterestingOrder}
+import org.neo4j.cypher.internal.ir.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ColumnOrder.Desc
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
@@ -42,13 +43,13 @@ object aggregation {
 
         def minFunc(expr: Expression) = {
           providedOrder.columns.headOption match {
-            case Some(Asc(providedExpr)) => providedExpr == expr
+            case Some(Asc(providedExpr, _)) => providedExpr == expr
             case _ => false
           }
         }
         def maxFunc(expr: Expression) = {
           providedOrder.columns.headOption match {
-            case Some(Desc(providedExpr)) => providedExpr == expr
+            case Some(Desc(providedExpr, _)) => providedExpr == expr
             case _ => false
           }
         }

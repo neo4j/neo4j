@@ -333,7 +333,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     cardinalities.set(argument.id, 1.0)
     val providedOrders = new ProvidedOrders
     providedOrders.set(argument.id, ProvidedOrder.empty)
-    providedOrders.set(expandPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("foo")), ProvidedOrder.Desc(varFor("bar")))))
+    providedOrders.set(expandPlan.id, ProvidedOrder.asc(varFor("foo")).desc(varFor("bar")))
     val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders)
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
@@ -349,7 +349,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val expandPlan = Expand(argument, "from", SemanticDirection.INCOMING, Seq.empty, "to", "rel", ExpandAll)
     val cardinalities = new Cardinalities
     val providedOrders = new ProvidedOrders
-    providedOrders.set(expandPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("  FRESHID42")))))
+    providedOrders.set(expandPlan.id, ProvidedOrder.asc(varFor("  FRESHID42")))
     val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders)
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
@@ -484,7 +484,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     cardinalities.set(argument.id, 1.0)
     val providedOrders = new ProvidedOrders
     providedOrders.set(argument.id, ProvidedOrder.empty)
-    providedOrders.set(seekPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("foo")))))
+    providedOrders.set(seekPlan.id, ProvidedOrder.asc(varFor("foo")))
     val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders)
 
     renderAsTreeTable(description.create(seekPlan)) should equal(
@@ -503,7 +503,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     cardinalities.set(argument.id, 1.0)
     val providedOrders = new ProvidedOrders
     providedOrders.set(argument.id, ProvidedOrder.empty)
-    providedOrders.set(seekPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("foo")))))
+    providedOrders.set(seekPlan.id, ProvidedOrder.asc(varFor("foo")))
     val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders)
 
     renderAsTreeTable(description.create(seekPlan)) should equal(

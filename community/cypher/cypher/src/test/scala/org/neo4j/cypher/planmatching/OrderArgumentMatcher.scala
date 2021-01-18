@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.planmatching
 
+import org.neo4j.cypher.internal.ir.ColumnOrder
 import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
@@ -34,9 +35,9 @@ case class OrderArgumentMatcher(expected: ProvidedOrder) extends Matcher[Interna
     val args = plan.arguments.collect { case Order(providedOrder) => providedOrder }
     val anonArgs = args.map(arg => ProvidedOrder(arg.columns.map(col => {
       col.expression match {
-        case variable@Variable(varName) => ProvidedOrder.Column(Variable(removeGeneratedNames(varName))(variable.position), col.isAscending)
+        case variable@Variable(varName) => ColumnOrder(Variable(removeGeneratedNames(varName))(variable.position), col.isAscending)
         case prop@Property(v@Variable(varName), p@PropertyKeyName(propName)) =>
-          ProvidedOrder.Column(Property(Variable(removeGeneratedNames(varName))(v.position), PropertyKeyName(propName)(p.position))(prop.position), col.isAscending)
+          ColumnOrder(Property(Variable(removeGeneratedNames(varName))(v.position), PropertyKeyName(propName)(p.position))(prop.position), col.isAscending)
       }
     })))
     MatchResult(

@@ -88,9 +88,9 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   }
 
   test("should serialize provided order") {
-    serialize(Order(ProvidedOrder(List(ProvidedOrder.Asc(varFor("a")), ProvidedOrder.Desc(varFor("b")), ProvidedOrder.Asc(prop("c","foo")))))) should be("a ASC, b DESC, c.foo ASC")
+    serialize(Order(ProvidedOrder.asc(varFor("a")).desc(varFor("b")).asc(prop("c","foo")))) should be("a ASC, b DESC, c.foo ASC")
     serialize(Order(ProvidedOrder.empty)) should be("")
-    serialize(Order(ProvidedOrder(List(ProvidedOrder.Asc(varFor("  FRESHID42")))))) should be("anon[42] ASC")
+    serialize(Order(ProvidedOrder.asc(varFor("  FRESHID42")))) should be("anon[42] ASC")
   }
 
   test("should remove multiple layers of namespacer renamings") {
