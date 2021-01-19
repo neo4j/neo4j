@@ -19,11 +19,9 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.io.Closeable;
+import org.neo4j.kernel.KernelVersion;
 
-/**
- * Provider for metadata that describes stores properties, ids, store level implementation details
- */
-public interface MetadataProvider extends TransactionIdStore, LogVersionRepository, StoreIdProvider, KernelVersionRepository, Closeable
+public interface KernelVersionRepository
 {
+    KernelVersion kernelVersion();
 }
