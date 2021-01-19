@@ -132,31 +132,27 @@ object CypherPlanner {
         case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${plannerOption.name}")
       }
 
-    plannerName match {
+    // Let's only create a monitor when we have a valid plannerName
+    val (monitor, solverConfig) = plannerName match {
       case IDPPlannerName =>
         val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
         val solverConfig = new ConfigurableIDPSolverConfig(
           maxTableSize = config.idpMaxTableSize,
           iterationDurationLimit = config.idpIterationDuration
         )
-        val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
-        val componentConnectorPlanner = connectComponentsPlannerOption match {
-          case CypherConnectComponentsPlannerOption.idp |
-               CypherConnectComponentsPlannerOption.default => ComponentConnectorPlanner(singleComponentPlanner, solverConfig, monitor)
-          case CypherConnectComponentsPlannerOption.greedy  => cartesianProductsOrValueJoins
-        }
-        IDPQueryGraphSolver(singleComponentPlanner, componentConnectorPlanner, monitor)
-
+        (monitor, solverConfig)
       case DPPlannerName =>
         val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
-        val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
-        val componentConnectorPlanner = connectComponentsPlannerOption match {
-          case CypherConnectComponentsPlannerOption.idp |
-               CypherConnectComponentsPlannerOption.default => ComponentConnectorPlanner(singleComponentPlanner, DPSolverConfig, monitor)
-          case _                                        => cartesianProductsOrValueJoins
-        }
-        IDPQueryGraphSolver(singleComponentPlanner, componentConnectorPlanner, monitor)
+        (monitor, DPSolverConfig)
     }
+
+    val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
+    val componentConnectorPlanner = connectComponentsPlannerOption match {
+      case CypherConnectComponentsPlannerOption.idp |
+           CypherConnectComponentsPlannerOption.default => ComponentConnectorPlanner(singleComponentPlanner, solverConfig, monitor)
+      case CypherConnectComponentsPlannerOption.greedy  => cartesianProductsOrValueJoins
+    }
+    IDPQueryGraphSolver(singleComponentPlanner, componentConnectorPlanner, monitor)
   }
 
 }
