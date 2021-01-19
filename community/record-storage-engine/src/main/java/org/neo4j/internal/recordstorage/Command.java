@@ -20,45 +20,29 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetTime;
-import java.time.ZonedDateTime;
-import java.util.Collection;
-import java.util.Map;
 
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
-import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.string.UTF8;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueWriter;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.token.api.TokenIdPrettyPrinter.label;
 import static org.neo4j.token.api.TokenIdPrettyPrinter.relationshipType;
-import static org.neo4j.util.Bits.bitFlag;
-import static org.neo4j.util.Bits.bitFlags;
 
 /**
  * Command implementations for all the commands that can be performed on a Neo
@@ -66,6 +50,7 @@ import static org.neo4j.util.Bits.bitFlags;
  */
 public abstract class Command implements StorageCommand
 {
+    protected final LogCommandSerialization serialization;
     private int keyHash;
     private long key;
     private Mode mode;
@@ -100,6 +85,16 @@ public abstract class Command implements StorageCommand
         {
             return fromRecordState( record.isCreated(), record.inUse() );
         }
+    }
+
+    public Command()
+    {
+        this( LATEST_LOG_SERIALIZATION );
+    }
+
+    public Command( LogCommandSerialization serialization )
+    {
+        this.serialization = serialization;
     }
 
     protected final void setup( long key, Mode mode )
@@ -142,52 +137,6 @@ public abstract class Command implements StorageCommand
         return format( "\t-%s%n\t+%s", before, after );
     }
 
-    void writeDynamicRecords( WritableChannel channel, Collection<DynamicRecord> records ) throws IOException
-    {
-        writeDynamicRecords( channel, records, records.size() );
-    }
-
-    void writeDynamicRecords( WritableChannel channel, Iterable<DynamicRecord> records, int size ) throws IOException
-    {
-        channel.putInt( size ); // 4
-        for ( DynamicRecord record : records )
-        {
-            writeDynamicRecord( channel, record );
-        }
-    }
-
-    void writeDynamicRecord( WritableChannel channel, DynamicRecord record ) throws IOException
-    {
-        // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
-        if ( record.inUse() )
-        {
-            byte inUse = Record.IN_USE.byteValue();
-            if ( record.isCreated() )
-            {
-                inUse |= Record.CREATED_IN_TX;
-            }
-            if ( record.isStartRecord() )
-            {
-                inUse |= Record.ADDITIONAL_FLAG_1;
-            }
-            channel.putLong( record.getId() )
-                   .putInt( record.getTypeAsInt() )
-                   .put( inUse )
-                   .putInt( record.getLength() )
-                   .putLong( record.getNextBlock() );
-            byte[] data = record.getData();
-            assert data != null;
-            channel.put( data, data.length );
-        }
-        else
-        {
-            byte inUse = Record.NOT_IN_USE.byteValue();
-            channel.putLong( record.getId() )
-                   .putInt( record.getTypeAsInt() )
-                   .put( inUse );
-        }
-    }
-
     public abstract static class BaseCommand<RECORD extends AbstractBaseRecord> extends Command
     {
         protected final RECORD before;
@@ -195,6 +144,12 @@ public abstract class Command implements StorageCommand
 
         public BaseCommand( RECORD before, RECORD after )
         {
+            this( LATEST_LOG_SERIALIZATION, before, after );
+        }
+
+        public BaseCommand( LogCommandSerialization serialization, RECORD before, RECORD after )
+        {
+            super( serialization );
             setup( after.getId(), Mode.fromRecordState( after ) );
             this.before = before;
             this.after = after;
@@ -227,6 +182,11 @@ public abstract class Command implements StorageCommand
             super( before, after );
         }
 
+        public NodeCommand( LogCommandSerialization serialization, NodeRecord before, NodeRecord after )
+        {
+            super( serialization, before, after );
+        }
+
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
@@ -236,33 +196,7 @@ public abstract class Command implements StorageCommand
         @Override
         public void serialize( WritableChannel channel ) throws IOException
         {
-            channel.put( NeoCommandType.NODE_COMMAND );
-            channel.putLong( after.getId() );
-            writeNodeRecord( channel, before );
-            writeNodeRecord( channel, after );
-        }
-
-        private void writeNodeRecord( WritableChannel channel, NodeRecord record ) throws IOException
-        {
-            byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
-                                   bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
-                                   bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
-                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ),
-                                   bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ) );
-            channel.put( flags );
-            if ( record.inUse() )
-            {
-                channel.put( record.isDense() ? (byte) 1 : (byte) 0 );
-                channel.putLong( record.getNextRel() ).putLong( record.getNextProp() );
-                channel.putLong( record.getLabelField() );
-                if ( record.hasSecondaryUnitId() )
-                {
-                    channel.putLong( record.getSecondaryUnitId() );
-                }
-            }
-            // Always write dynamic label records because we want to know which ones have been deleted
-            // especially if the node has been deleted.
-            writeDynamicRecords( channel, record.getDynamicLabelRecords() );
+            serialization.writeNodeCommand( channel, this );
         }
     }
 
@@ -276,6 +210,11 @@ public abstract class Command implements StorageCommand
             super( before, after );
         }
 
+        public RelationshipCommand( LogCommandSerialization serialization, RelationshipRecord before, RelationshipRecord after )
+        {
+            super( serialization, before, after );
+        }
+
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
@@ -285,36 +224,7 @@ public abstract class Command implements StorageCommand
         @Override
         public void serialize( WritableChannel channel ) throws IOException
         {
-            channel.put( NeoCommandType.REL_COMMAND );
-            channel.putLong( after.getId() );
-            writeRelationshipRecord( channel, before );
-            writeRelationshipRecord( channel, after );
-        }
-
-        private void writeRelationshipRecord( WritableChannel channel, RelationshipRecord record ) throws IOException
-        {
-            byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
-                                   bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
-                                   bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
-                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ),
-                                   bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ) );
-            channel.put( flags );
-            if ( record.inUse() )
-            {
-                channel.putLong( record.getFirstNode() ).putLong( record.getSecondNode() ).putInt( record.getType() )
-                       .putLong( record.getFirstPrevRel() ).putLong( record.getFirstNextRel() )
-                       .putLong( record.getSecondPrevRel() ).putLong( record.getSecondNextRel() )
-                       .putLong( record.getNextProp() )
-                       .put( (byte) ((record.isFirstInFirstChain() ? 1 : 0) | (record.isFirstInSecondChain() ? 2 : 0)) );
-                if ( record.hasSecondaryUnitId() )
-                {
-                    channel.putLong( record.getSecondaryUnitId() );
-                }
-            }
-            else
-            {
-                channel.putInt( record.getType() );
-            }
+            serialization.writeRelationshipCommand( channel, this );
         }
     }
 
@@ -328,6 +238,11 @@ public abstract class Command implements StorageCommand
             super( before, after );
         }
 
+        public RelationshipGroupCommand( LogCommandSerialization serialization, RelationshipGroupRecord before, RelationshipGroupRecord after )
+        {
+            super( serialization, before, after );
+        }
+
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
@@ -337,30 +252,7 @@ public abstract class Command implements StorageCommand
         @Override
         public void serialize( WritableChannel channel ) throws IOException
         {
-            channel.put( NeoCommandType.REL_GROUP_COMMAND );
-            channel.putLong( after.getId() );
-            writeRelationshipGroupRecord( channel, before );
-            writeRelationshipGroupRecord( channel, after );
-        }
-
-        private void writeRelationshipGroupRecord( WritableChannel channel, RelationshipGroupRecord record )
-                throws IOException
-        {
-            byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
-                                   bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
-                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ),
-                                   bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ) );
-            channel.put( flags );
-            channel.putShort( (short) record.getType() );
-            channel.putLong( record.getNext() );
-            channel.putLong( record.getFirstOut() );
-            channel.putLong( record.getFirstIn() );
-            channel.putLong( record.getFirstLoop() );
-            channel.putLong( record.getOwningNode() );
-            if ( record.hasSecondaryUnitId() )
-            {
-                channel.putLong( record.getSecondaryUnitId() );
-            }
+            serialization.writeRelationshipGroupCommand( channel, this );
         }
     }
 
@@ -374,6 +266,11 @@ public abstract class Command implements StorageCommand
             super( before, after );
         }
 
+        NeoStoreCommand( LogCommandSerialization serialization, NeoStoreRecord before, NeoStoreRecord after )
+        {
+            super( serialization, before, after );
+        }
+
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
@@ -383,14 +280,32 @@ public abstract class Command implements StorageCommand
         @Override
         public void serialize( WritableChannel channel ) throws IOException
         {
-            channel.put( NeoCommandType.NEOSTORE_COMMAND );
-            writeNeoStoreRecord( channel, before );
-            writeNeoStoreRecord( channel, after );
+            serialization.writeNeoStoreCommand( channel, this );
+        }
+    }
+
+    public static class MetaDataCommand extends BaseCommand<MetaDataRecord>
+    {
+        MetaDataCommand( MetaDataRecord before, MetaDataRecord after )
+        {
+            super( before, after );
         }
 
-        private void writeNeoStoreRecord( WritableChannel channel, NeoStoreRecord record ) throws IOException
+        MetaDataCommand( LogCommandSerialization serialization, MetaDataRecord before, MetaDataRecord after )
         {
-            channel.putLong( record.getNextProp() );
+            super( serialization, before, after );
+        }
+
+        @Override
+        public boolean handle( CommandVisitor handler ) throws IOException
+        {
+            return handler.visitMetaDataCommand( this );
+        }
+
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            serialization.writeMetaDataCommand( channel, this );
         }
     }
 
@@ -404,10 +319,21 @@ public abstract class Command implements StorageCommand
             super( before, after );
         }
 
+        public PropertyCommand( LogCommandSerialization serialization, PropertyRecord before, PropertyRecord after )
+        {
+            super( serialization, before, after );
+        }
+
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
             return handler.visitPropertyCommand( this );
+        }
+
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            serialization.writePropertyCommand( channel, this );
         }
 
         public long getEntityId()
@@ -429,86 +355,6 @@ public abstract class Command implements StorageCommand
         {
             return after.getSchemaRuleId();
         }
-
-        @Override
-        public void serialize( WritableChannel channel ) throws IOException
-        {
-            channel.put( NeoCommandType.PROP_COMMAND );
-            channel.putLong( after.getId() );
-            writePropertyRecord( channel, before );
-            writePropertyRecord( channel, after );
-        }
-
-        private void writePropertyRecord( WritableChannel channel, PropertyRecord record ) throws IOException
-        {
-            byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
-                                   bitFlag( record.getRelId() != -1, Record.REL_PROPERTY.byteValue() ),
-                                   bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
-                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ),
-                                   bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ) );
-
-            channel.put( flags ); // 1
-            channel.putLong( record.getNextProp() ).putLong( record.getPrevProp() ); // 8 + 8
-            long nodeId = record.getNodeId();
-            long relId = record.getRelId();
-            if ( nodeId != -1 )
-            {
-                channel.putLong( nodeId ); // 8 or
-            }
-            else if ( relId != -1 )
-            {
-                channel.putLong( relId ); // 8 or
-            }
-            else
-            {
-                // means this records value has not changed, only place in
-                // prop chain
-                channel.putLong( -1 ); // 8
-            }
-            if ( record.hasSecondaryUnitId() )
-            {
-                channel.putLong( record.getSecondaryUnitId() );
-            }
-            channel.put( (byte) record.numberOfProperties() ); // 1
-            for ( PropertyBlock block : record )
-            {
-                assert block.getSize() > 0 : record + " seems kinda broken";
-                writePropertyBlock( channel, block );
-            }
-            writeDynamicRecords( channel, record.getDeletedRecords() );
-        }
-
-        private void writePropertyBlock( WritableChannel channel, PropertyBlock block ) throws IOException
-        {
-            byte blockSize = (byte) block.getSize();
-            assert blockSize > 0 : blockSize + " is not a valid block size value";
-            channel.put( blockSize ); // 1
-            long[] propBlockValues = block.getValueBlocks();
-            for ( long propBlockValue : propBlockValues )
-            {
-                channel.putLong( propBlockValue );
-            }
-            /*
-             * For each block we need to keep its dynamic record chain if
-             * it is just created. Deleted dynamic records are in the property
-             * record and dynamic records are never modified. Also, they are
-             * assigned as a whole, so just checking the first should be enough.
-             */
-            if ( block.isLight() )
-            {
-                /*
-                 *  This has to be int. If this record is not light
-                 *  then we have the number of DynamicRecords that follow,
-                 *  which is an int. We do not currently want/have a flag bit so
-                 *  we simplify by putting an int here always
-                 */
-                channel.putInt( 0 ); // 4 or
-            }
-            else
-            {
-                writeDynamicRecords( channel, block.getValueRecords() );
-            }
-        }
     }
 
     public abstract static class TokenCommand<RECORD extends TokenRecord> extends BaseCommand<RECORD> implements StorageCommand.TokenCommand
@@ -516,6 +362,11 @@ public abstract class Command implements StorageCommand
         public TokenCommand( RECORD before, RECORD after )
         {
             super( before, after );
+        }
+
+        public TokenCommand( LogCommandSerialization serialization, RECORD before, RECORD after )
+        {
+            super( serialization, before, after );
         }
 
         @Override
@@ -547,6 +398,11 @@ public abstract class Command implements StorageCommand
             super( before, after );
         }
 
+        public PropertyKeyTokenCommand( LogCommandSerialization serialization, PropertyKeyTokenRecord before, PropertyKeyTokenRecord after )
+        {
+            super( serialization, before, after );
+        }
+
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
@@ -556,27 +412,7 @@ public abstract class Command implements StorageCommand
         @Override
         public void serialize( WritableChannel channel ) throws IOException
         {
-            channel.put( NeoCommandType.PROP_INDEX_COMMAND );
-            channel.putInt( after.getIntId() );
-            writePropertyKeyTokenRecord( channel, before );
-            writePropertyKeyTokenRecord( channel, after );
-        }
-
-        private void writePropertyKeyTokenRecord( WritableChannel channel, PropertyKeyTokenRecord record ) throws IOException
-        {
-            // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
-            byte headerByte = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
-            headerByte += record.isInternal() ? Record.ADDITIONAL_FLAG_1 : 0;
-            channel.put( headerByte );
-            channel.putInt( record.getPropertyCount() ).putInt( record.getNameId() );
-            if ( record.isLight() )
-            {
-                channel.putInt( 0 );
-            }
-            else
-            {
-                writeDynamicRecords( channel, record.getNameRecords() );
-            }
+            serialization.writePropertyKeyTokenCommand( channel, this );
         }
     }
 
@@ -590,6 +426,11 @@ public abstract class Command implements StorageCommand
             super( before, after );
         }
 
+        public RelationshipTypeTokenCommand( LogCommandSerialization serialization, RelationshipTypeTokenRecord before, RelationshipTypeTokenRecord after )
+        {
+            super( serialization, before, after );
+        }
+
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
@@ -599,27 +440,7 @@ public abstract class Command implements StorageCommand
         @Override
         public void serialize( WritableChannel channel ) throws IOException
         {
-            channel.put( NeoCommandType.REL_TYPE_COMMAND );
-            channel.putInt( after.getIntId() );
-            writeRelationshipTypeTokenRecord( channel, before );
-            writeRelationshipTypeTokenRecord( channel, after );
-        }
-
-        private void writeRelationshipTypeTokenRecord( WritableChannel channel, RelationshipTypeTokenRecord record ) throws IOException
-        {
-            // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
-            byte headerByte = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
-            headerByte += record.isInternal() ? Record.ADDITIONAL_FLAG_1 : 0;
-            channel.put( headerByte );
-            channel.putInt( record.getNameId() );
-            if ( record.isLight() )
-            {
-                channel.putInt( 0 );
-            }
-            else
-            {
-                writeDynamicRecords( channel, record.getNameRecords() );
-            }
+            serialization.writeRelationshipTypeTokenCommand( channel, this );
         }
     }
 
@@ -633,6 +454,11 @@ public abstract class Command implements StorageCommand
             super( before, after );
         }
 
+        public LabelTokenCommand( LogCommandSerialization serialization, LabelTokenRecord before, LabelTokenRecord after )
+        {
+            super( serialization, before, after );
+        }
+
         @Override
         public boolean handle( CommandVisitor handler ) throws IOException
         {
@@ -642,19 +468,7 @@ public abstract class Command implements StorageCommand
         @Override
         public void serialize( WritableChannel channel ) throws IOException
         {
-            channel.put( NeoCommandType.LABEL_KEY_COMMAND );
-            channel.putInt( after.getIntId() );
-            writeLabelTokenRecord( channel, before );
-            writeLabelTokenRecord( channel, after );
-        }
-
-        private void writeLabelTokenRecord( WritableChannel channel, LabelTokenRecord record ) throws IOException
-        {
-            // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
-            byte headerByte = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
-            headerByte += record.isInternal() ? Record.ADDITIONAL_FLAG_1 : 0;
-            channel.put( headerByte ).putInt( record.getNameId() );
-            writeDynamicRecords( channel, record.getNameRecords() );
+            serialization.writeLabelTokenCommand( channel, this );
         }
     }
 
@@ -667,7 +481,12 @@ public abstract class Command implements StorageCommand
 
         public SchemaRuleCommand( SchemaRecord recordBefore, SchemaRecord recordAfter, SchemaRule schemaRule )
         {
-            super( recordBefore, recordAfter );
+            this( LATEST_LOG_SERIALIZATION, recordBefore, recordAfter, schemaRule );
+        }
+
+        public SchemaRuleCommand( LogCommandSerialization serialization, SchemaRecord recordBefore, SchemaRecord recordAfter, SchemaRule schemaRule )
+        {
+            super( serialization, recordBefore, recordAfter );
             this.schemaRule = schemaRule;
         }
 
@@ -688,308 +507,15 @@ public abstract class Command implements StorageCommand
             return handler.visitSchemaRuleCommand( this );
         }
 
-        public SchemaRule getSchemaRule()
-        {
-            return schemaRule;
-        }
-
         @Override
         public void serialize( WritableChannel channel ) throws IOException
         {
-            channel.put( NeoCommandType.SCHEMA_RULE_COMMAND );
-            channel.putLong( before.getId() );
-            boolean hasSchemaRule = schemaRule != null;
-            channel.put( hasSchemaRule ? SchemaRecord.COMMAND_HAS_SCHEMA_RULE : SchemaRecord.COMMAND_HAS_NO_SCHEMA_RULE );
-            writeSchemaRecord( channel, before );
-            writeSchemaRecord( channel, after );
-            if ( hasSchemaRule )
-            {
-                writeSchemaRule( channel );
-            }
+            serialization.writeSchemaRuleCommand( channel, this );
         }
 
-        private void writeSchemaRecord( WritableChannel channel, SchemaRecord record ) throws IOException
+        public SchemaRule getSchemaRule()
         {
-            byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
-                                   bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
-                                   bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ),
-                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ) );
-            channel.put( flags );
-            if ( record.inUse() )
-            {
-                byte schemaFlags = bitFlags( bitFlag( record.isConstraint(), SchemaRecord.SCHEMA_FLAG_IS_CONSTRAINT ) );
-                channel.put( schemaFlags );
-                channel.putLong( record.getNextProp() );
-                if ( record.hasSecondaryUnitId() )
-                {
-                    channel.putLong( record.getSecondaryUnitId() );
-                }
-            }
-        }
-
-        private void writeSchemaRule( WritableChannel channel ) throws IOException
-        {
-            Map<String,Value> ruleMap = SchemaStore.mapifySchemaRule( schemaRule );
-            writeStringValueMap( channel, ruleMap );
-        }
-
-        /**
-         * @see PhysicalLogCommandReaderV4_0#readStringValueMap(ReadableChannel)
-         */
-        void writeStringValueMap( WritableChannel channel, Map<String,Value> ruleMap ) throws IOException
-        {
-            channel.putInt( ruleMap.size() );
-            for ( Map.Entry<String,Value> entry : ruleMap.entrySet() )
-            {
-                writeMapKeyByteArray( channel, UTF8.encode( entry.getKey() ) );
-                writeMapValue( channel, entry.getValue() );
-            }
-        }
-
-        private void writeMapKeyByteArray( WritableChannel channel, byte[] bytes ) throws IOException
-        {
-            channel.putInt( bytes.length );
-            channel.put( bytes, bytes.length );
-        }
-
-        enum SchemaMapValueType
-        {
-            // NOTE: Enum order (specifically, the enum ordinal) is part of the binary format!
-            BOOL_LITERAL_TRUE,
-            BOOL_LITERAL_FALSE,
-            BOOL_ARRAY_ELEMENT,
-            BYTE,
-            SHORT,
-            INT,
-            LONG,
-            FLOAT,
-            DOUBLE,
-            STRING,
-            CHAR,
-            ARRAY;
-
-            private static final SchemaMapValueType[] TYPE_ID_TO_ENUM = values(); // This works because 'type' is equal to ordinal.
-
-            public static SchemaMapValueType map( byte type )
-            {
-                return TYPE_ID_TO_ENUM[type];
-            }
-
-            public static SchemaMapValueType map( ValueWriter.ArrayType arrayType ) throws IOException
-            {
-                switch ( arrayType )
-                {
-                case BYTE:
-                    return BYTE;
-                case SHORT:
-                    return SHORT;
-                case INT:
-                    return INT;
-                case LONG:
-                    return LONG;
-                case FLOAT:
-                    return FLOAT;
-                case DOUBLE:
-                    return DOUBLE;
-                case BOOLEAN:
-                    return BOOL_ARRAY_ELEMENT;
-                case STRING:
-                    return STRING;
-                case CHAR:
-                    return CHAR;
-                case POINT:
-                case ZONED_DATE_TIME:
-                case LOCAL_DATE_TIME:
-                case DATE:
-                case ZONED_TIME:
-                case LOCAL_TIME:
-                case DURATION:
-                default:
-                    throw new IOException( "Unsupported schema record map value type: " + arrayType );
-                }
-            }
-
-            public byte type()
-            {
-                return (byte) ordinal();
-            }
-        }
-
-        private void writeMapValue( WritableChannel channel, Value value ) throws IOException
-        {
-            value.writeTo( new ValueWriter<IOException>()
-            {
-                private boolean arrayContext;
-
-                @Override
-                public void writeNull() throws IOException
-                {
-                    throw new IOException( "Cannot write null entry value in schema record map representation." );
-                }
-
-                @Override
-                public void writeBoolean( boolean value ) throws IOException
-                {
-                    if ( value )
-                    {
-                        channel.put( SchemaMapValueType.BOOL_LITERAL_TRUE.type() );
-                    }
-                    else
-                    {
-                        channel.put( SchemaMapValueType.BOOL_LITERAL_FALSE.type() );
-                    }
-                }
-
-                @Override
-                public void writeInteger( byte value ) throws IOException
-                {
-                    if ( !arrayContext )
-                    {
-                        channel.put( SchemaMapValueType.BYTE.type() );
-                    }
-                    channel.put( value );
-                }
-
-                @Override
-                public void writeInteger( short value ) throws IOException
-                {
-                    if ( !arrayContext )
-                    {
-                        channel.put( SchemaMapValueType.SHORT.type() );
-                    }
-                    channel.putShort( value );
-                }
-
-                @Override
-                public void writeInteger( int value ) throws IOException
-                {
-                    if ( !arrayContext )
-                    {
-                        channel.put( SchemaMapValueType.INT.type() );
-                    }
-                    channel.putInt( value );
-                }
-
-                @Override
-                public void writeInteger( long value ) throws IOException
-                {
-                    if ( !arrayContext )
-                    {
-                        channel.put( SchemaMapValueType.LONG.type() );
-                    }
-                    channel.putLong( value );
-                }
-
-                @Override
-                public void writeFloatingPoint( float value ) throws IOException
-                {
-                    if ( !arrayContext )
-                    {
-                        channel.put( SchemaMapValueType.FLOAT.type() );
-                    }
-                    channel.putFloat( value );
-                }
-
-                @Override
-                public void writeFloatingPoint( double value ) throws IOException
-                {
-                    if ( !arrayContext )
-                    {
-                        channel.put( SchemaMapValueType.DOUBLE.type() );
-                    }
-                    channel.putDouble( value );
-                }
-
-                @Override
-                public void writeString( String value ) throws IOException
-                {
-                    if ( !arrayContext )
-                    {
-                        channel.put( SchemaMapValueType.STRING.type() );
-                    }
-                    byte[] bytes = UTF8.encode( value );
-                    channel.putInt( bytes.length );
-                    channel.put( bytes, bytes.length );
-                }
-
-                @Override
-                public void writeString( char value ) throws IOException
-                {
-                    if ( !arrayContext )
-                    {
-                        channel.put( SchemaMapValueType.CHAR.type() );
-                    }
-                    channel.putInt( value );
-                }
-
-                @Override
-                public void beginArray( int size, ArrayType arrayType ) throws IOException
-                {
-                    arrayContext = true;
-                    channel.put( SchemaMapValueType.ARRAY.type() );
-                    channel.putInt( size );
-                    channel.put( SchemaMapValueType.map( arrayType ).type() );
-                }
-
-                @Override
-                public void endArray()
-                {
-                    arrayContext = false;
-                }
-
-                @Override
-                public void writeByteArray( byte[] value ) throws IOException
-                {
-                    beginArray( value.length, ArrayType.BYTE );
-                    for ( byte b : value )
-                    {
-                        writeInteger( b );
-                    }
-                    endArray();
-                }
-
-                @Override
-                public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws IOException
-                {
-                    throw new IOException( "Point is not a supported schema map value type." );
-                }
-
-                @Override
-                public void writeDuration( long months, long days, long seconds, int nanos ) throws IOException
-                {
-                    throw new IOException( "Duration is not a supported schema map value type." );
-                }
-
-                @Override
-                public void writeDate( LocalDate localDate ) throws IOException
-                {
-                    throw new IOException( "Date is not a supported schema map value type." );
-                }
-
-                @Override
-                public void writeLocalTime( LocalTime localTime ) throws IOException
-                {
-                    throw new IOException( "LocalTime is not a supported schema map value type." );
-                }
-
-                @Override
-                public void writeTime( OffsetTime offsetTime ) throws IOException
-                {
-                    throw new IOException( "OffsetTime is not a supported schema map value type." );
-                }
-
-                @Override
-                public void writeLocalDateTime( LocalDateTime localDateTime ) throws IOException
-                {
-                    throw new IOException( "LocalDateTime is not a supported schema map value type." );
-                }
-
-                @Override
-                public void writeDateTime( ZonedDateTime zonedDateTime ) throws IOException
-                {
-                    throw new IOException( "DateTime is not a supported schema map value type." );
-                }
-            } );
+            return schemaRule;
         }
     }
 
@@ -1002,6 +528,12 @@ public abstract class Command implements StorageCommand
 
         public NodeCountsCommand( int labelId, long delta )
         {
+            this( LATEST_LOG_SERIALIZATION, labelId, delta );
+        }
+
+        public NodeCountsCommand( LogCommandSerialization serialization, int labelId, long delta )
+        {
+            super( serialization );
             setup( labelId, Mode.UPDATE );
             assert delta != 0 : "Tried to create a NodeCountsCommand for something that didn't change any count";
             this.labelId = labelId;
@@ -1021,6 +553,12 @@ public abstract class Command implements StorageCommand
             return handler.visitNodeCountsCommand( this );
         }
 
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            serialization.writeNodeCountsCommand( channel, this );
+        }
+
         public int labelId()
         {
             return labelId;
@@ -1029,14 +567,6 @@ public abstract class Command implements StorageCommand
         public long delta()
         {
             return delta;
-        }
-
-        @Override
-        public void serialize( WritableChannel channel ) throws IOException
-        {
-            channel.put( NeoCommandType.UPDATE_NODE_COUNTS_COMMAND );
-            channel.putInt( labelId() )
-                   .putLong( delta() );
         }
     }
 
@@ -1051,6 +581,12 @@ public abstract class Command implements StorageCommand
 
         public RelationshipCountsCommand( int startLabelId, int typeId, int endLabelId, long delta )
         {
+            this( LATEST_LOG_SERIALIZATION, startLabelId, typeId, endLabelId, delta );
+        }
+
+        public RelationshipCountsCommand( LogCommandSerialization serialization, int startLabelId, int typeId, int endLabelId, long delta )
+        {
+            super( serialization );
             setup( typeId, Mode.UPDATE );
             assert delta !=
                    0 : "Tried to create a RelationshipCountsCommand for something that didn't change any count";
@@ -1074,6 +610,12 @@ public abstract class Command implements StorageCommand
             return handler.visitRelationshipCountsCommand( this );
         }
 
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            serialization.writeRelationshipCountsCommand( channel, this );
+        }
+
         public int startLabelId()
         {
             return startLabelId;
@@ -1092,16 +634,6 @@ public abstract class Command implements StorageCommand
         public long delta()
         {
             return delta;
-        }
-
-        @Override
-        public void serialize( WritableChannel channel ) throws IOException
-        {
-            channel.put( NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND );
-            channel.putInt( startLabelId() )
-                   .putInt( typeId() )
-                   .putInt( endLabelId() )
-                   .putLong( delta() );
         }
     }
 }

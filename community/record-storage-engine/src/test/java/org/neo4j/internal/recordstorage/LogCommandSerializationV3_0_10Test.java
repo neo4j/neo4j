@@ -35,9 +35,10 @@ import org.neo4j.storageengine.api.CommandReader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.recordstorage.LogCommandSerializationV3_0_10.INSTANCE;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
-class PhysicalLogCommandReaderV3_0Test
+class LogCommandSerializationV3_0_10Test
 {
     private static final long NULL_REF = NULL_REFERENCE.longValue();
 
@@ -50,11 +51,10 @@ class PhysicalLogCommandReaderV3_0Test
         before.setLinks( -1, -1, -1 );
         RelationshipRecord after = new RelationshipRecord( 42 );
         after.initialize( true, 0, 1, 2, 3, 4, 5, 6, 7, true, true );
-        new Command.RelationshipCommand( before, after ).serialize( channel );
+        new Command.RelationshipCommand( writer(), before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
+        Command command = INSTANCE.read( channel );
         assertTrue( command instanceof Command.RelationshipCommand );
 
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
@@ -73,10 +73,9 @@ class PhysicalLogCommandReaderV3_0Test
         before.setSecondaryUnitIdOnLoad( 47 );
         RelationshipRecord after = new RelationshipRecord( 42 );
         after.initialize( true, 0, 1, 8, 3, 4, 5, 6, 7, true, true );
-        new Command.RelationshipCommand( before, after ).serialize( channel );
+        new Command.RelationshipCommand( writer(), before, after ).serialize( channel );
 
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
+        Command command = INSTANCE.read( channel );
         assertTrue( command instanceof Command.RelationshipCommand );
 
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
@@ -94,10 +93,9 @@ class PhysicalLogCommandReaderV3_0Test
         before.setSecondaryUnitIdOnLoad( 52 );
         RelationshipRecord after = new RelationshipRecord( 42 );
         after.initialize( true, 0, 1, 8, 3, 4, 5, 6, 7, true, true );
-        new Command.RelationshipCommand( before, after ).serialize( channel );
+        new Command.RelationshipCommand( writer(), before, after ).serialize( channel );
 
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
+        Command command = INSTANCE.read( channel );
         assertTrue( command instanceof Command.RelationshipCommand );
 
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
@@ -107,7 +105,7 @@ class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    void readRelationshipCommandWithFixedReferenceFormat300() throws IOException
+    void readRelationshipCommandWithFixedReferenceFormat() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42 );
@@ -116,33 +114,9 @@ class PhysicalLogCommandReaderV3_0Test
         RelationshipRecord after = new RelationshipRecord( 42 );
         after.initialize( true, 0, 1, 8, 3, 4, 5, 6, 7, true, true );
         after.setUseFixedReferences( true );
-        new Command.RelationshipCommand( before, after ).serialize( channel );
+        new Command.RelationshipCommand( writer(), before, after ).serialize( channel );
 
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipCommand );
-
-        Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
-        assertEquals( before, relationshipCommand.getBefore() );
-        assertTrue( relationshipCommand.getBefore().isUseFixedReferences() );
-        assertEquals( after, relationshipCommand.getAfter() );
-        assertTrue( relationshipCommand.getAfter().isUseFixedReferences() );
-    }
-
-    @Test
-    void readRelationshipCommandWithFixedReferenceFormat302() throws IOException
-    {
-        InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipRecord before = new RelationshipRecord( 42 );
-        before.initialize( true, 0, 1, 2, 3, 4, 5, 6, 7, true, true );
-        before.setUseFixedReferences( true );
-        RelationshipRecord after = new RelationshipRecord( 42 );
-        after.initialize( true, 0, 1, 8, 3, 4, 5, 6, 7, true, true );
-        after.setUseFixedReferences( true );
-        new Command.RelationshipCommand( before, after ).serialize( channel );
-
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
+        Command command = INSTANCE.read( channel );
         assertTrue( command instanceof Command.RelationshipCommand );
 
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
@@ -161,11 +135,10 @@ class PhysicalLogCommandReaderV3_0Test
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
+        Command command = INSTANCE.read( channel );
         assertTrue( command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
@@ -185,11 +158,10 @@ class PhysicalLogCommandReaderV3_0Test
         after.setSecondaryUnitIdOnCreate( 17 );
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
+        Command command = INSTANCE.read( channel );
         assertTrue( command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
@@ -210,11 +182,10 @@ class PhysicalLogCommandReaderV3_0Test
         after.setSecondaryUnitIdOnCreate( 17 );
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
+        Command command = INSTANCE.read( channel );
         assertTrue( command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
@@ -226,7 +197,7 @@ class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    void readRelationshipGroupCommandWithFixedReferenceFormat300() throws IOException
+    void readRelationshipGroupCommandWithFixedReferenceFormat() throws IOException
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -235,37 +206,10 @@ class PhysicalLogCommandReaderV3_0Test
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
         after.setUseFixedReferences( true );
 
-        new Command.RelationshipGroupCommand( before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
-        assertTrue( command instanceof Command.RelationshipGroupCommand);
-
-        Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
-
-        // Then
-        assertEquals( before, relationshipGroupCommand.getBefore() );
-        assertEquals( after, relationshipGroupCommand.getAfter() );
-        assertTrue( relationshipGroupCommand.getBefore().isUseFixedReferences() );
-        assertTrue( relationshipGroupCommand.getAfter().isUseFixedReferences() );
-    }
-
-    @Test
-    void readRelationshipGroupCommandWithFixedReferenceFormat302() throws IOException
-    {
-        // Given
-        InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
-        before.setUseFixedReferences( true );
-        RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
-        after.setUseFixedReferences( true );
-
-        new Command.RelationshipGroupCommand( before, after ).serialize( channel );
-
-        // When
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
+        Command command = INSTANCE.read( channel );
         assertTrue( command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
@@ -286,11 +230,10 @@ class PhysicalLogCommandReaderV3_0Test
         NeoStoreRecord after = new NeoStoreRecord();
         after.setNextProp( 42 );
 
-        new Command.NeoStoreCommand( before, after ).serialize( channel );
+        new Command.NeoStoreCommand( new LogCommandSerializationV3_0_10(), before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
+        Command command = INSTANCE.read( channel );
         assertTrue( command instanceof Command.NeoStoreCommand);
 
         Command.NeoStoreCommand neoStoreCommand = (Command.NeoStoreCommand) command;
@@ -301,7 +244,7 @@ class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    void nodeCommandWithFixedReferenceFormat300() throws Exception
+    void nodeCommandWithFixedReferenceFormat() throws Exception
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -310,37 +253,10 @@ class PhysicalLogCommandReaderV3_0Test
         before.setUseFixedReferences( true );
         after.setUseFixedReferences( true );
 
-        new Command.NodeCommand( before, after ).serialize( channel );
+        new Command.NodeCommand( writer(), before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
-        assertTrue( command instanceof Command.NodeCommand);
-
-        Command.NodeCommand nodeCommand = (Command.NodeCommand) command;
-
-        // Then
-        assertEquals( before, nodeCommand.getBefore() );
-        assertEquals( after, nodeCommand.getAfter() );
-        assertTrue( nodeCommand.getBefore().isUseFixedReferences() );
-        assertTrue( nodeCommand.getAfter().isUseFixedReferences() );
-    }
-
-    @Test
-    void nodeCommandWithFixedReferenceFormat302() throws Exception
-    {
-        // Given
-        InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        NodeRecord before = new NodeRecord( 42 ).initialize( true, 99, false, 33, 66 );
-        NodeRecord after = new NodeRecord( 42 ).initialize( true, 99, false, 33, 66 );
-        before.setUseFixedReferences( true );
-        after.setUseFixedReferences( true );
-
-        new Command.NodeCommand( before, after ).serialize( channel );
-
-        // When
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
+        Command command = INSTANCE.read( channel );
         assertTrue( command instanceof Command.NodeCommand);
 
         Command.NodeCommand nodeCommand = (Command.NodeCommand) command;
@@ -360,10 +276,9 @@ class PhysicalLogCommandReaderV3_0Test
         PropertyRecord after = new PropertyRecord( 2 );
         after.setSecondaryUnitIdOnCreate( 78 );
 
-        new Command.PropertyCommand( before, after ).serialize( channel );
+        new Command.PropertyCommand( writer(), before, after ).serialize( channel );
 
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
+        Command command = INSTANCE.read( channel );
         assertTrue( command instanceof Command.PropertyCommand);
 
         Command.PropertyCommand neoStoreCommand = (Command.PropertyCommand) command;
@@ -382,10 +297,9 @@ class PhysicalLogCommandReaderV3_0Test
         PropertyRecord after = new PropertyRecord( 2 );
         after.setSecondaryUnitIdOnCreate( 78 );
 
-        new Command.PropertyCommand( before, after ).serialize( channel );
+        new Command.PropertyCommand( writer(), before, after ).serialize( channel );
 
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
+        Command command = INSTANCE.read( channel );
         assertTrue( command instanceof Command.PropertyCommand);
 
         Command.PropertyCommand neoStoreCommand = (Command.PropertyCommand) command;
@@ -397,7 +311,7 @@ class PhysicalLogCommandReaderV3_0Test
     }
 
     @Test
-    void readPropertyCommandWithFixedReferenceFormat300() throws IOException
+    void readPropertyCommandWithFixedReferenceFormat() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyRecord before = new PropertyRecord( 1 );
@@ -405,34 +319,9 @@ class PhysicalLogCommandReaderV3_0Test
         before.setUseFixedReferences( true );
         after.setUseFixedReferences( true );
 
-        new Command.PropertyCommand( before, after ).serialize( channel );
+        new Command.PropertyCommand( writer(), before, after ).serialize( channel );
 
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
-        assertTrue( command instanceof Command.PropertyCommand);
-
-        Command.PropertyCommand neoStoreCommand = (Command.PropertyCommand) command;
-
-        // Then
-        assertEquals( before.getNextProp(), neoStoreCommand.getBefore().getNextProp() );
-        assertEquals( after.getNextProp(), neoStoreCommand.getAfter().getNextProp() );
-        assertTrue( neoStoreCommand.getBefore().isUseFixedReferences() );
-        assertTrue( neoStoreCommand.getAfter().isUseFixedReferences() );
-    }
-
-    @Test
-    void readPropertyCommandWithFixedReferenceFormat302() throws IOException
-    {
-        InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        PropertyRecord before = new PropertyRecord( 1 );
-        PropertyRecord after = new PropertyRecord( 2 );
-        before.setUseFixedReferences( true );
-        after.setUseFixedReferences( true );
-
-        new Command.PropertyCommand( before, after ).serialize( channel );
-
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
-        Command command = reader.read( channel );
+        Command command = INSTANCE.read( channel );
         assertTrue( command instanceof Command.PropertyCommand);
 
         Command.PropertyCommand neoStoreCommand = (Command.PropertyCommand) command;
@@ -448,14 +337,15 @@ class PhysicalLogCommandReaderV3_0Test
     void shouldReadSomeCommands() throws Exception
     {
         // GIVEN
+        LogCommandSerialization writer = writer();
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        Commands.createNode( 0 ).serialize( channel );
-        Commands.createNode( 1 ).serialize( channel );
-        Commands.createRelationshipTypeToken( 0, 0 ).serialize( channel );
-        Commands.createRelationship( 0, 0, 1, 0 ).serialize( channel );
-        Commands.createPropertyKeyToken( 0, 0 ).serialize( channel );
-        Commands.createProperty( 0, PropertyType.SHORT_STRING, 0 ).serialize( channel );
-        CommandReader reader = new PhysicalLogCommandReaderV3_0_10();
+        writer.writeNodeCommand( channel, Commands.createNode( 0 ) );
+        writer.writeNodeCommand( channel, Commands.createNode( 1 ) );
+        writer.writeRelationshipTypeTokenCommand( channel, Commands.createRelationshipTypeToken( 0, 0 ) );
+        writer.writeRelationshipCommand( channel, Commands.createRelationship( 0, 0, 1, 0 ) );
+        writer.writePropertyKeyTokenCommand( channel, Commands.createPropertyKeyToken( 0, 0 ) );
+        writer.writePropertyCommand( channel, Commands.createProperty( 0, PropertyType.SHORT_STRING, 0 ) );
+        CommandReader reader = new LogCommandSerializationV3_0_10();
 
         // THEN
         assertTrue( reader.read( channel ) instanceof Command.NodeCommand );
@@ -472,5 +362,10 @@ class PhysicalLogCommandReaderV3_0Test
                 commandRecord.requiresSecondaryUnit(), "Secondary unit requirements should be the same" );
         assertEquals( record.getSecondaryUnitId(),
                 commandRecord.getSecondaryUnitId(), "Secondary unit ids should be the same" );
+    }
+
+    private LogCommandSerialization writer()
+    {
+        return LogCommandSerializationV4_2.INSTANCE;
     }
 }

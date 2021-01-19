@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -73,7 +72,7 @@ class NodeCommandTest
 
     private NodeStore nodeStore;
     private final InMemoryClosableChannel channel = new InMemoryClosableChannel();
-    private final CommandReader commandReader = new PhysicalLogCommandReaderV4_0();
+    private final LogCommandSerialization commandSerialization = RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
     private NeoStores neoStores;
 
     @BeforeEach
@@ -99,7 +98,7 @@ class NodeCommandTest
         NodeRecord before = new NodeRecord( 12 );
         NodeRecord after = new NodeRecord( 12 );
         // When
-        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
+        assertSerializationWorksFor( new Command.NodeCommand( commandSerialization, before, after ) );
     }
 
     @Test
@@ -111,7 +110,7 @@ class NodeCommandTest
         after.setCreated();
         after.setInUse( true );
         // When
-        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
+        assertSerializationWorksFor( new Command.NodeCommand( commandSerialization, before, after ) );
     }
 
     @Test
@@ -123,7 +122,7 @@ class NodeCommandTest
         NodeRecord after = new NodeRecord( 12 ).initialize( false, 1, true, 2, 0 );
         after.setInUse( true );
         // When
-        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
+        assertSerializationWorksFor( new Command.NodeCommand( commandSerialization, before, after ) );
     }
 
     @Test
@@ -135,7 +134,7 @@ class NodeCommandTest
         NodeRecord after = new NodeRecord( 12 ).initialize( false, 1, false, 2, 0 );
         after.setInUse( true );
         // When
-        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
+        assertSerializationWorksFor( new Command.NodeCommand( commandSerialization, before, after ) );
     }
 
     @Test
@@ -149,7 +148,7 @@ class NodeCommandTest
         NodeLabels nodeLabels = parseLabelsField( after );
         nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
         // When
-        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
+        assertSerializationWorksFor( new Command.NodeCommand( commandSerialization, before, after ) );
     }
 
     @Test
@@ -164,7 +163,7 @@ class NodeCommandTest
         after.setInUse( true );
         after.setSecondaryUnitIdOnCreate( 14L );
 
-        Command.NodeCommand command = new Command.NodeCommand( before, after );
+        Command.NodeCommand command = new Command.NodeCommand( commandSerialization, before, after );
 
         // Then
         assertSerializationWorksFor( command );
@@ -184,7 +183,7 @@ class NodeCommandTest
             nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore(), NULL, INSTANCE );
         }
         // When
-        assertSerializationWorksFor( new Command.NodeCommand( before, after ) );
+        assertSerializationWorksFor( new Command.NodeCommand( commandSerialization, before, after ) );
     }
 
     @Test
@@ -203,9 +202,9 @@ class NodeCommandTest
                 0, false, true, -1L, LONG.intValue(), new byte[]{ 1, 2, 3, 4, 5, 6, 7, 8} ) );
         after.setLabelField( dynamicPointer( dynamicRecords ), dynamicRecords );
         // When
-        Command.NodeCommand cmd = new Command.NodeCommand( before, after );
+        Command.NodeCommand cmd = new Command.NodeCommand( commandSerialization, before, after );
         cmd.serialize( channel );
-        Command.NodeCommand result = (Command.NodeCommand) commandReader.read( channel );
+        Command.NodeCommand result = (Command.NodeCommand) commandSerialization.read( channel );
         // Then
         assertThat( result ).isEqualTo( cmd );
         assertThat( result.getMode() ).isEqualTo( cmd.getMode() );
@@ -229,7 +228,7 @@ class NodeCommandTest
     {
         channel.reset();
         cmd.serialize( channel );
-        Command.NodeCommand result = (Command.NodeCommand) commandReader.read( channel );
+        Command.NodeCommand result = (Command.NodeCommand) commandSerialization.read( channel );
         // Then
         assertThat( result ).isEqualTo( cmd );
         assertThat( result.getMode() ).isEqualTo( cmd.getMode() );

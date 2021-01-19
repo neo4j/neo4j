@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class CountsRecordStateTest
@@ -30,7 +31,7 @@ class CountsRecordStateTest
     void trackCounts()
     {
         // given
-        CountsRecordState counts = new CountsRecordState();
+        CountsRecordState counts = new CountsRecordState( LATEST_LOG_SERIALIZATION );
         counts.incrementNodeCount( 17, 5 );
         counts.incrementNodeCount( 12, 9 );
         counts.incrementRelationshipCount( 1, 2, 3, 19 );

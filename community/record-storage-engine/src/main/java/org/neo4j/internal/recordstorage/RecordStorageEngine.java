@@ -57,6 +57,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -324,12 +325,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             // this storage engine itself, anything else is considered a bug. And we do know the inner workings
             // of the storage statements that we create.
             RecordStorageCommandCreationContext creationContext = (RecordStorageCommandCreationContext) commandCreationContext;
-            TransactionRecordState recordState = creationContext.createTransactionRecordState( integrityValidator, lastTransactionIdWhenStarted, locks );
+            LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get( neoStores.getMetaDataStore().kernelVersion() );
+            TransactionRecordState recordState =
+                    creationContext.createTransactionRecordState( integrityValidator, lastTransactionIdWhenStarted, locks, serialization );
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
                     schemaRuleAccess, constraintSemantics, cursorTracer );
-            CountsRecordState countsRecordState = new CountsRecordState();
+            CountsRecordState countsRecordState = new CountsRecordState( serialization );
             txStateVisitor = additionalTxStateVisitor.apply( txStateVisitor );
             txStateVisitor = new TransactionCountingStateVisitor( txStateVisitor, storageReader, txState, countsRecordState, cursorTracer );
             try ( TxStateVisitor visitor = txStateVisitor )

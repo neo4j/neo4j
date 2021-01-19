@@ -32,6 +32,13 @@ import static java.lang.StrictMath.toIntExact;
  */
 public class CountsRecordState extends CountsDelta implements RecordState
 {
+    private final LogCommandSerialization serialization;
+
+    CountsRecordState( LogCommandSerialization serialization )
+    {
+        this.serialization = serialization;
+    }
+
     @Override
     public void extractCommands( Collection<StorageCommand> target, MemoryTracker memoryTracker )
     {
@@ -42,7 +49,7 @@ public class CountsRecordState extends CountsDelta implements RecordState
         {
             if ( count != 0 )
             {
-                target.add( new Command.NodeCountsCommand( toIntExact( labelId ), count ) );
+                target.add( new Command.NodeCountsCommand( serialization, toIntExact( labelId ), count ) );
             }
         } );
         relationshipCounts.forEachKeyValue( ( k, mutableLong ) ->
@@ -50,7 +57,7 @@ public class CountsRecordState extends CountsDelta implements RecordState
             long count = mutableLong.longValue();
             if ( count != 0 )
             {
-                target.add( new Command.RelationshipCountsCommand( k.startLabelId, k.typeId, k.endLabelId, count ) );
+                target.add( new Command.RelationshipCountsCommand( serialization, k.startLabelId, k.typeId, k.endLabelId, count ) );
             }
         } );
     }

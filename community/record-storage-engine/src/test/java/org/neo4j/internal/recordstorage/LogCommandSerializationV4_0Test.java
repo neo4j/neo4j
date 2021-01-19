@@ -40,13 +40,14 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
+import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.recordstorage.PhysicalLogCommandReaderV4_0.markAfterRecordAsCreatedIfCommandLooksCreated;
+import static org.neo4j.internal.recordstorage.LogCommandSerializationV4_0.markAfterRecordAsCreatedIfCommandLooksCreated;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
-class PhysicalLogCommandReaderV4_0Test
+class LogCommandSerializationV4_0Test
 {
     private static final long NULL_REF = NULL_REFERENCE.longValue();
 
@@ -59,11 +60,11 @@ class PhysicalLogCommandReaderV4_0Test
         PropertyKeyTokenRecord after = before.copy();
         after.initialize( true, 13 );
         after.setCreated();
-        new Command.PropertyKeyTokenCommand( before, after ).serialize( channel );
+        new Command.PropertyKeyTokenCommand( writer(), before, after ).serialize( channel );
 
         // When
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.PropertyKeyTokenCommand );
 
         Command.PropertyKeyTokenCommand propertyKeyTokenCommand = (Command.PropertyKeyTokenCommand) command;
@@ -82,11 +83,11 @@ class PhysicalLogCommandReaderV4_0Test
         after.initialize( true, 13 );
         after.setCreated();
         after.setInternal( true );
-        new Command.PropertyKeyTokenCommand( before, after ).serialize( channel );
+        new Command.PropertyKeyTokenCommand( writer(), before, after ).serialize( channel );
 
         // When
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.PropertyKeyTokenCommand );
 
         Command.PropertyKeyTokenCommand propertyKeyTokenCommand = (Command.PropertyKeyTokenCommand) command;
@@ -104,11 +105,11 @@ class PhysicalLogCommandReaderV4_0Test
         LabelTokenRecord after = before.copy();
         after.initialize( true, 13 );
         after.setCreated();
-        new Command.LabelTokenCommand( before, after ).serialize( channel );
+        new Command.LabelTokenCommand( writer(), before, after ).serialize( channel );
 
         // When
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.LabelTokenCommand );
 
         Command.LabelTokenCommand labelTokenCommand = (Command.LabelTokenCommand) command;
@@ -127,11 +128,11 @@ class PhysicalLogCommandReaderV4_0Test
         after.initialize( true, 13 );
         after.setCreated();
         after.setInternal( true );
-        new Command.LabelTokenCommand( before, after ).serialize( channel );
+        new Command.LabelTokenCommand( writer(), before, after ).serialize( channel );
 
         // When
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.LabelTokenCommand );
 
         Command.LabelTokenCommand labelTokenCommand = (Command.LabelTokenCommand) command;
@@ -149,11 +150,11 @@ class PhysicalLogCommandReaderV4_0Test
         RelationshipTypeTokenRecord after = before.copy();
         after.initialize( true, 13 );
         after.setCreated();
-        new Command.RelationshipTypeTokenCommand( before, after ).serialize( channel );
+        new Command.RelationshipTypeTokenCommand( writer(), before, after ).serialize( channel );
 
         // When
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipTypeTokenCommand );
 
         Command.RelationshipTypeTokenCommand relationshipTypeTokenCommand = (Command.RelationshipTypeTokenCommand) command;
@@ -172,11 +173,11 @@ class PhysicalLogCommandReaderV4_0Test
         after.initialize( true, 13 );
         after.setCreated();
         after.setInternal( true );
-        new Command.RelationshipTypeTokenCommand( before, after ).serialize( channel );
+        new Command.RelationshipTypeTokenCommand( writer(), before, after ).serialize( channel );
 
         // When
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipTypeTokenCommand );
 
         Command.RelationshipTypeTokenCommand relationshipTypeTokenCommand = (Command.RelationshipTypeTokenCommand) command;
@@ -195,11 +196,11 @@ class PhysicalLogCommandReaderV4_0Test
         RelationshipRecord after = new RelationshipRecord( 42 );
         after.initialize( true, 0, 1, 2, 3, 4, 5, 6, 7, true, true );
         after.setCreated();
-        new Command.RelationshipCommand( before, after ).serialize( channel );
+        new Command.RelationshipCommand( writer(), before, after ).serialize( channel );
 
         // When
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipCommand );
 
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
@@ -217,10 +218,10 @@ class PhysicalLogCommandReaderV4_0Test
         before.setSecondaryUnitIdOnLoad( 47 );
         RelationshipRecord after = new RelationshipRecord( 42 );
         after.initialize( true, 0, 1, 8, 3, 4, 5, 6, 7, true, true );
-        new Command.RelationshipCommand( before, after ).serialize( channel );
+        new Command.RelationshipCommand( writer(), before, after ).serialize( channel );
 
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipCommand );
 
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
@@ -236,10 +237,10 @@ class PhysicalLogCommandReaderV4_0Test
         before.setSecondaryUnitIdOnLoad( 52 );
         RelationshipRecord after = new RelationshipRecord( 42 );
         after.initialize( true, 0, 1, 8, 3, 4, 5, 6, 7, true, true );
-        new Command.RelationshipCommand( before, after ).serialize( channel );
+        new Command.RelationshipCommand( writer(), before, after ).serialize( channel );
 
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipCommand );
 
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
@@ -256,10 +257,10 @@ class PhysicalLogCommandReaderV4_0Test
         RelationshipRecord after = new RelationshipRecord( 42 );
         after.initialize( true, 0, 1, 8, 3, 4, 5, 6, 7, true, true );
         after.setUseFixedReferences( true );
-        new Command.RelationshipCommand( before, after ).serialize( channel );
+        new Command.RelationshipCommand( writer(), before, after ).serialize( channel );
 
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipCommand );
 
         Command.RelationshipCommand relationshipCommand = (Command.RelationshipCommand) command;
@@ -277,11 +278,11 @@ class PhysicalLogCommandReaderV4_0Test
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
 
         // When
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
@@ -300,11 +301,11 @@ class PhysicalLogCommandReaderV4_0Test
         after.setSecondaryUnitIdOnCreate( 17 );
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
 
         // When
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
@@ -323,11 +324,11 @@ class PhysicalLogCommandReaderV4_0Test
         after.setSecondaryUnitIdOnCreate( 17 );
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
 
         // When
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
@@ -347,11 +348,11 @@ class PhysicalLogCommandReaderV4_0Test
         after.setUseFixedReferences( true );
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
 
         // When
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipGroupCommand);
 
         Command.RelationshipGroupCommand relationshipGroupCommand = (Command.RelationshipGroupCommand) command;
@@ -372,11 +373,11 @@ class PhysicalLogCommandReaderV4_0Test
         before.setUseFixedReferences( true );
         after.setUseFixedReferences( true );
 
-        new Command.NodeCommand( before, after ).serialize( channel );
+        new Command.NodeCommand( writer(), before, after ).serialize( channel );
 
         // When
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.NodeCommand);
 
         Command.NodeCommand nodeCommand = (Command.NodeCommand) command;
@@ -395,10 +396,10 @@ class PhysicalLogCommandReaderV4_0Test
         PropertyRecord after = new PropertyRecord( 1 );
         after.setSecondaryUnitIdOnCreate( 78 );
 
-        new Command.PropertyCommand( before, after ).serialize( channel );
+        new Command.PropertyCommand( writer(), before, after ).serialize( channel );
 
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.PropertyCommand);
 
         Command.PropertyCommand propertyCommand = (Command.PropertyCommand) command;
@@ -415,10 +416,10 @@ class PhysicalLogCommandReaderV4_0Test
         PropertyRecord after = new PropertyRecord( 1 );
         after.setSecondaryUnitIdOnCreate( 78 );
 
-        new Command.PropertyCommand( before, after ).serialize( channel );
+        new Command.PropertyCommand( writer(), before, after ).serialize( channel );
 
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.PropertyCommand);
 
         Command.PropertyCommand propertyCommand = (Command.PropertyCommand) command;
@@ -436,10 +437,10 @@ class PhysicalLogCommandReaderV4_0Test
         before.setUseFixedReferences( true );
         after.setUseFixedReferences( true );
 
-        new Command.PropertyCommand( before, after ).serialize( channel );
+        new Command.PropertyCommand( writer(), before, after ).serialize( channel );
 
-        BaseCommandReader reader = createReader();
-        Command command = reader.read( channel );
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
         assertTrue( command instanceof Command.PropertyCommand);
 
         Command.PropertyCommand propertyCommand = (Command.PropertyCommand) command;
@@ -454,13 +455,14 @@ class PhysicalLogCommandReaderV4_0Test
     void shouldReadSomeCommands() throws Exception
     {
         // GIVEN
+        LogCommandSerialization writer = writer();
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        Commands.createNode( 0 ).serialize( channel );
-        Commands.createNode( 1 ).serialize( channel );
-        Commands.createRelationshipTypeToken( 0, 0 ).serialize( channel );
-        Commands.createRelationship( 0, 0, 1, 0 ).serialize( channel );
-        Commands.createPropertyKeyToken( 0, 0 ).serialize( channel );
-        Commands.createProperty( 0, PropertyType.SHORT_STRING, 0 ).serialize( channel );
+        writer.writeNodeCommand( channel, Commands.createNode( 0 ) );
+        writer.writeNodeCommand( channel, Commands.createNode( 1 ) );
+        writer.writeRelationshipTypeTokenCommand( channel, Commands.createRelationshipTypeToken( 0, 0 ) );
+        writer.writeRelationshipCommand( channel, Commands.createRelationship( 0, 0, 1, 0 ) );
+        writer.writePropertyKeyTokenCommand( channel, Commands.createPropertyKeyToken( 0, 0 ) );
+        writer.writePropertyCommand( channel, Commands.createProperty( 0, PropertyType.SHORT_STRING, 0 ) );
         CommandReader reader = createReader();
 
         // THEN
@@ -483,7 +485,7 @@ class PhysicalLogCommandReaderV4_0Test
 
         long id = after.getId();
         SchemaRule rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2, 3 ) ).withName( "index_" + id ).materialise( id );
-        new Command.SchemaRuleCommand( before, after, rule ).serialize( channel );
+        writer().writeSchemaRuleCommand( channel, new Command.SchemaRuleCommand( writer(), before, after, rule ) );
 
         CommandReader reader = createReader();
         Command.SchemaRuleCommand command = (Command.SchemaRuleCommand) reader.read( channel );
@@ -518,9 +520,9 @@ class PhysicalLogCommandReaderV4_0Test
         return record;
     }
 
-    private BaseCommandReader createReader()
+    protected CommandReader createReader()
     {
-        return new PhysicalLogCommandReaderV4_0();
+        return new LogCommandSerializationV4_0();
     }
 
     private static <RECORD extends AbstractBaseRecord> void assertBeforeAndAfterEquals( Command.BaseCommand<RECORD> command, RECORD before, RECORD after )
@@ -535,5 +537,10 @@ class PhysicalLogCommandReaderV4_0Test
         assertEquals( expected.isCreated(), record.isCreated() );
         assertEquals( expected.isUseFixedReferences(), record.isUseFixedReferences() );
         assertEquals( expected.isSecondaryUnitCreated(), record.isSecondaryUnitCreated() );
+    }
+
+    protected LogCommandSerialization writer()
+    {
+        return new LogCommandSerializationV4_2();
     }
 }

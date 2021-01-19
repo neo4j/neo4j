@@ -95,12 +95,14 @@ public class TransactionRecordState implements RecordState
     private final PropertyDeleter propertyDeleter;
     private final PageCursorTracer cursorTracer;
     private final MemoryTracker memoryTracker;
+    private final LogCommandSerialization commandSerialization;
 
     private boolean prepared;
 
     TransactionRecordState( NeoStores neoStores, IntegrityValidator integrityValidator, RecordChangeSet recordChangeSet,
             long lastCommittedTxWhenTransactionStarted, ResourceLocker locks, RelationshipCreator relationshipCreator, RelationshipDeleter relationshipDeleter,
-            PropertyCreator propertyCreator, PropertyDeleter propertyDeleter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+            PropertyCreator propertyCreator, PropertyDeleter propertyDeleter, PageCursorTracer cursorTracer, MemoryTracker memoryTracker,
+            LogCommandSerialization commandSerialization )
     {
         this.neoStores = neoStores;
         this.nodeStore = neoStores.getNodeStore();
@@ -117,6 +119,7 @@ public class TransactionRecordState implements RecordState
         this.propertyDeleter = propertyDeleter;
         this.cursorTracer = cursorTracer;
         this.memoryTracker = memoryTracker;
+        this.commandSerialization = commandSerialization;
     }
 
     @Override
@@ -132,21 +135,21 @@ public class TransactionRecordState implements RecordState
         memoryTracker.allocateHeap( labelTokenChanges.size() * Command.LabelTokenCommand.HEAP_SIZE );
         for ( RecordProxy<LabelTokenRecord, Void> record : labelTokenChanges )
         {
-            commands.add( new Command.LabelTokenCommand( record.getBefore(), record.forReadingLinkage() ) );
+            commands.add( new Command.LabelTokenCommand( commandSerialization, record.getBefore(), record.forReadingLinkage() ) );
         }
 
         var relationshipTypeTokenChanges = recordChangeSet.getRelationshipTypeTokenChanges().changes();
         memoryTracker.allocateHeap( relationshipTypeTokenChanges.size() * Command.RelationshipTypeTokenCommand.HEAP_SIZE );
         for ( RecordProxy<RelationshipTypeTokenRecord, Void> record : relationshipTypeTokenChanges )
         {
-            commands.add( new Command.RelationshipTypeTokenCommand( record.getBefore(), record.forReadingLinkage() ) );
+            commands.add( new Command.RelationshipTypeTokenCommand( commandSerialization, record.getBefore(), record.forReadingLinkage() ) );
         }
 
         var propertyKeyTokenChanges = recordChangeSet.getPropertyKeyTokenChanges().changes();
         memoryTracker.allocateHeap( propertyKeyTokenChanges.size() * Command.PropertyKeyTokenCommand.HEAP_SIZE );
         for ( RecordProxy<PropertyKeyTokenRecord, Void> record : propertyKeyTokenChanges )
         {
-            commands.add( new Command.PropertyKeyTokenCommand( record.getBefore(), record.forReadingLinkage() ) );
+            commands.add( new Command.PropertyKeyTokenCommand( commandSerialization, record.getBefore(), record.forReadingLinkage() ) );
         }
 
         // Collect nodes, relationships, properties
@@ -162,7 +165,7 @@ public class TransactionRecordState implements RecordState
             {
                 NodeRecord record = prepared( change, nodeStore );
                 integrityValidator.validateNodeRecord( record );
-                nodeCommands[i++] = new Command.NodeCommand( change.getBefore(), record );
+                nodeCommands[i++] = new Command.NodeCommand( commandSerialization, change.getBefore(), record );
             }
             Arrays.sort( nodeCommands, COMMAND_COMPARATOR );
         }
@@ -176,7 +179,7 @@ public class TransactionRecordState implements RecordState
             int i = 0;
             for ( RecordProxy<RelationshipRecord, Void> change : relationshipChanges )
             {
-                relCommands[i++] = new Command.RelationshipCommand( change.getBefore(), prepared( change, relationshipStore ) );
+                relCommands[i++] = new Command.RelationshipCommand( commandSerialization, change.getBefore(), prepared( change, relationshipStore ) );
             }
             Arrays.sort( relCommands, COMMAND_COMPARATOR );
         }
@@ -190,7 +193,7 @@ public class TransactionRecordState implements RecordState
             int i = 0;
             for ( RecordProxy<PropertyRecord, PrimitiveRecord> change : propertyChanges )
             {
-                propCommands[i++] = new Command.PropertyCommand( change.getBefore(), prepared( change, propertyStore ) );
+                propCommands[i++] = new Command.PropertyCommand( commandSerialization, change.getBefore(), prepared( change, propertyStore ) );
             }
             Arrays.sort( propCommands, COMMAND_COMPARATOR );
         }
@@ -230,7 +233,7 @@ public class TransactionRecordState implements RecordState
                     skippedCommands++;
                     continue;
                 }
-                relGroupCommands[i++] = new Command.RelationshipGroupCommand( change.getBefore(),
+                relGroupCommands[i++] = new Command.RelationshipGroupCommand( commandSerialization, change.getBefore(),
                         prepared( change, relationshipGroupStore ) );
             }
             relGroupCommands = i < relGroupCommands.length ? Arrays.copyOf( relGroupCommands, i ) : relGroupCommands;
@@ -252,7 +255,7 @@ public class TransactionRecordState implements RecordState
             {
                 integrityValidator.validateSchemaRule( rule );
             }
-            Command.SchemaRuleCommand cmd = new Command.SchemaRuleCommand( change.getBefore(), change.forChangingData(), rule );
+            Command.SchemaRuleCommand cmd = new Command.SchemaRuleCommand( commandSerialization, change.getBefore(), change.forChangingData(), rule );
             schemaChangeByMode.computeIfAbsent( cmd.getMode(), MODE_TO_ARRAY_LIST ).add( cmd );
         }
 

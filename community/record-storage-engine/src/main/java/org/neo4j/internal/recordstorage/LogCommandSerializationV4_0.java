@@ -28,7 +28,6 @@ import java.util.Map;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.ReadableChannel;
-import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -43,9 +42,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.internal.helpers.Numbers.unsignedShortToInt;
@@ -55,81 +54,36 @@ import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_DELETED_D
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.util.Bits.bitFlag;
 
-public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
+class LogCommandSerializationV4_0 extends LogCommandSerialization
 {
-    public static final CommandReader INSTANCE = new PhysicalLogCommandReaderV4_0();
-    static final byte FORMAT_ID = 1;
+    static final LogCommandSerializationV4_0 INSTANCE = new LogCommandSerializationV4_0();
 
     @Override
-    protected Command read( byte commandType, ReadableChannel channel ) throws IOException
-    {
-        switch ( commandType )
-        {
-        case NeoCommandType.NODE_COMMAND:
-            return visitNodeCommand( channel );
-        case NeoCommandType.PROP_COMMAND:
-            return visitPropertyCommand( channel );
-        case NeoCommandType.PROP_INDEX_COMMAND:
-            return visitPropertyKeyTokenCommand( channel );
-        case NeoCommandType.REL_COMMAND:
-            return visitRelationshipCommand( channel );
-        case NeoCommandType.REL_TYPE_COMMAND:
-            return visitRelationshipTypeTokenCommand( channel );
-        case NeoCommandType.LABEL_KEY_COMMAND:
-            return visitLabelTokenCommand( channel );
-        case NeoCommandType.REL_GROUP_COMMAND:
-            return visitRelationshipGroupCommand( channel );
-        case NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND:
-            return visitRelationshipCountsCommand( channel );
-        case NeoCommandType.UPDATE_NODE_COUNTS_COMMAND:
-            return visitNodeCountsCommand( channel );
-        case NeoCommandType.SCHEMA_RULE_COMMAND:
-            return visitSchemaRuleCommand( channel );
-        default:
-            throw unknownCommandType( commandType, channel );
-        }
-    }
-
-    private Command visitNodeCommand( ReadableChannel channel ) throws IOException
+    protected Command readNodeCommand( ReadableChannel channel ) throws IOException
     {
         long id = channel.getLong();
         NodeRecord before = readNodeRecord( id, channel );
-        if ( before == null )
-        {
-            return null;
-        }
         NodeRecord after = readNodeRecord( id, channel );
-        if ( after == null )
-        {
-            return null;
-        }
 
         markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
         // DynamicRecord has the created flag stored inside them because it's much harder to tell by looking at the command whether or not they are created
-        return new Command.NodeCommand( before, after );
+        return new Command.NodeCommand( this, before, after );
     }
 
-    private Command visitRelationshipCommand( ReadableChannel channel ) throws IOException
+    @Override
+    protected Command readRelationshipCommand( ReadableChannel channel ) throws IOException
     {
         long id = channel.getLong();
 
         RelationshipRecord before = readRelationshipRecord( id, channel );
-        if ( before == null )
-        {
-            return null;
-        }
-
         RelationshipRecord after = readRelationshipRecord( id, channel );
-        if ( after == null )
-        {
-            return null;
-        }
 
         markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
-        return new Command.RelationshipCommand( before, after );
+        return new Command.RelationshipCommand( this, before, after );
     }
 
-    private Command visitPropertyCommand( ReadableChannel channel ) throws IOException
+    @Override
+    protected Command readPropertyCommand( ReadableChannel channel ) throws IOException
     {
         // ID
         long id = channel.getLong(); // 8
@@ -148,17 +102,18 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
 
         markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
         // DynamicRecord has the created flag stored inside them because it's much harder to tell by looking at the command whether or not they are created
-        return new Command.PropertyCommand( before, after );
+        return new Command.PropertyCommand( this, before, after );
     }
 
-    private Command visitRelationshipGroupCommand( ReadableChannel channel ) throws IOException
+    @Override
+    protected Command readRelationshipGroupCommand( ReadableChannel channel ) throws IOException
     {
         long id = channel.getLong();
         RelationshipGroupRecord before = readRelationshipGroupRecord( id, channel );
         RelationshipGroupRecord after = readRelationshipGroupRecord( id, channel );
 
         markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
-        return new Command.RelationshipGroupCommand( before, after );
+        return new Command.RelationshipGroupCommand( this, before, after );
     }
 
     private RelationshipGroupRecord readRelationshipGroupRecord( long id, ReadableChannel channel )
@@ -186,24 +141,16 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         return record;
     }
 
-    private Command visitRelationshipTypeTokenCommand( ReadableChannel channel ) throws IOException
+    @Override
+    protected Command readRelationshipTypeTokenCommand( ReadableChannel channel ) throws IOException
     {
         int id = channel.getInt();
         RelationshipTypeTokenRecord before = readRelationshipTypeTokenRecord( id, channel );
-        if ( before == null )
-        {
-            return null;
-        }
-
         RelationshipTypeTokenRecord after = readRelationshipTypeTokenRecord( id, channel );
-        if ( after == null )
-        {
-            return null;
-        }
 
         markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
         // DynamicRecord has the created flag stored inside them because it's much harder to tell by looking at the command whether or not they are created
-        return new Command.RelationshipTypeTokenCommand( before, after );
+        return new Command.RelationshipTypeTokenCommand( this, before, after );
     }
 
     private RelationshipTypeTokenRecord readRelationshipTypeTokenRecord( int id, ReadableChannel channel )
@@ -230,33 +177,21 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         for ( int i = 0; i < nrTypeRecords; i++ )
         {
             DynamicRecord dr = readDynamicRecord( channel );
-            if ( dr == null )
-            {
-                return null;
-            }
             record.addNameRecord( dr );
         }
         return record;
     }
 
-    private Command visitLabelTokenCommand( ReadableChannel channel ) throws IOException
+    @Override
+    protected Command readLabelTokenCommand( ReadableChannel channel ) throws IOException
     {
         int id = channel.getInt();
         LabelTokenRecord before = readLabelTokenRecord( id, channel );
-        if ( before == null )
-        {
-            return null;
-        }
-
         LabelTokenRecord after = readLabelTokenRecord( id, channel );
-        if ( after == null )
-        {
-            return null;
-        }
 
         markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
         // DynamicRecord has the created flag stored inside them because it's much harder to tell by looking at the command whether or not they are created
-        return new Command.LabelTokenCommand( before, after );
+        return new Command.LabelTokenCommand( this, before, after );
     }
 
     private LabelTokenRecord readLabelTokenRecord( int id, ReadableChannel channel ) throws IOException
@@ -282,16 +217,13 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         for ( int i = 0; i < nrTypeRecords; i++ )
         {
             DynamicRecord dr = readDynamicRecord( channel );
-            if ( dr == null )
-            {
-                return null;
-            }
             record.addNameRecord( dr );
         }
         return record;
     }
 
-    private Command visitPropertyKeyTokenCommand( ReadableChannel channel ) throws IOException
+    @Override
+    protected Command readPropertyKeyTokenCommand( ReadableChannel channel ) throws IOException
     {
         int id = channel.getInt();
         PropertyKeyTokenRecord before = readPropertyKeyTokenRecord( id, channel );
@@ -308,7 +240,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
 
         markAfterRecordAsCreatedIfCommandLooksCreated( before, after );
         // DynamicRecord has the created flag stored inside them because it's much harder to tell by looking at the command whether or not they are created
-        return new Command.PropertyKeyTokenCommand( before, after );
+        return new Command.PropertyKeyTokenCommand( this, before, after );
     }
 
     private PropertyKeyTokenRecord readPropertyKeyTokenRecord( int id, ReadableChannel channel ) throws IOException
@@ -338,7 +270,8 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         return record;
     }
 
-    private Command visitSchemaRuleCommand( ReadableChannel channel ) throws IOException
+    @Override
+    protected Command readSchemaRuleCommand( ReadableChannel channel ) throws IOException
     {
         long id = channel.getLong();
         byte schemaRulePresence = channel.get();
@@ -352,7 +285,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         {
             schemaRule = readSchemaRule( id, channel );
         }
-        return new Command.SchemaRuleCommand( before, after, schemaRule );
+        return new Command.SchemaRuleCommand( this, before, after, schemaRule );
     }
 
     private SchemaRecord readSchemaRecord( long id, ReadableChannel channel ) throws IOException
@@ -397,9 +330,6 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         }
     }
 
-    /**
-     * @see Command.SchemaRuleCommand#writeStringValueMap(WritableChannel, Map)
-     */
     Map<String,Value> readStringValueMap( ReadableChannel channel ) throws IOException
     {
         Map<String,Value> map = new HashMap<>();
@@ -424,7 +354,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
 
     private Value readMapValue( ReadableChannel channel ) throws IOException
     {
-        Command.SchemaRuleCommand.SchemaMapValueType type = Command.SchemaRuleCommand.SchemaMapValueType.map( channel.get() );
+        SchemaMapValueType type = SchemaMapValueType.map( channel.get() );
         switch ( type )
         {
         case BOOL_LITERAL_TRUE:
@@ -457,7 +387,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         case ARRAY:
         {
             int arraySize = channel.getInt();
-            Command.SchemaRuleCommand.SchemaMapValueType elementType = Command.SchemaRuleCommand.SchemaMapValueType.map( channel.get() );
+            SchemaMapValueType elementType = SchemaMapValueType.map( channel.get() );
             switch ( elementType )
             {
             case BOOL_LITERAL_TRUE:
@@ -469,7 +399,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
                 boolean[] array = new boolean[arraySize];
                 for ( int i = 0; i < arraySize; i++ )
                 {
-                    array[i] = channel.get() == Command.SchemaRuleCommand.SchemaMapValueType.BOOL_LITERAL_TRUE.type();
+                    array[i] = channel.get() == SchemaMapValueType.BOOL_LITERAL_TRUE.type();
                 }
                 return Values.booleanArray( array );
             }
@@ -683,10 +613,6 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         while ( numberOfRecords > 0 )
         {
             DynamicRecord read = readDynamicRecord( channel );
-            if ( read == null )
-            {
-                return -1;
-            }
             adder.add( target, read );
             numberOfRecords--;
         }
@@ -751,10 +677,6 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         while ( deletedRecords-- > 0 )
         {
             DynamicRecord read = readDynamicRecord( channel );
-            if ( read == null )
-            {
-                return null;
-            }
             record.addDeletedRecord( read );
         }
         if ( (inUse && !record.inUse()) || (!inUse && record.inUse()) )
@@ -803,20 +725,28 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         return result;
     }
 
-    private Command visitNodeCountsCommand( ReadableChannel channel ) throws IOException
+    @Override
+    protected Command readNodeCountsCommand( ReadableChannel channel ) throws IOException
     {
         int labelId = channel.getInt();
         long delta = channel.getLong();
-        return new Command.NodeCountsCommand( labelId, delta );
+        return new Command.NodeCountsCommand( this, labelId, delta );
     }
 
-    private Command visitRelationshipCountsCommand( ReadableChannel channel ) throws IOException
+    @Override
+    protected Command readRelationshipCountsCommand( ReadableChannel channel ) throws IOException
     {
         int startLabelId = channel.getInt();
         int typeId = channel.getInt();
         int endLabelId = channel.getInt();
         long delta = channel.getLong();
-        return new Command.RelationshipCountsCommand( startLabelId, typeId, endLabelId, delta );
+        return new Command.RelationshipCountsCommand( this, startLabelId, typeId, endLabelId, delta );
+    }
+
+    @Override
+    protected Command readNeoStoreCommand( ReadableChannel channel ) throws IOException
+    {
+        throw unsupportedInThisVersionException();
     }
 
     static void markAfterRecordAsCreatedIfCommandLooksCreated( AbstractBaseRecord before, AbstractBaseRecord after )
@@ -830,5 +760,110 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
             // Override the "load" of the secondary unit to be a create since the before state didn't have it and the after does
             after.setSecondaryUnitIdOnCreate( after.getSecondaryUnitId() );
         }
+    }
+
+    private enum SchemaMapValueType
+    {
+        // NOTE: Enum order (specifically, the enum ordinal) is part of the binary format!
+        BOOL_LITERAL_TRUE,
+        BOOL_LITERAL_FALSE,
+        BOOL_ARRAY_ELEMENT,
+        BYTE,
+        SHORT,
+        INT,
+        LONG,
+        FLOAT,
+        DOUBLE,
+        STRING,
+        CHAR,
+        ARRAY;
+
+        private static final SchemaMapValueType[] TYPE_ID_TO_ENUM = values(); // This works because 'type' is equal to ordinal.
+
+        public static SchemaMapValueType map( byte type )
+        {
+            return TYPE_ID_TO_ENUM[type];
+        }
+
+        public static SchemaMapValueType map( ValueWriter.ArrayType arrayType ) throws IOException
+        {
+            switch ( arrayType )
+            {
+            case BYTE:
+                return BYTE;
+            case SHORT:
+                return SHORT;
+            case INT:
+                return INT;
+            case LONG:
+                return LONG;
+            case FLOAT:
+                return FLOAT;
+            case DOUBLE:
+                return DOUBLE;
+            case BOOLEAN:
+                return BOOL_ARRAY_ELEMENT;
+            case STRING:
+                return STRING;
+            case CHAR:
+                return CHAR;
+            case POINT:
+            case ZONED_DATE_TIME:
+            case LOCAL_DATE_TIME:
+            case DATE:
+            case ZONED_TIME:
+            case LOCAL_TIME:
+            case DURATION:
+            default:
+                throw new IOException( "Unsupported schema record map value type: " + arrayType );
+            }
+        }
+
+        public byte type()
+        {
+            return (byte) ordinal();
+        }
+    }
+
+    @Override
+    protected Command readLegacySchemaRuleCommand( ReadableChannel channel ) throws IOException
+    {
+        throw unsupportedInThisVersionException();
+    }
+
+    @Override
+    protected Command readIndexDefineCommand( ReadableChannel channel ) throws IOException
+    {
+        throw unsupportedInThisVersionException();
+    }
+
+    @Override
+    protected Command readIndexAddNodeCommand( ReadableChannel channel ) throws IOException
+    {
+        throw unsupportedInThisVersionException();
+    }
+
+    @Override
+    protected Command readIndexAddRelationshipCommand( ReadableChannel channel ) throws IOException
+    {
+        throw unsupportedInThisVersionException();
+    }
+
+    @Override
+    protected Command readIndexCreateCommand( ReadableChannel channel ) throws IOException
+    {
+        throw unsupportedInThisVersionException();
+    }
+
+    @Override
+    protected Command readIndexDeleteCommand( ReadableChannel channel ) throws IOException
+    {
+        throw unsupportedInThisVersionException();
+    }
+
+    @Override
+    protected Command readIndexRemoveCommand( ReadableChannel channel ) throws IOException
+    {
+        throw unsupportedInThisVersionException();
     }
 }

@@ -19,28 +19,27 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.storageengine.api.CommandReader;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
 public class RecordStorageCommandReaderFactory implements CommandReaderFactory
 {
-    public static final CommandReaderFactory INSTANCE = new RecordStorageCommandReaderFactory();
+    public static final RecordStorageCommandReaderFactory INSTANCE = new RecordStorageCommandReaderFactory();
+    public static LogCommandSerialization LATEST_LOG_SERIALIZATION = INSTANCE.get( KernelVersion.LATEST );
 
     @Override
-    public CommandReader get( int logEntryVersion )
+    public LogCommandSerialization get( KernelVersion version )
     {
-        // Historically the log entry version
-
-        switch ( logEntryVersion )
+        switch ( version )
         {
-        case PhysicalLogCommandReaderV3_0_10.FORMAT_ID:
-            return PhysicalLogCommandReaderV3_0_10.INSTANCE;
-        case PhysicalLogCommandReaderV4_0.FORMAT_ID:
-            return PhysicalLogCommandReaderV4_0.INSTANCE;
-        case PhysicalLogCommandReaderV4_2.FORMAT_ID:
-            return PhysicalLogCommandReaderV4_2.INSTANCE;
+        case V2_3:
+            return LogCommandSerializationV3_0_10.INSTANCE;
+        case V4_0:
+            return LogCommandSerializationV4_0.INSTANCE;
+        case V4_2:
+            return LogCommandSerializationV4_2.INSTANCE;
         default:
-            throw new IllegalArgumentException( "Unsupported command format [id=" + logEntryVersion + "]" );
+            throw new IllegalArgumentException( "Unsupported kernel version " + version );
         }
     }
 }

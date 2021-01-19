@@ -61,6 +61,11 @@ public class IndexDefineCommand extends Command
     private MutableIntObjectMap<String> idToIndexName = new IntObjectHashMap<>();
     private MutableIntObjectMap<String> idToKey = new IntObjectHashMap<>();
 
+    public IndexDefineCommand()
+    {
+        super( null );
+    }
+
     public void init( MutableObjectIntMap<String> indexNames, MutableObjectIntMap<String> keys )
     {
         this.indexNameIdRange = requireNonNull( indexNames, "indexNames" );

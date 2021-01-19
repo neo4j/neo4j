@@ -84,7 +84,7 @@ class SchemaRuleCommandTest
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final PropertyStore propertyStore = mock( PropertyStore.class );
     private final IndexTransactionApplierFactory indexApplier = new IndexTransactionApplierFactory( indexUpdateListener );
-    private final BaseCommandReader reader = new PhysicalLogCommandReaderV4_0();
+    private final LogCommandSerialization serialization = LogCommandSerializationV4_2.INSTANCE;
     private final IndexDescriptor rule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( labelId, propertyKey ) ).withName( "index" ).materialise( id );
 
     @BeforeEach
@@ -108,7 +108,7 @@ class SchemaRuleCommandTest
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( before, after, rule ) );
+        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( serialization, before, after, rule ) );
 
         // THEN
         verify( schemaStore ).updateRecord( eq( after ), any(), any() );
@@ -125,7 +125,7 @@ class SchemaRuleCommandTest
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( before, after, rule ) );
+        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( serialization, before, after, rule ) );
 
         // THEN
         verify( indexUpdateListener ).createIndexes( SYSTEM , rule );
@@ -146,7 +146,7 @@ class SchemaRuleCommandTest
         ConstraintDescriptor schemaRule = ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKey ).withId( id ).withOwnedIndexId( 0 );
 
         // WHEN
-        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( before, after, schemaRule ) );
+        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( serialization, before, after, schemaRule ) );
 
         // THEN
         verify( schemaStore ).updateRecord( eq( after ), any(), any() );
@@ -164,7 +164,7 @@ class SchemaRuleCommandTest
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( before, after, rule ) );
+        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( serialization, before, after, rule ) );
 
         // THEN
         verify( schemaStore ).updateRecord( eq( after ), any(), any() );
@@ -181,7 +181,7 @@ class SchemaRuleCommandTest
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( before, after, rule ) );
+        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( serialization, before, after, rule ) );
 
         // THEN
         verify( indexUpdateListener ).dropIndex( rule );
@@ -195,14 +195,14 @@ class SchemaRuleCommandTest
         SchemaRecord after = new SchemaRecord( id ).initialize( true, 42 );
         after.setCreated();
 
-        SchemaRuleCommand command = new SchemaRuleCommand( before, after, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand( serialization, before, after, rule );
         InMemoryClosableChannel buffer = new InMemoryClosableChannel();
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
         command.serialize( buffer );
-        Command readCommand = reader.read( buffer );
+        Command readCommand = serialization.read( buffer );
 
         // THEN
         assertThat( readCommand ).isInstanceOf( SchemaRuleCommand.class );
@@ -218,13 +218,13 @@ class SchemaRuleCommandTest
         before.setCreated();
         SchemaRecord after = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
 
-        SchemaRuleCommand command = new SchemaRuleCommand( before, after, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand( serialization, before, after, rule );
         InMemoryClosableChannel buffer = new InMemoryClosableChannel();
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
         command.serialize( buffer );
-        Command readCommand = reader.read( buffer );
+        Command readCommand = serialization.read( buffer );
 
         // THEN
         assertThat( readCommand ).isInstanceOf( SchemaRuleCommand.class );
@@ -244,13 +244,13 @@ class SchemaRuleCommandTest
         SchemaRecord after = new SchemaRecord( ruleId ).initialize( true, 42 );
         after.setCreated();
 
-        SchemaRuleCommand command = new SchemaRuleCommand( before, after, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand( serialization, before, after, rule );
         InMemoryClosableChannel buffer = new InMemoryClosableChannel( (int) ByteUnit.kibiBytes( 5 ) );
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
         command.serialize( buffer );
-        SchemaRuleCommand readCommand = (SchemaRuleCommand) reader.read( buffer );
+        SchemaRuleCommand readCommand = (SchemaRuleCommand) serialization.read( buffer );
 
         // THEN
         assertEquals( ruleId, readCommand.getKey() );

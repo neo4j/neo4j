@@ -51,7 +51,7 @@ class PhysicalLogCommandReadersTest
     private static final long OWNING_NODE = 42;
 
     @ParameterizedTest
-    @ValueSource( classes = {PhysicalLogCommandReaderV3_0_10.class, PhysicalLogCommandReaderV4_0.class} )
+    @ValueSource( classes = {LogCommandSerializationV3_0_10.class, LogCommandSerializationV4_0.class} )
     void readRelGroupWithHugeType( Class<CommandReader> readerClass )
             throws IOException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException
     {

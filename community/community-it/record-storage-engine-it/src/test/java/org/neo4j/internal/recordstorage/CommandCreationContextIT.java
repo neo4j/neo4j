@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -101,7 +102,7 @@ public class CommandCreationContextIT
         try ( var commandCreationContext = storageEngine.newCommandCreationContext( NULL, memoryTracker ) )
         {
             var integrityValidator = mock( IntegrityValidator.class );
-            var recordState = commandCreationContext.createTransactionRecordState( integrityValidator, 1, IGNORE );
+            var recordState = commandCreationContext.createTransactionRecordState( integrityValidator, 1, IGNORE, LATEST_LOG_SERIALIZATION );
             long heapBefore = memoryTracker.estimatedHeapMemory();
             for ( int i = 1; i < 1024; i++ )
             {

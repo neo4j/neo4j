@@ -25,11 +25,11 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import org.neo4j.internal.recordstorage.PhysicalLogCommandReaderV4_0;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
 
 class IndexDefineCommandTest
 {
@@ -64,8 +64,7 @@ class IndexDefineCommandTest
         command.serialize( channel );
 
         // THEN
-        CommandReader commandReader = PhysicalLogCommandReaderV4_0.INSTANCE;
-        assertThrows( IOException.class, () -> commandReader.read( channel ) );
+        assertThrows( IOException.class, () -> ((CommandReader) LATEST_LOG_SERIALIZATION).read( channel ) );
     }
 
     @Test

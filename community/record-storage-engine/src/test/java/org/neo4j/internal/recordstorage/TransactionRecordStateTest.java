@@ -80,6 +80,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
@@ -1491,7 +1492,7 @@ class TransactionRecordStateTest
     @SuppressWarnings( "InfiniteLoopStatement" )
     private static CommandsToApply readFromChannel( ReadableLogChannel channel ) throws IOException
     {
-        PhysicalLogCommandReaderV4_0 reader = new PhysicalLogCommandReaderV4_0();
+        CommandReader reader = LogCommandSerializationV4_0.INSTANCE;
         List<StorageCommand> commands = new ArrayList<>();
         try
         {
@@ -1586,7 +1587,7 @@ class TransactionRecordStateTest
                 new RelationshipCreator( relationshipGroupGetter, neoStores.getRelationshipGroupStore().getStoreHeaderInt(), NULL ),
                 new RelationshipDeleter( relationshipGroupGetter, propertyDeleter, NULL ),
                 new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser, NULL, INSTANCE ),
-                propertyDeleter, NULL, INSTANCE );
+                propertyDeleter, NULL, INSTANCE, RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION );
     }
 
     private static CommandsToApply transaction( TransactionRecordState recordState ) throws TransactionFailureException

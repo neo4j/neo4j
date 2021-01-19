@@ -55,6 +55,11 @@ public abstract class IndexCommand extends Command
     protected byte valueType;
     protected Object value;
 
+    public IndexCommand()
+    {
+        super( null );
+    }
+
     protected void init( byte commandType, int indexNameId, byte entityType, long entityId, int keyId, Object value )
     {
         this.commandType = commandType ;

@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -57,46 +58,48 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class LogTruncationTest
 {
     private final InMemoryClosableChannel inMemoryChannel = new InMemoryClosableChannel();
-    private final PhysicalLogCommandReaderV4_0 reader = new PhysicalLogCommandReaderV4_0();
+    private final LogCommandSerialization serialization = RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
     /** Stores all known commands, and an arbitrary set of different permutations for them */
     private final Map<Class<?>, Command[]> permutations = new HashMap<>();
     {
         NeoStoreRecord after = new NeoStoreRecord();
         after.setNextProp( 42 );
-        permutations.put( Command.NodeCommand.class, new Command[] { new Command.NodeCommand(
+        permutations.put( Command.NodeCommand.class, new Command[] { new Command.NodeCommand( serialization,
                 new NodeRecord( 12 ).initialize( false, 13, false, 13, 0 ), new NodeRecord( 0 ).initialize( false, 0, false, 0, 0 ) ) } );
         RelationshipRecord relationship = new RelationshipRecord( 1 );
         relationship.setLinks( 2, 3, 4 );
         permutations.put( Command.RelationshipCommand.class,
-                new Command[] { new Command.RelationshipCommand( new RelationshipRecord( 1 ),
-                        relationship ) } );
-        permutations.put( Command.PropertyCommand.class, new Command[] { new Command.PropertyCommand(
+                new Command[] { new Command.RelationshipCommand( serialization, new RelationshipRecord( 1 ), relationship ) } );
+        permutations.put( Command.PropertyCommand.class, new Command[] { new Command.PropertyCommand( serialization,
                 new PropertyRecord( 1, new NodeRecord( 12 ).initialize( false, 13, false, 13, 0 ) ), new PropertyRecord( 1, new NodeRecord( 12 )
                 .initialize( false, 13, false, 13, 0 ) ) ) } );
         permutations.put( Command.RelationshipGroupCommand.class,
-                new Command[] { new Command.LabelTokenCommand( new LabelTokenRecord( 1 ),
+                new Command[] { new Command.LabelTokenCommand( serialization, new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
         IndexDescriptor schemaRule = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 3, 4 ) ).withName( "index_1" ).materialise( 1 );
         permutations.put( Command.SchemaRuleCommand.class, new Command[]{
-                new Command.SchemaRuleCommand( new SchemaRecord( 1 ).initialize( true, 41 ), new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),
-                new Command.SchemaRuleCommand( new SchemaRecord( 1 ), new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),
-                new Command.SchemaRuleCommand( new SchemaRecord( 1 ).initialize( true, 41 ), new SchemaRecord( 1 ), null ),
-                new Command.SchemaRuleCommand( new SchemaRecord( 1 ), new SchemaRecord( 1 ), null ),} );
+                new Command.SchemaRuleCommand( serialization, new SchemaRecord( 1 ).initialize( true, 41 ), new SchemaRecord( 1 ).initialize( true, 42 ),
+                        schemaRule ),
+                new Command.SchemaRuleCommand( serialization, new SchemaRecord( 1 ), new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),
+                new Command.SchemaRuleCommand( serialization, new SchemaRecord( 1 ).initialize( true, 41 ), new SchemaRecord( 1 ), null ),
+                new Command.SchemaRuleCommand( serialization, new SchemaRecord( 1 ), new SchemaRecord( 1 ), null ),} );
         permutations
                 .put( Command.RelationshipTypeTokenCommand.class,
-                        new Command[] { new Command.RelationshipTypeTokenCommand(
+                        new Command[] { new Command.RelationshipTypeTokenCommand( serialization,
                                 new RelationshipTypeTokenRecord( 1 ), createRelationshipTypeTokenRecord( 1 ) ) } );
         permutations.put( Command.PropertyKeyTokenCommand.class,
-                new Command[] { new Command.PropertyKeyTokenCommand( new PropertyKeyTokenRecord( 1 ),
+                new Command[] { new Command.PropertyKeyTokenCommand( serialization, new PropertyKeyTokenRecord( 1 ),
                         createPropertyKeyTokenRecord( 1 ) ) } );
         permutations.put( Command.LabelTokenCommand.class,
-                new Command[] { new Command.LabelTokenCommand( new LabelTokenRecord( 1 ),
+                new Command[] { new Command.LabelTokenCommand( serialization, new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
+        permutations.put( Command.MetaDataCommand.class,
+                new Command[] { new Command.MetaDataCommand( serialization, new MetaDataRecord( 2 ), new MetaDataRecord( 2 ).initialize( true, 123 ) ) } );
 
         // Counts commands
-        permutations.put( NodeCountsCommand.class, new Command[]{new NodeCountsCommand( 42, 11 )} );
+        permutations.put( NodeCountsCommand.class, new Command[]{new NodeCountsCommand( serialization, 42, 11 )} );
         permutations.put( RelationshipCountsCommand.class,
-                new Command[]{new RelationshipCountsCommand( 17, 2, 13, -2 )} );
+                new Command[]{new RelationshipCountsCommand( serialization, 17, 2, 13, -2 )} );
     }
 
     @Test
@@ -143,7 +146,7 @@ class LogTruncationTest
         int bytesSuccessfullyWritten = inMemoryChannel.writerPosition();
         try
         {
-            StorageCommand command = reader.read( inMemoryChannel );
+            StorageCommand command = serialization.read( inMemoryChannel );
             assertEquals( cmd, command );
         }
         catch ( Exception e )
@@ -159,7 +162,7 @@ class LogTruncationTest
             Command command = null;
             try
             {
-                command = reader.read( inMemoryChannel );
+                command = serialization.read( inMemoryChannel );
             }
             catch ( ReadPastEndException e )
             {

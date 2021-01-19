@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.recordstorage.legacy.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
+import org.neo4j.storageengine.api.CommandReader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -40,7 +41,7 @@ class PhysicalLogNeoCommandReaderTest
         // Number 12 will do just fine.
 
         // GIVEN
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
+        CommandReader reader = LogCommandSerializationV3_0_10.INSTANCE;
         InMemoryClosableChannel data = new InMemoryClosableChannel();
         AddRelationshipCommand command = new AddRelationshipCommand();
         byte indexNameId = (byte)12;
@@ -76,7 +77,7 @@ class PhysicalLogNeoCommandReaderTest
          */
 
         // GIVEN
-        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
+        CommandReader reader = LogCommandSerializationV3_0_10.INSTANCE;
         InMemoryClosableChannel data = new InMemoryClosableChannel();
         // Here we take advantage of the fact that all index commands have the same header written out
         AddRelationshipCommand command = new AddRelationshipCommand();
