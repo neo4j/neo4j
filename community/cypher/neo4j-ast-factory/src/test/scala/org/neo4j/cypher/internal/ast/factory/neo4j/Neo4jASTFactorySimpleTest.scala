@@ -73,7 +73,7 @@ class Neo4jASTFactorySimpleTest extends ParsingTestBase with FunSuiteLike with T
 
   test("keywords are allowed names") {
     val keywords =
-      Seq("RETURN", "CREATE", "DELETE", "SET", "REMOVE", "DETACH", "MATCH", "WITH",
+      Seq("TRUE", "FALSE", "NULL", "RETURN", "CREATE", "DELETE", "SET", "REMOVE", "DETACH", "MATCH", "WITH",
           "UNWIND", "USE", "GRAPH", "CALL", "YIELD", "LOAD", "CSV", "PERIODIC", "COMMIT",
           "HEADERS", "FROM", "FIELDTERMINATOR", "FOREACH", "WHERE", "DISTINCT", "MERGE",
           "OPTIONAL", "USING", "ORDER", "BY", "ASC", "ASCENDING", "DESC", "DESCENDING",
@@ -136,6 +136,38 @@ class Neo4jASTFactorySimpleTest extends ParsingTestBase with FunSuiteLike with T
   }
 
   test("RETURN [x = ()--()--()--()--()--()--()--()--()--()--()]") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE (:True)") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE (:False)") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE (t:True)") {
+    assertSameAST(testName)
+  }
+
+  test("CREATE (f:False)") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH (:True) RETURN 1 AS one") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH (:False) RETURN 1 AS one") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH (t:True) RETURN t") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH (f:False) RETURN f") {
     assertSameAST(testName)
   }
 
