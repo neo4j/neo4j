@@ -55,6 +55,8 @@ case object DPSolverConfig extends SingleComponentIDPSolverConfig {
 class ConfigurableIDPSolverConfig(override val maxTableSize: Int,
                                   override val iterationDurationLimit: Long) extends SingleComponentIDPSolverConfig {
   override def solvers(queryGraph: QueryGraph) = Seq(joinSolverStep(_), expandSolverStep(_))
+
+  override def toString: String = s"${this.getClass.getSimpleName}(maxTableSize = $maxTableSize, iterationDurationLimit = $iterationDurationLimit})"
 }
 
 /* For testing IDP we sometimes limit the solver to expands only */

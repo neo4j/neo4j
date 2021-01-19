@@ -84,6 +84,7 @@ import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.planner.spi.DPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.planning.CypherPlanner.createQueryGraphSolver
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
@@ -115,6 +116,49 @@ object CypherPlanner {
    * where we need to inject some specific indexes and statistics.
    */
   var customPlanContextCreator: Option[(TransactionalContextWrapper, InternalNotificationLogger, Log) => PlanContext] = None
+
+  /**
+   * Create a Query Graph solver that matches the configurations and pre-parser options.
+   */
+  private[planning] def createQueryGraphSolver(config: CypherPlannerConfiguration,
+                                               plannerOption: CypherPlannerOption,
+                                               connectComponentsPlannerOption: CypherConnectComponentsPlannerOption,
+                                               monitors: Monitors): IDPQueryGraphSolver = {
+    val plannerName: CostBasedPlannerName =
+      plannerOption match {
+        case CypherPlannerOption.default => CostBasedPlannerName.default
+        case CypherPlannerOption.cost | CypherPlannerOption.idp => IDPPlannerName
+        case CypherPlannerOption.dp => DPPlannerName
+        case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${plannerOption.name}")
+      }
+
+    plannerName match {
+      case IDPPlannerName =>
+        val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
+        val solverConfig = new ConfigurableIDPSolverConfig(
+          maxTableSize = config.idpMaxTableSize,
+          iterationDurationLimit = config.idpIterationDuration
+        )
+        val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
+        val componentConnectorPlanner = connectComponentsPlannerOption match {
+          case CypherConnectComponentsPlannerOption.idp |
+               CypherConnectComponentsPlannerOption.default => ComponentConnectorPlanner(singleComponentPlanner, solverConfig, monitor)
+          case CypherConnectComponentsPlannerOption.greedy  => cartesianProductsOrValueJoins
+        }
+        IDPQueryGraphSolver(singleComponentPlanner, componentConnectorPlanner, monitor)
+
+      case DPPlannerName =>
+        val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
+        val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
+        val componentConnectorPlanner = connectComponentsPlannerOption match {
+          case CypherConnectComponentsPlannerOption.idp |
+               CypherConnectComponentsPlannerOption.default => ComponentConnectorPlanner(singleComponentPlanner, DPSolverConfig, monitor)
+          case _                                        => cartesianProductsOrValueJoins
+        }
+        IDPQueryGraphSolver(singleComponentPlanner, componentConnectorPlanner, monitor)
+    }
+  }
+
 }
 
 /**
@@ -154,14 +198,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
     case _ => None
   }
-
-  private val plannerName: CostBasedPlannerName =
-    plannerOption match {
-      case CypherPlannerOption.default => CostBasedPlannerName.default
-      case CypherPlannerOption.cost | CypherPlannerOption.idp => IDPPlannerName
-      case CypherPlannerOption.dp => DPPlannerName
-      case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${plannerOption.name}")
-    }
 
   private val planner: compiler.CypherPlanner[PlannerContext] =
     new CypherPlannerFactory().costBasedCompiler(config, clock, monitors, maybeUpdateStrategy, contextCreator)
@@ -289,7 +325,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
       Some(options.offset),
       monitors,
       CachedMetricsFactory(SimpleMetricsFactory),
-      createQueryGraphSolver(options.queryOptions.connectComponentsPlanner),
+      createQueryGraphSolver(config, plannerOption, options.queryOptions.connectComponentsPlanner, monitors),
       config,
       maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
       clock,
@@ -397,32 +433,6 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 
   private def checkForSchemaChanges(tcw: TransactionalContextWrapper): Unit =
     tcw.getOrCreateFromSchemaState(schemaStateKey, planCache.clear())
-
-  private def createQueryGraphSolver(connectComponentsPlannerOption: CypherConnectComponentsPlannerOption): IDPQueryGraphSolver =
-    plannerName match {
-      case IDPPlannerName =>
-        val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
-        val solverConfig = new ConfigurableIDPSolverConfig(
-          maxTableSize = config.idpMaxTableSize,
-          iterationDurationLimit = config.idpIterationDuration
-        )
-        val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
-        val componentConnectorPlanner = connectComponentsPlannerOption match {
-          case CypherConnectComponentsPlannerOption.idp |
-               CypherConnectComponentsPlannerOption.default => ComponentConnectorPlanner(singleComponentPlanner, solverConfig, monitor)
-          case CypherConnectComponentsPlannerOption.greedy  => cartesianProductsOrValueJoins
-        }
-        IDPQueryGraphSolver(singleComponentPlanner, componentConnectorPlanner, monitor)
-
-      case DPPlannerName =>
-        val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
-        val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
-        val componentConnectorPlanner = connectComponentsPlannerOption match {
-          case CypherConnectComponentsPlannerOption.idp => ComponentConnectorPlanner(singleComponentPlanner, DPSolverConfig, monitor)
-          case _                                        => cartesianProductsOrValueJoins
-        }
-        IDPQueryGraphSolver(singleComponentPlanner, componentConnectorPlanner, monitor)
-    }
 
   private def parameterNamesAndValues(statement: Statement): (ArrayBuffer[String], MapValue) = {
     val names = mutable.ArrayBuffer.empty[String]

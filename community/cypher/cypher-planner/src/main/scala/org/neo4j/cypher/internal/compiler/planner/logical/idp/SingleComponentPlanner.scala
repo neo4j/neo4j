@@ -142,6 +142,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 
 trait SingleComponentPlannerTrait {
   def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrderConfig: InterestingOrderConfig): BestPlans
+  def solverConfig: SingleComponentIDPSolverConfig
 }
 
 
