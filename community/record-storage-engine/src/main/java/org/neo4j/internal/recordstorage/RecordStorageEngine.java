@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockService;
@@ -344,6 +345,26 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             recordState.extractCommands( commands, transactionMemoryTracker );
             countsRecordState.extractCommands( commands, transactionMemoryTracker );
         }
+    }
+
+    @Override
+    public Collection<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo )
+    {
+        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
+        int id = MetaDataStore.Position.KERNEL_VERSION.id();
+
+        MetaDataRecord before = metaDataStore.newRecord();
+        before.setId( id );
+        before.initialize( true, metaDataStore.kernelVersion().version() );
+
+        MetaDataRecord after = metaDataStore.newRecord();
+        after.setId( id );
+        after.initialize( true, versionToUpgradeTo.version() );
+
+        //This command can be the first one in the "new" version, indicating the switch and writing it to the MetaDataStore
+        //This will work in a Cluster rolling-upgrade scenario as any member receiving this will be on the latest jars and able to read/apply the new version
+        LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get( versionToUpgradeTo );
+        return List.of( new Command.MetaDataCommand( serialization, before, after ) );
     }
 
     @Override

@@ -50,6 +50,16 @@ public class DatabaseTransactionEventListeners
         this.databaseName = namedDatabaseId.name();
     }
 
+    public void registerTransactionEventListener( TransactionEventListener<?> listener )
+    {
+        globalTransactionEventListeners.registerTransactionEventListener( databaseName, listener );
+    }
+
+    public void unregisterTransactionEventListener( TransactionEventListener<?> listener )
+    {
+        globalTransactionEventListeners.unregisterTransactionEventListener( databaseName, listener );
+    }
+
     public TransactionListenersState beforeCommit( ReadableTransactionState state, KernelTransaction transaction, StorageReader storageReader )
     {
         // The iterator grabs a snapshot of our list of listenerIterator

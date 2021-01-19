@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel;
 
-import java.util.Arrays;
-import java.util.Comparator;
+import org.eclipse.collections.api.map.primitive.ImmutableByteObjectMap;
+import org.eclipse.collections.impl.factory.primitive.ByteObjectMaps;
 
-import org.neo4j.util.Preconditions;
+import java.util.List;
 
 /**
  * One version scheme to unify various internal versions into one with the intent of conceptual simplification and simplification of version bumping.
@@ -35,16 +35,13 @@ import org.neo4j.util.Preconditions;
  */
 public enum KernelVersion
 {
-    UNKNOWN( (byte) -1 ),
     V2_3( (byte) -10 ), // 2.3 to 3.5.
     V4_0( (byte) 1 ), // 4.0 to 4.1. Added checksums to the log files.
     V4_2( (byte) 2 ); // 4.2+. Removed checkpoint entries.
 
     public static KernelVersion LATEST = V4_2;
-    private static final KernelVersion[] sortedVersions = Arrays.stream( values() )
-            .filter( KernelVersion::isKnown )
-            .sorted( Comparator.comparingInt( KernelVersion::version ).reversed() )
-            .toArray( KernelVersion[]::new );
+    private static final ImmutableByteObjectMap<KernelVersion> versionMap =
+            ByteObjectMaps.immutable.from( List.of( values() ), KernelVersion::version, v -> v );
 
     private final byte version;
 
@@ -58,11 +55,6 @@ public enum KernelVersion
         return this.version;
     }
 
-    public boolean isKnown()
-    {
-        return this != UNKNOWN;
-    }
-
     public boolean isLatest()
     {
         return this == LATEST;
@@ -70,9 +62,12 @@ public enum KernelVersion
 
     public boolean isGreaterThan( KernelVersion other )
     {
-        Preconditions.checkState( this != UNKNOWN, "Cannot compare " + UNKNOWN );
-        Preconditions.checkArgument( other != UNKNOWN, "Cannot compare " + UNKNOWN );
         return version > other.version;
+    }
+
+    public boolean isAtLeast( KernelVersion other )
+    {
+        return version >= other.version;
     }
 
     @Override
@@ -83,16 +78,11 @@ public enum KernelVersion
 
     public static KernelVersion getForVersion( byte version )
     {
-        if ( version <= LATEST.version() )
+        KernelVersion kernelVersion = versionMap.get( version );
+        if ( kernelVersion == null )
         {
-            for ( KernelVersion kernelVersion : sortedVersions )
-            {
-                if ( version >= kernelVersion.version() )
-                {
-                    return kernelVersion;
-                }
-            }
+            throw new IllegalArgumentException( "No matching " + KernelVersion.class.getSimpleName() + " for version " + version );
         }
-        throw new IllegalArgumentException( "No matching " + KernelVersion.class.getSimpleName() + " for version " + version );
+        return kernelVersion;
     }
 }

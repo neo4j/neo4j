@@ -19,31 +19,35 @@
  */
 package org.neo4j.dbms.database;
 
+import org.neo4j.kernel.KernelVersion;
+
 public enum DbmsRuntimeVersion implements ComponentVersion
 {
-    V4_1( 1, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_41 ),
+    V4_1( 1, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_41, KernelVersion.V4_0 ),
 
     /**
      * Introduced new transaction log version
      */
-    V4_2( 2, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_42 ),
+    V4_2( 2, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_42, KernelVersion.V4_2 ),
 
     /**
      * Switch to use the Version node
      */
-    V4_3( 3, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_43D2 );
+    V4_3( 3, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_43D2, KernelVersion.V4_2 );
 
     public static final DbmsRuntimeVersion LATEST_DBMS_RUNTIME_COMPONENT_VERSION = V4_3;
 
-    DbmsRuntimeVersion( int version, String componentName, String description )
+    DbmsRuntimeVersion( int version, String componentName, String description, KernelVersion kernelVersion )
     {
         this.version = version;
         this.componentName = componentName;
         this.description = description;
+        this.kernelVersion = kernelVersion;
     }
 
     private final String componentName;
     private final String description;
+    private final KernelVersion kernelVersion;
     private final int version;
 
     @Override
@@ -102,5 +106,10 @@ public enum DbmsRuntimeVersion implements ComponentVersion
             throw new IllegalArgumentException( "Comparison to different Version type" );
         }
         return this.getVersion() > other.getVersion();
+    }
+
+    public KernelVersion kernelVersion()
+    {
+        return kernelVersion;
     }
 }

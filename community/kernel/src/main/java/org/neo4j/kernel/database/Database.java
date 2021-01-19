@@ -46,11 +46,13 @@ import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.dbms.database.DatabasePageCache;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
@@ -60,6 +62,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -76,6 +79,7 @@ import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -108,6 +112,7 @@ import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointScheduler;
@@ -133,6 +138,7 @@ import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
@@ -162,12 +168,14 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
@@ -252,6 +260,7 @@ public class Database extends LifecycleAdapter
     private MemoryTracker otherDatabaseMemoryTracker;
     private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private DatabaseAvailability databaseAvailability;
+    private DatabaseTransactionEventListeners databaseTransactionEventListeners;
 
     public Database( DatabaseCreationContext context )
     {
@@ -468,6 +477,7 @@ public class Database extends LifecycleAdapter
                     buildTransactionLogs( logFiles, databaseConfig, internalLogProvider, scheduler, forceOperation,
                             logEntryReader, metadataProvider, databaseMonitors, databaseDependencies );
 
+            databaseTransactionEventListeners = new DatabaseTransactionEventListeners( databaseFacade, transactionEventListeners, namedDatabaseId );
             final DatabaseKernelModule kernelModule = buildKernel(
                     logFiles,
                     transactionLogModule.transactionAppender(),
@@ -479,7 +489,7 @@ public class Database extends LifecycleAdapter
                     metadataProvider,
                     databaseAvailabilityGuard,
                     clock,
-                    indexStatisticsStore, databaseFacade, leaseService );
+                    indexStatisticsStore, leaseService );
 
             kernelModule.satisfyDependencies( databaseDependencies );
 
@@ -511,6 +521,8 @@ public class Database extends LifecycleAdapter
 
             databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
             life.start();
+
+            registerUpgradeListener();
             eventListeners.databaseStart( namedDatabaseId );
 
             /*
@@ -526,6 +538,27 @@ public class Database extends LifecycleAdapter
         {
             handleStartupFailure( e );
         }
+    }
+
+    private void registerUpgradeListener()
+    {
+        DatabaseUpgradeTransactionHandler handler = new DatabaseUpgradeTransactionHandler( storageEngine,
+                globalDependencies.resolveDependency( DbmsRuntimeRepository.class ), storageEngine.metadataProvider(), databaseTransactionEventListeners );
+
+        handler.registerUpgradeListener( commands ->
+        {
+            PhysicalTransactionRepresentation transactionRepresentation =
+                    new PhysicalTransactionRepresentation( commands );
+            long time = clock.millis();
+            transactionRepresentation.setHeader( EMPTY_BYTE_ARRAY, time, storageEngine.metadataProvider().getLastClosedTransactionId(), time,
+                    leaseService.newClient().leaseId(), AuthSubject.AUTH_DISABLED );
+            TransactionToApply toApply =
+                    new TransactionToApply( transactionRepresentation, versionContextSupplier.getVersionContext(), PageCursorTracer.NULL );
+
+            TransactionCommitProcess commitProcess = databaseDependencies.resolveDependency( TransactionCommitProcess.class );
+            commitProcess.commit( toApply, CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
+        }  );
+
     }
 
     private void validateStoreAndTxLogs( LogFiles logFiles, PageCacheTracer pageCacheTracer, boolean storageExists )
@@ -769,7 +802,7 @@ public class Database extends LifecycleAdapter
             IndexingService indexingService, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
             RelationshipTypeScanStore relationshipTypeScanStore, StorageEngine storageEngine, TransactionIdStore transactionIdStore,
             AvailabilityGuard databaseAvailabilityGuard, SystemNanoClock clock,
-            IndexStatisticsStore indexStatisticsStore, GraphDatabaseFacade facade,
+            IndexStatisticsStore indexStatisticsStore,
             LeaseService leaseService )
     {
         AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
@@ -784,8 +817,6 @@ public class Database extends LifecycleAdapter
 
         ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService, internalLogProvider );
 
-        DatabaseTransactionEventListeners databaseTransactionEventListeners =
-                new DatabaseTransactionEventListeners( facade, transactionEventListeners, namedDatabaseId );
         KernelTransactions kernelTransactions = life.add(
                 new KernelTransactions( databaseConfig, locks, constraintIndexCreator,
                         transactionCommitProcess, databaseTransactionEventListeners, transactionStats,

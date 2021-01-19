@@ -27,6 +27,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.Log;
@@ -103,6 +104,14 @@ public interface StorageEngine extends Lifecycle
             PageCursorTracer cursorTracer,
             MemoryTracker memoryTracker )
             throws KernelException;
+
+    /**
+     * Generates a list of {@link StorageCommand commands} representing the upgrade of the {@link KernelVersion} for this
+     * store to the desired version.
+     * @param versionToUpgradeTo the {@link KernelVersion} that the returned commands will represent an upgrade to.
+     * @return commands for making an upgrade to the desired {@link KernelVersion}.
+     */
+    Collection<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo );
 
     /**
      * Apply a batch of groups of commands to this storage.
