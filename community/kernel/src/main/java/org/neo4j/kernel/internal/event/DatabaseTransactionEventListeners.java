@@ -31,7 +31,6 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.kernel.internal.event.EmptyTransactionData.EMPTY_DATA;
 
 /**
  * Handle the collection of transaction event listeners, and fire events as needed.
@@ -61,21 +60,26 @@ public class DatabaseTransactionEventListeners
             return null;
         }
 
-        TransactionData txData = state == null ? EMPTY_DATA : new TxStateTransactionDataSnapshot( state, storageReader, transaction );
+        TransactionData txData = new TxStateTransactionDataSnapshot( state, storageReader, transaction );
         TransactionListenersState listenersStates = new TransactionListenersState( txData );
 
+        boolean hasDataChanges = state.hasDataChanges();
+        boolean isSystem = SYSTEM_DATABASE_NAME.equals( databaseName );
         for ( TransactionEventListener<?> listener : eventListeners )
         {
-            Object listenerState = null;
-            try
+            if ( hasDataChanges || listener instanceof InternalTransactionEventListener || isSystem )
             {
-                listenerState = listener.beforeCommit( txData, transaction.internalTransaction(), databaseFacade );
+                Object listenerState = null;
+                try
+                {
+                    listenerState = listener.beforeCommit( txData, transaction.internalTransaction(), databaseFacade );
+                }
+                catch ( Throwable t )
+                {
+                    listenersStates.failed( t );
+                }
+                listenersStates.addListenerState( listener, listenerState );
             }
-            catch ( Throwable t )
-            {
-                listenersStates.failed( t );
-            }
-            listenersStates.addListenerState( listener, listenerState );
         }
 
         return listenersStates;
@@ -132,18 +136,6 @@ public class DatabaseTransactionEventListeners
 
     private boolean canInvokeListenersWithTransactionState( ReadableTransactionState state )
     {
-        if ( state == null )
-        {
-            // no need to invoke listeners for transaction without state (read-only transaction)
-            return false;
-        }
-        if ( state.hasDataChanges() )
-        {
-            // transaction has data changes and listeners can be invoked (write transaction that created nodes or relationships)
-            return true;
-        }
-
-        // system database listeners receive events about all transactions, including internal transactions that create tokens and make schema changes
-        return state.hasChanges() && SYSTEM_DATABASE_NAME.equals( databaseName );
+        return state != null && state.hasChanges();
     }
 }

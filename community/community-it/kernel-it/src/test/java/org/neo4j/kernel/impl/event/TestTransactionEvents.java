@@ -52,6 +52,7 @@ import org.neo4j.internal.recordstorage.TestRelType;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
+import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -1047,6 +1048,30 @@ class TestTransactionEvents
     }
 
     @Test
+    void shouldInvokeInternalListenersForInternalTokenTransactions()
+    {
+        var databaseName = DEFAULT_DATABASE_NAME;
+        var listener = new CommitCountingEventInternalListener(); // note internal listener
+        dbms.registerTransactionEventListener( databaseName, listener );
+
+        var lastClosedTxIdBefore = lastClosedTxId( databaseName, dbms );
+
+        // commit a transaction that introduces multiple tokens
+        commitTxWithMultipleNewTokens( databaseName, dbms );
+
+        var lastClosedTxIdAfter = lastClosedTxId( databaseName, dbms );
+
+        // more than one transaction should be committed
+        assertThat( lastClosedTxIdAfter ).isGreaterThan( lastClosedTxIdBefore + 1 );
+
+        // and the listener should be invoked for all transactions since it is internal
+        var committedTransactions = lastClosedTxIdAfter - lastClosedTxIdBefore;
+        assertEquals( committedTransactions, listener.beforeCommitInvocations.get() );
+        assertEquals( committedTransactions, listener.afterCommitInvocations.get() );
+        assertEquals( 0, listener.afterRollbackInvocations.get() );
+    }
+
+    @Test
     void shouldInvokeListenersForAllTransactionsOnSystemDatabase()
     {
         var databaseName = SYSTEM_DATABASE_NAME;
@@ -1502,29 +1527,35 @@ class TestTransactionEvents
         }
     }
 
-    private static class CommitCountingEventListener extends TransactionEventListenerAdapter<Object>
+    private static class CommitCountingEventBase
     {
         final AtomicInteger beforeCommitInvocations = new AtomicInteger();
         final AtomicInteger afterCommitInvocations = new AtomicInteger();
         final AtomicInteger afterRollbackInvocations = new AtomicInteger();
 
-        @Override
         public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService )
         {
             beforeCommitInvocations.incrementAndGet();
             return null;
         }
 
-        @Override
         public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
         {
             afterCommitInvocations.incrementAndGet();
         }
 
-        @Override
         public void afterRollback( TransactionData data, Object state, GraphDatabaseService databaseService )
         {
             afterRollbackInvocations.incrementAndGet();
         }
     }
+
+    private static class CommitCountingEventListener extends CommitCountingEventBase implements TransactionEventListener<Object>
+    {
+    }
+
+    private static class CommitCountingEventInternalListener extends CommitCountingEventBase implements InternalTransactionEventListener<Object>
+    {
+    }
+
 }
