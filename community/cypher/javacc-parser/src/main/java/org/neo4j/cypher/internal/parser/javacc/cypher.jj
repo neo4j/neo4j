@@ -2363,5 +2363,7 @@ Token SymbolicNameString() :
   | t=<SHORTEST_PATH>
   | t=<ALL_SHORTEST_PATH>
   | t=<NULL>
+  | t=<TRUE>
+  | t=<FALSE>
   ) { return t; }
 }
