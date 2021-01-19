@@ -31,6 +31,12 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.lock.LockType.EXCLUSIVE
+import org.neo4j.lock.LockType.SHARED
+import org.neo4j.lock.ResourceTypes.INDEX_ENTRY
+import org.neo4j.lock.ResourceTypes.LABEL
+
+import scala.util.Random
 
 // Supported by all runtimes
 abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
@@ -276,83 +282,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withSingleRow(nodes(20))
   }
 
-}
-
-// Supported by interpreted, slotted, compiled
-trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
-  self: NodeIndexSeekTestBase[CONTEXT] =>
-
-  test("should exact seek nodes of a locking unique index with a property") {
-    val nodes = given {
-      uniqueIndex("Honey", "prop")
-      nodeGraph(5, "Milk")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("prop" -> i)
-      }, "Honey")
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .nodeIndexOperator("x:Honey(prop = 20)", unique = true)
-      .build(readOnly = false)
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = nodes(20)
-    runtimeResult should beColumns("x").withSingleRow(expected)
-  }
-
-  test("should exact (multiple, but identical) seek nodes of a locking unique index with a property") {
-    val nodes = given {
-      uniqueIndex("Honey", "prop")
-      nodeGraph(5, "Milk")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("prop" -> i)
-      }, "Honey")
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .nodeIndexOperator("x:Honey(prop = 20 OR 20)", unique = true)
-      .build(readOnly = false)
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = Seq(nodes(20))
-    runtimeResult should beColumns("x").withRows(singleColumn(expected))
-  }
-
-  test("should cache properties in locking unique index") {
-    val nodes = given {
-      uniqueIndex("Honey", "prop")
-      nodeGraph(5, "Milk")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("prop" -> i)
-      }, "Honey")
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "prop")
-      .projection("cache[x.prop] AS prop")
-      .nodeIndexOperator("x:Honey(prop = 10)", GetValue)
-      .build(readOnly = false)
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "prop").withSingleRow(nodes(10), 10)
-  }
-}
-
-// Supported by interpreted, slotted, pipelined, parallel
-trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
-  self: NodeIndexSeekTestBase[CONTEXT] =>
-
+  // RANGE queries
   test("should seek nodes of an index with a property") {
     val nodes = given {
       index("Honey", "prop")
@@ -1030,6 +960,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
   }
 
+  //array properties
   test("should handle multiple index seek with overflowing morsels") {
     // given
     given {
@@ -1058,6 +989,142 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     runtimeResult should beColumns("x").withRows(rowCount(sizeHint * 5))
+  }
+  test("should exact (single) seek nodes of an index with an array property") {
+    val nodes = given {
+      index("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> Array[Int](i))
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop = ???)", paramExpr = Some(listOf(literalInt(20))))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(20)
+    runtimeResult should beColumns("x").withSingleRow(expected)
+  }
+}
+
+// Supported by interpreted, slotted, pipelined, not by parallel
+trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
+  self: NodeIndexSeekTestBase[CONTEXT] =>
+  test("should exact seek nodes of a locking unique index with a property") {
+    val nodes = given {
+      uniqueIndex("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop = 20)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(20)
+    runtimeResult should beColumns("x").withSingleRow(expected)
+  }
+
+  test("should exact (multiple, but identical) seek nodes of a locking unique index with a property") {
+    val nodes = given {
+      uniqueIndex("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop = 20 OR 20)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = Seq(nodes(20))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
+
+  test("should cache properties in locking unique index") {
+    val nodes = given {
+      uniqueIndex("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "prop")
+      .projection("cache[x.prop] AS prop")
+      .nodeIndexOperator("x:Honey(prop = 10)", GetValue, unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x", "prop").withSingleRow(nodes(10), 10)
+  }
+
+  test("should grab shared lock when finding a node") {
+    val nodes = given {
+      uniqueIndex("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "Honey")
+    }
+    val propToFind = Random.nextInt(sizeHint)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:Honey(prop = $propToFind)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(propToFind)
+    runtimeResult should beColumns("x").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, LABEL))
+  }
+
+  test("should grab an exclusive lock when not finding a node") {
+    val nodes = given {
+      uniqueIndex("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "Honey")
+    }
+    val propToFind = sizeHint + 1
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:Honey(prop = $propToFind)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withNoRows().withLocks((EXCLUSIVE, INDEX_ENTRY), (SHARED, LABEL))
   }
 }
 
@@ -1092,32 +1159,5 @@ trait EnterpriseNodeIndexSeekTestBase[CONTEXT <: RuntimeContext] {
       _ <- milk
     } yield honey(10)
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
-  }
-}
-
-// Buggy in compiled runtime
-trait ArrayIndexSupport[CONTEXT <: RuntimeContext] {
-  self: NodeIndexSeekTestBase[CONTEXT] =>
-
-  test("should exact (single) seek nodes of an index with an array property") {
-    val nodes = given {
-      index("Honey", "prop")
-      nodeGraph(5, "Milk")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("prop" -> Array[Int](i))
-      }, "Honey")
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .nodeIndexOperator("x:Honey(prop = ???)", paramExpr = Some(listOf(literalInt(20))))
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = nodes(20)
-    runtimeResult should beColumns("x").withSingleRow(expected)
   }
 }
