@@ -21,6 +21,6 @@ package org.neo4j.cypher.internal.parser.javacc;
 
 public class WithOffset
 {
-    public int beginOffset = 0;
-    public int endOffset = 0;
+    public int beginOffset;
+    public int endOffset;
 }

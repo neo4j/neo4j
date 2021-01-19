@@ -49,10 +49,10 @@ public class CypherCharStream implements CharStream
 
     private final String query;
     private int queryCursor = -1;
-    private int queryCursorColumn = 0;
+    private int queryCursorColumn;
     private int queryCursorLine = 1;
-    private boolean queryCursorIsCR = false;
-    private boolean queryCursorIsLF = false;
+    private boolean queryCursorIsCR;
+    private boolean queryCursorIsLF;
 
     private char[] result;
     private int resultCursor = -1;
@@ -165,7 +165,7 @@ public class CypherCharStream implements CharStream
             break;
         case '\t':
             queryCursorColumn--;
-            queryCursorColumn += (tabSize - (queryCursorColumn % tabSize));
+            queryCursorColumn += tabSize - (queryCursorColumn % tabSize);
             break;
         default:
             break;
@@ -331,9 +331,8 @@ public class CypherCharStream implements CharStream
         case 'f':
         case 'F':
             return 15;
+        default:
+            throw new IOException( "Invalid input '" + c + "': expected four hexadecimal digits specifying a unicode character" );
         }
-
-        // Should never come here
-        throw new IOException( "Invalid input '" + c + "': expected four hexadecimal digits specifying a unicode character" );
     }
 }

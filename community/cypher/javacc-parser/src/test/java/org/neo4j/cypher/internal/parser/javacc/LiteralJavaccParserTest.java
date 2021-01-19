@@ -190,7 +190,8 @@ public class LiteralJavaccParserTest
         DateTimeValue dateTimeZone = DateTimeValue.datetime( 2020, 12, 10, 6, 41, 23, 0, ZoneId.of( "America/Los_Angeles" ) );
         assertEquals( date, parseLiteral( "datetime('2020-12-10T6:41:23.0')" ) );
         assertEquals( date, parseLiteral( "datetime({year:2020, month:12, day:10, hour: 6, minute: 41, second: 23})" ) );
-        assertEquals( dateTimeZone, parseLiteral( "datetime({year:2020, month:12, day:10, hour: 6, minute: 41, second: 23, timezone: 'America/Los Angeles'})" ) );
+        assertEquals( dateTimeZone,
+                      parseLiteral( "datetime({year:2020, month:12, day:10, hour: 6, minute: 41, second: 23, timezone: 'America/Los Angeles'})" ) );
         assertNotNull( parseLiteral( "datetime()" ) ); // should not throw
 
         assertThrows( IllegalArgumentException.class, () -> parseLiteral( "datetime(2020, 12, 10, 6, 41, 23, 0)" ) );

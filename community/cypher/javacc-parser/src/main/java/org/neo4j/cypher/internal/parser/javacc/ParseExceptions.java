@@ -28,8 +28,8 @@ public class ParseExceptions extends RuntimeException
     {
     }
 
-    public static List<String> expected(final int[][] expectedTokenSequences,
-                                        final String[] tokenImage)
+    public static List<String> expected( final int[][] expectedTokenSequences,
+                                         final String[] tokenImage )
     {
         List<String> expected = new ArrayList<>();
         for ( int[] expectedTokenSequence : expectedTokenSequences )

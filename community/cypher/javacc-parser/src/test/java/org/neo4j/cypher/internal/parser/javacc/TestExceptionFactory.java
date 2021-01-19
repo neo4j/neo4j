@@ -28,12 +28,12 @@ public class TestExceptionFactory implements ASTExceptionFactory
     @Override
     public Exception syntaxException( String got, List<String> expected, Exception source, int offset, int line, int column )
     {
-        return new Exception("SyntaxException!", source);
+        return new Exception( "SyntaxException!", source );
     }
 
     @Override
     public Exception syntaxException( Exception source, int offset, int line, int column )
     {
-        return new Exception("SyntaxException!", source);
+        return new Exception( "SyntaxException!", source );
     }
 }

@@ -25,8 +25,9 @@ public class InvalidUnicodeLiteral extends RuntimeException
     public final int line;
     public final int column;
 
-    public InvalidUnicodeLiteral( String message, int offset, int line, int column ) {
-        super(message);
+    public InvalidUnicodeLiteral( String message, int offset, int line, int column )
+    {
+        super( message );
         this.offset = offset;
         this.line = line;
         this.column = column;
