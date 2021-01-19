@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Rewriter
@@ -52,21 +53,22 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
   override def instance(context: PlannerContext,
                         solveds: Solveds,
                         cardinalities: Cardinalities,
+                        effectiveCardinalities: EffectiveCardinalities,
                         providedOrders: ProvidedOrders,
                         otherAttributes: Attributes[LogicalPlan]): Rewriter = fixedPoint(inSequence(
     fuseSelections,
-    unnestApply(solveds, otherAttributes.withAlso(cardinalities, providedOrders)),
+    unnestApply(solveds, otherAttributes.withAlso(cardinalities, effectiveCardinalities, providedOrders)),
     unnestCartesianProduct,
-    cleanUpEager(solveds, otherAttributes.withAlso(cardinalities, providedOrders)),
+    cleanUpEager(solveds, otherAttributes.withAlso(cardinalities, effectiveCardinalities, providedOrders)),
     simplifyPredicates,
     unnestOptional,
-    predicateRemovalThroughJoins(solveds, cardinalities, otherAttributes.withAlso(providedOrders)),
-    removeIdenticalPlans(otherAttributes.withAlso(cardinalities, solveds, providedOrders)),
+    predicateRemovalThroughJoins(solveds, cardinalities, otherAttributes.withAlso(effectiveCardinalities, providedOrders)),
+    removeIdenticalPlans(otherAttributes.withAlso(cardinalities, effectiveCardinalities, solveds, providedOrders)),
     pruningVarExpander,
     useTop,
     skipInPartialSort,
     simplifySelections,
-    limitNestedPlanExpressions(cardinalities, otherAttributes.withAlso(solveds, providedOrders))
+    limitNestedPlanExpressions(cardinalities, otherAttributes.withAlso(effectiveCardinalities, solveds, providedOrders))
   ))
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
@@ -97,6 +99,7 @@ trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
   def instance(context: PlannerContext,
                solveds: Solveds,
                cardinalities: Cardinalities,
+               effectiveCardinalities: EffectiveCardinalities,
                providedOrders: ProvidedOrders,
                otherAttributes: Attributes[LogicalPlan]): Rewriter
 
@@ -104,7 +107,7 @@ trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     val idGen = context.logicalPlanIdGen
     val otherAttributes = Attributes[LogicalPlan](idGen, from.planningAttributes.leveragedOrders)
     val rewritten = from.logicalPlan.endoRewrite(
-      instance(context, from.planningAttributes.solveds, from.planningAttributes.cardinalities, from.planningAttributes.providedOrders, otherAttributes))
+      instance(context, from.planningAttributes.solveds, from.planningAttributes.cardinalities, from.planningAttributes.effectiveCardinalities, from.planningAttributes.providedOrders, otherAttributes))
     from.copy(maybeLogicalPlan = Some(rewritten))
   }
 }

@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.BatchedCartesianOrdering
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.CartesianOrdering
 import org.neo4j.cypher.internal.util.VolcanoCartesianOrdering
+import org.neo4j.cypher.internal.util.attribution.Attribute
 
 /**
  * The execution model of how a runtime executes a query.
@@ -51,7 +51,7 @@ object ExecutionModel {
     /**
      * Select the batch size for executing a logical plan.
      */
-    def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): Int = {
+    def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Attribute[LogicalPlan, Cardinality]): Int = {
       val maxCardinality = logicalPlan.flatten.map(plan => cardinalities.get(plan.id)).max
       selectBatchSize(maxCardinality)
     }

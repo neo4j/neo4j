@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
 import org.neo4j.cypher.internal.logical.builder.Resolver
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
@@ -45,6 +46,10 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
   }
 
   private val cardinalities: Cardinalities = new Cardinalities with Default[LogicalPlan, Cardinality] {
+    override val defaultValue: Cardinality = Cardinality.SINGLE
+  }
+
+  private val effectiveCardinalities: EffectiveCardinalities = new EffectiveCardinalities with Default[LogicalPlan, Cardinality] {
     override val defaultValue: Cardinality = Cardinality.SINGLE
   }
 
@@ -68,7 +73,7 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
   }
 
   def withCardinalityEstimation(cardinality: Cardinality): this.type = {
-    cardinalities.set(idOfLastPlan, cardinality)
+    effectiveCardinalities.set(idOfLastPlan, cardinality)
     this
   }
 
@@ -85,6 +90,7 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
                  resultColumns,
                  semanticTable,
                  cardinalities,
+                 effectiveCardinalities,
                  providedOrders,
                  leveragedOrders,
                  hasLoadCSV = false,

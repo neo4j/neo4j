@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
@@ -35,13 +36,14 @@ import org.neo4j.cypher.internal.util.attribution.PartialAttribute
 object PlanningAttributes {
   class Solveds extends Attribute[LogicalPlan, PlannerQueryPart]
   class Cardinalities extends Attribute[LogicalPlan, Cardinality]
+  class EffectiveCardinalities extends Attribute[LogicalPlan, Cardinality]
   class ProvidedOrders extends Attribute[LogicalPlan, ProvidedOrder]
   class LeveragedOrders extends PartialAttribute[LogicalPlan, Boolean](false)
 
-  def newAttributes: PlanningAttributes = PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders, new LeveragedOrders)
+  def newAttributes: PlanningAttributes = PlanningAttributes(new Solveds, new Cardinalities, new EffectiveCardinalities, new ProvidedOrders, new LeveragedOrders)
 }
 
-case class PlanningAttributes(solveds: Solveds, cardinalities: Cardinalities, providedOrders: ProvidedOrders, leveragedOrders: LeveragedOrders) {
+case class PlanningAttributes(solveds: Solveds, cardinalities: Cardinalities, effectiveCardinalities: EffectiveCardinalities, providedOrders: ProvidedOrders, leveragedOrders: LeveragedOrders) {
   private val attributes = productIterator.asInstanceOf[Iterator[Attribute[LogicalPlan, _]]].toSeq
 
   def asAttributes(idGen: IdGen): Attributes[LogicalPlan] = Attributes[LogicalPlan](idGen, attributes: _*)
@@ -50,6 +52,7 @@ case class PlanningAttributes(solveds: Solveds, cardinalities: Cardinalities, pr
   def createCopy() : PlanningAttributes =
     PlanningAttributes(solveds.clone[Solveds],
       cardinalities.clone[Cardinalities],
+      effectiveCardinalities.clone[EffectiveCardinalities],
       providedOrders.clone[ProvidedOrders],
       leveragedOrders.clone[LeveragedOrders]
     )

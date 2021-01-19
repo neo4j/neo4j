@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.WithState
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.spi.TransactionBoundGraphStatistics
@@ -59,6 +60,7 @@ object LogicalQueryGenerator {
       logicalPlan.availableSymbols.toArray,
       state.semanticTable,
       state.cardinalities,
+      state.cardinalities.clone[EffectiveCardinalities],
       providedOrders,
       leveragedOrders,
       hasLoadCSV = false,

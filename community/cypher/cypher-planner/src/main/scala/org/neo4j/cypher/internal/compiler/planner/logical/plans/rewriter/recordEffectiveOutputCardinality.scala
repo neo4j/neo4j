@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.WorkReduction
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -37,7 +37,7 @@ import scala.collection.mutable
  * LIMIT to earlier operations.
  *
  */
-case class useEffectiveOutputCardinality(cardinalities: Cardinalities, attributes: Attributes[LogicalPlan]) extends Rewriter {
+case class recordEffectiveOutputCardinality(cardinalities: Cardinalities, effectiveCardinalities: EffectiveCardinalities, attributes: Attributes[LogicalPlan]) extends Rewriter {
 
   override def apply(input: AnyRef): AnyRef = {
     val workReductions: mutable.Map[Id, WorkReduction] = mutable.Map().withDefaultValue(WorkReduction.NoReduction)
@@ -51,14 +51,9 @@ case class useEffectiveOutputCardinality(cardinalities: Cardinalities, attribute
           p.lhs.foreach { lhs => workReductions += (lhs.id -> effectiveCardinalities.lhsReduction) }
           p.rhs.foreach { rhs => workReductions += (rhs.id -> effectiveCardinalities.rhsReduction) }
 
-          // No need to create a new plan if we do not have a work reduction
-          if (reduction == WorkReduction.NoReduction) {
-            p
-          } else {
-            val newP = p.copyPlanWithIdGen(attributes.copy(p.id))
-            cardinalities.set(newP.id, effectiveCardinalities.outputCardinality)
-            newP
-          }
+          effectiveCardinalities.set(p.id, effectiveCardinalities.outputCardinality)
+
+          p
       })
     }
 

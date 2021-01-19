@@ -57,6 +57,9 @@ case object CompressPlanIDs extends Transformer[PlannerContext, LogicalPlanState
         oldAttributes.cardinalities.getOption(lp.id).foreach {
           newAttributes.cardinalities.set(newLP.id, _)
         }
+        oldAttributes.effectiveCardinalities.getOption(lp.id).foreach {
+          newAttributes.effectiveCardinalities.set(newLP.id, _)
+        }
         oldAttributes.providedOrders.getOption(lp.id).foreach {
           newAttributes.providedOrders.set(newLP.id, _)
         }

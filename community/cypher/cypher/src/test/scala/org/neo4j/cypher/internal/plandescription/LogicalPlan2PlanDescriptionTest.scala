@@ -270,6 +270,7 @@ import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.DummyPosition
@@ -316,6 +317,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   implicit val idGen: IdGen = new SequentialIdGen()
   private val readOnly = true
   private val cardinalities = new Cardinalities
+  private val effectiveCardinalities = new EffectiveCardinalities
   private val providedOrders = new ProvidedOrders
   private val id = Id.INVALID_ID
 
@@ -1389,7 +1391,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   def assertGood(logicalPlan: LogicalPlan, expectedPlanDescription: InternalPlanDescription, validateAllArgs: Boolean = false): Unit = {
-    val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly, cardinalities, withRawCardinalities = false, providedOrders = providedOrders, executionPlan = StubExecutionPlan())
+    val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly, cardinalities, effectiveCardinalities, withRawCardinalities = false, providedOrders = providedOrders, executionPlan = StubExecutionPlan())
 
     def shouldValidateArg(arg: Argument) =
       validateAllArgs ||

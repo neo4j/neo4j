@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.ParserFixture
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
@@ -63,13 +64,17 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
     override def defaultValue: Cardinality = 0.0
   }
 
+  class StubEffectiveCardinalities extends EffectiveCardinalities with StubAttribute[LogicalPlan, Cardinality] {
+    override def defaultValue: Cardinality = 0.0
+  }
+
   class StubProvidedOrders extends ProvidedOrders with StubAttribute[LogicalPlan, ProvidedOrder] {
     override def defaultValue: ProvidedOrder = ProvidedOrder.empty
   }
 
   class StubLeveragedOrders extends LeveragedOrders with StubAttribute[LogicalPlan, Boolean]
 
-  def newStubbedPlanningAttributes: PlanningAttributes = PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders, new StubLeveragedOrders)
+  def newStubbedPlanningAttributes: PlanningAttributes = PlanningAttributes(new StubSolveds, new StubCardinalities, new StubEffectiveCardinalities, new StubProvidedOrders, new StubLeveragedOrders)
 }
 
 trait AstRewritingTestSupport extends CypherTestSupport with AstConstructionTestSupport {

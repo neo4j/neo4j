@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Rewriter
@@ -39,9 +40,10 @@ case object CardinalityRewriter extends LogicalPlanRewriter with StepSequencer.S
   override def instance(context: PlannerContext,
                         solveds: Solveds,
                         cardinalities: Cardinalities,
+                        effectiveCardinalities: EffectiveCardinalities,
                         providedOrders: ProvidedOrders,
                         otherAttributes: Attributes[LogicalPlan]): Rewriter =
-    useEffectiveOutputCardinality(cardinalities, otherAttributes.withAlso(solveds, providedOrders))
+    recordEffectiveOutputCardinality(cardinalities, effectiveCardinalities, otherAttributes.withAlso(solveds, providedOrders))
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // The rewriters operate on the LogicalPlan

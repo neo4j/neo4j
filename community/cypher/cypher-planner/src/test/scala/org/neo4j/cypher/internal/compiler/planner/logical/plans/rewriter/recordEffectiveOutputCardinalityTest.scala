@@ -30,13 +30,13 @@ import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class useEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   val leafCardinality = 10
 
   private def noAttributes(idGen: IdGen) = Attributes[LogicalPlan](idGen)
@@ -136,21 +136,21 @@ class useEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPlann
   private def shouldIncludePlanWithCardinality[T <: LogicalPlan : Manifest](args: Seq[Any],
                                                                             cardinality: Double,
                                                                             plan: LogicalPlan,
-                                                                            cardinalities: Cardinalities,
+                                                                            effectiveCardinalities: EffectiveCardinalities,
                                                                             lessThan: Boolean = false) = {
     val maybePlan = plan.treeFind[LogicalPlan] { case p: T if args.forall(a => p.productIterator.contains(a)) => true }
 
     maybePlan should not be None
 
     if (lessThan) {
-      cardinalities(maybePlan.get.id) should be < Cardinality(cardinality)
+      effectiveCardinalities(maybePlan.get.id) should be < Cardinality(cardinality)
     } else {
-      cardinalities(maybePlan.get.id) shouldEqual Cardinality(cardinality)
+      effectiveCardinalities(maybePlan.get.id) shouldEqual Cardinality(cardinality)
     }
   }
 
-  private def rewrite(pb: LogicalPlanBuilder): (LogicalPlan, Cardinalities) = {
-    val plan = pb.build().endoRewrite(useEffectiveOutputCardinality(pb.cardinalities, noAttributes(pb.idGen)))
-    (plan, pb.cardinalities)
+  private def rewrite(pb: LogicalPlanBuilder): (LogicalPlan, EffectiveCardinalities) = {
+    val plan = pb.build().endoRewrite(recordEffectiveOutputCardinality(pb.cardinalities, pb.effectiveCardinalities, noAttributes(pb.idGen)))
+    (plan, pb.effectiveCardinalities)
   }
 }

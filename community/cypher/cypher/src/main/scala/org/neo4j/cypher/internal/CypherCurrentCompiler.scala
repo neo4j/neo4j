@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.cypher.internal.planning.ExceptionTranslatingQueryContext
@@ -143,6 +144,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       planState.returnColumns().toArray,
       planState.semanticTable(),
       planningAttributesCopy.cardinalities,
+      planningAttributesCopy.effectiveCardinalities,
       planningAttributesCopy.providedOrders,
       planningAttributesCopy.leveragedOrders,
       planState.hasLoadCSV,
@@ -166,6 +168,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       logicalPlan,
       logicalQuery.readOnly,
       planningAttributesCopy.cardinalities,
+      planningAttributesCopy.effectiveCardinalities,
       logicalPlanResult.plannerContext.debugOptions.rawCardinalitiesEnabled,
       planningAttributesCopy.providedOrders,
       executionPlan,
@@ -228,6 +231,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
   protected class CypherExecutableQuery(logicalPlan: LogicalPlan,
                                         readOnly: Boolean,
                                         cardinalities: Cardinalities,
+                                        effectiveCardinalities: EffectiveCardinalities,
                                         rawCardinalitiesInPlanDescription: Boolean,
                                         providedOrders: ProvidedOrders,
                                         executionPlan: ExecutionPlan,
@@ -255,6 +259,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         cypherVersion,
         readOnly,
         cardinalities,
+        effectiveCardinalities,
         rawCardinalitiesInPlanDescription,
         providedOrders,
         executionPlan)
