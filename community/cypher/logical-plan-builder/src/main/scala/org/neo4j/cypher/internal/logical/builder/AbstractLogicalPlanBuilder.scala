@@ -1018,14 +1018,14 @@ object AbstractLogicalPlanBuilder {
   def createNode(node: String, labels: String*): CreateNode =
     CreateNode(node, labels.map(LabelName(_)(pos)), None)
 
-  def createNodeWithProperties(node: String, labels: Seq[String], properties: Expression): CreateNode =
-    CreateNode(node, labels.map(LabelName(_)(pos)), Some(properties))
+  def createNodeWithProperties(node: String, labels: Seq[String], properties: String): CreateNode =
+    CreateNode(node, labels.map(LabelName(_)(pos)), Some(Parser.parseExpression(properties)))
 
   def createRelationship(relationship: String,
                          left: String,
                          typ: String,
                          right: String,
-                         direction: SemanticDirection,
-                         properties: Option[Expression] = None): CreateRelationship =
-    CreateRelationship(relationship, left, RelTypeName(typ)(pos), right, direction,  properties)
+                         direction: SemanticDirection = OUTGOING,
+                         properties: Option[String] = None): CreateRelationship =
+    CreateRelationship(relationship, left, RelTypeName(typ)(pos), right, direction, properties.map(Parser.parseExpression))
 }

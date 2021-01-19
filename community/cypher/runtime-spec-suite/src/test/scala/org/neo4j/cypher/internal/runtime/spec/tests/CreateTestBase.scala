@@ -89,7 +89,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .create(createNodeWithProperties("n", Seq("A"), mapOf("p1" -> literal(1), "p2" -> literal(2), "p3" -> literal(3))))
+      .create(createNodeWithProperties("n", Seq("A"), "{p1: 1, p2: 2, p3: 3}"))
       .argument()
       .build(readOnly = false)
 
@@ -107,7 +107,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .create(createNodeWithProperties("n", Seq("A"), mapOf("p1" -> literal(1), "p2" -> nullLiteral)))
+      .create(createNodeWithProperties("n", Seq("A"), "{p1: 1, p2: null}"))
       .argument()
       .build(readOnly = false)
 
@@ -127,8 +127,8 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .produceResults("mprop", "nprop")
       .projection("m.prop AS mprop", "n.prop AS nprop")
       .create(
-        createNodeWithProperties("m", Seq("A"), mapOf("prop" -> literal(1))),
-        createNodeWithProperties("n", Seq("A"), mapOf("prop" -> add(prop("m", "prop"), literalInt(1))))
+        createNodeWithProperties("m", Seq("A"), "{prop: 1}"),
+        createNodeWithProperties("n", Seq("A"), "{prop: m.prop + 1}")
       )
       .argument()
       .build(readOnly = false)
@@ -281,7 +281,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .create(nodes = Seq(createNode("n", "A"), createNode("m", "B")),
         relationships = Seq(
-          createRelationship("r", "n", "R", "m", OUTGOING, Some(mapOf("p1" -> literal(1), "p2" -> literal(2), "p3" -> literal(3))))))
+          createRelationship("r", "n", "R", "m", OUTGOING, Some("{p1: 1, p2: 2, p3: 3}"))))
       .argument()
       .build(readOnly = false)
 
@@ -302,7 +302,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .create(nodes = Seq(createNode("n", "A"), createNode("m", "B")),
         relationships = Seq(
-          createRelationship("r", "n", "R", "m", OUTGOING, Some(mapOf("p1" -> literal(1), "p2" -> nullLiteral)))))
+          createRelationship("r", "n", "R", "m", OUTGOING, Some("{p1: 1, p2: null}"))))
       .argument()
       .build(readOnly = false)
 
@@ -324,8 +324,8 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .projection("r1.prop AS r1prop", "r2.prop AS r2prop")
       .create(nodes = Seq(createNode("n", "A"), createNode("m", "B")),
           relationships = Seq(
-            createRelationship("r1", "n", "R", "m", OUTGOING, Some(mapOf("prop" -> literal(1)))),
-            createRelationship("r2", "n", "R", "m", OUTGOING, Some(mapOf("prop" -> add(prop("r1", "prop"), literalInt(1)))))
+            createRelationship("r1", "n", "R", "m", OUTGOING, Some("{prop: 1}")),
+            createRelationship("r2", "n", "R", "m", OUTGOING, Some("{prop: r1.prop + 1}"))
           )
       )
       .argument()

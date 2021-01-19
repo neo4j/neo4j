@@ -33,6 +33,8 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
@@ -142,8 +144,10 @@ object LogicalPlanToPlanBuilderString {
         wrapInQuotationsAndMkString(argumentIds.toSeq)
       case CacheProperties(_, properties) =>
         wrapInQuotationsAndMkString(properties.toSeq.map(expressionStringifier(_)))
-      case Create(_, nodes, _) =>
-        nodes.map(createNode => "createNode(" + wrapInQuotationsAndMkString(createNode.idName +: createNode.labels.map(_.name)) + ")").mkString(", ")
+      case Create(_, nodes, Seq()) =>
+        nodes.map(createNodeToString).mkString(", ")
+      case Create(_, nodes, relationships) =>
+        s"Seq(${nodes.map(createNodeToString).mkString(", ")}), Seq(${relationships.map(createRelationshipToString).mkString(", ")})"
       case Expand(_, from, dir, types, to, relName, _) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
@@ -404,6 +408,18 @@ object LogicalPlanToPlanBuilderString {
     }
     val getValueStr = s", getValue = ${objectName(getValueBehavior)}"
     s""" "$indexStr"$indexOrderStr$argStr$getValueStr$uniqueStr """.trim
+  }
+
+  private def createNodeToString(createNode: CreateNode) = createNode match {
+    case CreateNode(idName, labels, None) =>
+      s"createNode(${wrapInQuotationsAndMkString(idName +: labels.map(_.name))})"
+    case CreateNode(idName, labels, Some(props)) =>
+      s"createNodeWithProperties(${wrapInQuotations(idName)}, Seq(${wrapInQuotationsAndMkString(labels.map(_.name))}), ${wrapInQuotations(expressionStringifier(props))})"
+  }
+
+  private def createRelationshipToString(rel: CreateRelationship) =  {
+    val propString = rel.properties.map(p => s", Some(${wrapInQuotations(expressionStringifier(p))})").getOrElse("")
+    s"createRelationship(${wrapInQuotationsAndMkString(Seq(rel.idName, rel.leftNode, rel.relType.name, rel.rightNode))}, ${rel.direction}$propString)"
   }
 
   private def pointDistanceIndexSeek(idName: String,

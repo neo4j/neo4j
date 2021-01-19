@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
@@ -359,6 +361,20 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     new TestPlanBuilder()
       .produceResults("x", "y")
       .create(createNode("a", "A"), createNode("b"))
+      .argument()
+      .build())
+
+  testPlan("create nodes and relationships",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .create(Seq(createNode("a", "A"), createNodeWithProperties("b", Seq("B"), "{node: true}")), Seq(createRelationship("r", "a", "R", "b", INCOMING, Some("{rel: true}"))))
+      .argument()
+      .build())
+
+  testPlan("create with properties",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .create(createNodeWithProperties("a", Seq("A"),"{foo: 42}"), createNodeWithProperties("b", Seq.empty, "{bar: 'hello'}"))
       .argument()
       .build())
 
@@ -821,6 +837,8 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         // imports
         interpreter.interpret(
           """import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
             |import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING, BOTH}
             |import org.neo4j.cypher.internal.logical.plans._
