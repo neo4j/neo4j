@@ -53,6 +53,7 @@ import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -70,9 +71,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector;
 import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
@@ -763,7 +762,7 @@ class RecoveryCorruptedTransactionLogIT
 
     private byte randomInvalidVersionsBytes()
     {
-        int highestVersionByte = Arrays.stream( LogEntryParserSetVersion.values() ).mapToInt( LogEntryParserSetVersion::getVersionByte ).max().getAsInt();
+        int highestVersionByte = Arrays.stream( KernelVersion.values() ).mapToInt( KernelVersion::version ).max().getAsInt();
         return (byte) random.nextInt( highestVersionByte + 1, Byte.MAX_VALUE );
     }
 
@@ -946,7 +945,7 @@ class RecoveryCorruptedTransactionLogIT
         @Override
         public void writeStartEntry( long timeWritten, long latestCommittedTxWhenStarted, int previousChecksum, byte[] additionalHeaderData ) throws IOException
         {
-            byte nonExistingLogEntryVersion = (byte) (TransactionLogVersionSelector.LATEST.versionByte() + 10);
+            byte nonExistingLogEntryVersion = (byte) (KernelVersion.LATEST.version() + 10);
             channel.put( nonExistingLogEntryVersion ).put( TX_START );
             channel.putLong( timeWritten )
                     .putLong( latestCommittedTxWhenStarted )
@@ -1070,7 +1069,7 @@ class RecoveryCorruptedTransactionLogIT
 
         DelegatingLogEntryWriter( LogEntryWriter<T> logEntryWriter )
         {
-            super( logEntryWriter.getChannel(), TransactionLogVersionSelector.LATEST );
+            super( logEntryWriter.getChannel(), KernelVersion.LATEST );
             this.delegate = logEntryWriter;
         }
 

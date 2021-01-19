@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.COMMAND;
@@ -29,10 +30,10 @@ public class LogEntryCommand extends AbstractLogEntry
 
     public LogEntryCommand( StorageCommand command )
     {
-        this( TransactionLogVersionSelector.LATEST.versionByte(), command );
+        this( KernelVersion.LATEST, command );
     }
 
-    public LogEntryCommand( byte version, StorageCommand command )
+    public LogEntryCommand( KernelVersion version, StorageCommand command )
     {
         super( version, COMMAND );
         this.command = command;

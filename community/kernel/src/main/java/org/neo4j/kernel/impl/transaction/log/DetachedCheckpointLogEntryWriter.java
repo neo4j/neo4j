@@ -24,11 +24,11 @@ import java.time.Instant;
 
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.StoreId;
 
 import static java.lang.Math.min;
 import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
-import static org.neo4j.kernel.impl.transaction.log.entry.CheckpointLogVersionSelector.LATEST;
 import static org.neo4j.kernel.impl.transaction.log.entry.CheckpointParserSetV4_2.MAX_DESCRIPTION_LENGTH;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT;
 
@@ -65,6 +65,6 @@ public class DetachedCheckpointLogEntryWriter
 
     protected static void writeLogEntryHeader( byte type, WritableChannel channel ) throws IOException
     {
-        channel.put( LATEST.versionByte() ).put( type );
+        channel.put( KernelVersion.LATEST.version() ).put( type );
     }
 }

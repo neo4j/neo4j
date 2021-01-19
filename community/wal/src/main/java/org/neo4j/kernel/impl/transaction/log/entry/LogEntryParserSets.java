@@ -19,16 +19,32 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.CheckpointParserSetV4_2.V4_2;
+import org.neo4j.kernel.KernelVersion;
 
-public class CheckpointLogVersionSelector extends LogVersionSelector
+public class LogEntryParserSets
 {
-    public static final LogEntryParserSet LATEST = V4_2;
-    public static final CheckpointLogVersionSelector INSTANCE = new CheckpointLogVersionSelector();
-
-    private CheckpointLogVersionSelector()
+    public static LogEntryParserSet parserSet( KernelVersion version )
     {
-        super( LATEST.versionByte() );
-        register( V4_2 );
+        switch ( version )
+        {
+        case V2_3:
+            return LogEntryParserSetV2_3.V2_3;
+        case V4_0:
+            return LogEntryParserSetV4_0.V4_0;
+        case V4_2:
+            return LogEntryParserSetV4_2.V4_2;
+        default:
+            throw new IllegalArgumentException( "No log entries version matching " + version );
+        }
+    }
+
+    public static LogEntryParserSet checkpointParserSet( KernelVersion version )
+    {
+        switch ( version )
+        {
+        case V4_2:
+        default:
+            throw new IllegalArgumentException( "No checkpoint log entries version matching " + version );
+        }
     }
 }

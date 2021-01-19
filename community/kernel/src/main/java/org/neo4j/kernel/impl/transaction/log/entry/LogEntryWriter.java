@@ -25,6 +25,7 @@ import java.util.Collection;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -41,10 +42,10 @@ public class LogEntryWriter<T extends WritableChecksumChannel>
     protected final T channel;
     private final byte parserSetVersion;
 
-    public LogEntryWriter( T channel, LogEntryParserSet parserSet )
+    public LogEntryWriter( T channel, KernelVersion version )
     {
         this.channel = channel;
-        this.parserSetVersion = parserSet.versionByte();
+        this.parserSetVersion = version.version();
         this.serializer = new StorageCommandSerializer( channel, this );
     }
 

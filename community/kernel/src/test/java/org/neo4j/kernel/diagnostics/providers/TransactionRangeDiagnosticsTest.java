@@ -25,9 +25,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.collection.Dependencies;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFile;
@@ -126,7 +126,7 @@ class TransactionRangeDiagnosticsTest
         when( file.hasAnyEntries( logVersion ) ).thenReturn( true );
         when( file.versionExists( logVersion ) ).thenReturn( true );
         when( file.extractHeader( logVersion ) )
-                .thenReturn( new LogHeader( TransactionLogVersionSelector.LATEST.versionByte(), logVersion, headerTxId, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
+                .thenReturn( new LogHeader( KernelVersion.LATEST.version(), logVersion, headerTxId, CURRENT_FORMAT_LOG_HEADER_SIZE ) );
         return files;
     }
 

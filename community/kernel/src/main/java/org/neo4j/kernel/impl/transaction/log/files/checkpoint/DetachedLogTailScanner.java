@@ -233,11 +233,11 @@ public class DetachedLogTailScanner extends AbstractLogTailScanner
         {
             if ( start != null )
             {
-                return start.getVersion();
+                return start.getVersion().version();
             }
             if ( commit != null )
             {
-                return commit.getVersion();
+                return commit.getVersion().version();
             }
             return 0;
         }

@@ -21,9 +21,11 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.util.TimeZone;
 
+import org.neo4j.kernel.KernelVersion;
+
 public interface LogEntry
 {
-    byte getVersion();
+    KernelVersion getVersion();
 
     byte getType();
 

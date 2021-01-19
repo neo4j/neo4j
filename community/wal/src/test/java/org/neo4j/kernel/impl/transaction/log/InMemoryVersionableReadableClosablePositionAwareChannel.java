@@ -24,29 +24,20 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LO
 public class InMemoryVersionableReadableClosablePositionAwareChannel extends InMemoryClosableChannel implements
         ReadableLogChannel
 {
-    private final long version;
-    private final byte formatVersion;
-
     public InMemoryVersionableReadableClosablePositionAwareChannel()
     {
-        this( 0, CURRENT_LOG_FORMAT_VERSION );
-    }
-
-    public InMemoryVersionableReadableClosablePositionAwareChannel( long version, byte formatVersion )
-    {
-        this.version = version;
-        this.formatVersion = formatVersion;
+        super( true );
     }
 
     @Override
     public long getVersion()
     {
-        return version;
+        return 0;
     }
 
     @Override
     public byte getLogFormatVersion()
     {
-        return formatVersion;
+        return CURRENT_LOG_FORMAT_VERSION;
     }
 }

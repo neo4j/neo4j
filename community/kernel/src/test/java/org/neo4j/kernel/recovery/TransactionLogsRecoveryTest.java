@@ -44,6 +44,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -58,13 +59,10 @@ import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableCheck
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSet;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_0;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -311,7 +309,7 @@ class TransactionLogsRecoveryTest
                 writer.writeLegacyCheckPointEntry( marker.newPosition() );
             }
             return true;
-        }, useSeparateLogFiles ? TransactionLogVersionSelector.LATEST : LogEntryParserSetV4_0.V4_0 );
+        }, useSeparateLogFiles ? KernelVersion.LATEST : KernelVersion.V4_0 );
 
         LifeSupport life = new LifeSupport();
         RecoveryMonitor monitor = mock( RecoveryMonitor.class );
@@ -593,11 +591,11 @@ class TransactionLogsRecoveryTest
 
     private void writeSomeData( Path file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
     {
-        writeSomeDataWithVersion( file, visitor, TransactionLogVersionSelector.LATEST );
+        writeSomeDataWithVersion( file, visitor, KernelVersion.LATEST );
     }
 
     private void writeSomeDataWithVersion( Path file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor,
-            LogEntryParserSet parserSet ) throws IOException
+            KernelVersion version ) throws IOException
     {
         try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.write( file ), logVersion,
                 CURRENT_LOG_FORMAT_VERSION, file, EMPTY_ACCESSOR );
@@ -617,7 +615,7 @@ class TransactionLogsRecoveryTest
                     throw new RuntimeException( e );
                 }
             };
-            LogEntryWriter first = new LogEntryWriter( writableLogChannel, parserSet );
+            LogEntryWriter first = new LogEntryWriter( writableLogChannel, version );
             visitor.visit( Pair.of( first, consumer ) );
         }
     }

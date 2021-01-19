@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
@@ -32,13 +33,14 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_0.V4_0;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSets.parserSet;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.LEGACY_CHECK_POINT;
-import static org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector.LATEST;
 
 class LogEntryParserDispatcherV6Test
 {
-    private final byte version = LATEST.versionByte();
+    private final KernelVersion version = LATEST;
     private final CommandReaderFactory commandReader = new TestCommandReaderFactory();
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 25 );
@@ -59,7 +61,7 @@ class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = LATEST.select( LogEntryTypeCodes.TX_START );
+        final LogEntryParser parser = parserSet( LATEST ).select( LogEntryTypeCodes.TX_START );
         final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
@@ -80,7 +82,7 @@ class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = LATEST.select( LogEntryTypeCodes.TX_COMMIT );
+        final LogEntryParser parser = parserSet( LATEST ).select( LogEntryTypeCodes.TX_COMMIT );
         final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
@@ -99,7 +101,7 @@ class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = LATEST.select( LogEntryTypeCodes.COMMAND );
+        final LogEntryParser parser = parserSet( LATEST ).select( LogEntryTypeCodes.COMMAND );
         final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
@@ -110,7 +112,7 @@ class LogEntryParserDispatcherV6Test
     void parseLegacyCheckPointEntry() throws IOException
     {
         // given
-        final LogEntryInlinedCheckPoint checkPoint = new LogEntryInlinedCheckPoint( V4_0.versionByte(), new LogPosition( 43, 44 ) );
+        final LogEntryInlinedCheckPoint checkPoint = new LogEntryInlinedCheckPoint( KernelVersion.V4_0, new LogPosition( 43, 44 ) );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong( checkPoint.getLogPosition().getLogVersion() );
@@ -121,7 +123,7 @@ class LogEntryParserDispatcherV6Test
 
         // when
         final LogEntryParser parser = V4_0.select( LEGACY_CHECK_POINT );
-        final LogEntry logEntry = parser.parse( V4_0.versionByte(), channel, marker, commandReader );
+        final LogEntry logEntry = parser.parse( KernelVersion.V4_0, channel, marker, commandReader );
 
         // then
         assertEquals( checkPoint, logEntry );
@@ -138,12 +140,12 @@ class LogEntryParserDispatcherV6Test
         channel.putChecksum();
 
         channel.getCurrentPosition( marker );
-        assertThrows( Exception.class, () -> LATEST.select( LEGACY_CHECK_POINT ) );
+        assertThrows( Exception.class, () -> parserSet( LATEST ).select( LEGACY_CHECK_POINT ) );
     }
 
     @Test
     void shouldThrowWhenParsingUnknownEntry()
     {
-        assertThrows( IllegalArgumentException.class, () -> LATEST.select( (byte) 42 ) ); // unused, at lest for now
+        assertThrows( IllegalArgumentException.class, () -> parserSet( LATEST ).select( (byte) 42 ) ); // unused, at lest for now
     }
 }

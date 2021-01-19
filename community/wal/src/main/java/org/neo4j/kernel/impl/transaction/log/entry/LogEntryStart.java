@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.TimeZone;
 
 import org.neo4j.internal.helpers.Format;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
@@ -38,11 +39,11 @@ public class LogEntryStart extends AbstractLogEntry
     public LogEntryStart( long timeWritten, long lastCommittedTxWhenTransactionStarted,
             int previousChecksum, byte[] additionalHeader, LogPosition startPosition )
     {
-        this( TransactionLogVersionSelector.LATEST.versionByte(), timeWritten, lastCommittedTxWhenTransactionStarted, previousChecksum,
+        this( KernelVersion.LATEST, timeWritten, lastCommittedTxWhenTransactionStarted, previousChecksum,
                 additionalHeader, startPosition );
     }
 
-    public LogEntryStart( byte version, long timeWritten, long lastCommittedTxWhenTransactionStarted,
+    public LogEntryStart( KernelVersion version, long timeWritten, long lastCommittedTxWhenTransactionStarted,
             int previousChecksum, byte[] additionalHeader, LogPosition startPosition )
     {
         super( version, TX_START );

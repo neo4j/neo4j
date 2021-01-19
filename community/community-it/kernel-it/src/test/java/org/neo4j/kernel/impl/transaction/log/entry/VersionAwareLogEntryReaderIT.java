@@ -36,6 +36,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.PositionableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -133,7 +134,7 @@ class VersionAwareLogEntryReaderIT
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withStoreId( StoreId.UNKNOWN )
-                .withTransactionLogVersionProvider( () -> LogEntryParserSetVersion.LogEntryV4_0 )
+                .withKernelVersionProvider( () -> KernelVersion.V4_0 )
                 .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {

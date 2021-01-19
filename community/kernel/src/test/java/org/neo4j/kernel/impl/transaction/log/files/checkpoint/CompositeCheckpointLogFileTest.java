@@ -27,16 +27,14 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 
-import org.neo4j.dbms.database.TransactionLogVersionProvider;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetVersion;
-import org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
@@ -44,6 +42,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.PanicEventGenerator;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -75,7 +74,7 @@ class CompositeCheckpointLogFileTest
     private CheckpointFile checkpointFile;
     private TransactionLogWriter transactionLogWriter;
     private LogFiles logFiles;
-    private final FakeTransactionLogVersionProvider versionProvider = new FakeTransactionLogVersionProvider();
+    private final FakeKernelVersionProvider versionProvider = new FakeKernelVersionProvider();
 
     @BeforeEach
     void setUp() throws IOException
@@ -175,7 +174,7 @@ class CompositeCheckpointLogFileTest
                 .withLogVersionRepository( logVersionRepository )
                 .withLogEntryReader( logEntryReader() )
                 .withStoreId( StoreId.UNKNOWN )
-                .withTransactionLogVersionProvider( versionProvider )
+                .withKernelVersionProvider( versionProvider )
                 .build();
     }
 
@@ -184,17 +183,17 @@ class CompositeCheckpointLogFileTest
      */
     private void writeLegacyCheckpoint( LogPosition logPosition ) throws IOException
     {
-        versionProvider.version = LogEntryParserSetVersion.LogEntryV4_0;
+        versionProvider.version = KernelVersion.V4_0;
         transactionLogWriter.legacyCheckPoint( logPosition );
-        versionProvider.version = TransactionLogVersionSelector.LATEST.version();
+        versionProvider.version = KernelVersion.LATEST;
     }
 
-    private class FakeTransactionLogVersionProvider implements TransactionLogVersionProvider
+    private class FakeKernelVersionProvider implements KernelVersionRepository
     {
-        volatile LogEntryParserSetVersion version = TransactionLogVersionSelector.LATEST.version();
+        volatile KernelVersion version = KernelVersion.LATEST;
 
         @Override
-        public LogEntryParserSetVersion getVersion()
+        public KernelVersion kernelVersion()
         {
             return version;
         }

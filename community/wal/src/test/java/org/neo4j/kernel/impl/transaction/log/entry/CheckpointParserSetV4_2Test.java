@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -32,7 +33,6 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StoreId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.kernel.impl.transaction.log.entry.CheckpointParserSetV4_2.V4_2;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT;
 
 class CheckpointParserSetV4_2Test
@@ -43,7 +43,7 @@ class CheckpointParserSetV4_2Test
     @Test
     void parseDetachedCheckpointRecord() throws IOException
     {
-        byte version = V4_2.versionByte();
+        KernelVersion version = KernelVersion.V4_2;
         var storeId = new StoreId( 4, 5, 6, 7, 8 );
         var channel = new InMemoryClosableChannel();
         int checkpointMillis = 3;
@@ -63,7 +63,7 @@ class CheckpointParserSetV4_2Test
                .put( bytes, bytes.length );
         channel.putChecksum();
 
-        var checkpointParser = V4_2.select( DETACHED_CHECK_POINT );
+        var checkpointParser = LogEntryParserSets.checkpointParserSet( version ).select( DETACHED_CHECK_POINT );
         LogEntry logEntry = checkpointParser.parse( version, channel, positionMarker, commandReader );
         assertEquals( checkpoint, logEntry );
     }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.util.Objects;
 
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.StoreId;
 
@@ -33,7 +34,7 @@ public class LogEntryDetachedCheckpoint extends AbstractLogEntry
     private final StoreId storeId;
     private final String reason;
 
-    public LogEntryDetachedCheckpoint( byte version, LogPosition logPosition, long checkpointMillis, StoreId storeId, String reason )
+    public LogEntryDetachedCheckpoint( KernelVersion version, LogPosition logPosition, long checkpointMillis, StoreId storeId, String reason )
     {
         super( version, DETACHED_CHECK_POINT );
         this.logPosition = logPosition;

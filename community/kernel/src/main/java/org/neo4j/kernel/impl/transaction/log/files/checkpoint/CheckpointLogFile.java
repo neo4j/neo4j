@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryDetachedCheckpoint;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSets;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
@@ -45,7 +46,6 @@ import org.neo4j.logging.Log;
 import static java.util.Collections.emptyList;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.entry.CheckpointLogVersionSelector.INSTANCE;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
 import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.checkpointLogRotation;
 import static org.neo4j.storageengine.api.CommandReaderFactory.NO_COMMANDS;
@@ -100,7 +100,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
         long lowestVersion = versionVisitor.getLowestVersion();
         long currentVersion = highestVersion;
 
-        var checkpointReader = new VersionAwareLogEntryReader( NO_COMMANDS, INSTANCE, true );
+        var checkpointReader = new VersionAwareLogEntryReader( NO_COMMANDS, LogEntryParserSets::checkpointParserSet, true );
         while ( currentVersion >= lowestVersion )
         {
             try ( var channel = channelAllocator.openLogChannel( currentVersion );
@@ -141,7 +141,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
 
         long currentVersion = versionVisitor.getLowestVersion();
 
-        var checkpointReader = new VersionAwareLogEntryReader( NO_COMMANDS, INSTANCE, true );
+        var checkpointReader = new VersionAwareLogEntryReader( NO_COMMANDS, LogEntryParserSets::checkpointParserSet, true );
         var checkpoints = new ArrayList<CheckpointInfo>();
         while ( currentVersion <= highestVersion )
         {

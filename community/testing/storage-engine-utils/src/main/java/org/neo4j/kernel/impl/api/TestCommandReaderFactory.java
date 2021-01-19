@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.io.IOException;
 
 import org.neo4j.io.fs.ReadableChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -31,7 +32,7 @@ public class TestCommandReaderFactory implements CommandReaderFactory
     private static final TestCommandReader READER = new TestCommandReader();
 
     @Override
-    public CommandReader get( int logEntryVersion )
+    public CommandReader get( KernelVersion version )
     {
         // At the time of writing this the act of plugging in and selecting commands and readers from different storages
         // doesn't work and it's always going to be the latest record-storage format version which LogEntryWriter

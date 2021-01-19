@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import java.io.IOException;
 
 import org.neo4j.io.fs.ReadableChecksumChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
@@ -37,11 +38,13 @@ public class CheckpointParserSetV4_2 extends LogEntryParserSet
 
     private CheckpointParserSetV4_2()
     {
-        super( LogEntryParserSetVersion.CheckpointEntryV4_2 );
+        // TODO we should comment the merging of the two log entry parser set versioning schemes into KernelVersion here...
+        //      using V4_3 is intentional btw
+        super( KernelVersion.V4_3_D3 );
         register( new LogEntryParser( DETACHED_CHECK_POINT )
         {
             @Override
-            LogEntry parse( byte version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
+            LogEntry parse( KernelVersion version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
                     throws IOException
             {
                 long logVersion = channel.getLong();

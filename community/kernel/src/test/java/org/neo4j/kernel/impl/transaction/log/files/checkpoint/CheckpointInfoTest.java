@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryDetachedCheckpoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryInlinedCheckPoint;
@@ -49,7 +50,7 @@ class CheckpointInfoTest
         var logPosition = new LogPosition( 0, 1 );
         var storeId = new StoreId( 3, 4, 5, 6, 7 );
         LogPosition position = new LogPosition( 1, 2 );
-        var checkpointInfo = new CheckpointInfo( new LogEntryDetachedCheckpoint( (byte) 1, logPosition, 2, storeId, "checkpoint" ), position );
+        var checkpointInfo = new CheckpointInfo( new LogEntryDetachedCheckpoint( KernelVersion.V4_0, logPosition, 2, storeId, "checkpoint" ), position );
 
         assertSame( logPosition, checkpointInfo.getTransactionLogPosition() );
         assertSame( storeId, checkpointInfo.storeId() );

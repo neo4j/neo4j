@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
@@ -34,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector.LATEST;
+import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 class VersionAwareLogEntryReaderTest
@@ -45,8 +46,8 @@ class VersionAwareLogEntryReaderTest
     void shouldReadAStartLogEntry() throws IOException
     {
         // given
-        final LogEntryStart start = new LogEntryStart( 1, 2, BASE_TX_CHECKSUM, new byte[]{4}, new LogPosition( 0, 27 ) );
-        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        final LogEntryStart start = new LogEntryStart( 1, 2, BASE_TX_CHECKSUM, new byte[]{4}, new LogPosition( 0, 0 ) );
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel( true );
 
         writeStartEntry( channel, start );
 
@@ -61,8 +62,8 @@ class VersionAwareLogEntryReaderTest
     void shouldReadACommitLogEntry() throws IOException
     {
         // given
-        final LogEntryCommit commit = new LogEntryCommit( 42, 21, 1748422299 );
-        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        final LogEntryCommit commit = new LogEntryCommit( 42, 21, 1734331568 );
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel( true );
 
         writeCommitEntry( channel, commit );
 
@@ -77,12 +78,12 @@ class VersionAwareLogEntryReaderTest
     void shouldReadACommandLogEntry() throws IOException
     {
         // given
-        byte version = LATEST.versionByte();
+        KernelVersion version = LATEST;
         TestCommand testCommand = new TestCommand( new byte[] {100, 101, 102} );
         final LogEntryCommand command = new LogEntryCommand( version, testCommand );
-        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel( true );
 
-        channel.put( version );
+        channel.put( version.version() );
         channel.put( LogEntryTypeCodes.COMMAND );
         testCommand.serialize( channel );
 
@@ -100,7 +101,7 @@ class VersionAwareLogEntryReaderTest
         final LogEntryInlinedCheckPoint checkPoint = new LogEntryInlinedCheckPoint( new LogPosition( 42, 43 ) );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel( true );
 
-        channel.put( checkPoint.getVersion() );
+        channel.put( checkPoint.getVersion().version() );
         channel.put( LogEntryTypeCodes.LEGACY_CHECK_POINT );
         channel.putLong( checkPoint.getLogPosition().getLogVersion() );
         channel.putLong( checkPoint.getLogPosition().getByteOffset() );
@@ -117,9 +118,9 @@ class VersionAwareLogEntryReaderTest
     void shouldReturnNullWhenThereIsNoCommand() throws IOException
     {
         // given
-        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel( true );
 
-        channel.put( LATEST.versionByte() );
+        channel.put( LATEST.version() );
         channel.put( LogEntryTypeCodes.COMMAND );
         channel.put( CommandReader.NONE );
 
@@ -134,7 +135,7 @@ class VersionAwareLogEntryReaderTest
     void shouldReturnNullWhenNotEnoughDataInTheChannel() throws IOException
     {
         // given
-        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel( true );
 
         // when
         final LogEntry logEntry = logEntryReader.readLogEntry( channel );
@@ -148,7 +149,7 @@ class VersionAwareLogEntryReaderTest
     void shouldValidateChecksumChain() throws IOException
     {
         // given
-        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        final InMemoryClosableChannel channel = new InMemoryClosableChannel( true );
         LogPosition startPosition = new LogPosition( 0, 174 );
 
         int checksum1 = 1021763356;
@@ -187,7 +188,7 @@ class VersionAwareLogEntryReaderTest
     private static void writeStartEntry( InMemoryClosableChannel channel, LogEntryStart start )
     {
         channel.beginChecksum();
-        channel.put( start.getVersion() ); // version
+        channel.put( start.getVersion().version() ); // version
         channel.put( LogEntryTypeCodes.TX_START ); // type
         channel.putLong( start.getTimeWritten() );
         channel.putLong( start.getLastCommittedTxWhenTransactionStarted() );
@@ -198,7 +199,7 @@ class VersionAwareLogEntryReaderTest
 
     private static void writeCommitEntry( InMemoryClosableChannel channel, LogEntryCommit commit )
     {
-        channel.put( commit.getVersion() );
+        channel.put( commit.getVersion().version() );
         channel.put( LogEntryTypeCodes.TX_COMMIT );
         channel.putLong( commit.getTxId() );
         channel.putLong( commit.getTimeWritten() );

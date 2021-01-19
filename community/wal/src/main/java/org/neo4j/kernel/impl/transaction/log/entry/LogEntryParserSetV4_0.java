@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import java.io.IOException;
 
 import org.neo4j.io.fs.ReadableChecksumChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
@@ -33,11 +34,11 @@ public class LogEntryParserSetV4_0 extends LogEntryParserSet
 
     private LogEntryParserSetV4_0()
     {
-        super( LogEntryParserSetVersion.LogEntryV4_0 );
+        super( KernelVersion.V4_0 );
         register( new LogEntryParser( LogEntryTypeCodes.TX_START )
         {
             @Override
-            public LogEntry parse( byte version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
+            public LogEntry parse( KernelVersion version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
                     throws IOException
             {
                 LogPosition position = marker.newPosition();
@@ -53,7 +54,7 @@ public class LogEntryParserSetV4_0 extends LogEntryParserSet
         register( new LogEntryParser( LogEntryTypeCodes.COMMAND )
         {
             @Override
-            public LogEntry parse( byte version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
+            public LogEntry parse( KernelVersion version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
                     throws IOException
             {
                 StorageCommand command = commandReaderFactory.get( version ).read( channel );
@@ -63,7 +64,7 @@ public class LogEntryParserSetV4_0 extends LogEntryParserSet
         register( new LogEntryParser( LogEntryTypeCodes.TX_COMMIT )
         {
             @Override
-            public LogEntry parse( byte version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
+            public LogEntry parse( KernelVersion version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
                     throws IOException
             {
                 long txId = channel.getLong();
@@ -75,7 +76,7 @@ public class LogEntryParserSetV4_0 extends LogEntryParserSet
         register( new LogEntryParser( LogEntryTypeCodes.LEGACY_CHECK_POINT )
         {
             @Override
-            public LogEntry parse( byte version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
+            public LogEntry parse( KernelVersion version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
                     throws IOException
             {
                 long logVersion = channel.getLong();

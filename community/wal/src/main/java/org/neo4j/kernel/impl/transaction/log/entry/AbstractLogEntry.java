@@ -22,13 +22,14 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import java.util.TimeZone;
 
 import org.neo4j.internal.helpers.Format;
+import org.neo4j.kernel.KernelVersion;
 
 public abstract class AbstractLogEntry implements LogEntry
 {
-    private final byte version;
+    private final KernelVersion version;
     private final byte type;
 
-    AbstractLogEntry( byte version, byte type )
+    AbstractLogEntry( KernelVersion version, byte type )
     {
         this.type = type;
         this.version = version;
@@ -41,7 +42,7 @@ public abstract class AbstractLogEntry implements LogEntry
     }
 
     @Override
-    public byte getVersion()
+    public KernelVersion getVersion()
     {
         return version;
     }

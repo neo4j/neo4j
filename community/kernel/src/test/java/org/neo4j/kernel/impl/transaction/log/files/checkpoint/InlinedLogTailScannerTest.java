@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 import java.io.IOException;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -46,7 +46,7 @@ class InlinedLogTailScannerTest extends AbstractLogTailScannerTest
                 .withLogProvider( logProvider )
                 .withConfig( Config.defaults( fail_on_corrupted_log_files, false ) )
                 // The inlined checkpoints doesn't exist in LogEntryParserSets later than 4.0 so write them with that version.
-                .withTransactionLogVersionProvider( () -> LogEntryParserSetVersion.LogEntryV4_0 )
+                .withKernelVersionProvider( () -> KernelVersion.V4_0 )
                 .build();
     }
 

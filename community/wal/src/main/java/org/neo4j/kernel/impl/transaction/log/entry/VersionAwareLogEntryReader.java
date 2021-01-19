@@ -20,9 +20,11 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
+import java.util.function.Function;
 
 import org.neo4j.io.fs.PositionableChannel;
 import org.neo4j.io.fs.ReadPastEndException;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChecksumChannel;
@@ -39,11 +41,11 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 public class VersionAwareLogEntryReader implements LogEntryReader
 {
     private static final boolean VERIFY_CHECKSUM_CHAIN = FeatureToggles.flag( LogEntryReader.class, "verifyChecksumChain", false );
-    private final LogVersionSelector selector;
+    private final Function<KernelVersion,LogEntryParserSet> parserSetSelector;
     private final CommandReaderFactory commandReaderFactory;
     private final LogPositionMarker positionMarker;
     private final boolean verifyChecksumChain;
-    private LogEntryParserSet parserSet = TransactionLogVersionSelector.LATEST;
+    private LogEntryParserSet parserSet;
     private int lastTxChecksum = BASE_TX_CHECKSUM;
 
     public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory )
@@ -53,12 +55,13 @@ public class VersionAwareLogEntryReader implements LogEntryReader
 
     public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory, boolean verifyChecksumChain )
     {
-        this( commandReaderFactory, TransactionLogVersionSelector.INSTANCE, verifyChecksumChain );
+        this( commandReaderFactory, LogEntryParserSets::parserSet, verifyChecksumChain );
     }
 
-    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory, LogVersionSelector entryVersion, boolean verifyChecksumChain )
+    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory, Function<KernelVersion,LogEntryParserSet> parserSetSelector,
+            boolean verifyChecksumChain )
     {
-        this.selector = entryVersion;
+        this.parserSetSelector = parserSetSelector;
         this.commandReaderFactory = commandReaderFactory;
         this.positionMarker = new LogPositionMarker();
         this.verifyChecksumChain = verifyChecksumChain;
@@ -89,9 +92,20 @@ public class VersionAwareLogEntryReader implements LogEntryReader
                     }
                     return null;
                 }
-                if ( parserSet == null || parserSet.versionByte() != versionCode )
+                if ( parserSet == null || parserSet.getIntroductionVersion().version() != versionCode )
                 {
-                    parserSet = selector.select( versionCode );
+                    try
+                    {
+                        parserSet = parserSetSelector.apply( KernelVersion.getForVersion( versionCode ) );
+                    }
+                    catch ( IllegalArgumentException e )
+                    {
+                        throw new UnsupportedLogVersionException( String.format(
+                                "Log file contains entries with prefix %d, and the lowest supported prefix is %s. This " +
+                                        "indicates that the log files originates from an older version of neo4j, which we don't support " +
+                                        "migrations from.",
+                                versionCode, KernelVersion.V2_3 ) );
+                    }
                     // Since checksum is calculated over the whole entry we need to rewind and begin
                     // a new checksum segment if we change version parser.
                     if ( channel instanceof PositionableChannel )
@@ -109,7 +123,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader
                 try
                 {
                     entryReader = parserSet.select( typeCode );
-                    entry = entryReader.parse( versionCode, channel, positionMarker, commandReaderFactory );
+                    entry = entryReader.parse( parserSet.getIntroductionVersion(), channel, positionMarker, commandReaderFactory );
                 }
                 catch ( ReadPastEndException e )
                 {   // Make these exceptions slip by straight out to the outer handler

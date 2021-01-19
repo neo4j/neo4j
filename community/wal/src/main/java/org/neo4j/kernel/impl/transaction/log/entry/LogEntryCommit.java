@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.TimeZone;
 
 import org.neo4j.internal.helpers.Format;
+import org.neo4j.kernel.KernelVersion;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 
@@ -34,10 +35,10 @@ public class LogEntryCommit extends AbstractLogEntry
 
     public LogEntryCommit( long txId, long timeWritten, int checksum )
     {
-        this( TransactionLogVersionSelector.LATEST.versionByte(), txId, timeWritten, checksum );
+        this( KernelVersion.LATEST, txId, timeWritten, checksum );
     }
 
-    public LogEntryCommit( byte version, long txId, long timeWritten, int checksum )
+    public LogEntryCommit( KernelVersion version, long txId, long timeWritten, int checksum )
     {
         super( version, TX_COMMIT );
         this.txId = txId;

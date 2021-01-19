@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import java.io.IOException;
 
 import org.neo4j.io.fs.ReadableChecksumChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandReaderFactory;
@@ -29,7 +30,7 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 /**
  * Reads and parses the next {@link LogEntry} from {@link ReadableChecksumChannel}, given the version.
  *
- * {@link #parse(byte, ReadableChecksumChannel, LogPositionMarker, CommandReaderFactory)}.
+ * {@link #parse(KernelVersion, ReadableChecksumChannel, LogPositionMarker, CommandReaderFactory)}.
  */
 public abstract class LogEntryParser
 {
@@ -60,6 +61,6 @@ public abstract class LogEntryParser
      * @return the next {@link LogEntry} read and parsed from the {@code channel}.
      * @throws IOException I/O error from channel or if data was read past the end of the channel.
      */
-    abstract LogEntry parse( byte version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
+    abstract LogEntry parse( KernelVersion version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
             throws IOException;
 }

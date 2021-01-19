@@ -134,7 +134,7 @@ public class InlinedLogTailScanner extends AbstractLogTailScanner
                     // Collect data about latest entry version, only in first log file
                     if ( version == versionToSearchForCommits || latestLogEntryVersion == 0 )
                     {
-                        latestLogEntryVersion = entry.getVersion();
+                        latestLogEntryVersion = entry.getVersion().version();
                     }
                     position = channel.position();
                     channelVersion = channel.getVersion();

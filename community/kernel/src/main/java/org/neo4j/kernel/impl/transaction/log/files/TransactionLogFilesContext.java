@@ -26,7 +26,6 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.TransactionLogVersionProvider;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -36,6 +35,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 
@@ -57,7 +57,7 @@ public class TransactionLogFilesContext
     private final boolean failOnCorruptedLogFiles;
     private final Supplier<StoreId> storeId;
     private final DatabaseHealth databaseHealth;
-    private final TransactionLogVersionProvider transactionLogVersionProvider;
+    private final KernelVersionRepository kernelVersionRepository;
     private final Clock clock;
     private final Config config;
 
@@ -66,7 +66,7 @@ public class TransactionLogFilesContext
             Supplier<LogVersionRepository> logVersionRepositorySupplier,FileSystemAbstraction fileSystem, LogProvider logProvider,
             DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess,
             MemoryTracker memoryTracker, Monitors monitors, boolean failOnCorruptedLogFiles, DatabaseHealth databaseHealth,
-            TransactionLogVersionProvider transactionLogVersionProvider, Clock clock, Config config )
+            KernelVersionRepository kernelVersionRepository, Clock clock, Config config )
     {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
@@ -84,7 +84,7 @@ public class TransactionLogFilesContext
         this.monitors = monitors;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
         this.databaseHealth = databaseHealth;
-        this.transactionLogVersionProvider = transactionLogVersionProvider;
+        this.kernelVersionRepository = kernelVersionRepository;
         this.clock = clock;
         this.config = config;
     }
@@ -169,9 +169,9 @@ public class TransactionLogFilesContext
         return databaseHealth;
     }
 
-    public TransactionLogVersionProvider getTransactionLogVersionProvider()
+    public KernelVersionRepository getKernelVersionProvider()
     {
-        return transactionLogVersionProvider;
+        return kernelVersionRepository;
     }
 
     public Clock getClock()

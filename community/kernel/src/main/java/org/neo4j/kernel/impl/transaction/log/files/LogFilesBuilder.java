@@ -29,19 +29,16 @@ import java.util.function.Supplier;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DbmsRuntimeRepository;
-import org.neo4j.dbms.database.TransactionLogVersionProvider;
-import org.neo4j.dbms.database.TransactionLogVersionProviderImpl;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.TransactionLogVersionSelector;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -51,6 +48,7 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.CommandReaderFactory;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
@@ -103,7 +101,7 @@ public class LogFilesBuilder
     private Monitors monitors;
     private StoreId storeId;
     private NativeAccess nativeAccess;
-    private TransactionLogVersionProvider transactionLogVersionProvider;
+    private KernelVersionRepository kernelVersionRepository;
 
     private LogFilesBuilder()
     {
@@ -169,9 +167,9 @@ public class LogFilesBuilder
         return this;
     }
 
-    public LogFilesBuilder withTransactionLogVersionProvider( TransactionLogVersionProvider transactionLogVersionProvider )
+    public LogFilesBuilder withKernelVersionProvider( KernelVersionRepository kernelVersionRepository )
     {
-        this.transactionLogVersionProvider = transactionLogVersionProvider;
+        this.kernelVersionRepository = kernelVersionRepository;
         return this;
     }
 
@@ -312,15 +310,14 @@ public class LogFilesBuilder
 
         // If no transaction log version provider has been supplied explicitly, we try to use the version from the system database.
         // Or the latest version if we can't find the system db version.
-        if ( transactionLogVersionProvider == null )
+        if ( kernelVersionRepository == null )
         {
-            transactionLogVersionProvider = TransactionLogVersionSelector.LATEST::version;
+            kernelVersionRepository = () -> KernelVersion.LATEST;
             if ( dependencies != null )
             {
                 try
                 {
-                    DbmsRuntimeRepository dbmsRuntimeRepository = dependencies.resolveDependency( DbmsRuntimeRepository.class );
-                    transactionLogVersionProvider = new TransactionLogVersionProviderImpl( dbmsRuntimeRepository );
+                    this.kernelVersionRepository = dependencies.resolveDependency( KernelVersionRepository.class );
                 }
                 catch ( UnsatisfiedDependencyException e )
                 {
@@ -332,7 +329,7 @@ public class LogFilesBuilder
         return new TransactionLogFilesContext( rotationThreshold, tryPreallocateTransactionLogs, logEntryReader, lastCommittedIdSupplier,
                 committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logVersionRepositorySupplier,
                 fileSystem, logProvider, databaseTracers, storeIdSupplier, nativeAccess, memoryTracker, monitors, config.get( fail_on_corrupted_log_files ),
-                health, transactionLogVersionProvider, clock, config );
+                health, kernelVersionRepository, clock, config );
     }
 
     private Clock getClock()
