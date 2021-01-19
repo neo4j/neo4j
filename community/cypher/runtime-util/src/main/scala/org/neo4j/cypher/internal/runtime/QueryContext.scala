@@ -437,7 +437,7 @@ class NodeValueHit(val nodeId: Long, val values: Array[Value], read: Read) exten
 
   override def score(): Float = Float.NaN
 
-  override def setTracer(tracer: KernelReadTracer): Unit = {}//throw new UnsupportedOperationException("not implemented")
-
-  override def removeTracer(): Unit = {}//throw new UnsupportedOperationException("not implemented")
+  //this cursor doesn't need tracing since all values has already been read.
+  override def setTracer(tracer: KernelReadTracer): Unit = {}
+  override def removeTracer(): Unit = {}
 }
