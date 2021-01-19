@@ -238,8 +238,8 @@ public class StoreCopy
                     log.info( "... found %d schema definitions. The following can be used to recreate the schema:", schemaCount );
                     String newLine = System.lineSeparator();
                     log.info( newLine + newLine + String.join( ";" + newLine, schemaStatements ) );
-                    log.info( "You have to manually apply the above commands to the database when it is stared to recreate the indexes and constraints. " +
-                            "The commands are saved to " + logFilePath.toAbsolutePath() + " as well for reference.");
+                    log.info( "You have to manually apply the above commands to the database when it is started to recreate the indexes and constraints. " +
+                            "The commands are saved to " + logFilePath.toAbsolutePath() + " as well for reference." );
                 }
 
                 if ( recreatedTokens.notEmpty() )
