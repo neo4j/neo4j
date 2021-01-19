@@ -53,7 +53,7 @@ object PlanDescriptionArgumentSerializer {
       case PageCacheMisses(value) => Long.box(value)
       case Rows(value) => Long.box(value)
       case Time(value) => Long.box(value)
-      case EstimatedRows(value) => Double.box(value)
+      case EstimatedRows(effectiveCardinality, _) => Double.box(effectiveCardinality)
       case Order(providedOrder) => providedOrder.prettifiedString
       case Version(version) => version
       case Planner(planner) => planner
@@ -61,8 +61,8 @@ object PlanDescriptionArgumentSerializer {
       case PlannerVersion(value) => value
       case Runtime(runtime) => runtime
       case RuntimeVersion(value) => value
-      case SourceCode(className, sourceCode) => sourceCode
-      case ByteCode(className, byteCode) => byteCode
+      case SourceCode(_, sourceCode) => sourceCode
+      case ByteCode(_, byteCode) => byteCode
       case RuntimeImpl(runtimeName) => runtimeName
       case PipelineInfo(pipelineId, fused) =>
         val fusion = if (fused) "Fused in" else "In"

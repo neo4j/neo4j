@@ -29,6 +29,6 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   test("serialization should leave numeric arguments as numbers") {
     serialize(DbHits(12)) shouldBe a [java.lang.Number]
     serialize(Rows(12)) shouldBe a [java.lang.Number]
-    serialize(EstimatedRows(12)) shouldBe a [java.lang.Number]
+    serialize(EstimatedRows(12, Some(12))) shouldBe a [java.lang.Number]
   }
 }

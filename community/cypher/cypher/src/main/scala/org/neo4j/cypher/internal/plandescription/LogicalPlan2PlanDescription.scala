@@ -772,7 +772,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
   private def addPlanningAttributes(description: InternalPlanDescription, plan: LogicalPlan): InternalPlanDescription = {
     val withEstRows = if (effectiveCardinalities.isDefinedAt(plan.id)) {
-      description.addArgument(EstimatedRows(effectiveCardinalities.get(plan.id).amount))
+      val maybeCardinality = if (cardinalities.isDefinedAt(plan.id)) Some(cardinalities.get(plan.id).amount) else None
+      description.addArgument(EstimatedRows(effectiveCardinalities.get(plan.id).amount, maybeCardinality))
     } else {
       description
     }

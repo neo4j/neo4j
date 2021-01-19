@@ -438,6 +438,41 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
       NoChildren,
       Seq(
         details("n:Foo"),
+        EstimatedRows(0.00123456789, Some(1))),
+      Set.empty)
+    val planDescr2 = planDescription(
+      id,
+      "NodeByLabelScan",
+      NoChildren,
+      Seq(
+        details("n:Foo"),
+        EstimatedRows(1.23456789, Some(1))),
+      Set.empty)
+
+    renderAsTreeTable(planDescr1, withRawCardinalities = true) should equal(
+      """+------------------+---------+---------------------+
+        || Operator         | Details | Estimated Rows      |
+        |+------------------+---------+---------------------+
+        || +NodeByLabelScan | n:Foo   | 1.0 (0.00123456789) |
+        |+------------------+---------+---------------------+
+        |""".stripMargin )
+
+    renderAsTreeTable(planDescr2, withRawCardinalities = true) should equal(
+      """+------------------+---------+------------------+
+        || Operator         | Details | Estimated Rows   |
+        |+------------------+---------+------------------+
+        || +NodeByLabelScan | n:Foo   | 1.0 (1.23456789) |
+        |+------------------+---------+------------------+
+        |""".stripMargin )
+  }
+
+  test("Output 'unknown' when original cardinality is unknown") {
+    val planDescr1 = planDescription(
+      id,
+      "NodeByLabelScan",
+      NoChildren,
+      Seq(
+        details("n:Foo"),
         EstimatedRows(0.00123456789)),
       Set.empty)
     val planDescr2 = planDescription(
@@ -450,19 +485,19 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
       Set.empty)
 
     renderAsTreeTable(planDescr1, withRawCardinalities = true) should equal(
-      """+------------------+---------+----------------+
-        || Operator         | Details | Estimated Rows |
-        |+------------------+---------+----------------+
-        || +NodeByLabelScan | n:Foo   |  0.00123456789 |
-        |+------------------+---------+----------------+
+      """+------------------+---------+-------------------------+
+        || Operator         | Details | Estimated Rows          |
+        |+------------------+---------+-------------------------+
+        || +NodeByLabelScan | n:Foo   | Unknown (0.00123456789) |
+        |+------------------+---------+-------------------------+
         |""".stripMargin )
 
     renderAsTreeTable(planDescr2, withRawCardinalities = true) should equal(
-      """+------------------+---------+----------------+
-        || Operator         | Details | Estimated Rows |
-        |+------------------+---------+----------------+
-        || +NodeByLabelScan | n:Foo   |     1.23456789 |
-        |+------------------+---------+----------------+
+      """+------------------+---------+----------------------+
+        || Operator         | Details | Estimated Rows       |
+        |+------------------+---------+----------------------+
+        || +NodeByLabelScan | n:Foo   | Unknown (1.23456789) |
+        |+------------------+---------+----------------------+
         |""".stripMargin )
   }
 
@@ -857,9 +892,9 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
   test("MultiNodeIndexSeek") {
     val logicalPlan = MultiNodeIndexSeek(Seq(IndexSeek("x:Label(Prop = 10,Foo = 1,Distance = 6,Name = 'Karoline Getinge')", unique = true).asInstanceOf[IndexSeekLeafPlan], IndexSeek("y:Label(Prop = 12, Name = 'Foo')").asInstanceOf[IndexSeekLeafPlan], IndexSeek("z:Label(Prop > 100, Name = 'Bar')").asInstanceOf[IndexSeekLeafPlan]))
-    val cardinalities = new Cardinalities
-    cardinalities.set(logicalPlan.id, 2.0)
-    val plan = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly = true, cardinalities, new EffectiveCardinalities, withRawCardinalities = false, new ProvidedOrders, StubExecutionPlan())
+    val effectiveCardinalities = new EffectiveCardinalities
+    effectiveCardinalities.set(logicalPlan.id, 2.0)
+    val plan = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly = true, new Cardinalities, effectiveCardinalities, withRawCardinalities = false, new ProvidedOrders, StubExecutionPlan())
 
     renderAsTreeTable(plan) should equal(
       """+---------------------+------------------------------------------------------------------------------------------------------+----------------+

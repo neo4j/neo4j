@@ -234,7 +234,7 @@ object renderAsTreeTable extends ((InternalPlanDescription, Boolean) => String) 
       key -> RightJustifiedCell(mergedColumns.contains(key), lines:_*)
 
     val argumentColumns = description.arguments.collect {
-      case EstimatedRows(count) => rightJustifiedMapping(ESTIMATED_ROWS, format(count, withRawCardinalities))
+      case EstimatedRows(effectiveCardinality, cardinality) => rightJustifiedMapping(ESTIMATED_ROWS, format(effectiveCardinality, cardinality, withRawCardinalities))
       case Rows(count) => rightJustifiedMapping(ROWS, count.toString)
       case DbHits(count) => rightJustifiedMapping(HITS, count.toString)
       case Memory(count) => rightJustifiedMapping(MEMORY, count.toString)
@@ -330,13 +330,13 @@ object renderAsTreeTable extends ((InternalPlanDescription, Boolean) => String) 
     otherFields(description).mkString("; ").replaceAll(UNNAMED_PATTERN, "")
   }
 
-  private def format(v: Double, withRawCardinalities: Boolean) =
-    if (v.isNaN) {
-      v.toString
-    } else if (withRawCardinalities) {
-      v.toString
+  private def format(effectiveCardinality: Double, cardinality: Option[Double], withRawCardinalities: Boolean) =
+    if (withRawCardinalities) {
+      s"${cardinality.getOrElse("Unknown")} ($effectiveCardinality)"
+    } else if (effectiveCardinality.isNaN) {
+      effectiveCardinality.toString
     } else {
-      math.round(v).toString
+      math.round(effectiveCardinality).toString
     }
 
   private def columnLengths(rows: Seq[TableRow]): Map[String, Int] = {

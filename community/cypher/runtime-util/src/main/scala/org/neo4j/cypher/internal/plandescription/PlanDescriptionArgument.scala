@@ -57,7 +57,7 @@ object Arguments {
 
   case class PageCacheMisses(value: Long) extends Argument
 
-  case class EstimatedRows(value: Double) extends Argument
+  case class EstimatedRows(effectiveCardinality: Double, cardinality: Option[Double] = None) extends Argument
 
   case class PipelineInfo(pipelineId: Int, fused: Boolean) extends Argument
 

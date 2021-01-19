@@ -321,50 +321,51 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   private val providedOrders = new ProvidedOrders
   private val id = Id.INVALID_ID
 
-  private def attach[P <: LogicalPlan](plan: P, cardinality: Cardinality, providedOrder: ProvidedOrder = ProvidedOrder.empty): P = {
-    cardinalities.set(plan.id, cardinality)
+  private def attach[P <: LogicalPlan](plan: P, effectiveCardinality: Cardinality, cardinality: Option[Cardinality] = None, providedOrder: ProvidedOrder = ProvidedOrder.empty): P = {
+    effectiveCardinalities.set(plan.id, effectiveCardinality)
+    cardinality.foreach(c => cardinalities.set(plan.id, c))
     providedOrders.set(plan.id, providedOrder)
     plan
   }
 
-  private val privLhsLP = attach(plans.AssertDbmsAdmin(ShowUserAction), 2.0, ProvidedOrder.empty)
+  private val privLhsLP = attach(plans.AssertDbmsAdmin(ShowUserAction), 2.0, providedOrder = ProvidedOrder.empty)
 
-  private val lhsLP = attach(AllNodesScan("a", Set.empty), 2.0, ProvidedOrder.empty)
-  private val lhsPD = PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("a"), EstimatedRows(2)), Set(pretty"a"))
+  private val lhsLP = attach(AllNodesScan("a", Set.empty), 2.0, Some(10.0), ProvidedOrder.empty)
+  private val lhsPD = PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("a"), EstimatedRows(2, Some(10))), Set(pretty"a"))
 
-  private val rhsLP = attach(AllNodesScan("b", Set.empty), 2.0, ProvidedOrder.empty)
-  private val rhsPD = PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("b"), EstimatedRows(2)), Set(pretty"b"))
+  private val rhsLP = attach(AllNodesScan("b", Set.empty), 2.0, providedOrder = ProvidedOrder.empty)
+  private val rhsPD = PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("b"), EstimatedRows(2, Some(10))), Set(pretty"b"))
 
   private val pos: InputPosition = DummyPosition(0)
 
   test("Validate all arguments") {
     assertGood(
-      attach(AllNodesScan("a", Set.empty), 1.0, ProvidedOrder.asc(varFor("a"))),
-      planDescription(id, "AllNodesScan", NoChildren, Seq(details("a"), EstimatedRows(1), Order(asPrettyString.raw("a ASC")), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("a")),
+      attach(AllNodesScan("a", Set.empty), 1.0, Some(15.0), ProvidedOrder.asc(varFor("a"))),
+      planDescription(id, "AllNodesScan", NoChildren, Seq(details("a"), EstimatedRows(1, Some(15)), Order(asPrettyString.raw("a ASC")), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("a")),
       validateAllArgs = true)
 
     assertGood(
-      attach(AllNodesScan("  REL111", Set.empty), 1.0, ProvidedOrder.asc(varFor("  REL111"))),
-      planDescription(id, "AllNodesScan", NoChildren, Seq(details(anonVar("111")), EstimatedRows(1), Order(asPrettyString.raw(s"${anonVar("111")} ASC")), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set(anonVar("111"))),
+      attach(AllNodesScan("  REL111", Set.empty), 1.0, Some(10.0), ProvidedOrder.asc(varFor("  REL111"))),
+      planDescription(id, "AllNodesScan", NoChildren, Seq(details(anonVar("111")), EstimatedRows(1, Some(10)), Order(asPrettyString.raw(s"${anonVar("111")} ASC")), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set(anonVar("111"))),
       validateAllArgs = true)
 
-    assertGood(attach(Input(Seq("n1", "n2"), Seq("r"), Seq("v1", "v2"), nullable = false), 42.3),
-      planDescription(id, "Input", NoChildren, Seq(details(Seq("n1", "n2", "r", "v1", "v2")), EstimatedRows(42.3), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("n1", "n2", "r", "v1", "v2")),
+    assertGood(attach(Input(Seq("n1", "n2"), Seq("r"), Seq("v1", "v2"), nullable = false), 42.3, Some(132)),
+      planDescription(id, "Input", NoChildren, Seq(details(Seq("n1", "n2", "r", "v1", "v2")), EstimatedRows(42.3, Some(132)), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("n1", "n2", "r", "v1", "v2")),
       validateAllArgs = true)
   }
 
   // Leaf Plans
   test("AllNodesScan") {
     assertGood(
-      attach(AllNodesScan("a", Set.empty), 1.0, ProvidedOrder.asc(varFor("a"))),
+      attach(AllNodesScan("a", Set.empty), 1.0, providedOrder = ProvidedOrder.asc(varFor("a"))),
       planDescription(id, "AllNodesScan", NoChildren, Seq(details("a"), Order(asPrettyString.raw("a ASC"))), Set("a")))
 
     assertGood(
-      attach(AllNodesScan("  REL111", Set.empty), 1.0, ProvidedOrder.asc(varFor("  REL111"))),
+      attach(AllNodesScan("  REL111", Set.empty), 1.0, providedOrder = ProvidedOrder.asc(varFor("  REL111"))),
       planDescription(id, "AllNodesScan", NoChildren, Seq(details(anonVar("111")), Order(asPrettyString.raw(s"${anonVar("111")} ASC"))), Set(anonVar("111"))))
 
     assertGood(
-      attach(AllNodesScan("b", Set.empty), 42.0, ProvidedOrder.asc(varFor("b")).desc(prop("b", "foo"))),
+      attach(AllNodesScan("b", Set.empty), 42.0, providedOrder = ProvidedOrder.asc(varFor("b")).desc(prop("b", "foo"))),
       planDescription(id, "AllNodesScan", NoChildren, Seq(details("b"), Order(asPrettyString.raw("b ASC, b.foo DESC"))), Set("b")))
   }
 
@@ -1379,7 +1380,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "Union", TwoChildren(lhsPD, rhsPD), Seq.empty, Set.empty))
 
     // leafs with overlapping variables
-    val lp = attach(AllNodesScan("a", Set.empty), 2.0, ProvidedOrder.empty)
+    val lp = attach(AllNodesScan("a", Set.empty), 2.0, providedOrder = ProvidedOrder.empty)
     val pd = planDescription(id, "AllNodesScan", NoChildren, Seq(details("a")), Set("a"))
     assertGood(attach(Union(lhsLP, lp), 2345.0),
       planDescription(id, "Union", TwoChildren(lhsPD, pd), Seq.empty, Set("a")))

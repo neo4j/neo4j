@@ -394,7 +394,7 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
     val variablesDesc = variables.fold(Set.empty[PrettyString])(_.expected.map(asPrettyString.raw))
     val lhsDesc = lhs.map(_.toPlanDescription)
     val rhsDesc = rhs.map(_.toPlanDescription)
-    val estRowArg = estimatedRows.map(m => EstimatedRows(m.expectedValue)).toSeq
+    val estRowArg = estimatedRows.map(m => EstimatedRows(m.expectedValue, None)).toSeq
     val rowArg = rows.map(m => Rows(m.expectedValue)).toSeq
     val timeArg = time.map(m => Time(m.expectedValue)).toSeq
     val memoryArg = memory.map(m => Memory(m.expectedValue)).toSeq

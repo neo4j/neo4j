@@ -21,10 +21,10 @@ package org.neo4j.cypher.planmatching
 
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
-import org.neo4j.cypher.internal.plandescription.Arguments.Rows
-import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.Arguments.GlobalMemory
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
+import org.neo4j.cypher.internal.plandescription.Arguments.Rows
+import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
@@ -127,7 +127,7 @@ trait EstimatedRowsMatcher extends NumericArgumentMatcher {
 
   override def maybeMatchingArgument(plan: InternalPlanDescription): Option[Long] =
     plan.arguments.collectFirst {
-      case EstimatedRows(value) => math.round(value)
+      case EstimatedRows(effectiveCardinality, _) => math.round(effectiveCardinality)
     }
 }
 
