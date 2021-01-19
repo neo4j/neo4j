@@ -32,6 +32,7 @@ public class LogEntryParserSets
         PARSER_SETS.put( KernelVersion.V2_3, new LogEntryParserSetV2_3() );
         PARSER_SETS.put( KernelVersion.V4_0, new LogEntryParserSetV4_0() );
         PARSER_SETS.put( KernelVersion.V4_2, new LogEntryParserSetV4_2() );
+        PARSER_SETS.put( KernelVersion.V4_3_D3, new LogEntryParserSetV4_3() );
     }
 
     /**

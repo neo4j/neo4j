@@ -37,9 +37,12 @@ public enum KernelVersion
 {
     V2_3( (byte) -10 ), // 2.3 to 3.5.
     V4_0( (byte) 1 ), // 4.0 to 4.1. Added checksums to the log files.
-    V4_2( (byte) 2 ); // 4.2+. Removed checkpoint entries.
+    V4_2( (byte) 2 ), // 4.2+. Removed checkpoint entries.
+    // 4.3(some drop)+. Not a change to log entry format, but record storage engine log format change. Since record storage commands
+    // has no command version of their own it relies on a bump of the parser set version to distinguish between versions unfortunately.
+    V4_3_D3( (byte) 3 );
 
-    public static KernelVersion LATEST = V4_2;
+    public static final KernelVersion LATEST = V4_3_D3;
     private static final ImmutableByteObjectMap<KernelVersion> versionMap =
             ByteObjectMaps.immutable.from( List.of( values() ), KernelVersion::version, v -> v );
 

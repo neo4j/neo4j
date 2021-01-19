@@ -38,6 +38,8 @@ public class RecordStorageCommandReaderFactory implements CommandReaderFactory
             return LogCommandSerializationV4_0.INSTANCE;
         case V4_2:
             return LogCommandSerializationV4_2.INSTANCE;
+        case V4_3_D3:
+            return LogCommandSerializationV4_3_D3.INSTANCE;
         default:
             throw new IllegalArgumentException( "Unsupported kernel version " + version );
         }
