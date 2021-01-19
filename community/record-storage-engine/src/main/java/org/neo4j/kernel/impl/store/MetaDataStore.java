@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
+import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdSequence;
@@ -40,6 +41,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
@@ -62,6 +64,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextS
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.EXTERNAL_STORE_UUID_LEAST_SIGN_BITS;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.EXTERNAL_STORE_UUID_MOST_SIGN_BITS;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.KERNEL_VERSION;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.RECORD_SIZE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
@@ -100,7 +103,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 "Generated on creation and never updated. Most significant bits." ),
         EXTERNAL_STORE_UUID_LEAST_SIGN_BITS( 17, "Database identifier exposed as external store identity. " +
                 "Generated on creation and never updated. Least significant bits" ),
-        CHECKPOINT_LOG_VERSION( 18, "Current checkpoint log version" );
+        CHECKPOINT_LOG_VERSION( 18, "Current checkpoint log version" ),
+        // This field is changed using explicit upgrade trigger. Store can be upgraded to a later version, but still write commands for an older version
+        KERNEL_VERSION( 19, "The kernel version (also transaction log version) that is currently being used when writing new transactions" );
 
         private final int id;
         private final String description;
@@ -137,6 +142,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private volatile long upgradeTimeField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeCommitTimestampField = FIELD_NOT_INITIALIZED;
     private volatile UUID externalStoreUUID = NOT_INITIALISED_EXTERNAL_STORE_UUID;
+    private volatile long kernelVersion = FIELD_NOT_INITIALIZED;
     private final PageCacheTracer pageCacheTracer;
 
     private volatile TransactionId upgradeTransaction = new TransactionId( FIELD_NOT_INITIALIZED, (int) FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
@@ -197,9 +203,26 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setLatestConstraintIntroducingTx( 0, cursorTracer );
         setExternalStoreUUID( UUID.randomUUID(), cursorTracer );
         setCheckpointLogVersion( 0, cursorTracer );
+        setKernelVersion( KernelVersion.LATEST, cursorTracer );
 
         initHighId();
         flush( cursorTracer );
+    }
+
+    public void setKernelVersion( KernelVersion kernelVersion, PageCursorTracer cursorTracer )
+    {
+        assertNotClosed();
+        byte version = kernelVersion.version();
+        setRecord( KERNEL_VERSION, version, cursorTracer );
+        this.kernelVersion = version;
+    }
+
+    @Override
+    public KernelVersion kernelVersion()
+    {
+        assertNotClosed();
+        checkInitialized( kernelVersion );
+        return KernelVersion.getForVersion( Numbers.safeCastLongToByte( kernelVersion ) );
     }
 
     @Override
@@ -623,6 +646,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
             upgradeTransaction = new TransactionId( upgradeTxIdField, upgradeTxChecksumField, upgradeCommitTimestampField );
             checkpointLogVersionField = getRecordValue( cursor, CHECKPOINT_LOG_VERSION, 0 );
+            kernelVersion = getRecordValue( cursor, KERNEL_VERSION );
         }
         while ( cursor.shouldRetry() );
         if ( cursor.checkAndClearBoundsFlag() )

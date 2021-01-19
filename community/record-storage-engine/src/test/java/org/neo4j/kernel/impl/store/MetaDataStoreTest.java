@@ -49,6 +49,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -767,9 +768,9 @@ class MetaDataStoreTest
         newMetaDataStore( pageCacheTracer );
 
         assertThat( pageCacheTracer.faults() ).isOne();
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 24 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 24 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 23 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 25 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 25 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 24 );
     }
 
     @Test
@@ -888,6 +889,23 @@ class MetaDataStoreTest
         dataStore.setCheckpointLogVersion( 321, NULL );
         assertEquals( 321, dataStore.getCheckpointLogVersion() );
         assertEquals( 0, dataStore.getCurrentLogVersion() );
+    }
+
+    @Test
+    void shouldBeAbleToReadAndWriteKernelVersion()
+    {
+        try ( MetaDataStore metaDataStore = newMetaDataStore() )
+        {
+            assertThat( metaDataStore.kernelVersion() ).isEqualTo( KernelVersion.LATEST ); //new store should have latest
+            assertThat( metaDataStore.kernelVersion() ).isNotEqualTo( KernelVersion.V4_0 ); //that is not 4.0
+            metaDataStore.setKernelVersion( KernelVersion.V4_0, NULL ); //so we set it
+        }
+
+        try ( MetaDataStore metaDataStore = newMetaDataStore() )
+        {
+            assertThat( metaDataStore.kernelVersion() ).isEqualTo( KernelVersion.V4_0 ); //and can read it after a restart
+
+        }
     }
 
     private MetaDataStore newMetaDataStore()

@@ -122,4 +122,10 @@ public class TransactionApplierFacade implements TransactionApplier
     {
         return visit( command );
     }
+
+    @Override
+    public boolean visitMetaDataCommand( Command.MetaDataCommand command ) throws IOException
+    {
+        return visit( command );
+    }
 }

@@ -283,7 +283,6 @@ class RecordStorageEngineTest
             final TransactionApplier transactionApplier = actual.startTx( transaction, batchContext );
             return new TransactionApplier()
             {
-
                 public boolean visit( StorageCommand element ) throws IOException
                 {
                     return transactionApplier.visit( element );
@@ -337,6 +336,12 @@ class RecordStorageEngineTest
                 public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command ) throws IOException
                 {
                     return transactionApplier.visitRelationshipCountsCommand( command );
+                }
+
+                @Override
+                public boolean visitMetaDataCommand( Command.MetaDataCommand command ) throws IOException
+                {
+                    return transactionApplier.visitMetaDataCommand( command );
                 }
 
                 public void close() throws Exception

@@ -19,11 +19,16 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import java.io.IOException;
+
+import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.recordstorage.Command.BaseCommand;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.lock.LockGroup;
@@ -145,6 +150,21 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         SchemaRule schemaRule = command.getSchemaRule();
         boolean isConstraint = command.getAfter().isConstraint();
         onSchemaRuleChange( command.getMode(), command.getKey(), schemaRule, isConstraint );
+        return false;
+    }
+
+    @Override
+    public boolean visitMetaDataCommand( Command.MetaDataCommand command ) throws IOException
+    {
+        if ( command.getAfter().getId() == MetaDataStore.Position.KERNEL_VERSION.id() )
+        {
+            KernelVersion kernelVersion = KernelVersion.getForVersion( Numbers.safeCastLongToByte( command.getAfter().getValue() ) );
+            neoStores.getMetaDataStore().setKernelVersion( kernelVersion, cursorTracer );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Unexpected meta data update " + command );
+        }
         return false;
     }
 
