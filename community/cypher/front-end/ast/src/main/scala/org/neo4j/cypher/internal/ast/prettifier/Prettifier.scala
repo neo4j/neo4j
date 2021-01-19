@@ -66,7 +66,6 @@ import org.neo4j.cypher.internal.ast.DropView
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
-import org.neo4j.cypher.internal.ast.ExecutePrivilegeQualifier
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FromGraph
 import org.neo4j.cypher.internal.ast.FunctionAllQualifier
@@ -295,6 +294,8 @@ case class Prettifier(
     }
     val commandString = adminCommand match {
 
+      // User commands
+
       case x @ ShowUsers(yields,_) =>
         val (y: String, r: String) = showClausesAsString(yields)
         s"${x.name}$y$r"
@@ -336,6 +337,8 @@ case class Prettifier(
       case x @ SetOwnPassword(newPassword, currentPassword) =>
         s"${x.name} FROM ${expr.escapePassword(currentPassword)} TO ${expr.escapePassword(newPassword)}"
 
+      // Role commands
+
       case x @ ShowRoles(withUsers, _, yields,_) =>
         val (y: String, r: String) = showClausesAsString(yields)
         s"${x.name}${if (withUsers) " WITH USERS" else ""}$y$r"
@@ -356,95 +359,102 @@ case class Prettifier(
         if (ifExists) s"${x.name} ${Prettifier.escapeName(roleName)} IF EXISTS"
         else s"${x.name} ${Prettifier.escapeName(roleName)}"
 
-      case x @ GrantRolesToUsers(roleNames, userNames) if roleNames.length > 1 =>
-        s"${x.name}S ${roleNames.map(Prettifier.escapeName).mkString(", ")} TO ${userNames.map(Prettifier.escapeName).mkString(", ")}"
-
       case x @ GrantRolesToUsers(roleNames, userNames) =>
-        s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString(", ")} TO ${userNames.map(Prettifier.escapeName).mkString(", ")}"
-
-      case x @ RevokeRolesFromUsers(roleNames, userNames) if roleNames.length > 1 =>
-        s"${x.name}S ${roleNames.map(Prettifier.escapeName).mkString(", ")} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
+        val start = if (roleNames.length > 1) s"${x.name}S" else x.name
+        s"$start ${roleNames.map(Prettifier.escapeName).mkString(", ")} TO ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
       case x @ RevokeRolesFromUsers(roleNames, userNames) =>
-        s"${x.name} ${roleNames.map(Prettifier.escapeName).mkString(", ")} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
+        val start = if (roleNames.length > 1) s"${x.name}S" else x.name
+        s"$start ${roleNames.map(Prettifier.escapeName).mkString(", ")} FROM ${userNames.map(Prettifier.escapeName).mkString(", ")}"
 
-      case x @ GrantPrivilege(DbmsPrivilege(_), _, _, qualifiers: List[ExecutePrivilegeQualifier], roleNames) =>
+      // Privilege commands
+      // dbms privileges
+
+      case x @ GrantPrivilege(DbmsPrivilege(_), _, _, qualifiers, roleNames) =>
         s"${x.name}${Prettifier.extractQualifierString(qualifiers)} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
 
-      case x @ GrantPrivilege(DbmsPrivilege(_), _, _, _, roleNames) =>
-        s"${x.name} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
-
-      case x @ DenyPrivilege(DbmsPrivilege(_), _, _, qualifiers: List[ExecutePrivilegeQualifier], roleNames) =>
+      case x @ DenyPrivilege(DbmsPrivilege(_), _, _, qualifiers, roleNames) =>
         s"${x.name}${Prettifier.extractQualifierString(qualifiers)} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
 
-      case x @ DenyPrivilege(DbmsPrivilege(_), _, _, _, roleNames) =>
-        s"${x.name} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
-
-      case x @ RevokePrivilege(DbmsPrivilege(_), _, _, qualifiers: List[ExecutePrivilegeQualifier], roleNames, _) =>
+      case x @ RevokePrivilege(DbmsPrivilege(_), _, _, qualifiers, roleNames, _) =>
         s"${x.name}${Prettifier.extractQualifierString(qualifiers)} ON DBMS FROM ${Prettifier.escapeNames(roleNames)}"
 
-      case x @ RevokePrivilege(DbmsPrivilege(_), _, _, _, roleNames, _) =>
-        s"${x.name} ON DBMS FROM ${Prettifier.escapeNames(roleNames)}"
+      // database privileges
 
-      case x @ GrantPrivilege(DatabasePrivilege(_), _, dbScope: List[DatabaseScope], qualifier, roleNames) =>
+      case x @ GrantPrivilege(DatabasePrivilege(_), _, dbOrGraphScope, qualifier, roleNames) =>
+        val dbScope = dbOrGraphScope.map(d => d.asInstanceOf[DatabaseScope])
         Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "TO", roleNames)
 
-      case x @ DenyPrivilege(DatabasePrivilege(_), _, dbScope: List[DatabaseScope], qualifier, roleNames) =>
+      case x @ DenyPrivilege(DatabasePrivilege(_), _, dbOrGraphScope, qualifier, roleNames) =>
+        val dbScope = dbOrGraphScope.map(d => d.asInstanceOf[DatabaseScope])
         Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "TO", roleNames)
 
-      case x @ RevokePrivilege(DatabasePrivilege(_), _, dbScope: List[DatabaseScope], qualifier, roleNames, _) =>
+      case x @ RevokePrivilege(DatabasePrivilege(_), _, dbOrGraphScope, qualifier, roleNames, _) =>
+        val dbScope = dbOrGraphScope.map(d => d.asInstanceOf[DatabaseScope])
         Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "FROM", roleNames)
 
-      case x@GrantPrivilege(GraphPrivilege(WriteAction), _, graphScope: List[GraphScope], _, roleNames) =>
-        val scope = Prettifier.extractGraphScope(graphScope)
+      // graph privileges: Write
+
+      case x@GrantPrivilege(GraphPrivilege(WriteAction), _, graphScope, _, roleNames) =>
+        val scope = Prettifier.extractGraphScope(graphScope.map(d => d.asInstanceOf[GraphScope]))
         s"${x.name} ON $scope TO ${Prettifier.escapeNames(roleNames)}"
 
-      case x@DenyPrivilege(GraphPrivilege(WriteAction), _, graphScope: List[GraphScope], _, roleNames) =>
-        val scope = Prettifier.extractGraphScope(graphScope)
+      case x@DenyPrivilege(GraphPrivilege(WriteAction), _, graphScope, _, roleNames) =>
+        val scope = Prettifier.extractGraphScope(graphScope.map(d => d.asInstanceOf[GraphScope]))
         s"${x.name} ON $scope TO ${Prettifier.escapeNames(roleNames)}"
 
-      case x@RevokePrivilege(GraphPrivilege(WriteAction), _, graphScope: List[GraphScope], _, roleNames, _) =>
-        val scope = Prettifier.extractGraphScope(graphScope)
+      case x@RevokePrivilege(GraphPrivilege(WriteAction), _, graphScope, _, roleNames, _) =>
+        val scope = Prettifier.extractGraphScope(graphScope.map(d => d.asInstanceOf[GraphScope]))
         s"${x.name} ON $scope FROM ${Prettifier.escapeNames(roleNames)}"
 
-      case x@GrantPrivilege(GraphPrivilege(_), None, graphScope: List[GraphScope], qualifier, roleNames) =>
-        val scope = Prettifier.extractScope(graphScope, qualifier)
+      // graph privileges: without resource
+      // all, create, delete, traverse
+
+      case x@GrantPrivilege(GraphPrivilege(_), None, graphScope, qualifier, roleNames) =>
+        val scope = Prettifier.extractScope(graphScope.map(d => d.asInstanceOf[GraphScope]), qualifier)
         s"${x.name} ON $scope TO ${Prettifier.escapeNames(roleNames)}"
 
-      case x@DenyPrivilege(GraphPrivilege(_), None, graphScope: List[GraphScope], qualifier, roleNames) =>
-        val scope = Prettifier.extractScope(graphScope, qualifier)
+      case x@DenyPrivilege(GraphPrivilege(_), None, graphScope, qualifier, roleNames) =>
+        val scope = Prettifier.extractScope(graphScope.map(d => d.asInstanceOf[GraphScope]), qualifier)
         s"${x.name} ON $scope TO ${Prettifier.escapeNames(roleNames)}"
 
-      case x@RevokePrivilege(GraphPrivilege(_), None, graphScope: List[GraphScope], qualifier, roleNames, _) =>
-        val scope = Prettifier.extractScope(graphScope, qualifier)
+      case x@RevokePrivilege(GraphPrivilege(_), None, graphScope, qualifier, roleNames, _) =>
+        val scope = Prettifier.extractScope(graphScope.map(d => d.asInstanceOf[GraphScope]), qualifier)
         s"${x.name} ON $scope FROM ${Prettifier.escapeNames(roleNames)}"
 
-      case x@GrantPrivilege(GraphPrivilege(_), Some(resource), graphScope: List[GraphScope], _, roleNames)
+      // graph privileges: label resource
+      // remove label, set label
+
+      case x@GrantPrivilege(GraphPrivilege(_), Some(resource), graphScope, _, roleNames)
         if resource.isInstanceOf[LabelsResource] || resource.isInstanceOf[AllLabelResource] =>
-          val scope = Prettifier.extractLabelScope(graphScope, resource)
+          val scope = Prettifier.extractLabelScope(graphScope.map(d => d.asInstanceOf[GraphScope]), resource)
           s"${x.name} $scope TO ${Prettifier.escapeNames(roleNames)}"
 
-      case x@DenyPrivilege(GraphPrivilege(_), Some(resource), graphScope: List[GraphScope], _, roleNames)
+      case x@DenyPrivilege(GraphPrivilege(_), Some(resource), graphScope, _, roleNames)
         if resource.isInstanceOf[LabelsResource] || resource.isInstanceOf[AllLabelResource] =>
-          val scope = Prettifier.extractLabelScope(graphScope, resource)
+          val scope = Prettifier.extractLabelScope(graphScope.map(d => d.asInstanceOf[GraphScope]), resource)
           s"${x.name} $scope TO ${Prettifier.escapeNames(roleNames)}"
 
-      case x@RevokePrivilege(GraphPrivilege(_), Some(resource), graphScope: List[GraphScope], _, roleNames, _)
+      case x@RevokePrivilege(GraphPrivilege(_), Some(resource), graphScope, _, roleNames, _)
         if resource.isInstanceOf[LabelsResource] || resource.isInstanceOf[AllLabelResource] =>
-          val scope = Prettifier.extractLabelScope(graphScope, resource)
+          val scope = Prettifier.extractLabelScope(graphScope.map(d => d.asInstanceOf[GraphScope]), resource)
           s"${x.name} $scope FROM ${Prettifier.escapeNames(roleNames)}"
 
-      case x @ GrantPrivilege(_, Some(resource), graphScope: List[GraphScope], qualifier, roleNames) =>
-        val (resourceName, scope) = Prettifier.extractScope(resource, graphScope, qualifier)
+      // remaining graph privileges
+
+      case x @ GrantPrivilege(_, Some(resource), graphScope, qualifier, roleNames) =>
+        val (resourceName, scope) = Prettifier.extractScope(resource, graphScope.map(d => d.asInstanceOf[GraphScope]), qualifier)
         s"${x.name} {$resourceName} ON $scope TO ${Prettifier.escapeNames(roleNames)}"
 
-      case x @ DenyPrivilege(_, Some(resource), graphScope: List[GraphScope], qualifier, roleNames) =>
-        val (resourceName, scope) = Prettifier.extractScope(resource, graphScope, qualifier)
+      case x @ DenyPrivilege(_, Some(resource), graphScope, qualifier, roleNames) =>
+        val (resourceName, scope) = Prettifier.extractScope(resource, graphScope.map(d => d.asInstanceOf[GraphScope]), qualifier)
         s"${x.name} {$resourceName} ON $scope TO ${Prettifier.escapeNames(roleNames)}"
 
-      case x @ RevokePrivilege(_, Some(resource), graphScope: List[GraphScope], qualifier, roleNames, _) =>
-        val (resourceName, scope) = Prettifier.extractScope(resource, graphScope, qualifier)
+      case x @ RevokePrivilege(_, Some(resource), graphScope, qualifier, roleNames, _) =>
+        val (resourceName, scope) = Prettifier.extractScope(resource, graphScope.map(d => d.asInstanceOf[GraphScope]), qualifier)
         s"${x.name} {$resourceName} ON $scope FROM ${Prettifier.escapeNames(roleNames)}"
+
+      // show privileges
 
       case ShowPrivileges(scope, yields, _) =>
         val (y: String, r: String) = showClausesAsString(yields)
@@ -454,6 +464,8 @@ case class Prettifier(
         val (y: String, r: String) = showClausesAsString(yields)
         val asCommand = if (asRevoke) " AS REVOKE COMMANDS" else " AS COMMANDS"
         s"SHOW ${Prettifier.extractScope(scope)} PRIVILEGES$asCommand$y$r"
+
+      // Database commands
 
       case x @ ShowDatabase(scope, yields,_) =>
         val (y: String, r: String) = showClausesAsString(yields)
@@ -585,13 +597,13 @@ case class Prettifier(
       val ind = indented()
       val w = m.where.map(ind.asString).map(asNewLine).getOrElse("")
       val h = m.hints.map(ind.asString).map(asNewLine).mkString
-      s"${INDENT}${o}MATCH $p$h$w"
+      s"$INDENT${o}MATCH $p$h$w"
     }
 
     def asString(c: SubQuery): String = {
       s"""${INDENT}CALL {
          |${indented().queryPart(c.part)}
-         |${INDENT}}""".stripMargin
+         |$INDENT}""".stripMargin
     }
 
     def asString(w: Where): String =
@@ -740,7 +752,7 @@ case class Prettifier(
 
     def asString(delete: Delete): String = {
       val detach = if (delete.forced) "DETACH " else ""
-      s"${INDENT}${detach}DELETE ${delete.expressions.map(expr(_)).mkString(", ")}"
+      s"$INDENT${detach}DELETE ${delete.expressions.map(expr(_)).mkString(", ")}"
     }
 
     def asString(foreach: Foreach): String = {
