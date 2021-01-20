@@ -19,32 +19,30 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import java.util.EnumMap;
+
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.util.Preconditions;
 
 public class LogEntryParserSets
 {
-    public static LogEntryParserSet parserSet( KernelVersion version )
+    private static final EnumMap<KernelVersion,LogEntryParserSet> PARSER_SETS = new EnumMap<>( KernelVersion.class );
+    static
     {
-        switch ( version )
-        {
-        case V2_3:
-            return LogEntryParserSetV2_3.V2_3;
-        case V4_0:
-            return LogEntryParserSetV4_0.V4_0;
-        case V4_2:
-            return LogEntryParserSetV4_2.V4_2;
-        default:
-            throw new IllegalArgumentException( "No log entries version matching " + version );
-        }
+        PARSER_SETS.put( KernelVersion.V2_3, new LogEntryParserSetV2_3() );
+        PARSER_SETS.put( KernelVersion.V4_0, new LogEntryParserSetV4_0() );
+        PARSER_SETS.put( KernelVersion.V4_2, new LogEntryParserSetV4_2() );
     }
 
-    public static LogEntryParserSet checkpointParserSet( KernelVersion version )
+    /**
+     * @param version the {@link KernelVersion} to get the {@link LogEntryParserSet} for. The returned parser is capable of reading
+     * all types of log entries.
+     * @return LogEntryParserSet for the given {@code version}.
+     */
+    public static LogEntryParserSet parserSet( KernelVersion version )
     {
-        switch ( version )
-        {
-        case V4_2:
-        default:
-            throw new IllegalArgumentException( "No checkpoint log entries version matching " + version );
-        }
+        LogEntryParserSet parserSet = PARSER_SETS.get( version );
+        Preconditions.checkState( parserSet != null, "No log entries version matching %s", version );
+        return parserSet;
     }
 }

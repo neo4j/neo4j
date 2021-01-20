@@ -34,7 +34,6 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.kernel.KernelVersion.LATEST;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_0.V4_0;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSets.parserSet;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.LEGACY_CHECK_POINT;
 
@@ -122,7 +121,7 @@ class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = V4_0.select( LEGACY_CHECK_POINT );
+        final LogEntryParser parser = new LogEntryParserSetV4_0().select( LEGACY_CHECK_POINT );
         final LogEntry logEntry = parser.parse( KernelVersion.V4_0, channel, marker, commandReader );
 
         // then

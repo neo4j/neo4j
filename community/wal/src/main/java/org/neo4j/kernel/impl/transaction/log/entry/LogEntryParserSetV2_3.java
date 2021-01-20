@@ -28,11 +28,9 @@ import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageCommand;
 
-public class LogEntryParserSetV2_3 extends LogEntryParserSet
+class LogEntryParserSetV2_3 extends LogEntryParserSet
 {
-    public static final LogEntryParserSet V2_3 = new LogEntryParserSetV2_3();
-
-    private LogEntryParserSetV2_3()
+    LogEntryParserSetV2_3()
     {
         super( KernelVersion.V2_3 );
         register( new LogEntryParser( LogEntryTypeCodes.TX_START )

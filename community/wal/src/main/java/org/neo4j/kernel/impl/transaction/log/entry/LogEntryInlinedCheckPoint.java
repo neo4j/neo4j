@@ -24,15 +24,13 @@ import java.util.Objects;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSetV4_0.V4_0;
-
 public class LogEntryInlinedCheckPoint extends AbstractLogEntry
 {
     private final LogPosition logPosition;
 
     public LogEntryInlinedCheckPoint( LogPosition logPosition )
     {
-        this( V4_0.getIntroductionVersion(), logPosition );
+        this( KernelVersion.V4_0, logPosition );
     }
 
     LogEntryInlinedCheckPoint( KernelVersion version, LogPosition logPosition )

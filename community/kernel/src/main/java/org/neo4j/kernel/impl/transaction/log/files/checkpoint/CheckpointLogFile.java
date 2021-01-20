@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryDetachedCheckpoint;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParserSets;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
@@ -100,7 +99,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
         long lowestVersion = versionVisitor.getLowestVersion();
         long currentVersion = highestVersion;
 
-        var checkpointReader = new VersionAwareLogEntryReader( NO_COMMANDS, LogEntryParserSets::checkpointParserSet, true );
+        var checkpointReader = new VersionAwareLogEntryReader( NO_COMMANDS, true );
         while ( currentVersion >= lowestVersion )
         {
             try ( var channel = channelAllocator.openLogChannel( currentVersion );
@@ -141,7 +140,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
 
         long currentVersion = versionVisitor.getLowestVersion();
 
-        var checkpointReader = new VersionAwareLogEntryReader( NO_COMMANDS, LogEntryParserSets::checkpointParserSet, true );
+        var checkpointReader = new VersionAwareLogEntryReader( NO_COMMANDS, true );
         var checkpoints = new ArrayList<CheckpointInfo>();
         while ( currentVersion <= highestVersion )
         {

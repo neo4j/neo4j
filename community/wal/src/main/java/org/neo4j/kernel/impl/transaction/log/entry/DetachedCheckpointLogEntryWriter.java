@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -25,11 +25,12 @@ import java.time.Instant;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.StoreId;
 
 import static java.lang.Math.min;
 import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
-import static org.neo4j.kernel.impl.transaction.log.entry.CheckpointParserSetV4_2.MAX_DESCRIPTION_LENGTH;
+import static org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryParser.MAX_DESCRIPTION_LENGTH;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT;
 
 public class DetachedCheckpointLogEntryWriter

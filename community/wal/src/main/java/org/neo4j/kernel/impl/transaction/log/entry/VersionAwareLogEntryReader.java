@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
-import java.util.function.Function;
 
 import org.neo4j.io.fs.PositionableChannel;
 import org.neo4j.io.fs.ReadPastEndException;
@@ -41,7 +40,6 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 public class VersionAwareLogEntryReader implements LogEntryReader
 {
     private static final boolean VERIFY_CHECKSUM_CHAIN = FeatureToggles.flag( LogEntryReader.class, "verifyChecksumChain", false );
-    private final Function<KernelVersion,LogEntryParserSet> parserSetSelector;
     private final CommandReaderFactory commandReaderFactory;
     private final LogPositionMarker positionMarker;
     private final boolean verifyChecksumChain;
@@ -55,13 +53,6 @@ public class VersionAwareLogEntryReader implements LogEntryReader
 
     public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory, boolean verifyChecksumChain )
     {
-        this( commandReaderFactory, LogEntryParserSets::parserSet, verifyChecksumChain );
-    }
-
-    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory, Function<KernelVersion,LogEntryParserSet> parserSetSelector,
-            boolean verifyChecksumChain )
-    {
-        this.parserSetSelector = parserSetSelector;
         this.commandReaderFactory = commandReaderFactory;
         this.positionMarker = new LogPositionMarker();
         this.verifyChecksumChain = verifyChecksumChain;
@@ -96,7 +87,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader
                 {
                     try
                     {
-                        parserSet = parserSetSelector.apply( KernelVersion.getForVersion( versionCode ) );
+                        parserSet = LogEntryParserSets.parserSet( KernelVersion.getForVersion( versionCode ) );
                     }
                     catch ( IllegalArgumentException e )
                     {
