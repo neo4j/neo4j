@@ -36,7 +36,7 @@ class CollapseInCollectionsTest extends CypherFunSuite with AstRewritingTestSupp
     )
   }
 
-  test("should not collapse collections containing ConstValues and nonConstValues for id function") {
+  test("should collapse collections containing ConstValues and nonConstValues for id function") {
     assertRewritten(
       "MATCH (a) WHERE id(a) IN [42] OR id(a) IN [rand()] RETURN a",
       "MATCH (a) WHERE id(a) IN [42, rand()] RETURN a"
@@ -50,7 +50,7 @@ class CollapseInCollectionsTest extends CypherFunSuite with AstRewritingTestSupp
     )
   }
 
-  test("should not collapse collections containing ConstValues and nonConstValues for property") {
+  test("should collapse collections containing ConstValues and nonConstValues for property") {
     assertRewritten(
       "MATCH (a) WHERE a.prop IN [42] OR a.prop IN [rand()] RETURN a",
       "MATCH (a) WHERE a.prop IN [42, rand()] RETURN a"
