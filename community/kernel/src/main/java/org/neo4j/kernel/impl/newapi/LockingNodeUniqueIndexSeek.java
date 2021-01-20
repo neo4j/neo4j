@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
@@ -65,6 +66,11 @@ public class LockingNodeUniqueIndexSeek
                     // downgrade to a shared lock
                     locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
                     locks.releaseExclusive( INDEX_ENTRY, indexEntryId );
+                    return cursor.nodeReference();
+                }
+                else
+                {
+                    return StatementConstants.NO_SUCH_NODE;
                 }
             }
 
