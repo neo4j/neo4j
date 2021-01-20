@@ -71,7 +71,7 @@ object LogicalPlanToPlanBuilderString {
 
       sb ++= ".|" * level
 
-      sb ++= planPrefixDot.getOrElse((_:LogicalPlan) => ".").apply(plan)
+      sb ++= planPrefixDot.fold(".")(_.apply(plan))
       sb ++= pre(plan)
       sb += '('
       sb ++= par(plan)
