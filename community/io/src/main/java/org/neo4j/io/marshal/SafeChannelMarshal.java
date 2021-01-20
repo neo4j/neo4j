@@ -41,7 +41,7 @@ public abstract class SafeChannelMarshal<STATE> implements ChannelMarshal<STATE>
         }
         catch ( ReadPastEndException e )
         {
-            throw new EndOfStreamException( e );
+            throw EndOfStreamException.INSTANCE;
         }
     }
 

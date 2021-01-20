@@ -26,8 +26,10 @@ package org.neo4j.io.marshal;
  */
 public class EndOfStreamException extends Exception
 {
-    public EndOfStreamException( Throwable e )
+    public static final EndOfStreamException INSTANCE = new EndOfStreamException();
+
+    private EndOfStreamException()
     {
-        super( e );
+        super();
     }
 }
