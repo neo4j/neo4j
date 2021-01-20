@@ -93,28 +93,27 @@ object SortPlanner {
 
     case class SortColumnsWithProjections(columnOrder: ColumnOrder,
                                           providedOrderColumn: ir.ordering.ColumnOrder,
-                                          projections: Map[String, Expression],
                                           unaliasedProjections: Option[(String, Expression)])
 
     val sortItems: Seq[SortColumnsWithProjections] = interestingOrder.requiredOrderCandidate.order.map {
       // Aliased sort expressions
-      case Asc(v@Variable(key), projections) =>
-        SortColumnsWithProjections(Ascending(key), Asc(v, projections), projections, None)
-      case Desc(v@Variable(key), projections) =>
-        SortColumnsWithProjections(Descending(key), Desc(v, projections), projections, None)
+      case asc@Asc(Variable(key), _) =>
+        SortColumnsWithProjections(Ascending(key), asc, None)
+      case desc@Desc(Variable(key), _) =>
+        SortColumnsWithProjections(Descending(key), desc, None)
 
       // Unaliased sort expressions
-      case Asc(expression, projections) =>
+      case asc@Asc(expression, projections) =>
         val columnId = idFrom(expression, projections)
-        SortColumnsWithProjections(Ascending(columnId), Asc(expression, projections), projections, Some(columnId -> expression))
-      case Desc(expression, projections) =>
+        SortColumnsWithProjections(Ascending(columnId), asc, Some(columnId -> expression))
+      case desc@Desc(expression, projections) =>
         val columnId = idFrom(expression, projections)
-        SortColumnsWithProjections(Descending(columnId), Desc(expression, projections), projections, Some(columnId -> expression))
+        SortColumnsWithProjections(Descending(columnId), desc, Some(columnId -> expression))
     }
 
     // Project all variables needed for sort in two steps
     // First the ones that are part of projection list and may introduce variables that are needed for the second projection
-    val projections = sortItems.foldLeft(Map.empty[String, Expression])((acc, i) => acc ++ i.projections)
+    val projections = sortItems.foldLeft(Map.empty[String, Expression])((acc, i) => acc ++ i.providedOrderColumn.projections)
     val projected1 = projected(plan, projections)
     // And then all the ones from unaliased sort items that may refer to newly introduced variables
     val unaliasedProjections = sortItems.foldLeft(Map.empty[String, Expression])((acc, i) => acc ++ i.unaliasedProjections)

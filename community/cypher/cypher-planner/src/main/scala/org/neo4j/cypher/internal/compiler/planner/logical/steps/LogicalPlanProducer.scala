@@ -605,10 +605,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planLeftOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.amendQueryGraph(_.withAddedOptionalMatch(solveds.get(right.id).asSinglePlannerQuery.queryGraph.addHints(hints)))
     val inputOrder = providedOrders.get(right.id)
-    val providedOrder = if (inputOrder.columns.exists {
-      case _: Desc => true
-      case _ => false
-    }) {
+    val providedOrder = if (inputOrder.columns.exists(!_.isAscending)) {
       // Join nodes that are not matched from the RHS will result in rows with null in the Sort column.
       // These nulls will always be at the end. That is the correct order for ASC.
       // If there is at least a DESC column, we cannot provide any order.
