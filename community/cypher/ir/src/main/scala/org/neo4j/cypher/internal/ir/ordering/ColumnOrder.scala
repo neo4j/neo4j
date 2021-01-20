@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.topDown
  * A column of either an [[OrderCandidate]] or a [[ProvidedOrder]].
  * Specifies both what is ordered and in what direction.
  */
-trait ColumnOrder {
+sealed trait ColumnOrder {
 
   /**
    * @return the expression that this column is/should be ordered by.

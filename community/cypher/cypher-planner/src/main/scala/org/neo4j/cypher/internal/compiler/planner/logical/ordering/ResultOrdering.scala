@@ -77,8 +77,8 @@ object ResultOrdering {
 
       // Accumulator for the foldLeft
       sealed trait Acc
-      case class OrderNotYetDecided(providedOrderColumns: Seq[ColumnOrder]) extends Acc
-      case class IndexOrderDecided(indexOrder: IndexOrder, providedOrderColumns: Seq[ColumnOrder]) extends Acc
+      final case class OrderNotYetDecided(providedOrderColumns: Seq[ColumnOrder]) extends Acc
+      final case class IndexOrderDecided(indexOrder: IndexOrder, providedOrderColumns: Seq[ColumnOrder]) extends Acc
 
       def possibleOrdersForCandidate(candidate: OrderCandidate[_]): Acc =
         candidate.order.zipAll(indexProperties, null, null).foldLeft[Acc](OrderNotYetDecided(Seq.empty)) {
