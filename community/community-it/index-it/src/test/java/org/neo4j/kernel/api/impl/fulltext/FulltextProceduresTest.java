@@ -19,6 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -29,6 +38,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,11 +47,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -93,6 +98,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.QUE
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.QUERY_RELS;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
+import static org.neo4j.kernel.api.impl.fulltext.analyzer.StandardFoldingAnalyzer.NON_ASCII_LETTERS;
 
 class FulltextProceduresTest extends FulltextProceduresTestSupport
 {
@@ -2734,7 +2740,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     }
 
     @Test
-    void relationshipIndexAndDetachDelete() throws Exception
+    void relationshipIndexAndDetachDelete()
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -2798,7 +2804,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     }
 
     @Test
-    public void relationshipIndexAndDetachDeleteWithRestart() throws Exception
+    public void relationshipIndexAndDetachDeleteWithRestart()
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -2840,7 +2846,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     }
 
     @Test
-    public void relationshipIndexAndPropertyRemove() throws Exception
+    public void relationshipIndexAndPropertyRemove()
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -2879,7 +2885,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     }
 
     @Test
-    public void relationshipIndexAndPropertyRemoveWithRestart() throws Exception
+    public void relationshipIndexAndPropertyRemoveWithRestart()
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -3033,6 +3039,174 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
                 tx.commit();
             }
         }
+    }
+
+    /**
+     * This test comes from github issue #12662
+     * https://github.com/neo4j/neo4j/issues/12662
+     */
+    @Test
+    void standardFoldingAnalyzerMustWorkGitHub12662()
+    {
+        String indexName = "my_index";
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = tx.createNode( LABEL );
+            node.setProperty( PROP, "1SOMECODE1" );
+            nodeId = node.getId();
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            String label = asStrList( LABEL.name() );
+            String props = asStrList( PROP );
+            String analyzer = props + ", {analyzer: 'standard-folding'}";
+            tx.execute( format( NODE_CREATE, indexName, label, analyzer ) ).close();
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            try ( var iterator = tx.execute( format( QUERY_NODES, indexName, "*SOMECODE*" ) ).columnAs( "node" ) )
+            {
+                assertTrue( iterator.hasNext() );
+                assertThat( ((Node) iterator.next()).getId() ).isEqualTo( nodeId );
+                assertFalse( iterator.hasNext() );
+            }
+            tx.commit();
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource( SearchString.class )
+    void standardFoldingAnalyzerMustFindNonASCIILettersByTheirFolding( SearchString searchString )
+    {
+        // Given
+        // Fulltext index with analyzer: 'standard-folding'
+        String indexName = createNodeFulltextIndexWithStandardFoldingAnalyzer();
+        char[] nonAsciiLetterArray = NON_ASCII_LETTERS.toCharArray();
+
+        // and
+        // a folding from non ascii characters to ascii strings
+        Map<Character,String> nonAsciiCharsToFolding = getFoldingOfChars( nonAsciiLetterArray );
+
+        // When
+        // Nodes with non Ascii characters
+        Map<Character,Long> nonAsciiCharsToNodeId = new HashMap<>();
+        String propPrefix = "123";
+        String propSuffix = "345";
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Map.Entry<Character,String> charToFolding : nonAsciiCharsToFolding.entrySet() )
+            {
+                Node node = tx.createNode( LABEL );
+                Character character = charToFolding.getKey();
+
+                // To make sure no properties are filtered out because of accidental match with stopwords
+                // we surround the non ascii letter with prefix and suffix. We use a number to avoid false
+                // positives when searching.
+                String propValue = propPrefix + character + propSuffix;
+                node.setProperty( PROP, propValue );
+
+                long id = node.getId();
+                nonAsciiCharsToNodeId.put( character, id );
+            }
+            tx.commit();
+        }
+
+        // Then
+        // Should find with exact match and wildcard
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( char nonAsciiChar : nonAsciiLetterArray )
+            {
+                Long expectedNodeId = nonAsciiCharsToNodeId.get( nonAsciiChar );
+                assertAtLeastSingleHitOnSearch( indexName, expectedNodeId, tx, searchString.searchString( nonAsciiChar, propPrefix, propSuffix ) );
+            }
+            tx.commit();
+        }
+    }
+
+    private Map<Character,String> getFoldingOfChars( char[] nonAsciiCharacterArray )
+    {
+        Map<Character,String> nonAsciiCharToAsciiFolding = new HashMap<>();
+        for ( char nonASCIIChar : nonAsciiCharacterArray )
+        {
+            String folding = toASCIIFolding( nonASCIIChar );
+            nonAsciiCharToAsciiFolding.put( nonASCIIChar, folding );
+        }
+        return nonAsciiCharToAsciiFolding;
+    }
+
+    private String createNodeFulltextIndexWithStandardFoldingAnalyzer()
+    {
+        String indexName = "my_index";
+        try ( Transaction tx = db.beginTx() )
+        {
+            String label = asStrList( LABEL.name() );
+            String props = asStrList( PROP );
+            String analyzer = props + ", {analyzer: 'standard-folding'}";
+            tx.execute( format( NODE_CREATE, indexName, label, analyzer ) ).close();
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+            tx.commit();
+        }
+        return indexName;
+    }
+
+    private static String toASCIIFolding( char nonASCIIChar )
+    {
+        char[] result = new char[4];
+        int length = ASCIIFoldingFilter.foldToASCII( new char[]{nonASCIIChar}, 0, result, 0, 1 );
+        result = Arrays.copyOf( result, length );
+        return new String( result );
+    }
+
+    private void assertAtLeastSingleHitOnSearch( String indexName, long expectedNodeId, Transaction tx, String searchString )
+    {
+        Set<Long> nodeIds = new TreeSet<>();
+        try ( var iterator = tx.execute( format( QUERY_NODES, indexName, searchString ) ).columnAs( "node" ) )
+        {
+            while ( iterator.hasNext() )
+            {
+                nodeIds.add(((Node)iterator.next()).getId() );
+            }
+        }
+         assertThat( nodeIds ).as( "expected search '" + searchString + "' to find " + expectedNodeId ).contains( expectedNodeId );
+    }
+
+    private enum SearchString
+    {
+        FOLDING_EXACT
+                {
+                    @Override
+                    String searchString( Character nonAsciiCharacter, String propPrefix, String propSuffix )
+                    {
+                        return propPrefix + toASCIIFolding( nonAsciiCharacter ) + propSuffix;
+                    }
+                },
+        FOLDING_WILDCARD
+                {
+                    @Override
+                    String searchString( Character nonAsciiCharacter, String propPrefix, String propSuffix )
+                    {
+                        return "*" + toASCIIFolding( nonAsciiCharacter ) + "*";
+                    }
+                };
+
+        abstract String searchString( Character nonAsciiCharacter, String propPrefix, String propSuffix );
     }
 
     @Nested
