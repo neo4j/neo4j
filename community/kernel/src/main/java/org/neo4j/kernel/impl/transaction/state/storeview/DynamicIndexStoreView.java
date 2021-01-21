@@ -85,7 +85,7 @@ public class DynamicIndexStoreView implements IndexStoreView
                     cacheTracer, memoryTracker );
         }
         return new LabelViewNodeStoreScan<>( config, storageEngine.get(), locks, labelScanStore, labelUpdateVisitor, propertyUpdatesVisitor, labelIds,
-                propertyKeyIdFilter, parallelWrite, cacheTracer, memoryTracker );
+                propertyKeyIdFilter, parallelWrite, neoStoreIndexStoreView.scheduler, cacheTracer, memoryTracker );
     }
 
     @Override
@@ -99,7 +99,7 @@ public class DynamicIndexStoreView implements IndexStoreView
                     forceStoreScan, parallelWrite, cacheTracer, memoryTracker );
         }
         return new RelationshipTypeViewRelationshipStoreScan<>( config, storageEngine.get(), locks, relationshipTypeScanStore, relationshipTypeUpdateVisitor,
-                propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, parallelWrite, cacheTracer, memoryTracker );
+                propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, parallelWrite, neoStoreIndexStoreView.scheduler, cacheTracer, memoryTracker );
     }
 
     @Override

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +34,9 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenScanReader;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.lock.LockService;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StubStorageCursors;
@@ -53,6 +56,13 @@ class RelationshipTypeViewRelationshipStoreScanTest
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private final Visitor<List<EntityTokenUpdate>,Exception> labelUpdateVisitor = mock( Visitor.class );
     private final Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
+    private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+
+    @AfterEach
+    void tearDown() throws Exception
+    {
+        jobScheduler.close();
+    }
 
     @BeforeEach
     void setUp()
@@ -86,6 +96,6 @@ class RelationshipTypeViewRelationshipStoreScanTest
     private RelationshipTypeViewRelationshipStoreScan<Exception> getRelationshipTypeScanViewStoreScan( int[] relationshipTypeIds )
     {
         return new RelationshipTypeViewRelationshipStoreScan<>( Config.defaults(), cursors, LockService.NO_LOCK_SERVICE, relationshipTypeScanStore,
-                labelUpdateVisitor, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, false, PageCacheTracer.NULL, INSTANCE );
+                labelUpdateVisitor, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, false, jobScheduler, PageCacheTracer.NULL, INSTANCE );
     }
 }

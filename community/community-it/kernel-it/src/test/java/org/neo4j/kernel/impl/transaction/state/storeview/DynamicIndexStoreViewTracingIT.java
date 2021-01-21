@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -31,9 +32,11 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -56,6 +59,13 @@ class DynamicIndexStoreViewTracingIT
     private RelationshipTypeScanStore relationshipTypeScanStore;
     @Inject
     private RecordStorageEngine storageEngine;
+    private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+
+    @AfterEach
+    void closeJobScheduler() throws Exception
+    {
+        jobScheduler.close();
+    }
 
     @Test
     void tracePageCacheAccess() throws Exception
@@ -73,7 +83,7 @@ class DynamicIndexStoreViewTracingIT
         }
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var neoStoreStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader, Config.defaults() );
+        var neoStoreStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader, Config.defaults(), jobScheduler );
         var indexStoreView = new DynamicIndexStoreView( neoStoreStoreView, labelScanStore, relationshipTypeScanStore,
                 lockService, storageEngine::newReader, NullLogProvider.nullLogProvider(), Config.defaults() );
         var storeScan = indexStoreView.visitNodes( new int[]{0, 1, 2}, ALWAYS_TRUE_INT, null,

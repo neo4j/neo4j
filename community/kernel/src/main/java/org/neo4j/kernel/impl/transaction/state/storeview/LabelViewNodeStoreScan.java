@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageReader;
@@ -48,10 +49,10 @@ public class LabelViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
             @Nullable Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
             @Nullable Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
             int[] labelIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
-            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         super( config, storageReader, locks, labelUpdateVisitor, propertyUpdatesVisitor, labelIds,
-                propertyKeyIdFilter, parallelWrite, cacheTracer, memoryTracker );
+                propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
         this.labelScanStore = labelScanStore;
     }
 

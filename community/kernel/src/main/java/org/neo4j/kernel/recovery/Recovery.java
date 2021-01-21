@@ -312,7 +312,7 @@ public final class Recovery
                 true, memoryTracker );
 
         // Label index
-        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, storageEngine::newReader, config );
+        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, storageEngine::newReader, config, scheduler );
         LabelScanStore labelScanStore = Database.buildLabelIndex( recoveryCleanupCollector, storageEngine, neoStoreIndexStoreView, monitors,
                 logProvider, databasePageCache, databaseLayout, fs, false, config, tracers.getPageCacheTracer(), memoryTracker );
         RelationshipTypeScanStore relationshipTypeScanStore =

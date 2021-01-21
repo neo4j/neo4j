@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -38,10 +39,12 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan.ExternalUpdatesCheck;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.PropertyAwareEntityStoreScan.CursorEntityIdIterator;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageNodeCursor;
@@ -79,6 +82,13 @@ class StoreScanStageTest
             return 10;
         }
     };
+    private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+
+    @AfterEach
+    void tearDown() throws Exception
+    {
+        jobScheduler.close();
+    }
 
     @ValueSource( booleans = {true, false} )
     @ParameterizedTest( name = "parallelWrite={0}" )
@@ -93,7 +103,7 @@ class StoreScanStageTest
         StoreScanStage<RuntimeException,StorageNodeCursor> scan =
                 new StoreScanStage<>( dbConfig, config, ct -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data, new int[]{LABEL},
                         alwaysTrue(), propertyUpdateVisitor, tokenUpdateVisitor, new NodeCursorBehaviour( data ), lockFunction, parallelWrite,
-                        PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
+                        jobScheduler, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
 
         // when
         runScan( scan );
@@ -124,7 +134,7 @@ class StoreScanStageTest
         };
         StoreScanStage<RuntimeException,StorageNodeCursor> scan =
                 new StoreScanStage<>( dbConfig, config, ct -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data, new int[]{LABEL},
-                        alwaysTrue(), failingWriter, null, new NodeCursorBehaviour( data ), id -> null, true, PageCacheTracer.NULL,
+                        alwaysTrue(), failingWriter, null, new NodeCursorBehaviour( data ), id -> null, true, jobScheduler, PageCacheTracer.NULL,
                         EmptyMemoryTracker.INSTANCE );
 
         // when/then
@@ -146,7 +156,8 @@ class StoreScanStageTest
         };
         StoreScanStage<RuntimeException,StorageNodeCursor> scan =
                 new StoreScanStage<>( dbConfig, config, ct -> entityIdIterator, externalUpdatesCheck, new AtomicBoolean( true ), data, new int[]{LABEL},
-                        alwaysTrue(), writer, null, new NodeCursorBehaviour( data ), id -> null, true, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
+                        alwaysTrue(), writer, null, new NodeCursorBehaviour( data ), id -> null, true, jobScheduler,
+                        PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
 
         // when
         runScan( scan );
@@ -171,7 +182,7 @@ class StoreScanStageTest
         };
         StoreScanStage<RuntimeException,StorageNodeCursor> scan =
                 new StoreScanStage<>( dbConfig, config, ct -> entityIdIterator, externalUpdatesCheck, continueScanning, data, new int[]{LABEL}, alwaysTrue(),
-                        writer, null, new NodeCursorBehaviour( data ), id -> null, true, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
+                        writer, null, new NodeCursorBehaviour( data ), id -> null, true, jobScheduler, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
 
         // when
         runScan( scan );
@@ -201,7 +212,7 @@ class StoreScanStageTest
         StoreScanStage<RuntimeException,StorageNodeCursor> scan =
                 new StoreScanStage<>( dbConfig, config, ct -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data, new int[]{LABEL},
                         alwaysTrue(), new ThreadCapturingWriter<>(), new ThreadCapturingWriter<>(), new NodeCursorBehaviour( data ), l -> LockService.NO_LOCK,
-                        true, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
+                        true, jobScheduler, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
         stage.set( scan );
 
         // when

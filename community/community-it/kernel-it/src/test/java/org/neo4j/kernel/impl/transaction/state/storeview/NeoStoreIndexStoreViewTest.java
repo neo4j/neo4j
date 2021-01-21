@@ -47,12 +47,14 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -119,6 +121,7 @@ class NeoStoreIndexStoreViewTest
         getOrCreateIds();
 
         neoStores = storageEngine.testAccessNeoStores();
+        jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
 
         locks = mock( LockService.class );
         when( locks.acquireNodeLock( anyLong(), any() ) ).thenAnswer(
@@ -132,14 +135,15 @@ class NeoStoreIndexStoreViewTest
             Long nodeId = invocation.getArgument( 0 );
             return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
         } );
-        storeView = new NeoStoreIndexStoreView( locks, storageEngine::newReader, Config.defaults() );
+        storeView = new NeoStoreIndexStoreView( locks, storageEngine::newReader, Config.defaults(), jobScheduler );
         propertyAccessor = storeView.newPropertyAccessor( PageCursorTracer.NULL, INSTANCE );
         reader = storageEngine.newReader();
     }
 
     @AfterEach
-    void after()
+    void after() throws Exception
     {
+        jobScheduler.close();
         propertyAccessor.close();
         reader.close();
     }
@@ -283,7 +287,7 @@ class NeoStoreIndexStoreViewTest
         var pageCacheTracer = new DefaultPageCacheTracer();
         CountingVisitor countingVisitor = new CountingVisitor();
         var scan = new NodeStoreScan<>( Config.defaults(), storageEngine.newReader(), locks, null, countingVisitor, new int[]{labelId}, id -> true, false,
-                pageCacheTracer, INSTANCE );
+                jobScheduler, pageCacheTracer, INSTANCE );
         scan.run( NO_EXTERNAL_UPDATES );
 
         assertThat( countingVisitor.countedUpdates() ).isEqualTo( 2 );
@@ -301,7 +305,7 @@ class NeoStoreIndexStoreViewTest
         var pageCacheTracer = new DefaultPageCacheTracer();
         CountingVisitor countingVisitor = new CountingVisitor();
         var scan = new RelationshipStoreScan<>( Config.defaults(), storageEngine.newReader(), locks, null, countingVisitor, new int[]{relTypeId}, id -> true,
-                false, pageCacheTracer, INSTANCE );
+                false, jobScheduler, pageCacheTracer, INSTANCE );
         scan.run( NO_EXTERNAL_UPDATES );
 
         assertThat( countingVisitor.countedUpdates() ).isEqualTo( 2 );

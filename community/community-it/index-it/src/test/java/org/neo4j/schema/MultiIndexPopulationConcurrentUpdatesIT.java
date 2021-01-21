@@ -327,11 +327,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             Config config = Config.defaults();
             KernelTransaction ktx = ((InternalTransaction) transaction).kernelTransaction();
+            JobScheduler scheduler = getJobScheduler();
             DynamicIndexStoreView storeView =
-                    dynamicIndexStoreViewWrapper( customAction, storageEngine::newReader, labelScanStore, relationshipTypeScanStore, config );
+                    dynamicIndexStoreViewWrapper( customAction, storageEngine::newReader, labelScanStore, relationshipTypeScanStore, config, scheduler );
 
             IndexProviderMap providerMap = getIndexProviderMap();
-            JobScheduler scheduler = getJobScheduler();
 
             NullLogProvider nullLogProvider = NullLogProvider.getInstance();
             indexService = IndexingServiceFactory.createIndexingService( config, scheduler,
@@ -349,14 +349,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
     }
 
-    private DynamicIndexStoreView dynamicIndexStoreViewWrapper( Runnable customAction,
-            Supplier<StorageReader> readerSupplier, LabelScanStore labelScanStore,
-            RelationshipTypeScanStore relationshipTypeScanStore, Config config )
+    private DynamicIndexStoreView dynamicIndexStoreViewWrapper( Runnable customAction, Supplier<StorageReader> readerSupplier, LabelScanStore labelScanStore,
+            RelationshipTypeScanStore relationshipTypeScanStore, Config config, JobScheduler scheduler )
     {
         LockService locks = LockService.NO_LOCK_SERVICE;
-        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( locks, readerSupplier, Config.defaults() );
+        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( locks, readerSupplier, Config.defaults(), scheduler );
         return new DynamicIndexStoreViewWrapper( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, locks, readerSupplier, customAction,
-                config );
+                config, scheduler );
     }
 
     private void waitAndActivateIndexes( Map<String,Integer> labelsIds, int propertyId )
@@ -504,13 +503,15 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private class DynamicIndexStoreViewWrapper extends DynamicIndexStoreView
     {
         private final Runnable customAction;
+        private final JobScheduler jobScheduler;
 
         DynamicIndexStoreViewWrapper( NeoStoreIndexStoreView neoStoreIndexStoreView, LabelScanStore labelScanStore,
                 RelationshipTypeScanStore relationshipTypeScanStore, LockService locks,
-                Supplier<StorageReader> storageEngine, Runnable customAction, Config config )
+                Supplier<StorageReader> storageEngine, Runnable customAction, Config config, JobScheduler jobScheduler )
         {
             super( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, locks, storageEngine, NullLogProvider.getInstance(), config );
             this.customAction = customAction;
+            this.jobScheduler = jobScheduler;
         }
 
         @Override
@@ -522,7 +523,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                     labelUpdateVisitor, forceStoreScan, parallelWrite, cacheTracer, memoryTracker );
             return new LabelViewNodeStoreWrapper<>( storageEngine.get(), locks, getLabelScanStore(),
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
-                    (LabelViewNodeStoreScan<FAILURE>) storeScan, customAction );
+                    (LabelViewNodeStoreScan<FAILURE>) storeScan, customAction, jobScheduler );
         }
     }
 
@@ -534,11 +535,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         LabelViewNodeStoreWrapper( StorageReader storageReader, LockService locks,
                 LabelScanStore labelScanStore, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
                 Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter,
-                LabelViewNodeStoreScan<FAILURE> delegate,
-                Runnable customAction )
+                LabelViewNodeStoreScan<FAILURE> delegate, Runnable customAction,
+                JobScheduler jobScheduler )
         {
             super( Config.defaults(), storageReader, locks, labelScanStore, labelUpdateVisitor, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, false,
-                    PageCacheTracer.NULL, INSTANCE );
+                    jobScheduler, PageCacheTracer.NULL, INSTANCE );
             this.delegate = delegate;
             this.customAction = customAction;
         }

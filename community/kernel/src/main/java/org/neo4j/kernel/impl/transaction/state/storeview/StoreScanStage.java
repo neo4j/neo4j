@@ -28,6 +28,7 @@ import java.util.function.LongFunction;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -36,6 +37,8 @@ import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.Lock;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
@@ -55,9 +58,9 @@ public class StoreScanStage<FAILURE extends Exception,CURSOR extends StorageEnti
             AtomicBoolean continueScanning, StorageReader storageReader, int[] entityTokenIdFilter, IntPredicate propertyKeyIdFilter,
             Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> tokenUpdatesVisitor,
             EntityScanCursorBehaviour<CURSOR> entityCursorBehaviour, LongFunction<Lock> lockFunction, boolean parallelWrite,
-            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( "IndexPopulation store scan", null, config, parallelWrite ? 0 : ORDER_SEND_DOWNSTREAM );
+        super( "IndexPopulation store scan", null, config, parallelWrite ? 0 : ORDER_SEND_DOWNSTREAM, runInJobScheduler( scheduler ) );
         int parallelism = dbConfig.get( GraphDatabaseInternalSettings.index_population_workers );
         long maxBatchByteSize = dbConfig.get( GraphDatabaseInternalSettings.index_population_batch_max_byte_size );
         // Read from entity iterator --> long[]
@@ -70,6 +73,11 @@ public class StoreScanStage<FAILURE extends Exception,CURSOR extends StorageEnti
             // Write the updates with a single thread if we're not allowed to do this in parallel. The updates are still generated in parallel
             add( writeStep = new WriteUpdatesStep( control(), config, propertyUpdatesVisitor, tokenUpdatesVisitor, cacheTracer ) );
         }
+    }
+
+    private static ProcessorScheduler runInJobScheduler( JobScheduler scheduler )
+    {
+        return ( job, name ) -> scheduler.schedule( Group.INDEX_POPULATION_WORK, job );
     }
 
     void reportTo( PhaseTracker phaseTracker )

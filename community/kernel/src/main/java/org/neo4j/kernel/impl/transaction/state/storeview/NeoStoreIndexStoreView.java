@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -44,12 +45,14 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     protected final LockService locks;
     protected final Supplier<StorageReader> storageEngine;
     protected final Config config;
+    protected final JobScheduler scheduler;
 
-    public NeoStoreIndexStoreView( LockService locks, Supplier<StorageReader> storageEngine, Config config )
+    public NeoStoreIndexStoreView( LockService locks, Supplier<StorageReader> storageEngine, Config config, JobScheduler scheduler )
     {
         this.locks = locks;
         this.storageEngine = storageEngine;
         this.config = config;
+        this.scheduler = scheduler;
     }
 
     @Override
@@ -58,7 +61,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
             boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         return new NodeStoreScan<>( config, storageEngine.get(), locks, labelUpdateVisitor,
-                propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, parallelWrite, cacheTracer, memoryTracker );
+                propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
     }
 
     @Override
@@ -67,7 +70,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
             boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         return new RelationshipStoreScan<>( config, storageEngine.get(), locks, relationshipTypeUpdateVisitor, propertyUpdatesVisitor, relationshipTypeIds,
-                propertyKeyIdFilter, parallelWrite, cacheTracer, memoryTracker );
+                propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
     }
 
     @Override

@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.lock.Lock;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
@@ -59,6 +60,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     protected final StorageReader storageReader;
     protected final EntityScanCursorBehaviour<CURSOR> cursorBehaviour;
     private final boolean parallelWrite;
+    private final JobScheduler scheduler;
     protected final PageCacheTracer cacheTracer;
     private final AtomicBoolean continueScanning = new AtomicBoolean();
     private final long totalCount;
@@ -75,11 +77,13 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     protected PropertyAwareEntityStoreScan( Config config, StorageReader storageReader, long totalEntityCount, int[] entityTokenIdFilter,
             IntPredicate propertyKeyIdFilter, Visitor<List<EntityTokenUpdate>,FAILURE> tokenUpdateVisitor,
             Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, LongFunction<Lock> lockFunction,
-            EntityScanCursorBehaviour<CURSOR> cursorBehaviour, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            EntityScanCursorBehaviour<CURSOR> cursorBehaviour, boolean parallelWrite, JobScheduler scheduler,
+            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         this.storageReader = storageReader;
         this.cursorBehaviour = cursorBehaviour;
         this.parallelWrite = parallelWrite;
+        this.scheduler = scheduler;
         this.cacheTracer = cacheTracer;
         this.entityTokenIdFilter = entityTokenIdFilter;
         this.propertyKeyIdFilter = propertyKeyIdFilter;
@@ -101,7 +105,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
             Configuration config = Configuration.DEFAULT;
             stage = new StoreScanStage<>( dbConfig, config, this::getEntityIdIterator, externalUpdatesCheck, continueScanning, storageReader,
                     entityTokenIdFilter, propertyKeyIdFilter, propertyUpdateVisitor, tokenUpdateVisitor, cursorBehaviour, lockFunction, parallelWrite,
-                    cacheTracer, memoryTracker );
+                    scheduler, cacheTracer, memoryTracker );
             superviseDynamicExecution( INVISIBLE, stage );
             stage.reportTo( phaseTracker );
         }

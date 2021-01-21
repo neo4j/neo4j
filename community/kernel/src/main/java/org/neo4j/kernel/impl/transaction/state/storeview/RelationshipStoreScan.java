@@ -28,6 +28,7 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageReader;
@@ -45,10 +46,10 @@ public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAw
             @Nullable Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
             @Nullable Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
             int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
-            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         super( config, storageReader, storageReader.relationshipsGetCount(), relationshipTypeIds, propertyKeyIdFilter, relationshipTypeUpdateVisitor,
                 propertyUpdatesVisitor, id -> locks.acquireRelationshipLock( id, SHARED ), new RelationshipCursorBehaviour( storageReader ), parallelWrite,
-                cacheTracer, memoryTracker );
+                scheduler, cacheTracer, memoryTracker );
     }
 }

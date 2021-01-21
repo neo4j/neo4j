@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -72,9 +73,11 @@ class LabelScanNodeViewTracingIT
 
         var labelId = getLabelId( label );
 
+        var jobScheduler = database.getDependencyResolver().resolveDependency( JobScheduler.class );
         var cacheTracer = new DefaultPageCacheTracer();
         var scan = new LabelViewNodeStoreScan<>( Config.defaults(), storageEngine.newReader(), lockService, labelScanStore,
-                (Visitor<List<EntityTokenUpdate>,Exception>) element -> false, null, new int[]{labelId}, any -> false, false, cacheTracer, INSTANCE );
+                (Visitor<List<EntityTokenUpdate>,Exception>) element -> false, null, new int[]{labelId}, any -> false, false, jobScheduler, cacheTracer,
+                INSTANCE );
         scan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         assertThat( cacheTracer.pins() ).isEqualTo( 3 );

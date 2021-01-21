@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +34,9 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenScanReader;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.lock.LockService;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StubStorageCursors;
@@ -53,6 +56,13 @@ class LabelViewNodeStoreScanTest
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private final Visitor<List<EntityTokenUpdate>,Exception> labelUpdateVisitor = mock( Visitor.class );
     private final Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
+    private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+
+    @AfterEach
+    void tearDown() throws Exception
+    {
+        jobScheduler.close();
+    }
 
     @BeforeEach
     void setUp()
@@ -86,6 +96,6 @@ class LabelViewNodeStoreScanTest
     private LabelViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
     {
         return new LabelViewNodeStoreScan<>( Config.defaults(), cursors, LockService.NO_LOCK_SERVICE,
-                labelScanStore, labelUpdateVisitor, propertyUpdateVisitor, labelIds, propertyKeyIdFilter, false, PageCacheTracer.NULL, INSTANCE );
+                labelScanStore, labelUpdateVisitor, propertyUpdateVisitor, labelIds, propertyKeyIdFilter, false, jobScheduler, PageCacheTracer.NULL, INSTANCE );
     }
 }

@@ -24,6 +24,7 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.IntLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,8 +39,10 @@ import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan;
 import org.neo4j.lock.LockService;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StubStorageCursors;
@@ -73,6 +76,13 @@ class NodeStoreScanTest
     private final int[] allPossibleLabelIds = {1, 2, 3, 4};
     private int nameKeyId;
     private int ageKeyId;
+    private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+
+    @AfterEach
+    void tearDown() throws Exception
+    {
+        jobScheduler.close();
+    }
 
     @BeforeEach
     void setUp() throws KernelException
@@ -153,7 +163,8 @@ class NodeStoreScanTest
             return false;
         };
         NodeStoreScan<RuntimeException> scan =
-                new NodeStoreScan<>( Config.defaults(), cursors, locks, tokenVisitor, propertyVisitor, labelFilter, propertyKeyFilter, false, NULL, INSTANCE );
+                new NodeStoreScan<>( Config.defaults(), cursors, locks, tokenVisitor, propertyVisitor, labelFilter, propertyKeyFilter, false, jobScheduler,
+                        NULL, INSTANCE );
         scan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         // then

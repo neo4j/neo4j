@@ -440,7 +440,7 @@ public class Database extends LifecycleAdapter
             life.add( logFiles );
 
             // Token indexes
-            NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader, databaseConfig );
+            NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader, databaseConfig, scheduler );
             LabelScanStore labelScanStore =
                     buildLabelIndex( databasePageCache, recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, databaseMonitors,
                             pageCacheTracer, otherDatabaseMemoryTracker );

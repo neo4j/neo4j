@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -42,8 +43,10 @@ import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.TokenScanReader;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageReader;
@@ -74,12 +77,19 @@ class DynamicIndexStoreViewTest
     private final AllEntriesTokenScanReader nodeLabelRanges = mock( AllEntriesTokenScanReader.class );
     private final AllEntriesTokenScanReader relationshipTypeRanges = mock( AllEntriesTokenScanReader.class );
     private final Config config = Config.newBuilder().set( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true ).build();
+    private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
 
     @BeforeEach
     void setUp()
     {
         when( labelScanStore.allEntityTokenRanges( PageCursorTracer.NULL ) ).thenReturn( nodeLabelRanges );
         when( relationshipTypeScanStore.allEntityTokenRanges( PageCursorTracer.NULL ) ).thenReturn( relationshipTypeRanges );
+    }
+
+    @AfterEach
+    void tearDown() throws Exception
+    {
+        jobScheduler.close();
     }
 
     @Test
@@ -279,7 +289,7 @@ class DynamicIndexStoreViewTest
     {
         LockService locks = LockService.NO_LOCK_SERVICE;
         Supplier<StorageReader> storageReaderSupplier = () -> cursors;
-        return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, storageReaderSupplier, Config.defaults() ), labelScanStore,
+        return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, storageReaderSupplier, Config.defaults(), jobScheduler ), labelScanStore,
                 relationshipTypeScanStore, locks, storageReaderSupplier, NullLogProvider.getInstance(), config );
     }
 

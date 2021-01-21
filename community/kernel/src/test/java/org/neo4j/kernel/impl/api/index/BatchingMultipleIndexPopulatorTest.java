@@ -113,7 +113,7 @@ public class BatchingMultipleIndexPopulatorTest
     void populateFromQueuePopulatesWhenThresholdReached() throws Exception
     {
         NeoStoreIndexStoreView storeView =
-                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, () -> mock( StorageReader.class ), Config.defaults() );
+                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, () -> mock( StorageReader.class ), Config.defaults(), jobScheduler );
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator(
                 storeView, NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
                 new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED,

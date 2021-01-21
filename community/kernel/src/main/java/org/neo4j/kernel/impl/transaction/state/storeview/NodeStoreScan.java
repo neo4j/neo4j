@@ -29,6 +29,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageNodeCursor;
@@ -48,10 +49,10 @@ public class NodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntit
             @Nullable Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
             @Nullable Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
             int[] labelIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
-            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         super( config, storageReader, getNodeCount( storageReader, cacheTracer ), labelIds, propertyKeyIdFilter, labelUpdateVisitor, propertyUpdatesVisitor,
-                id -> locks.acquireNodeLock( id, SHARED ), new NodeCursorBehaviour( storageReader ), parallelWrite, cacheTracer, memoryTracker );
+                id -> locks.acquireNodeLock( id, SHARED ), new NodeCursorBehaviour( storageReader ), parallelWrite, scheduler, cacheTracer, memoryTracker );
     }
 
     private static long getNodeCount( StorageReader storageReader, PageCacheTracer cacheTracer )
