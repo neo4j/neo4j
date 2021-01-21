@@ -314,12 +314,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             "Note that multiple indexes can be populated by a single index population if they were created in the same transaction. " +
             "Zero means unrestricted. " )
     public static final Setting<Integer> index_population_parallelism =
-            newBuilder( "unsupported.dbms.index_population.parallelism", INT, 4 ).addConstraint( min( 0 ) ).build();
+            newBuilder( "unsupported.dbms.index_population.parallelism", INT, 2 ).addConstraint( min( 0 ) ).build();
 
     @Internal
-    @Description( "Set the number of threads used for index population work. " +
+    @Description( "Set the number of threads used for each index population job. " +
             "Those threads execute individual subtasks provided by index population main threads, see unsupported.dbms.index_population.parallelism." +
-            "Zero means one thread per cpu core." )
+            "Zero means one thread per cpu core. " +
+            "Thus the maximum total number of index worker threads in the system is " +
+            "unsupported.dbms.index_population.workers * unsupported.dbms.index_population.parallelism." )
     public static final Setting<Integer> index_population_workers =
             newBuilder( "unsupported.dbms.index_population.workers", INT, Integer.max( 1, Runtime.getRuntime().availableProcessors() / 4 ) )
                     .addConstraint( min( 0 ) ).build();
