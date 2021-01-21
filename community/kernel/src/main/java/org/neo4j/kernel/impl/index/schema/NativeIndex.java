@@ -35,6 +35,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.monitoring.Monitors;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
@@ -47,23 +48,22 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     final IndexLayout<KEY,VALUE> layout;
     final FileSystemAbstraction fileSystem;
     final IndexDescriptor descriptor;
-    private final IndexProvider.Monitor monitor;
-    private final GBPTree.Monitor treeMonitor;
+    private final Monitors monitors;
+    private final String monitorTag;
     private final boolean readOnly;
 
     protected GBPTree<KEY,VALUE> tree;
 
-    NativeIndex( DatabaseIndexContext databaseIndexContext, IndexLayout<KEY,VALUE> layout, IndexFiles indexFiles, IndexDescriptor descriptor,
-            GBPTree.Monitor treeMonitor )
+    NativeIndex( DatabaseIndexContext databaseIndexContext, IndexLayout<KEY,VALUE> layout, IndexFiles indexFiles, IndexDescriptor descriptor )
     {
         this.pageCache = databaseIndexContext.pageCache;
         this.fileSystem = databaseIndexContext.fileSystem;
-        this.monitor = databaseIndexContext.monitor;
+        this.monitors = databaseIndexContext.monitors;
+        this.monitorTag = databaseIndexContext.monitorTag;
         this.readOnly = databaseIndexContext.readOnly;
         this.indexFiles = indexFiles;
         this.layout = layout;
         this.descriptor = descriptor;
-        this.treeMonitor = treeMonitor;
     }
 
     void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
@@ -80,9 +80,11 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     {   // no-op per default
     }
 
-    private GBPTree.Monitor treeMonitor( )
+    private GBPTree.Monitor treeMonitor()
     {
-        return new NativeIndexTreeMonitor();
+        GBPTree.Monitor treeMonitor = monitors.newMonitor( GBPTree.Monitor.class, monitorTag );
+        IndexProvider.Monitor indexMonitor = monitors.newMonitor( IndexProvider.Monitor.class, monitorTag );
+        return new IndexMonitorAdaptor( treeMonitor, indexMonitor, indexFiles, descriptor );
     }
 
     private void ensureDirectoryExist()
@@ -119,50 +121,6 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
-        }
-    }
-
-    private class NativeIndexTreeMonitor extends GBPTree.Monitor.Delegate
-    {
-        NativeIndexTreeMonitor()
-        {
-            super( treeMonitor );
-        }
-
-        @Override
-        public void cleanupRegistered()
-        {
-            monitor.recoveryCleanupRegistered( indexFiles.getStoreFile(), descriptor );
-            super.cleanupRegistered();
-        }
-
-        @Override
-        public void cleanupStarted()
-        {
-            monitor.recoveryCleanupStarted( indexFiles.getStoreFile(), descriptor );
-            super.cleanupStarted();
-        }
-
-        @Override
-        public void cleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
-        {
-            monitor.recoveryCleanupFinished( indexFiles.getStoreFile(), descriptor,
-                    numberOfPagesVisited, numberOfTreeNodes, numberOfCleanedCrashPointers, durationMillis );
-            super.cleanupFinished( numberOfPagesVisited, numberOfTreeNodes, numberOfCleanedCrashPointers, durationMillis );
-        }
-
-        @Override
-        public void cleanupClosed()
-        {
-            monitor.recoveryCleanupClosed( indexFiles.getStoreFile(), descriptor );
-            super.cleanupClosed();
-        }
-
-        @Override
-        public void cleanupFailed( Throwable throwable )
-        {
-            monitor.recoveryCleanupFailed( indexFiles.getStoreFile(), descriptor, throwable );
-            super.cleanupFailed( throwable );
         }
     }
 }

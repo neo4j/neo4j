@@ -24,7 +24,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.TreeInconsistencyException;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -48,7 +47,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     NativeIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
             IndexDescriptor descriptor )
     {
-        super( databaseIndexContext, layout, indexFiles, descriptor, GBPTree.NO_MONITOR );
+        super( databaseIndexContext, layout, indexFiles, descriptor );
         singleUpdater = new NativeIndexUpdater<>( layout.newKey(), layout.newValue() );
         headerWriter = new NativeIndexHeaderWriter( BYTE_ONLINE );
     }

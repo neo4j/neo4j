@@ -60,6 +60,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
 {
     protected final DatabaseIndexContext databaseIndexContext;
     protected final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
+    private final Monitor monitor;
 
     protected NativeIndexProvider( DatabaseIndexContext databaseIndexContext, IndexProviderDescriptor descriptor,
             Factory directoryStructureFactory, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
@@ -67,6 +68,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         super( descriptor, directoryStructureFactory );
         this.databaseIndexContext = databaseIndexContext;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
+        this.monitor = databaseIndexContext.monitors.newMonitor( IndexProvider.Monitor.class, databaseIndexContext.monitorTag );
     }
 
     /**
@@ -135,7 +137,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         }
         catch ( MetadataMismatchException | IOException e )
         {
-            databaseIndexContext.monitor.failedToOpenIndex( descriptor, "Requesting re-population.", e );
+            monitor.failedToOpenIndex( descriptor, "Requesting re-population.", e );
             return InternalIndexState.POPULATING;
         }
     }

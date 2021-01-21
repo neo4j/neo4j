@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.helpers.Exceptions;
@@ -124,14 +123,14 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     BlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
             IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker )
     {
-        this( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, NO_MONITOR, GBPTree.NO_MONITOR );
+        this( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, NO_MONITOR );
     }
 
     BlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
             IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker,
-            BlockStorage.Monitor blockStorageMonitor, GBPTree.Monitor treeMonitor )
+            BlockStorage.Monitor blockStorageMonitor )
     {
-        super( databaseIndexContext, indexFiles, layout, descriptor, treeMonitor );
+        super( databaseIndexContext, indexFiles, layout, descriptor );
         this.archiveFailedIndex = archiveFailedIndex;
         this.memoryTracker = memoryTracker;
         this.mergeFactor = config.get( GraphDatabaseInternalSettings.index_populator_merge_factor );

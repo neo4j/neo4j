@@ -21,20 +21,22 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.monitoring.Monitors;
 
 public class DatabaseIndexContext
 {
     final PageCache pageCache;
     final FileSystemAbstraction fileSystem;
-    final IndexProvider.Monitor monitor;
+    final Monitors monitors;
+    final String monitorTag;
     final boolean readOnly;
 
-    private DatabaseIndexContext( PageCache pageCache, FileSystemAbstraction fileSystem, IndexProvider.Monitor monitor, boolean readOnly )
+    private DatabaseIndexContext( PageCache pageCache, FileSystemAbstraction fileSystem, Monitors monitors, String monitorTag, boolean readOnly )
     {
         this.pageCache = pageCache;
         this.fileSystem = fileSystem;
-        this.monitor = monitor;
+        this.monitors = monitors;
+        this.monitorTag = monitorTag;
         this.readOnly = readOnly;
     }
 
@@ -48,18 +50,34 @@ public class DatabaseIndexContext
         return new Builder( pageCache, fileSystem );
     }
 
+    /**
+     * @param copy {@link DatabaseIndexContext} for with to create copy builder from.
+     *                                         Note that object references are shared.
+     * @return {@link Builder} to use for creating {@link DatabaseIndexContext}, pre-loaded with
+     *         all fields from copy.
+     */
+    public static Builder builder( DatabaseIndexContext copy )
+    {
+        return new Builder( copy.pageCache, copy.fileSystem )
+                .withReadOnly( copy.readOnly )
+                .withMonitors( copy.monitors )
+                .withTag( copy.monitorTag );
+    }
+
     public static class Builder
     {
         private final PageCache pageCache;
         private final FileSystemAbstraction fileSystem;
-        private IndexProvider.Monitor monitor;
+        private Monitors monitors;
+        private String monitorTag;
         private boolean readOnly;
 
         private Builder( PageCache pageCache, FileSystemAbstraction fileSystem )
         {
             this.pageCache = pageCache;
             this.fileSystem = fileSystem;
-            this.monitor = IndexProvider.Monitor.EMPTY;
+            this.monitors = new Monitors();
+            this.monitorTag = "";
             this.readOnly = false;
         }
 
@@ -76,20 +94,32 @@ public class DatabaseIndexContext
         }
 
         /**
-         * Default is {@link IndexProvider.Monitor#EMPTY}.
+         * Default is new empty {@link Monitors}.
          *
-         * @param monitor {@link IndexProvider.Monitor monitor} to use.
+         * @param monitors {@link Monitors monitors} to use.
          * @return {@link Builder this builder}
          */
-        public Builder withMonitor( IndexProvider.Monitor monitor )
+        public Builder withMonitors( Monitors monitors )
         {
-            this.monitor = monitor;
+            this.monitors = monitors;
+            return this;
+        }
+
+        /**
+         * Default is empty string.
+         *
+         * @param monitorTag {@link String} to use as tag for monitor listeners.
+         * @return {@link Builder this builder}
+         */
+        public Builder withTag( String monitorTag )
+        {
+            this.monitorTag = monitorTag;
             return this;
         }
 
         public DatabaseIndexContext build()
         {
-            return new DatabaseIndexContext( pageCache, fileSystem, monitor, readOnly );
+            return new DatabaseIndexContext( pageCache, fileSystem, monitors, monitorTag, readOnly );
         }
     }
 }

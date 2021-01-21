@@ -61,7 +61,7 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, V
     @Override
     NativeIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache ) throws IOException
     {
-        DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).withMonitor( monitor ).build();
+        DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).build();
         return populatorFactory.create( context, indexFiles, layout, indexDescriptor, tokenNameLookup );
     }
 

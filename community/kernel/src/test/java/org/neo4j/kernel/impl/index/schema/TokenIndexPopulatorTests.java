@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
@@ -50,7 +51,9 @@ import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
@@ -97,8 +100,13 @@ class TokenIndexPopulatorTests extends IndexPopulatorTests<TokenScanKey,TokenSca
     @Override
     TokenIndexPopulator createPopulator( PageCache pageCache )
     {
+        return createPopulator( pageCache, new Monitors(), "" );
+    }
+
+    private TokenIndexPopulator createPopulator( PageCache pageCache, Monitors monitors, String monitorTag )
+    {
         return new TokenIndexPopulator( pageCache, DatabaseLayout.ofFlat( directory.homePath() ), indexFiles, fs, false, Config.defaults(),
-                new Monitors(), EntityType.NODE, PageCacheTracer.NULL, "Label Scan Store" );
+                monitors, monitorTag, EntityType.NODE, PageCacheTracer.NULL, "Label Scan Store" );
     }
 
     @Test
@@ -206,6 +214,69 @@ class TokenIndexPopulatorTests extends IndexPopulatorTests<TokenScanKey,TokenSca
         populator.close( true, NULL );
 
         verifyUpdates( entityTokens );
+    }
+
+    @Test
+    void shouldRelayMonitorCallsToRegisteredGBPTreeMonitorWithoutTag()
+    {
+        // Given
+        AtomicBoolean checkpointCompletedCall = new AtomicBoolean();
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( getCheckpointCompletedListener( checkpointCompletedCall ) );
+        populator = createPopulator( pageCache, monitors, "tag" );
+
+        // When
+        populator.create();
+        populator.close( true, NULL );
+
+        // Then
+        assertTrue( checkpointCompletedCall.get() );
+    }
+
+    @Test
+    void shouldNotRelayMonitorCallsToRegisteredGBPTreeMonitorWithDifferentTag()
+    {
+        // Given
+        AtomicBoolean checkpointCompletedCall = new AtomicBoolean();
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( getCheckpointCompletedListener( checkpointCompletedCall ), "differentTag" );
+        populator = createPopulator( pageCache, monitors, "tag" );
+
+        // When
+        populator.create();
+        populator.close( true, NULL );
+
+        // Then
+        assertFalse( checkpointCompletedCall.get() );
+    }
+
+    @Test
+    void shouldRelayMonitorCallsToRegisteredGBPTreeMonitorWithTag()
+    {
+        // Given
+        AtomicBoolean checkpointCompletedCall = new AtomicBoolean();
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( getCheckpointCompletedListener( checkpointCompletedCall ), "tag" );
+        populator = createPopulator( pageCache, monitors, "tag" );
+
+        // When
+        populator.create();
+        populator.close( true, NULL );
+
+        // Then
+        assertTrue( checkpointCompletedCall.get() );
+    }
+
+    private GBPTree.Monitor.Adaptor getCheckpointCompletedListener( AtomicBoolean checkpointCompletedCall )
+    {
+        return new GBPTree.Monitor.Adaptor()
+        {
+            @Override
+            public void checkpointCompleted()
+            {
+                checkpointCompletedCall.set( true );
+            }
+        };
     }
 
     private void generateRandomUpdate( long entityId, MutableLongObjectMap<long[]> trackingState, List<TokenIndexEntryUpdate<?>> updates )

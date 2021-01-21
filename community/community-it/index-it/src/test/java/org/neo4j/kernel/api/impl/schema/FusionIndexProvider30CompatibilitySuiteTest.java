@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
+import org.neo4j.monitoring.Monitors;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
@@ -38,11 +39,12 @@ public class FusionIndexProvider30CompatibilitySuiteTest extends IndexProviderCo
     @Override
     protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir )
     {
-        IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
+        Monitors monitors = new Monitors();
+        String monitorTag = "";
         Config config = Config.defaults( default_schema_provider, NATIVE30.providerName() );
         OperationalMode mode = OperationalMode.SINGLE;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
-        return NativeLuceneFusionIndexProviderFactory30.create( pageCache, graphDbDir, fs, monitor, config, mode, recoveryCleanupWorkCollector );
+        return NativeLuceneFusionIndexProviderFactory30.create( pageCache, graphDbDir, fs, monitors, monitorTag, config, mode, recoveryCleanupWorkCollector );
     }
 
     @Override

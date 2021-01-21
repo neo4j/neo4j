@@ -50,6 +50,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
@@ -66,11 +67,18 @@ public class LuceneIndexProvider extends IndexProvider
     private final Monitor monitor;
 
     public LuceneIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
-                                IndexDirectoryStructure.Factory directoryStructureFactory, Monitor monitor, Config config,
-                                boolean isSingleInstance )
+            IndexDirectoryStructure.Factory directoryStructureFactory, Monitors monitors, Config config,
+            boolean isSingleInstance )
+    {
+        this( fileSystem, directoryFactory, directoryStructureFactory, monitors, DESCRIPTOR.toString(), config, isSingleInstance );
+    }
+
+    public LuceneIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
+            IndexDirectoryStructure.Factory directoryStructureFactory, Monitors monitors, String monitorTag, Config config,
+            boolean isSingleInstance )
     {
         super( DESCRIPTOR, directoryStructureFactory );
-        this.monitor = monitor;
+        this.monitor = monitors.newMonitor( Monitor.class, monitorTag );
         this.indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory );
         this.fileSystem = fileSystem;
         this.config = config;

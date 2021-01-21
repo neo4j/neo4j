@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
@@ -66,15 +67,15 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
     }
 
     @Override
-    protected IndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor, Config config,
-            OperationalMode operationalMode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    protected IndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors, String monitorTag,
+            Config config, OperationalMode operationalMode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        return create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+        return create( pageCache, storeDir, fs, monitors, monitorTag, config, operationalMode, recoveryCleanupWorkCollector );
     }
 
     @VisibleForTesting
     public static FusionIndexProvider create( PageCache pageCache, Path databaseDirectory, FileSystemAbstraction fs,
-            IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode,
+            Monitors monitors, String monitorTag, Config config, OperationalMode operationalMode,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( databaseDirectory );
@@ -82,11 +83,12 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
         boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, isSingleInstance );
         boolean archiveFailedIndex = config.get( GraphDatabaseInternalSettings.archive_failed_index );
 
-        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).withMonitor( monitor ).withReadOnly( readOnly ).build();
+        DatabaseIndexContext databaseIndexContext =
+                DatabaseIndexContext.builder( pageCache, fs ).withMonitors( monitors ).withTag( monitorTag ).withReadOnly( readOnly ).build();
         GenericNativeIndexProvider generic =
                 new GenericNativeIndexProvider( databaseIndexContext, childDirectoryStructure,
                         recoveryCleanupWorkCollector, config );
-        LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, isSingleInstance );
+        LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitors, monitorTag, config, isSingleInstance );
 
         return new FusionIndexProvider( generic, lucene, new FusionSlotSelector30(),
                 DESCRIPTOR, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );

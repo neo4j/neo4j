@@ -103,42 +103,6 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
 {
     public interface Monitor
     {
-        Monitor EMPTY = new Monitor.Adaptor();
-
-        class Adaptor implements Monitor
-        {
-            @Override
-            public void failedToOpenIndex( IndexDescriptor index, String action, Exception cause )
-            {   // no-op
-            }
-
-            @Override
-            public void recoveryCleanupRegistered( Path indexFile, IndexDescriptor index )
-            {   // no-op
-            }
-
-            @Override
-            public void recoveryCleanupStarted( Path indexFile, IndexDescriptor index )
-            {   // no-op
-            }
-
-            @Override
-            public void recoveryCleanupFinished( Path indexFile, IndexDescriptor index,
-                    long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
-            {   // no-op
-            }
-
-            @Override
-            public void recoveryCleanupClosed( Path indexFile, IndexDescriptor index )
-            {   // no-op
-            }
-
-            @Override
-            public void recoveryCleanupFailed( Path indexFile, IndexDescriptor index, Throwable throwable )
-            {   // no-op
-            }
-        }
-
         void failedToOpenIndex( IndexDescriptor index, String action, Exception cause );
 
         void recoveryCleanupRegistered( Path indexFile, IndexDescriptor index );

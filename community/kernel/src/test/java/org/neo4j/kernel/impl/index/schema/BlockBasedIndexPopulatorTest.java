@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ThreadSafePeakMemoryTracker;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
@@ -333,7 +334,7 @@ class BlockBasedIndexPopulatorTest
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory, memoryTracker );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
         boolean closed = false;
         try
         {
@@ -371,7 +372,7 @@ class BlockBasedIndexPopulatorTest
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory, memoryTracker );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
         boolean closed = false;
         try
         {
@@ -408,7 +409,7 @@ class BlockBasedIndexPopulatorTest
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, 100 );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory, memoryTracker );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
         Collection<IndexEntryUpdate<?>> populationUpdates = batchOfUpdates();
         populator.add( populationUpdates, NULL );
 
@@ -448,7 +449,12 @@ class BlockBasedIndexPopulatorTest
                 checkpoints.incrementAndGet();
             }
         };
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, treeMonitor, bufferFactory, memoryTracker );
+        Monitors monitors = new Monitors( databaseIndexContext.monitors );
+        monitors.addMonitorListener( treeMonitor );
+        databaseIndexContext = DatabaseIndexContext.builder( databaseIndexContext )
+                .withMonitors( monitors )
+                .build();
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, memoryTracker );
         try
         {
             // when
@@ -505,7 +511,7 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory, INSTANCE );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap();
@@ -535,7 +541,7 @@ class BlockBasedIndexPopulatorTest
     {
         /// given
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory, INSTANCE );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap() + 1;
@@ -554,7 +560,7 @@ class BlockBasedIndexPopulatorTest
     {
         // given
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory, INSTANCE );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap();
@@ -600,7 +606,7 @@ class BlockBasedIndexPopulatorTest
     {
         /// given
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, GBPTree.NO_MONITOR, bufferFactory, INSTANCE );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR, bufferFactory, INSTANCE );
         try
         {
             int size = populator.tree.keyValueSizeCap() + 1;
@@ -647,17 +653,17 @@ class BlockBasedIndexPopulatorTest
 
     private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor )
     {
-        return instantiatePopulator( monitor, GBPTree.NO_MONITOR, heapBufferFactory( 100), INSTANCE );
+        return instantiatePopulator( monitor, heapBufferFactory( 100), INSTANCE );
     }
 
-    private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor, GBPTree.Monitor treeMonitor,
-            ByteBufferFactory bufferFactory, MemoryTracker memoryTracker )
+    private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
+            MemoryTracker memoryTracker )
     {
         GenericLayout layout = layout();
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator =
                 new BlockBasedIndexPopulator<>( databaseIndexContext, indexFiles, layout, INDEX_DESCRIPTOR, false, bufferFactory,
                         Config.defaults( GraphDatabaseInternalSettings.index_populator_merge_factor, 2 ),
-                        memoryTracker, monitor, treeMonitor )
+                        memoryTracker, monitor )
                 {
                     @Override
                     NativeIndexReader<GenericKey,NativeIndexValue> newReader()

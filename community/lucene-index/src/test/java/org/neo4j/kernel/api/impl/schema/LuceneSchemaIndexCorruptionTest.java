@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -127,7 +128,9 @@ class LuceneSchemaIndexCorruptionTest
         DirectoryFactory directoryFactory = mock( DirectoryFactory.class );
         Path indexRootFolder = testDirectory.homePath();
         AtomicReference<FaultyIndexStorageFactory> reference = new AtomicReference<>();
-        return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( indexRootFolder ), monitor,
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( monitor );
+        return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( indexRootFolder ), monitors,
                 Config.defaults(), true )
         {
             @Override

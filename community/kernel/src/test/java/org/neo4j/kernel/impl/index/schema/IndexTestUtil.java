@@ -35,7 +35,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaTestUtil;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.scheduler.Group;
@@ -72,7 +71,6 @@ public abstract class IndexTestUtil<KEY,VALUE, LAYOUT extends Layout<KEY,VALUE>>
     IndexDescriptor indexDescriptor;
     LAYOUT layout;
     IndexFiles indexFiles;
-    IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
     JobScheduler jobScheduler;
     IndexPopulator.PopulationWorkScheduler populationWorkScheduler;
     TokenNameLookup tokenNameLookup;

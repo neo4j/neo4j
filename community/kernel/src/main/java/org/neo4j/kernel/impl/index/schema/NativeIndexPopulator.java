@@ -68,9 +68,9 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private boolean closed;
 
     NativeIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-            IndexDescriptor descriptor, GBPTree.Monitor treeMonitor )
+            IndexDescriptor descriptor )
     {
-        super( databaseIndexContext, layout, indexFiles, descriptor, treeMonitor );
+        super( databaseIndexContext, layout, indexFiles, descriptor );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.uniqueSampler = descriptor.isUnique() ? new UniqueIndexSampler() : null;

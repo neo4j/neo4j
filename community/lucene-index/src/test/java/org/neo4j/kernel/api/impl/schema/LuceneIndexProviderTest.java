@@ -33,9 +33,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -135,6 +135,6 @@ class LuceneIndexProviderTest
                                                         FileSystemAbstraction fs, Path graphDbDir )
     {
         return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( graphDbDir ),
-                IndexProvider.Monitor.EMPTY, config, true );
+                new Monitors(), config, true );
     }
 }

@@ -53,13 +53,12 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
         FileSystemAbstraction fs = dependencies.fileSystem();
         Log log = dependencies.getLogService().getInternalLogProvider().getLog( loggingClass() );
         Monitors monitors = dependencies.monitors();
-        String descriptorString = descriptor().toString();
-        monitors.addMonitorListener( new LoggingMonitor( log ), descriptorString );
-        IndexProvider.Monitor monitor = monitors.newMonitor( IndexProvider.Monitor.class, descriptorString );
+        String monitorTag = descriptor().toString();
+        monitors.addMonitorListener( new LoggingMonitor( log ), monitorTag );
         Config config = dependencies.getConfig();
         OperationalMode operationalMode = context.dbmsInfo().operationalMode;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
-        return internalCreate( pageCache, databaseDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+        return internalCreate( pageCache, databaseDir, fs, monitors, monitorTag, config, operationalMode, recoveryCleanupWorkCollector );
     }
 
     protected abstract Class<?> loggingClass();
@@ -67,7 +66,7 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
     public abstract IndexProviderDescriptor descriptor();
 
     protected abstract IndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs,
-            IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode,
+            Monitors monitors, String monitorTag, Config config, OperationalMode operationalMode,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector );
 
     public interface Dependencies

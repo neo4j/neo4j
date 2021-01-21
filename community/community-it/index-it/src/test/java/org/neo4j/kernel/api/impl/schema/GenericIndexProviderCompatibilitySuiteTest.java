@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
+import org.neo4j.monitoring.Monitors;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
@@ -42,11 +43,13 @@ public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCom
     @Override
     protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir )
     {
-        IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
+        Monitors monitors = new Monitors();
+        String monitorTag = "";
         Config config = Config.defaults( default_schema_provider, NATIVE_BTREE10.providerName() );
         OperationalMode mode = OperationalMode.SINGLE;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
-        return GenericNativeIndexProviderFactory.create( pageCache, graphDbDir, fs, monitor, config, mode, recoveryCleanupWorkCollector );
+        return GenericNativeIndexProviderFactory.
+                create( pageCache, graphDbDir, fs, monitors, monitorTag, config, mode, recoveryCleanupWorkCollector );
     }
 
     @Override

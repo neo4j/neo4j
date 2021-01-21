@@ -25,7 +25,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.monitoring.Monitors;
 
 import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
 
@@ -37,10 +37,10 @@ public class IndexProviderFactoryUtil
     }
 
     public static LuceneIndexProvider luceneProvider( FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure,
-            IndexProvider.Monitor monitor, Config config, boolean isSingleInstance )
+            Monitors monitors, String monitorTag, Config config, boolean isSingleInstance )
     {
         boolean ephemeral = config.get( GraphDatabaseInternalSettings.ephemeral_lucene );
         DirectoryFactory directoryFactory = directoryFactory( ephemeral );
-        return new LuceneIndexProvider( fs, directoryFactory, directoryStructure, monitor, config, isSingleInstance );
+        return new LuceneIndexProvider( fs, directoryFactory, directoryStructure, monitors, monitorTag, config, isSingleInstance );
     }
 }

@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.schema.SchemaTestUtil;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
@@ -77,8 +78,8 @@ abstract class NativeIndexProviderTests
     @Inject
     private FileSystemAbstraction fs;
 
-    private final AssertableLogProvider logging = new AssertableLogProvider();
-    private final IndexProvider.Monitor monitor = new LoggingMonitor( logging.getLog( "test" ) );
+    private final AssertableLogProvider logging;
+    private final Monitors monitors;
     private final ProviderFactory factory;
     private final InternalIndexState expectedStateOnNonExistingSubIndex;
     private final Value someValue;
@@ -90,6 +91,9 @@ abstract class NativeIndexProviderTests
         this.factory = factory;
         this.expectedStateOnNonExistingSubIndex = expectedStateOnNonExistingSubIndex;
         this.someValue = someValue;
+        this.logging = new AssertableLogProvider();
+        this.monitors = new Monitors();
+        this.monitors.addMonitorListener( new LoggingMonitor( logging.getLog( "test" ) ) );
     }
 
     @BeforeEach
@@ -323,7 +327,7 @@ abstract class NativeIndexProviderTests
 
     private IndexProvider newProvider( boolean readOnly )
     {
-        return factory.create( pageCache, fs, directoriesByProvider( testDirectory.absolutePath() ), monitor, immediate(), readOnly );
+        return factory.create( pageCache, fs, directoriesByProvider( testDirectory.absolutePath() ), monitors, immediate(), readOnly );
     }
 
     private IndexProvider newProvider()
@@ -364,7 +368,7 @@ abstract class NativeIndexProviderTests
     @FunctionalInterface
     interface ProviderFactory
     {
-        IndexProvider create( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir, IndexProvider.Monitor monitor,
-            RecoveryCleanupWorkCollector collector, boolean readOnly );
+        IndexProvider create( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
+                Monitors monitors, RecoveryCleanupWorkCollector collector, boolean readOnly );
     }
 }

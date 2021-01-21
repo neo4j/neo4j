@@ -41,7 +41,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
@@ -54,6 +53,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.recovery.RecoveryExtension;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -346,7 +346,7 @@ class LuceneIndexRecoveryIT
         public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
         {
             boolean isSingleInstance = context.dbmsInfo().operationalMode == OperationalMode.SINGLE;
-            return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( context.directory() ), IndexProvider.Monitor.EMPTY,
+            return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( context.directory() ), new Monitors(),
                     dependencies.getConfig(), isSingleInstance );
         }
     }
@@ -364,7 +364,7 @@ class LuceneIndexRecoveryIT
         {
             boolean isSingleInstance = context.dbmsInfo().operationalMode == OperationalMode.SINGLE;
             return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( context.directory() ),
-                    IndexProvider.Monitor.EMPTY, dependencies.getConfig(), isSingleInstance )
+                    new Monitors(), dependencies.getConfig(), isSingleInstance )
             {
                 @Override
                 public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )

@@ -45,6 +45,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.monitoring.Monitors;
@@ -95,14 +96,17 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
     private final boolean readOnly;
 
     /**
-     * Monitoring internal events.
-     */
-    private final TokenScanStore.Monitor monitor;
-
-    /**
      * Monitors used to pass down monitor to underlying {@link GBPTree}
      */
     private final Monitors monitors;
+
+    /**
+     * Tag to use when creating new monitors.
+     * We need this because there could be multiple
+     * {@link IndexProvider.Monitor listeners} registered
+     * of the same type.
+     */
+    private final String monitorTag;
 
     /**
      * {@link PageCache} to {@link PageCache#map(Path, int, ImmutableSet)}
@@ -158,35 +162,34 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
     private boolean closed;
 
     TokenIndexPopulator( PageCache pageCache, DatabaseLayout directoryStructure, IndexFiles indexFiles, FileSystemAbstraction fs,
-            boolean readOnly, Config config, Monitors monitors, EntityType entityType, PageCacheTracer cacheTracer, String tokenStoreName )
+            boolean readOnly, Config config, Monitors monitors, String monitorTag, EntityType entityType, PageCacheTracer cacheTracer,
+            String tokenStoreName )
     {
         this.pageCache = pageCache;
         this.indexFiles = indexFiles;
         this.fs = fs;
         this.directoryStructure = directoryStructure;
         this.config = config;
+        this.monitorTag = monitorTag;
         this.cacheTracer = cacheTracer;
         this.readOnly = readOnly;
         this.monitors = monitors;
-        String monitorTag =
-                entityType == EntityType.NODE ? TokenScanStore.LABEL_SCAN_STORE_MONITOR_TAG : TokenScanStore.RELATIONSHIP_TYPE_SCAN_STORE_MONITOR_TAG;
-        this.monitor = monitors.newMonitor( TokenScanStore.Monitor.class, monitorTag );
         this.entityType = entityType;
         this.tokenStoreName = tokenStoreName;
     }
 
     private void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
     {
-        monitors.addMonitorListener( treeMonitor() );
-        GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class );
-
+        GBPTree.Monitor monitor = treeMonitor();
         index = new GBPTree<>( pageCache, indexFiles.getStoreFile(), new TokenScanLayout(), monitor, NO_HEADER_READER,
                 headerWriter, recoveryCleanupWorkCollector, readOnly, cacheTracer, immutable.empty(), tokenStoreName );
     }
 
     private GBPTree.Monitor treeMonitor()
     {
-        return new TokenIndexTreeMonitor();
+        GBPTree.Monitor treeMonitor = monitors.newMonitor( GBPTree.Monitor.class, monitorTag );
+        IndexProvider.Monitor indexMonitor = monitors.newMonitor( IndexProvider.Monitor.class, monitorTag );
+        return new IndexMonitorAdaptor( treeMonitor, indexMonitor, indexFiles, null );
     }
 
     @Override
@@ -367,38 +370,5 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
     private void assertPopulatorOpen()
     {
         Preconditions.checkState( index != null, "Populator has already been closed." );
-    }
-
-    private class TokenIndexTreeMonitor extends GBPTree.Monitor.Adaptor
-    {
-        @Override
-        public void cleanupRegistered()
-        {
-            monitor.recoveryCleanupRegistered();
-        }
-
-        @Override
-        public void cleanupStarted()
-        {
-            monitor.recoveryCleanupStarted();
-        }
-
-        @Override
-        public void cleanupFinished( long numberOfPagesVisited, long numberOfTreeNodes, long numberOfCleanedCrashPointers, long durationMillis )
-        {
-            monitor.recoveryCleanupFinished( numberOfPagesVisited, numberOfTreeNodes, numberOfCleanedCrashPointers, durationMillis );
-        }
-
-        @Override
-        public void cleanupClosed()
-        {
-            monitor.recoveryCleanupClosed();
-        }
-
-        @Override
-        public void cleanupFailed( Throwable throwable )
-        {
-            monitor.recoveryCleanupFailed( throwable );
-        }
     }
 }
