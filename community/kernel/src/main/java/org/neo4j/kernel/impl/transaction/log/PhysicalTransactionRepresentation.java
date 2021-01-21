@@ -173,4 +173,9 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     {
         return commands.iterator();
     }
+
+    public int commandCount()
+    {
+        return commands.size();
+    }
 }
