@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 
 /**
  * A stage of processing, mainly consisting of one or more {@link Step steps} that batches of data to
@@ -35,7 +36,12 @@ public class Stage
 
     public Stage( String name, String part, Configuration config, int orderingGuarantees )
     {
-        this.execution = new StageExecution( name, part, config, pipeline, orderingGuarantees );
+        this( name, part, config, orderingGuarantees, ProcessorScheduler.SPAWN_THREAD );
+    }
+
+    public Stage( String name, String part, Configuration config, int orderingGuarantees, ProcessorScheduler scheduler )
+    {
+        this.execution = new StageExecution( name, part, config, pipeline, orderingGuarantees, scheduler );
     }
 
     protected StageControl control()

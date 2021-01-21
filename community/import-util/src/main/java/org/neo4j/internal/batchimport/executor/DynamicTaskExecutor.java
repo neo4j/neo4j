@@ -31,7 +31,6 @@ import org.neo4j.function.Suppliers;
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.internal.helpers.Exceptions.SILENT_UNCAUGHT_EXCEPTION_HANDLER;
 
 /**
  * Implementation of {@link TaskExecutor} with a maximum queue size and where each processor is a dedicated
@@ -48,18 +47,13 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     private final AtomicReference<Throwable> panic = new AtomicReference<>();
     private final Supplier<LOCAL> initialLocalState;
     private final int maxProcessorCount;
+    private final ProcessorScheduler scheduler;
 
     public DynamicTaskExecutor( int initialProcessorCount, int maxProcessorCount, int maxQueueSize,
-            ParkStrategy parkStrategy, String processorThreadNamePrefix )
-    {
-        this( initialProcessorCount, maxProcessorCount, maxQueueSize, parkStrategy, processorThreadNamePrefix,
-                Suppliers.singleton( null ) );
-    }
-
-    public DynamicTaskExecutor( int initialProcessorCount, int maxProcessorCount, int maxQueueSize,
-            ParkStrategy parkStrategy, String processorThreadNamePrefix, Supplier<LOCAL> initialLocalState )
+            ParkStrategy parkStrategy, String processorThreadNamePrefix, Supplier<LOCAL> initialLocalState, ProcessorScheduler scheduler )
     {
         this.maxProcessorCount = maxProcessorCount == 0 ? Integer.MAX_VALUE : maxProcessorCount;
+        this.scheduler = scheduler;
 
         assert this.maxProcessorCount >= initialProcessorCount :
                 "Unexpected initial processor count " + initialProcessorCount + " for max " + maxProcessorCount;
@@ -95,7 +89,8 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
                     Processor[] newProcessors = Arrays.copyOf( processors, requestedNumber );
                     for ( int i = processors.length; i < requestedNumber; i++ )
                     {
-                        newProcessors[i] = new Processor( processorThreadNamePrefix + "-" + i );
+                        newProcessors[i] = new Processor();
+                        scheduler.schedule( newProcessors[i], processorThreadNamePrefix + "-" + i );
                     }
                     this.processors = newProcessors;
                 }
@@ -173,7 +168,7 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
     {
         for ( Processor processor : processors )
         {
-            if ( processor.isAlive() )
+            if ( !processor.ended )
             {
                 return true;
             }
@@ -186,50 +181,56 @@ public class DynamicTaskExecutor<LOCAL> implements TaskExecutor<LOCAL>
         parkStrategy.park( Thread.currentThread() );
     }
 
-    private class Processor extends Thread
+    public static <T> Supplier<T> noLocalState()
+    {
+        return Suppliers.singleton( null );
+    }
+
+    private class Processor implements Runnable
     {
         // In addition to the global shutDown flag in the executor each processor has a local flag
         // so that an individual processor can be shut down, for example when reducing number of processors
         private volatile boolean processorShutDown;
-
-        Processor( String name )
-        {
-            super( name );
-            setUncaughtExceptionHandler( SILENT_UNCAUGHT_EXCEPTION_HANDLER );
-            start();
-        }
+        private volatile boolean ended;
 
         @Override
         public void run()
         {
-            // Initialized here since it's the thread itself that needs to call it
-            final LOCAL threadLocalState = initialLocalState.get();
-            while ( !shutDown && !processorShutDown )
+            try
             {
-                Task<LOCAL> task;
-                try
+                // Initialized here since it's the thread itself that needs to call it
+                final LOCAL threadLocalState = initialLocalState.get();
+                while ( !shutDown && !processorShutDown )
                 {
-                    task = queue.poll( 10, MILLISECONDS );
-                }
-                catch ( InterruptedException e )
-                {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-
-                if ( task != null )
-                {
+                    Task<LOCAL> task;
                     try
                     {
-                        task.run( threadLocalState );
+                        task = queue.poll( 10, MILLISECONDS );
                     }
-                    catch ( Throwable e )
+                    catch ( InterruptedException e )
                     {
-                        receivePanic( e );
-                        close();
-                        throw new RuntimeException( e );
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+
+                    if ( task != null )
+                    {
+                        try
+                        {
+                            task.run( threadLocalState );
+                        }
+                        catch ( Throwable e )
+                        {
+                            receivePanic( e );
+                            close();
+                            throw new RuntimeException( e );
+                        }
                     }
                 }
+            }
+            finally
+            {
+                ended = true;
             }
         }
     }

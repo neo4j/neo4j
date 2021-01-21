@@ -28,8 +28,6 @@ import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.Stat;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
 
-import static org.neo4j.internal.helpers.Exceptions.SILENT_UNCAUGHT_EXCEPTION_HANDLER;
-
 /**
  * Step that generally sits first in a {@link Stage} and produces batches that will flow downstream
  * to other {@link Step steps}.
@@ -52,25 +50,19 @@ public abstract class ProducerStep extends AbstractStep<Void> implements StatsPr
     {
         // It's fine to not store a reference to this thread here because either it completes and exits
         // normally, notices a panic and exits via an exception.
-        Thread thread = new Thread( name() )
+        control.scheduler().schedule( () ->
         {
-            @Override
-            public void run()
+            assertHealthy();
+            try
             {
-                assertHealthy();
-                try
-                {
-                    process();
-                    endOfUpstream();
-                }
-                catch ( Throwable e )
-                {
-                    issuePanic( e, false );
-                }
+                process();
+                endOfUpstream();
             }
-        };
-        thread.setUncaughtExceptionHandler( SILENT_UNCAUGHT_EXCEPTION_HANDLER );
-        thread.start();
+            catch ( Throwable e )
+            {
+                issuePanic( e, false );
+            }
+        }, name() );
         return 0;
     }
 

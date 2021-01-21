@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.internal.batchimport.stats.Key;
 import org.neo4j.internal.batchimport.stats.Stat;
 import org.neo4j.internal.helpers.collection.Pair;
@@ -44,10 +45,16 @@ public class StageExecution implements StageControl, AutoCloseable
     private final int orderingGuarantees;
     private volatile Throwable panic;
     private final boolean shouldRecycle;
+    private final ProcessorScheduler scheduler;
     private final ConcurrentLinkedQueue<Object> recycled;
 
-    public StageExecution( String stageName, String part, Configuration config, Collection<Step<?>> pipeline,
-            int orderingGuarantees )
+    public StageExecution( String stageName, String part, Configuration config, Collection<Step<?>> pipeline, int orderingGuarantees )
+    {
+        this( stageName, part, config, pipeline, orderingGuarantees, ProcessorScheduler.SPAWN_THREAD );
+    }
+
+    public StageExecution( String stageName, String part, Configuration config, Collection<Step<?>> pipeline, int orderingGuarantees,
+            ProcessorScheduler scheduler )
     {
         this.stageName = stageName;
         this.part = part;
@@ -55,6 +62,7 @@ public class StageExecution implements StageControl, AutoCloseable
         this.pipeline = pipeline;
         this.orderingGuarantees = orderingGuarantees;
         this.shouldRecycle = (orderingGuarantees & Step.RECYCLE_BATCHES) != 0;
+        this.scheduler = scheduler;
         this.recycled = shouldRecycle ? new ConcurrentLinkedQueue<>() : null;
     }
 
@@ -214,6 +222,12 @@ public class StageExecution implements StageControl, AutoCloseable
             }
         }
         return true;
+    }
+
+    @Override
+    public ProcessorScheduler scheduler()
+    {
+        return scheduler;
     }
 
     @Override

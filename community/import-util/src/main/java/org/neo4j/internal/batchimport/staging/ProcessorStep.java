@@ -38,7 +38,6 @@ import static java.lang.System.nanoTime;
  * Supports an arbitrary number of threads to execute batches in parallel.
  * Subclasses implement {@link #process(Object, BatchSender, PageCursorTracer)} receiving the batch to process
  * and an {@link BatchSender} for sending the modified batch, or other batches downstream.
- *
  */
 public abstract class ProcessorStep<T> extends AbstractStep<T>
 {
@@ -66,7 +65,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     public void start( int orderingGuarantees )
     {
         super.start( orderingGuarantees );
-        this.executor = new DynamicTaskExecutor<>( 1, maxProcessors, config.maxNumberOfProcessors(), PARK, name(), Sender::new );
+        this.executor = new DynamicTaskExecutor<>( 1, maxProcessors, config.maxNumberOfProcessors(), PARK, name(), Sender::new, control.scheduler() );
     }
 
     @Override

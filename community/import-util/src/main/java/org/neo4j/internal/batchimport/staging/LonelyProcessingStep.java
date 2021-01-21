@@ -43,7 +43,7 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
     @Override
     public long receive( long ticket, Void nothing )
     {
-        new Thread( () -> {
+        control.scheduler().schedule( () -> {
             assertHealthy();
             try
             {
@@ -72,7 +72,7 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
                     throw e;
                 }
             }
-        } ).start();
+        }, name() );
         return 0;
     }
 

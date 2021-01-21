@@ -38,6 +38,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.internal.batchimport.executor.DynamicTaskExecutor.noLocalState;
+import static org.neo4j.internal.batchimport.executor.ProcessorScheduler.SPAWN_THREAD;
 
 class DynamicTaskExecutorTest
 {
@@ -47,8 +49,7 @@ class DynamicTaskExecutorTest
     void shouldExecuteTasksInParallel()
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 5, PARK,
-                getClass().getSimpleName() );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 5, PARK, getClass().getSimpleName(), noLocalState(), SPAWN_THREAD );
         ControlledTask task1 = new ControlledTask();
         TestTask task2 = new TestTask();
 
@@ -76,8 +77,7 @@ class DynamicTaskExecutorTest
     void shouldIncrementNumberOfProcessorsWhenRunning()
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 0, 5, PARK,
-                getClass().getSimpleName() );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 0, 5, PARK, getClass().getSimpleName(), noLocalState(), SPAWN_THREAD );
         ControlledTask task1 = new ControlledTask();
         TestTask task2 = new TestTask();
 
@@ -106,8 +106,7 @@ class DynamicTaskExecutorTest
     void shouldDecrementNumberOfProcessorsWhenRunning() throws Exception
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 5, PARK,
-                getClass().getSimpleName() );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 5, PARK, getClass().getSimpleName(), noLocalState(), SPAWN_THREAD );
         ControlledTask task1 = new ControlledTask();
         ControlledTask task2 = new ControlledTask();
         ControlledTask task3 = new ControlledTask();
@@ -140,8 +139,7 @@ class DynamicTaskExecutorTest
     void shouldExecuteMultipleTasks()
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 30, 0, 5, PARK,
-                getClass().getSimpleName() );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 30, 0, 5, PARK, getClass().getSimpleName(), noLocalState(), SPAWN_THREAD );
         ExpensiveTask[] tasks = new ExpensiveTask[1000];
 
         // WHEN
@@ -162,8 +160,7 @@ class DynamicTaskExecutorTest
     void shouldShutDownOnTaskFailure() throws Exception
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 30, 0, 5, PARK,
-                getClass().getSimpleName() );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 30, 0, 5, PARK, getClass().getSimpleName(), noLocalState(), SPAWN_THREAD );
 
         // WHEN
         IOException exception = new IOException( "Test message" );
@@ -180,8 +177,7 @@ class DynamicTaskExecutorTest
     void shouldShutDownOnTaskFailureEvenIfOtherTasksArePending() throws Exception
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, PARK,
-                getClass().getSimpleName() );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, PARK, getClass().getSimpleName(), noLocalState(), SPAWN_THREAD );
         IOException exception = new IOException( "Test message" );
         ControlledTask firstBlockingTask = new ControlledTask();
         ControlledTask secondBlockingTask = new ControlledTask();
@@ -212,8 +208,7 @@ class DynamicTaskExecutorTest
     void shouldSurfaceTaskErrorInAssertHealthy() throws Exception
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, PARK,
-                getClass().getSimpleName() );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, PARK, getClass().getSimpleName(), noLocalState(), SPAWN_THREAD );
         IOException exception = new IOException( "Failure" );
 
         // WHEN
@@ -244,8 +239,7 @@ class DynamicTaskExecutorTest
     void shouldLetShutdownCompleteInEventOfPanic() throws Exception
     {
         // GIVEN
-        final TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, PARK,
-                getClass().getSimpleName() );
+        final TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 10, PARK, getClass().getSimpleName(), noLocalState(), SPAWN_THREAD );
         IOException exception = new IOException( "Failure" );
 
         // WHEN
@@ -281,8 +275,7 @@ class DynamicTaskExecutorTest
     {
         // GIVEN
         int maxProcessors = 4;
-        final TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, maxProcessors, 10, PARK,
-                getClass().getSimpleName() );
+        final TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, maxProcessors, 10, PARK, getClass().getSimpleName(), noLocalState(), SPAWN_THREAD );
 
         // WHEN/THEN
         assertEquals( 1, executor.processors( 0 ) );
@@ -301,7 +294,7 @@ class DynamicTaskExecutorTest
     void shouldCopeWithConcurrentIncrementOfProcessorsAndShutdown() throws Throwable
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test" );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test", noLocalState(), SPAWN_THREAD );
         Race race = new Race().withRandomStartDelays();
         race.addContestant( executor::close );
         race.addContestant( () -> executor.processors( 1 ) );
@@ -317,7 +310,7 @@ class DynamicTaskExecutorTest
     void shouldNoticeBadHealthBeforeBeingClosed()
     {
         // GIVEN
-        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test" );
+        TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test", noLocalState(), SPAWN_THREAD );
         RuntimeException panic = new RuntimeException( "My failure" );
 
         // WHEN

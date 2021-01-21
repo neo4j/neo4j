@@ -21,6 +21,8 @@ package org.neo4j.internal.batchimport.staging;
 
 import java.util.function.Supplier;
 
+import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
+
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 
 /**
@@ -81,5 +83,11 @@ public class SimpleStageControl implements StageControl
     public <T> T reuse( Supplier<T> fallback )
     {
         return fallback.get();
+    }
+
+    @Override
+    public ProcessorScheduler scheduler()
+    {
+        return ProcessorScheduler.SPAWN_THREAD;
     }
 }

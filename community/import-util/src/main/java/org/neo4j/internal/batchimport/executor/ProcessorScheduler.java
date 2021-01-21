@@ -17,27 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.batchimport.staging;
+package org.neo4j.internal.batchimport.executor;
 
-import java.util.function.Supplier;
+import static org.neo4j.internal.helpers.Exceptions.SILENT_UNCAUGHT_EXCEPTION_HANDLER;
 
-import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
-
-/**
- * Represents a means to control and coordinate lifecycle matters about a {@link Stage} and all its
- * {@link Step steps}.
- */
-public interface StageControl
+public interface ProcessorScheduler
 {
-    void panic( Throwable cause );
+    ProcessorScheduler SPAWN_THREAD = ( job, name ) ->
+    {
+        Thread thread = new Thread( job, name );
+        thread.setUncaughtExceptionHandler( SILENT_UNCAUGHT_EXCEPTION_HANDLER );
+        thread.start();
+    };
 
-    void assertHealthy();
-
-    void recycle( Object batch );
-
-    boolean isIdle();
-
-    <T> T reuse( Supplier<T> fallback );
-
-    ProcessorScheduler scheduler();
+    void schedule( Runnable job, String name );
 }

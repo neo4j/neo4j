@@ -193,10 +193,9 @@ class ForkedProcessorStepTest
         AtomicIntegerArray reference = new AtomicIntegerArray( length );
 
         // GIVEN
-        StageControl control = mock( StageControl.class );
+        StageControl control = new SimpleStageControl();
         int availableProcessors = Runtime.getRuntime().availableProcessors();
-        ForkedProcessorStep<int[]> step = new ForkedProcessorStep<int[]>( control, "Processor",
-                config( availableProcessors ) )
+        ForkedProcessorStep<int[]> step = new ForkedProcessorStep<>( control, "Processor", config( availableProcessors ) )
         {
             @Override
             protected void forkedProcess( int id, int processors, int[] batch ) throws InterruptedException

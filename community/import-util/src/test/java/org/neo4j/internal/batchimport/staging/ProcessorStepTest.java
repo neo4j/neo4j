@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.batchimport.executor.ProcessorScheduler;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -42,6 +43,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.internal.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
@@ -65,7 +67,7 @@ class ProcessorStepTest
     void shouldUpholdProcessOrderingGuarantee() throws Exception
     {
         // GIVEN
-        StageControl control = mock( StageControl.class );
+        StageControl control = new SimpleStageControl();
         try ( MyProcessorStep step = new MyProcessorStep( control, 0 ) )
         {
             step.start( ORDER_SEND_DOWNSTREAM );
@@ -88,7 +90,7 @@ class ProcessorStepTest
     @Test
     void tracePageCacheAccessOnProcess() throws Exception
     {
-        StageControl control = mock( StageControl.class );
+        StageControl control = new SimpleStageControl();
         var cacheTracer = new DefaultPageCacheTracer();
         int batches = 10;
         try ( MyProcessorStep step = new MyProcessorStep( control, 0, cacheTracer ) )
@@ -113,7 +115,7 @@ class ProcessorStepTest
     void shouldHaveTaskQueueSizeEqualToMaxNumberOfProcessors() throws Exception
     {
         // GIVEN
-        StageControl control = mock( StageControl.class );
+        StageControl control = new SimpleStageControl();
         final CountDownLatch latch = new CountDownLatch( 1 );
         final int processors = 2;
         int maxProcessors = 5;
@@ -151,6 +153,7 @@ class ProcessorStepTest
     {
         // GIVEN
         StageControl control = mock( StageControl.class );
+        when( control.scheduler() ).thenReturn( ProcessorScheduler.SPAWN_THREAD );
         try ( MyProcessorStep step = new MyProcessorStep( control, 0 ) )
         {
             step.start( ORDER_SEND_DOWNSTREAM );

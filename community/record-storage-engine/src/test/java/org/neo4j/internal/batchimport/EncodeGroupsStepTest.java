@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.internal.batchimport.ReadGroupsFromCacheStepTest.Group;
 import org.neo4j.internal.batchimport.staging.BatchSender;
+import org.neo4j.internal.batchimport.staging.SimpleStageControl;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -47,7 +48,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class EncodeGroupsStepTest
 {
-    private final StageControl control = mock( StageControl.class );
+    private final StageControl control = new SimpleStageControl();
     private final RecordStore<RelationshipGroupRecord> store = mock( RecordStore.class );
 
     @SuppressWarnings( "unchecked" )
