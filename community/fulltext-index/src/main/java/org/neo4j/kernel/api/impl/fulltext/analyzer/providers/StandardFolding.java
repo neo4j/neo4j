@@ -45,6 +45,7 @@ public class StandardFolding extends AnalyzerProvider
     public String description()
     {
         return "Analyzer that uses ASCIIFoldingFilter to remove accents (diacritics). Otherwise behaves as standard " +
-                "english analyzer.";
+                "english analyzer. Note! This Analyser may have unexpected behaviour, such as tokenizing, " +
+                "for all non ASCII numbers and symbols.";
     }
 }

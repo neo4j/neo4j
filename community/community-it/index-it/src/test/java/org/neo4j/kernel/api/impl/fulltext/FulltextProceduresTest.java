@@ -20,10 +20,13 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.queryparser.flexible.standard.QueryParserUtil;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -45,6 +48,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -104,6 +108,7 @@ import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -129,6 +134,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.QUE
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.QUERY_RELS;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asCypherStringsList;
+import static org.neo4j.kernel.api.impl.fulltext.analyzer.StandardFoldingAnalyzer.NON_ASCII_LETTERS;
 
 public class FulltextProceduresTest
 {
@@ -3159,6 +3165,164 @@ public class FulltextProceduresTest
         checkDatabaseConsistency();
     }
 
+    /**
+     * This test comes from github issue #12662
+     * https://github.com/neo4j/neo4j/issues/12662
+     */
+    @Test
+    public void standardFoldingAnalyzerMustWorkGitHub12662()
+    {
+        db = createDatabase();
+        String indexName = "my_index";
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = tx.createNode( LABEL );
+            node.setProperty( PROP, "1SOMECODE1" );
+            nodeId = node.getId();
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            String label = asCypherStringsList( LABEL.name() );
+            String props = asCypherStringsList( PROP );
+            String analyzer = props + ", {analyzer: 'standard-folding'}";
+            tx.execute( format( NODE_CREATE, indexName, label, analyzer ) ).close();
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            try ( var iterator = tx.execute( format( QUERY_NODES, indexName, "*SOMECODE*" ) ).columnAs( "node" ) )
+            {
+                assertTrue( iterator.hasNext() );
+                assertThat( ((Node) iterator.next()).getId(), equalTo( nodeId ) );
+                assertFalse( iterator.hasNext() );
+            }
+            tx.commit();
+        }
+    }
+
+    @Test
+    public void standardFoldingAnalyzerMustFindNonASCIILettersByTheirFoldingExact()
+    {
+        standardFoldingAnalyzerMustFindNonASCIILettersByTheirFolding( SearchString.FOLDING_EXACT );
+    }
+
+    @Test
+    public void standardFoldingAnalyzerMustFindNonASCIILettersByTheirFoldingWildcard()
+    {
+        standardFoldingAnalyzerMustFindNonASCIILettersByTheirFolding( SearchString.FOLDING_WILDCARD );
+    }
+
+    private void standardFoldingAnalyzerMustFindNonASCIILettersByTheirFolding( SearchString searchString )
+    {
+        // Given
+        // Fulltext index with analyzer: 'standard-folding'
+        db = createDatabase();
+        String indexName = createNodeFulltextIndexWithStandardFoldingAnalyzer();
+        char[] nonAsciiLetterArray = NON_ASCII_LETTERS.toCharArray();
+
+        // and
+        // a folding from non ascii characters to ascii strings
+        Map<Character,String> nonAsciiCharsToFolding = getFoldingOfChars( nonAsciiLetterArray );
+
+        // When
+        // Nodes with non Ascii characters
+        Map<Character,Long> nonAsciiCharsToNodeId = new HashMap<>();
+        String propPrefix = "123";
+        String propSuffix = "345";
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Map.Entry<Character,String> charToFolding : nonAsciiCharsToFolding.entrySet() )
+            {
+                Node node = tx.createNode( LABEL );
+                Character character = charToFolding.getKey();
+
+                // To make sure no properties are filtered out because of accidental match with stopwords
+                // we surround the non ascii letter with prefix and suffix. We use a number to avoid false
+                // positives when searching.
+                String propValue = propPrefix + character + propSuffix;
+                node.setProperty( PROP, propValue );
+
+                long id = node.getId();
+                nonAsciiCharsToNodeId.put( character, id );
+            }
+            tx.commit();
+        }
+
+        // Then
+        // Should find with exact match and wildcard
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( char nonAsciiChar : nonAsciiLetterArray )
+            {
+                Long expectedNodeId = nonAsciiCharsToNodeId.get( nonAsciiChar );
+                assertAtLeastSingleHitOnSearch( indexName, expectedNodeId, tx, searchString.searchString( nonAsciiChar, propPrefix, propSuffix ) );
+            }
+            tx.commit();
+        }
+    }
+
+    private Map<Character,String> getFoldingOfChars( char[] nonAsciiCharacterArray )
+    {
+        Map<Character,String> nonAsciiCharToAsciiFolding = new HashMap<>();
+        for ( char nonASCIIChar : nonAsciiCharacterArray )
+        {
+            String folding = toASCIIFolding( nonASCIIChar );
+            nonAsciiCharToAsciiFolding.put( nonASCIIChar, folding );
+        }
+        return nonAsciiCharToAsciiFolding;
+    }
+
+    private String createNodeFulltextIndexWithStandardFoldingAnalyzer()
+    {
+        String indexName = "my_index";
+        try ( Transaction tx = db.beginTx() )
+        {
+            String label = asCypherStringsList( LABEL.name() );
+            String props = asCypherStringsList( PROP );
+            String analyzer = props + ", {analyzer: 'standard-folding'}";
+            tx.execute( format( NODE_CREATE, indexName, label, analyzer ) ).close();
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.HOURS );
+            tx.commit();
+        }
+        return indexName;
+    }
+
+    private static String toASCIIFolding( char nonASCIIChar )
+    {
+        char[] result = new char[4];
+        int length = ASCIIFoldingFilter.foldToASCII( new char[]{nonASCIIChar}, 0, result, 0, 1 );
+        result = Arrays.copyOf( result, length );
+        return new String( result );
+    }
+
+    private void assertAtLeastSingleHitOnSearch( String indexName, long expectedNodeId, Transaction tx, String searchString )
+    {
+        Set<Long> nodeIds = new TreeSet<>();
+        try ( var iterator = tx.execute( format( QUERY_NODES, indexName, searchString ) ).columnAs( "node" ) )
+        {
+            while ( iterator.hasNext() )
+            {
+                nodeIds.add(((Node)iterator.next()).getId() );
+            }
+        }
+        assertTrue( nodeIds.contains( expectedNodeId ) );
+    }
+
     private void assertNoIndexSeeks( Result result )
     {
         assertThat( result.stream().count(), is( 1L ) );
@@ -3315,5 +3479,27 @@ public class FulltextProceduresTest
     private void createSimpleNodesIndex( Transaction tx )
     {
         tx.execute( format( NODE_CREATE, "nodes", asCypherStringsList( LABEL.name() ), asCypherStringsList( PROP ) ) ).close();
+    }
+
+    private enum SearchString
+    {
+        FOLDING_EXACT
+                {
+                    @Override
+                    String searchString( Character nonAsciiCharacter, String propPrefix, String propSuffix )
+                    {
+                        return propPrefix + toASCIIFolding( nonAsciiCharacter ) + propSuffix;
+                    }
+                },
+        FOLDING_WILDCARD
+                {
+                    @Override
+                    String searchString( Character nonAsciiCharacter, String propPrefix, String propSuffix )
+                    {
+                        return "*" + toASCIIFolding( nonAsciiCharacter ) + "*";
+                    }
+                };
+
+        abstract String searchString( Character nonAsciiCharacter, String propPrefix, String propSuffix );
     }
 }

@@ -124,9 +124,13 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         }
 
         long id;
+        long id2;
+        long id3;
         try ( Transaction tx = db.beginTx() )
         {
             id = createNodeIndexableByPropertyValue( tx, LABEL, "Příliš žluťoučký kůň úpěl ďábelské ódy." );
+            id2 = createNodeIndexableByPropertyValue( tx, LABEL, "1SOMEDATA1" );
+            id3 = createNodeIndexableByPropertyValue( tx, LABEL, "Ⓐpa Ɐmma Ǣta Ꜷajaj Ꜻverka dett⒜" );
 
             tx.commit();
         }
@@ -140,6 +144,16 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
             assertQueryFindsIds( ktx, true, "nodes", "upel", id );
             assertQueryFindsIds( ktx, true, "nodes", "dabelske", id );
             assertQueryFindsIds( ktx, true, "nodes", "ody", id );
+            assertQueryFindsIds( ktx, true, "nodes", "1SOMEDATA1", id2 );
+            assertQueryFindsIds( ktx, true, "nodes", "1somedata1", id2 );
+            assertQueryFindsIds( ktx, true, "nodes", "*SOMEDATA*", id2 );
+            assertQueryFindsIds( ktx, true, "nodes", "*somedata*", id2 );
+            assertQueryFindsIds( ktx, true, "nodes", "Apa", id3 );
+            assertQueryFindsIds( ktx, true, "nodes", "amma", id3 );
+            assertQueryFindsIds( ktx, true, "nodes", "AEta", id3 );
+            assertQueryFindsIds( ktx, true, "nodes", "Auajaj", id3 );
+            assertQueryFindsIds( ktx, true, "nodes", "Avverka", id3 );
+            assertQueryFindsIds( ktx, true, "nodes", "dett(a)", id3 );
         }
     }
 
