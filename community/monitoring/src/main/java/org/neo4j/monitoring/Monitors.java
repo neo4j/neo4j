@@ -63,14 +63,16 @@ public class Monitors
     }
 
     /**
-     * Create a child monitor with a given {@code parent}. Propagation works as expected where you can subscribe to
-     * global monitors through the child monitor, but not the other way around. E.g. you can not subscribe to monitors
-     * that are registered on the child monitor through the parent monitor.
+     * Create a child Monitors instance with a given {@code parent}.
+     * Events are propagated up, so any listeners connected to the parent instance will see events from monitor objects
+     * {@link #newMonitor(Class, String...) created} on this instance.
+     * Listeners registered on this Monitors instance will receive events from monitor objects {@link #newMonitor(Class, String...) created} on this
+     * instance or any of its children - they will NOT see events on monitor objects connected to the parent instance.
      * <p>
-     * Events will bubble up from the children in a way that listeners on the child monitor will be invoked before the
+     * Events from monitor objects will bubble up from the children in a way that listeners on the child monitor will be invoked before the
      * parent ones.
      *
-     * @param parent to propagate events to and from.
+     * @param parent to propagate events to.
      */
     public Monitors( Monitors parent )
     {
