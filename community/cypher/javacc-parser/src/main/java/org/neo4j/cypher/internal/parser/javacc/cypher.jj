@@ -2130,11 +2130,11 @@ EXPRESSION ListLiteralOfLiterals() :
 {
   Token t;
   EXPRESSION e;
-  List list = new ArrayList();
+  List<EXPRESSION> list = new ArrayList<>();
 }
 {
   t=<LBRACKET> ( e=Literal() {list.add(e);} )? ( "," e=Literal() {list.add(e);} )* <RBRACKET>
-  { return astFactory.listLiteral(pos(t), (List<EXPRESSION>)list); }
+  { return astFactory.listLiteral(pos(t), list); }
 }
 
 EXPRESSION MapLiteralOfLiterals() :
@@ -2142,8 +2142,8 @@ EXPRESSION MapLiteralOfLiterals() :
   Token t;
   StringPos<POS> key;
   EXPRESSION value;
-  List<StringPos<POS>> keys = new ArrayList();
-  List<EXPRESSION> values = new ArrayList();
+  List<StringPos<POS>> keys = new ArrayList<>();
+  List<EXPRESSION> values = new ArrayList<>();
 }
 {
   t=<LCURLY> ( key=PropertyKeyName() ":" value=Literal() {keys.add(key); values.add(value);} )?
@@ -2232,7 +2232,7 @@ EXPRESSION FunctionInvocation() :
   ( LOOKAHEAD(2) <DISTINCT> { distinct=true; })?
   ( e=Expression() {arguments.add(e);} )? ( "," e=Expression() {arguments.add(e);} )*
   <RPAREN>
-  { return astFactory.functionInvocation(pos(before.next), (List<String>)namespace, name, distinct, (List<EXPRESSION>)arguments);}
+  { return astFactory.functionInvocation(pos(before.next), namespace, name, distinct, arguments);}
 }
 
 List<String> Namespace() :
@@ -2261,7 +2261,7 @@ List<VARIABLE> VariableList1() :
   t=SymbolicNameString() { list.add(astFactory.newVariable(pos(t), t.image)); }
   ( "," t=SymbolicNameString() { list.add(astFactory.newVariable(pos(t), t.image)); })*
   {
-    return (List<VARIABLE>)list;
+    return list;
   }
 }
 
