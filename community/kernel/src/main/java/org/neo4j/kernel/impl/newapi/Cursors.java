@@ -42,7 +42,7 @@ public final class Cursors
         return new EmptyTraversalCursor( (Read) read );
     }
 
-    private static class EmptyTraversalCursor implements RelationshipTraversalCursor
+    public static class EmptyTraversalCursor implements RelationshipTraversalCursor
     {
         private final Read read;
 
