@@ -767,6 +767,8 @@ object IntermediateRepresentation {
   def invokeStaticSideEffect(method: Method, params: IntermediateRepresentation*): IntermediateRepresentation =
     InvokeStaticSideEffect(method, params)
 
+
+
   def invoke(owner: IntermediateRepresentation, method: Method,
              params: IntermediateRepresentation*): IntermediateRepresentation =
     if (method.returnType == org.neo4j.codegen.TypeReference.VOID)
@@ -774,9 +776,17 @@ object IntermediateRepresentation {
     else
       Invoke(owner, method, params)
 
+  def invoke(ownerVar: String, method: Method,
+             params: IntermediateRepresentation*): IntermediateRepresentation =
+    invoke(Load(ownerVar, method.owner), method, params:_*)
+
   def invokeSideEffect(owner: IntermediateRepresentation, method: Method,
                        params: IntermediateRepresentation*): IntermediateRepresentation =
     InvokeSideEffect(owner, method, params)
+
+  def invokeSideEffect(ownerVar: String, method: Method,
+                       params: IntermediateRepresentation*): IntermediateRepresentation =
+    invokeSideEffect(Load(ownerVar, method.owner), method, params:_*)
 
   def load[TYPE](variable: String)(implicit typ: Manifest[TYPE]): Load = Load(variable, typeRef(typ))
 
@@ -844,20 +854,56 @@ object IntermediateRepresentation {
   def multiply(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Multiply(lhs, rhs)
 
+  def lessThan(lhsVar: String, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    lessThan(Load(lhsVar, rhs.typeReference), rhs)
+
+  def lessThan(lhs: IntermediateRepresentation, rhsVar: String): IntermediateRepresentation =
+    lessThan(lhs, Load(rhsVar, lhs.typeReference))
+
   def lessThan(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Lt(lhs, rhs)
+
+  def lessThanOrEqual(lhsVar: String, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    lessThanOrEqual(Load(lhsVar, rhs.typeReference), rhs)
+
+  def lessThanOrEqual(lhs: IntermediateRepresentation, rhsVar: String): IntermediateRepresentation =
+    lessThanOrEqual(lhs, Load(rhsVar, lhs.typeReference))
 
   def lessThanOrEqual(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Lte(lhs, rhs)
 
+  def greaterThan(lhsVar: String, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    greaterThan(Load(lhsVar, rhs.typeReference), rhs)
+
+  def greaterThan(lhs: IntermediateRepresentation, rhsVar: String): IntermediateRepresentation =
+    greaterThan(lhs, Load(rhsVar, lhs.typeReference))
+
   def greaterThan(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Gt(lhs, rhs)
+
+  def greaterThanOrEqual(lhsVar: String, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    greaterThanOrEqual(Load(lhsVar, rhs.typeReference), rhs)
+
+  def greaterThanOrEqual(lhs: IntermediateRepresentation, rhsVar: String): IntermediateRepresentation =
+    greaterThanOrEqual(lhs, Load(rhsVar, lhs.typeReference))
 
   def greaterThanOrEqual(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Gte(lhs, rhs)
 
+  def equal(lhsVar: String, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    equal(Load(lhsVar, rhs.typeReference), rhs)
+
+  def equal(lhs: IntermediateRepresentation, rhsVar: String): IntermediateRepresentation =
+    equal(lhs, Load(rhsVar, lhs.typeReference))
+
   def equal(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Eq(lhs, rhs)
+
+  def notEqual(lhsVar: String, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    notEqual(Load(lhsVar, rhs.typeReference), rhs)
+
+  def notEqual(lhs: IntermediateRepresentation, rhsVar: String): IntermediateRepresentation =
+    notEqual(lhs, Load(rhsVar, lhs.typeReference))
 
   def notEqual(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     NotEq(lhs, rhs)
@@ -912,6 +958,12 @@ object IntermediateRepresentation {
 
   def fail(error: IntermediateRepresentation): Throw = Throw(error)
 
+  def and(lhsVar: String, rhs: IntermediateRepresentation): IntermediateRepresentation =
+    and(Load(lhsVar, rhs.typeReference), rhs)
+
+  def and(lhs: IntermediateRepresentation, rhsVar: String): IntermediateRepresentation =
+    and(lhs, Load(rhsVar, lhs.typeReference))
+
   def and(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation = {
     (lhs, rhs) match {
       case (Constant(false), _) => Constant(false)
@@ -930,7 +982,7 @@ object IntermediateRepresentation {
   def and(ands: Seq[IntermediateRepresentation]): IntermediateRepresentation = {
     if (ands.isEmpty) constant(true)
     else if (ands.size == 1) ands.head
-    else ands.reduceLeft(and)
+    else ands.reduceLeft((l: IntermediateRepresentation, r: IntermediateRepresentation) => and(l, r))
   }
 
   def or(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation = {

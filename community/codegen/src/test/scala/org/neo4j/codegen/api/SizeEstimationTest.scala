@@ -43,11 +43,14 @@ import org.neo4j.codegen.api.IntermediateRepresentation.declare
 import org.neo4j.codegen.api.IntermediateRepresentation.field
 import org.neo4j.codegen.api.IntermediateRepresentation.getStatic
 import org.neo4j.codegen.api.IntermediateRepresentation.greaterThan
+import org.neo4j.codegen.api.IntermediateRepresentation.greaterThanOrEqual
 import org.neo4j.codegen.api.IntermediateRepresentation.ifElse
 import org.neo4j.codegen.api.IntermediateRepresentation.invoke
 import org.neo4j.codegen.api.IntermediateRepresentation.invokeStatic
 import org.neo4j.codegen.api.IntermediateRepresentation.isNull
 import org.neo4j.codegen.api.IntermediateRepresentation.labeledLoop
+import org.neo4j.codegen.api.IntermediateRepresentation.lessThan
+import org.neo4j.codegen.api.IntermediateRepresentation.lessThanOrEqual
 import org.neo4j.codegen.api.IntermediateRepresentation.load
 import org.neo4j.codegen.api.IntermediateRepresentation.loadField
 import org.neo4j.codegen.api.IntermediateRepresentation.loop
@@ -56,6 +59,7 @@ import org.neo4j.codegen.api.IntermediateRepresentation.multiply
 import org.neo4j.codegen.api.IntermediateRepresentation.newArray
 import org.neo4j.codegen.api.IntermediateRepresentation.newInstance
 import org.neo4j.codegen.api.IntermediateRepresentation.noop
+import org.neo4j.codegen.api.IntermediateRepresentation.notEqual
 import org.neo4j.codegen.api.IntermediateRepresentation.oneTime
 import org.neo4j.codegen.api.IntermediateRepresentation.or
 import org.neo4j.codegen.api.IntermediateRepresentation.self
@@ -353,7 +357,8 @@ class SizeEstimationTest extends CypherFunSuite {
         assign("a", comparison(constant(1L), constant(2L)))
       )
 
-    val comparisons = Seq(IntermediateRepresentation.equal _, greaterThan _, IntermediateRepresentation.greaterThanOrEqual _, IntermediateRepresentation.lessThan _, IntermediateRepresentation.lessThanOrEqual _, IntermediateRepresentation.equal _, IntermediateRepresentation.notEqual _ )
+    val comparisons: Seq[(IntermediateRepresentation, IntermediateRepresentation) => IntermediateRepresentation] =
+       Seq(greaterThan, greaterThanOrEqual, lessThan, lessThanOrEqual, IntermediateRepresentation.equal, notEqual)
     comparisons.foreach(v => {
       val representation = instructions(v)
       sizeOf(representation) should equal(computeSize(representation))
@@ -367,7 +372,8 @@ class SizeEstimationTest extends CypherFunSuite {
         assign("a", comparison(constant(1), constant(2)))
       )
 
-    val comparisons = Seq(greaterThan _, IntermediateRepresentation.greaterThanOrEqual _, IntermediateRepresentation.lessThan _, IntermediateRepresentation.lessThanOrEqual _, IntermediateRepresentation.equal _, IntermediateRepresentation.notEqual _ )
+    val comparisons: Seq[(IntermediateRepresentation, IntermediateRepresentation) => IntermediateRepresentation] =
+      Seq(greaterThan, greaterThanOrEqual, lessThan, lessThanOrEqual, IntermediateRepresentation.equal, notEqual)
     comparisons.foreach(v => {
       val representation = instructions(v)
       sizeOf(representation) should equal(computeSize(representation))
@@ -381,7 +387,8 @@ class SizeEstimationTest extends CypherFunSuite {
         assign("a", comparison(constant("hello"), constant("there")))
       )
 
-    val comparisons = Seq(IntermediateRepresentation.equal _, IntermediateRepresentation.notEqual _ )
+    val comparisons: Seq[(IntermediateRepresentation, IntermediateRepresentation) => IntermediateRepresentation] =
+      Seq(IntermediateRepresentation.equal, IntermediateRepresentation.notEqual)
     comparisons.foreach(v => {
       val representation = instructions(v)
       sizeOf(representation) should equal(computeSize(representation))
@@ -493,7 +500,7 @@ class SizeEstimationTest extends CypherFunSuite {
   test("condition + not equal") {
     val instructions =
       block(
-        condition(IntermediateRepresentation.notEqual(constant(53), constant(54))) {
+        condition(notEqual(constant(53), constant(54))) {
           block(
             declare[Int]("a"),
             assign("a", constant(1))
