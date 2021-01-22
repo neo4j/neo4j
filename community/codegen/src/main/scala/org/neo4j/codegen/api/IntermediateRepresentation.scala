@@ -35,6 +35,10 @@ import org.neo4j.values.storable.Values
  */
 sealed trait IntermediateRepresentation {
   def typeReference: TypeReference
+
+  def +(other: IntermediateRepresentation): Add = Add(this, other)
+  def +(constant: Int): Add = Add(this, Constant(constant))
+  def +(constant: Long): Add = Add(this, Constant(constant))
 }
 
 /**
@@ -829,6 +833,11 @@ object IntermediateRepresentation {
   def add(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Add(lhs, rhs)
 
+  /**
+   * NOTE: assumes Int
+   */
+  def ++(value: String): IntermediateRepresentation = assign(value, add(load[Int](value), constant(1)))
+
   def subtract(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Subtract(lhs, rhs)
 
@@ -879,6 +888,12 @@ object IntermediateRepresentation {
   def assign(name: String, value: IntermediateRepresentation): AssignToLocalVariable = AssignToLocalVariable(name, value)
 
   def assign(variable: LocalVariable, value: IntermediateRepresentation): AssignToLocalVariable = AssignToLocalVariable(variable.name, value)
+
+  def declareAndAssign(name: String, value: IntermediateRepresentation): IntermediateRepresentation =
+    block(declareAndAssignList(value.typeReference, name, value) :_*)
+
+  def declareAndAssign(load: Load, value: IntermediateRepresentation): IntermediateRepresentation =
+    block(declareAndAssignList(value.typeReference, load.variable, value) :_*)
 
   def declareAndAssign(typeReference: TypeReference, load: Load, value: IntermediateRepresentation): IntermediateRepresentation =
     declareAndAssign(typeReference, load.variable, value)
