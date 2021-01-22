@@ -37,6 +37,14 @@ public final class Cursors
         throw new UnsupportedOperationException( "Don't instantiate" );
     }
 
+    /**
+     * Returns an empty relationship traversal cursor.
+     *
+     * Note, the Read is required for situations where we for example try to
+     * read properties from this cursor. If we did nothing in that case the
+     * property cursor could end up in an undefined state that lead to errors
+     * in some cases.
+     */
     public static RelationshipTraversalCursor emptyTraversalCursor( org.neo4j.internal.kernel.api.Read read )
     {
         return new EmptyTraversalCursor( (Read) read );
