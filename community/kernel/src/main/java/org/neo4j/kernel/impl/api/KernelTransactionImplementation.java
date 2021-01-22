@@ -773,9 +773,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         finally
         {
-            transactionMonitor.addHeapTransactionSize( memoryTracker.heapHighWaterMark() );
-            transactionMonitor.addNativeTransactionSize( memoryTracker.usedNativeMemory() );
-
             if ( !success )
             {
                 rollback( listenersState );
@@ -785,6 +782,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 transactionId = txId;
                 afterCommit( listenersState );
             }
+            transactionMonitor.addHeapTransactionSize( memoryTracker.heapHighWaterMark() );
+            transactionMonitor.addNativeTransactionSize( memoryTracker.usedNativeMemory() );
         }
     }
 
