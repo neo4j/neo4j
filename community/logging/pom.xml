@@ -113,6 +113,7 @@
                             </artifactSet>
                             <relocations>
                                 <relocation>
+                                    <!-- Don't change shadedPattern without updating in Log4jPluginLoadingWorkaround as well -->
                                     <pattern>org.apache.logging.log4j</pattern>
                                     <shadedPattern>org.neo4j.logging.shaded.log4j</shadedPattern>
                                 </relocation>
@@ -123,10 +124,6 @@
                                 </relocation>
                             </relocations>
                             <transformers>
-                                <!-- workaround for https://issues.apache.org/jira/browse/LOG4J2-673 -->
-                                <transformer
-                                        implementation="com.github.edwgiz.maven_shade_plugin.log4j2_cache_transformer.PluginsCacheFileTransformer">
-                                </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
@@ -139,6 +136,9 @@
                                     <artifact>*:*</artifact>
                                     <excludes>
                                         <exclude>**/javax.annotation.processing.Processor</exclude>
+                                        <!-- Skip the plugins listing file to not interfere with any external Log4j dependencies.
+                                             We work around this file not existing in Log4jPluginLoadingWorkaround. -->
+                                        <exclude>**/Log4j2Plugins.dat</exclude>
                                     </excludes>
                                 </filter>
                                 <filter>
@@ -154,13 +154,6 @@
                         </configuration>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.github.edwgiz</groupId>
-                        <artifactId>maven-shade-plugin.log4j2-cachefile-transformer</artifactId>
-                        <version>${log4j.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
         </plugins>
     </build>

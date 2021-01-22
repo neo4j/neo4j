@@ -33,6 +33,11 @@ import org.neo4j.io.IOUtils;
  */
 public class Neo4jLoggerContext implements Closeable
 {
+    static
+    {
+        Log4jPluginLoadingWorkaround.doLog4jPluginLoadingWorkaround();
+    }
+
     private final LoggerContext ctx;
     private final Closeable additionalClosable;
 
