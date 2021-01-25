@@ -514,8 +514,8 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
 
   private def toCommandProperty(id: Id, e: internal.expressions.LogicalProperty, self: ExpressionConverters): commands.expressions.Expression =
     e match {
-      case e:ASTCachedProperty if e.entityType == NODE_TYPE => commands.expressions.CachedNodeProperty(e.entityName, getPropertyKey(e.propertyKey), e)
-      case e:ASTCachedProperty if e.entityType == RELATIONSHIP_TYPE => commands.expressions.CachedRelationshipProperty(e.entityName, getPropertyKey(e.propertyKey), e)
+      case e:ASTCachedProperty if e.entityType == NODE_TYPE => commands.expressions.CachedNodeProperty(e.entityName, getPropertyKey(e.propertyKey), e.runtimeKey)
+      case e:ASTCachedProperty if e.entityType == RELATIONSHIP_TYPE => commands.expressions.CachedRelationshipProperty(e.entityName, getPropertyKey(e.propertyKey), e.runtimeKey)
       case e: LogicalProperty => commands.expressions.Property(self.toCommandExpression(id, e.map), getPropertyKey(e.propertyKey))
     }
 

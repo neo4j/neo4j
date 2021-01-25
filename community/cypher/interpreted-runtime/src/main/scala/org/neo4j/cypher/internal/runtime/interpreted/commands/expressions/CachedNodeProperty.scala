@@ -96,7 +96,7 @@ abstract class AbstractCachedRelationshipProperty extends AbstractCachedProperty
                         propId: Int): Value = state.query.relationshipProperty(id, propId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor, throwOnDeleted = true)
 }
 
-case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: ASTCachedProperty)
+case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: ASTCachedProperty.RuntimeKey)
   extends AbstractCachedNodeProperty
 {
   override def toString: String = key.propertyAccessString
@@ -117,7 +117,7 @@ case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: ASTC
   override def children: Seq[AstNode[_]] = Seq(propertyKey)
 }
 
-case class CachedRelationshipProperty(nodeName: String, propertyKey: KeyToken, key: ASTCachedProperty)
+case class CachedRelationshipProperty(nodeName: String, propertyKey: KeyToken, key: ASTCachedProperty.RuntimeKey)
   extends AbstractCachedRelationshipProperty
 {
   override def toString: String = key.propertyAccessString

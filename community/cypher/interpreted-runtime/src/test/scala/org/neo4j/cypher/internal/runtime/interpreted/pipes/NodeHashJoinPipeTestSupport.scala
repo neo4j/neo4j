@@ -49,7 +49,7 @@ trait NodeHashJoinPipeTestSupport extends CypherFunSuite {
   case class rowWith(variables: (String, AnyValue)*) {
     def cached(cachedNodePropeties: (CachedProperty, Value)*): CypherRow = {
       val row = CypherRow.from(variables: _*)
-      for ((cnp, value) <- cachedNodePropeties) row.setCachedProperty(cnp, value)
+      for ((cnp, value) <- cachedNodePropeties) row.setCachedProperty(cnp.runtimeKey, value)
       row
     }
   }

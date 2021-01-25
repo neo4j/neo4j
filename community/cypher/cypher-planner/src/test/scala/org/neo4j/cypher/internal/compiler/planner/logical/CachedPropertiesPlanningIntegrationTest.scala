@@ -129,7 +129,7 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
           Selection(Seq(greaterThan(cachedNodeProp("n", "prop1"), literalInt(42))),
             AllNodesScan("n", Set.empty)),
           Map("x" -> varFor("n"))),
-        Map("x.prop1" -> cachedNodeProp("n", "prop1"))
+        Map("x.prop1" -> cachedNodeProp("n", "prop1", "x"))
       )
     )
   }
@@ -138,7 +138,7 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
     val plan = planFor("MATCH (n) WHERE n.prop1 > 42 WITH n AS x WHERE x.prop1 > 42 RETURN x")
 
     plan._2 should equal(
-      Selection(Seq(greaterThan(cachedNodeProp("n", "prop1"), literalInt(42))),
+      Selection(Seq(greaterThan(cachedNodeProp("n", "prop1", "x"), literalInt(42))),
         Projection(
           Selection(Seq(greaterThan(cachedNodeProp("n", "prop1"), literalInt(42))),
             AllNodesScan("n", Set.empty)),
@@ -158,7 +158,7 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
             Selection(Seq(greaterThan(cachedNodeProp("  m@12", "prop1"), literalInt(42))),
               AllNodesScan("  m@12", Set.empty))),
           Map("  m@61" -> varFor("n"), "x" -> varFor("  m@12"))),
-        Map("m.prop1" -> cachedNodeProp("n", "prop1"), "x.prop1" -> cachedNodeProp("  m@12", "prop1"))
+        Map("m.prop1" -> cachedNodeProp("n", "prop1", "  m@61"), "x.prop1" -> cachedNodeProp("  m@12", "prop1", "x"))
       )
     )
   }

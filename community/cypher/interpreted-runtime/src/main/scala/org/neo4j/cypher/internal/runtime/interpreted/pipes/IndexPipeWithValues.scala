@@ -47,7 +47,7 @@ trait IndexPipeWithValues extends Pipe {
         val newContext = rowFactory.copyWith(baseContext, ident, queryContext.nodeById(cursor.nodeReference()))
         var i = 0
         while (i < indexPropertyIndices.length) {
-          newContext.setCachedProperty(indexCachedProperties(i), cursor.propertyValue(indexPropertyIndices(i)))
+          newContext.setCachedProperty(indexCachedProperties(i).runtimeKey, cursor.propertyValue(indexPropertyIndices(i)))
           i += 1
         }
         newContext

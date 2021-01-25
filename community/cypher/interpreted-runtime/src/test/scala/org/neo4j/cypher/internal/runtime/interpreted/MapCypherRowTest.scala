@@ -160,7 +160,7 @@ class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
     val lhsCtx = CypherRow.empty.copyWith(key1, BooleanValue.FALSE)
     val rhsCtx = CypherRow.empty
     rhsCtx.set(key1, BooleanValue.TRUE, key2, BooleanValue.TRUE)
-    rhsCtx.setCachedProperty(cachedPropertyKey, BooleanValue.TRUE)
+    rhsCtx.setCachedProperty(cachedPropertyKey.runtimeKey, BooleanValue.TRUE)
 
     // when (other map is equal or larger)
     lhsCtx.mergeWith(rhsCtx, null)
@@ -168,7 +168,7 @@ class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
     // then
     lhsCtx.getByName(key1) should equal(BooleanValue.TRUE)
     lhsCtx.getByName(key2) should equal(BooleanValue.TRUE)
-    lhsCtx.getCachedProperty(cachedPropertyKey) should equal(BooleanValue.TRUE)
+    lhsCtx.getCachedProperty(cachedPropertyKey.runtimeKey) should equal(BooleanValue.TRUE)
 
     // when (other map is smaller, the missing keys should not be removed)
     lhsCtx.mergeWith(CypherRow.empty.copyWith(key2, BooleanValue.FALSE), null)
@@ -186,7 +186,7 @@ class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
     val key2 = "key2"
     val cachedPropertyKey = cachedNodeProp("n", "key")
     val lhsCtx = CypherRow.empty.copyWith(key1, BooleanValue.FALSE)
-    lhsCtx.setCachedProperty(cachedPropertyKey, BooleanValue.TRUE)
+    lhsCtx.setCachedProperty(cachedPropertyKey.runtimeKey, BooleanValue.TRUE)
 
     val rhsCtx1 = CypherRow.empty
     rhsCtx1.set(key1, BooleanValue.TRUE, key2, BooleanValue.TRUE)
@@ -197,7 +197,7 @@ class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
     // then
     lhsCtx.getByName(key1) should equal(BooleanValue.TRUE)
     lhsCtx.getByName(key2) should equal(BooleanValue.TRUE)
-    lhsCtx.getCachedProperty(cachedPropertyKey) should equal(BooleanValue.TRUE)
+    lhsCtx.getCachedProperty(cachedPropertyKey.runtimeKey) should equal(BooleanValue.TRUE)
 
     // when (other map is smaller, the missing keys should not be removed)
     val rhsCtx2 = CypherRow.empty.copyWith(key2, BooleanValue.FALSE)
@@ -217,11 +217,11 @@ class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
     val key2 = "key2"
     val cachedPropertyKey = cachedNodeProp("n", "key")
     val lhsCtx = CypherRow.empty.copyWith(key1, BooleanValue.FALSE)
-    lhsCtx.setCachedProperty(cachedPropertyKey, BooleanValue.TRUE)
+    lhsCtx.setCachedProperty(cachedPropertyKey.runtimeKey, BooleanValue.TRUE)
 
     val rhsCtx1 = CypherRow.empty
     rhsCtx1.set(key1, BooleanValue.TRUE, key2, BooleanValue.TRUE)
-    rhsCtx1.setCachedProperty(cachedPropertyKey, BooleanValue.FALSE)
+    rhsCtx1.setCachedProperty(cachedPropertyKey.runtimeKey, BooleanValue.FALSE)
 
     // when (other map is equal or larger)
     lhsCtx.mergeWith(rhsCtx1, null)
@@ -229,7 +229,7 @@ class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
     // then
     lhsCtx.getByName(key1) should equal(BooleanValue.TRUE)
     lhsCtx.getByName(key2) should equal(BooleanValue.TRUE)
-    lhsCtx.getCachedProperty(cachedPropertyKey) should equal(BooleanValue.FALSE)
+    lhsCtx.getCachedProperty(cachedPropertyKey.runtimeKey) should equal(BooleanValue.FALSE)
 
     // when (other map is smaller, the missing keys should not be removed)
     val rhsCtx2 = CypherRow.empty.copyWith(key2, BooleanValue.FALSE)
@@ -249,16 +249,16 @@ class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
     val ctx = CypherRow.empty
 
     // when (written)
-    ctx.setCachedProperty(key, BooleanValue.FALSE)
+    ctx.setCachedProperty(key.runtimeKey, BooleanValue.FALSE)
 
     // then
-    ctx.getCachedProperty(key) should equal(BooleanValue.FALSE)
+    ctx.getCachedProperty(key.runtimeKey) should equal(BooleanValue.FALSE)
 
     // when (overwritten)
-    ctx.setCachedProperty(key, BooleanValue.TRUE)
+    ctx.setCachedProperty(key.runtimeKey, BooleanValue.TRUE)
 
     // then
-    ctx.getCachedProperty(key) should equal(BooleanValue.TRUE)
+    ctx.getCachedProperty(key.runtimeKey) should equal(BooleanValue.TRUE)
   }
 
   test("single key copy") {
@@ -329,7 +329,7 @@ class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
     val row = CypherRow.empty
     val node = VirtualValues.node(42)
     row.set("x", node)
-    row.setCachedProperty( cachedNodeProp("x", "prop"), Values.stringValue("foo"))
+    row.setCachedProperty( cachedNodeProp("x", "prop").runtimeKey, Values.stringValue("foo"))
     row.invalidateCachedNodeProperties(42)
 
     row.estimatedHeapUsage should be >= node.estimatedHeapUsage()
@@ -340,16 +340,16 @@ class MapCypherRowTest extends CypherFunSuite with AstConstructionTestSupport {
     left should not be theSameInstanceAs(right)
     val newKey = "this key should not yet exist in left or right"
     val newCachedPropertyKey = cachedNodeProp("n", newKey)
-    left.getCachedProperty(newCachedPropertyKey) shouldBe null
-    right.getCachedProperty(newCachedPropertyKey) shouldBe null
+    left.getCachedProperty(newCachedPropertyKey.runtimeKey) shouldBe null
+    right.getCachedProperty(newCachedPropertyKey.runtimeKey) shouldBe null
 
     // when (left is modified)
     left.set(newKey, BooleanValue.TRUE)
-    left.setCachedProperty(newCachedPropertyKey, BooleanValue.FALSE)
+    left.setCachedProperty(newCachedPropertyKey.runtimeKey, BooleanValue.FALSE)
 
     // then (only left should be modified)
     left.getByName(newKey) should equal(BooleanValue.TRUE)
-    left.getCachedProperty(newCachedPropertyKey) should equal(BooleanValue.FALSE)
-    right.getCachedProperty(newCachedPropertyKey) shouldBe null
+    left.getCachedProperty(newCachedPropertyKey.runtimeKey) should equal(BooleanValue.FALSE)
+    right.getCachedProperty(newCachedPropertyKey.runtimeKey) shouldBe null
   }
 }

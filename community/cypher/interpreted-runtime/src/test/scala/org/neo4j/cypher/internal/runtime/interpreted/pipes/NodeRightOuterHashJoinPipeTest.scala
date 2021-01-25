@@ -78,8 +78,8 @@ class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPip
       Map("b" -> fromNodeEntity(node2)),
       Map("b" -> fromNodeEntity(node3))
     ))
-    result.map(_.getCachedProperty(bPropLeft)) should be(Seq(intValue(-2), null))
-    result.map(_.getCachedProperty(bPropRight)) should be(Seq(intValue(12), intValue(13)))
+    result.map(_.getCachedProperty(bPropLeft.runtimeKey)) should be(Seq(intValue(-2), null))
+    result.map(_.getCachedProperty(bPropRight.runtimeKey)) should be(Seq(intValue(12), intValue(13)))
   }
 
   test("should work when the inner pipe produces multiple rows with the same join key") {

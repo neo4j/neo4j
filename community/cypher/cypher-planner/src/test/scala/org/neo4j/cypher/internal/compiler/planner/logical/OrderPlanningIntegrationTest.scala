@@ -155,11 +155,12 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
     val ageAProperty = cachedNodeProp("a", "age")
+    val ageBProperty = cachedNodeProp("a", "age", "b")
     val nameProperty = prop("b", "name")
     val fooProperty = prop("b", "foo")
 
     val projection = Projection(labelScan, Map("b" -> varFor("a")))
-    val projection2 = Projection(projection, Map("b.foo" -> fooProperty, "b.age + 5" -> add(ageAProperty, literalInt(5))))
+    val projection2 = Projection(projection, Map("b.foo" -> fooProperty, "b.age + 5" -> add(ageBProperty, literalInt(5))))
     val sort = Sort(projection2, Seq(Ascending("b.foo"), Ascending("b.age + 5")))
     val projection3 = Projection(sort, Map("age" -> ageAProperty))
     val result = Projection(projection3, Map("b.name" -> nameProperty))

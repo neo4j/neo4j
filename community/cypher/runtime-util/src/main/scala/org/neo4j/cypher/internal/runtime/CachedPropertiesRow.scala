@@ -32,7 +32,7 @@ trait CachedPropertiesRow {
    *   or NO_VALUE if the entity does not have the property,
    *   or null     if this cached value has been invalidated, or the property value has not been cached.
    */
-  def getCachedProperty(key: ASTCachedProperty): Value
+  def getCachedProperty(key: ASTCachedProperty.RuntimeKey): Value
 
   /**
    * Returns the cached property value
@@ -41,7 +41,7 @@ trait CachedPropertiesRow {
    */
   def getCachedPropertyAt(offset: Int): Value
 
-  def setCachedProperty(key: ASTCachedProperty, value: Value): Unit
+  def setCachedProperty(key: ASTCachedProperty.RuntimeKey, value: Value): Unit
 
   def setCachedPropertyAt(offset: Int, value: Value): Unit
 }

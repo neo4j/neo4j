@@ -86,7 +86,7 @@ object MapCypherRow {
   private final val INITAL_SIZE_OF_MUTABLE_MAP = SHALLOW_SIZE_OF_MUTABLE_MAP + shallowSizeOfObjectArray(8) // OpenHashMap initial size 8
 }
 
-class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cachedProperties: mutable.Map[ASTCachedProperty, Value] = null)
+class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cachedProperties: mutable.Map[ASTCachedProperty.RuntimeKey, Value] = null)
   extends CypherRow {
 
   override def copyAllFrom(input: ReadableRow): Unit = fail()
@@ -181,7 +181,7 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
       case _ => false
     }
 
-  override def setCachedProperty(key: ASTCachedProperty, value: Value): Unit = {
+  override def setCachedProperty(key: ASTCachedProperty.RuntimeKey, value: Value): Unit = {
     if (cachedProperties == null) {
       cachedProperties = mutable.Map.empty
     }
@@ -190,7 +190,7 @@ class MapCypherRow(private val m: mutable.Map[String, AnyValue], private var cac
 
   override def setCachedPropertyAt(offset: Int, value: Value): Unit = fail()
 
-  override def getCachedProperty(key: ASTCachedProperty): Value = {
+  override def getCachedProperty(key: ASTCachedProperty.RuntimeKey): Value = {
     if (cachedProperties == null) {
       null
     } else {
