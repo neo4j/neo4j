@@ -135,11 +135,6 @@ public class StoreUpgrader
         {
             return;
         }
-        if ( layout.getDatabaseName().equals( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
-        {
-            // TODO: System database does not (yet) support migration, remove this when it does!
-            return;
-        }
 
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( STORE_UPGRADE_TAG ) )
         {

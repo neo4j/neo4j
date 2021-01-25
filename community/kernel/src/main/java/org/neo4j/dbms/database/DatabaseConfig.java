@@ -35,26 +35,33 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
 import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
+import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 
 public class DatabaseConfig extends Config implements Lifecycle
 {
     private final Config globalConfig;
-    private final NamedDatabaseId namedDatabaseId;
+    private final Map<Setting<?>, Object> overriddenSettings;
     private Map<Setting<Object>,Collection<SettingChangeListener<Object>>> registeredListeners = new ConcurrentHashMap<>();
 
     public DatabaseConfig( Config globalConfig, NamedDatabaseId namedDatabaseId )
     {
         this.globalConfig = globalConfig;
-        this.namedDatabaseId = namedDatabaseId;
+        overriddenSettings = !namedDatabaseId.isSystemDatabase() ? null : Map.of(
+                read_only, FALSE,
+                record_format, record_format.defaultValue(),
+                allow_upgrade, TRUE
+        );
     }
 
     @Override
     public <T> T get( Setting<T> setting )
     {
-        if ( read_only.equals( setting ) && namedDatabaseId.isSystemDatabase() )
+        if ( overriddenSettings != null && overriddenSettings.containsKey( setting ) )
         {
-            return (T) FALSE;
+            return (T) overriddenSettings.get( setting );
         }
         return globalConfig.get( setting );
     }
