@@ -45,6 +45,7 @@ class VerboseTimeoutExceptionExtensionTest
         assertTestGetsThreadDump( "dumpOnSuppressedTimeout" );
         assertTestGetsThreadDump( "dumpOnDeepCauseTimeout" );
         assertTestGetsThreadDump( "dumpOnDeepSuppressedTimeout" );
+        assertTestGetsThreadDump( "dumpOnAssertEventually" );
     }
 
     @Test

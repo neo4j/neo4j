@@ -20,6 +20,7 @@
 package org.neo4j.test.extension.timeout;
 
 import org.apache.commons.lang3.StringUtils;
+import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
 
@@ -45,6 +46,7 @@ public class VerboseTimeoutExceptionExtension implements TestWatcher
     {
         return throwable != null && (
                    throwable instanceof TimeoutException
+                || throwable instanceof ConditionTimeoutException
                 || StringUtils.contains( throwable.getMessage(),"timed out" )
                 || (!Objects.equals( throwable, throwable.getCause() ) && isTimeout( throwable.getCause() ))
                 || Arrays.stream( throwable.getSuppressed() ).anyMatch( VerboseTimeoutExceptionExtension::isTimeout )

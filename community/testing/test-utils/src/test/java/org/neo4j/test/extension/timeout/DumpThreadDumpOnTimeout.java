@@ -31,6 +31,8 @@ import static java.time.Duration.ofMillis;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.test.assertion.Assert.assertEventually;
+import static org.neo4j.test.conditions.Conditions.equalityCondition;
 
 class DumpThreadDumpOnTimeout
 {
@@ -54,6 +56,12 @@ class DumpThreadDumpOnTimeout
     void dumpOnTimeoutException() throws TimeoutException
     {
         throw new TimeoutException();
+    }
+
+    @Test
+    void dumpOnAssertEventually()
+    {
+        assertEventually( () -> false, equalityCondition( true ), 100, TimeUnit.MILLISECONDS );
     }
 
     @Test
