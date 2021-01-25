@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.Identifiable
@@ -64,8 +65,8 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
     override def defaultValue: Cardinality = 0.0
   }
 
-  class StubEffectiveCardinalities extends EffectiveCardinalities with StubAttribute[LogicalPlan, Cardinality] {
-    override def defaultValue: Cardinality = 0.0
+  class StubEffectiveCardinalities extends EffectiveCardinalities with StubAttribute[LogicalPlan, EffectiveCardinality] {
+    override def defaultValue: EffectiveCardinality = EffectiveCardinality(0.0)
   }
 
   class StubProvidedOrders extends ProvidedOrders with StubAttribute[LogicalPlan, ProvidedOrder] {

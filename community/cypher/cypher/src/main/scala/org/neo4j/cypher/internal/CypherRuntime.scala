@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
 import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -77,7 +76,6 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
  * @param readOnly true if the query is read only
  * @param resultColumns names of the returned result columns
  * @param semanticTable semantic table with type information on the expressions in the query
- * @param cardinalities cardinalities (estimated rows) of all operators in the logical plan tree
  * @param effectiveCardinalities effective cardinalities (estimated rows when considering selectivity imposed by a limit) of all operators in the logical plan tree
  * @param providedOrders provided order of all operators in the logical plan tree
  * @param leveragedOrders leveragedOrder of all operators in the logical plan tree
@@ -90,7 +88,6 @@ case class LogicalQuery(logicalPlan: LogicalPlan,
                         readOnly: Boolean,
                         resultColumns: Array[String],
                         semanticTable: SemanticTable,
-                        cardinalities: Cardinalities,
                         effectiveCardinalities: EffectiveCardinalities,
                         providedOrders: ProvidedOrders,
                         leveragedOrders: LeveragedOrders,

@@ -217,7 +217,6 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                    IDPPlannerName,
                                    CypherVersion.default,
                                    logicalQuery.readOnly,
-                                   logicalQuery.cardinalities,
                                    logicalQuery.effectiveCardinalities,
                                    debugOptions.rawCardinalitiesEnabled,
                                    logicalQuery.providedOrders,

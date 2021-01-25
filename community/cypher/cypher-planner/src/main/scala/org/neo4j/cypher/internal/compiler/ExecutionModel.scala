@@ -21,11 +21,12 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.util.BatchedCartesianOrdering
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.CartesianOrdering
 import org.neo4j.cypher.internal.util.VolcanoCartesianOrdering
-import org.neo4j.cypher.internal.util.attribution.Attribute
 
 /**
  * The execution model of how a runtime executes a query.
@@ -51,16 +52,24 @@ object ExecutionModel {
     /**
      * Select the batch size for executing a logical plan.
      */
-    def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Attribute[LogicalPlan, Cardinality]): Int = {
+    def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): Int = {
       val maxCardinality = logicalPlan.flatten.map(plan => cardinalities.get(plan.id)).max
-      selectBatchSize(maxCardinality)
+      selectBatchSize(maxCardinality.amount)
     }
 
-    private def selectBatchSize(maxCardinality: Cardinality): Int = {
-      if (maxCardinality.amount.toLong > bigBatchSize) bigBatchSize else smallBatchSize
+    /**
+     * Select the batch size for executing a logical plan.
+     */
+    def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: EffectiveCardinalities): Int = {
+      val maxCardinality = logicalPlan.flatten.map(plan => cardinalities.get(plan.id)).max
+      selectBatchSize(maxCardinality.amount)
     }
 
-    override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering = new BatchedCartesianOrdering(selectBatchSize(maxCardinality))
+    private def selectBatchSize(maxCardinality: Double): Int = {
+      if (maxCardinality.toLong > bigBatchSize) bigBatchSize else smallBatchSize
+    }
+
+    override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering = new BatchedCartesianOrdering(selectBatchSize(maxCardinality.amount))
   }
 
   object Batched {

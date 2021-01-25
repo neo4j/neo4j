@@ -190,7 +190,6 @@ import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringMaker
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.exceptions.InternalException
@@ -201,12 +200,11 @@ object LogicalPlan2PlanDescription {
             plannerName: PlannerName,
             cypherVersion: CypherVersion,
             readOnly: Boolean,
-            cardinalities: Cardinalities,
             effectiveCardinalities: EffectiveCardinalities,
             withRawCardinalities: Boolean,
             providedOrders: ProvidedOrders,
             executionPlan: ExecutionPlan): InternalPlanDescription = {
-    new LogicalPlan2PlanDescription(readOnly, cardinalities, effectiveCardinalities, withRawCardinalities, providedOrders, executionPlan).create(input)
+    new LogicalPlan2PlanDescription(readOnly, effectiveCardinalities, withRawCardinalities, providedOrders, executionPlan).create(input)
       .addArgument(Version("CYPHER " + cypherVersion.name))
       .addArgument(RuntimeVersion("4.3"))
       .addArgument(Planner(plannerName.toTextOutput))
@@ -215,7 +213,7 @@ object LogicalPlan2PlanDescription {
   }
 }
 
-case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardinalities, effectiveCardinalities: EffectiveCardinalities, withRawCardinalities: Boolean, providedOrders: ProvidedOrders, executionPlan: ExecutionPlan)
+case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities: EffectiveCardinalities, withRawCardinalities: Boolean, providedOrders: ProvidedOrders, executionPlan: ExecutionPlan)
   extends LogicalPlans.Mapper[InternalPlanDescription] {
   private val SEPARATOR = ", "
 
@@ -772,8 +770,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
   private def addPlanningAttributes(description: InternalPlanDescription, plan: LogicalPlan): InternalPlanDescription = {
     val withEstRows = if (effectiveCardinalities.isDefinedAt(plan.id)) {
-      val maybeCardinality = if (cardinalities.isDefinedAt(plan.id)) Some(cardinalities.get(plan.id).amount) else None
-      description.addArgument(EstimatedRows(effectiveCardinalities.get(plan.id).amount, maybeCardinality))
+      val effectiveCardinality = effectiveCardinalities.get(plan.id)
+      description.addArgument(EstimatedRows(effectiveCardinality.amount, effectiveCardinality.originalCardinality.map(_.amount)))
     } else {
       description
     }

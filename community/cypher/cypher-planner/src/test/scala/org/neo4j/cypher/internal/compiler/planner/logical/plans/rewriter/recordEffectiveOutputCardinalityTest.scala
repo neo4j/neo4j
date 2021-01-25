@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
-import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -143,9 +143,9 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     maybePlan should not be None
 
     if (lessThan) {
-      effectiveCardinalities(maybePlan.get.id) should be < Cardinality(cardinality)
+      effectiveCardinalities(maybePlan.get.id) should be < EffectiveCardinality(cardinality)
     } else {
-      effectiveCardinalities(maybePlan.get.id) shouldEqual Cardinality(cardinality)
+      effectiveCardinalities(maybePlan.get.id).amount shouldEqual cardinality
     }
   }
 

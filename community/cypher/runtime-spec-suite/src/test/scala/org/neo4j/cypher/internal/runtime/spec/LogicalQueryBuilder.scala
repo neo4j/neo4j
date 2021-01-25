@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
 import org.neo4j.cypher.internal.logical.builder.Resolver
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Default
 
 /**
@@ -45,12 +45,8 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
     override val defaultValue: ProvidedOrder = ProvidedOrder.empty
   }
 
-  private val cardinalities: Cardinalities = new Cardinalities with Default[LogicalPlan, Cardinality] {
-    override val defaultValue: Cardinality = Cardinality.SINGLE
-  }
-
-  private val effectiveCardinalities: EffectiveCardinalities = new EffectiveCardinalities with Default[LogicalPlan, Cardinality] {
-    override val defaultValue: Cardinality = Cardinality.SINGLE
+  private val effectiveCardinalities: EffectiveCardinalities = new EffectiveCardinalities with Default[LogicalPlan, EffectiveCardinality] {
+    override val defaultValue: EffectiveCardinality = EffectiveCardinality(Cardinality.SINGLE.amount)
   }
 
   private val leveragedOrders: LeveragedOrders = new LeveragedOrders
@@ -72,8 +68,8 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
     this
   }
 
-  def withCardinalityEstimation(cardinality: Cardinality): this.type = {
-    effectiveCardinalities.set(idOfLastPlan, cardinality)
+  def withCardinalityEstimation(effectiveCardinality: EffectiveCardinality): this.type = {
+    effectiveCardinalities.set(idOfLastPlan, effectiveCardinality)
     this
   }
 
@@ -89,7 +85,6 @@ class LogicalQueryBuilder(tokenResolver: Resolver)
                  readOnly,
                  resultColumns,
                  semanticTable,
-                 cardinalities,
                  effectiveCardinalities,
                  providedOrders,
                  leveragedOrders,

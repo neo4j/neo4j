@@ -45,9 +45,9 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.details
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.planDescription
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
@@ -366,7 +366,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val expandPlan = Expand(argument, "from", SemanticDirection.INCOMING, Seq.empty, "to", "rel", ExpandAll)
     val providedOrders = new ProvidedOrders
     providedOrders.set(expandPlan.id, ProvidedOrder.asc(varFor("  FRESHID42")))
-    val description = LogicalPlan2PlanDescription(readOnly = true, new Cardinalities, new EffectiveCardinalities, withRawCardinalities = false, providedOrders, StubExecutionPlan())
+    val description = LogicalPlan2PlanDescription(readOnly = true, new EffectiveCardinalities, withRawCardinalities = false, providedOrders, StubExecutionPlan())
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
       """+--------------+--------------------+-------------+
@@ -893,8 +893,8 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
   test("MultiNodeIndexSeek") {
     val logicalPlan = MultiNodeIndexSeek(Seq(IndexSeek("x:Label(Prop = 10,Foo = 1,Distance = 6,Name = 'Karoline Getinge')", unique = true).asInstanceOf[IndexSeekLeafPlan], IndexSeek("y:Label(Prop = 12, Name = 'Foo')").asInstanceOf[IndexSeekLeafPlan], IndexSeek("z:Label(Prop > 100, Name = 'Bar')").asInstanceOf[IndexSeekLeafPlan]))
     val effectiveCardinalities = new EffectiveCardinalities
-    effectiveCardinalities.set(logicalPlan.id, 2.0)
-    val plan = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly = true, new Cardinalities, effectiveCardinalities, withRawCardinalities = false, new ProvidedOrders, StubExecutionPlan())
+    effectiveCardinalities.set(logicalPlan.id, EffectiveCardinality(2.0))
+    val plan = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly = true, effectiveCardinalities, withRawCardinalities = false, new ProvidedOrders, StubExecutionPlan())
 
     renderAsTreeTable(plan) should equal(
       """+---------------------+------------------------------------------------------------------------------------------------------+----------------+

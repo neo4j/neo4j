@@ -269,11 +269,10 @@ import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest
 import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescriptionTest.planDescription
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -316,21 +315,21 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   implicit val idGen: IdGen = new SequentialIdGen()
   private val readOnly = true
-  private val cardinalities = new Cardinalities
   private val effectiveCardinalities = new EffectiveCardinalities
   private val providedOrders = new ProvidedOrders
   private val id = Id.INVALID_ID
 
-  private def attach[P <: LogicalPlan](plan: P, effectiveCardinality: Cardinality, cardinality: Option[Cardinality] = None, providedOrder: ProvidedOrder = ProvidedOrder.empty): P = {
+  implicit def lift(amount: Double): EffectiveCardinality = EffectiveCardinality(amount)
+
+  private def attach[P <: LogicalPlan](plan: P, effectiveCardinality: EffectiveCardinality, providedOrder: ProvidedOrder = ProvidedOrder.empty): P = {
     effectiveCardinalities.set(plan.id, effectiveCardinality)
-    cardinality.foreach(c => cardinalities.set(plan.id, c))
     providedOrders.set(plan.id, providedOrder)
     plan
   }
 
   private val privLhsLP = attach(plans.AssertDbmsAdmin(ShowUserAction), 2.0, providedOrder = ProvidedOrder.empty)
 
-  private val lhsLP = attach(AllNodesScan("a", Set.empty), 2.0, Some(10.0), ProvidedOrder.empty)
+  private val lhsLP = attach(AllNodesScan("a", Set.empty), EffectiveCardinality(2.0, Some(10.0)), ProvidedOrder.empty)
   private val lhsPD = PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("a"), EstimatedRows(2, Some(10))), Set(pretty"a"))
 
   private val rhsLP = attach(AllNodesScan("b", Set.empty), 2.0, providedOrder = ProvidedOrder.empty)
@@ -340,16 +339,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("Validate all arguments") {
     assertGood(
-      attach(AllNodesScan("a", Set.empty), 1.0, Some(15.0), ProvidedOrder.asc(varFor("a"))),
+      attach(AllNodesScan("a", Set.empty), EffectiveCardinality(1.0, Some(15.0)), ProvidedOrder.asc(varFor("a"))),
       planDescription(id, "AllNodesScan", NoChildren, Seq(details("a"), EstimatedRows(1, Some(15)), Order(asPrettyString.raw("a ASC")), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("a")),
       validateAllArgs = true)
 
     assertGood(
-      attach(AllNodesScan("  REL111", Set.empty), 1.0, Some(10.0), ProvidedOrder.asc(varFor("  REL111"))),
+      attach(AllNodesScan("  REL111", Set.empty), EffectiveCardinality(1.0, Some(10.0)), ProvidedOrder.asc(varFor("  REL111"))),
       planDescription(id, "AllNodesScan", NoChildren, Seq(details(anonVar("111")), EstimatedRows(1, Some(10)), Order(asPrettyString.raw(s"${anonVar("111")} ASC")), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set(anonVar("111"))),
       validateAllArgs = true)
 
-    assertGood(attach(Input(Seq("n1", "n2"), Seq("r"), Seq("v1", "v2"), nullable = false), 42.3, Some(132)),
+    assertGood(attach(Input(Seq("n1", "n2"), Seq("r"), Seq("v1", "v2"), nullable = false), EffectiveCardinality(42.3, Some(132))),
       planDescription(id, "Input", NoChildren, Seq(details(Seq("n1", "n2", "r", "v1", "v2")), EstimatedRows(42.3, Some(132)), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"), PLANNER_VERSION), Set("n1", "n2", "r", "v1", "v2")),
       validateAllArgs = true)
   }
@@ -1392,7 +1391,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   def assertGood(logicalPlan: LogicalPlan, expectedPlanDescription: InternalPlanDescription, validateAllArgs: Boolean = false): Unit = {
-    val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly, cardinalities, effectiveCardinalities, withRawCardinalities = false, providedOrders = providedOrders, executionPlan = StubExecutionPlan())
+    val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, CypherVersion.default, readOnly, effectiveCardinalities, withRawCardinalities = false, providedOrders = providedOrders, executionPlan = StubExecutionPlan())
 
     def shouldValidateArg(arg: Argument) =
       validateAllArgs ||

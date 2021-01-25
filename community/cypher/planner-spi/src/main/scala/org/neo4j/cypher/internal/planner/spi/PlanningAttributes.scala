@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Attribute
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -36,7 +37,7 @@ import org.neo4j.cypher.internal.util.attribution.PartialAttribute
 object PlanningAttributes {
   class Solveds extends Attribute[LogicalPlan, PlannerQueryPart]
   class Cardinalities extends Attribute[LogicalPlan, Cardinality]
-  class EffectiveCardinalities extends Attribute[LogicalPlan, Cardinality]
+  class EffectiveCardinalities extends Attribute[LogicalPlan, EffectiveCardinality]
   class ProvidedOrders extends Attribute[LogicalPlan, ProvidedOrder]
   class LeveragedOrders extends PartialAttribute[LogicalPlan, Boolean](false)
 

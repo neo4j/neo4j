@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.spi.TransactionBoundGraphStatistics
 import org.neo4j.cypher.internal.util.Cost
+import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
@@ -54,18 +55,23 @@ object LogicalQueryGenerator {
 
     for {
       WithState(logicalPlan, state) <- new LogicalPlanGenerator(labelMap, relMap, stats, costLimit, nodes, rels).logicalPlan
-    } yield WithState(LogicalQuery(logicalPlan,
-      "<<queryText>>",
-      readOnly = true,
-      logicalPlan.availableSymbols.toArray,
-      state.semanticTable,
-      state.cardinalities,
-      state.cardinalities.clone[EffectiveCardinalities],
-      providedOrders,
-      leveragedOrders,
-      hasLoadCSV = false,
-      None,
-      state.idGen,
-      doProfile = false), state)
+    } yield {
+
+      val effectiveCardinalities = new EffectiveCardinalities
+      state.cardinalities.iterator.foreach(cp => effectiveCardinalities.set(cp._1, EffectiveCardinality(cp._2.amount)))
+
+      WithState(LogicalQuery(logicalPlan,
+        "<<queryText>>",
+        readOnly = true,
+        logicalPlan.availableSymbols.toArray,
+        state.semanticTable,
+        effectiveCardinalities,
+        providedOrders,
+        leveragedOrders,
+        hasLoadCSV = false,
+        None,
+        state.idGen,
+        doProfile = false), state)
+    }
   }
 }

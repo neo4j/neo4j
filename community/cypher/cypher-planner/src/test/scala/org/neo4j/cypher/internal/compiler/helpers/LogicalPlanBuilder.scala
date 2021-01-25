@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -45,8 +46,8 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
     override protected def defaultValue: Cardinality = Cardinality.SINGLE
   }
 
-  val effectiveCardinalities: EffectiveCardinalities = new EffectiveCardinalities with Default[LogicalPlan, Cardinality] {
-    override protected def defaultValue: Cardinality = Cardinality.SINGLE
+  val effectiveCardinalities: EffectiveCardinalities = new EffectiveCardinalities with Default[LogicalPlan, EffectiveCardinality] {
+    override protected def defaultValue: EffectiveCardinality = EffectiveCardinality(Cardinality.SINGLE.amount)
   }
 
   val providedOrders: ProvidedOrders = new ProvidedOrders with Default[LogicalPlan, ProvidedOrder] {

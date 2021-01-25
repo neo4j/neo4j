@@ -45,7 +45,7 @@ import scala.collection.Map
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-object renderAsTreeTable extends ((InternalPlanDescription, Boolean) => String) {
+object renderAsTreeTable {
   val UNNAMED_PATTERN = """  (REL|NODE|UNNAMED|FRESHID|AGGREGATION)(\d+)"""
   val UNNAMED_PARAMS_PATTERN = """  (AUTOINT|AUTODOUBLE|AUTOSTRING|AUTOLIST)(\d+)"""
   val OPERATOR = "Operator"

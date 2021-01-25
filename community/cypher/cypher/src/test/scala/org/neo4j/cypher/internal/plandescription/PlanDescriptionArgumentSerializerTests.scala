@@ -30,5 +30,6 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
     serialize(DbHits(12)) shouldBe a [java.lang.Number]
     serialize(Rows(12)) shouldBe a [java.lang.Number]
     serialize(EstimatedRows(12, Some(12))) shouldBe a [java.lang.Number]
+    serialize(EstimatedRows(12, None)) shouldBe a [java.lang.Number]
   }
 }
