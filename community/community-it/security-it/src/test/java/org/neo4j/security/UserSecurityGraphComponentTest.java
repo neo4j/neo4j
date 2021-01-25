@@ -48,6 +48,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
+import org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion;
 import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -59,9 +60,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
-import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.VERSION_35;
-import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.VERSION_40;
-import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.VERSION_41;
 import static org.neo4j.dbms.database.ComponentVersion.SECURITY_USER_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.CURRENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.REQUIRES_UPGRADE;
@@ -140,7 +138,7 @@ class UserSecurityGraphComponentTest
 
     @ParameterizedTest
     @MethodSource( "versionAndStatusProvider" )
-    void shouldInitializeAndUpgradeSystemGraph( String version, SystemGraphComponent.Status initialStatus ) throws Exception
+    void shouldInitializeAndUpgradeSystemGraph( UserSecurityGraphComponentVersion version, SystemGraphComponent.Status initialStatus ) throws Exception
     {
         initializeLatestSystem();
         initUserSecurityComponent( version );
@@ -150,9 +148,9 @@ class UserSecurityGraphComponentTest
     static Stream<Arguments> versionAndStatusProvider()
     {
         return Stream.of(
-                Arguments.arguments( VERSION_35, UNSUPPORTED_BUT_CAN_UPGRADE ),
-                Arguments.arguments( VERSION_40, REQUIRES_UPGRADE ),
-                Arguments.arguments( VERSION_41, CURRENT )
+                Arguments.arguments( UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_35, UNSUPPORTED_BUT_CAN_UPGRADE ),
+                Arguments.arguments( UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_40, REQUIRES_UPGRADE ),
+                Arguments.arguments( UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_41, CURRENT )
         );
     }
 
@@ -196,17 +194,17 @@ class UserSecurityGraphComponentTest
         systemGraphComponent.initializeSystemGraph( system, true );
     }
 
-    private void initUserSecurityComponent( String version ) throws Exception
+    private void initUserSecurityComponent( UserSecurityGraphComponentVersion version ) throws Exception
     {
-        KnownCommunitySecurityComponentVersion builder = userSecurityGraphComponent.findSecurityGraphComponentVersion( version );
+        KnownCommunitySecurityComponentVersion builder = userSecurityGraphComponent.findSecurityGraphComponentVersion( version.getDescription() );
         inTx( tx -> userSecurityGraphComponent.initializeSystemGraphConstraints( tx ) );
 
         switch ( version )
         {
-        case VERSION_40:
+        case COMMUNITY_SECURITY_40:
             inTx( builder::setupUsers );
             break;
-        case VERSION_41:
+        case COMMUNITY_SECURITY_41:
             inTx( builder::setupUsers );
             inTx( tx -> builder.setVersionProperty( tx, 2 ) );
             break;
