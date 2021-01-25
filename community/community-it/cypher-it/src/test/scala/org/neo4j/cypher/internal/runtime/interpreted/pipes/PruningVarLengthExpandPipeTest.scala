@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.runtime.MapCypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper.withQueryState
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.PruningVarLengthExpandPipeTest.createVarLengthPredicate
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.api.KernelTransaction.Type
