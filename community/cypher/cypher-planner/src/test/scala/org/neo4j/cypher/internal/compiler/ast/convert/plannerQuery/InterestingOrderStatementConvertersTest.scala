@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
@@ -262,24 +262,6 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
       InterestingOrder.required(RequiredOrderCandidate.asc(prop("a2", "prop"), Map("a2" -> varFor("a2")))),
       InterestingOrder.interested(InterestingOrderCandidate.asc(prop("c2", "prop"), Map("c2" -> varFor("c")))),
       InterestingOrder.required(RequiredOrderCandidate.asc(prop("c2", "prop"), Map("c2" -> varFor("c2"))))
-    ))
-  }
-
-  ignore("Propagate suffix of interesting order if the interesting prefix overlaps the required order") {
-    val result = buildSinglePlannerQuery(
-      """MATCH (a) WITH a AS a2
-        |MATCH (b) WITH b AS b2, a2 ORDER BY a2.prop
-        |MATCH (c) WITH c AS c2, b2, a2
-        |MATCH (d) RETURN d, c2, b2, a2 ORDER BY a2.prop, b2.prop""".stripMargin)
-
-    interestingOrders(result).take(4) should be(List(
-      InterestingOrder.interested(InterestingOrderCandidate.asc(prop("a2", "prop"), Map("a2" -> varFor("a")))),
-      InterestingOrder.required(RequiredOrderCandidate.asc(prop("a2", "prop"), Map("a2" -> varFor("a2"))))
-        .interesting(InterestingOrderCandidate.asc(prop("b2", "prop"), Map("b2" -> varFor("b")))),
-      InterestingOrder.interested(InterestingOrderCandidate
-        .asc(prop("a2", "prop"), Map("a2" -> varFor("a2"))).asc(prop("b2", "prop"), Map("b2" -> varFor("b2")))),
-      InterestingOrder.required(RequiredOrderCandidate
-        .asc(prop("a2", "prop"), Map("a2" -> varFor("a2"))).asc(prop("b2", "prop"), Map("b2" -> varFor("b2"))))
     ))
   }
 
