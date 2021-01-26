@@ -27,9 +27,16 @@ object BeLikeMatcher extends BeLikeMatcher
 trait BeLikeMatcher {
   class BeLike(pf: PartialFunction[Object, Unit]) extends Matcher[Object] {
 
-    def apply(left: Object) = {
+    def apply(left: Object): MatchResult = {
+      val matches = pf.isDefinedAt(left)
+
+      if (matches) {
+        // Run the Unit block in case it contains any assertions.
+        pf(left)
+      }
+
       MatchResult(
-        pf.isDefinedAt(left),
+        matches,
         s"""$left did not match the partial function""",
         s"""$left matched the partial function"""
       )

@@ -201,7 +201,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, startsWithPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, startsWithPredicate), hasLabels("n", "Awesome")))
           }
       }
     }
@@ -221,7 +221,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, startsWithPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, startsWithPredicate), hasLabels("n", "Awesome")))
           }
       }
     }
@@ -240,7 +240,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, ltPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, ltPredicate), hasLabels("n", "Awesome")))
           }
       }
     }
@@ -259,7 +259,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, ltPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, ltPredicate), hasLabels("n", "Awesome")))
           }
       }
     }
@@ -278,7 +278,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, neqPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, neqPredicate), hasLabels("n", "Awesome")))
           }
       }
     }
@@ -297,7 +297,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, neqPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, neqPredicate), hasLabels("n", "Awesome")))
           }
       }
     }
@@ -316,7 +316,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, eqPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, eqPredicate), hasLabels("n", "Awesome")))
           }
       }
     }
@@ -335,7 +335,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, eqPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, eqPredicate), hasLabels("n", "Awesome")))
           }
       }
     }
@@ -354,7 +354,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, DoNotGetValue)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, regexPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, regexPredicate), hasLabels("n", "Awesome")))
           }
       }
     }
@@ -373,7 +373,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         case Seq(plan@NodeIndexScan(`idName`, _, Seq(IndexedProperty(_, CanGetValue)), _, _)) =>
           ctx.planningAttributes.solveds.get(plan.id) should beLike {
             case RegularSinglePlannerQuery(scanQG, _, _, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, regexPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, regexPredicate), hasLabels("n", "Awesome")))
           }
       }
     }
