@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.consistency.checker.RecordStorageConsistencyChecker.DEFAULT_SLOT_SIZES;
 import static org.neo4j.consistency.checking.ByteArrayBitsManipulator.MAX_SLOT_BITS;
 import static org.neo4j.consistency.checking.cache.CacheSlots.NodeLink.SLOT_LABELS;
-import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.HEAP;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.HEAP;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;

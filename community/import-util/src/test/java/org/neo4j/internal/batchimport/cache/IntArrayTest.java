@@ -135,8 +135,8 @@ class IntArrayTest extends NumberArrayPageCacheTestSupport
         PageCache pageCache = fixture.pageCache;
         Path dir = fixture.directory;
         NullLog log = NullLog.getInstance();
-        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactory.auto( pageCache, NULL, dir, true, NumberArrayFactory.NO_MONITOR, log );
+        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactories.auto( pageCache, NULL, dir, true, NumberArrayFactories.NO_MONITOR, log );
         NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, NULL, dir, log );
-        return Iterators.iterator( NumberArrayFactory.HEAP, NumberArrayFactory.OFF_HEAP, autoWithPageCacheFallback, pageCacheArrayFactory );
+        return Iterators.iterator( NumberArrayFactories.HEAP, NumberArrayFactories.OFF_HEAP, autoWithPageCacheFallback, pageCacheArrayFactory );
     }
 }

@@ -50,16 +50,16 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
         PageCache pageCache = fixture.pageCache;
         Path dir = fixture.directory;
         NullLog log = NullLog.getInstance();
-        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactory.auto( pageCache, NULL, dir, true, NumberArrayFactory.NO_MONITOR, log );
+        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactories.auto( pageCache, NULL, dir, true, NumberArrayFactories.NO_MONITOR, log );
         NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, NULL, dir, log );
         int chunkSize = LENGTH / ChunkedNumberArrayFactory.MAGIC_CHUNK_COUNT;
         return Stream.of(
-                Arguments.of( NumberArrayFactory.HEAP.newByteArray( LENGTH, DEFAULT, INSTANCE ) ),
-                Arguments.of( NumberArrayFactory.HEAP.newDynamicByteArray( chunkSize, DEFAULT, INSTANCE ) ),
-                Arguments.of( NumberArrayFactory.OFF_HEAP.newByteArray( LENGTH, DEFAULT, INSTANCE ) ),
-                Arguments.of( NumberArrayFactory.OFF_HEAP.newDynamicByteArray( chunkSize, DEFAULT, INSTANCE ) ),
-                Arguments.of( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newByteArray( LENGTH, DEFAULT, INSTANCE ) ),
-                Arguments.of( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicByteArray( chunkSize, DEFAULT, INSTANCE ) ),
+                Arguments.of( NumberArrayFactories.HEAP.newByteArray( LENGTH, DEFAULT, INSTANCE ) ),
+                Arguments.of( NumberArrayFactories.HEAP.newDynamicByteArray( chunkSize, DEFAULT, INSTANCE ) ),
+                Arguments.of( NumberArrayFactories.OFF_HEAP.newByteArray( LENGTH, DEFAULT, INSTANCE ) ),
+                Arguments.of( NumberArrayFactories.OFF_HEAP.newDynamicByteArray( chunkSize, DEFAULT, INSTANCE ) ),
+                Arguments.of( NumberArrayFactories.AUTO_WITHOUT_PAGECACHE.newByteArray( LENGTH, DEFAULT, INSTANCE ) ),
+                Arguments.of( NumberArrayFactories.AUTO_WITHOUT_PAGECACHE.newDynamicByteArray( chunkSize, DEFAULT, INSTANCE ) ),
                 Arguments.of( autoWithPageCacheFallback.newByteArray( LENGTH, DEFAULT, INSTANCE ) ),
                 Arguments.of( autoWithPageCacheFallback.newDynamicByteArray( chunkSize, DEFAULT, INSTANCE ) ),
                 Arguments.of( pageCacheArrayFactory.newByteArray( LENGTH, DEFAULT, INSTANCE ) ),

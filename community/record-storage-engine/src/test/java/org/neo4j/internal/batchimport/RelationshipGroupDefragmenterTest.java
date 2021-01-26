@@ -31,7 +31,7 @@ import java.util.BitSet;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -230,8 +230,9 @@ class RelationshipGroupDefragmenterTest
     private void defrag( int nodeCount, RecordStore<RelationshipGroupRecord> groupStore, PageCacheTracer pageCacheTracer )
     {
         RelationshipGroupDefragmenter.Monitor monitor = mock( RelationshipGroupDefragmenter.Monitor.class );
-        RelationshipGroupDefragmenter defragmenter = new RelationshipGroupDefragmenter( CONFIG,
-                ExecutionMonitor.INVISIBLE, monitor, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, pageCacheTracer, INSTANCE );
+        RelationshipGroupDefragmenter defragmenter = new RelationshipGroupDefragmenter( CONFIG, ExecutionMonitor.INVISIBLE, monitor,
+                                                                                        NumberArrayFactories.AUTO_WITHOUT_PAGECACHE, pageCacheTracer,
+                                                                                        INSTANCE );
 
         // Calculation below correlates somewhat to calculation in RelationshipGroupDefragmenter.
         // Anyway we verify below that we exercise the multi-pass bit, which is what we want

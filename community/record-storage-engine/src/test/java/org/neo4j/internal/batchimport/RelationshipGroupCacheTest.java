@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.test.extension.Inject;
@@ -45,7 +45,7 @@ class RelationshipGroupCacheTest
     {
         // GIVEN
         int nodeCount = 1000;
-        RelationshipGroupCache cache = new RelationshipGroupCache( NumberArrayFactory.HEAP, ByteUnit.kibiBytes( 4 ), nodeCount, INSTANCE );
+        RelationshipGroupCache cache = new RelationshipGroupCache( NumberArrayFactories.HEAP, ByteUnit.kibiBytes( 4 ), nodeCount, INSTANCE );
         int[] counts = new int[nodeCount];
         for ( int nodeId = 0; nodeId < counts.length; nodeId++ )
         {
@@ -93,7 +93,7 @@ class RelationshipGroupCacheTest
     {
         // GIVEN
         int nodeCount = 10;
-        RelationshipGroupCache cache = new RelationshipGroupCache( NumberArrayFactory.HEAP, ByteUnit.kibiBytes( 4 ), nodeCount, INSTANCE );
+        RelationshipGroupCache cache = new RelationshipGroupCache( NumberArrayFactories.HEAP, ByteUnit.kibiBytes( 4 ), nodeCount, INSTANCE );
         setCount( cache, 1, 7 );
         assertEquals( nodeCount, cache.prepare( 0 ) );
 
@@ -117,7 +117,7 @@ class RelationshipGroupCacheTest
     {
         // GIVEN
         int nodeCount = 100;
-        RelationshipGroupCache cache = new RelationshipGroupCache( NumberArrayFactory.HEAP, ByteUnit.kibiBytes( 40 ), nodeCount, INSTANCE );
+        RelationshipGroupCache cache = new RelationshipGroupCache( NumberArrayFactories.HEAP, ByteUnit.kibiBytes( 40 ), nodeCount, INSTANCE );
         int[] counts = new int[nodeCount];
         int groupCount = 0;
         for ( int nodeId = 0; nodeId < counts.length; nodeId++ )
@@ -174,7 +174,7 @@ class RelationshipGroupCacheTest
         // GIVEN
         long nodeId = 0;
         int limit = Short.MAX_VALUE + 10;
-        RelationshipGroupCache cache = new RelationshipGroupCache( NumberArrayFactory.HEAP, ByteUnit.kibiBytes( 100 ), nodeId + 1, INSTANCE );
+        RelationshipGroupCache cache = new RelationshipGroupCache( NumberArrayFactories.HEAP, ByteUnit.kibiBytes( 100 ), nodeId + 1, INSTANCE );
 
         // WHEN first counting all groups per node
         for ( int type = 0; type < limit; type++ )

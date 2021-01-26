@@ -29,7 +29,7 @@ import org.neo4j.internal.batchimport.cache.ByteArray;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.AUTO_WITHOUT_PAGECACHE;
 
 /**
  * {@link CacheAccess} that uses {@link PackedMultiFieldCache} for cache.

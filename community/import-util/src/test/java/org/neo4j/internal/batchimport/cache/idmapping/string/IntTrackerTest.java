@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -41,7 +41,7 @@ class IntTrackerTest
     {
         // given
         int length = 10_000;
-        try ( IntTracker tracker = new IntTracker( NumberArrayFactory.HEAP.newIntArray( length, IntTracker.DEFAULT_VALUE, INSTANCE
+        try ( IntTracker tracker = new IntTracker( NumberArrayFactories.HEAP.newIntArray( length, IntTracker.DEFAULT_VALUE, INSTANCE
         ) ) )
         {
             // when
