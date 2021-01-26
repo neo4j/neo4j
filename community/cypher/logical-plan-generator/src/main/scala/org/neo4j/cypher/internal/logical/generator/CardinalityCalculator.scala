@@ -109,17 +109,16 @@ object CardinalityCalculator {
   implicit val expandCardinality: CardinalityCalculator[Expand] = {
     (plan, state, stats, _) =>
       val Expand(source, from, dir, relTypes, to, relName, _) = plan
+      val inboundCardinality = state.cardinalities.get(source.id)
       val qg = QueryGraph(
         patternNodes = Set(from, to),
         patternRelationships = Set(PatternRelationship(relName, (from, to), dir, relTypes, SimplePatternLength)),
         argumentIds = state.arguments
       )
-      val qgsi = QueryGraphSolverInput(
-        labelInfo = state.labelInfo,
-        inboundCardinality = state.cardinalities.get(source.id),
-      )
+      val qgsi = QueryGraphSolverInput(labelInfo = state.labelInfo)
       val qgCardinalityModel = AssumeIndependenceQueryGraphCardinalityModel(stats, IndependenceCombiner)
-      qgCardinalityModel(qg, qgsi, state.semanticTable)
+      val expandCardinality = qgCardinalityModel(qg, qgsi, state.semanticTable)
+      expandCardinality * inboundCardinality
   }
 
   implicit val skipCardinality: CardinalityCalculator[Skip] = {

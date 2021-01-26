@@ -60,12 +60,12 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.frontend.phases.ASTRewriter
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.CNFNormalizer
-import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.phases.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -195,13 +195,12 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       metrics: Metrics = mockedMetrics,
                                       semanticTable: SemanticTable = newMockedSemanticTable,
                                       strategy: QueryGraphSolver = newMockQueryGraphSolver,
-                                      cardinality: Cardinality = Cardinality(1),
                                       notificationLogger: InternalNotificationLogger = devNullLogger,
                                       useErrorsOverWarnings: Boolean = false
                                      ): LogicalPlanningContext = {
     val planningAttributes = PlanningAttributes.newAttributes
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen), metrics, semanticTable,
-      strategy, QueryGraphSolverInput(Map.empty, cardinality),
+      strategy, QueryGraphSolverInput(Map.empty),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
@@ -214,12 +213,11 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                                         metrics: Metrics = mockedMetrics,
                                                         semanticTable: SemanticTable = newMockedSemanticTable,
                                                         strategy: QueryGraphSolver = newMockQueryGraphSolver,
-                                                        cardinality: Cardinality = Cardinality(1),
                                                         notificationLogger: InternalNotificationLogger = devNullLogger,
                                                         useErrorsOverWarnings: Boolean = false): LogicalPlanningContext = {
     val planningAttributes = newStubbedPlanningAttributes
     LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen), metrics, semanticTable,
-      strategy, QueryGraphSolverInput(Map.empty, cardinality),
+      strategy, QueryGraphSolverInput(Map.empty),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, csvBufferSize = config.csvBufferSize,
       config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,

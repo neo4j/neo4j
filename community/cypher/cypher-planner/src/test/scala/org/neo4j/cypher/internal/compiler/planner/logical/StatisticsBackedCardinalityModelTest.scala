@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CardinalityModelIntegrationTest
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel.MIN_INBOUND_CARDINALITY
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
@@ -45,7 +44,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setRelationshipCardinality("(:Person)-[:REL]->()", relCount)
       .build()
     queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a LIMIT 10 MATCH (a)-[:REL]->()",
-      Math.max(MIN_INBOUND_CARDINALITY.amount, Math.min(i, 10.0)) * relCount / i)
+      Math.min(i, 10.0) * relCount / i)
   }
 
   test("query containing a WITH and LIMIT on high cardinality") {
@@ -191,7 +190,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setLabelCardinality("Person", i)
       .build()
     queryShouldHaveCardinality(config, "MATCH (a:Person) WITH count(a) AS count WHERE count > 20",
-        Math.max(DEFAULT_RANGE_SELECTIVITY, MIN_INBOUND_CARDINALITY.amount))
+      DEFAULT_RANGE_SELECTIVITY)
   }
 
   test("should reduce cardinality for a WHERE after a WITH, with AGGREGATION with grouping") {
@@ -277,12 +276,12 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       DEFAULT_MULTIPLIER)
   }
 
-  test("UNWIND with empty list literal should have min inbound cardinality") {
+  test("UNWIND with empty list literal should have 0 cardinality") {
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .build()
     queryShouldHaveCardinality(config, "UNWIND [] AS i",
-      MIN_INBOUND_CARDINALITY.amount)
+      0.0)
   }
 
   test("UNWIND with non-empty list literal should have list size cardinality") {
@@ -306,7 +305,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setAllNodesCardinality(allNodes)
       .build()
     queryShouldHaveCardinality(config, "UNWIND range(0, -1) AS i",
-      MIN_INBOUND_CARDINALITY.amount)
+      0.0)
   }
 
   test("UNWIND with empty range 2") {
@@ -314,7 +313,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setAllNodesCardinality(allNodes)
       .build()
     queryShouldHaveCardinality(config, "UNWIND range(10, 0, 1) AS i",
-      MIN_INBOUND_CARDINALITY.amount)
+      0.0)
   }
 
   test("UNWIND with empty range 3") {
@@ -322,7 +321,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       .setAllNodesCardinality(allNodes)
       .build()
     queryShouldHaveCardinality(config, "UNWIND range(0, 10, -1) AS i",
-      MIN_INBOUND_CARDINALITY.amount)
+      0.0)
   }
 
   test("UNWIND with non-empty range") {
@@ -400,28 +399,31 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
       relCount / nodeCount * inboundCardinality)
   }
 
-  test("input cardinality <1.0 => 1.0 * scan cardinality") {
+  test("input cardinality <1.0 => input cardinality * scan cardinality") {
+    val inboundCardinality = 1
+    val whereSelectivity = 0.5
     val nodes = 500
     val config = plannerBuilder()
       .setAllNodesCardinality(nodes)
-      .setLabelCardinality("Foo", 1)
-      .addIndex("Foo", Seq("bar"), 1.0, 0.5)
+      .setLabelCardinality("Foo", inboundCardinality)
+      .addIndex("Foo", Seq("bar"), 1.0, whereSelectivity)
       .build()
 
     queryShouldHaveCardinality(config, s"MATCH (f:Foo) WHERE f.bar = 1 WITH f, 1 AS horizon MATCH (a)",
-      nodes)
+      inboundCardinality * whereSelectivity * nodes)
   }
 
   test("input cardinality >1.0 => input cardinality * scan cardinality") {
     val inboundCardinality = 10
+    val whereSelectivity = 1.0
     val nodes = 500
     val config = plannerBuilder()
       .setAllNodesCardinality(500)
       .setLabelCardinality("Foo", inboundCardinality)
-      .addIndex("Foo", Seq("bar"), 1.0, 1.0)
+      .addIndex("Foo", Seq("bar"), 1.0, whereSelectivity)
       .build()
 
     queryShouldHaveCardinality(config, s"MATCH (f:Foo) WHERE f.bar = 1 WITH f, 1 AS horizon MATCH (a)",
-      inboundCardinality * nodes)
+      inboundCardinality * whereSelectivity * nodes)
   }
 }

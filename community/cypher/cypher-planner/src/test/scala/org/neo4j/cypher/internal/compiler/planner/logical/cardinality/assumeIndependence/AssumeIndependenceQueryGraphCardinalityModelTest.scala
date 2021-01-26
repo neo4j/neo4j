@@ -21,9 +21,14 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInd
 
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ABCDECardinalityData
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.PatternRelationshipMultiplierCalculator.uniquenessSelectivityForNRels
+import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
 class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite with ABCDECardinalityData with TestName {
@@ -313,7 +318,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectCardinality(A * B)
     expectPlanCardinality({
       case NodeByLabelScan("b", _, _, _) => true
-    }, A * B)
+    }, B)
   }
 
   test("MATCH (a:A) CALL { MATCH (b:B) RETURN b }") {
@@ -327,7 +332,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectCardinality(A * B * C)
     expectPlanCardinality({
       case NodeByLabelScan("c", _, _, _) => true
-    }, A * B * C)
+    }, C)
   }
 
   test("MATCH (a:A) CALL { WITH a MATCH (a)-[:T1]->(b:B) RETURN b }") {
@@ -346,10 +351,10 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectCardinality(A * (B + C))
     expectPlanCardinality({
       case NodeByLabelScan("b", _, _, _) => true
-    }, A * B)
+    }, B)
     expectPlanCardinality({
       case NodeByLabelScan("c", _, _, _) => true
-    }, A * C)
+    }, C)
   }
 
   test("MATCH (a:A) CALL { MATCH (b:B) RETURN b AS x UNION ALL MATCH (c:C) RETURN c AS x}") {
@@ -360,6 +365,26 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectPlanCardinality({
       case NodeByLabelScan("c", _, _, _) => true
     }, C)
+  }
+
+  test("MATCH (a:A) CALL { WITH a UNWIND [1, 2] AS x WITH toFloat(x) AS f, x AS x RETURN x }") {
+    expectCardinality(A * 2)
+    expectPlanCardinality({
+      case Projection(_, MapKeys("f")) => true
+    }, 2)
+    expectPlanCardinality({
+      case UnwindCollection(_, "x", _) => true
+    }, 2)
+    expectPlanCardinality({
+      case Argument(_) => true
+    }, 1)
+  }
+
+  test("MATCH (a:A) CALL { WITH a MATCH (a)-[:T1]->(b:B) RETURN count(*) AS c }") {
+    expectCardinality(A)
+    expectPlanCardinality({
+      case Aggregation(_, _, _) => true
+    }, 1)
   }
 
   private val varLength0_0 = N * Asel * Bsel

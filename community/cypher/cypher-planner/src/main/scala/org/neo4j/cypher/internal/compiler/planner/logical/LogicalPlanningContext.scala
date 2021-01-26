@@ -68,8 +68,8 @@ case class LogicalPlanningContext(planContext: PlanContext,
   def withAggregationProperties(properties: Set[(String, String)]): LogicalPlanningContext =
     copy(aggregatingProperties = properties)
 
-  def withUpdatedCardinalityInformation(plan: LogicalPlan): LogicalPlanningContext =
-    copy(input = input.recurse(plan, planningAttributes.solveds, planningAttributes.cardinalities))
+  def withUpdatedLabelInfo(plan: LogicalPlan): LogicalPlanningContext =
+    copy(input = input.withUpdatedLabelInfo(plan, planningAttributes.solveds))
 
   def withAddedLeafPlanUpdater(newUpdater: LeafPlanUpdater): LogicalPlanningContext = {
     copy(leafPlanUpdater = ChainedUpdater(leafPlanUpdater, newUpdater))

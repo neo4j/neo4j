@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.StatisticsBackedCardinalityModel.CardinalityAndInput
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel.MIN_INBOUND_CARDINALITY
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.util.Cardinality
@@ -43,27 +43,31 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
   private val relMultiplierCalculator = PatternRelationshipMultiplierCalculator(stats, combiner)
 
   def apply(queryGraph: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
+    val cardinalityAndInput = CardinalityAndInput(Cardinality.SINGLE, input)
     // Fold over query graph and optional query graphs, aggregating cardinality and label info using QueryGraphSolverInput
-    val afterOuter = visitQueryGraph(queryGraph, input, semanticTable)
+    val afterOuter = visitQueryGraph(queryGraph, cardinalityAndInput, semanticTable)
     val afterOptionalMatches = visitOptionalMatchQueryGraphs(queryGraph.optionalMatches, afterOuter, semanticTable)
-    afterOptionalMatches.inboundCardinality
+    afterOptionalMatches.cardinality
   }
 
-  private def visitQueryGraph(outer: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): QueryGraphSolverInput =
-    input.copy(inboundCardinality = cardinalityForQueryGraph(outer, input, semanticTable))
+  private def visitQueryGraph(outer: QueryGraph, cardinalityAndInput: CardinalityAndInput, semanticTable: SemanticTable): CardinalityAndInput = {
+    cardinalityAndInput.copy(cardinality = cardinalityForQueryGraph(outer, cardinalityAndInput.input, semanticTable))
+  }
 
-  private def visitOptionalMatchQueryGraphs(optionals: Seq[QueryGraph], input: QueryGraphSolverInput, semanticTable: SemanticTable): QueryGraphSolverInput = {
-    val inputWithMultiply = input.copy(alwaysMultiply = true)
-    optionals.foldLeft(inputWithMultiply) { case (current, optional) =>
+  private def visitOptionalMatchQueryGraphs(optionals: Seq[QueryGraph], cardinalityAndInput: CardinalityAndInput, semanticTable: SemanticTable): CardinalityAndInput = {
+    optionals.foldLeft(cardinalityAndInput) { case (current, optional) =>
       visitOptionalQueryGraph(optional, current, semanticTable)
     }
   }
 
-  private def visitOptionalQueryGraph(optional: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): QueryGraphSolverInput = {
-    val inputWithKnownLabelInfo = input.withFusedLabelInfo(optional.selections.labelInfo)
-    val cardinality = cardinalityForQueryGraph(optional, inputWithKnownLabelInfo, semanticTable)
+  private def visitOptionalQueryGraph(optional: QueryGraph, cardinalityAndInput: CardinalityAndInput, semanticTable: SemanticTable): CardinalityAndInput = {
+    val inputWithKnownLabelInfo = cardinalityAndInput.input.withFusedLabelInfo(optional.selections.labelInfo)
+    val optionalCardinality = cardinalityAndInput.cardinality * cardinalityForQueryGraph(optional, inputWithKnownLabelInfo, semanticTable)
     // OPTIONAL MATCH can't decrease cardinality
-    inputWithKnownLabelInfo.copy(inboundCardinality = Cardinality.max(input.inboundCardinality, cardinality))
+    cardinalityAndInput.copy(
+      cardinality = Cardinality.max(cardinalityAndInput.cardinality, optionalCardinality),
+      input = inputWithKnownLabelInfo
+    )
   }
 
   private def cardinalityForQueryGraph(qg: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
@@ -71,16 +75,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
     val numberOfPatternNodes = qg.patternNodes.count(!qg.argumentIds.contains(_))
     val numberOfGraphNodes = stats.nodesAllCardinality()
 
-    // We can't always rely on arguments being present to indicate we need to multiply the cardinality
-    // For example, when planning to solve an OPTIONAL MATCH with a join, we remove all the arguments. We
-    // could still be beneath an Apply a this point though.
-    val inputMultiplier = if (input.alwaysMultiply || qg.argumentIds.nonEmpty) {
-      Cardinality.max(input.inboundCardinality, MIN_INBOUND_CARDINALITY)
-    } else {
-      MIN_INBOUND_CARDINALITY
-    }
-
-    inputMultiplier * (numberOfGraphNodes ^ numberOfPatternNodes) * patternMultiplier
+    (numberOfGraphNodes ^ numberOfPatternNodes) * patternMultiplier
   }
 
   private def calculateMultiplier(qg: QueryGraph, labels: LabelInfo, semanticTable: SemanticTable): Multiplier = {
@@ -94,8 +89,4 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
 
     patternMultipliers.product * expressionSelectivity
   }
-}
-
-object AssumeIndependenceQueryGraphCardinalityModel {
-  val MIN_INBOUND_CARDINALITY: Cardinality = Cardinality(1.0)
 }

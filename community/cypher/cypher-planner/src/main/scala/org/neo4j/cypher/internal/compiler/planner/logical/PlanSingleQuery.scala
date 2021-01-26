@@ -56,7 +56,7 @@ case class PlanSingleQuery(planPart: MatchPlanner = planMatch,
         plansWithHorizon.toSeq.distinct
       }
 
-    val contextForTail = updatedContext.withUpdatedCardinalityInformation(plans.head) // cardinality should be the same for all plans, let's use the first one
+    val contextForTail = updatedContext.withUpdatedLabelInfo(plans.head) // cardinality should be the same for all plans, let's use the first one
     val (plan, _) = planWithTail(plans, in, contextForTail)
     plan
   }

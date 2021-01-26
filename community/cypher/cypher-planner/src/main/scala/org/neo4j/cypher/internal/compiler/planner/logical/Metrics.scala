@@ -52,25 +52,19 @@ object Metrics {
 
   object QueryGraphSolverInput {
 
-    def empty: QueryGraphSolverInput = QueryGraphSolverInput(Map.empty, Cardinality(1))
+    def empty: QueryGraphSolverInput = QueryGraphSolverInput(Map.empty)
   }
 
   case class QueryGraphSolverInput(labelInfo: LabelInfo,
-                                   inboundCardinality: Cardinality,
-                                   alwaysMultiply: Boolean = false,
                                    limitSelectivity: Selectivity = Selectivity.ONE) {
 
-    def recurse(fromPlan: LogicalPlan, solveds: Solveds, cardinalities: Cardinalities): QueryGraphSolverInput = {
-      val newCardinalityInput = cardinalities.get(fromPlan.id)
-      val newLabels = (labelInfo fuse solveds.get(fromPlan.id).asSinglePlannerQuery.labelInfo) (_ ++ _)
-      copy(labelInfo = newLabels, inboundCardinality = newCardinalityInput)
+    def withUpdatedLabelInfo(fromPlan: LogicalPlan, solveds: Solveds): QueryGraphSolverInput = {
+      val newLabels = (labelInfo fuse solveds.get(fromPlan.id).asSinglePlannerQuery.lastLabelInfo) (_ ++ _)
+      copy(labelInfo = newLabels)
     }
 
     def withFusedLabelInfo(newLabelInfo: LabelInfo): QueryGraphSolverInput =
       copy(labelInfo = labelInfo.fuse(newLabelInfo)(_ ++ _))
-
-    def withCardinality(cardinality: Cardinality): QueryGraphSolverInput =
-      copy(inboundCardinality = cardinality)
 
     def withLimitSelectivity(s: Selectivity): QueryGraphSolverInput =
       copy(limitSelectivity = s)

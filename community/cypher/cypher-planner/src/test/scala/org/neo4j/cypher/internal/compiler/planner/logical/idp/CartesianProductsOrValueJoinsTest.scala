@@ -19,19 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
-import org.neo4j.cypher.internal.ir.PlannerQueryPart
-import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
@@ -54,7 +47,6 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
-import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -297,60 +289,6 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     planningAttributes.providedOrders.set(component.plan.bestResult.id, ProvidedOrder.empty)
     component
   }
-
-  test("should forward lhs cardinality as input cardinality to rhs of apply") {
-
-    val lhsCardinality = Cardinality(123)
-    var rhsInputCardinalities = Set.empty[Cardinality]
-
-    // I'm not allowed to call equals(e1, e2) inside the given {} for some reason..
-    def eql(e1: Expression, e2: Expression) = equals(e1, e2)
-
-    new given {
-
-      // MATCH (a), (b:B)
-      // WHERE a.p = b.p
-      qg = QueryGraph(
-        patternNodes = Set("a", "b"),
-        selections = Selections(Set(
-          Predicate(Set("b"), hasLabels("b", "B")),
-          Predicate(Set("a", "b"), eql(prop("a", "p"), prop("b", "p"))))))
-
-      // Make sure we consider the form Apply(AllNodesScan, NodeIndexSeek)
-      indexOn("B", "p")
-      addTypeToSemanticTable(prop("b", "p"), CTInteger.invariant)
-
-      override def cardinalityModel(queryGraphCardinalityModel: Metrics.QueryGraphCardinalityModel,
-                                    evaluator: ExpressionEvaluator): Metrics.CardinalityModel = {
-        val superModel = super.cardinalityModel(queryGraphCardinalityModel, evaluator)
-        (query: PlannerQueryPart, input: QueryGraphSolverInput, semanticTable: SemanticTable) => {
-          // Appears as RHS of Apply
-          if (query.asSinglePlannerQuery.queryGraph.patternNodes == Set("b")) {
-            rhsInputCardinalities = rhsInputCardinalities + input.inboundCardinality
-          }
-          superModel(query, input, semanticTable)
-        }
-      }
-      addTypeToSemanticTable(varFor("a"), CTNode)
-      addTypeToSemanticTable(varFor("b"), CTNode)
-    }.withLogicalPlanningContext { (cfg, context) =>
-      val kit = context.config.toKit(InterestingOrderConfig.empty, context)
-
-      val givenPlans: Set[PlannedComponent] = Set(
-        addComponent(PlannedComponent(
-          QueryGraph(patternNodes = Set("a")),
-          BestResults(AllNodesScan("a", Set.empty), None)), lhsCardinality, context.planningAttributes),
-        addComponent(PlannedComponent(
-          QueryGraph(patternNodes = Set("b"), selections = Selections(Set(Predicate(Set("b"), hasLabels("b", "B"))))),
-          BestResults(AllNodesScan("b", Set.empty), None)), Cardinality(1), context.planningAttributes),
-      )
-
-      cartesianProductsOrValueJoins.connectComponentsAndSolveOptionalMatch(givenPlans, cfg.qg, InterestingOrderConfig.empty, context, kit, SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]))
-
-      rhsInputCardinalities shouldEqual Set(lhsCardinality)
-    }
-  }
-
 
   private def testThis(graph: QueryGraph, input: PlanningAttributes => Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {
     new given {

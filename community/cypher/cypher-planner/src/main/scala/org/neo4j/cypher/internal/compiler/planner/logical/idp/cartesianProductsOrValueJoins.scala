@@ -393,7 +393,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     val (leftSymbols, rightSymbols) = predicate.dependencies.map(_.name).partition(lhsQG.patternNodes.contains)
     rightSymbols.toSeq match {
       case Seq(rightSymbol) =>
-        val contextForRhs = context.withUpdatedCardinalityInformation(lhsPlan)
+        val contextForRhs = context.withUpdatedLabelInfo(lhsPlan)
           .withConfig(context.config.withLeafPlanners(
             QueryPlannerConfiguration.leafPlannersForNestedIndexJoins(LeafPlanRestrictions.OnlyIndexPlansFor(rightSymbol, leftSymbols))
           ))

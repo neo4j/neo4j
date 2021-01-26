@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery.extractLabelInfo
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery.reverseProjectedInterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.exceptions.InternalException
@@ -225,18 +226,11 @@ trait SinglePlannerQuery extends PlannerQueryPart {
     buffer
   }
 
-  def labelInfo: Map[String, Set[LabelName]] = {
-    val labelInfo = lastQueryGraph.selections.labelInfo
-    val projectedLabelInfo = lastQueryHorizon match {
-      case projection: QueryProjection =>
-        projection.projections.collect {
-          case (projectedName, Variable(name)) if labelInfo.contains(name) =>
-              projectedName -> labelInfo(name)
-        }
-      case _ => Map.empty[String, Set[LabelName]]
-    }
-    labelInfo ++ projectedLabelInfo
-  }
+  lazy val firstLabelInfo: Map[String, Set[LabelName]] =
+    extractLabelInfo(this)
+
+  lazy val lastLabelInfo: Map[String, Set[LabelName]] =
+    extractLabelInfo(last)
 
   override def returns: Set[String] = {
     lastQueryHorizon match {
@@ -261,6 +255,19 @@ object SinglePlannerQuery {
       case qp: QueryProjection => order.withReverseProjectedColumns(qp.projections, argumentIds)
       case _ => order
     }
+  }
+
+  def extractLabelInfo(q: SinglePlannerQuery) : Map[String, Set[LabelName]] = {
+    val labelInfo = q.queryGraph.selections.labelInfo
+    val projectedLabelInfo = q.horizon match {
+      case projection: QueryProjection =>
+        projection.projections.collect {
+          case (projectedName, Variable(name)) if labelInfo.contains(name) =>
+            projectedName -> labelInfo(name)
+        }
+      case _ => Map.empty[String, Set[LabelName]]
+    }
+    labelInfo ++ projectedLabelInfo
   }
 }
 

@@ -439,8 +439,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           Set("b") ->  Map(
             // 50% have :B
             hasLabels("b", "B") -> 0.5,
-            // 1% have .prop = <given value>
-            Equals(prop("a", "prop"), prop("b", "prop"))(pos) -> 0.01,
+            // 0.01% have .prop = <given value>
+            Equals(prop("a", "prop"), prop("b", "prop"))(pos) -> 0.0001,
           ),
         )))
       } getLogicalPlanFor s"MATCH (a:A), (b:B) WHERE a.prop > 'foo' AND a.prop = b.prop RETURN a.prop ORDER BY a.prop $cypherToken"

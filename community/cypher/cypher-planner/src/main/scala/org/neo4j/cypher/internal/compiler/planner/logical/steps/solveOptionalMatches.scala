@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait OptionalSolver {
@@ -35,7 +34,7 @@ trait OptionalSolver {
 
 case object applyOptional extends OptionalSolver {
   override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Iterator[LogicalPlan] = {
-    val innerContext: LogicalPlanningContext = context.withUpdatedCardinalityInformation(lhs)
+    val innerContext: LogicalPlanningContext = context.withUpdatedLabelInfo(lhs)
     val inner = context.strategy.plan(optionalQg, interestingOrderConfig, innerContext)
     inner.allResults.map { inner =>
       val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext)
@@ -56,19 +55,13 @@ case object outerHashJoin extends OptionalSolver {
       joinNodes.forall(side1Plan.availableSymbols) &&
       joinNodes.forall(optionalQg.patternNodes)) {
 
-      // If side1 is just an Argument, any Apply above this will get written out so the incoming cardinality should be 1
-      // This will be the case as [AssumeIndependenceQueryGraphCardinalityModel] will always use a cardinality of 1 if there are no
-      // arguments and we delete the arguments below.
-      // If not, then we're probably under an apply that will stay, so we need to force the cardinality to be multiplied by the incoming
-      // cardinality.
-      val side2Context = if (!side1Plan.isInstanceOf[Argument]) context.copy(input = context.input.copy(alwaysMultiply = true)) else context
       val solvedHints = optionalQg.joinHints.filter { hint =>
         val hintVariables = hint.variables.map(_.name).toSet
         hintVariables.subsetOf(joinNodes)
       }
       val rhsQG = optionalQg.withoutArguments().withoutHints(solvedHints.map(_.asInstanceOf[Hint]))
 
-      val BestResults(side2Plan, side2SortedPlan) = context.strategy.plan(rhsQG, interestingOrderConfig, side2Context)
+      val BestResults(side2Plan, side2SortedPlan) = context.strategy.plan(rhsQG, interestingOrderConfig, context)
 
       Iterator(
         leftOuterJoin(context, joinNodes, side1Plan, side2Plan, solvedHints),

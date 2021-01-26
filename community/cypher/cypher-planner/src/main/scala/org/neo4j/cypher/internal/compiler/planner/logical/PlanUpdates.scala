@@ -230,7 +230,7 @@ case object PlanUpdates extends UpdatesPlanner {
     val leafPlanners = PriorityLeafPlannerList(leafPlannerList, context.config.leafPlanners)
 
     val innerContext: LogicalPlanningContext =
-      context.withUpdatedCardinalityInformation(source).copy(config = context.config.withLeafPlanners(leafPlanners))
+      context.withUpdatedLabelInfo(source).copy(config = context.config.withLeafPlanners(leafPlanners))
     val mergeMatch = mergeMatchPart(matchGraph, interestingOrderConfig, innerContext)
 
     //Check if we need to do OnMatch:

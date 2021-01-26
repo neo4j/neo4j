@@ -113,7 +113,6 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       labelCardinality = Map("X" -> 1.0, "Y" -> 10.0)
       statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
         override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
-          // TODO proper lookup from semantic table somehow
           // X = 0, Y = 1
           if (fromLabel.exists(_.id == 0) && relTypeId.isEmpty && toLabel.isEmpty) {
             // low from a to b
@@ -127,7 +126,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         }
       }
       cost = {
-        case (_: Apply, _, _, _) => Double.MaxValue
+        case (_: OptionalExpand, _, _, _) => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
       LeftOuterHashJoin(Set("b"),
@@ -142,7 +141,6 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       labelCardinality = Map("X" -> 10.0, "Y" -> 1.0)
       statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
         override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
-          // TODO proper lookup from semantic table somehow
           // X = 0, Y = 1
           if (fromLabel.exists(_.id == 0) && relTypeId.isEmpty && toLabel.isEmpty) {
             // high from a to b
@@ -156,7 +154,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         }
       }
       cost = {
-        case (_: Apply, _, _, _) => Double.MaxValue
+        case (_: OptionalExpand, _, _, _) => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
       RightOuterHashJoin(Set("b"),
