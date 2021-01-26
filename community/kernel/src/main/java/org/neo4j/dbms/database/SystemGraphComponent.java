@@ -87,19 +87,32 @@ public interface SystemGraphComponent
         }
     }
 
-    default Integer getVersionNumber( Transaction tx, String componentVersionProperty )
+    default Integer getVersion( Transaction tx, String componentVersionProperty )
+    {
+        return getVersionNumber( tx, componentVersionProperty );
+    }
+
+    /**
+     * Get the version number of a component from the system graph.
+     *
+     * @param tx an open transaction
+     * @param componentVersionProperty name of the property describing the version for the component
+     * @return The version of the component or null if there is no stored information.
+     */
+    static Integer getVersionNumber( Transaction tx, String componentVersionProperty )
     {
         Integer result = null;
-        ResourceIterator<Node> nodes = tx.findNodes( VERSION_LABEL );
-        if ( nodes.hasNext() )
+        try ( ResourceIterator<Node> nodes = tx.findNodes( VERSION_LABEL ) )
         {
-            Node versionNode = nodes.next();
-            if ( versionNode.hasProperty( componentVersionProperty ) )
+            if ( nodes.hasNext() )
             {
-                result = (Integer) versionNode.getProperty( componentVersionProperty );
+                Node versionNode = nodes.next();
+                if ( versionNode.hasProperty( componentVersionProperty ) )
+                {
+                    result = (Integer) versionNode.getProperty( componentVersionProperty );
+                }
             }
         }
-        nodes.close();
         return result;
     }
 

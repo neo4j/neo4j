@@ -21,7 +21,7 @@ package org.neo4j.server.security.systemgraph;
 
 import org.neo4j.dbms.database.ComponentVersion;
 
-import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
+import static org.neo4j.dbms.database.KnownSystemComponentVersion.UNKNOWN_VERSION;
 
 public enum UserSecurityGraphComponentVersion implements ComponentVersion
 {

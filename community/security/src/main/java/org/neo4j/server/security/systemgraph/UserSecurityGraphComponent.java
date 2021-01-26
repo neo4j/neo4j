@@ -33,8 +33,8 @@ import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponent
 import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion;
 import org.neo4j.server.security.systemgraph.versions.NoCommunitySecurityComponentVersion;
 
-import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
 import static org.neo4j.dbms.database.ComponentVersion.SECURITY_USER_COMPONENT;
+import static org.neo4j.dbms.database.KnownSystemComponentVersion.UNKNOWN_VERSION;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL;
 
 /**

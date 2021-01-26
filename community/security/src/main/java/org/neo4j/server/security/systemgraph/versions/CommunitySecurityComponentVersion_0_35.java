@@ -27,10 +27,9 @@ import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.util.Preconditions;
 
 import static java.lang.String.format;
+import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.IS_SUSPENDED;
 import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_35;
 import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.LATEST_COMMUNITY_SECURITY_COMPONENT_VERSION;
-import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
-import static org.neo4j.server.security.systemgraph.SystemGraphRealmHelper.IS_SUSPENDED;
 
 /**
  * This is the UserSecurityComponent version for Neo4j 3.5
@@ -48,7 +47,7 @@ public class CommunitySecurityComponentVersion_0_35 extends KnownCommunitySecuri
     @Override
     public boolean detected( Transaction tx )
     {
-        if ( nodesWithLabelExist( tx, USER_LABEL ) || getVersion( tx ) != UNKNOWN_VERSION )
+        if ( nodesWithLabelExist( tx, USER_LABEL ) || getVersion( tx ) != null )
         {
             return false;
         }

@@ -46,7 +46,7 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<Db
     }
 
     @Override
-    public Integer getVersionNumber( Transaction tx, String componentName )
+    public Integer getVersion( Transaction tx, String componentName )
     {
         Integer result = null;
         try ( ResourceIterator<Node> nodes = tx.findNodes( OLD_COMPONENT_LABEL ) )
@@ -60,7 +60,7 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<Db
                 }
             }
         }
-        return result != null ? result : super.getVersionNumber( tx, componentName );
+        return result != null ? result : SystemGraphComponent.getVersionNumber( tx, componentName );
     }
 
     @Override
@@ -71,29 +71,5 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<Db
             tx.findNodes( OLD_COMPONENT_LABEL ).forEachRemaining( Node::delete );
             setToLatestVersion( tx );
         } );
-    }
-
-    @Override
-    DbmsRuntimeVersion fetchStateFromSystemDatabase( GraphDatabaseService system )
-    {
-        DbmsRuntimeVersion result = null;
-        try ( var tx = system.beginTx();
-              var nodes = tx.findNodes( OLD_COMPONENT_LABEL ) )
-        {
-            if ( nodes.hasNext() )
-            {
-                Node versionNode = nodes.next();
-                if ( versionNode.hasProperty( OLD_PROPERTY_NAME ) )
-                {
-                    result = convertToVersion.apply( (int) versionNode.getProperty( OLD_PROPERTY_NAME ) );
-                }
-                Preconditions.checkState( !nodes.hasNext(), "More than one version node in system database" );
-            }
-        }
-        if ( result == null )
-        {
-            result = super.fetchStateFromSystemDatabase( system );
-        }
-        return result;
     }
 }

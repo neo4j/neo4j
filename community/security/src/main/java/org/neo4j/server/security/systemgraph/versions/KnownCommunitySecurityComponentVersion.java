@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.cypher.internal.security.SystemGraphCredential;
+import org.neo4j.dbms.database.ComponentVersion;
+import org.neo4j.dbms.database.KnownSystemComponentVersion;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
@@ -32,13 +34,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
-import org.neo4j.dbms.database.ComponentVersion;
-import org.neo4j.dbms.database.KnownSystemComponentVersion;
 import org.neo4j.string.UTF8;
 
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
-import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
 
 public abstract class KnownCommunitySecurityComponentVersion extends KnownSystemComponentVersion
 {
@@ -52,7 +51,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
 
     boolean componentNotInVersionNode( Transaction tx )
     {
-        return getVersion( tx ) == UNKNOWN_VERSION;
+        return getVersion( tx ) == null;
     }
 
     public abstract void setupUsers( Transaction tx ) throws Exception;

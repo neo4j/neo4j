@@ -25,8 +25,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.UNKNOWN_VERSION;
-
 /**
  * Version of a system graph component.
  * Components that due to breaking schema changes requires migrations also needs versions.
@@ -36,6 +34,8 @@ import static org.neo4j.dbms.database.ComponentVersion.Neo4jVersions.UNKNOWN_VER
  */
 public abstract class KnownSystemComponentVersion
 {
+    public static final int UNKNOWN_VERSION = -1;
+
     private final Label versionLabel = Label.label( "Version" );
     private final ComponentVersion componentVersion;
     protected final String componentVersionProperty;
@@ -67,26 +67,15 @@ public abstract class KnownSystemComponentVersion
         return componentVersion.runtimeSupported();
     }
 
-    protected int getVersion( Transaction tx )
+    protected Integer getVersion( Transaction tx )
     {
-        int result = UNKNOWN_VERSION;
-        try ( ResourceIterator<Node> nodes = tx.findNodes( versionLabel ) )
-        {
-            if ( nodes.hasNext() )
-            {
-                Node versionNode = nodes.next();
-                if ( versionNode.hasProperty( componentVersionProperty ) )
-                {
-                    result = (Integer) versionNode.getProperty( componentVersionProperty );
-                }
-            }
-        }
-        return result;
+        return SystemGraphComponent.getVersionNumber( tx, componentVersionProperty );
     }
 
     public boolean detected( Transaction tx )
     {
-        return getVersion( tx ) == version;
+        Integer version = getVersion( tx );
+        return version != null && version == this.version;
     }
 
     public UnsupportedOperationException unsupported()

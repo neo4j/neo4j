@@ -61,14 +61,14 @@ public abstract class AbstractVersionComponent<T extends ComponentVersion> exten
     {
         try
         {
-            Integer versionNumber = getVersionNumber( tx, componentName );
+            Integer versionNumber = getVersion( tx, componentName );
             if ( versionNumber == null )
             {
                 return Status.UNINITIALIZED;
             }
             else
             {
-                T version = convertToVersion.apply( getVersionNumber( tx, componentName ) );
+                T version = convertToVersion.apply( getVersion( tx, componentName ) );
                 if ( latestVersion.isGreaterThan( version ) )
                 {
                     return Status.REQUIRES_UPGRADE;
@@ -150,17 +150,12 @@ public abstract class AbstractVersionComponent<T extends ComponentVersion> exten
     T fetchStateFromSystemDatabase( GraphDatabaseService system )
     {
         T result = getFallbackVersion();
-        try ( var tx = system.beginTx();
-              var nodes = tx.findNodes( VERSION_LABEL ) )
+        try ( var tx = system.beginTx() )
         {
-            if ( nodes.hasNext() )
+            Integer version = getVersion( tx, componentName );
+            if ( version != null )
             {
-                Node versionNode = nodes.next();
-                if ( versionNode.hasProperty( componentName ) )
-                {
-                    result = convertToVersion.apply( (int) versionNode.getProperty( componentName ) );
-                }
-                Preconditions.checkState( !nodes.hasNext(), "More than one version node in system database" );
+                result = convertToVersion.apply( version );
             }
         }
         return result;
