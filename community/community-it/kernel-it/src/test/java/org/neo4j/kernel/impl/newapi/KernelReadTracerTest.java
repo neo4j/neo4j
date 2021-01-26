@@ -19,11 +19,462 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-public class KernelReadTracerTest extends KernelReadTracerTestBase<ReadTestSupport>
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
+import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
+import org.neo4j.memory.EmptyMemoryTracker;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.ON_ALL_NODES_SCAN;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnIndexSeek;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnLabelScan;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnNode;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnProperty;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationship;
+import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.OnRelationshipTypeScan;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
+import static org.neo4j.storageengine.api.RelationshipSelection.selection;
+
+@TestInstance( TestInstance.Lifecycle.PER_CLASS )
+public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
 {
+    private long foo;
+    private long bar;
+    private long bare;
+
+    private long has;
+    private long is;
+
+    private IndexDescriptor index;
+    private IndexDescriptor relIndex;
+
+    @Override
+    public void createTestGraph( GraphDatabaseService graphDb )
+    {
+        Node deleted;
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            Node foo = tx.createNode( label( "Foo" ) );
+            Node bar = tx.createNode( label( "Bar" ) );
+            tx.createNode( label( "Baz" ) );
+            tx.createNode( label( "Bar" ), label( "Baz" ) );
+            deleted = tx.createNode();
+            Node bare = tx.createNode();
+
+            Relationship has = foo.createRelationshipTo( bar, RelationshipType.withName( "HAS" ) );
+            foo.createRelationshipTo( bar, RelationshipType.withName( "HAS" ) );
+            foo.createRelationshipTo( bar, RelationshipType.withName( "IS" ) );
+            foo.createRelationshipTo( bar, RelationshipType.withName( "HAS" ) );
+            foo.createRelationshipTo( bar, RelationshipType.withName( "HAS" ) );
+
+            is = bar.createRelationshipTo( bare, RelationshipType.withName( "IS" ) ).getId();
+
+            this.foo = foo.getId();
+            this.has = has.getId();
+            this.bar = bar.getId();
+            this.bare = bare.getId();
+
+            foo.setProperty( "p1", 1 );
+            has.setProperty( "p1", 1 );
+            foo.setProperty( "p2", 2 );
+            foo.setProperty( "p3", 3 );
+            foo.setProperty( "p4", 4 );
+
+            tx.commit();
+        }
+
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            index = ((IndexDefinitionImpl) tx.schema().indexFor( label( "Foo" ) ).on( "p1" ).create()).getIndexReference();
+            tx.commit();
+        }
+
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            relIndex = ((IndexDefinitionImpl) tx.schema().indexFor( RelationshipType.withName( "HAS" ) ).on( "p1" ).create()).getIndexReference();
+            tx.commit();
+        }
+
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            tx.commit();
+        }
+
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            tx.getNodeById( deleted.getId() ).delete();
+            tx.commit();
+        }
+    }
+
+    @Test
+    void shouldTraceAllNodesScan()
+    {
+        // given
+        TestKernelReadTracer tracer = new TestKernelReadTracer();
+
+        List<TraceEvent> expectedEvents = new ArrayList<>();
+        expectedEvents.add( ON_ALL_NODES_SCAN );
+
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
+        {
+            // when
+            nodes.setTracer( tracer );
+            read.allNodesScan( nodes );
+            while ( nodes.next() )
+            {
+                expectedEvents.add( OnNode( nodes.nodeReference() ) );
+            }
+        }
+
+        // then
+        tracer.assertEvents( expectedEvents );
+    }
+
+    @Test
+    void shouldTraceSingleNode()
+    {
+        // given
+        TestKernelReadTracer tracer = new TestKernelReadTracer();
+
+        try ( NodeCursor cursor = cursors.allocateNodeCursor( NULL ) )
+        {
+            // when
+            cursor.setTracer( tracer );
+            read.singleNode( foo, cursor );
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnNode( foo ) );
+
+            read.singleNode( bar, cursor );
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnNode( bar ) );
+
+            read.singleNode( bare, cursor );
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnNode( bare ) );
+        }
+    }
+
+    @Test
+    void shouldStopAndRestartTracing()
+    {
+        // given
+        TestKernelReadTracer tracer = new TestKernelReadTracer();
+
+        try ( NodeCursor cursor = cursors.allocateNodeCursor( NULL ) )
+        {
+            // when
+            cursor.setTracer( tracer );
+            read.singleNode( foo, cursor );
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnNode( foo ) );
+
+            cursor.removeTracer( );
+            read.singleNode( bar, cursor );
+            assertTrue( cursor.next() );
+            tracer.assertEvents();
+
+            cursor.setTracer( tracer );
+            read.singleNode( bare, cursor );
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnNode( bare ) );
+        }
+    }
+
+    @Test
+    void shouldTraceLabelScan() throws KernelException
+    {
+        // given
+        TestKernelReadTracer tracer = new TestKernelReadTracer();
+        int barId = token.labelGetOrCreateForName( "Bar" );
+
+        List<TraceEvent> expectedEvents = new ArrayList<>();
+        expectedEvents.add( OnLabelScan( barId ) );
+
+        try ( NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor( NULL ) )
+        {
+            // when
+            cursor.setTracer( tracer );
+            read.nodeLabelScan( barId, cursor, IndexOrder.NONE );
+            while ( cursor.next() )
+            {
+                expectedEvents.add( OnNode( cursor.nodeReference() ) );
+            }
+        }
+
+        // then
+        tracer.assertEvents( expectedEvents );
+    }
+
+    @Test
+    void shouldTraceNodeIndexSeek() throws KernelException
+    {
+        // given
+        TestKernelReadTracer tracer = new TestKernelReadTracer();
+
+        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
+        {
+            int p1 = token.propertyKey( "p1" );
+            IndexReadSession session = read.indexReadSession( index );
+
+            assertIndexSeekTracing( tracer, cursor, session, IndexOrder.NONE, p1 );
+            assertIndexSeekTracing( tracer, cursor, session, IndexOrder.ASCENDING, p1 );
+        }
+    }
+
+    private void assertIndexSeekTracing( TestKernelReadTracer tracer,
+                                         NodeValueIndexCursor cursor,
+                                         IndexReadSession session,
+                                         IndexOrder order,
+                                         int prop ) throws KernelException
+    {
+        // when
+        cursor.setTracer( tracer );
+        read.nodeIndexSeek( session, cursor, constrained( order, false ), IndexQuery.range( prop, 0, false, 10, false ) );
+
+        tracer.assertEvents( OnIndexSeek() );
+
+        assertTrue( cursor.next() );
+        tracer.assertEvents( OnNode( cursor.nodeReference() ) );
+
+        assertFalse( cursor.next() );
+        tracer.assertEvents();
+    }
+
+    @Test
+    void shouldTraceSingleRelationship()
+    {
+        // given
+        TestKernelReadTracer tracer = new TestKernelReadTracer();
+
+        try ( RelationshipScanCursor cursor = cursors.allocateRelationshipScanCursor( NULL ) )
+        {
+            // when
+            cursor.setTracer( tracer );
+            read.singleRelationship( has, cursor );
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnRelationship( has ) );
+
+            cursor.removeTracer();
+            read.singleRelationship( is, cursor );
+            assertTrue( cursor.next() );
+            tracer.assertEvents();
+
+            cursor.setTracer( tracer );
+            read.singleRelationship( is, cursor );
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnRelationship( is ) );
+
+            assertFalse( cursor.next() );
+            tracer.assertEvents();
+        }
+    }
+
+    @Test
+    void shouldTraceRelationshipTraversal()
+    {
+        // given
+        TestKernelReadTracer tracer = new TestKernelReadTracer();
+
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL );
+              RelationshipTraversalCursor cursor = cursors.allocateRelationshipTraversalCursor( NULL ) )
+        {
+            // when
+            cursor.setTracer( tracer );
+
+            read.singleNode( foo, nodeCursor );
+            assertTrue( nodeCursor.next() );
+            nodeCursor.relationships( cursor, ALL_RELATIONSHIPS );
+
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
+
+            cursor.removeTracer();
+            assertTrue( cursor.next() );
+            tracer.assertEvents();
+
+            cursor.setTracer( tracer );
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
+
+            assertTrue( cursor.next() ); // skip last two
+            assertTrue( cursor.next() );
+            tracer.clear();
+
+            assertFalse( cursor.next() );
+            tracer.assertEvents();
+        }
+    }
+
+    @Test
+    void shouldTraceLazySelectionRelationshipTraversal()
+    {
+        // given
+        TestKernelReadTracer tracer = new TestKernelReadTracer();
+
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL );
+              RelationshipTraversalCursor cursor = cursors.allocateRelationshipTraversalCursor( NULL ) )
+        {
+            // when
+            cursor.setTracer( tracer );
+
+            read.singleNode( foo, nodeCursor );
+            assertTrue( nodeCursor.next() );
+
+            int type = token.relationshipType( "HAS" );
+            nodeCursor.relationships( cursor, selection( type, Direction.OUTGOING ) );
+
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
+
+            cursor.removeTracer();
+            assertTrue( cursor.next() );
+            tracer.assertEvents();
+
+            cursor.setTracer( tracer );
+            assertTrue( cursor.next() );
+            tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
+
+            assertTrue( cursor.next() ); // skip last one
+            tracer.clear();
+
+            assertFalse( cursor.next() );
+            tracer.assertEvents();
+        }
+    }
+
+    @Test
+    void shouldTracePropertyAccess()
+    {
+        // given
+        TestKernelReadTracer tracer = new TestKernelReadTracer();
+
+        try ( NodeCursor nodeCursor = cursors.allocateNodeCursor( NULL );
+              PropertyCursor propertyCursor = cursors.allocatePropertyCursor( NULL, INSTANCE ) )
+        {
+            // when
+            propertyCursor.setTracer( tracer );
+
+            read.singleNode( foo, nodeCursor );
+            assertTrue( nodeCursor.next() );
+            nodeCursor.properties( propertyCursor );
+
+            assertTrue( propertyCursor.next() );
+            tracer.assertEvents( OnProperty( propertyCursor.propertyKey() ) );
+
+            assertTrue( propertyCursor.next() );
+            tracer.assertEvents( OnProperty( propertyCursor.propertyKey() ) );
+
+            propertyCursor.removeTracer();
+            assertTrue( propertyCursor.next() );
+            tracer.assertEvents();
+
+            propertyCursor.setTracer( tracer );
+            assertTrue( propertyCursor.next() );
+            tracer.assertEvents( OnProperty( propertyCursor.propertyKey() ) );
+
+            assertFalse( propertyCursor.next() );
+            tracer.assertEvents();
+        }
+    }
+
+    @Test
+    void shouldTraceRelationshipTypeScan() throws KernelException
+    {
+        // given
+        TestKernelReadTracer tracer = new TestKernelReadTracer();
+        int hasId = token.relationshipTypeGetOrCreateForName( "HAS" );
+
+        List<TraceEvent> expectedEvents = new ArrayList<>();
+        expectedEvents.add( OnRelationshipTypeScan( hasId ) );
+
+        try ( RelationshipTypeIndexCursor cursor = cursors.allocateRelationshipTypeIndexCursor() )
+        {
+            // when
+            cursor.setTracer( tracer );
+            read.relationshipTypeScan( hasId, cursor, IndexOrder.NONE );
+            while ( cursor.next() )
+            {
+                expectedEvents.add( OnRelationship( cursor.relationshipReference() ) );
+            }
+        }
+
+        // then
+        tracer.assertEvents( expectedEvents );
+    }
+
+    @Test
+    void shouldTraceRelationshipIndexSeek() throws KernelException
+    {
+        // given
+        TestKernelReadTracer tracer = new TestKernelReadTracer();
+
+        try ( RelationshipValueIndexCursor cursor = cursors.allocateRelationshipValueIndexCursor( NULL, INSTANCE ) )
+        {
+            int p1 = token.propertyKey( "p1" );
+            IndexReadSession session = read.indexReadSession( relIndex );
+
+            assertRelationshipIndexSeekTracing( tracer, cursor, session, IndexOrder.NONE, p1 );
+            assertRelationshipIndexSeekTracing( tracer, cursor, session, IndexOrder.ASCENDING, p1 );
+        }
+    }
+
+    private void assertRelationshipIndexSeekTracing( TestKernelReadTracer tracer,
+                                                     RelationshipValueIndexCursor cursor,
+                                                     IndexReadSession session,
+                                                     IndexOrder order,
+                                                     int prop ) throws KernelException
+    {
+        // when
+        cursor.setTracer( tracer );
+        read.relationshipIndexSeek( session, cursor, constrained( order, false ), IndexQuery.range( prop, 0, false, 10, false ) );
+
+        tracer.assertEvents( OnIndexSeek() );
+
+        assertTrue( cursor.next() );
+        tracer.assertEvents( OnRelationship( cursor.relationshipReference() ) );
+
+        assertFalse( cursor.next() );
+        tracer.assertEvents();
+    }
+
     @Override
     public ReadTestSupport newTestSupport()
     {
-        return new ReadTestSupport();
+        ReadTestSupport testSupport = new ReadTestSupport();
+        testSupport.addSetting( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
+        return testSupport;
     }
 }
