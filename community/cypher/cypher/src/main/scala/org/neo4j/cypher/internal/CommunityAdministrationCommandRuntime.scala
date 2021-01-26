@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.security.SystemGraphCredential
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
+import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.graphdb.Direction
 import org.neo4j.graphdb.Label
@@ -71,7 +72,6 @@ import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScop
 import org.neo4j.internal.kernel.api.security.PrivilegeAction
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.security.Segment
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode
@@ -137,7 +137,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     // Check that the specified user is not the logged in user (eg. for some CREATE/DROP/ALTER USER commands)
     case AssertNotCurrentUser(source, userName, verb, violationMessage) => context =>
       new PredicateExecutionPlan((params, sc) => !sc.subject().hasUsername(runtimeValue(userName, params)),
-        onViolation = (_, sc) => new InvalidArgumentsException(s"Failed to $verb the specified user '${sc.subject().username()}': $violationMessage."),
+        onViolation = (_, sc) => new InvalidArgumentException(s"Failed to $verb the specified user '${sc.subject().username()}': $violationMessage."),
         source = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
       )
 
@@ -267,9 +267,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
             val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObject()
             val currentValue = p.get(currentKeyBytes).asInstanceOf[ByteArray].asObject()
             if (!oldCredentials.matchesPassword(currentValue))
-              Some(new InvalidArgumentsException(s"User '${currentUser(p)}' failed to alter their own password: Invalid principal or credentials."))
+              Some(new InvalidArgumentException(s"User '${currentUser(p)}' failed to alter their own password: Invalid principal or credentials."))
             else if (oldCredentials.matchesPassword(newValue))
-              Some(new InvalidArgumentsException(s"User '${currentUser(p)}' failed to alter their own password: Old password and new password cannot be the same."))
+              Some(new InvalidArgumentException(s"User '${currentUser(p)}' failed to alter their own password: Old password and new password cannot be the same."))
             else
               None
           })
@@ -365,7 +365,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
            |RETURN node""".stripMargin,
         VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
         QueryHandler
-          .handleNoResult(p => Some(new InvalidArgumentsException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}': $label does not exist.")))
+          .handleNoResult(p => Some(new InvalidArgumentException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}': $label does not exist.")))
           .handleError {
             case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
               new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}': $followerError", error)

@@ -30,7 +30,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.Credential;
 
 public class SystemGraphCredential implements Credential
@@ -108,7 +107,7 @@ public class SystemGraphCredential implements Credential
         return String.join( CREDENTIAL_SEPARATOR, algorithm, encodedPassword, encodedSalt, iterations );
     }
 
-    public static String serialize( byte[] encodedCredential ) throws InvalidArgumentsException
+    public static String serialize( byte[] encodedCredential ) throws IllegalArgumentException
     {
         Pattern validEncryptedPassword = Pattern.compile( String.join( CREDENTIAL_SEPARATOR, "^([0-9])", "([A-Fa-f0-9]+)", "([A-Fa-f0-9]+)" ) );
         String encryptedPasswordString = new String( encodedCredential, StandardCharsets.UTF_8 );
@@ -123,18 +122,18 @@ public class SystemGraphCredential implements Credential
 
             if ( configuration == null )
             {
-                throw new InvalidArgumentsException( "The encryption version specified is not available." );
+                throw new IllegalArgumentException( "The encryption version specified is not available." );
             }
 
             return String.join( CREDENTIAL_SEPARATOR, configuration.algorithm, hash, salt, String.valueOf( configuration.iterations ) );
         }
         else
         {
-            throw new InvalidArgumentsException( "Incorrect format of encrypted password. Correct format is '<encryption-version>,<hash>,<salt>'." );
+            throw new IllegalArgumentException( "Incorrect format of encrypted password. Correct format is '<encryption-version>,<hash>,<salt>'." );
         }
     }
 
-    public static String maskSerialized( String serialized ) throws InvalidArgumentsException
+    public static String maskSerialized( String serialized ) throws IllegalArgumentException
     {
         Pattern validSerialized =
                 Pattern.compile( String.join( CREDENTIAL_SEPARATOR, "^([A-Za-z0-9\\-]+)", "([A-Fa-f0-9]+)", "([A-Fa-f0-9]+)" ) + "(?:,([0-9]+))?" );
@@ -153,7 +152,7 @@ public class SystemGraphCredential implements Credential
         }
         else
         {
-            throw new InvalidArgumentsException( "Invalid serialized credential." );
+            throw new IllegalArgumentException( "Invalid serialized credential." );
         }
     }
 

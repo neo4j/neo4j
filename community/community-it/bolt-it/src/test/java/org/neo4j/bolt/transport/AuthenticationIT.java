@@ -422,7 +422,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 SYSTEM_DATABASE_NAME ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.General.InvalidArguments,
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Statement.ArgumentError,
                 "Old password and new password cannot be the same." ) ) );
 
         // However you should also be able to recover
@@ -454,7 +454,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
                 SYSTEM_DATABASE_NAME ) );
 
         // Then
-        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.General.InvalidArguments,
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgFailure( Status.Statement.ArgumentError,
                 "A password cannot be empty." ) ) );
 
         // However you should also be able to recover

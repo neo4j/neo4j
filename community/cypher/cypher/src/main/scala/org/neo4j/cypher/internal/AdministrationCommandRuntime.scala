@@ -31,10 +31,10 @@ import org.neo4j.cypher.internal.security.SystemGraphCredential
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
+import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.ParameterNotFoundException
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.graphdb.Transaction
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException
@@ -57,7 +57,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
   def isApplicableAdministrationCommand(logicalPlanState: LogicalPlanState): Boolean
 
   protected def validatePassword(password: Array[Byte]): Array[Byte] = {
-    if (password == null || password.length == 0) throw new InvalidArgumentsException("A password cannot be empty.")
+    if (password == null || password.length == 0) throw new InvalidArgumentException("A password cannot be empty.")
     password
   }
 
@@ -70,8 +70,10 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
   }
 
-  protected def validateAndFormatEncryptedPassword(password: Array[Byte]): TextValue = {
+  protected def validateAndFormatEncryptedPassword(password: Array[Byte]): TextValue = try {
     Values.utf8Value(SystemGraphCredential.serialize(password))
+  } catch {
+    case e: IllegalArgumentException => throw new InvalidArgumentException(e.getMessage, e)
   }
 
   private val internalPrefix: String = "__internal_"
@@ -213,7 +215,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
         .handleNoResult(params => Some(new IllegalStateException(s"Failed to create the specified user '${runtimeValue(userName, params)}'.")))
         .handleError((error, params) => (error, error.getCause) match {
           case (_, _: UniquePropertyValueValidationException) =>
-            new InvalidArgumentsException(s"Failed to create the specified user '${runtimeValue(userName, params)}': User already exists.", error)
+            new InvalidArgumentException(s"Failed to create the specified user '${runtimeValue(userName, params)}': User already exists.", error)
           case (e: HasStatus, _) if e.status() == Status.Cluster.NotALeader =>
             new DatabaseAdministrationOnFollowerException(s"Failed to create the specified user '${runtimeValue(userName, params)}': $followerError", error)
           case _ => new IllegalStateException(s"Failed to create the specified user '${runtimeValue(userName, params)}'.", error)
@@ -247,7 +249,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
         case Some(boolExpr: Boolean) => Seq((param._2, internalKey(param._2), Values.booleanValue(boolExpr)))
         case Some(passwordExpression: PasswordExpression) => Seq((param._2, passwordExpression.key, passwordExpression.value))
         case Some(nameFields: NameFields) => Seq((param._2, nameFields.nameKey, nameFields.nameValue))
-        case Some(p) => throw new InvalidArgumentsException(
+        case Some(p) => throw new InvalidArgumentException(
           s"Invalid option type for ALTER USER, expected PasswordExpression, Boolean, String or Parameter but got: ${p.getClass.getSimpleName}")
       }
     }
@@ -267,7 +269,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       s"$query RETURN oldCredentials",
       VirtualValues.map(parameterKeys.toArray, parameterValues.toArray),
       QueryHandler
-        .handleNoResult(p => Some(new InvalidArgumentsException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': User does not exist.")))
+        .handleNoResult(p => Some(new InvalidArgumentException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': User does not exist.")))
         .handleError {
           case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
             new DatabaseAdministrationOnFollowerException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': $followerError", error)
@@ -277,7 +279,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
           val oldCredentials = SystemGraphCredential.deserialize(value.asInstanceOf[TextValue].stringValue(), secureHasher)
           val newValue = p.get(newPw.bytesKey).asInstanceOf[ByteArray].asObject()
           if (oldCredentials.matchesPassword(newValue))
-            Some(new InvalidArgumentsException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': Old password and new password cannot be the same."))
+            Some(new InvalidArgumentException(s"Failed to alter the specified user '${runtimeValue(userName, p)}': Old password and new password cannot be the same."))
           else
             None
         }),

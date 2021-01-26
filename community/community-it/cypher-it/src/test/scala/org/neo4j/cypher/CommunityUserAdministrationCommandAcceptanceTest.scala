@@ -37,7 +37,6 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.internal.kernel.api.security.AuthenticationResult
 import org.neo4j.kernel.api.KernelTransaction.Type
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.security.AuthManager
 import org.neo4j.server.security.auth.SecurityTestUtils
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
@@ -417,7 +416,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   }
 
   test("should fail when creating user with empty password") {
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute("CREATE USER foo SET PASSWORD ''")
       // THEN
@@ -513,13 +512,13 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   }
 
   test("should fail when creating already existing user") {
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute(s"CREATE USER $defaultUsername SET PASSWORD 'password'")
       // THEN
     } should have message s"Failed to create the specified user '$defaultUsername': User already exists."
 
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute("CREATE USER $user SET PASSWORD 'password'", defaultUserMap)
       // THEN
@@ -677,7 +676,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     // GIVEN
     val unmaskedEncryptedPassword = "SHA-256,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab,1024"
 
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute(s"CREATE USER foo SET ENCRYPTED PASSWORD '$unmaskedEncryptedPassword'")
       // THEN
@@ -690,7 +689,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     // GIVEN
     val incorrectlyEncryptedPassword = "8,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab"
 
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute(s"CREATE USER foo SET ENCRYPTED PASSWORD '$incorrectlyEncryptedPassword'")
       // THEN
@@ -703,7 +702,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     // GIVEN
     val incorrectlyEncryptedPassword = "1,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab"
 
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute(s"CREATE USER foo SET ENCRYPTED PASSWORD '$incorrectlyEncryptedPassword'")
       // THEN
@@ -713,7 +712,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   }
 
   test("should fail to create user with empty encrypted password") {
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute("CREATE USER foo SET ENCRYPTED PASSWORD ''")
       // THEN
@@ -833,14 +832,14 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   }
 
   test("should fail when dropping non-existing user") {
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute(s"DROP USER $username")
       // THEN
     } should have message s"Failed to delete the specified user '$username': User does not exist."
 
     // using parameter
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute("DROP USER $user", userFooMap)
       // THEN
@@ -850,14 +849,14 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet should be(Set(defaultUser))
 
     // and an invalid (non-existing) one
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute("DROP USER `:foo`")
       // THEN
     } should have message "Failed to delete the specified user ':foo': User does not exist."
 
     // and an invalid (non-existing) one using parameter
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute("DROP USER $user", Map("user" -> ":foo"))
       // THEN
@@ -919,7 +918,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     // GIVEN
     prepareUser()
 
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute(s"ALTER USER $username SET PASSWORD '' CHANGE NOT REQUIRED")
       // THEN
@@ -933,7 +932,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     // GIVEN
     prepareUser()
 
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute("ALTER USER $user SET PASSWORD $password", Map("user" -> username, "password" -> ""))
       // THEN
@@ -947,7 +946,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     // GIVEN
     prepareUser()
 
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute(s"ALTER USER $username SET PASSWORD $$password CHANGE NOT REQUIRED", Map("password" -> password))
       // THEN
@@ -1018,13 +1017,13 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   }
 
   test("should fail when altering a non-existing user") {
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute(s"ALTER USER $username SET PASSWORD 'baz'")
       // THEN
     } should have message s"Failed to alter the specified user '$username': User does not exist."
 
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute("ALTER USER $user SET PASSWORD 'baz'", userFooMap)
       // THEN
@@ -1064,7 +1063,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     // GIVEN
     prepareUser()
 
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute(s"ALTER USER $username SET ENCRYPTED PASSWORD ''")
       // THEN
@@ -1080,7 +1079,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     prepareUser()
     val incorrectlyEncryptedPassword = "0b1ca6d4016160782ab"
 
-    the[InvalidArgumentsException] thrownBy {
+    the[InvalidArgumentException] thrownBy {
       // WHEN
       execute(s"ALTER USER $username SET ENCRYPTED PASSWORD '$incorrectlyEncryptedPassword'")
       // THEN
