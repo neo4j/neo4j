@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import scala.collection.mutable.ArrayStack
+import scala.collection.mutable
 
 object LogicalPlans {
 
@@ -50,10 +50,10 @@ object LogicalPlans {
    *   A = mapTwoChildPlan(a, B, C)
    */
   def map[T](plan: LogicalPlan, mapper: Mapper[T]): T = {
-    val planStack = new ArrayStack[LogicalPlan]()
-    val resultStack = new ArrayStack[T]()
+    val planStack = new mutable.ArrayStack[LogicalPlan]()
+    val resultStack = new mutable.ArrayStack[T]()
     var comingFrom = plan
-    def populate(plan: LogicalPlan) = {
+    def populate(plan: LogicalPlan): Unit = {
       var current = plan
       while (!current.isLeaf) {
         planStack.push(current)

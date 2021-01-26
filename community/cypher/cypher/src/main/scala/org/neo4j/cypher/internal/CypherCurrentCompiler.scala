@@ -134,7 +134,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       query.options.queryOptions.interpretedPipesFallback)
 
     // Make copy, so per-runtime logical plan rewriting does not mutate cached attributes
-    val planningAttributesCopy = logicalPlanResult.logicalPlanState.planningAttributes.copy()
+    val planningAttributesCopy = logicalPlanResult.logicalPlanState.planningAttributes.createCopy()
 
     val logicalQuery = LogicalQuery(
       logicalPlan,

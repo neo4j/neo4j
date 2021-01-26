@@ -265,7 +265,7 @@ case object PushdownPropertyReads {
         foldTwoChildPlan
       )
 
-    val propertyMap = new mutable.HashMap[Id, Set[LogicalProperty]]
+    val propertyMap = new mutable.HashMap[Id, Set[Property]]
     propertyReadOptima foreach {
       case (CardinalityOptimum(_, id, variableNameAtOptimum), property) =>
         propertyMap(id) = propertyMap.getOrElse(id, Set.empty) + propertyWithName(variableNameAtOptimum, property)
@@ -273,7 +273,11 @@ case object PushdownPropertyReads {
 
     val propertyReadInsertRewriter = bottomUp(Rewriter.lift {
       case lp: LogicalPlan if propertyMap.contains(lp.id) =>
-        CacheProperties(lp, propertyMap(lp.id))(attributes.copy(lp.id))
+        val copiedProperties = propertyMap(lp.id).map {
+          p =>
+            p.copy()(p.position): LogicalProperty
+        }
+        CacheProperties(lp, copiedProperties)(attributes.copy(lp.id))
     })
 
     propertyReadInsertRewriter(logicalPlan).asInstanceOf[LogicalPlan]

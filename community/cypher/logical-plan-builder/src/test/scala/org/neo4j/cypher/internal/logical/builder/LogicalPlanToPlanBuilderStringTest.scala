@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
-import java.lang.reflect.Modifier
-
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
@@ -43,6 +41,7 @@ import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
+import java.lang.reflect.Modifier
 import scala.collection.mutable
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.IMain
@@ -520,6 +519,9 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .projection("cacheR[r.prop] AS rel")
       .projection("cacheN[n.prop] AS node")
       .projection("cache[n.prop] AS node")
+      .projection("cacheFromStore[n.prop] AS node")
+      .projection("cacheNFromStore[n.prop] AS node")
+      .projection("cacheRFromStore[r.prop] AS node")
       .argument()
       .build())
 

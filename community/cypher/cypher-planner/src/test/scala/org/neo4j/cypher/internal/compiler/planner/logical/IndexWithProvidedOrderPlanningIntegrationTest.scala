@@ -451,7 +451,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             IndexSeek(
               "a:A(prop > 'foo')", indexOrder = plannedOrder),
             IndexSeek("b:B(prop = ???)",
-              paramExpr = Some(cachedNodeProp("a", "prop")),
+              paramExpr = Some(cachedNodePropFromStore("a", "prop")),
               labelId = 1,
               argumentIds = Set("a"))
           ),
@@ -504,7 +504,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             Apply(
               IndexSeek("a:A(prop STARTS WITH 'foo')", indexOrder = plannedOrder),
               IndexSeek("b:B(prop > ???)",
-                paramExpr = Some(cachedNodeProp("a", "prop")),
+                paramExpr = Some(cachedNodePropFromStore("a", "prop")),
                 labelId = 1,
                 argumentIds = Set("a"))
             ),
@@ -542,7 +542,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             IndexSeek(
               "a:A(prop > 'foo')", indexOrder = plannedOrder),
             "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
-          Map("a.prop" -> cachedNodeProp("a", "prop")), Map("count(b)" -> count(varFor("b"))), Seq(cachedNodeProp("a", "prop")))
+          Map("a.prop" -> cachedNodePropFromStore("a", "prop")), Map("count(b)" -> count(varFor("b"))), Seq(cachedNodePropFromStore("a", "prop")))
       )
     }
 
@@ -617,8 +617,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             IndexSeek(
               "a:A(prop > 'foo')", indexOrder = plannedOrder),
             "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
-          Map("a.prop" -> cachedNodeProp("a", "prop")),
-          Seq(cachedNodeProp("a", "prop")))
+          Map("a.prop" -> cachedNodePropFromStore("a", "prop")),
+          Seq(cachedNodePropFromStore("a", "prop")))
       )
     }
 
@@ -1076,16 +1076,16 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       greaterThan(prop("n", "prop3"), literalString(""))
     )
     val expr_2_3_cached = ands(
-      lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3)),
-      greaterThan(cachedNodeProp("n", "prop3"), literalString(""))
+      lessThanOrEqual(cachedNodePropFromStore("n", "prop2"), literalInt(3)),
+      greaterThan(cachedNodePropFromStore("n", "prop3"), literalString(""))
     )
     val expr_2_cached = ands(
-      lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3)),
+      lessThanOrEqual(cachedNodePropFromStore("n", "prop2"), literalInt(3)),
       greaterThan(prop("n", "prop3"), literalString(""))
     )
     val expr_3_cached = ands(
       lessThanOrEqual(prop("n", "prop2"), literalInt(3)),
-      greaterThan(cachedNodeProp("n", "prop3"), literalString(""))
+      greaterThan(cachedNodePropFromStore("n", "prop3"), literalString(""))
     )
     val map_empty = Map.empty[String, Expression] // needed for correct type
     val map_1 = Map("n.prop1" -> prop("n", "prop1"))
@@ -1174,13 +1174,15 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
         // Then
         val leafPlan = IndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > '')", indexOrder = indexOrder)
-        plan._2 should equal {
-          if (fullSort)
-            Sort(Projection(Projection(Selection(selectionExpression, leafPlan), returnProjections), sortProjections), sortItems)
-          else if (partialSort)
-            PartialSort(Projection(Projection(Selection(selectionExpression, leafPlan), returnProjections), sortProjections), alreadySorted, sortItems)
-          else
-            Projection(Selection(selectionExpression, leafPlan), returnProjections)
+        withClue(query) {
+          plan._2 should equal {
+            if (fullSort)
+              Sort(Projection(Projection(Selection(selectionExpression, leafPlan), returnProjections), sortProjections), sortItems)
+            else if (partialSort)
+              PartialSort(Projection(Projection(Selection(selectionExpression, leafPlan), returnProjections), sortProjections), alreadySorted, sortItems)
+            else
+              Projection(Selection(selectionExpression, leafPlan), returnProjections)
+          }
         }
     }
   }

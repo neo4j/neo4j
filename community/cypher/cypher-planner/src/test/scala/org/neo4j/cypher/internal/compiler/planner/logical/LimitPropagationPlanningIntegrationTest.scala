@@ -240,7 +240,7 @@ class LimitPropagationPlanningIntegrationTest
       .filterExpression(
         hasLabels("c", "C"),
         startsWith(
-          cachedNodeProp("c", "id"),
+          cachedNodePropFromStore("c", "id"),
           literalString("")))
       .expandAll("(b)<-[cb:REL_CB]-(c)")
       .filterExpression(hasLabels("b", "B"))
@@ -268,7 +268,7 @@ class LimitPropagationPlanningIntegrationTest
       .filterExpression(
         hasLabels("c", "C"),
         startsWith(
-          cachedNodeProp("c", "id"),
+          cachedNodePropFromStore("c", "id"),
           literalString("")))
       .expandAll("(b)<-[cb:REL_CB]-(c)")
       .filterExpression(hasLabels("b", "B"))
@@ -322,7 +322,7 @@ class LimitPropagationPlanningIntegrationTest
       .filterExpression(
         hasLabels("c", "C"),
         startsWith(
-          cachedNodeProp("c", "id"),
+          cachedNodePropFromStore("c", "id"),
           literalString("")))
       .expandAll("(b)<-[cb:REL_CB]-(c)")
       .filterExpression(hasLabels("b", "B"))
@@ -377,7 +377,7 @@ class LimitPropagationPlanningIntegrationTest
       .distinct("a AS a", "c AS c")
       .filterExpression(
         startsWith(
-          cachedNodeProp("c", "id"),
+          cachedNodePropFromStore("c", "id"),
           literalString("")),
         hasLabels("c", "C"))
       .expandAll("(b)<-[cb:REL_CB]-(c)")

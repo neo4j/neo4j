@@ -67,8 +67,14 @@ object leverageOrder {
   }
 
   private def providedOrderPrefix(inputProvidedOrder: ProvidedOrder, groupingExpressions: Set[Expression]): Seq[Expression] = {
-    inputProvidedOrder.columns.map(_.expression).takeWhile { exp =>
-      groupingExpressions.contains(exp)
-    }
+    // We use the instances of expressions from the groupingExpressions (instead of the instance of expressions from the ProvidedOrder).
+    // This is important because some rewriters will rewrite expressions based on reference equality
+    // and we need to make sure that orderToLeverage expressions are equal to grouping expressions, even after those rewriters.
+    inputProvidedOrder.columns.map(_.expression)
+      .map { exp =>
+        groupingExpressions.find(_ == exp)
+      }
+      .takeWhile(_.isDefined)
+      .flatten
   }
 }

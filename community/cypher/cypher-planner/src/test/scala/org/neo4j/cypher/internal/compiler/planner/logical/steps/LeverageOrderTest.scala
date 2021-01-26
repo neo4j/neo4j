@@ -85,4 +85,16 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
     val aliasedGroupings = Map("aprop" -> varFor("aprop"), "xxx" -> varFor("aprop"))
     leverageOrder(po, grouping, Set("aprop")) should be(OrderToLeverageWithAliases(aliasedOrder, aliasedGroupings))
   }
+
+  test("should use the instances from the grouping expressions - not the instances from the provided order") {
+    val providedOrderInstance = varFor("a")
+    val groupingInstance = varFor("a")
+    val po = ProvidedOrder.asc(providedOrderInstance)
+    val grouping = Map("newA" -> groupingInstance)
+
+    leverageOrder(po, grouping, Set.empty) match {
+      case OrderToLeverageWithAliases(Seq(v), _) =>
+        v should be theSameInstanceAs(groupingInstance)
+    }
+  }
 }

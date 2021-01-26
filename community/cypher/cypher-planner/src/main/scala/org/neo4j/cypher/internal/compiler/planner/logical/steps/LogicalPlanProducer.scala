@@ -84,10 +84,9 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.ir.ordering
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
-import org.neo4j.cypher.internal.ir.ordering
-import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -1479,7 +1478,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     columns.map {
       case columnOrder@ordering.ColumnOrder(e@Property(v@Variable(varName), p@PropertyKeyName(propName))) =>
         projectExpressions.collectFirst {
-          case (newName, Property(Variable(`varName`), PropertyKeyName(`propName`)) | CachedProperty(`varName`, _, PropertyKeyName(`propName`), _)) =>
+          case (newName, Property(Variable(`varName`), PropertyKeyName(`propName`)) | CachedProperty(`varName`, _, PropertyKeyName(`propName`), _, _)) =>
             ordering.ColumnOrder(Variable(newName)(v.position), columnOrder.isAscending)
           case (newName, Variable(`varName`)) =>
             ordering.ColumnOrder(Property(Variable(newName)(v.position), PropertyKeyName(propName)(p.position))(e.position), columnOrder.isAscending)
@@ -1496,7 +1495,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val trimmed = providedOrder.columns.takeWhile {
       case ordering.ColumnOrder(Property(Variable(varName), PropertyKeyName(propName))) =>
         grouping.values.exists {
-          case CachedProperty(`varName`, _, PropertyKeyName(`propName`), _) => true
+          case CachedProperty(`varName`, _, PropertyKeyName(`propName`), _, _) => true
           case Property(Variable(`varName`), PropertyKeyName(`propName`)) => true
           case _ => false
         }

@@ -140,14 +140,20 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def cachedNodeProp(variable: String, propKey: String): CachedProperty =
     cachedNodeProp(variable, propKey, variable)
 
-  def cachedNodeProp(variable: String, propKey: String, currentVarName: String): CachedProperty =
-    CachedProperty(variable, varFor(currentVarName), PropertyKeyName(propKey)(pos), NODE_TYPE)(pos)
+  def cachedNodePropFromStore(variable: String, propKey: String): CachedProperty =
+    cachedNodeProp(variable, propKey, variable, knownToAccessStore = true)
+
+  def cachedNodeProp(variable: String, propKey: String, currentVarName: String, knownToAccessStore: Boolean = false): CachedProperty =
+    CachedProperty(variable, varFor(currentVarName), PropertyKeyName(propKey)(pos), NODE_TYPE, knownToAccessStore)(pos)
 
   def cachedRelProp(variable: String, propKey: String): CachedProperty =
     cachedRelProp(variable, propKey, variable)
 
-  def cachedRelProp(variable: String, propKey: String, currentVarName: String): CachedProperty =
-    CachedProperty(variable, varFor(currentVarName), PropertyKeyName(propKey)(pos), RELATIONSHIP_TYPE)(pos)
+  def cachedRelPropFromStore(variable: String, propKey: String): CachedProperty =
+    cachedRelProp(variable, propKey, variable, knownToAccessStore = true)
+
+  def cachedRelProp(variable: String, propKey: String, currentVarName: String, knownToAccessStore: Boolean = false): CachedProperty =
+    CachedProperty(variable, varFor(currentVarName), PropertyKeyName(propKey)(pos), RELATIONSHIP_TYPE, knownToAccessStore)(pos)
 
   def prop(map: Expression, key: String): Property =
     Property(map, PropertyKeyName(key)(pos))(pos)

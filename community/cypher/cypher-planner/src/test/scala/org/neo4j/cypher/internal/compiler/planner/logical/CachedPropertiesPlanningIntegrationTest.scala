@@ -41,7 +41,7 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan._2 should equal(
       Projection(
-        Selection(Seq(greaterThan(cachedNodeProp("n", "prop1"), literalInt(42))),
+        Selection(Seq(greaterThan(cachedNodePropFromStore("n", "prop1"), literalInt(42))),
           AllNodesScan("n", Set.empty)),
         Map("n.prop1" -> cachedNodeProp("n", "prop1"))
       )
@@ -54,7 +54,7 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
     plan._2 should equal(
       EmptyResult(
         SetNodeProperty(
-          Selection(Seq(greaterThan(cachedNodeProp("n", "prop1"), literalInt(42))),
+          Selection(Seq(greaterThan(cachedNodePropFromStore("n", "prop1"), literalInt(42))),
             AllNodesScan("n", Set.empty)),
           "n", PropertyKeyName("prop2")(pos), cachedNodeProp("n", "prop1")
         )
@@ -87,7 +87,7 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan._2 should equal(
       Selection(Seq(cachedAndedNodePropertyInequalities("n", "prop1",
-        greaterThan(cachedNodeProp("n", "prop1"), literalInt(42)),
+        greaterThan(cachedNodePropFromStore("n", "prop1"), literalInt(42)),
         lessThan(cachedNodeProp("n", "prop1"), literalInt(100)))
       ),
         AllNodesScan("n", Set.empty))    )
@@ -98,7 +98,7 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan._2 should equal(
       Projection(
-        Selection(Seq(greaterThan(cachedRelProp("r", "prop1"), literalInt(42))),
+        Selection(Seq(greaterThan(cachedRelPropFromStore("r", "prop1"), literalInt(42))),
           Expand(
             AllNodesScan("a", Set.empty),
             "a", BOTH, Seq.empty, "b", "r")),
@@ -126,7 +126,7 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
     plan._2 should equal(
       Projection(
         Projection(
-          Selection(Seq(greaterThan(cachedNodeProp("n", "prop1"), literalInt(42))),
+          Selection(Seq(greaterThan(cachedNodePropFromStore("n", "prop1"), literalInt(42))),
             AllNodesScan("n", Set.empty)),
           Map("x" -> varFor("n"))),
         Map("x.prop1" -> cachedNodeProp("n", "prop1", "x"))
@@ -140,7 +140,7 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
     plan._2 should equal(
       Selection(Seq(greaterThan(cachedNodeProp("n", "prop1", "x"), literalInt(42))),
         Projection(
-          Selection(Seq(greaterThan(cachedNodeProp("n", "prop1"), literalInt(42))),
+          Selection(Seq(greaterThan(cachedNodePropFromStore("n", "prop1"), literalInt(42))),
             AllNodesScan("n", Set.empty)),
           Map("x" -> varFor("n"))))
     )
@@ -153,9 +153,9 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
       Projection(
         Projection(
           CartesianProduct(
-            Selection(Seq(greaterThan(cachedNodeProp("n", "prop1"), literalInt(42))),
+            Selection(Seq(greaterThan(cachedNodePropFromStore("n", "prop1"), literalInt(42))),
               AllNodesScan("n", Set.empty)),
-            Selection(Seq(greaterThan(cachedNodeProp("  m@12", "prop1"), literalInt(42))),
+            Selection(Seq(greaterThan(cachedNodePropFromStore("  m@12", "prop1"), literalInt(42))),
               AllNodesScan("  m@12", Set.empty))),
           Map("  m@61" -> varFor("n"), "x" -> varFor("  m@12"))),
         Map("m.prop1" -> cachedNodeProp("n", "prop1", "  m@61"), "x.prop1" -> cachedNodeProp("  m@12", "prop1", "x"))
@@ -164,6 +164,6 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   private def cachedAndedNodePropertyInequalities(varName: String, propName: String, expression: InequalityExpression*) = {
-    AndedPropertyInequalities(varFor(varName), cachedNodeProp(varName, propName), NonEmptyList(expression.head, expression.tail: _*))
+    AndedPropertyInequalities(varFor(varName), cachedNodePropFromStore(varName, propName), NonEmptyList(expression.head, expression.tail: _*))
   }
 }

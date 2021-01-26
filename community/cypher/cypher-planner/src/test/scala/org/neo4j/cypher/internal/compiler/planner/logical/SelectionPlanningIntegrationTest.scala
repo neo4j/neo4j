@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.PredicateOrdering
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -104,6 +105,54 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       )),
       NodeByLabelScan("n", LabelName("N"), `noArgs`, IndexOrderNone)
       ) => ()
+    }
+  }
+
+  test("should treat cached properties that read from store like normal properties") {
+    val nPropFoo = equals(prop("n", "foo"), literalInt(2))
+    val nPropBar = greaterThan(cachedNodePropFromStore("n", "bar"), literalInt(2))
+
+    val plan = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("N", 10)
+      .build()
+      .plan("MATCH (n:N) WHERE n.foo = 2 AND n.bar > 2 RETURN n.bar")
+
+    val noArgs = Set.empty[String]
+
+    plan.stripProduceResults should beLike {
+      // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
+      // But unapply takes the order into account for [[Ands]].
+      case Projection(Selection(Ands(Seq(
+      `nPropFoo`, // more selective
+      `nPropBar`, // is cached, but needs ro read from store
+      )),
+      NodeByLabelScan("n", LabelName("N"), `noArgs`, IndexOrderNone)
+      ), _) => ()
+    }
+  }
+
+  test("should not treat cached properties that do not read from store like normal properties") {
+    val nPropFoo = equals(prop("nn", "foo"), literalInt(2))
+    val nPropBar = greaterThan(cachedNodeProp("n", "bar", "nn"), literalInt(2))
+
+    val plan = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("N", 10)
+      .build()
+      .plan("MATCH (n:N) WHERE n.bar IS NOT NULL WITH n AS nn WHERE nn.foo = 2 AND nn.bar > 2 RETURN nn.bar")
+
+    val noArgs = Set.empty[String]
+
+    plan.stripProduceResults should beLike {
+      // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
+      // But unapply takes the order into account for [[Ands]].
+      case Projection(Selection(Ands(Seq(
+      `nPropBar`, // is cached and does not need to read from store
+      `nPropFoo`, // more selective
+      )),
+      _
+      ), _) => ()
     }
   }
 }

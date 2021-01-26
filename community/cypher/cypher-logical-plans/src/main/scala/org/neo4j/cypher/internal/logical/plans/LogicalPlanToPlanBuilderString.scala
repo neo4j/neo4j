@@ -57,8 +57,10 @@ object LogicalPlanToPlanBuilderString {
 
   def expressionStringifierExtension(expression: Expression): String = {
     expression match {
-      case p@CachedProperty(_, _, _, NODE_TYPE) => s"cacheN[${p.propertyAccessString}]"
-      case p@CachedProperty(_, _, _, RELATIONSHIP_TYPE) => s"cacheR[${p.propertyAccessString}]"
+      case p@CachedProperty(_, _, _, NODE_TYPE, false) => s"cacheN[${p.propertyAccessString}]"
+      case p@CachedProperty(_, _, _, RELATIONSHIP_TYPE, false) => s"cacheR[${p.propertyAccessString}]"
+      case p@CachedProperty(_, _, _, NODE_TYPE, true) => s"cacheNFromStore[${p.propertyAccessString}]"
+      case p@CachedProperty(_, _, _, RELATIONSHIP_TYPE, true) => s"cacheRFromStore[${p.propertyAccessString}]"
       case e => e.asCanonicalStringVal
     }
   }

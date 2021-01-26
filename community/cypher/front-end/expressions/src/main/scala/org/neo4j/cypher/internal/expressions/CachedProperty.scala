@@ -91,11 +91,14 @@ object ASTCachedProperty {
  * @param originalEntityName the name of the variable how it appeared in the first Property access.
  * @param entityVariable     the variable how it appeared in this particular Property. It can have a different name than `originalEntityName`,
  *                           if the variable name was changed in between.
+ * @param knownToAccessStore `true` if we know that the evaluation of this CachedProperty will access the store, `false` otherwise.
+ *                           This is purely used for Cost estimation and has no effect on the runtime.
  */
 case class CachedProperty(override val originalEntityName: String,
                           entityVariable: LogicalVariable,
                           override val propertyKey: PropertyKeyName,
-                          override val entityType: EntityType)(val position: InputPosition) extends ASTCachedProperty {
+                          override val entityType: EntityType,
+                          knownToAccessStore: Boolean = false)(val position: InputPosition) extends ASTCachedProperty {
 
   override val entityName: String = entityVariable.name
 

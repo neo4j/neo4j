@@ -93,13 +93,13 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Expand(
             CacheProperties(
               NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone),
-              Set(cachedNodeProp("a", "prop"))
+              Set(cachedNodePropFromStore("a", "prop"))
             ),
             "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "b", "r1", ExpandAll),
           Expand(
             CacheProperties(
               NodeByLabelScan("c", labelName("C"), Set.empty, IndexOrderNone),
-              Set(cachedNodeProp("c", "prop"))
+              Set(cachedNodePropFromStore("c", "prop"))
             ),
             "c", SemanticDirection.INCOMING, Seq(RelTypeName("X") _), "b", "r2", ExpandAll)
         )

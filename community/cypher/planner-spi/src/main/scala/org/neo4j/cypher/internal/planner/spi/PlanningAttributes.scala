@@ -46,7 +46,8 @@ case class PlanningAttributes(solveds: Solveds, cardinalities: Cardinalities, pr
 
   def asAttributes(idGen: IdGen): Attributes[LogicalPlan] = Attributes[LogicalPlan](idGen, attributes: _*)
 
-  def copy() : PlanningAttributes =
+  // Let's not override the copy method of case classes
+  def createCopy() : PlanningAttributes =
     PlanningAttributes(solveds.clone[Solveds],
       cardinalities.clone[Cardinalities],
       providedOrders.clone[ProvidedOrders],

@@ -454,9 +454,9 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
                          .produceResults("n")
                          .filter("cache[n.prop2] = cache[m.prop2]")
                          .valueHashJoin("m.prop1 = n.prop1")
-                         .|.cacheProperties("cache[n.prop2]")
+                         .|.cacheProperties("cacheFromStore[n.prop2]")
                          .|.nodeByLabelScan("n", "N")
-                         .cacheProperties("cache[m.prop2]")
+                         .cacheProperties("cacheFromStore[m.prop2]")
                          .nodeByLabelScan("m", "M")
                          .build()
 
@@ -464,9 +464,9 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
                           .produceResults("n")
                           .filter("cache[n.prop1] = cache[m.prop1]")
                           .valueHashJoin("m.prop2 = n.prop2")
-                          .|.cacheProperties("cache[n.prop1]")
+                          .|.cacheProperties("cacheFromStore[n.prop1]")
                           .|.nodeByLabelScan("n", "N")
-                          .cacheProperties("cache[m.prop1]")
+                          .cacheProperties("cacheFromStore[m.prop1]")
                           .nodeByLabelScan("m", "M")
                           .build()
 

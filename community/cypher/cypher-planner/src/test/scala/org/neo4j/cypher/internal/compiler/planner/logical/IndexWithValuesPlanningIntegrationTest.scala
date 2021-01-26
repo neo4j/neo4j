@@ -246,7 +246,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Expand(
             CacheProperties(
               IndexSeek("n:Awesome(prop <= 42)", GetValue),
-              Set(cachedNodeProp("n", "foo"))
+              Set(cachedNodePropFromStore("n", "foo"))
             ),
             "n", SemanticDirection.OUTGOING, Seq.empty, "m", "r")
         ),
