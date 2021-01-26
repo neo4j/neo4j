@@ -62,7 +62,7 @@ sealed trait AdministrationCommand extends CatalogDDL {
 
   override def semanticCheck: SemanticCheck =
       requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleDatabases, position) chain
-      when(useGraphVar.isDefined)(SemanticError(s"The `USE` clause is not supported for Administration Commands.", position))
+      when(useGraphVar.isDefined)(SemanticError(s"The `USE` clause is not required for Administration Commands. Retry your query omitting the `USE` clause and it will be routed automatically.", position))
 }
 
 sealed trait ReadAdministrationCommand extends AdministrationCommand {
