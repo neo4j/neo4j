@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.exceptions.ParameterWrongTypeException
+import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values.NO_VALUE
@@ -78,8 +78,8 @@ class ToStringFunctionTest extends CypherFunSuite with GeneratorDrivenPropertyCh
   // toString
 
   test("should throw an exception if the argument is an object which cannot be converted to a string") {
-    val caughtException = the[ParameterWrongTypeException] thrownBy toString(List(1, 24))
-    caughtException.getMessage should startWith("Expected a String, Number, Boolean, Temporal or Duration, got: ")
+    val caughtException = the[CypherTypeException] thrownBy toString(List(1, 24))
+    caughtException.getMessage should startWith("Invalid input for function 'toString()': Expected a String, Number, Boolean, Temporal or Duration, got: ")
   }
 
   // toStringOrNull

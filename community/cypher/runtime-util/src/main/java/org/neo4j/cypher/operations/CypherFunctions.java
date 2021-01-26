@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.InvalidArgumentException;
-import org.neo4j.exceptions.ParameterWrongTypeException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -268,10 +267,11 @@ public final class CypherFunctions
 
         if ( in instanceof NumberValue && precisionValue instanceof NumberValue )
         {
-            int precision = asInt( precisionValue );
+            String contextForErrorMessage = "Invalid input for precision value in function 'round()'";
+            int precision = asInt( precisionValue, contextForErrorMessage );
             if ( precision < 0 )
             {
-                throw new InvalidArgumentException( "precision argument to round() cannot be negative", null );
+                throw new InvalidArgumentException( "Precision argument to 'round()' cannot be negative", null );
             }
             // For the default values, standard Java round is faster
             else if ( precision == 0 && mode.equals( HALF_UP ) )
@@ -377,18 +377,23 @@ public final class CypherFunctions
     @CalledFromGeneratedCode
     public static ListValue range( AnyValue startValue, AnyValue endValue )
     {
-        return VirtualValues.range( asLong( startValue ), asLong( endValue ), 1L );
+        return VirtualValues.range(
+                asLong( startValue, "Invalid input for start value in function 'range()'" ),
+                asLong( endValue, "Invalid input for end value in function 'range()'" ),
+                1L );
     }
 
     public static ListValue range( AnyValue startValue, AnyValue endValue, AnyValue stepValue )
     {
-        long step = asLong( stepValue );
+        long step = asLong( stepValue, "Invalid input for step value in function 'range()'" );
         if ( step == 0L )
         {
-            throw new InvalidArgumentException( "step argument to range() cannot be zero", null );
+            throw new InvalidArgumentException( "Step argument to 'range()' cannot be zero", null );
         }
 
-        return VirtualValues.range( asLong( startValue ), asLong( endValue ), step );
+        return VirtualValues.range( asLong( startValue, "Invalid input for start value in function 'range()'" ),
+                                    asLong( endValue, "Invalid input for end value in function 'range()'" ),
+                                    step );
     }
 
     @CalledFromGeneratedCode
@@ -451,7 +456,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Expected %s to be a RelationshipValue", anyValue ), null );
+            throw new CypherTypeException( format( "Invalid input for function 'startNode()': Expected %s to be a RelationshipValue", anyValue ), null );
         }
     }
 
@@ -474,7 +479,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Expected %s to be a RelationshipValue", anyValue ), null );
+            throw new CypherTypeException( format( "Invalid input for function 'endNode()': Expected %s to be a RelationshipValue", anyValue ), null );
         }
     }
 
@@ -490,6 +495,7 @@ public final class CypherFunctions
     @CalledFromGeneratedCode
     public static NodeValue otherNode( AnyValue anyValue, DbAccess access, VirtualNodeValue node, RelationshipScanCursor cursor )
     {
+        // This is not a function exposed to the user
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( anyValue instanceof VirtualRelationshipValue )
         {
@@ -548,7 +554,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Expected %s to be a property container", container ), null );
+            throw new CypherTypeException( format( "Invalid input for function 'exists()': Expected %s to be a property container", container ), null );
         }
     }
 
@@ -610,7 +616,7 @@ public final class CypherFunctions
         if ( container instanceof VirtualNodeValue )
         {
             return dbAccess.nodeProperty( ((VirtualNodeValue) container).id(),
-                                          dbAccess.propertyKey( asString( index ) ),
+                                          propertyKeyId(dbAccess, index),
                                           nodeCursor,
                                           propertyCursor,
                                           true );
@@ -618,7 +624,7 @@ public final class CypherFunctions
         else if ( container instanceof VirtualRelationshipValue )
         {
             return dbAccess.relationshipProperty( ((VirtualRelationshipValue) container).id(),
-                                                  dbAccess.propertyKey( asString( index ) ),
+                                                  propertyKeyId(dbAccess, index),
                                                   relationshipScanCursor,
                                                   propertyCursor,
                                                   true );
@@ -651,17 +657,21 @@ public final class CypherFunctions
         assert container != NO_VALUE && index != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( container instanceof VirtualNodeValue )
         {
-            return dbAccess.nodeHasProperty( ((VirtualNodeValue) container).id(), dbAccess.propertyKey( asString( index ) ),
+            return dbAccess.nodeHasProperty( ((VirtualNodeValue) container).id(),
+                                             propertyKeyId(dbAccess, index),
                                              nodeCursor, propertyCursor );
         }
         else if ( container instanceof VirtualRelationshipValue )
         {
-            return dbAccess.relationshipHasProperty( ((VirtualRelationshipValue) container).id(), dbAccess.propertyKey( asString( index ) ),
+            return dbAccess.relationshipHasProperty( ((VirtualRelationshipValue) container).id(),
+                                                     propertyKeyId(dbAccess, index),
                                                      relationshipScanCursor, propertyCursor );
         }
         if ( container instanceof MapValue )
         {
-            return ((MapValue) container).containsKey( asString( index ) );
+            // this string assumes that the asString method fails and gives context which operation went wrong
+            String contextForErrorMessage = "Cannot use non string value as or in map keys. It was " + index.toString();
+            return ((MapValue) container).containsKey( asString( index, contextForErrorMessage ) );
         }
         else
         {
@@ -688,7 +698,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Expected %s to be a list", container ), null );
+            throw new CypherTypeException( format( "Invalid input for function 'head()': Expected %s to be a list", container ), null );
         }
     }
 
@@ -727,7 +737,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Expected %s to be a list", container ), null );
+            throw new CypherTypeException( format( "Invalid input for function 'last()': Expected %s to be a list", container ), null );
         }
     }
 
@@ -736,7 +746,7 @@ public final class CypherFunctions
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof TextValue )
         {
-            int len = asInt( endPos );
+            int len = asInt( endPos, "Invalid input for length value in function 'left()'" );
             return ((TextValue) in).substring( 0, len );
         }
         else
@@ -812,6 +822,7 @@ public final class CypherFunctions
         else
         {
             throw new CypherTypeException(
+                    "Invalid input for function 'reverse()': " +
                     "Expected a string or a list; consider converting it to a string with toString() or creating a list.",
                     null );
         }
@@ -823,7 +834,7 @@ public final class CypherFunctions
         if ( original instanceof TextValue )
         {
             TextValue asText = (TextValue) original;
-            int len = asInt( length );
+            int len = asInt( length, "Invalid input for length value in function 'right()'" );
             if ( len < 0 )
             {
                 throw new IndexOutOfBoundsException( "negative length" );
@@ -875,7 +886,7 @@ public final class CypherFunctions
         {
             TextValue asText = (TextValue) original;
 
-            return asText.substring( asInt( start ) );
+            return asText.substring( asInt( start,"Invalid input for start value in function 'substring()'" ) );
         }
         else
         {
@@ -890,7 +901,8 @@ public final class CypherFunctions
         {
             TextValue asText = (TextValue) original;
 
-            return asText.substring( asInt( start ), asInt( length ) );
+            return asText.substring( asInt( start, "Invalid input for start value in function 'substring()'" ),
+                                     asInt( length, "Invalid input for length value in function 'substring()'" ) );
         }
         else
         {
@@ -937,8 +949,8 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Expected %s to be a node or relationship, but it was `%s`",
-                                                   item, item.getClass().getSimpleName() ), null );
+            throw new CypherTypeException( format( "Invalid input for function 'id()': Expected %s to be a node or relationship, but it was `%s`",
+                                                   item, item.getTypeName() ), null );
         }
     }
 
@@ -951,7 +963,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException( "Expected a Node, got: " + item, null );
+            throw new CypherTypeException( "Invalid input for function 'labels()': Expected a Node, got: " + item, null );
         }
     }
 
@@ -965,7 +977,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException( "Expected a Node, got: " + entity, null );
+            throw new CypherTypeException( "Expected a Node, got: " + entity, null );
         }
     }
 
@@ -978,7 +990,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException( "Expected a Relationship, got: " + item, null );
+            throw new CypherTypeException( "Invalid input for function 'type()': Expected a Relationship, got: " + item, null );
         }
     }
 
@@ -992,7 +1004,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException( "Expected a Relationship, got: " + entity, null );
+            throw new CypherTypeException( "Expected a Relationship, got: " + entity, null );
         }
     }
 
@@ -1005,7 +1017,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Expected %s to be a path.", in ), null );
+            throw new CypherTypeException( format( "Invalid input for function 'nodes()': Expected %s to be a path", in ), null );
         }
     }
 
@@ -1018,7 +1030,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Expected %s to be a path.", in ), null );
+            throw new CypherTypeException( format( "Invalid input for function 'relationships()': Expected %s to be a path", in ), null );
         }
     }
 
@@ -1044,7 +1056,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Expected a map but got %s", in ), null );
+            throw new CypherTypeException( format( "Invalid input for function 'point()': Expected a map but got %s", in ), null );
         }
     }
 
@@ -1071,7 +1083,8 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Expected a node, a relationship or a literal map but got %s", in ), null );
+            throw new CypherTypeException( format(
+                    "Invalid input for function 'keys()': Expected a node, a relationship or a literal map but got %s", in ), null );
         }
     }
 
@@ -1096,7 +1109,8 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( format( "Expected a node, a relationship or a literal map but got %s", in ), null );
+            throw new CypherTypeException( format(
+                    "Invalid input for function 'properties()': Expected a node, a relationship or a literal map but got %s", in ), null );
         }
     }
 
@@ -1138,7 +1152,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException( "Expected a List, Map, or String, got: " + item, null );
+            throw new CypherTypeException( "Invalid input for function 'isEmpty()': Expected a List, Map, or String, got: " + item, null );
         }
     }
 
@@ -1188,7 +1202,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException( "Expected a Boolean or String, got: " + in, null );
+            throw new CypherTypeException( "Invalid input for function 'toBoolean()': Expected a Boolean, Integer or String, got: " + in, null );
         }
     }
 
@@ -1210,7 +1224,7 @@ public final class CypherFunctions
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(in instanceof ListValue) )
         {
-            throw new ParameterWrongTypeException( String.format("Expected a List, got: %s in function: ToBooleanList", in), null );
+            throw new CypherTypeException( String.format("Invalid input for function 'toBooleanList()': Expected a List, got: %s", in), null );
         }
 
         ListValue lv = (ListValue) in;
@@ -1244,7 +1258,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException( "Expected a String or Number, got: " + in, null );
+            throw new CypherTypeException( "Invalid input for function 'toFloat()': Expected a String or Number, got: " + in, null );
         }
     }
 
@@ -1266,7 +1280,7 @@ public final class CypherFunctions
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(in instanceof ListValue) )
         {
-            throw new ParameterWrongTypeException( String.format("Expected a List, got: %s in function: ToFloatList", in), null );
+            throw new CypherTypeException( String.format("Invalid input for function 'toFloatList()': Expected a List, got: %s", in), null );
         }
 
         ListValue lv = (ListValue) in;
@@ -1304,7 +1318,7 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException( String.format( "Expected a String, Number or Boolean, got: '%s' in function: ToInteger", in ), null );
+            throw new CypherTypeException( "Invalid input for function 'toInteger()': Expected a String, Number or Boolean, got: " + in, null );
         }
     }
 
@@ -1337,7 +1351,7 @@ public final class CypherFunctions
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(in instanceof ListValue) )
         {
-            throw new ParameterWrongTypeException( String.format("Expected a List, got: %s in function: ToIntegerList",in), null );
+            throw new CypherTypeException( String.format("Invalid input for function 'toIntegerList()': Expected a List, got: %s",in), null );
         }
 
         ListValue lv = (ListValue) in;
@@ -1368,8 +1382,8 @@ public final class CypherFunctions
         }
         else
         {
-            throw new ParameterWrongTypeException(
-                    "Expected a String, Number, Boolean, Temporal or Duration, got: " + in, null );
+            throw new CypherTypeException(
+                    "Invalid input for function 'toString()': Expected a String, Number, Boolean, Temporal or Duration, got: " + in, null );
         }
     }
 
@@ -1392,7 +1406,7 @@ public final class CypherFunctions
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(in instanceof ListValue) )
         {
-            throw new ParameterWrongTypeException( String.format("Expected a List, got: %s in function: ToStringList",in), null );
+            throw new CypherTypeException( String.format("Invalid input for function 'toStringList()': Expected a List, got: %s",in), null );
         }
 
         ListValue lv = (ListValue) in;
@@ -1406,7 +1420,7 @@ public final class CypherFunctions
     {
         assert collection != NO_VALUE && fromValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
 
-        int from = asInt( fromValue );
+        int from = asInt( fromValue, null );
         ListValue list = asList( collection );
         if ( from >= 0 )
         {
@@ -1421,7 +1435,7 @@ public final class CypherFunctions
     public static ListValue toSlice( AnyValue collection, AnyValue toValue )
     {
         assert collection != NO_VALUE && toValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        int from = asInt( toValue );
+        int from = asInt( toValue, null );
         ListValue list = asList( collection );
         if ( from >= 0 )
         {
@@ -1438,8 +1452,8 @@ public final class CypherFunctions
         assert collection != NO_VALUE && fromValue != NO_VALUE && toValue != NO_VALUE :
                 "NO_VALUE checks need to happen outside this call";
 
-        int from = asInt( fromValue );
-        int to = asInt( toValue );
+        int from = asInt( fromValue, null );
+        int to = asInt( toValue, null );
         ListValue list = asList( collection );
         int size = list.size();
         if ( from >= 0 && to >= 0 )
@@ -1522,10 +1536,31 @@ public final class CypherFunctions
     @CalledFromGeneratedCode
     public static TextValue asTextValue( AnyValue value )
     {
+        return asTextValue( value, null );
+    }
+
+    public static TextValue asTextValue( AnyValue value, String contextForErrorMessage )
+    {
         if ( !(value instanceof TextValue) )
         {
-            throw new CypherTypeException( format( "Expected %s to be a %s, but it was a %s", value,
-                                                   TextValue.class.getName(), value.getClass().getName() ), null );
+            String errorMessage;
+            if ( contextForErrorMessage == null )
+            {
+                errorMessage = format( "Expected %s to be a %s, but it was a %s",
+                                       value,
+                                       TextValue.class.getName(),
+                                       value.getClass().getName() );
+            }
+            else
+            {
+                errorMessage = format( "%s: Expected %s to be a %s, but it was a %s",
+                                       contextForErrorMessage,
+                                       value,
+                                       TextValue.class.getName(),
+                                       value.getClass().getName() );
+            }
+
+            throw new CypherTypeException( errorMessage, null );
         }
         return (TextValue) value;
     }
@@ -1629,10 +1664,11 @@ public final class CypherFunctions
 
     private static AnyValue listAccess( SequenceValue container, AnyValue index )
     {
-        NumberValue number = asNumberValue( index );
+        String contextForErrorMessage = "Cannot access a list '" + container.toString() + "' using a non-number index, got " + index.toString();
+        NumberValue number = asNumberValue( index, contextForErrorMessage );
         if ( !(number instanceof IntegralValue) )
         {
-            throw new CypherTypeException( format( "Cannot index a list using an non-integer number, got %s", number ),
+            throw new CypherTypeException( format( "Cannot access a list using an non-integer number index, got %s", number ),
                                            null );
         }
         long idx = number.longValue();
@@ -1654,22 +1690,40 @@ public final class CypherFunctions
         return container.value( (int) idx );
     }
 
+    private static int propertyKeyId( DbAccess dbAccess, AnyValue index )
+    {
+        // this string assumes that the asString method fails and gives context which operation went wrong
+        String contextForErrorMessage = "Cannot use a property key with non string name. It was " + index.toString();
+        return dbAccess.propertyKey( asString( index, contextForErrorMessage ) );
+    }
+
     private static AnyValue mapAccess( MapValue container, AnyValue index )
     {
-        return container.get( asString( index ) );
+        // this string assumes that the asString method fails and gives context which operation went wrong
+        String contextForErrorMessage = "Cannot access a map '" + container.toString() + "' by key '" + index.toString() + "'";
+        return container.get( asString( index, contextForErrorMessage ) );
     }
 
     private static String asString( AnyValue value )
     {
-        return asTextValue( value ).stringValue();
+        return asTextValue( value, null ).stringValue();
     }
 
-    private static NumberValue asNumberValue( AnyValue value )
+    private static String asString( AnyValue value, String contextForErrorMessage )
+    {
+        return asTextValue( value, contextForErrorMessage ).stringValue();
+    }
+
+    private static NumberValue asNumberValue( AnyValue value, String contextForErrorMessage )
     {
         if ( !(value instanceof NumberValue) )
         {
-            throw new CypherTypeException( format( "Expected %s to be a %s, but it was a %s", value,
-                                                   NumberValue.class.getName(), value.getClass().getName() ), null );
+            throw new CypherTypeException( format( "%s: Expected %s to be a %s, but it was a %s",
+                                                   contextForErrorMessage,
+                                                   value,
+                                                   NumberValue.class.getName(),
+                                                   value.getClass().getName()
+                                                 ), null );
         }
         return (NumberValue) value;
     }
@@ -1686,7 +1740,7 @@ public final class CypherFunctions
         }
     }
 
-    private static long asLong( AnyValue value )
+    private static long asLong( AnyValue value, String contextForErrorMessage )
     {
         if ( value instanceof NumberValue )
         {
@@ -1694,13 +1748,28 @@ public final class CypherFunctions
         }
         else
         {
-            throw new CypherTypeException( "Expected a numeric value but got: " + value, null );
+            String errorMsg;
+            if ( contextForErrorMessage == null )
+            {
+                errorMsg = "Expected a numeric value but got: " + value;
+            }
+            else
+            {
+                errorMsg = contextForErrorMessage + ": Expected a numeric value but got: " + value;
+            }
+            throw new CypherTypeException( errorMsg, null );
         }
     }
 
+    @CalledFromGeneratedCode
     public static int asInt( AnyValue value )
     {
-        return (int) asLong( value );
+        return asInt( value, null );
+    }
+
+    public static int asInt( AnyValue value, String contextForErrorMessage )
+    {
+        return (int) asLong( value, contextForErrorMessage );
     }
 
     public static long nodeId( AnyValue value )

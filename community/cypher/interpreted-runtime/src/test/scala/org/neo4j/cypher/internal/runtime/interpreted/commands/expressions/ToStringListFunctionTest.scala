@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.exceptions.ParameterWrongTypeException
+import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.NO_VALUE
@@ -74,8 +74,8 @@ class ToStringListFunctionTest extends CypherFunSuite with GeneratorDrivenProper
   }
 
   test("should throw an exception if the list argument contains a non-list") {
-    val caughtException = the[ParameterWrongTypeException] thrownBy toStringList("foo")
-    caughtException.getMessage should equal("""Expected a List, got: String("foo") in function: ToStringList""")
+    val caughtException = the[CypherTypeException] thrownBy toStringList("foo")
+    caughtException.getMessage should equal("""Invalid input for function 'toStringList()': Expected a List, got: String("foo")""")
   }
 
   test("should not throw an exception for any value in the list") {

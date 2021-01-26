@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.exceptions.ParameterWrongTypeException
+import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.DoubleValue
 import org.neo4j.values.storable.Values.NO_VALUE
@@ -78,8 +78,8 @@ class ToFloatFunctionTest extends CypherFunSuite with GeneratorDrivenPropertyChe
   // toFloat
 
   test("should throw an exception if the argument is an object which cannot be converted to a float") {
-    val caughtException = the[ParameterWrongTypeException] thrownBy toFloat(true)
-    caughtException.getMessage should startWith("Expected a String or Number, got: ")
+    val caughtException = the[CypherTypeException] thrownBy toFloat(true)
+    caughtException.getMessage should startWith("Invalid input for function 'toFloat()': Expected a String or Number, got: ")
   }
 
   // toFloatOrNull

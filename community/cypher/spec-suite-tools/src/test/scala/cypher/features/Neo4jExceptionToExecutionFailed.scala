@@ -98,9 +98,9 @@ object Neo4jExceptionToExecutionFailed {
       INVALID_ARGUMENT_TYPE
     else if (msg.matches("Type mismatch: expected a map but was .+"))
       PROPERTY_ACCESS_ON_NON_MAP
-    else if (msg.matches("Expected .+ to be a ((java.lang.String)|(org.neo4j.values.storable.TextValue)), but it was a .+"))
+    else if (msg.matches("Cannot access a map 'Map\\{.+\\}' by key '.+': Expected .+ to be a ((java.lang.String)|(org.neo4j.values.storable.TextValue)), but it was a .+"))
       MAP_ELEMENT_ACCESS_BY_NON_STRING
-    else if (msg.matches("Expected .+ to be a ((java.lang.Number)|(org.neo4j.values.storable.NumberValue)), but it was a .+"))
+    else if (msg.matches("Cannot access a list 'List\\{.+\\}' using a non-number index, got .+: Expected .+ to be a ((java.lang.Number)|(org.neo4j.values.storable.NumberValue)), but it was a .+") )
       LIST_ELEMENT_ACCESS_BY_NON_INTEGER
     else if (msg.matches(".+ is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key .+"))
       INVALID_ELEMENT_ACCESS
@@ -118,9 +118,9 @@ object Neo4jExceptionToExecutionFailed {
       "IncomparableValues"
     else if (msg.matches("Invalid input '.+' is not a valid argument, must be a number in the range 0.0 to 1.0"))
       NUMBER_OUT_OF_RANGE
-    else if (msg.matches("step argument to range\\(\\) cannot be zero"))
+    else if (msg.matches("Step argument to 'range\\(\\)' cannot be zero"))
       NUMBER_OUT_OF_RANGE
-    else if (msg.matches("Expected a (.+), got: (.*)"))
+    else if (msg.matches("Invalid input for function '.+': Expected a (.+), got: (.*)"))
       INVALID_ARGUMENT_VALUE
     else if (msg.matches("The expression .+ should have been a node or a relationship, but got .+"))
       REQUIRES_DIRECTED_RELATIONSHIP

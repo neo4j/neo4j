@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.exceptions.ParameterWrongTypeException
+import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.Values.FALSE
@@ -80,9 +80,9 @@ class ToBooleanFunctionTest extends CypherFunSuite with GeneratorDrivenPropertyC
   // toBoolean
 
   test("toBoolean throws for wrong types") {
-    a [ParameterWrongTypeException] shouldBe thrownBy(toBoolean(1.1))
+    a [CypherTypeException] shouldBe thrownBy(toBoolean(1.1))
     val toBooleanOfList = ToBooleanFunction(ListLiteral.empty)
-    a [ParameterWrongTypeException] shouldBe thrownBy(toBooleanOfList(CypherRow.empty, QueryStateHelper.empty))
+    a [CypherTypeException] shouldBe thrownBy(toBooleanOfList(CypherRow.empty, QueryStateHelper.empty))
   }
 
   // toBooleanOrNull

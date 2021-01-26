@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.storable.LongValue
@@ -126,10 +125,10 @@ class ToIntegerFunctionTest extends CypherFunSuite with GeneratorDrivenPropertyC
   test(
     "toInteger should throw an exception if the argument is an object which cannot be converted to integer"
   ) {
-    val caughtException = the[ParameterWrongTypeException] thrownBy toInteger(
+    val caughtException = the[CypherTypeException] thrownBy toInteger(
       Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 0)
     )
-    caughtException.getMessage should startWith("Expected a String, Number or Boolean, got: 'point({x: 1.0, y: 0.0, crs: 'cartesian'})'")
+    caughtException.getMessage should startWith("Invalid input for function 'toInteger()': Expected a String, Number or Boolean, got: point({x: 1.0, y: 0.0, crs: 'cartesian'})")
   }
 
   // ToIntegerOrNull

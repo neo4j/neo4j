@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.doReturn
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toRelationshipValue
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toLongValue
+import org.neo4j.cypher.internal.runtime.ImplicitValueConversion.toRelationshipValue
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.exceptions.ParameterWrongTypeException
+import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.values.storable.Values.stringValue
 
@@ -57,7 +57,7 @@ class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSup
   test("should throw if encountering anything other than a relationship") {
     result(false).when(operations).isDeletedInThisTx(any())
 
-    a [ParameterWrongTypeException] should be thrownBy function.compute(1337L, null, state)
+    a [CypherTypeException] should be thrownBy function.compute(1337L, null, state)
   }
 
   private def result(value: Any) = doReturn(value, Nil: _*)

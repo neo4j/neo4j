@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
-import java.util.regex.Pattern
-
 import org.neo4j.cypher.internal.runtime.CastSupport
 import org.neo4j.cypher.internal.runtime.IsList
 import org.neo4j.cypher.internal.runtime.IsNoValue
@@ -31,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Abstra
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AbstractCachedRelationshipProperty
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ParameterFromSlot
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -44,6 +43,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
+import java.util.regex.Pattern
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -180,7 +180,14 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
       Some(map(state).get(propertyKey.name) != Values.NO_VALUE)
 
     case IsNoValue() => None
-    case _ => throw new CypherTypeException("Expected " + variable + " to be a property container.")
+    case _ =>
+      variable match {
+        // resolve parameter name to value if possible/needed
+        case p: ParameterFromSlot if state.params.length > p.offset =>
+          throw new CypherTypeException("Invalid input for function 'exists()': Expected " + state.params(p.offset) + " to be a property container")
+        case _ =>
+          throw new CypherTypeException("Invalid input for function 'exists()': Expected " + variable + " to be a property container")
+      }
   }
 
   override def toString: String = s"hasProp($variable.${propertyKey.name})"
