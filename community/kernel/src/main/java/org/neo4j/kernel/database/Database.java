@@ -408,16 +408,7 @@ public class Database extends LifecycleAdapter
             // Check the tail of transaction logs and validate version
             LogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
 
-            LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader )
-                    .withConfig( databaseConfig )
-                    .withDependencies( databaseDependencies )
-                    .withLogProvider( internalLogProvider )
-                    .withDatabaseTracers( tracers )
-                    .withMemoryTracker( otherDatabaseMemoryTracker )
-                    .withMonitors( databaseMonitors )
-                    .withClock( clock )
-                    .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
-                    .build();
+            LogFiles logFiles = getLogFiles( logEntryReader );
 
             databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
             databaseMonitors.addMonitorListener( new LoggingLogTailScannerMonitor( internalLogProvider.getLog( AbstractLogTailScanner.class ) ) );
@@ -443,6 +434,12 @@ public class Database extends LifecycleAdapter
                     constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider,
                     recoveryCleanupWorkCollector, pageCacheTracer, !storageExists, otherDatabaseMemoryTracker );
 
+            MetadataProvider metadataProvider = storageEngine.metadataProvider();
+            databaseDependencies.satisfyDependency( metadataProvider );
+
+            //Recreate the logFiles after storage engine to get access to dependencies
+            logFiles = getLogFiles( logEntryReader );
+
             life.add( storageEngine );
             life.add( storageEngine.schemaAndTokensLifecycle() );
             life.add( logFiles );
@@ -465,8 +462,6 @@ public class Database extends LifecycleAdapter
             IndexingService indexingService = buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore,
                     pageCacheTracer, otherDatabaseMemoryTracker );
 
-            MetadataProvider metadataProvider = storageEngine.metadataProvider();
-            databaseDependencies.satisfyDependency( metadataProvider );
             databaseDependencies.satisfyDependency( storageEngine.countsAccessor() );
 
             versionContextSupplier.init( metadataProvider::getLastClosedTransactionId );
@@ -538,6 +533,20 @@ public class Database extends LifecycleAdapter
         {
             handleStartupFailure( e );
         }
+    }
+
+    private LogFiles getLogFiles( LogEntryReader logEntryReader ) throws IOException
+    {
+        return LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader )
+                .withConfig( databaseConfig )
+                .withDependencies( databaseDependencies )
+                .withLogProvider( internalLogProvider )
+                .withDatabaseTracers( tracers )
+                .withMemoryTracker( otherDatabaseMemoryTracker )
+                .withMonitors( databaseMonitors )
+                .withClock( clock )
+                .withCommandReaderFactory( storageEngineFactory.commandReaderFactory() )
+                .build();
     }
 
     private void registerUpgradeListener()

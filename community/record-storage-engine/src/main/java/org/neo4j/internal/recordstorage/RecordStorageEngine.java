@@ -322,11 +322,15 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         if ( txState != null )
         {
+            KernelVersion version = neoStores.getMetaDataStore().kernelVersion();
+            Preconditions
+                    .checkState( version.isAtLeast( KernelVersion.V4_2 ), "Can not write older version than %s. Requested %s", KernelVersion.V4_2, version );
+
             // We can make this cast here because we expected that the storageReader passed in here comes from
             // this storage engine itself, anything else is considered a bug. And we do know the inner workings
             // of the storage statements that we create.
             RecordStorageCommandCreationContext creationContext = (RecordStorageCommandCreationContext) commandCreationContext;
-            LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get( neoStores.getMetaDataStore().kernelVersion() );
+            LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get( version );
             TransactionRecordState recordState =
                     creationContext.createTransactionRecordState( integrityValidator, lastTransactionIdWhenStarted, locks, serialization );
 
@@ -351,19 +355,24 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public Collection<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo )
     {
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
+        KernelVersion currentVersion = metaDataStore.kernelVersion();
+        Preconditions.checkState( currentVersion.isAtLeast( KernelVersion.V4_2 ), "Upgrade transaction was introduced in %s(%s jars). Tried writing on %s",
+                KernelVersion.V4_2, KernelVersion.V4_3_D3, versionToUpgradeTo );
+        Preconditions.checkState( versionToUpgradeTo.isGreaterThan( currentVersion ), "Can not downgrade from %s to %s", currentVersion, versionToUpgradeTo );
+
         int id = MetaDataStore.Position.KERNEL_VERSION.id();
 
         MetaDataRecord before = metaDataStore.newRecord();
         before.setId( id );
-        before.initialize( true, metaDataStore.kernelVersion().version() );
+        before.initialize( true, currentVersion.version() );
 
         MetaDataRecord after = metaDataStore.newRecord();
         after.setId( id );
         after.initialize( true, versionToUpgradeTo.version() );
 
-        //This command can be the first one in the "new" version, indicating the switch and writing it to the MetaDataStore
+        //This command can be the last one in the "old" version, indicating the switch and writing it to the MetaDataStore
         //This will work in a Cluster rolling-upgrade scenario as any member receiving this will be on the latest jars and able to read/apply the new version
-        LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get( versionToUpgradeTo );
+        LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get( currentVersion );
         return List.of( new Command.MetaDataCommand( serialization, before, after ) );
     }
 

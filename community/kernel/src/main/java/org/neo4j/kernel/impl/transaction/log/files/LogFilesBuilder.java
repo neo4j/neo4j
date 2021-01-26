@@ -321,7 +321,7 @@ public class LogFilesBuilder
                 }
                 catch ( UnsatisfiedDependencyException e )
                 {
-                    // Use latest version if can't find version in system db.
+                    // Use latest version if can't find version repository.
                 }
             }
         }
