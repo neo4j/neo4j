@@ -32,10 +32,10 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
-import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.CHUNKED_FIXED_SIZE;
-import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.HEAP;
-import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.OFF_HEAP;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.AUTO_WITHOUT_PAGECACHE;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.CHUNKED_FIXED_SIZE;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.HEAP;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.OFF_HEAP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( RandomExtension.class )

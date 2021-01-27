@@ -25,6 +25,7 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.NodeCountsStage;
 import org.neo4j.internal.batchimport.RelationshipCountsStage;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -34,7 +35,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
 
-import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.NO_MONITOR;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.NO_MONITOR;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 
 public class CountsComputer implements CountsBuilder
@@ -54,11 +55,11 @@ public class CountsComputer implements CountsBuilder
             MemoryTracker memoryTracker, Log log )
     {
         this( stores.getMetaDataStore().getLastCommittedTransactionId(),
-                stores.getNodeStore(), stores.getRelationshipStore(),
-                (int) stores.getLabelTokenStore().getHighId(),
-                (int) stores.getRelationshipTypeTokenStore().getHighId(),
-                NumberArrayFactory.auto( pageCache, pageCacheTracer, databaseLayout.databaseDirectory(), true, NO_MONITOR, log ),
-                databaseLayout, pageCacheTracer, memoryTracker );
+              stores.getNodeStore(), stores.getRelationshipStore(),
+              (int) stores.getLabelTokenStore().getHighId(),
+              (int) stores.getRelationshipTypeTokenStore().getHighId(),
+              NumberArrayFactories.auto( pageCache, pageCacheTracer, databaseLayout.databaseDirectory(), true, NO_MONITOR, log ),
+              databaseLayout, pageCacheTracer, memoryTracker );
     }
 
     private CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships, int highLabelId, int highRelationshipTypeId,

@@ -47,7 +47,7 @@ import org.neo4j.consistency.store.DirectRecordAccess;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.RelationshipTypeScanStore;
@@ -165,8 +165,8 @@ class CheckerTestBase
         schemaStorage = new SchemaStorage( schemaStore, tokenHolders );
         labelIndex = dependencies.resolveDependency( LabelScanStore.class );
         relationshipTypeIndex = dependencies.resolveDependency( RelationshipTypeScanStore.class );
-        cacheAccess = new DefaultCacheAccess( NumberArrayFactory.HEAP.newDynamicByteArray( 10_000, new byte[MAX_BYTES], INSTANCE ),
-                Counts.NONE, NUMBER_OF_THREADS );
+        cacheAccess = new DefaultCacheAccess( NumberArrayFactories.HEAP.newDynamicByteArray( 10_000, new byte[MAX_BYTES], INSTANCE ),
+                                              Counts.NONE, NUMBER_OF_THREADS );
         cacheAccess.setCacheSlotSizes( DEFAULT_SLOT_SIZES );
         pageCache = dependencies.resolveDependency( PageCache.class );
     }

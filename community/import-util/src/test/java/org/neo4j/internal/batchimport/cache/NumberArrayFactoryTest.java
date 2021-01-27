@@ -39,8 +39,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.HEAP;
-import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.OFF_HEAP;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.HEAP;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.OFF_HEAP;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -100,7 +100,7 @@ class NumberArrayFactoryTest
     void shouldPickFirstAvailableCandidateLongArray()
     {
         // GIVEN
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.NO_MONITOR, HEAP );
+        NumberArrayFactory factory = new NumberArrayFactories.Auto( NumberArrayFactories.NO_MONITOR, HEAP );
 
         // WHEN
         LongArray array = factory.newLongArray( KILO, -1, INSTANCE );
@@ -117,7 +117,7 @@ class NumberArrayFactoryTest
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
         doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newLongArray( anyLong(), anyLong(), anyLong(), any( MemoryTracker.class ) );
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.NO_MONITOR, lowMemoryFactory, HEAP );
+        NumberArrayFactory factory = new NumberArrayFactories.Auto( NumberArrayFactories.NO_MONITOR, lowMemoryFactory, HEAP );
 
         // WHEN
         LongArray array = factory.newLongArray( KILO, -1, INSTANCE );
@@ -136,7 +136,7 @@ class NumberArrayFactoryTest
         FailureMonitor monitor = new FailureMonitor();
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
         doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newLongArray( anyLong(), anyLong(), anyLong(), any( MemoryTracker.class ) );
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( monitor, lowMemoryFactory );
+        NumberArrayFactory factory = new NumberArrayFactories.Auto( monitor, lowMemoryFactory );
 
         // WHEN
         assertThrows( OutOfMemoryError.class, () -> factory.newLongArray( KILO, -1, INSTANCE ) );
@@ -147,7 +147,7 @@ class NumberArrayFactoryTest
     {
         // GIVEN
         FailureMonitor monitor = new FailureMonitor();
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( monitor, HEAP );
+        NumberArrayFactory factory = new NumberArrayFactories.Auto( monitor, HEAP );
 
         // WHEN
         IntArray array = factory.newIntArray( KILO, -1, INSTANCE );
@@ -166,7 +166,7 @@ class NumberArrayFactoryTest
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
         doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newIntArray( anyLong(), anyInt(), anyLong(), any( MemoryTracker.class ) );
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.NO_MONITOR, lowMemoryFactory, HEAP );
+        NumberArrayFactory factory = new NumberArrayFactories.Auto( NumberArrayFactories.NO_MONITOR, lowMemoryFactory, HEAP );
 
         // WHEN
         IntArray array = factory.newIntArray( KILO, -1, INSTANCE );
@@ -184,7 +184,7 @@ class NumberArrayFactoryTest
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
         doThrow( NativeMemoryAllocationRefusedError.class ).when( lowMemoryFactory ).newIntArray( anyLong(), anyInt(), anyLong(), any( MemoryTracker.class ) );
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.NO_MONITOR, lowMemoryFactory, HEAP );
+        NumberArrayFactory factory = new NumberArrayFactories.Auto( NumberArrayFactories.NO_MONITOR, lowMemoryFactory, HEAP );
 
         // WHEN
         IntArray array = factory.newIntArray( KILO, -1, INSTANCE );
@@ -204,7 +204,7 @@ class NumberArrayFactoryTest
         ArithmeticException failure = new ArithmeticException( "This is an artificial failure" );
         doThrow( failure ).when( throwingMemoryFactory ).newByteArray( anyLong(), any( byte[].class ), anyLong(), any( MemoryTracker.class ) );
         FailureMonitor monitor = new FailureMonitor();
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( monitor, throwingMemoryFactory, HEAP );
+        NumberArrayFactory factory = new NumberArrayFactories.Auto( monitor, throwingMemoryFactory, HEAP );
         int itemSize = 4;
 
         // WHEN
@@ -224,14 +224,14 @@ class NumberArrayFactoryTest
     @Test
     void heapArrayShouldAllowVeryLargeBases()
     {
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.NO_MONITOR, HEAP );
+        NumberArrayFactory factory = new NumberArrayFactories.Auto( NumberArrayFactories.NO_MONITOR, HEAP );
         verifyVeryLargeBaseSupport( factory );
     }
 
     @Test
     void offHeapArrayShouldAllowVeryLargeBases()
     {
-        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.NO_MONITOR, OFF_HEAP );
+        NumberArrayFactory factory = new NumberArrayFactories.Auto( NumberArrayFactories.NO_MONITOR, OFF_HEAP );
         verifyVeryLargeBaseSupport( factory );
     }
 

@@ -28,7 +28,7 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
-import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
@@ -97,7 +97,7 @@ class CountsStagesTest
                 {
                     prepareCache( stores, cache );
                     return new RelationshipCountsStage( config, cache, stores.getRelationshipStore(), highTokenId, highTokenId, countsUpdater,
-                            NumberArrayFactory.HEAP, progressReporter, NULL, INSTANCE );
+                                                        NumberArrayFactories.HEAP, progressReporter, NULL, INSTANCE );
                 } );
     }
 
@@ -119,7 +119,7 @@ class CountsStagesTest
                 {
                     prepareCache( stores, cache );
                     return new RelationshipCountsAndTypeIndexBuildStage( config, cache, stores.getRelationshipStore(), highTokenId, highTokenId, countsUpdater,
-                            NumberArrayFactory.HEAP, progressReporter, mockedTokenScanStore( mock( RelationshipTypeScanStore.class ) ), NULL, INSTANCE );
+                            NumberArrayFactories.HEAP, progressReporter, mockedTokenScanStore( mock( RelationshipTypeScanStore.class ) ), NULL, INSTANCE );
                 } );
     }
 
@@ -135,7 +135,7 @@ class CountsStagesTest
 
             // when
             NodeStore nodeStore = stores.getNodeStore();
-            try ( NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.HEAP, nodeStore.getHighId(), highTokenId, INSTANCE ) )
+            try ( NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactories.HEAP, nodeStore.getHighId(), highTokenId, INSTANCE ) )
             {
                 superviseDynamicExecution( eagerRandomSaturation( config.maxNumberOfProcessors() ), stageFactory.apply( stores, cache ) );
             }

@@ -34,7 +34,7 @@ class DynamicIntArrayTest
     {
         // GIVEN
         int defaultValue = 0;
-        IntArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray( 10, defaultValue, INSTANCE );
+        IntArray array = NumberArrayFactories.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray( 10, defaultValue, INSTANCE );
         array.set( 4, 5 );
 
         // WHEN
@@ -48,7 +48,7 @@ class DynamicIntArrayTest
     void trackHeapMemoryOnArrayAllocations()
     {
         var memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0, null );
-        var longArray = NumberArrayFactory.HEAP.newDynamicLongArray( 10, 1, memoryTracker );
+        var longArray = NumberArrayFactories.HEAP.newDynamicLongArray( 10, 1, memoryTracker );
 
         assertEquals( 0, memoryTracker.estimatedHeapMemory() );
         assertEquals( 0, memoryTracker.usedNativeMemory() );
@@ -63,7 +63,7 @@ class DynamicIntArrayTest
     void trackNativeMemoryOnArrayAllocations()
     {
         var memoryTracker = new LocalMemoryTracker( MemoryPools.NO_TRACKING, 300, 0, null );
-        try ( var longArray = NumberArrayFactory.OFF_HEAP.newDynamicLongArray( 10, 1, memoryTracker ) )
+        try ( var longArray = NumberArrayFactories.OFF_HEAP.newDynamicLongArray( 10, 1, memoryTracker ) )
         {
 
             assertEquals( 0, memoryTracker.estimatedHeapMemory() );
@@ -80,7 +80,7 @@ class DynamicIntArrayTest
     void shouldChunksAsNeeded()
     {
         // GIVEN
-        IntArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray( 10, 0, INSTANCE );
+        IntArray array = NumberArrayFactories.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray( 10, 0, INSTANCE );
 
         // WHEN
         long index = 243;
