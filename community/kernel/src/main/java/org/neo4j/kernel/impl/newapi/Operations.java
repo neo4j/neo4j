@@ -627,40 +627,39 @@ public class Operations implements Write, SchemaWrite
             existingPropertyKeyIds = loadSortedNodePropertyKeyList();
         }
 
-        if ( !existingValue.equals( value ) )
-        {
-            assertAllowsSetProperty( labels, propertyKey );
-            // The value changed and there may be relevant constraints to check so let's check those now.
-            Collection<IndexBackedConstraintDescriptor> uniquenessConstraints = storageReader.uniquenessConstraintsGetRelated( labels, propertyKey, NODE );
-            SchemaMatcher.onMatchingSchema( uniquenessConstraints.iterator(), propertyKey, existingPropertyKeyIds, constraint ->
-                    validateNoExistingNodeWithExactValues( constraint, getAllPropertyValues( constraint.schema(), propertyKey, value ), node ) );
-        }
-
         if ( existingValue == NO_VALUE )
         {
-            //no existing value, we just add it
             assertAllowsSetProperty( labels, propertyKey );
+            checkUniquenessConstraints( node, propertyKey, value, labels, existingPropertyKeyIds );
+
+            //no existing value, we just add it
             ktx.txState().nodeDoAddProperty( node, propertyKey, value );
             if ( hasRelatedSchema )
             {
                 updater.onPropertyAdd( nodeCursor, propertyCursor, labels, propertyKey, existingPropertyKeyIds, value );
             }
-            return NO_VALUE;
         }
-        else
+        else if ( propertyHasChanged( value, existingValue ) )
         {
-            if ( propertyHasChanged( value, existingValue ) )
+            assertAllowsSetProperty( labels, propertyKey );
+            checkUniquenessConstraints( node, propertyKey, value, labels, existingPropertyKeyIds );
+
+            //the value has changed to a new value
+            ktx.txState().nodeDoChangeProperty( node, propertyKey, value );
+            if ( hasRelatedSchema )
             {
-                assertAllowsSetProperty( labels, propertyKey );
-                //the value has changed to a new value
-                ktx.txState().nodeDoChangeProperty( node, propertyKey, value );
-                if ( hasRelatedSchema )
-                {
-                    updater.onPropertyChange( nodeCursor, propertyCursor, labels, propertyKey, existingPropertyKeyIds, existingValue, value );
-                }
+                updater.onPropertyChange( nodeCursor, propertyCursor, labels, propertyKey, existingPropertyKeyIds, existingValue, value );
             }
-            return existingValue;
         }
+        return existingValue;
+    }
+
+    private void checkUniquenessConstraints( long node, int propertyKey, Value value, long[] labels, int[] existingPropertyKeyIds )
+            throws ConstraintValidationException
+    {
+        Collection<IndexBackedConstraintDescriptor> uniquenessConstraints = storageReader.uniquenessConstraintsGetRelated( labels, propertyKey, NODE );
+        SchemaMatcher.onMatchingSchema( uniquenessConstraints.iterator(), propertyKey, existingPropertyKeyIds, constraint ->
+                validateNoExistingNodeWithExactValues( constraint, getAllPropertyValues( constraint.schema(), propertyKey, value ), node ) );
     }
 
     @Override
