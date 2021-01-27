@@ -32,7 +32,17 @@ import org.neo4j.internal.batchimport.input.InputChunk;
  */
 public interface InputIterator extends Closeable
 {
+    /**
+     * Called by each thread that will be reading input data and the returned instances will be local to that thread.
+     * @return an instance which is capable of receiving data in chunks when passed into {@link #next(InputChunk)}.
+     */
     InputChunk newChunk();
 
+    /**
+     * Fills the given {@code chunk} with more data. Should be called by the same thread that {@link #newChunk() allocated} the chunk.
+     * @param chunk to receive the new data.
+     * @return {@code true} if data was retreived into the chunk, otherwise {@code false} if there was no more data to be read.
+     * @throws IOException on I/O error.
+     */
     boolean next( InputChunk chunk ) throws IOException;
 }
