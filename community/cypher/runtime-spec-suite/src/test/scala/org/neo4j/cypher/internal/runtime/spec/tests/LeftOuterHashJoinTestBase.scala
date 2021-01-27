@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import java.util.Collections
+import java.util.Collections.emptyList
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
@@ -32,7 +32,6 @@ import org.neo4j.graphdb.RelationshipType
 
 import org.neo4j.graphdb.RelationshipType
 
-import java.util.Collections
 import scala.collection.JavaConverters.asJavaIterableConverter
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.util.Random
@@ -574,7 +573,9 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     val runtimeResult = execute(logicalQuery, runtime)
 
     //then
-    runtimeResult should beColumns("exposures").withRows(Seq(Array(exposures.asJava), Array(Collections.emptyList()), Array(Collections.emptyList()), Array(Collections.emptyList())), listInAnyOrder = true)
+    val expected = Seq(exposures.asJava, emptyList(), emptyList(), emptyList())
+      .map(r => Array(r))
+    runtimeResult should beColumns("exposures").withRows(expected, listInAnyOrder = true)
   }
 
   // Emulates outer join.
