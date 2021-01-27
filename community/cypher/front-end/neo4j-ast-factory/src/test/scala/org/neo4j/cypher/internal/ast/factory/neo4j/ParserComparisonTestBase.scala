@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.parser.javacc.Cypher
-import org.neo4j.cypher.internal.parser.javacc.CypherCharStream
+import org.neo4j.cypher.internal.parser.JavaCCParser
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 import org.scalatest.Assertion
@@ -35,10 +34,9 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
 
   protected def assertSyntaxException(query: String): Unit = {
     val exceptionFactory = new OpenCypherExceptionFactory(None)
-    val parser = new Cypher(new Neo4jASTFactory(query), new Neo4jASTExceptionFactory(exceptionFactory), new CypherCharStream(query))
 
     an[OpenCypherExceptionFactory.SyntaxException] should be thrownBy {
-      parser.Statements()
+      JavaCCParser.parse(query, exceptionFactory)
     }
   }
 
@@ -51,8 +49,7 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
       val exceptionFactory = new OpenCypherExceptionFactory(None)
       val parboiledAST = Try(parboiledParser.parse(query, exceptionFactory, None))
 
-      val parser = new Cypher(new Neo4jASTFactory(query), new Neo4jASTExceptionFactory(exceptionFactory), new CypherCharStream(query))
-      val javaccAST = Try(parser.Statements().get(0))
+      val javaccAST = Try(JavaCCParser.parse(query, exceptionFactory))
 
       (javaccAST, parboiledAST) match {
         case (Failure(javaccEx: SyntaxException), Failure(parboiledEx: SyntaxException)) =>

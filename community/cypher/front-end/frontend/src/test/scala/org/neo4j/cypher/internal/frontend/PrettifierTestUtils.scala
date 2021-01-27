@@ -57,7 +57,7 @@ trait PrettifierTestUtils extends Matchers {
   def roundTripCheck(original: Statement): Assertion = {
     val pretty = prettifier.asString(original)
     val parsed = try {
-      parser.parse(pretty, OpenCypherExceptionFactory(None))
+      parse(pretty)
     } catch {
       case e: Exception =>
         println("-- failure --------------------------------------")
@@ -82,15 +82,25 @@ trait PrettifierTestUtils extends Matchers {
       case i @ UnaliasedReturnItem(e, _) => UnaliasedReturnItem(e, "")(i.position)
     })))
 
-
   def show(original: String): Unit = {
     println("original: " + original)
-    val parsed1 = parser.parse(original, OpenCypherExceptionFactory(None))
+    val parsed1 = parse(original)
     println("  - ast1: " + parsed1)
     val pretty = prettifier.asString(parsed1)
     println("  - pret: " + pretty)
-    val parsed2 = parser.parse(pretty, OpenCypherExceptionFactory(None))
+    val parsed2 = parse(pretty)
     println("  - ast2: " + parsed2)
   }
+
+  private def parse(original: String): Statement =
+    parser.parse(original, OpenCypherExceptionFactory(None))
+// TODO: use the try catch below to use new parser and fallback,
+//  the update will be part of https://trello.com/c/GcTY5tC4/252-use-the-new-parser-in-tests-and-utilities
+//    try {
+//      JavaCCParser.parse(original, OpenCypherExceptionFactory(None))
+//    } catch {
+//      case _ if JavaCCParser.shouldFallBack(original) =>
+//        parser.parse(original, OpenCypherExceptionFactory(None))
+//    }
 
 }

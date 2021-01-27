@@ -65,6 +65,11 @@
             <artifactId>cypher-ast-factory</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-javacc-parser</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- test dependencies -->
 
@@ -81,13 +86,6 @@
             <version>${project.version}</version>
             <scope>test</scope>
             <type>test-jar</type>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-javacc-parser</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
