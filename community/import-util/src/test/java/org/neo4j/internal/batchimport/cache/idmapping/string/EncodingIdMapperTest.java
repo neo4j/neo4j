@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongFunction;
 
 import org.neo4j.function.Factory;
-import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
@@ -379,7 +379,7 @@ public class EncodingIdMapperTest
             groups.getOrCreate( "Group " + i );
         }
         IdMapper mapper = mapper( encoder, Radix.LONG, EncodingIdMapper.NO_MONITOR, ParallelSort.DEFAULT,
-                numberOfCollisions -> new LongCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions ) );
+                numberOfCollisions -> new LongCollisionValues( NumberArrayFactories.HEAP, numberOfCollisions ) );
         final AtomicReference<Group> group = new AtomicReference<>();
         LongFunction<Object> ids = nodeId ->
         {
@@ -580,15 +580,15 @@ public class EncodingIdMapperTest
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, ParallelSort.Comparator comparator,
             LongFunction<CollisionValues> collisionValuesFactory )
     {
-        return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups,
+        return new EncodingIdMapper( NumberArrayFactories.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups,
                 collisionValuesFactory, 1_000, processors, comparator );
     }
 
     private LongFunction<CollisionValues> autoDetect( Encoder encoder )
     {
         return numberOfCollisions -> encoder instanceof LongEncoder
-                ? new LongCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions )
-                : new StringCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions );
+                ? new LongCollisionValues( NumberArrayFactories.HEAP, numberOfCollisions )
+                : new StringCollisionValues( NumberArrayFactories.HEAP, numberOfCollisions );
 
     }
 

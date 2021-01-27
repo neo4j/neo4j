@@ -25,6 +25,7 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.NodeCountsStage;
 import org.neo4j.internal.batchimport.RelationshipCountsStage;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -49,7 +50,7 @@ public class CountsComputer implements CountsBuilder
                 stores.getNodeStore(), stores.getRelationshipStore(),
                 (int) stores.getLabelTokenStore().getHighId(),
                 (int) stores.getRelationshipTypeTokenStore().getHighId(),
-                NumberArrayFactory.auto( pageCache, databaseLayout.databaseDirectory(), true, NumberArrayFactory.NO_MONITOR, log ) );
+                NumberArrayFactories.auto( pageCache, databaseLayout.databaseDirectory(), true, NumberArrayFactories.NO_MONITOR, log ) );
     }
 
     private CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships, int highLabelId, int highRelationshipTypeId,

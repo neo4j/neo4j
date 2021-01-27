@@ -21,7 +21,7 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -32,7 +32,7 @@ class GroupCacheTest
     {
         // given
         int max = 256;
-        GroupCache cache = GroupCache.select( NumberArrayFactory.HEAP, 100, max );
+        GroupCache cache = GroupCache.select( NumberArrayFactories.HEAP, 100, max );
 
         // when
         assertSetAndGet( cache, 10, 45 );
@@ -48,7 +48,7 @@ class GroupCacheTest
     {
         // given
         int max = 257;
-        GroupCache cache = GroupCache.select( NumberArrayFactory.HEAP, 100, max );
+        GroupCache cache = GroupCache.select( NumberArrayFactories.HEAP, 100, max );
 
         // when
         assertSetAndGet( cache, 10, 123 );

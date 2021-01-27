@@ -117,11 +117,11 @@ class NumberArrayTest extends NumberArrayPageCacheTestSupport
         NullLog log = NullLog.getInstance();
         Collection<NumberArrayTestData> list = new ArrayList<>();
         Map<String,NumberArrayFactory> factories = new HashMap<>();
-        factories.put( "HEAP", NumberArrayFactory.HEAP );
-        factories.put( "OFF_HEAP", NumberArrayFactory.OFF_HEAP );
-        factories.put( "AUTO_WITHOUT_PAGECACHE", NumberArrayFactory.AUTO_WITHOUT_PAGECACHE );
-        factories.put( "CHUNKED_FIXED_SIZE", NumberArrayFactory.CHUNKED_FIXED_SIZE );
-        factories.put( "autoWithPageCacheFallback", NumberArrayFactory.auto( pageCache, dir, true, NumberArrayFactory.NO_MONITOR, log ) );
+        factories.put( "HEAP", NumberArrayFactories.HEAP );
+        factories.put( "OFF_HEAP", NumberArrayFactories.OFF_HEAP );
+        factories.put( "AUTO_WITHOUT_PAGECACHE", NumberArrayFactories.AUTO_WITHOUT_PAGECACHE );
+        factories.put( "CHUNKED_FIXED_SIZE", NumberArrayFactories.CHUNKED_FIXED_SIZE );
+        factories.put( "autoWithPageCacheFallback", NumberArrayFactories.auto( pageCache, dir, true, NumberArrayFactories.NO_MONITOR, log ) );
         factories.put( "PageCachedNumberArrayFactory", new PageCachedNumberArrayFactory( pageCache, dir, log ) );
         for ( Map.Entry<String,NumberArrayFactory> entry : factories.entrySet() )
         {

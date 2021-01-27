@@ -28,7 +28,7 @@ import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.counts.CountsVisitor;
 import org.neo4j.internal.batchimport.cache.LongArray;
-import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.cache.OffHeapLongArray;
 import org.neo4j.internal.counts.CountsKey;
 import org.neo4j.internal.recordstorage.RelationshipCounter;
@@ -76,7 +76,7 @@ class CountsState implements AutoCloseable
         this.highRelationshipTypeId = highRelationshipTypeId;
         this.highNodeId = highNodeId;
         this.cacheAccess = cacheAccess;
-        var arrayFactory = NumberArrayFactory.OFF_HEAP;
+        var arrayFactory = NumberArrayFactories.OFF_HEAP;
         this.nodeCounts = (OffHeapLongArray) arrayFactory.newLongArray( highLabelId + 1, 0 );
         this.relationshipLabelCounts = arrayFactory.newLongArray( labelsCountsLength( highLabelId, highRelationshipTypeId ), 0 );
         this.relationshipWildcardCounts = arrayFactory.newLongArray( wildcardCountsLength( highRelationshipTypeId ), 0 );

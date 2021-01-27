@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport.cache;
 import static java.lang.Long.min;
 
 /**
- * Used as part of the fallback strategy for {@link Auto}. Tries to split up fixed-size arrays
+ * Used as part of the fallback strategy for {@link NumberArrayFactories.Auto}. Tries to split up fixed-size arrays
  * ({@link #newLongArray(long, long)} and {@link #newIntArray(long, int)} into smaller chunks where
  * some can live on heap and some off heap.
  */
@@ -34,14 +34,9 @@ public class ChunkedNumberArrayFactory extends NumberArrayFactory.Adapter
     private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - Short.MAX_VALUE;
     private final NumberArrayFactory delegate;
 
-    ChunkedNumberArrayFactory( Monitor monitor )
-    {
-        this( monitor, OFF_HEAP, HEAP );
-    }
-
     ChunkedNumberArrayFactory( Monitor monitor, NumberArrayFactory... delegateList )
     {
-        delegate = new Auto( monitor, delegateList );
+        delegate = new NumberArrayFactories.Auto( monitor, delegateList );
     }
 
     @Override

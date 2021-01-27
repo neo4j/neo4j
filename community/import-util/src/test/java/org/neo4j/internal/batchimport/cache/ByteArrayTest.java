@@ -55,16 +55,16 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
         PageCache pageCache = fixture.pageCache;
         File dir = fixture.directory;
         NullLog log = NullLog.getInstance();
-        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactory.auto( pageCache, dir, true, NumberArrayFactory.NO_MONITOR, log );
+        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactories.auto( pageCache, dir, true, NumberArrayFactories.NO_MONITOR, log );
         NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, dir, log );
         int chunkSize = LENGTH / ChunkedNumberArrayFactory.MAGIC_CHUNK_COUNT;
         return Arrays.asList(
-                () -> NumberArrayFactory.HEAP.newByteArray( LENGTH, DEFAULT ),
-                () -> NumberArrayFactory.HEAP.newDynamicByteArray( chunkSize, DEFAULT ),
-                () -> NumberArrayFactory.OFF_HEAP.newByteArray( LENGTH, DEFAULT ),
-                () -> NumberArrayFactory.OFF_HEAP.newDynamicByteArray( chunkSize, DEFAULT ),
-                () -> NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newByteArray( LENGTH, DEFAULT ),
-                () -> NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicByteArray( chunkSize, DEFAULT ),
+                () -> NumberArrayFactories.HEAP.newByteArray( LENGTH, DEFAULT ),
+                () -> NumberArrayFactories.HEAP.newDynamicByteArray( chunkSize, DEFAULT ),
+                () -> NumberArrayFactories.OFF_HEAP.newByteArray( LENGTH, DEFAULT ),
+                () -> NumberArrayFactories.OFF_HEAP.newDynamicByteArray( chunkSize, DEFAULT ),
+                () -> NumberArrayFactories.AUTO_WITHOUT_PAGECACHE.newByteArray( LENGTH, DEFAULT ),
+                () -> NumberArrayFactories.AUTO_WITHOUT_PAGECACHE.newDynamicByteArray( chunkSize, DEFAULT ),
                 () -> autoWithPageCacheFallback.newByteArray( LENGTH, DEFAULT ),
                 () -> autoWithPageCacheFallback.newDynamicByteArray( chunkSize, DEFAULT ),
                 () -> pageCacheArrayFactory.newByteArray( LENGTH, DEFAULT ),

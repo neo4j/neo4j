@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.internal.batchimport.cache.ByteArray;
-import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -45,7 +45,7 @@ class ByteArrayBitsManipulatorTest
         // given
         ByteArrayBitsManipulator manipulator = new ByteArrayBitsManipulator( MAX_SLOT_BITS, 1 );
         long[][] actual = new long[1_000][];
-        try ( ByteArray array = NumberArrayFactory.HEAP.newByteArray( actual.length, new byte[MAX_BYTES] ) )
+        try ( ByteArray array = NumberArrayFactories.HEAP.newByteArray( actual.length, new byte[MAX_BYTES] ) )
         {
             // when
             for ( int i = 0; i < actual.length; i++ )
@@ -67,7 +67,7 @@ class ByteArrayBitsManipulatorTest
         // given
         ByteArrayBitsManipulator manipulator = new ByteArrayBitsManipulator( MAX_SLOT_BITS, MAX_SLOT_BITS, 1, 1, 1, 1 );
         long[][] actual = new long[1_000][];
-        try ( ByteArray array = NumberArrayFactory.HEAP.newByteArray( actual.length, new byte[MAX_BYTES] ) )
+        try ( ByteArray array = NumberArrayFactories.HEAP.newByteArray( actual.length, new byte[MAX_BYTES] ) )
         {
             // when
             for ( int i = 0; i < actual.length; i++ )
@@ -91,7 +91,7 @@ class ByteArrayBitsManipulatorTest
     {
         // given
         ByteArrayBitsManipulator manipulator = new ByteArrayBitsManipulator( MAX_SLOT_BITS, 1 );
-        try ( ByteArray array = NumberArrayFactory.HEAP.newByteArray( 2, new byte[MAX_BYTES] ) )
+        try ( ByteArray array = NumberArrayFactories.HEAP.newByteArray( 2, new byte[MAX_BYTES] ) )
         {
             // when
             put( manipulator, array, 0, -1, 0 );

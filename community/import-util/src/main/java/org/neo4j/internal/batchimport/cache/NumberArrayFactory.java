@@ -19,28 +19,10 @@
  */
 package org.neo4j.internal.batchimport.cache;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
-
-import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.logging.Log;
-
-import static java.lang.Math.toIntExact;
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-import static org.neo4j.io.ByteUnit.bytesToString;
-
 /**
- * Factory of {@link LongArray}, {@link IntArray} and {@link ByteArray} instances. Users can select in which type of
- * memory the arrays will be placed, either in {@link #HEAP}, {@link #OFF_HEAP}, or use an auto allocator which
- * will have each instance placed where it fits best, favoring the primary candidates.
+ * Factory of {@link LongArray}, {@link IntArray} and {@link ByteArray} instances. Users can select in which type of memory the arrays will be placed, either in
+ * {@link NumberArrayFactories#HEAP}, {@link NumberArrayFactories#OFF_HEAP}, or use an auto allocator which will have each instance placed where it fits best,
+ * favoring the primary candidates.
  */
 public interface NumberArrayFactory
 {
@@ -54,115 +36,6 @@ public interface NumberArrayFactory
          * @param attemptedAllocationFailures list of failed attempts to allocate this memory in other allocators.
          */
         void allocationSuccessful( long memory, NumberArrayFactory successfulFactory, Iterable<AllocationFailure> attemptedAllocationFailures );
-    }
-
-    Monitor NO_MONITOR = ( memory, successfulFactory, attemptedAllocationFailures ) -> { /* no-op */ };
-
-    /**
-     * Puts arrays inside the heap.
-     */
-    NumberArrayFactory HEAP = new Adapter()
-    {
-        @Override
-        public IntArray newIntArray( long length, int defaultValue, long base )
-        {
-            return new HeapIntArray( toIntExact( length ), defaultValue, base );
-        }
-
-        @Override
-        public LongArray newLongArray( long length, long defaultValue, long base )
-        {
-            return new HeapLongArray( toIntExact( length ), defaultValue, base );
-        }
-
-        @Override
-        public ByteArray newByteArray( long length, byte[] defaultValue, long base )
-        {
-            return new HeapByteArray( toIntExact( length ), defaultValue, base );
-        }
-
-        @Override
-        public String toString()
-        {
-            return "HEAP";
-        }
-    };
-
-    /**
-     * Puts arrays off-heap, using unsafe calls.
-     */
-    NumberArrayFactory OFF_HEAP = new Adapter()
-    {
-        @Override
-        public IntArray newIntArray( long length, int defaultValue, long base )
-        {
-            return new OffHeapIntArray( length, defaultValue, base );
-        }
-
-        @Override
-        public LongArray newLongArray( long length, long defaultValue, long base )
-        {
-            return new OffHeapLongArray( length, defaultValue, base );
-        }
-
-        @Override
-        public ByteArray newByteArray( long length, byte[] defaultValue, long base )
-        {
-            return new OffHeapByteArray( length, defaultValue, base );
-        }
-
-        @Override
-        public String toString()
-        {
-            return "OFF_HEAP";
-        }
-    };
-
-    /**
-     * Used as part of the fallback strategy for {@link Auto}. Tries to split up fixed-size arrays
-     * ({@link #newLongArray(long, long)} and {@link #newIntArray(long, int)} into smaller chunks where
-     * some can live on heap and some off heap.
-     */
-    NumberArrayFactory CHUNKED_FIXED_SIZE = new ChunkedNumberArrayFactory( NumberArrayFactory.NO_MONITOR );
-
-    /**
-     * {@link Auto} factory which uses JVM stats for gathering information about available memory.
-     */
-    NumberArrayFactory AUTO_WITHOUT_PAGECACHE = new Auto( NumberArrayFactory.NO_MONITOR, OFF_HEAP, HEAP, CHUNKED_FIXED_SIZE );
-
-    /**
-     * {@link Auto} factory which has a page cache backed number array as final fallback, in order to prevent OOM
-     * errors.
-     * @param pageCache {@link PageCache} to fallback allocation into, if no more memory is available.
-     * @param dir directory where cached files are placed.
-     * @param allowHeapAllocation whether or not to allow allocation on heap. Otherwise allocation is restricted
-     * to off-heap and the page cache fallback. This to be more in control of available space in the heap at all times.
-     * @param monitor for monitoring successful and failed allocations and which factory was selected.
-     * @return a {@link NumberArrayFactory} which tries to allocation off-heap, then potentially on heap
-     * and lastly falls back to allocating inside the given {@code pageCache}.
-     */
-    static NumberArrayFactory auto( PageCache pageCache, File dir, boolean allowHeapAllocation, Monitor monitor, Log log )
-    {
-        PageCachedNumberArrayFactory pagedArrayFactory = new PageCachedNumberArrayFactory( pageCache, dir, log );
-        ChunkedNumberArrayFactory chunkedArrayFactory = new ChunkedNumberArrayFactory( monitor,
-                allocationAlternatives( allowHeapAllocation, pagedArrayFactory ) );
-        return new Auto( monitor, allocationAlternatives( allowHeapAllocation, chunkedArrayFactory ) );
-    }
-
-    /**
-     * @param allowHeapAllocation whether or not to include heap allocation as an alternative.
-     * @param additional other means of allocation to try after the standard off/on heap alternatives.
-     * @return an array of {@link NumberArrayFactory} with the desired alternatives.
-     */
-    static NumberArrayFactory[] allocationAlternatives( boolean allowHeapAllocation, NumberArrayFactory... additional )
-    {
-        List<NumberArrayFactory> result = new ArrayList<>( Collections.singletonList( OFF_HEAP ) );
-        if ( allowHeapAllocation )
-        {
-            result.add( HEAP );
-        }
-        result.addAll( asList( additional ) );
-        return result.toArray( new NumberArrayFactory[0] );
     }
 
     class AllocationFailure
@@ -185,85 +58,6 @@ public interface NumberArrayFactory
         {
             return factory;
         }
-    }
-
-    /**
-     * Looks at available memory and decides where the requested array fits best. Tries to allocate the whole
-     * array with the first candidate, falling back to others as needed.
-     */
-    class Auto extends Adapter
-    {
-        private final Monitor monitor;
-        private final NumberArrayFactory[] candidates;
-
-        public Auto( Monitor monitor, NumberArrayFactory... candidates )
-        {
-            Objects.requireNonNull( monitor );
-            this.monitor = monitor;
-            this.candidates = candidates;
-        }
-
-        @Override
-        public LongArray newLongArray( long length, long defaultValue, long base )
-        {
-            return tryAllocate( length, 8, f -> f.newLongArray( length, defaultValue, base ) );
-        }
-
-        @Override
-        public IntArray newIntArray( long length, int defaultValue, long base )
-        {
-            return tryAllocate( length, 4, f -> f.newIntArray( length, defaultValue, base ) );
-        }
-
-        @Override
-        public ByteArray newByteArray( long length, byte[] defaultValue, long base )
-        {
-            return tryAllocate( length, defaultValue.length, f -> f.newByteArray( length, defaultValue, base ) );
-        }
-
-        private <T extends NumberArray<? extends T>> T tryAllocate( long length, int itemSize,
-                Function<NumberArrayFactory,T> allocator )
-        {
-            List<AllocationFailure> failures = new ArrayList<>();
-            Error error = null;
-            for ( NumberArrayFactory candidate : candidates )
-            {
-                try
-                {
-                    try
-                    {
-                        T array = allocator.apply( candidate );
-                        monitor.allocationSuccessful( length * itemSize, candidate, failures );
-                        return array;
-                    }
-                    catch ( ArithmeticException e )
-                    {
-                        throw new OutOfMemoryError( e.getMessage() );
-                    }
-                }
-                catch ( OutOfMemoryError | NativeMemoryAllocationRefusedError e )
-                {   // Alright let's try the next one
-                    if ( error == null )
-                    {
-                        error = e;
-                    }
-                    else
-                    {
-                        e.addSuppressed( error );
-                        error = e;
-                    }
-                    failures.add( new AllocationFailure( e, candidate ) );
-                }
-            }
-            throw error( length, itemSize, error );
-        }
-
-        private Error error( long length, int itemSize, Error error )
-        {
-            return Exceptions.withMessage( error, format( "%s: Not enough memory available for allocating %s, tried %s",
-                    error.getMessage(), bytesToString( length * itemSize ), Arrays.toString( candidates ) ) );
-        }
-
     }
 
     /**

@@ -22,7 +22,7 @@ package org.neo4j.internal.batchimport.cache.idmapping.string;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -40,7 +40,7 @@ class BigIdTrackerTest
     {
         // given
         int length = 10_000;
-        try ( BigIdTracker tracker = new BigIdTracker( NumberArrayFactory.HEAP.newByteArray( length, BigIdTracker.DEFAULT_VALUE ) ) )
+        try ( BigIdTracker tracker = new BigIdTracker( NumberArrayFactories.HEAP.newByteArray( length, BigIdTracker.DEFAULT_VALUE ) ) )
         {
             // when
             long[] values = new long[length];

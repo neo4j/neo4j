@@ -28,7 +28,7 @@ import java.util.List;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.batchimport.cache.NodeRelationshipCache;
-import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
@@ -97,7 +97,7 @@ class ImportLogicTest
         int denseNodeThreshold = 5;
         int numberOfNodes = 100;
         int numberOfTypes = 10;
-        NodeRelationshipCache cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, denseNodeThreshold );
+        NodeRelationshipCache cache = new NodeRelationshipCache( NumberArrayFactories.HEAP, denseNodeThreshold );
         cache.setNodeCount( numberOfNodes + 1 );
         Direction[] directions = Direction.values();
         for ( int i = 0; i < numberOfNodes; i++ )
