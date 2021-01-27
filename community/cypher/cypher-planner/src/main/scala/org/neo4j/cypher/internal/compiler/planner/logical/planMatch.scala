@@ -19,65 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
-import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
-import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
-import org.neo4j.cypher.internal.logical.plans.ResolvedCall
-import org.neo4j.cypher.internal.util.Selectivity
-
-import scala.annotation.tailrec
 
 case object planMatch extends MatchPlanner {
 
   def apply(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): BestPlans = {
-    val limitSelectivity = limitSelectivityForRestOfQuery(query, context)
+    val limitSelectivity = LimitSelectivity.forRestOfQuery(query, context)
 
     context.strategy.plan(
       query.queryGraph,
       InterestingOrderConfig.interestingOrderForPart(query, rhsPart, isHorizon = false),
       context.withLimitSelectivity(limitSelectivity))
-  }
-
-  private[logical] def limitSelectivityForRestOfQuery(query: SinglePlannerQuery, context: LogicalPlanningContext): Selectivity = {
-    @tailrec
-    def recurse(query: SinglePlannerQuery, context: LogicalPlanningContext, parentLimitSelectivity: Selectivity): Selectivity = {
-      val lastPartSelectivity = limitSelectivityForPart(query, context, parentLimitSelectivity)
-
-      query.withoutLast match {
-        case None => lastPartSelectivity
-        case Some(withoutLast) =>
-          val currentSelectivity = lastPartSelectivity
-          recurse(withoutLast, context, currentSelectivity)
-      }
-    }
-
-    recurse(query, context, Selectivity.ONE)
-  }
-
-  private[logical] def limitSelectivityForPart(query: SinglePlannerQuery, context: LogicalPlanningContext, parentLimitSelectivity: Selectivity): Selectivity = {
-    if (!query.readOnly) {
-       Selectivity.ONE
-    } else {
-      query.lastQueryHorizon match {
-        case _: AggregatingQueryProjection =>
-          Selectivity.ONE
-
-        case proj: QueryProjection if proj.queryPagination.limit.isDefined =>
-          val queryWithoutLimit = query.updateTailOrSelf(_.updateQueryProjection(_ => proj.withPagination(proj.queryPagination.withLimit(None))))
-          val cardinalityModel = context.metrics.cardinality(_, context.input, context.semanticTable)
-
-          val cardinalityWithoutLimit = cardinalityModel(queryWithoutLimit)
-          val cardinalityWithLimit = cardinalityModel(query)
-
-          CardinalityCostModel.limitingPlanSelectivity(cardinalityWithoutLimit, cardinalityWithLimit, parentLimitSelectivity)
-
-        case ProcedureCallProjection(ResolvedCall(signature, _, _, _, _, _)) if signature.eager => Selectivity.ONE
-
-        case _ => parentLimitSelectivity
-      }
-    }
   }
 }

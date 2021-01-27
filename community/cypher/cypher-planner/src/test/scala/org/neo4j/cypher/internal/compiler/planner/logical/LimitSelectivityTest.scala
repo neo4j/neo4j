@@ -40,14 +40,14 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("limitSelectivityForPart: no LIMIT") {
     new given().withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery()
 
       // WHEN
-      val result = planMatch.limitSelectivityForPart(query, context, Selectivity.ONE)
+      val result = LimitSelectivity.forPart(query, context, Selectivity.ONE)
 
       // THEN
       result shouldBe Selectivity.ONE
@@ -69,7 +69,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit)))))
 
       // WHEN
-      val result = planMatch.limitSelectivityForPart(query, context, Selectivity.ONE)
+      val result = LimitSelectivity.forPart(query, context, Selectivity.ONE)
 
       // THEN
       result shouldBe Selectivity(limit / nodes.toDouble)
@@ -82,7 +82,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       val p = Selectivity(0.5)
 
       // WHEN
-      val result = planMatch.limitSelectivityForPart(query, context, p)
+      val result = LimitSelectivity.forPart(query, context, p)
 
       // THEN
       result shouldBe p
@@ -105,7 +105,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       val p = Selectivity(0.5)
 
       // WHEN
-      val result = planMatch.limitSelectivityForPart(query, context, p)
+      val result = LimitSelectivity.forPart(query, context, p)
 
       // THEN
       result shouldBe Selectivity(limit / nodes.toDouble) * p
@@ -117,14 +117,12 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       val query = RegularSinglePlannerQuery()
 
       // WHEN
-      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+      val result = LimitSelectivity.forRestOfQuery(query, context)
 
       // THEN
       result shouldBe Selectivity.ONE
     }
   }
-
-
 
   test("limitSelectivityForRestOfQuery: no LIMIT, tail") {
     new given().withLogicalPlanningContext { (_, context) =>
@@ -133,7 +131,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // WHEN
-      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+      val result = LimitSelectivity.forRestOfQuery(query, context)
 
       // THEN
       result shouldBe Selectivity.ONE
@@ -155,7 +153,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit)))))
 
       // WHEN
-      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+      val result = LimitSelectivity.forRestOfQuery(query, context)
 
       // THEN
       result shouldBe Selectivity(limit / nodes.toDouble)
@@ -181,7 +179,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // WHEN
-      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+      val result = LimitSelectivity.forRestOfQuery(query, context)
 
       // THEN
       result shouldBe Selectivity(limit / nodes.toDouble)
@@ -207,7 +205,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // WHEN
-      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+      val result = LimitSelectivity.forRestOfQuery(query, context)
 
       // THEN
       result shouldBe Selectivity(limit / (nodes.toDouble * nodes.toDouble))
@@ -235,7 +233,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // WHEN
-      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+      val result = LimitSelectivity.forRestOfQuery(query, context)
 
       // THEN
       result shouldBe Selectivity(highLimit / (nodes.toDouble * nodes.toDouble))
@@ -263,7 +261,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // WHEN
-      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+      val result = LimitSelectivity.forRestOfQuery(query, context)
 
       // THEN
       result shouldBe Selectivity(lowLimit / nodes.toDouble)
@@ -298,7 +296,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
           )
 
           // WHEN
-          val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+          val result = LimitSelectivity.forRestOfQuery(query, context)
 
           // THEN
           result shouldBe Selectivity(lowLimit / nodes.toDouble)
@@ -325,7 +323,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // WHEN
-      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+      val result = LimitSelectivity.forRestOfQuery(query, context)
 
       // THEN
       result shouldBe Selectivity.ONE
@@ -359,7 +357,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // WHEN
-      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+      val result = LimitSelectivity.forRestOfQuery(query, context)
 
       // THEN
       result shouldBe Selectivity.ONE
@@ -393,7 +391,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // WHEN
-      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+      val result = LimitSelectivity.forRestOfQuery(query, context)
 
       // THEN
       result shouldBe Selectivity.ONE
@@ -427,7 +425,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // WHEN
-      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+      val result = LimitSelectivity.forRestOfQuery(query, context)
 
       // THEN
       result shouldBe Selectivity(limit / (nodes.toDouble * nodes.toDouble * PlannerDefaults.DEFAULT_MULTIPLIER.coefficient))
@@ -455,7 +453,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // WHEN
-      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+      val result = LimitSelectivity.forRestOfQuery(query, context)
 
       // THEN
       result shouldBe Selectivity(limit / (nodes.toDouble * nodes.toDouble))
@@ -482,7 +480,7 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // WHEN
-      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+      val result = LimitSelectivity.forRestOfQuery(query, context)
 
       // THEN
       result shouldBe Selectivity.ONE

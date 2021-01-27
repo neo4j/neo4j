@@ -1,0 +1,72 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.compiler.planner.logical
+
+import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.QueryProjection
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.util.Selectivity
+
+import scala.annotation.tailrec
+
+object LimitSelectivity {
+
+  def forRestOfQuery(query: SinglePlannerQuery, context: LogicalPlanningContext): Selectivity = {
+    @tailrec
+    def recurse(query: SinglePlannerQuery, context: LogicalPlanningContext, parentLimitSelectivity: Selectivity): Selectivity = {
+      val lastPartSelectivity = forPart(query, context, parentLimitSelectivity)
+
+      query.withoutLast match {
+        case None => lastPartSelectivity
+        case Some(withoutLast) =>
+          val currentSelectivity = lastPartSelectivity
+          recurse(withoutLast, context, currentSelectivity)
+      }
+    }
+
+    recurse(query, context, Selectivity.ONE)
+  }
+
+  def forPart(query: SinglePlannerQuery, context: LogicalPlanningContext, parentLimitSelectivity: Selectivity): Selectivity = {
+    if (!query.readOnly) {
+      Selectivity.ONE
+    } else {
+      query.lastQueryHorizon match {
+        case _: AggregatingQueryProjection =>
+          Selectivity.ONE
+
+        case proj: QueryProjection if proj.queryPagination.limit.isDefined =>
+          val queryWithoutLimit = query.updateTailOrSelf(_.updateQueryProjection(_ => proj.withPagination(proj.queryPagination.withLimit(None))))
+          val cardinalityModel = context.metrics.cardinality(_, context.input, context.semanticTable)
+
+          val cardinalityWithoutLimit = cardinalityModel(queryWithoutLimit)
+          val cardinalityWithLimit = cardinalityModel(query)
+
+          CardinalityCostModel.limitingPlanSelectivity(cardinalityWithoutLimit, cardinalityWithLimit, parentLimitSelectivity)
+
+        case ProcedureCallProjection(ResolvedCall(signature, _, _, _, _, _)) if signature.eager => Selectivity.ONE
+
+        case _ => parentLimitSelectivity
+      }
+    }
+  }
+}
