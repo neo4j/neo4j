@@ -219,6 +219,9 @@ public interface Status
                 "This is an administration command and it should be executed against the system database." ),
         AccessMode( ClientError, "The request could not be completed due to access mode violation" ),
 
+        ExternalResourceFailed( ClientError,
+                "Access to an external resource failed" ),
+
         // database errors
         ExecutionFailed( DatabaseError,
                 "The database was unable to execute the statement." ),
@@ -227,8 +230,7 @@ public interface Status
         RemoteExecutionFailed( DatabaseError, "The database was unable to execute a remote part of the statement." ),
 
         // transient errors
-        ExternalResourceFailed( ClientError,
-                "Access to an external resource failed" ),
+        ExecutionTimeout( TransientError, "The database was unable to execute the statement in a timely fashion." ),
 
         // client notifications (performance)
         CartesianProductWarning( ClientNotification,

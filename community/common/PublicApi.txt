@@ -127,6 +127,7 @@ org.neo4j.kernel.api.exceptions.Status.Statement::DynamicPropertyWarning org.neo
 org.neo4j.kernel.api.exceptions.Status.Statement::EagerOperatorWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::EntityNotFound org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ExecutionFailed org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::ExecutionTimeout org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ExhaustiveShortestPathWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ExperimentalFeature org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ExternalResourceFailed org.neo4j.kernel.api.exceptions.Status.Statement public static final
