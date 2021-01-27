@@ -48,7 +48,7 @@ public class Loader
     private final ArchiveProgressPrinter progressPrinter;
 
     @VisibleForTesting
-    Loader()
+    public Loader()
     {
         progressPrinter = new ArchiveProgressPrinter( null );
     }

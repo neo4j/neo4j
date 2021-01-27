@@ -158,9 +158,10 @@ public class SetInitialPasswordCommand extends AbstractCommand implements Passwo
     Config loadNeo4jConfig()
     {
         Config cfg = Config.newBuilder()
-                .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath() )
-                .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .build();
+                           .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath() )
+                           .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                           .commandExpansion( allowCommandExpansion )
+                           .build();
         ConfigUtils.disableAllConnectors( cfg );
         return cfg;
     }

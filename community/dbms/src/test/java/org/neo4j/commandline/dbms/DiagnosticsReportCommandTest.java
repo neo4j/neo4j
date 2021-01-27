@@ -130,8 +130,8 @@ public class DiagnosticsReportCommandTest
                 "%n" +
                 "USAGE%n" +
                 "%n" +
-                "report [--force] [--list] [--verbose] [--pid=<pid>] [--to=<path>]%n" +
-                "       [<classifier>...]%n" +
+                "report [--expand-commands] [--force] [--list] [--verbose] [--pid=<pid>]%n" +
+                "       [--to=<path>] [<classifier>...]%n" +
                 "%n" +
                 "DESCRIPTION%n" +
                 "%n" +
@@ -147,6 +147,7 @@ public class DiagnosticsReportCommandTest
                 "OPTIONS%n" +
                 "%n" +
                 "      --verbose           Enable verbose output.%n" +
+                "      --expand-commands   Allow command expansion in config value evaluation.%n" +
                 "      --list              List all available classifiers%n" +
                 "      --force             Ignore disk full warning%n" +
                 "      --to=<path>         Destination directory for reports. Defaults to a%n" +

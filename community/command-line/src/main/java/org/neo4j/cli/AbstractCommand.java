@@ -45,6 +45,9 @@ public abstract class AbstractCommand implements Command
     @Option( names = "--verbose", arity = "0", description = "Enable verbose output." )
     protected boolean verbose;
 
+    @Option( names = "--expand-commands", description = "Allow command expansion in config value evaluation." )
+    protected boolean allowCommandExpansion;
+
     protected final ExecutionContext ctx;
     @Spec
     protected CommandSpec spec;

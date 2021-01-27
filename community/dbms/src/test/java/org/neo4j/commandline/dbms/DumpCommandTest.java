@@ -48,7 +48,7 @@ class DumpCommandTest
                 "%n" +
                 "USAGE%n" +
                 "%n" +
-                "dump [--verbose] [--database=<database>] --to=<path>%n" +
+                "dump [--expand-commands] [--verbose] [--database=<database>] --to=<path>%n" +
                 "%n" +
                 "DESCRIPTION%n" +
                 "%n" +
@@ -59,11 +59,12 @@ class DumpCommandTest
                 "%n" +
                 "OPTIONS%n" +
                 "%n" +
-                "      --verbose     Enable verbose output.%n" +
+                "      --verbose           Enable verbose output.%n" +
+                "      --expand-commands   Allow command expansion in config value evaluation.%n" +
                 "      --database=<database>%n" +
-                "                    Name of the database to dump.%n" +
-                "                      Default: neo4j%n" +
-                "      --to=<path>   Destination (file or folder) of database dump."
+                "                          Name of the database to dump.%n" +
+                "                            Default: neo4j%n" +
+                "      --to=<path>         Destination (file or folder) of database dump."
         ) );
     }
 }

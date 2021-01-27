@@ -87,7 +87,7 @@ public class DiagnosticsReportCommand extends AbstractCommand
 
     private JMXDumper jmxDumper;
 
-    DiagnosticsReportCommand( ExecutionContext ctx )
+    public DiagnosticsReportCommand( ExecutionContext ctx )
     {
         super( ctx );
     }
@@ -226,18 +226,13 @@ public class DiagnosticsReportCommand extends AbstractCommand
         {
             throw new CommandFailedException( "Unable to find config file, tried: " + configFile.toAbsolutePath() );
         }
-        try
-        {
-            Config cfg = Config.newBuilder()
-                    .fromFileNoThrow( configFile )
-                    .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir() ).build();
-            ConfigUtils.disableAllConnectors( cfg );
-            return cfg;
-        }
-        catch ( Exception e )
-        {
-            throw new CommandFailedException( "Failed to read config file: " + configFile.toAbsolutePath(), e );
-        }
+        Config cfg = Config.newBuilder()
+                           .fromFileNoThrow( configFile )
+                           .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir() )
+                           .commandExpansion( allowCommandExpansion )
+                           .build();
+        ConfigUtils.disableAllConnectors( cfg );
+        return cfg;
     }
 
     static String describeClassifier( String classifier )

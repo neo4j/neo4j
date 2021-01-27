@@ -72,7 +72,7 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.baseSchemaIndex
                 "running Neo4j. If this is not the case, then use the --memory argument to specify how much memory " +
                 "can be expected to be dedicated to Neo4j. The output is formatted such that it can be copy-pasted into the neo4j.conf file."
 )
-class MemoryRecommendationsCommand extends AbstractCommand
+public class MemoryRecommendationsCommand extends AbstractCommand
 {
     // Fields: {System Memory in GiBs; OS memory reserve in GiBs; JVM Heap memory in GiBs}.
     // And the page cache gets what's left, though always at least 100 MiB.
@@ -106,7 +106,7 @@ class MemoryRecommendationsCommand extends AbstractCommand
             "that can be directly passed to Neo4j docker container." )
     private boolean dockerOutput;
 
-    MemoryRecommendationsCommand( ExecutionContext ctx )
+    public MemoryRecommendationsCommand( ExecutionContext ctx )
     {
         super( ctx );
     }
@@ -390,19 +390,13 @@ class MemoryRecommendationsCommand extends AbstractCommand
         {
             throw new CommandFailedException( "Unable to find config file, tried: " + configFile.toAbsolutePath() );
         }
-        try
-        {
-            Config config = Config.newBuilder()
-                    .fromFile( configFile )
-                    .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath() )
-                    .build();
-            ConfigUtils.disableAllConnectors( config );
-            return config;
-        }
-        catch ( Exception e )
-        {
-            throw new CommandFailedException( "Failed to read config file: " + configFile.toAbsolutePath(), e );
-        }
+        Config config = Config.newBuilder()
+                              .fromFile( configFile )
+                              .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath() )
+                              .commandExpansion( allowCommandExpansion )
+                              .build();
+        ConfigUtils.disableAllConnectors( config );
+        return config;
     }
 
     private void print( String text )

@@ -93,7 +93,7 @@ class StoreInfoCommandTest
                         "%n" +
                         "USAGE%n" +
                         "%n" +
-                        "store-info [--all] [--structured] [--verbose] <path>%n" +
+                        "store-info [--all] [--expand-commands] [--structured] [--verbose] <path>%n" +
                         "%n" +
                         "DESCRIPTION%n" +
                         "%n" +
@@ -102,14 +102,15 @@ class StoreInfoCommandTest
                         "%n" +
                         "PARAMETERS%n" +
                         "%n" +
-                        "      <path>         Path to database store files, or databases directory if%n" +
-                        "                       --all option is used%n" +
+                        "      <path>              Path to database store files, or databases directory%n" +
+                        "                            if --all option is used%n" +
                         "%n" +
                         "OPTIONS%n" +
                         "%n" +
-                        "      --verbose      Enable verbose output.%n" +
-                        "      --structured   Return result structured as json%n" +
-                        "      --all          Return store info for all databases at provided path"
+                        "      --verbose           Enable verbose output.%n" +
+                        "      --expand-commands   Allow command expansion in config value evaluation.%n" +
+                        "      --structured        Return result structured as json%n" +
+                        "      --all               Return store info for all databases at provided path"
         ) );
     }
 

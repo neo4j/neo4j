@@ -202,13 +202,14 @@ public class CheckConsistencyCommand extends AbstractCommand
         }
     }
 
-    private static Config loadNeo4jConfig( Path homeDir, Path configDir, Path additionalConfig )
+    private Config loadNeo4jConfig( Path homeDir, Path configDir, Path additionalConfig )
     {
         Config cfg = Config.newBuilder()
-                .fromFileNoThrow( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .fromFileNoThrow( additionalConfig )
-                .set( GraphDatabaseSettings.neo4j_home, homeDir )
-                .build();
+                           .fromFileNoThrow( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                           .fromFileNoThrow( additionalConfig )
+                           .commandExpansion( allowCommandExpansion )
+                           .set( GraphDatabaseSettings.neo4j_home, homeDir )
+                           .build();
         ConfigUtils.disableAllConnectors( cfg );
         return cfg;
     }

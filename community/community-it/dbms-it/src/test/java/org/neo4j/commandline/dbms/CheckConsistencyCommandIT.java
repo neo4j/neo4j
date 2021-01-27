@@ -93,7 +93,7 @@ class CheckConsistencyCommandIT
                 "%n" +
                 "USAGE%n" +
                 "%n" +
-                "check-consistency [--verbose] [--additional-config=<path>]%n" +
+                "check-consistency [--expand-commands] [--verbose] [--additional-config=<path>]%n" +
                 "                  [--check-graph=<true/false>]%n" +
                 "                  [--check-index-structure=<true/false>]%n" +
                 "                  [--check-indexes=<true/false>]%n" +
@@ -115,6 +115,7 @@ class CheckConsistencyCommandIT
                 "OPTIONS%n" +
                 "%n" +
                 "      --verbose             Enable verbose output.%n" +
+                "      --expand-commands     Allow command expansion in config value evaluation.%n" +
                 "      --database=<database> Name of the database to check.%n" +
                 "      --backup=<path>       Path to backup to check consistency of. Cannot be%n" +
                 "                              used together with --database.%n" +
