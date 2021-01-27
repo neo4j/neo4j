@@ -38,7 +38,7 @@ import java.util.function.LongFunction;
 
 import org.neo4j.function.Factory;
 import org.neo4j.internal.batchimport.PropertyValueLookup;
-import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
@@ -416,7 +416,7 @@ public class EncodingIdMapperTest
             groups.getOrCreate( "Group " + i );
         }
         IdMapper mapper = mapper( encoder, Radix.LONG, EncodingIdMapper.NO_MONITOR, ParallelSort.DEFAULT,
-                numberOfCollisions -> new LongCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions, INSTANCE ) );
+                                  numberOfCollisions -> new LongCollisionValues( NumberArrayFactories.HEAP, numberOfCollisions, INSTANCE ) );
         final AtomicReference<Group> group = new AtomicReference<>();
         PropertyValueLookup ids = ( nodeId, cursorTracer ) ->
         {
@@ -602,8 +602,8 @@ public class EncodingIdMapperTest
 
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, PageCacheTracer pageCacheTracer )
     {
-        return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups, autoDetect( encoder ), 1_000, processors,
-                ParallelSort.DEFAULT, pageCacheTracer, INSTANCE );
+        return new EncodingIdMapper( NumberArrayFactories.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups, autoDetect( encoder ),
+                                     1_000, processors, ParallelSort.DEFAULT, pageCacheTracer, INSTANCE );
     }
 
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor )
@@ -619,15 +619,15 @@ public class EncodingIdMapperTest
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, EncodingIdMapper.Monitor monitor, ParallelSort.Comparator comparator,
             LongFunction<CollisionValues> collisionValuesFactory )
     {
-        return new EncodingIdMapper( NumberArrayFactory.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups,
-                collisionValuesFactory, 1_000, processors, comparator, PageCacheTracer.NULL, INSTANCE );
+        return new EncodingIdMapper( NumberArrayFactories.HEAP, encoder, radix, monitor, RANDOM_TRACKER_FACTORY, groups,
+                                     collisionValuesFactory, 1_000, processors, comparator, PageCacheTracer.NULL, INSTANCE );
     }
 
     private LongFunction<CollisionValues> autoDetect( Encoder encoder )
     {
         return numberOfCollisions -> encoder instanceof LongEncoder
-                ? new LongCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions, INSTANCE )
-                : new StringCollisionValues( NumberArrayFactory.HEAP, numberOfCollisions, INSTANCE );
+                                     ? new LongCollisionValues( NumberArrayFactories.HEAP, numberOfCollisions, INSTANCE )
+                                     : new StringCollisionValues( NumberArrayFactories.HEAP, numberOfCollisions, INSTANCE );
 
     }
 

@@ -44,8 +44,8 @@ class PageCacheArrayFactoryMonitorTest
     {
         // given
         monitor.allocationSuccessful( 123, factory, asList(
-                new NumberArrayFactory.AllocationFailure( new OutOfMemoryError( "OOM1" ), NumberArrayFactory.HEAP ),
-                new NumberArrayFactory.AllocationFailure( new OutOfMemoryError( "OOM2" ), NumberArrayFactory.OFF_HEAP ) ) );
+                new NumberArrayFactory.AllocationFailure( new OutOfMemoryError( "OOM1" ), NumberArrayFactories.HEAP ),
+                new NumberArrayFactory.AllocationFailure( new OutOfMemoryError( "OOM2" ), NumberArrayFactories.OFF_HEAP ) ) );
 
         // when
         String failure = monitor.pageCacheAllocationOrNull();
@@ -60,8 +60,8 @@ class PageCacheArrayFactoryMonitorTest
     {
         // given
         monitor.allocationSuccessful( 123, factory, asList(
-                new NumberArrayFactory.AllocationFailure( new OutOfMemoryError( "OOM1" ), NumberArrayFactory.HEAP ),
-                new NumberArrayFactory.AllocationFailure( new OutOfMemoryError( "OOM2" ), NumberArrayFactory.OFF_HEAP ) ) );
+                new NumberArrayFactory.AllocationFailure( new OutOfMemoryError( "OOM1" ), NumberArrayFactories.HEAP ),
+                new NumberArrayFactory.AllocationFailure( new OutOfMemoryError( "OOM2" ), NumberArrayFactories.OFF_HEAP ) ) );
 
         // when
         String failure = monitor.pageCacheAllocationOrNull();

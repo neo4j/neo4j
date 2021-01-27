@@ -24,6 +24,7 @@ import org.mockito.ArgumentMatcher;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.MemoryTracker;
@@ -90,8 +91,8 @@ class RelationshipCountsProcessorTest
         when( nodeLabelCache.get( eq( client ), eq( 3L ) ) ).thenReturn( new long[]{1, 2} );
         when( nodeLabelCache.get( eq( client ), eq( 4L ) ) ).thenReturn( new long[]{} );
 
-        RelationshipCountsProcessor countsProcessor = new RelationshipCountsProcessor( nodeLabelCache, labels,
-                relationTypes, countsUpdater, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, INSTANCE );
+        RelationshipCountsProcessor countsProcessor = new RelationshipCountsProcessor( nodeLabelCache, labels, relationTypes, countsUpdater,
+                                                                                       NumberArrayFactories.AUTO_WITHOUT_PAGECACHE, INSTANCE );
 
         countsProcessor.process( record( 1, 0, 3 ), NULL );
         countsProcessor.process( record( 2, 1, 4 ), NULL );

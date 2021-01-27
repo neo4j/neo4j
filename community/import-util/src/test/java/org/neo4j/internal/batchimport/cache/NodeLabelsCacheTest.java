@@ -32,7 +32,7 @@ import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.AUTO_WITHOUT_PAGECACHE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( RandomExtension.class )

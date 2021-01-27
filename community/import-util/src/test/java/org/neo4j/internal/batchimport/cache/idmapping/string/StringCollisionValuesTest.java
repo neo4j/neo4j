@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
 
+import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.cache.PageCachedNumberArrayFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -62,10 +63,10 @@ public class StringCollisionValuesTest
     public static Collection<Function<PageCacheAndDependenciesRule,NumberArrayFactory>> data()
     {
         return Arrays.asList(
-                storage -> NumberArrayFactory.HEAP,
-                storage -> NumberArrayFactory.OFF_HEAP,
-                storage -> NumberArrayFactory.AUTO_WITHOUT_PAGECACHE,
-                storage -> NumberArrayFactory.CHUNKED_FIXED_SIZE,
+                storage -> NumberArrayFactories.HEAP,
+                storage -> NumberArrayFactories.OFF_HEAP,
+                storage -> NumberArrayFactories.AUTO_WITHOUT_PAGECACHE,
+                storage -> NumberArrayFactories.CHUNKED_FIXED_SIZE,
                 storage -> new PageCachedNumberArrayFactory( storage.pageCache(), PageCacheTracer.NULL, storage.directory().homeDir(),
                         NullLog.getInstance() ) );
     }
