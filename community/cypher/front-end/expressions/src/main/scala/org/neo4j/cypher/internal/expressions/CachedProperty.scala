@@ -68,7 +68,7 @@ trait ASTCachedProperty extends LogicalProperty {
 object ASTCachedProperty {
 
   /**
-   * Used to match equivalanet cached properties at runtime.
+   * Used to match equivalent cached properties at runtime.
    */
   case class RuntimeKey(originalEntityName: String,
                         propertyKey: PropertyKeyName,
