@@ -19,7 +19,15 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.neo4j.kernel.KernelVersion;
+
 class LogCommandSerializationV4_3_D3 extends LogCommandSerializationV4_2
 {
     static final LogCommandSerializationV4_3_D3 INSTANCE = new LogCommandSerializationV4_3_D3();
+
+    @Override
+    KernelVersion version()
+    {
+        return KernelVersion.V4_3_D3;
+    }
 }

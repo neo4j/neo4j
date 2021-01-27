@@ -40,6 +40,7 @@ import org.neo4j.internal.recordstorage.legacy.IndexDefineCommand;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -70,6 +71,12 @@ import static org.neo4j.util.Bits.bitFlag;
 class LogCommandSerializationV3_0_10 extends LogCommandSerialization
 {
     static LogCommandSerializationV3_0_10 INSTANCE = new LogCommandSerializationV3_0_10();
+
+    @Override
+    KernelVersion version()
+    {
+        return KernelVersion.V2_3;
+    }
 
     @Override
     protected Command readNodeCommand( ReadableChannel channel ) throws IOException

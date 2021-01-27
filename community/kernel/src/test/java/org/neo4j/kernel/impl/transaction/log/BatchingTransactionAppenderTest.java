@@ -26,8 +26,8 @@ import org.mockito.Mockito;
 
 import java.io.Flushable;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -299,7 +299,7 @@ class BatchingTransactionAppenderTest
         return new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache, transactionIdStore, databaseHealth, BASE_TX_CHECKSUM );
     }
 
-    private TransactionRepresentation transaction( Collection<StorageCommand> commands, byte[] additionalHeader, long timeStarted,
+    private TransactionRepresentation transaction( List<StorageCommand> commands, byte[] additionalHeader, long timeStarted,
             long latestCommittedTxWhenStarted, long timeCommitted )
     {
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
@@ -307,7 +307,7 @@ class BatchingTransactionAppenderTest
         return tx;
     }
 
-    private Collection<StorageCommand> singleTestCommand()
+    private List<StorageCommand> singleTestCommand()
     {
         return Collections.singletonList( new TestCommand() );
     }

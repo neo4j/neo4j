@@ -352,7 +352,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public Collection<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo )
+    public List<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo )
     {
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         KernelVersion currentVersion = metaDataStore.kernelVersion();

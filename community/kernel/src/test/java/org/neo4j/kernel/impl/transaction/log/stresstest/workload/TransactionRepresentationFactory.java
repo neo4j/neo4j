@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -44,7 +43,7 @@ class TransactionRepresentationFactory
         return new TransactionToApply( representation, NULL );
     }
 
-    private Collection<StorageCommand> createRandomCommands()
+    private List<StorageCommand> createRandomCommands()
     {
         int commandNum = ThreadLocalRandom.current().nextInt( 1, 17 );
         List<StorageCommand> commands = new ArrayList<>( commandNum );

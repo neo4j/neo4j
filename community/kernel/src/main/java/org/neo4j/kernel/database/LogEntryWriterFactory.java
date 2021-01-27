@@ -21,6 +21,7 @@ package org.neo4j.kernel.database;
 
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 
 /**
@@ -34,12 +35,23 @@ public interface LogEntryWriterFactory
 {
     <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel );
 
+    default <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel, KernelVersion version )
+    {
+        return new LogEntryWriter<>( channel, version );
+    }
+
+    static <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel, TransactionRepresentation tx, LogEntryWriterFactory factory )
+    {
+        KernelVersion version = tx.version();
+        return version != null ? factory.createEntryWriter( channel, version ) : factory.createEntryWriter( channel );
+    }
+
     LogEntryWriterFactory LATEST = new LogEntryWriterFactory()
     {
         @Override
         public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel )
         {
-            return new LogEntryWriter<>( channel, KernelVersion.LATEST );
+            return createEntryWriter( channel, KernelVersion.LATEST );
         }
     };
 }

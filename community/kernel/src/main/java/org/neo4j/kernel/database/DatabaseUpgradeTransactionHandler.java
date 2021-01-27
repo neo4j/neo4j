@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.database;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -76,7 +76,7 @@ class DatabaseUpgradeTransactionHandler
 
     interface InternalTransactionCommitHandler
     {
-        void commit( Collection<StorageCommand> commands ) throws TransactionFailureException;
+        void commit( List<StorageCommand> commands ) throws TransactionFailureException;
     }
 
     /**

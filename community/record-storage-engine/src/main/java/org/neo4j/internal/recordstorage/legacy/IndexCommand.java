@@ -27,6 +27,7 @@ import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.internal.recordstorage.CommandVisitor;
 import org.neo4j.internal.recordstorage.NeoCommandType;
 import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.kernel.KernelVersion;
 
 import static java.lang.String.format;
 import static org.neo4j.io.fs.IoPrimitiveUtils.write2bLengthAndString;
@@ -69,6 +70,12 @@ public abstract class IndexCommand extends Command
         this.keyId = keyId;
         this.value = value;
         this.valueType = valueTypeOf( value );
+    }
+
+    @Override
+    public KernelVersion version()
+    {
+        return KernelVersion.V2_3;
     }
 
     public int getIndexNameId()

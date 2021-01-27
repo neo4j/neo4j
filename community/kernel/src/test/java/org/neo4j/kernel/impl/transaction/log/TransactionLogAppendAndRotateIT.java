@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -188,7 +188,7 @@ class TransactionLogAppendAndRotateIT
 
     private TransactionRepresentation sillyTransaction( int size )
     {
-        Collection<StorageCommand> commands = new ArrayList<>( size );
+        List<StorageCommand> commands = new ArrayList<>( size );
         for ( int i = 0; i < size; i++ )
         {
             // The actual data isn't super important

@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
@@ -102,6 +103,12 @@ public abstract class Command implements StorageCommand
         this.mode = mode;
         this.keyHash = (int) ((key >>> 32) ^ key);
         this.key = key;
+    }
+
+    @Override
+    public KernelVersion version()
+    {
+        return serialization.version();
     }
 
     @Override

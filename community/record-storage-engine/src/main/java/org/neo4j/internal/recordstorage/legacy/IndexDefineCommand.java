@@ -35,6 +35,7 @@ import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.internal.recordstorage.CommandVisitor;
 import org.neo4j.internal.recordstorage.NeoCommandType;
 import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
@@ -127,6 +128,12 @@ public class IndexDefineCommand extends Command
         stringToId.put( string, id );
         idToString.put( id, string );
         return id;
+    }
+
+    @Override
+    public KernelVersion version()
+    {
+        return KernelVersion.V2_3;
     }
 
     @Override

@@ -21,17 +21,18 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 
 public class PhysicalTransactionRepresentation implements TransactionRepresentation
 {
-    private final Collection<StorageCommand> commands;
+    private final List<StorageCommand> commands;
     private byte[] additionalHeader;
     private long timeStarted;
     private long latestCommittedTxWhenStarted;
@@ -44,12 +45,12 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
      */
     private int leaseId;
 
-    public PhysicalTransactionRepresentation( Collection<StorageCommand> commands )
+    public PhysicalTransactionRepresentation( List<StorageCommand> commands )
     {
         this.commands = commands;
     }
 
-    public PhysicalTransactionRepresentation( Collection<StorageCommand> commands, byte[] additionalHeader, long timeStarted, long latestCommittedTxWhenStarted,
+    public PhysicalTransactionRepresentation( List<StorageCommand> commands, byte[] additionalHeader, long timeStarted, long latestCommittedTxWhenStarted,
             long timeCommitted, int leaseId, AuthSubject subject )
     {
         this( commands );
@@ -118,6 +119,12 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     public AuthSubject getAuthSubject()
     {
         return subject;
+    }
+
+    @Override
+    public KernelVersion version()
+    {
+        return commands.isEmpty() ? null : commands.get( 0 ).version();
     }
 
     @Override

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.StorageCommand;
 
 /**
@@ -67,6 +68,12 @@ public class TestCommand implements StorageCommand
         }
         TestCommand that = (TestCommand) o;
         return Arrays.equals( bytes, that.bytes );
+    }
+
+    @Override
+    public KernelVersion version()
+    {
+        return KernelVersion.LATEST;
     }
 
     @Override

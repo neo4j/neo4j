@@ -25,7 +25,7 @@ import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -129,7 +129,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         return Values.of( id + "_" + progress );
     }
 
-    private static TransactionToApply tx( Collection<StorageCommand> commands )
+    private static TransactionToApply tx( List<StorageCommand> commands )
     {
         PhysicalTransactionRepresentation txRepresentation = new PhysicalTransactionRepresentation( commands, new byte[0], -1, -1, -1, -1, ANONYMOUS );
         TransactionToApply tx = new TransactionToApply( txRepresentation, NULL );
@@ -199,7 +199,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             txState.nodeDoCreate( nodeId );
             txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
             txState.nodeDoAddProperty( nodeId, descriptor.getPropertyId(), propertyValue( id, progress ) );
-            Collection<StorageCommand> commands = new ArrayList<>();
+            List<StorageCommand> commands = new ArrayList<>();
             storageEngine.createCommands( commands, txState, reader, creationContext, null, 0, NO_DECORATION, NULL, INSTANCE );
             return tx( commands );
         }

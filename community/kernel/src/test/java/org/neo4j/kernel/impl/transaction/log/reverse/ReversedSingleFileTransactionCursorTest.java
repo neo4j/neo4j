@@ -25,7 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -263,7 +263,7 @@ class ReversedSingleFileTransactionCursorTest
 
     private TransactionRepresentation tx( int size )
     {
-        Collection<StorageCommand> commands = new ArrayList<>();
+        List<StorageCommand> commands = new ArrayList<>();
         for ( int i = 0; i < size; i++ )
         {
             // The type of command doesn't matter here
@@ -279,15 +279,21 @@ class ReversedSingleFileTransactionCursorTest
         @Override
         public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel )
         {
-            return new CorruptedLogEntryWriter<>( channel );
+            return new CorruptedLogEntryWriter<>( channel, KernelVersion.LATEST );
+        }
+
+        @Override
+        public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel, KernelVersion version )
+        {
+            return new CorruptedLogEntryWriter<>( channel, version );
         }
     }
 
     private static class CorruptedLogEntryWriter<T extends WritableChecksumChannel> extends LogEntryWriter<T>
     {
-        CorruptedLogEntryWriter( T channel )
+        CorruptedLogEntryWriter( T channel, KernelVersion version )
         {
-            super( channel, KernelVersion.LATEST );
+            super( channel, version );
         }
 
         @Override

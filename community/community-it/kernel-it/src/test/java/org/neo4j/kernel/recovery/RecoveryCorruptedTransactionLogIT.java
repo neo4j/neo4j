@@ -787,7 +787,7 @@ class RecoveryCorruptedTransactionLogIT
             LogEntryWriter<FlushablePositionAwareChecksumChannel> wrappedLogEntryWriter = logEntryWriterWrapper.wrap( realLogEntryWriter );
             StaticLogEntryWriterFactory<FlushablePositionAwareChecksumChannel> factory = new StaticLogEntryWriterFactory<>( wrappedLogEntryWriter );
             TransactionLogWriter writer = new TransactionLogWriter( realLogEntryWriter.getChannel(), factory );
-            Collection<StorageCommand> commands = new ArrayList<>();
+            List<StorageCommand> commands = new ArrayList<>();
             commands.add( new Command.PropertyCommand( new PropertyRecord( 1 ), new PropertyRecord( 2 ) ) );
             commands.add( new Command.NodeCommand( new NodeRecord( 2 ), new NodeRecord( 3 ) ) );
             PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( commands );
@@ -894,6 +894,12 @@ class RecoveryCorruptedTransactionLogIT
 
         @Override
         public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel )
+        {
+            return (LogEntryWriter<T>) logEntryWriter;
+        }
+
+        @Override
+        public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel, KernelVersion version )
         {
             return (LogEntryWriter<T>) logEntryWriter;
         }

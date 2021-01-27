@@ -23,11 +23,14 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.PositionAwareChannel;
 import org.neo4j.storageengine.api.CommandReader;
 
 public abstract class LogCommandSerialization implements CommandReader
 {
+    abstract KernelVersion version();
+
     @Override
     public final Command read( ReadableChannel channel ) throws IOException
     {

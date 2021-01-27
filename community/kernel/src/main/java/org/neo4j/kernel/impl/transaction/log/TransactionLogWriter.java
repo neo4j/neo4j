@@ -26,6 +26,8 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.util.VisibleForTesting;
 
+import static org.neo4j.kernel.database.LogEntryWriterFactory.createEntryWriter;
+
 public class TransactionLogWriter
 {
     private final FlushablePositionAwareChecksumChannel channel;
@@ -43,7 +45,7 @@ public class TransactionLogWriter
      */
     public int append( TransactionRepresentation transaction, long transactionId, int previousChecksum ) throws IOException
     {
-        LogEntryWriter<FlushablePositionAwareChecksumChannel> writer = logEntryWriterFactory.createEntryWriter( channel );
+        LogEntryWriter<FlushablePositionAwareChecksumChannel> writer = createEntryWriter( channel, transaction, logEntryWriterFactory );
         writer.writeStartEntry( transaction.getTimeStarted(), transaction.getLatestCommittedTxWhenStarted(), previousChecksum, transaction.additionalHeader() );
 
         // Write all the commands to the log channel

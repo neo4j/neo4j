@@ -287,6 +287,12 @@ class DatabaseUpgradeTransactionHandlerTest
         }
 
         @Override
+        public KernelVersion version()
+        {
+            return version;
+        }
+
+        @Override
         public void serialize( WritableChannel channel ) throws IOException
         {
         }

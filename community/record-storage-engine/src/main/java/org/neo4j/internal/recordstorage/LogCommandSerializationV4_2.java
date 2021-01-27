@@ -31,6 +31,7 @@ import java.util.Map;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -55,6 +56,12 @@ import static org.neo4j.util.Bits.bitFlags;
 class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
 {
     static final LogCommandSerializationV4_2 INSTANCE = new LogCommandSerializationV4_2();
+
+    @Override
+    KernelVersion version()
+    {
+        return KernelVersion.V4_2;
+    }
 
     @Override
     public void writeNodeCommand( WritableChannel channel, Command.NodeCommand command ) throws IOException

@@ -25,8 +25,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.common.ProgressReporter;
@@ -305,7 +305,7 @@ class PhysicalLogicalTransactionStoreTest
         appender.append( new TransactionToApply( transaction, NULL ), LogAppendEvent.NULL );
     }
 
-    private Collection<StorageCommand> singleTestCommand()
+    private List<StorageCommand> singleTestCommand()
     {
         return Collections.singletonList( new TestCommand() );
     }

@@ -24,6 +24,7 @@ import java.util.Collection;
 
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -47,6 +48,8 @@ public interface StorageCommand
      * @throws IOException I/O error from channel.
      */
     void serialize( WritableChannel channel ) throws IOException;
+
+    KernelVersion version();
 
     interface TokenCommand extends StorageCommand
     {

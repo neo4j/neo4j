@@ -28,6 +28,7 @@ import java.util.Map;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.ReadableChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -57,6 +58,12 @@ import static org.neo4j.util.Bits.bitFlag;
 class LogCommandSerializationV4_0 extends LogCommandSerialization
 {
     static final LogCommandSerializationV4_0 INSTANCE = new LogCommandSerializationV4_0();
+
+    @Override
+    KernelVersion version()
+    {
+        return KernelVersion.V4_0;
+    }
 
     @Override
     protected Command readNodeCommand( ReadableChannel channel ) throws IOException

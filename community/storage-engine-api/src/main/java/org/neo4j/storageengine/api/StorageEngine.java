@@ -21,6 +21,7 @@ package org.neo4j.storageengine.api;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
@@ -111,7 +112,7 @@ public interface StorageEngine extends Lifecycle
      * @param versionToUpgradeTo the {@link KernelVersion} that the returned commands will represent an upgrade to.
      * @return commands for making an upgrade to the desired {@link KernelVersion}.
      */
-    Collection<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo );
+    List<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo );
 
     /**
      * Apply a batch of groups of commands to this storage.
