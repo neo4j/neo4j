@@ -35,10 +35,6 @@ import org.neo4j.values.storable.Values
  */
 sealed trait IntermediateRepresentation {
   def typeReference: TypeReference
-
-  def +(other: IntermediateRepresentation): Add = Add(this, other)
-  def +(constant: Int): Add = Add(this, Constant(constant))
-  def +(constant: Long): Add = Add(this, Constant(constant))
 }
 
 /**
@@ -840,13 +836,19 @@ object IntermediateRepresentation {
               onTrue: IntermediateRepresentation,
               onFalse: IntermediateRepresentation): IntermediateRepresentation = Ternary(condition, onTrue, onFalse)
 
+  def add(lhs: IntermediateRepresentation, rhs: Int): IntermediateRepresentation =
+    Add(lhs, constant(rhs))
+
+  def add(lhs: IntermediateRepresentation, rhs: Long): IntermediateRepresentation =
+    Add(lhs, constant(rhs))
+
   def add(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Add(lhs, rhs)
 
   /**
    * NOTE: assumes Int
    */
-  def ++(value: String): IntermediateRepresentation = assign(value, add(load[Int](value), constant(1)))
+  def increment(value: String): IntermediateRepresentation = assign(value, add(load[Int](value), constant(1)))
 
   def subtract(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     Subtract(lhs, rhs)
