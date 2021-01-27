@@ -94,7 +94,6 @@ public class ReadEntityIdsStep extends PullingProducerStep
             for ( long i = 0; !control.isIdle(); i++ )
             {
                 INCREMENTAL_BACKOFF.apply( i );
-                Thread.onSpinWait();
             }
             externalUpdatesCheck.applyExternalUpdates( lastEntityId );
         }
