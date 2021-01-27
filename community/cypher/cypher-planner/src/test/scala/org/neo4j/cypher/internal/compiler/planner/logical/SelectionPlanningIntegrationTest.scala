@@ -155,4 +155,35 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       ), _) => ()
     }
   }
+
+  test("For multiple predicates accessing the same cached property for the first time: order by selectivity") {
+    val nPropFoo1 = equals(cachedNodePropFromStore("n", "foo"), literalInt(2))
+    val nPropFoo2 = greaterThan(cachedNodePropFromStore("n", "foo"), literalInt(1))
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("N", 10)
+      .build()
+
+    val plans = Seq(
+      "MATCH (n:N) WHERE n.foo = 2 AND n.foo > 1 RETURN n.bar",
+      "MATCH (n:N) WHERE n.foo > 1 AND n.foo = 2 RETURN n.bar"
+    ).map(planner.plan).map(_.stripProduceResults)
+
+    val noArgs = Set.empty[String]
+
+    plans.foreach { plan =>
+      plan should beLike {
+        // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
+        // But unapply takes the order into account for [[Ands]].
+        case Projection(Selection(Ands(Seq(
+        `nPropFoo1`, // more selective
+        `nPropFoo2`,
+        )),
+        NodeByLabelScan("n", LabelName("N"), `noArgs`, IndexOrderNone)
+        ), _) => ()
+      }
+    }
+
+  }
 }

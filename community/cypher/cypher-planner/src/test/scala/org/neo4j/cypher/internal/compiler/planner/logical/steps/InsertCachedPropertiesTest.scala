@@ -75,11 +75,13 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   // Same property in different positions
   private val nProp1 = Property(n, prop)(InputPosition.NONE)
   private val nProp2 = Property(n, prop)(InputPosition.NONE.bumped())
+  private val nProp3 = Property(n, prop)(InputPosition.NONE.bumped().bumped())
   // Same property in different positions
   private val nFoo1 = Property(n, foo)(InputPosition.NONE)
   private val cachedNProp1 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE)
   private val cachedNFoo1 = CachedProperty("n", n, foo, NODE_TYPE)(InputPosition.NONE)
   private val cachedNProp2 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE.bumped())
+  private val cachedNProp3 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE.bumped().bumped())
   private val cachedNRelProp1 = CachedProperty("n", n, prop, RELATIONSHIP_TYPE)(InputPosition.NONE)
   private val cachedNRelProp2 = CachedProperty("n", n, prop, RELATIONSHIP_TYPE)(InputPosition.NONE.bumped())
 
@@ -293,6 +295,36 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val initialType = initialTable.types(nProp1)
     newTable.types(cp1) should be(initialType)
     newTable.types(cachedNProp2) should be(initialType)
+  }
+
+  test("multiple accesses to the same property in the same plan should all be knownToAccessStore") {
+    // If there are multiple accesses to the same property in the same plan, we cannot know which one will read first.
+    // This is especially important for Selections, if two predicates use the same property.
+    // We would otherwise reorder predicates such that the one which had `knownToAccessStore==false` almost certainly would come first,
+    // which defeats the purpose of reordering the predicates.
+
+    val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, nProp3 -> CTInteger, n -> CTNode)
+    val cp1 = cachedNProp1.copy(knownToAccessStore = true)(cachedNProp1.position)
+    val cp2 = cachedNProp2.copy(knownToAccessStore = true)(cachedNProp2.position)
+
+    val plan = Projection(
+      Selection(Seq(equals(nProp1, literalInt(2)), greaterThan(nProp2, literalInt(1))),
+        AllNodesScan("n", Set.empty)),
+      Map("x" -> nProp3)
+    )
+
+    val (newPlan, newTable) = replace(plan, initialTable)
+    newPlan should be(
+      Projection(
+        Selection(Seq(equals(cp1, literalInt(2)), greaterThan(cp1, literalInt(1))),
+          AllNodesScan("n", Set.empty)),
+        Map("x" -> cachedNProp3)
+      )
+    )
+    val initialType = initialTable.types(nProp1)
+    newTable.types(cp1) should be(initialType)
+    newTable.types(cp2) should be(initialType)
+    newTable.types(cachedNProp3) should be(initialType)
   }
 
   test("should not rewrite node property if there is only one usage") {
@@ -684,7 +716,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       )
 
     val plan = builder.build()
-    val (newPlan, newTable) = replace(plan, initialTable)
+    val (newPlan, _) = replace(plan, initialTable)
     newPlan should be(plan)
   }
 

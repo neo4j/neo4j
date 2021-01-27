@@ -81,23 +81,38 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transf
     def isNode(variable: Variable) = from.semanticTable().isNodeNoFail(variable.name)
     def isRel(variable: Variable) = from.semanticTable().isRelationshipNoFail(variable.name)
 
+    /**
+     * A summary of all usages of a property
+     *
+     * @param canGetFromIndex      if the property can be read from an index.
+     * @param usages               how many accesses to the property happen
+     * @param entityType           the type of property
+     * @param firstWritingAccesses if there can be determined a first logical plan that writes the property,
+     *                             this contains that plan and all accesses that happen to this property from that plan.
+     */
     case class PropertyUsages(canGetFromIndex: Boolean,
                               usages: Int,
                               entityType: EntityType,
-                              firstWritingAccess: Option[Property]) {
+                              firstWritingAccesses: Option[(LogicalPlan, Seq[Property])]) {
       //always prefer reading from index
       def registerIndexUsage: PropertyUsages =
-        copy(canGetFromIndex = true, firstWritingAccess = None)
-      def addUsage(prop: Property): PropertyUsages = {
-        val fWA = if (canGetFromIndex) None else firstWritingAccess.orElse(Some(prop))
-        copy(usages = usages + 1, firstWritingAccess = fWA)
+        copy(canGetFromIndex = true, firstWritingAccesses = None)
+
+      def addUsage(prop: Property, accessingPlan: LogicalPlan): PropertyUsages = {
+        val fWA = if (canGetFromIndex) None else firstWritingAccesses match {
+          case None => Some((accessingPlan, Seq(prop)))
+          case Some((`accessingPlan`, otherUsages)) => Some((accessingPlan, otherUsages :+ prop))
+          case x => x
+        }
+
+        copy(usages = usages + 1, firstWritingAccesses = fWA)
       }
 
       def ++(other: PropertyUsages): PropertyUsages = PropertyUsages(
         this.canGetFromIndex || other.canGetFromIndex,
         this.usages + other.usages,
         this.entityType,
-        this.firstWritingAccess.orElse(other.firstWritingAccess)
+        this.firstWritingAccesses.orElse(other.firstWritingAccesses)
       )
     }
 
@@ -118,17 +133,17 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transf
         copy(properties = newProperties)
       }
 
-      def addNodeProperty(prop: Property): Acc = {
+      def addNodeProperty(prop: Property, accessingPlan: LogicalPlan): Acc = {
         val originalProp = originalProperty(prop)
         val previousUsages = properties.getOrElse(originalProp, NODE_NO_PROP_USAGE)
-        val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop))
+        val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop, accessingPlan))
         copy(properties = newProperties)
       }
 
-      def addRelProperty(prop: Property): Acc = {
+      def addRelProperty(prop: Property, accessingPlan: LogicalPlan): Acc = {
         val originalProp = originalProperty(prop)
         val previousUsages = properties.getOrElse(originalProp, REL_NO_PROP_USAGE)
-        val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop))
+        val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop, accessingPlan))
         copy(properties = newProperties)
       }
 
@@ -173,9 +188,9 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transf
     def findPropertiesInPlan(acc: Acc, logicalPlan: LogicalPlan): Acc = logicalPlan.treeFold(acc) {
       // Find properties
       case prop@Property(v: Variable, _) if isNode(v) => acc =>
-        TraverseChildren(acc.addNodeProperty(prop))
+        TraverseChildren(acc.addNodeProperty(prop, logicalPlan))
       case prop@Property(v: Variable, _) if isRel(v) => acc =>
-        TraverseChildren(acc.addRelProperty(prop))
+        TraverseChildren(acc.addRelProperty(prop, logicalPlan))
 
       // New fold for nested plan expression
       case nested:NestedPlanExpression => acc =>
@@ -234,9 +249,12 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transf
         val originalVar = acc.variableWithOriginalName(v)
         val originalProp = acc.originalProperty(prop)
         acc.properties.get(originalProp) match {
-          case Some(PropertyUsages(canGetFromIndex, usages, entityType, firstWritingAccess)) if usages > 1 || canGetFromIndex =>
+          case Some(PropertyUsages(canGetFromIndex, usages, entityType, firstWritingAccesses)) if usages > 1 || canGetFromIndex =>
             // Use the original variable name for the cached property
-            val knownToAccessStore = firstWritingAccess.exists(_ eq prop)
+            val knownToAccessStore = firstWritingAccesses.exists {
+              case (_, properties) => properties.exists(_ eq prop)
+            }
+
             val newProperty = CachedProperty(originalVar.name, v, propertyKeyName, entityType, knownToAccessStore)(prop.position)
             // Register the new variables in the semantic table
             currentTypes.get(prop) match {

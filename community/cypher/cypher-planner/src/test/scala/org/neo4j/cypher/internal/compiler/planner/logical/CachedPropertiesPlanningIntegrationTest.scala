@@ -88,7 +88,7 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
     plan._2 should equal(
       Selection(Seq(cachedAndedNodePropertyInequalities("n", "prop1",
         greaterThan(cachedNodePropFromStore("n", "prop1"), literalInt(42)),
-        lessThan(cachedNodeProp("n", "prop1"), literalInt(100)))
+        lessThan(cachedNodePropFromStore("n", "prop1"), literalInt(100)))
       ),
         AllNodesScan("n", Set.empty))    )
   }
