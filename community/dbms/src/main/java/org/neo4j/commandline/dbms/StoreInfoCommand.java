@@ -79,7 +79,7 @@ public class StoreInfoCommand extends AbstractCommand
     public void execute()
     {
         var storageEngineFactory = StorageEngineFactory.selectStorageEngine();
-        var config = CommandHelpers.buildConfig( ctx );
+        var config = CommandHelpers.buildConfig( ctx, allowCommandExpansion );
         var neo4jLayout = Neo4jLayout.of( config );
         try ( var fs = ctx.fs();
               var jobScheduler = createInitialisedScheduler();

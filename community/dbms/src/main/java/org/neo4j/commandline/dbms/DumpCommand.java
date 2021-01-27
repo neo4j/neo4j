@@ -82,7 +82,7 @@ public class DumpCommand extends AbstractCommand
         Path archive = calculateArchive( databaseName, to.toAbsolutePath() );
         var memoryTracker =  EmptyMemoryTracker.INSTANCE;
 
-        Config config = CommandHelpers.buildConfig( ctx );
+        Config config = CommandHelpers.buildConfig( ctx, allowCommandExpansion );
         DatabaseLayout databaseLayout = Neo4jLayout.of( config ).databaseLayout( databaseName );
 
         try

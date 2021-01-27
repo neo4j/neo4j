@@ -142,8 +142,9 @@ public class LoadCommand extends AbstractCommand
     protected Config buildConfig()
     {
         Config cfg = Config.newBuilder()
-                .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir() ).build();
+                           .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                           .commandExpansion( allowCommandExpansion )
+                           .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir() ).build();
         ConfigUtils.disableAllConnectors( cfg );
         return cfg;
     }

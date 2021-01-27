@@ -376,6 +376,7 @@ public class PushToCloudCommand extends AbstractCommand
             return Config.newBuilder()
                          .fromFile( configFile )
                          .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath() )
+                         .commandExpansion( allowCommandExpansion )
                          .build();
         }
         catch ( Exception e )

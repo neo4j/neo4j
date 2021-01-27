@@ -105,7 +105,7 @@ class MemoryRecommendationsCommandTest
                 "%n" +
                 "USAGE%n" +
                 "%n" +
-                "memrec [--docker] [--verbose] [--memory=<size>]%n" +
+                "memrec [--docker] [--expand-commands] [--verbose] [--memory=<size>]%n" +
                 "%n" +
                 "DESCRIPTION%n" +
                 "%n" +
@@ -119,13 +119,14 @@ class MemoryRecommendationsCommandTest
                 "%n" +
                 "OPTIONS%n" +
                 "%n" +
-                "      --verbose         Enable verbose output.%n" +
-                "      --memory=<size>   Recommend memory settings with respect to the given%n" +
-                "                          amount of memory, instead of the total memory of the%n" +
-                "                          system running the command.%n" +
-                "      --docker          The recommended memory settings are produced in the%n" +
-                "                          form of environment variables that can be directly%n" +
-                "                          passed to Neo4j docker container."
+                "      --verbose           Enable verbose output.%n" +
+                "      --expand-commands   Allow command expansion in config value evaluation.%n" +
+                "      --memory=<size>     Recommend memory settings with respect to the given%n" +
+                "                            amount of memory, instead of the total memory of%n" +
+                "                            the system running the command.%n" +
+                "      --docker            The recommended memory settings are produced in the%n" +
+                "                            form of environment variables that can be directly%n" +
+                "                            passed to Neo4j docker container."
         ) );
     }
 

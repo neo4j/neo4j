@@ -64,16 +64,16 @@ class ImportCommandTest
         {
             CommandLine.usage( command, new PrintStream( out ), CommandLine.Help.Ansi.OFF );
         }
-        assertEquals( baos.toString().trim(),
-                "USAGE" + lineSeparator() +
+        assertEquals( "USAGE" + lineSeparator() +
                         "" + lineSeparator() +
-                        "import [--verbose] [--cache-on-heap[=<true/false>]] [--high-io[=<true/false>]]" + lineSeparator() +
-                        "       [--ignore-empty-strings[=<true/false>]] [--ignore-extra-columns" + lineSeparator() +
-                        "       [=<true/false>]] [--legacy-style-quoting[=<true/false>]]" + lineSeparator() +
-                        "       [--multiline-fields[=<true/false>]] [--normalize-types[=<true/false>]]" + lineSeparator() +
-                        "       [--skip-bad-entries-logging[=<true/false>]] [--skip-bad-relationships" + lineSeparator() +
-                        "       [=<true/false>]] [--skip-duplicate-nodes[=<true/false>]] [--trim-strings" + lineSeparator() +
-                        "       [=<true/false>]] [--additional-config=<path>] [--array-delimiter=<char>]" + lineSeparator() +
+                        "import [--expand-commands] [--verbose] [--cache-on-heap[=<true/false>]]" + lineSeparator() +
+                        "       [--high-io[=<true/false>]] [--ignore-empty-strings[=<true/false>]]" + lineSeparator() +
+                        "       [--ignore-extra-columns[=<true/false>]] [--legacy-style-quoting" + lineSeparator() +
+                        "       [=<true/false>]] [--multiline-fields[=<true/false>]] [--normalize-types" + lineSeparator() +
+                        "       [=<true/false>]] [--skip-bad-entries-logging[=<true/false>]]" + lineSeparator() +
+                        "       [--skip-bad-relationships[=<true/false>]] [--skip-duplicate-nodes" + lineSeparator() +
+                        "       [=<true/false>]] [--trim-strings[=<true/false>]]" + lineSeparator() +
+                        "       [--additional-config=<path>] [--array-delimiter=<char>]" + lineSeparator() +
                         "       [--bad-tolerance=<num>] [--database=<database>] [--delimiter=<char>]" + lineSeparator() +
                         "       [--id-type=<STRING|INTEGER|ACTUAL>] [--input-encoding=<character-set>]" + lineSeparator() +
                         "       [--max-memory=<size>] [--processors=<num>] [--quote=<char>]" + lineSeparator() +
@@ -88,6 +88,7 @@ class ImportCommandTest
                         "OPTIONS" + lineSeparator() +
                         "" + lineSeparator() +
                         "      --verbose              Enable verbose output." + lineSeparator() +
+                        "      --expand-commands      Allow command expansion in config value evaluation." + lineSeparator() +
                         "      --database=<database>  Name of the database to import." + lineSeparator() +
                         "                               Default: neo4j" + lineSeparator() +
                         "      --additional-config=<path>" + lineSeparator() +
@@ -228,8 +229,7 @@ class ImportCommandTest
                         "                               perspective of the importer. The first line must" + lineSeparator() +
                         "                               contain the header. Multiple data sources like" + lineSeparator() +
                         "                               these can be specified in one import, where each" + lineSeparator() +
-                        "                               data source has its own header."
-        );
+                        "                               data source has its own header.", baos.toString().trim() );
     }
 
     @Test

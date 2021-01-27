@@ -30,10 +30,11 @@ final class CommandHelpers
     { // should not be constructable
     }
 
-    static Config buildConfig( ExecutionContext ctx )
+    static Config buildConfig( ExecutionContext ctx, boolean allowCommandExpansion )
     {
         Config cfg = Config.newBuilder()
                            .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                           .commandExpansion( allowCommandExpansion )
                            .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir() )
                            .set( GraphDatabaseSettings.read_only, true ).build();
         ConfigUtils.disableAllConnectors( cfg );

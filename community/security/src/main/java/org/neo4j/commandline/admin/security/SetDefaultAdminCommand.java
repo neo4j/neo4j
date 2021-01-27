@@ -84,8 +84,10 @@ public class SetDefaultAdminCommand extends AbstractCommand
     Config loadNeo4jConfig()
     {
         Config cfg = Config.newBuilder()
-                .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath() ).build();
+                           .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                           .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir().toAbsolutePath() )
+                           .commandExpansion( allowCommandExpansion )
+                           .build();
         ConfigUtils.disableAllConnectors( cfg );
         return cfg;
     }

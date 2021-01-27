@@ -116,9 +116,9 @@ class LoadCommandTest
                         "%n" +
                         "USAGE%n" +
                         "%n" +
-                        "load [--force] [--info] [--verbose] [--database=<database>] --from=<path>%n" +
-                        "%n" +
-                        "DESCRIPTION%n" +
+                        "load [--expand-commands] [--force] [--info] [--verbose] [--database=<database>]%n" +
+                        "     --from=<path>%n" +
+                        "%nDESCRIPTION%n" +
                         "%n" +
                         "Load a database from an archive. <archive-path> must be an archive created with%n" +
                         "the dump command. <database> is the name of the database to create. Existing%n" +
@@ -129,14 +129,15 @@ class LoadCommandTest
                         "%n" +
                         "OPTIONS%n" +
                         "%n" +
-                        "      --verbose       Enable verbose output.%n" +
-                        "      --from=<path>   Path to archive created with the dump command.%n" +
+                        "      --verbose           Enable verbose output.%n" +
+                        "      --expand-commands   Allow command expansion in config value evaluation.%n" +
+                        "      --from=<path>       Path to archive created with the dump command.%n" +
                         "      --database=<database>%n" +
-                        "                      Name of the database to load.%n" +
-                        "                        Default: neo4j%n" +
-                        "      --force         If an existing database should be replaced.%n" +
-                        "      --info          Print meta-data information about the archive file,%n" +
-                        "                        instead of loading the contained database."
+                        "                          Name of the database to load.%n" +
+                        "                            Default: neo4j%n" +
+                        "      --force             If an existing database should be replaced.%n" +
+                        "      --info              Print meta-data information about the archive file,%n" +
+                        "                            instead of loading the contained database."
         ) );
     }
 

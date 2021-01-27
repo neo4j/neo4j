@@ -76,15 +76,18 @@ class SetInitialPasswordCommandTest
         }
         assertThat( baos.toString().trim() ).isEqualTo( String.format(
                 "USAGE%n" + "%n" +
-                        "set-initial-password [--require-password-change] [--verbose] <password>%n" +
+                        "set-initial-password [--expand-commands] [--require-password-change]%n" +
+                        "                     [--verbose] <password>%n" +
                         "%n" + "DESCRIPTION%n" + "%n" +
                         "Sets the initial password of the initial admin user ('neo4j'). And removes the%n" +
                         "requirement to change password on first login.%n" +
                         "%n" + "PARAMETERS%n" + "%n" +
                         "      <password>%n" + "%n" + "OPTIONS%n" + "%n" +
-                        "      --verbose    Enable verbose output.%n" +
+                        "      --verbose           Enable verbose output.%n" +
+                        "      --expand-commands   Allow command expansion in config value evaluation.%n" +
                         "      --require-password-change%n" +
-                        "                   Require the user to change their password on first login." ) );
+                        "                          Require the user to change their password on first%n" +
+                        "                            login." ) );
     }
 
     @Test
