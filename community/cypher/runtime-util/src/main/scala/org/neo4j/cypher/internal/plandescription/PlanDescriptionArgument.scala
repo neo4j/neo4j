@@ -39,6 +39,11 @@ object Arguments {
     }
   }
 
+  // For calling the apply method of EstimatedRows from Java
+  def estimatedRows(effectiveCardinality: Double): EstimatedRows = {
+    EstimatedRows(effectiveCardinality, None)
+  }
+
   case class Details(info: Seq[PrettyString]) extends Argument
 
   case class Time(value: Long) extends Argument

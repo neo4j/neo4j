@@ -47,12 +47,12 @@ case class recordEffectiveOutputCardinality(cardinalities: Cardinalities, effect
       topDown(Rewriter.lift {
         case p: LogicalPlan =>
           val reduction = workReductions(p.id)
-          val effectiveCardinalities = CardinalityCostModel.effectiveCardinalities(p, reduction, cardinalities)
+          val theseEffectiveCardinalities = CardinalityCostModel.effectiveCardinalities(p, reduction, cardinalities)
 
-          p.lhs.foreach { lhs => workReductions += (lhs.id -> effectiveCardinalities.lhsReduction) }
-          p.rhs.foreach { rhs => workReductions += (rhs.id -> effectiveCardinalities.rhsReduction) }
+          p.lhs.foreach { lhs => workReductions += (lhs.id -> theseEffectiveCardinalities.lhsReduction) }
+          p.rhs.foreach { rhs => workReductions += (rhs.id -> theseEffectiveCardinalities.rhsReduction) }
 
-          effectiveCardinalities.set(p.id, effectiveCardinalities.outputCardinality)
+          effectiveCardinalities.set(p.id, EffectiveCardinality(theseEffectiveCardinalities.outputCardinality.amount, Some(cardinalities.get(p.id))))
 
           p
       })
