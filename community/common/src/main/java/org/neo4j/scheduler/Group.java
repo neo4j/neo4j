@@ -111,8 +111,8 @@ public enum Group
 
     /** Rolls back idle transactions on the server. */
     SERVER_TRANSACTION_TIMEOUT( "ServerTransactionTimeout" ),
-    /** Pulls updates from the leader. */
     PULL_UPDATES( "PullUpdates" ),
+    APPLY_UPDATES( "ApplyUpdates" ),
 
     // FABRIC
     FABRIC_IDLE_DRIVER_MONITOR( "FabricIdleDriverMonitor" ),
