@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
@@ -92,6 +93,9 @@ case object planMatch extends MatchPlanner {
        Selectivity.ONE
     } else {
       query.lastQueryHorizon match {
+        case _: AggregatingQueryProjection =>
+          Selectivity.ONE
+
         case proj: QueryProjection if proj.queryPagination.limit.isDefined =>
           val queryWithoutLimit = query.updateTailOrSelf(_.updateQueryProjection(_ => proj.withPagination(proj.queryPagination.withLimit(None))))
           val cardinalityModel = context.metrics.cardinality(_, context.input, context.semanticTable)

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.test_helpers.TestGraphStatistics
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
@@ -458,6 +459,33 @@ class planMatchTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       // THEN
       result shouldBe Selectivity(limit / (nodes.toDouble * nodes.toDouble))
+    }
+  }
+
+  test("limitSelectivityForRestOfQuery: aggregation in first horizon, tail with LIMIT") {
+    val limit = 10
+    val nodes = 100
+
+    // MATCH (n) WITH count(*) AS c MATCH (m) RETURN * LIMIT 10
+    new given {
+      statistics = new TestGraphStatistics() {
+        override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
+      }
+    }.withLogicalPlanningContext { (_, context) =>
+      val query = RegularSinglePlannerQuery(
+        queryGraph = QueryGraph(patternNodes = Set("n")),
+        horizon = AggregatingQueryProjection(Map.empty, Map("c" -> countStar())),
+        tail = Some(RegularSinglePlannerQuery(
+          queryGraph = QueryGraph(patternNodes = Set("m"), argumentIds = Set("c")),
+          horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit))))
+        ))
+      )
+
+      // WHEN
+      val result = planMatch.limitSelectivityForRestOfQuery(query, context)
+
+      // THEN
+      result shouldBe Selectivity.ONE
     }
   }
 }
