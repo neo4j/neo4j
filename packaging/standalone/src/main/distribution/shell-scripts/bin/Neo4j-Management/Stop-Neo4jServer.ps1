@@ -57,7 +57,7 @@ function Stop-Neo4jServer
   process
   {
     $ServiceName = Get-Neo4jWindowsServiceName -Neo4jServer $Neo4jServer -ErrorAction Stop
-    $Found = Get-Service -Name $ServiceName -ComputerName '.' -ErrorAction 'SilentlyContinue'
+    $Found = Get-Service -Name $ServiceName -ErrorAction 'SilentlyContinue'
     if ($Found)
     {
       $prunsrv = Get-Neo4jPrunsrv -Neo4jServer $Neo4jServer -ForServerStop
