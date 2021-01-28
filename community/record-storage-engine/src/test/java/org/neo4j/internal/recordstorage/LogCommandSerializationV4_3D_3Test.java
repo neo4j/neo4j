@@ -19,7 +19,16 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+
+import org.neo4j.kernel.impl.store.record.MetaDataRecord;
+import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
+import org.neo4j.storageengine.api.StorageCommand;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
 {
@@ -33,5 +42,26 @@ class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
     protected LogCommandSerialization writer()
     {
         return LogCommandSerializationV4_3_D3.INSTANCE;
+    }
+
+    @Test
+    void shouldReadAndWriteMetaDataCommand() throws IOException
+    {
+        // Given
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        MetaDataRecord before = new MetaDataRecord( 12 );
+        MetaDataRecord after = new MetaDataRecord( 12 );
+        after.initialize( true, 999 );
+        new Command.MetaDataCommand( writer(), before, after ).serialize( channel );
+
+        // When
+        CommandReader reader = createReader();
+        StorageCommand command = reader.read( channel );
+        assertTrue( command instanceof Command.MetaDataCommand );
+
+        Command.MetaDataCommand readCommand = (Command.MetaDataCommand) command;
+
+        // Then
+        assertBeforeAndAfterEquals( readCommand, before, after );
     }
 }

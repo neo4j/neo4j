@@ -35,7 +35,6 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -625,43 +624,6 @@ class LogCommandSerializationV4_2 extends LogCommandSerializationV4_0
                .putInt( command.typeId() )
                .putInt( command.endLabelId() )
                .putLong( command.delta() );
-    }
-
-    /*
-     * MetaData commands are introduced in 4.3 but needs to be readable as V4.2 to solve rolling upgrade issues.
-     * They add a field in the MetaDataStore on the same format as 4.2 and these commands will only be generated & accepted by >=4.3 jars
-     * The "upgrade transaction" is using these, and needs to be written using the "old" version
-     */
-    @Override
-    protected Command readMetaDataCommand( ReadableChannel channel ) throws IOException
-    {
-        long id = channel.getLong();
-        MetaDataRecord before = readMetaDataRecord( id, channel );
-        MetaDataRecord after = readMetaDataRecord( id, channel );
-        return new Command.MetaDataCommand( this, before, after );
-    }
-
-    private MetaDataRecord readMetaDataRecord( long id, ReadableChannel channel ) throws IOException
-    {
-        long value = channel.getLong();
-        MetaDataRecord record = new MetaDataRecord();
-        record.setId( id );
-        record.initialize( true, value );
-        return record;
-    }
-
-    @Override
-    public void writeMetaDataCommand( WritableChannel channel, Command.MetaDataCommand command ) throws IOException
-    {
-        channel.put( NeoCommandType.META_DATA_COMMAND );
-        channel.putLong( command.getKey() );
-        writeMetaDataRecord( channel, command.getBefore() );
-        writeMetaDataRecord( channel, command.getAfter() );
-    }
-
-    private void writeMetaDataRecord( WritableChannel channel, MetaDataRecord record ) throws IOException
-    {
-        channel.putLong( record.getValue() );
     }
 
     void writeDynamicRecords( WritableChannel channel, Collection<DynamicRecord> records ) throws IOException

@@ -32,6 +32,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeVersion;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -84,11 +85,14 @@ class DatabaseUpgradeTransactionIT
 
         //Given
         setKernelVersion( KernelVersion.V4_2 );
+        setDbmsRuntime( DbmsRuntimeVersion.V4_3 );
         restartDbms();
         long startTransaction = db.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastCommittedTransactionId();
 
         //Then
         assertThat( getKernelVersion() ).isEqualTo( KernelVersion.V4_2 );
+        createWriteTransaction(); // Just to have at least one tx from our measurement point in the old version
+        setDbmsRuntime( DbmsRuntimeVersion.V4_3_D3 );
 
         //When
         createReadTransaction();
@@ -116,6 +120,7 @@ class DatabaseUpgradeTransactionIT
         //Then
         assertThat( getKernelVersion() ).isEqualTo( KernelVersion.V4_2 );
         assertThat( getDbmsRuntime() ).isEqualTo( DbmsRuntimeVersion.V4_2 );
+        createWriteTransaction(); // Just to have at least one tx from our measurement point in the old version
 
         //When
         Race race = new Race().withRandomStartDelays().withEndCondition( () -> KernelVersion.LATEST.equals( getKernelVersion() ) );
@@ -155,7 +160,7 @@ class DatabaseUpgradeTransactionIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( tx.getAllNodes().stream().count() ).isEqualTo( 0 );
+            tx.getAllNodes().stream().forEach( Entity::getAllProperties );
             tx.commit();
         }
     }
@@ -230,7 +235,7 @@ class DatabaseUpgradeTransactionIT
         assertThat( transactionVersions.get( 0 ) ).isEqualTo( from ); //First should be "from" version
         assertThat( transactionVersions.get( transactionVersions.size() - 1 ) ).isEqualTo( to ); //And last the "to" version
 
-        CommittedTransactionRepresentation upgradeTransaction = transactions.get( transactionVersions.indexOf( to ) - 1 );
+        CommittedTransactionRepresentation upgradeTransaction = transactions.get( transactionVersions.indexOf( to ) );
         PhysicalTransactionRepresentation physicalRep = (PhysicalTransactionRepresentation) upgradeTransaction.getTransactionRepresentation();
         physicalRep.accept( element ->
         {

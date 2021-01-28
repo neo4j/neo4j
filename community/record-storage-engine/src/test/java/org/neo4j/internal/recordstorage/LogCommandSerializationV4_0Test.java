@@ -525,7 +525,7 @@ class LogCommandSerializationV4_0Test
         return new LogCommandSerializationV4_0();
     }
 
-    private static <RECORD extends AbstractBaseRecord> void assertBeforeAndAfterEquals( Command.BaseCommand<RECORD> command, RECORD before, RECORD after )
+    static <RECORD extends AbstractBaseRecord> void assertBeforeAndAfterEquals( Command.BaseCommand<RECORD> command, RECORD before, RECORD after )
     {
         assertEqualsIncludingFlags( before, command.getBefore() );
         assertEqualsIncludingFlags( after, command.getAfter() );
