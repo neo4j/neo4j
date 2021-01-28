@@ -339,7 +339,6 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
   // Unused. We need to have a default
   case object default extends CypherDebugOption("none")
   case object tostring extends CypherDebugOption("tostring")
-  case object reportCostComparisonsAsRows extends CypherDebugOption("reportcostcomparisonsasrows")
   case object printCostComparisons extends CypherDebugOption("printcostcomparisons")
   case object generateJavaSource extends CypherDebugOption("generate_java_source")
   case object showJavaSource extends CypherDebugOption("show_java_source")
@@ -356,7 +355,6 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
 
   def values: Set[CypherDebugOption] = Set(
     tostring,
-    reportCostComparisonsAsRows,
     printCostComparisons,
     generateJavaSource,
     showJavaSource,
@@ -400,7 +398,6 @@ case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
   private def isEnabled(option: CypherDebugOption): Boolean = enabledOptions.contains(option)
 
   val toStringEnabled: Boolean = isEnabled(CypherDebugOption.tostring)
-  val reportCostComparisonsAsRowsEnabled: Boolean = isEnabled(CypherDebugOption.reportCostComparisonsAsRows)
   val printCostComparisonsEnabled: Boolean = isEnabled(CypherDebugOption.printCostComparisons)
   val generateJavaSourceEnabled: Boolean = isEnabled(CypherDebugOption.generateJavaSource)
   val showJavaSourceEnabled: Boolean = isEnabled(CypherDebugOption.showJavaSource)

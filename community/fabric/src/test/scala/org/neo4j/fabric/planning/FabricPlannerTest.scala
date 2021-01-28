@@ -19,9 +19,6 @@
  */
 package org.neo4j.fabric.planning
 
-import java.time.Duration
-import java.util.Optional
-
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.QueryOptions
@@ -69,6 +66,8 @@ import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 import org.scalatest.prop.TableDrivenPropertyChecks
 
+import java.time.Duration
+import java.util.Optional
 import scala.collection.JavaConverters.setAsJavaSetConverter
 import scala.reflect.ClassTag
 import scala.util.Failure
@@ -766,7 +765,6 @@ class FabricPlannerTest
           |  replan=force
           |  connectComponentsPlanner=greedy
           |  debug=tostring
-          |  debug=reportCostComparisonsAsRows
           |WITH 1 AS a
           |CALL {
           |  USE foo
@@ -794,7 +792,7 @@ class FabricPlannerTest
           interpretedPipesFallback = CypherInterpretedPipesFallbackOption.disabled,
           replan = CypherReplanOption.force,
           connectComponentsPlanner = CypherConnectComponentsPlannerOption.greedy,
-          debugOptions = CypherDebugOptions(Set(CypherDebugOption.tostring, CypherDebugOption.reportCostComparisonsAsRows)),
+          debugOptions = CypherDebugOptions(Set(CypherDebugOption.tostring)),
         ),
       )
 

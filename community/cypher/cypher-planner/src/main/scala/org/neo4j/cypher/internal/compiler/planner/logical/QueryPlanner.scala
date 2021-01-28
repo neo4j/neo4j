@@ -51,13 +51,10 @@ case object QueryPlanner
   override def description = "using cost estimates, plan the query to a logical plan"
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
-    val costComparisonsAsRows = context.debugOptions.reportCostComparisonsAsRowsEnabled
     val printCostComparisons = context.debugOptions.printCostComparisonsEnabled || java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
 
     val costComparisonListener =
-      if (costComparisonsAsRows)
-        new ReportCostComparisonsAsRows
-      else if (printCostComparisons)
+      if (printCostComparisons)
         SystemOutCostLogger
       else
         devNullListener
@@ -90,13 +87,10 @@ case object QueryPlanner
     val produceResultColumns = from.statement().returnColumns.map(_.name)
     val logicalPlan = plan(from.query, logicalPlanningContext, produceResultColumns)
 
-    costComparisonListener match {
-      case debug: ReportCostComparisonsAsRows => debug.addPlan(from)
-      case _ => from.copy(
-        maybePeriodicCommit = Some(from.query.periodicCommit),
-        maybeLogicalPlan = Some(logicalPlan),
-        maybeSemanticTable = Some(logicalPlanningContext.semanticTable))
-    }
+    from.copy(
+      maybePeriodicCommit = Some(from.query.periodicCommit),
+      maybeLogicalPlan = Some(logicalPlan),
+      maybeSemanticTable = Some(logicalPlanningContext.semanticTable))
   }
 
   private def getMetricsFrom(context: PlannerContext) = if (context.debugOptions.inverseCostEnabled) {

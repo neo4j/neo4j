@@ -52,7 +52,6 @@ class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks 
     ("CYPHER 4.1 planner=idp planner=dp runtime=interpreted RETURN", PreParsedStatement("RETURN", List(version("4.1"), opt("planner", "idp"), opt("planner", "dp"), opt("runtime", "interpreted")), (1, 55, 54))),
     ("explainmatch", PreParsedStatement("explainmatch", List.empty, (1, 1, 0))),
     ("CYPHER updateStrategy=eager RETURN", PreParsedStatement("RETURN", List(opt("updateStrategy", "eager")), (1, 29, 28))),
-    ("CYPHER debug=tostring debug=reportCostComparisonsAsRows RETURN", PreParsedStatement("RETURN", List(opt("debug", "tostring"), opt("debug", "reportCostComparisonsAsRows")), (1, 57, 56))),
     ("CYPHER runtime=slotted RETURN", PreParsedStatement("RETURN", List(opt("runtime", "slotted")), (1, 24, 23))),
     ("CYPHER expressionEngine=interpreted RETURN", PreParsedStatement("RETURN", List(opt("expressionEngine", "interpreted")), (1, 37, 36))),
     ("CYPHER expressionEngine=compiled RETURN", PreParsedStatement("RETURN", List(opt("expressionEngine", "compiled")), (1, 34, 33))),
