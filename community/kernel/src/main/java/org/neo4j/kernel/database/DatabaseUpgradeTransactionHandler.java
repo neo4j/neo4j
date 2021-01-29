@@ -21,26 +21,24 @@ package org.neo4j.kernel.database;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
-import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
+import org.neo4j.lock.Lock;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 
 class DatabaseUpgradeTransactionHandler
 {
-    private static final Object LISTENER_STATE = new Object();
-
     private final StorageEngine storageEngine;
     private final DbmsRuntimeRepository dbmsRuntimeRepository;
     private final KernelVersionRepository kernelVersionRepository;
@@ -63,15 +61,16 @@ class DatabaseUpgradeTransactionHandler
     // - Transaction B (version 2)
     //
     // I.e. the upgrade transaction wouldn't be a strong barrier. This lock prevents this scenario.
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final UpgradeLocker locker;
 
     DatabaseUpgradeTransactionHandler( StorageEngine storageEngine, DbmsRuntimeRepository dbmsRuntimeRepository,
-            KernelVersionRepository kernelVersionRepository, DatabaseTransactionEventListeners transactionEventListeners )
+            KernelVersionRepository kernelVersionRepository, DatabaseTransactionEventListeners transactionEventListeners, UpgradeLocker locker )
     {
         this.storageEngine = storageEngine;
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         this.kernelVersionRepository = kernelVersionRepository;
         this.transactionEventListeners = transactionEventListeners;
+        this.locker = locker;
     }
 
     interface InternalTransactionCommitHandler
@@ -91,23 +90,13 @@ class DatabaseUpgradeTransactionHandler
      */
     void registerUpgradeListener( InternalTransactionCommitHandler internalTransactionCommitHandler )
     {
-        DbmsRuntimeVersion startupRuntimeVersion = dbmsRuntimeRepository.getVersion();
-        KernelVersion startupKernelVersion = kernelVersionRepository.kernelVersion();
-        if ( startupKernelVersion.isGreaterThan( startupRuntimeVersion.kernelVersion() ) )
-        {
-            // This database has a higher runtime version than the system db. Reasonable scenarios is that this database has been created or imported
-            // on latest neo4j version jars before system has been "upgraded" to latest runtime version. This database is already past any
-            // rolling upgrade scenario.
-            return;
-        }
-
-        if ( !startupRuntimeVersion.isCurrent() || startupRuntimeVersion.kernelVersion().isGreaterThan( startupKernelVersion ) )
+        if ( !kernelVersionRepository.kernelVersion().isLatest() )
         {
             transactionEventListeners.registerTransactionEventListener( new DatabaseUpgradeListener( internalTransactionCommitHandler ) );
         }
     }
 
-    private class DatabaseUpgradeListener extends InternalTransactionEventListener.Adapter<Object>
+    private class DatabaseUpgradeListener extends InternalTransactionEventListener.Adapter<Lock>
     {
         private final InternalTransactionCommitHandler internalTransactionCommitHandler;
 
@@ -117,64 +106,65 @@ class DatabaseUpgradeTransactionHandler
         }
 
         @Override
-        public Object beforeCommit( TransactionData data, Transaction transaction, GraphDatabaseService databaseService ) throws Exception
+        public Lock beforeCommit( TransactionData data, KernelTransaction tx, GraphDatabaseService databaseService ) throws Exception
         {
             KernelVersion checkKernelVersion = kernelVersionRepository.kernelVersion();
             if ( dbmsRuntimeRepository.getVersion().kernelVersion().isGreaterThan( checkKernelVersion ) )
             {
-                lock.writeLock().lock();
                 try
                 {
-                    KernelVersion kernelVersionToUpgradeTo = dbmsRuntimeRepository.getVersion().kernelVersion();
-                    KernelVersion currentKernelVersion = kernelVersionRepository.kernelVersion();
-                    if ( kernelVersionToUpgradeTo.isGreaterThan( currentKernelVersion ) )
+                    try ( Lock lock = locker.acquireWriteLock( tx ) )
                     {
-                        internalTransactionCommitHandler.commit( storageEngine.createUpgradeCommands( kernelVersionToUpgradeTo ) );
+                        KernelVersion kernelVersionToUpgradeTo = dbmsRuntimeRepository.getVersion().kernelVersion();
+                        KernelVersion currentKernelVersion = kernelVersionRepository.kernelVersion();
+                        if ( kernelVersionToUpgradeTo.isGreaterThan( currentKernelVersion ) )
+                        {
+                            internalTransactionCommitHandler.commit( storageEngine.createUpgradeCommands( kernelVersionToUpgradeTo ) );
+                        }
                     }
                 }
-                finally
+                catch ( LockAcquisitionTimeoutException | DeadlockDetectedException ignore )
                 {
-                    lock.writeLock().unlock();
+                    //This can happen if there is an ongoing committing transaction waiting for locks that the "trigger tx" has
+                    //Let the "trigger tx" continue and try the upgrade again on the next write
                 }
+
             }
-
-            lock.readLock().lock();
-            return LISTENER_STATE;
+            return locker.acquireReadLock( tx ); // This read lock will be released in afterCommit or afterRollback
         }
 
         @Override
-        public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
+        public void afterCommit( TransactionData data, Lock readLock, GraphDatabaseService databaseService )
         {
-            checkUnlockAndUnregister( state );
+            checkUnlockAndUnregister( readLock );
         }
 
         @Override
-        public void afterRollback( TransactionData data, Object state, GraphDatabaseService databaseService )
+        public void afterRollback( TransactionData data, Lock readLock, GraphDatabaseService databaseService )
         {
-            checkUnlockAndUnregister( state );
+            checkUnlockAndUnregister( readLock );
         }
 
-        private void checkUnlockAndUnregister( Object state )
+        private void checkUnlockAndUnregister( Lock readLock )
         {
             // For some reason the transaction event listeners handling is such that even if beforeCommit fails for this listener
-            // then an afterRollback will be called. Therefore we distinguish between success and failure using the state, which
-            // on success must be our own special object.
-            if ( state != LISTENER_STATE )
+            // then an afterRollback will be called. Therefore we distinguish between success and failure using the state (which is the lock)
+            if ( readLock == null )
             {
                 return;
             }
 
-            lock.readLock().unlock();
+            readLock.close();
             if ( kernelVersionRepository.kernelVersion().isLatest() && unregistered.compareAndSet( false, true ) )
             {
-                lock.writeLock().lock();
                 try
                 {
                     transactionEventListeners.unregisterTransactionEventListener( this );
                 }
-                finally
+                catch ( Throwable e )
                 {
-                    lock.writeLock().unlock();
+                    unregistered.set( false );
+                    throw e;
                 }
             }
         }

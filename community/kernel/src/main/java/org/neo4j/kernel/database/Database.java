@@ -551,8 +551,9 @@ public class Database extends LifecycleAdapter
 
     private void registerUpgradeListener()
     {
-        DatabaseUpgradeTransactionHandler handler = new DatabaseUpgradeTransactionHandler( storageEngine,
-                globalDependencies.resolveDependency( DbmsRuntimeRepository.class ), storageEngine.metadataProvider(), databaseTransactionEventListeners );
+        DatabaseUpgradeTransactionHandler handler =
+                new DatabaseUpgradeTransactionHandler( storageEngine, globalDependencies.resolveDependency( DbmsRuntimeRepository.class ),
+                        storageEngine.metadataProvider(), databaseTransactionEventListeners, UpgradeLocker.DEFAULT );
 
         handler.registerUpgradeListener( commands ->
         {

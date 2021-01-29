@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeVersion;
@@ -37,7 +39,10 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
+import org.neo4j.lock.Lock;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -59,6 +64,8 @@ class DatabaseUpgradeTransactionHandlerTest
     private TransactionEventListener<Object> listener;
     private volatile boolean listenerUnregistered;
     private final ConcurrentLinkedQueue<RegisteredTransaction> registeredTransactions = new ConcurrentLinkedQueue<>();
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
+    private final RWUpgradeLocker lock = new RWUpgradeLocker();
 
     @AfterEach
     void checkTransactionStreamConsistency()
@@ -147,7 +154,7 @@ class DatabaseUpgradeTransactionHandlerTest
     @Test
     void shouldUpgradeOnceEvenWithManyConcurrentTransactions()
     {
-        //Given a dbms running with 4.3 "jars" and a db that has just now been upgraded to run on these jars too (hence the UNKNOWN version)
+        //Given a dbms running with 4.3 "jars" and a db that has just now been upgraded to run on these jars too
         init( KernelVersion.V4_0, DbmsRuntimeVersion.V4_2 );
         AtomicBoolean stop = new AtomicBoolean();
         Race race = new Race().withEndCondition( stop::get );
@@ -171,7 +178,7 @@ class DatabaseUpgradeTransactionHandlerTest
 
     /**
      * Asserts that the observed transaction stream is consistent according to these rules:
-     * - Either start from UNKNOWN or some of the known versions
+     * - Start from some of the known versions
      * - All transactions up until the next upgrade transaction needs to be for the same version
      * - Upgrade transaction is expected to be of a newer version
      *
@@ -186,6 +193,10 @@ class DatabaseUpgradeTransactionHandlerTest
         {
             if ( registeredTransaction.isUpgradeTransaction )
             {
+                if ( checkVersion != null )
+                {
+                    assertThat( registeredTransaction.version.isGreaterThan( checkVersion ) ).isTrue();
+                }
                 checkVersion = registeredTransaction.version;
             }
             else
@@ -223,7 +234,7 @@ class DatabaseUpgradeTransactionHandlerTest
         doAnswer( inv -> listenerUnregistered = true ).when( databaseTransactionEventListeners ).unregisterTransactionEventListener( any() );
 
         DatabaseUpgradeTransactionHandler handler =
-                new DatabaseUpgradeTransactionHandler( storageEngine, dbmsRuntimeRepository, kernelVersionRepository, databaseTransactionEventListeners );
+                new DatabaseUpgradeTransactionHandler( storageEngine, dbmsRuntimeRepository, kernelVersionRepository, databaseTransactionEventListeners, lock );
         handler.registerUpgradeListener( commands -> setKernelVersion( ((FakeKernelVersionUpgradeCommand) commands.iterator().next()).version ) );
     }
 
@@ -313,6 +324,39 @@ class DatabaseUpgradeTransactionHandlerTest
         public String toString()
         {
             return "RegisteredTransaction{" + "version=" + version + ", isUpgradeTransaction=" + isUpgradeTransaction + '}';
+        }
+    }
+
+    private static class RWUpgradeLocker implements UpgradeLocker
+    {
+        private final ReadWriteLock realLock = new ReentrantReadWriteLock();
+
+        @Override
+        public Lock acquireWriteLock( KernelTransaction tx )
+        {
+            realLock.writeLock().lock();
+            return new Lock()
+            {
+                @Override
+                public void release()
+                {
+                    realLock.writeLock().unlock();
+                }
+            };
+        }
+
+        @Override
+        public Lock acquireReadLock( KernelTransaction tx )
+        {
+            realLock.readLock().lock();
+            return new Lock()
+            {
+                @Override
+                public void release()
+                {
+                    realLock.readLock().unlock();
+                }
+            };
         }
     }
 }

@@ -19,8 +19,12 @@
  */
 package org.neo4j.kernel.internal.event;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
+import org.neo4j.kernel.api.KernelTransaction;
 
 /**
  * Used as a marker interface for internal transaction event listener, which will get called for all transactions containing changes,
@@ -28,6 +32,16 @@ import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
  */
 public interface InternalTransactionEventListener<T> extends TransactionEventListener<T>
 {
+    /**
+     * Difference is that the provided transaction is a {@link KernelTransaction}
+     * Note that only one will be invoked
+     * @see TransactionEventListener#beforeCommit(TransactionData, Transaction, GraphDatabaseService)
+     */
+    default T beforeCommit( TransactionData data, KernelTransaction transaction, GraphDatabaseService databaseService ) throws Exception
+    {
+        return beforeCommit( data, transaction.internalTransaction(), databaseService );
+    }
+
     class Adapter<T> extends TransactionEventListenerAdapter<T> implements InternalTransactionEventListener<T>
     {
     }

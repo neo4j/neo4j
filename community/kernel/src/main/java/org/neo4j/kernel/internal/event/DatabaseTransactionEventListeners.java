@@ -77,12 +77,14 @@ public class DatabaseTransactionEventListeners
         boolean isSystem = SYSTEM_DATABASE_NAME.equals( databaseName );
         for ( TransactionEventListener<?> listener : eventListeners )
         {
-            if ( hasDataChanges || listener instanceof InternalTransactionEventListener || isSystem )
+            boolean internal = listener instanceof InternalTransactionEventListener;
+            if ( hasDataChanges || internal || isSystem )
             {
                 Object listenerState = null;
                 try
                 {
-                    listenerState = listener.beforeCommit( txData, transaction.internalTransaction(), databaseFacade );
+                    listenerState = !internal ? listener.beforeCommit( txData, transaction.internalTransaction(), databaseFacade )
+                                              : ((InternalTransactionEventListener) listener).beforeCommit( txData, transaction, databaseFacade );
                 }
                 catch ( Throwable t )
                 {
