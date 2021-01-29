@@ -29,7 +29,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.configuration.GraphDatabaseInternalSettings.FeatureState;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -156,7 +155,6 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                      .setDefault( GraphDatabaseInternalSettings.netty_server_shutdown_quiet_period, 0 )
                      .setDefault( GraphDatabaseInternalSettings.netty_server_shutdown_timeout, Duration.ofSeconds( 3 ) )
                      .setDefault( GraphDatabaseInternalSettings.additional_lock_verification, true )
-                     .setDefault( GraphDatabaseInternalSettings.relaxed_dense_node_locking, FeatureState.ENABLED )
                 .build();
     }
 

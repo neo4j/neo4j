@@ -52,9 +52,10 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.internal.counts.DegreesRebuildFromStore;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
+import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStoreFactory;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.IteratorWrapper;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -323,10 +324,9 @@ public class BatchInserterImpl implements BatchInserter
             schemaStore = neoStores.getSchemaStore();
             labelTokenStore = neoStores.getLabelTokenStore();
 
-            groupDegreesStore = RelationshipGroupDegreesStoreFactory.create( config, pageCache, databaseLayout, fileSystem,
-                    immediate(), neoStores, pageCacheTracer, NO_MONITOR );
+            groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
+                    new DegreesRebuildFromStore( neoStores ), config.get( GraphDatabaseSettings.read_only ), pageCacheTracer, NO_MONITOR );
             groupDegreesStore.start( cursorTracer, memoryTracker );
-            boolean relaxedLockingForDenseNodes = RelationshipGroupDegreesStoreFactory.featureEnabled( config, databaseLayout, fileSystem );
 
             degreeUpdater = groupDegreesStore.apply( neoStores.getMetaDataStore().getLastCommittedTransactionId(), cursorTracer );
 
@@ -369,8 +369,8 @@ public class BatchInserterImpl implements BatchInserter
             // Record access
             recordAccess = new DirectRecordAccessSet( neoStores, idGeneratorFactory, cursorTracer );
             relationshipGroupGetter = new RelationshipGroupGetter( relationshipGroupStore, cursorTracer );
-            long externalDegreesThreshold = relaxedLockingForDenseNodes ? DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH : Long.MAX_VALUE;
-            relationshipCreator = new RelationshipCreator( relationshipGroupStore.getStoreHeaderInt(), externalDegreesThreshold, cursorTracer );
+            relationshipCreator =
+                    new RelationshipCreator( relationshipGroupStore.getStoreHeaderInt(), DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH, cursorTracer );
             propertyTraverser = new PropertyTraverser( cursorTracer );
             propertyCreator = new PropertyCreator( propertyStore, propertyTraverser, cursorTracer, memoryTracker );
             propertyDeletor = new PropertyDeleter( propertyTraverser, cursorTracer );

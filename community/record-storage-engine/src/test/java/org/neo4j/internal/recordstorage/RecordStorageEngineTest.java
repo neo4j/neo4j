@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings.FeatureState;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.collection.Visitor;
@@ -74,7 +73,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.relaxed_dense_node_locking;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 
@@ -176,35 +174,9 @@ class RecordStorageEngineTest
     }
 
     @Test
-    void shouldListAllStoreFilesWithDisabledRelaxedLocking()
-    {
-        // given
-        RecordStorageEngine engine = recordStorageEngineBuilder().setting( relaxed_dense_node_locking, FeatureState.DISABLED ).build();
-
-        // when
-        Collection<StoreFileMetadata> atomicFiles = new ArrayList<>();
-        Collection<StoreFileMetadata> replayableFiles = new ArrayList<>();
-        engine.listStorageFiles( atomicFiles, replayableFiles );
-        Collection<StoreFileMetadata> allFiles = new ArrayList<>();
-        allFiles.addAll( atomicFiles );
-        allFiles.addAll( replayableFiles );
-        Set<Path> currentFiles = allFiles.stream().map( StoreFileMetadata::path ).collect( Collectors.toSet() );
-
-        // then
-        Set<Path> allPossibleFiles = databaseLayout.storeFiles();
-        allPossibleFiles.remove( databaseLayout.labelScanStore() );
-        allPossibleFiles.remove( databaseLayout.relationshipTypeScanStore() );
-        allPossibleFiles.remove( databaseLayout.indexStatisticsStore() );
-        allPossibleFiles.remove( databaseLayout.relationshipGroupDegreesStore() );
-
-        assertEquals( allPossibleFiles, currentFiles );
-        assertThat( atomicFiles.stream().map( StoreFileMetadata::path ).collect( Collectors.toSet() ) ).isEqualTo( Set.of( databaseLayout.countStore() ) );
-    }
-
-    @Test
     void shouldListAllStoreFilesWithEnabledRelaxedLocking()
     {
-        RecordStorageEngine engine = recordStorageEngineBuilder().setting( relaxed_dense_node_locking, FeatureState.ENABLED ).build();
+        RecordStorageEngine engine = recordStorageEngineBuilder().build();
 
         // when
         Collection<StoreFileMetadata> atomicFiles = new ArrayList<>();

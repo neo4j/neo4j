@@ -39,13 +39,14 @@ import static java.lang.String.format;
  * {@link RelationshipGroupDegreesStore} backed by the {@link GBPTree}.
  * @see GBPTreeGenericCountsStore
  */
-class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsStore implements RelationshipGroupDegreesStore
+public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsStore implements RelationshipGroupDegreesStore
 {
     private static final String NAME = "Relationship group degrees store";
     static final byte TYPE_DEGREE = (byte) 3;
 
-    GBPTreeRelationshipGroupDegreesStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-            DegreesRebuilder rebuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor ) throws IOException
+    public GBPTreeRelationshipGroupDegreesStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem,
+            RecoveryCleanupWorkCollector recoveryCollector, DegreesRebuilder rebuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor )
+            throws IOException
     {
         super( pageCache, file, fileSystem, recoveryCollector, new RebuilderWrapper( rebuilder ), readOnly, NAME, pageCacheTracer, monitor );
     }

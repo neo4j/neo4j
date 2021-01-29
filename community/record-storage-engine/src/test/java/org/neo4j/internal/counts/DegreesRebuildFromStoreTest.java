@@ -50,10 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.FeatureState.ENABLED;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.relaxed_dense_node_locking;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
-import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.combinedKeyOnGroupAndDirection;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineTestUtils.applyLogicalChanges;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineTestUtils.openSimpleStorageEngine;
@@ -155,9 +152,7 @@ class DegreesRebuildFromStoreTest
 
     private RecordStorageEngine openStorageEngine( DatabaseLayout layout, int denseThreshold )
     {
-        Config config = Config.defaults( genericMap(
-                dense_node_threshold, denseThreshold,
-                relaxed_dense_node_locking, ENABLED ) );
+        Config config = Config.defaults( dense_node_threshold, denseThreshold );
         RecordStorageEngine storageEngine = openSimpleStorageEngine( directory.getFileSystem(), pageCache, layout, config );
         storageEngine.addRelationshipTypeUpdateListener( new EntityTokenUpdateListener.Adapter() );
         return storageEngine;

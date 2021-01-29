@@ -38,11 +38,11 @@ import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
 /**
  * Scans the store and rebuilds the {@link GBPTreeRelationshipGroupDegreesStore} contents if the file is missing.
  */
-class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder
+public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder
 {
     private final NeoStores neoStores;
 
-    DegreesRebuildFromStore( NeoStores neoStores )
+    public DegreesRebuildFromStore( NeoStores neoStores )
     {
         this.neoStores = neoStores;
     }

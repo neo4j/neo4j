@@ -60,7 +60,6 @@ import java.util.stream.StreamSupport;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -95,7 +94,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.FeatureState.ENABLED;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
@@ -132,7 +130,6 @@ class DenseNodeConcurrencyIT
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( GraphDatabaseInternalSettings.relaxed_dense_node_locking, ENABLED );
         builder.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( builder.getFileSystem() ) );
     }
 

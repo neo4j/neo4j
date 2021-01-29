@@ -35,10 +35,11 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.counts.DegreesRebuildFromStore;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
+import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStoreFactory;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.id.IdController;
@@ -123,7 +124,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final ConstraintRuleAccessor constraintSemantics;
     private final LockService lockService;
     private final boolean consistencyCheckApply;
-    private final boolean relaxedLockingForDenseNodes;
     private WorkSync<EntityTokenUpdateListener,TokenUpdateWork> labelScanStoreSync;
     private WorkSync<EntityTokenUpdateListener,TokenUpdateWork> relationshipTypeScanStoreSync;
     private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
@@ -196,7 +196,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             countsStore = openCountsStore( pageCache, fs, databaseLayout, config, logProvider, recoveryCleanupWorkCollector, cacheTracer );
 
             groupDegreesStore = openDegreesStore( pageCache, fs, databaseLayout, config, recoveryCleanupWorkCollector, cacheTracer );
-            relaxedLockingForDenseNodes = RelationshipGroupDegreesStoreFactory.featureEnabled( config, databaseLayout, fs );
 
             consistencyCheckApply = config.get( GraphDatabaseInternalSettings.consistency_check_on_apply );
         }
@@ -281,7 +280,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         try
         {
-            return RelationshipGroupDegreesStoreFactory.create( config, pageCache, layout, fs, recoveryCleanupWorkCollector, neoStores, pageCacheTracer,
+            return new GBPTreeRelationshipGroupDegreesStore( pageCache, layout.relationshipGroupDegreesStore(), fs, recoveryCleanupWorkCollector,
+                    new DegreesRebuildFromStore( neoStores ), config.get( GraphDatabaseSettings.read_only ), pageCacheTracer,
                     GBPTreeGenericCountsStore.NO_MONITOR );
         }
         catch ( IOException e )
@@ -299,7 +299,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public RecordStorageCommandCreationContext newCommandCreationContext( PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, relaxedLockingForDenseNodes, cursorTracer, memoryTracker );
+        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, this::relaxedLockingForDenseNodes, cursorTracer, memoryTracker );
     }
 
     @Override
@@ -526,7 +526,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void listStorageFiles( Collection<StoreFileMetadata> atomic, Collection<StoreFileMetadata> replayable )
     {
         atomic.add( new StoreFileMetadata( databaseLayout.countStore(), RecordFormat.NO_RECORD_SIZE ) );
-        if ( relaxedLockingForDenseNodes )
+        if ( relaxedLockingForDenseNodes() )
         {
             atomic.add( new StoreFileMetadata( databaseLayout.relationshipGroupDegreesStore(), RecordFormat.NO_RECORD_SIZE ) );
         }
@@ -536,6 +536,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             StoreFileMetadata metadata = new StoreFileMetadata( recordStore.getStorageFile(), recordStore.getRecordSize() );
             replayable.add( metadata );
         }
+    }
+
+    private boolean relaxedLockingForDenseNodes()
+    {
+        return neoStores.getMetaDataStore().kernelVersion().isAtLeast( KernelVersion.V4_3_D3 );
     }
 
     /**
