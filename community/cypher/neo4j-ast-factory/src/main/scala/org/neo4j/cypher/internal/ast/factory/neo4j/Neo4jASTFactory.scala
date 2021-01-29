@@ -23,22 +23,14 @@ import java.util
 import java.util.stream.Collectors
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
-import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DescSortItem
-import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FromGraph
-import org.neo4j.cypher.internal.ast.GrantRolesToUsers
-import org.neo4j.cypher.internal.ast.IfExistsDoNothing
-import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
-import org.neo4j.cypher.internal.ast.IfExistsReplace
-import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
@@ -57,7 +49,6 @@ import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
-import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.SeekOnly
 import org.neo4j.cypher.internal.ast.SeekOrScan
 import org.neo4j.cypher.internal.ast.SetClause
@@ -66,7 +57,6 @@ import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetItem
 import org.neo4j.cypher.internal.ast.SetLabelItem
 import org.neo4j.cypher.internal.ast.SetPropertyItem
-import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.SortItem
@@ -83,7 +73,6 @@ import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
-import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.factory.ASTFactory
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.MergeActionType
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos
@@ -177,36 +166,30 @@ import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.internal.util.symbols.CTString
 
 import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.util.Either
 
 class Neo4jASTFactory(query: String)
   extends ASTFactory[Statement,
-    Query,
-    Clause,
-    Return,
-    ReturnItem,
-    SortItem,
-    PatternPart,
-    NodePattern,
-    RelationshipPattern,
-    Option[Range],
-    SetClause,
-    SetItem,
-    RemoveItem,
-    ProcedureResultItem,
-    UsingHint,
-    Expression,
-    Parameter,
-    Variable,
-    Property,
-    MapProjectionElement,
-    UseGraph,
-    AdministrationCommand,
-    Yield,
-    InputPosition] {
+                     Query,
+                     Clause,
+                     Return,
+                     ReturnItem,
+                     SortItem,
+                     PatternPart,
+                     NodePattern,
+                     RelationshipPattern,
+                     Option[Range],
+                     SetClause,
+                     SetItem,
+                     RemoveItem,
+                     ProcedureResultItem,
+                     UsingHint,
+                     Expression,
+                     Variable,
+                     Property,
+                     MapProjectionElement,
+                     InputPosition] {
 
   override def newSingleQuery(clauses: util.List[Clause]): Query = {
     if (clauses.isEmpty) {
@@ -230,7 +213,7 @@ class Neo4jASTFactory(query: String)
 
     val union =
       if (all) UnionAll(lhs.part, rhsQuery)(p)
-      else UnionDistinct(lhs.part, rhsQuery)(p)
+      else     UnionDistinct(lhs.part, rhsQuery)(p)
     Query(None, union)(p)
   }
 
@@ -246,7 +229,7 @@ class Neo4jASTFactory(query: String)
                           e: Expression): Clause = FromGraph(e)(p)
 
   override def useClause(p: InputPosition,
-                         e: Expression): UseGraph = UseGraph(e)(p)
+                         e: Expression): Clause = UseGraph(e)(p)
 
   override def newReturnClause(p: InputPosition,
                                distinct: Boolean,
@@ -267,14 +250,15 @@ class Neo4jASTFactory(query: String)
     throw new UnsupportedOperationException("The `RETURN GRAPH` clause is not available in this implementation of Cypher due to lack of support for multiple graphs.")
   }
 
-  override def newReturnItem(p: InputPosition, e: Expression, v: Variable): ReturnItem = AliasedReturnItem(e, v)(p)
+  override def newReturnItem(p: InputPosition, e: Expression,
+                             v: Variable): ReturnItem = AliasedReturnItem(e, v)(p)
 
   override def newReturnItem(p: InputPosition,
                              e: Expression,
                              eStartOffset: Int,
                              eEndOffset: Int): ReturnItem = {
 
-    val name = query.substring(eStartOffset, eEndOffset + 1)
+    val name = query.substring(eStartOffset, eEndOffset+1)
     UnaliasedReturnItem(e, name)(p)
   }
 
@@ -406,9 +390,9 @@ class Neo4jASTFactory(query: String)
                             pattern: PatternPart): PatternPart =
     NamedPatternPart(v, pattern.asInstanceOf[AnonymousPatternPart])(v.position)
 
-  override def shortestPathPattern(p: InputPosition, pattern: PatternPart): PatternPart = ShortestPaths(pattern.element, single = true)(p)
+  override def shortestPathPattern(p: InputPosition, pattern: PatternPart): PatternPart = ShortestPaths(pattern.element, true)(p)
 
-  override def allShortestPathsPattern(p: InputPosition, pattern: PatternPart): PatternPart = ShortestPaths(pattern.element, single = false)(p)
+  override def allShortestPathsPattern(p: InputPosition, pattern: PatternPart): PatternPart = ShortestPaths(pattern.element, false)(p)
 
   override def everyPathPattern(nodes: util.List[NodePattern],
                                 relationships: util.List[RelationshipPattern]): PatternPart = {
@@ -474,13 +458,9 @@ class Neo4jASTFactory(query: String)
 
   override def newVariable(p: InputPosition, name: String): Variable = Variable(name)(p)
 
-  override def newParameter(p: InputPosition, v: Variable): Parameter = Parameter(v.name, CTAny)(p)
+  override def newParameter(p: InputPosition, v: Variable): Expression = Parameter(v.name, CTAny)(p)
 
-  override def newParameter(p: InputPosition, offset: String): Parameter = Parameter(offset, CTAny)(p)
-
-  override def newStringParameter(p: InputPosition, v: Variable): Parameter = Parameter(v.name, CTString)(p)
-
-  override def newStringParameter(p: InputPosition, offset: String): Parameter = Parameter(offset, CTString)(p)
+  override def newParameter(p: InputPosition, offset: String): Expression = Parameter(offset, CTAny)(p)
 
   override def oldParameter(p: InputPosition, v: Variable): Expression = ParameterWithOldSyntax(v.name, CTAny)(p)
 
@@ -745,6 +725,7 @@ class Neo4jASTFactory(query: String)
   override def mapProjectionProperty(property: StringPos[InputPosition]): MapProjectionElement =
     PropertySelector(Variable(property.string)(property.pos))(property.pos)
 
+
   override def mapProjectionVariable(v: Variable): MapProjectionElement =
     VariableSelector(v)(v.position)
 
@@ -771,88 +752,9 @@ class Neo4jASTFactory(query: String)
     CaseExpression(Option(e), alternatives, Option(elze))(p)
   }
 
-  def useGraph(command: AdministrationCommand, graph: UseGraph): AdministrationCommand = {
-    command.withGraph(Option(graph))
-  }
-
-  override def createRole(p: InputPosition,
-                          replace: Boolean,
-                          roleName: Either[String, Parameter],
-                          from: Either[String, Parameter],
-                          ifNotExists: Boolean): CreateRole = {
-
-    val ifExistsDo =
-      if (ifNotExists) {
-        if (replace) {
-          IfExistsInvalidSyntax
-        } else {
-          IfExistsDoNothing
-        }
-      } else {
-        if (replace) {
-          IfExistsReplace
-        } else {
-          IfExistsThrowError
-        }
-      }
-
-    CreateRole(roleName, Option(from), ifExistsDo)(p)
-  }
-
-  override def dropRole(p: InputPosition, roleName: Either[String, Parameter], ifExists: Boolean): DropRole = {
-    DropRole(roleName, ifExists)(p)
-  }
-
-  override def showRoles(p: InputPosition,
-                         WithUsers: Boolean,
-                         showAll: Boolean,
-                         yieldExpr: Yield,
-                         returnWithoutGraph: Return,
-                         where: Expression): ShowRoles = {
-    val yieldOrWhere = if (yieldExpr != null) {
-      Some(Left(yieldExpr, Option(returnWithoutGraph)))
-    } else if (where != null) {
-      Some(Right(Where(where)(where.position)))
-    } else {
-      None
-    }
-    ShowRoles(WithUsers, showAll, yieldOrWhere)(p)
-  }
-
-  override def yieldClause(p: InputPosition,
-                           returnAll: Boolean,
-                           returnItemList: util.List[ReturnItem],
-                           order: util.List[SortItem],
-                           skip: Expression,
-                           limit: Expression,
-                           where: Expression): Yield = {
-
-    val returnItems = ReturnItems(returnAll, returnItemList.asScala.toList)(p)
-
-    Yield(returnItems,
-      Option(order.asScala.toList).filter(_.nonEmpty).map(OrderBy(_)(p)),
-      Option(skip).map(Skip(_)(p)),
-      Option(limit).map(Limit(_)(p)),
-      Option(where).map(e => Where(e)(e.position))
-    )(p)
-  }
-
-  override def grantRoles(p: InputPosition,
-                          roles: util.List[Either[String, Parameter]],
-                          users: util.List[Either[String, Parameter]]): GrantRolesToUsers = {
-    GrantRolesToUsers(roles.asScala, users.asScala)(p)
-  }
-
-  override def revokeRoles(p: InputPosition,
-                           roles: util.List[Either[String, Parameter]],
-                           users: util.List[Either[String, Parameter]]): RevokeRolesFromUsers = {
-    RevokeRolesFromUsers(roles.asScala, users.asScala)(p)
-  }
-
   override def inputPosition(offset: Int, line: Int, column: Int): InputPosition = InputPosition(offset, line, column)
 
   private def pretty[T <: AnyRef](ts: util.List[T]): String = {
-    ts.stream().map[String](t => t.toString).collect(Collectors.joining(","))
+    ts.stream().map[String](t => t.toString).collect(Collectors.joining( "," ))
   }
 }
-

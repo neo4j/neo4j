@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.ast.factory;
 
-import scala.util.Either;
-
 import java.util.List;
 
 /**
@@ -53,15 +51,11 @@ public interface ASTFactory<STATEMENT,
         CALL_RESULT_ITEM,
         HINT,
         EXPRESSION,
-        PARAMETER extends EXPRESSION,
         VARIABLE extends EXPRESSION,
         PROPERTY extends EXPRESSION,
         MAP_PROJECTION_ITEM,
-        USE_GRAPH extends CLAUSE,
-        ADMINISTRATION_COMMAND extends STATEMENT,
-        YIELD,
         POS>
-        extends ASTExpressionFactory<EXPRESSION,PARAMETER,PATTERN,VARIABLE,PROPERTY,MAP_PROJECTION_ITEM,POS>
+        extends ASTExpressionFactory<EXPRESSION,PATTERN,VARIABLE,PROPERTY,MAP_PROJECTION_ITEM,POS>
 {
     final class NULL
     {
@@ -93,7 +87,7 @@ public interface ASTFactory<STATEMENT,
 
     CLAUSE fromClause( POS p, EXPRESSION e );
 
-    USE_GRAPH useClause( POS p, EXPRESSION e );
+    CLAUSE useClause( POS p, EXPRESSION e );
 
     RETURN_CLAUSE newReturnClause( POS p, boolean distinct,
                                    boolean returnAll,
@@ -200,25 +194,4 @@ public interface ASTFactory<STATEMENT,
     CLAUSE foreachClause( POS p, VARIABLE v, EXPRESSION list, List<CLAUSE> clauses );
 
     CLAUSE subqueryClause( POS p, QUERY subquery );
-
-    //Role Administration Commands
-    ADMINISTRATION_COMMAND useGraph( ADMINISTRATION_COMMAND command, USE_GRAPH useGraph );
-
-    ADMINISTRATION_COMMAND createRole( POS p, boolean replace, Either<String, PARAMETER> roleName, Either<String, PARAMETER> fromRole, boolean ifNotExists );
-
-    ADMINISTRATION_COMMAND dropRole( POS p, Either<String, PARAMETER> roleName, boolean ifExists );
-
-    ADMINISTRATION_COMMAND showRoles( POS p, boolean withUsers, boolean showAll, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, EXPRESSION where );
-
-    YIELD yieldClause( POS p,
-                       boolean returnAll,
-                       List<RETURN_ITEM> returnItems,
-                       List<ORDER_ITEM> orderBy,
-                       EXPRESSION skip,
-                       EXPRESSION limit,
-                       EXPRESSION where );
-
-    ADMINISTRATION_COMMAND grantRoles( POS p, List<Either<String,PARAMETER>> roles, List<Either<String,PARAMETER>> users );
-
-    ADMINISTRATION_COMMAND revokeRoles( POS p, List<Either<String,PARAMETER>> roles, List<Either<String,PARAMETER>> users );
 }

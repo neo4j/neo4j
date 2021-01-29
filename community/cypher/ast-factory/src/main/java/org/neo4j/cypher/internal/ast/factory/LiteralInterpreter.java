@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.ast.factory;
 
-import scala.util.Either;
-
 import java.time.Clock;
 import java.time.ZoneId;
 import java.util.HashMap;
@@ -47,30 +45,7 @@ import org.neo4j.values.virtual.VirtualValues;
 /**
  * Interprets literal AST nodes and output a corresponding java object.
  */
-public class LiteralInterpreter implements ASTFactory<NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        Object,
-        Object,
-        Object,
-        Object,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL>
+public class LiteralInterpreter implements ASTFactory<NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,Object,Object,Object,NULL,NULL>
 {
 
     public static ZoneId DEFAULT_ZONE_ID = ZoneId.systemDefault();
@@ -321,48 +296,6 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL useGraph( NULL aNull, NULL aNull2 )
-    {
-        throw new UnsupportedOperationException( "useGraph is not a literal" );
-    }
-
-    @Override
-    public NULL createRole( NULL p, boolean replace, Either<String,Object> roleName, Either<String,Object> from, boolean ifNotExists )
-    {
-        throw new UnsupportedOperationException( "createRole is not a literal" );
-    }
-
-    @Override
-    public NULL dropRole( NULL p, Either<String,Object> roleName, boolean ifExists )
-    {
-        throw new UnsupportedOperationException( "dropRole is not a literal" );
-    }
-
-    @Override
-    public NULL showRoles( NULL p, boolean withUsers, boolean showAll, NULL yieldExpr, NULL returnWithoutGraph, Object where )
-    {
-        throw new UnsupportedOperationException( "showRoles is not a literal" );
-    }
-
-    @Override
-    public NULL yieldClause( NULL p, boolean returnAll, List<NULL> nulls, List<NULL> orderBy, Object skip, Object limit, Object where )
-    {
-        throw new UnsupportedOperationException( "yieldClause is not a literal" );
-    }
-
-    @Override
-    public NULL grantRoles( NULL p, List<Either<String,Object>> roles, List<Either<String,Object>> users )
-    {
-        throw new UnsupportedOperationException( "grantRoles is not a literal" );
-    }
-
-    @Override
-    public NULL revokeRoles( NULL p, List<Either<String,Object>> roles, List<Either<String,Object>> users )
-    {
-        throw new UnsupportedOperationException( "grantRoles is not a literal" );
-    }
-
-    @Override
     public Object newVariable( NULL p, String name )
     {
         throw new UnsupportedOperationException( "newVariable is not a literal" );
@@ -378,18 +311,6 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     public Object newParameter( NULL p, String offset )
     {
         throw new UnsupportedOperationException( "newParameter is not a literal" );
-    }
-
-    @Override
-    public Object newStringParameter( NULL p, Object v )
-    {
-        throw new UnsupportedOperationException( "newStringParameter is not a literal" );
-    }
-
-    @Override
-    public Object newStringParameter( NULL p, String offset )
-    {
-        throw new UnsupportedOperationException( "newStringParameter is not a literal" );
     }
 
     @Override
