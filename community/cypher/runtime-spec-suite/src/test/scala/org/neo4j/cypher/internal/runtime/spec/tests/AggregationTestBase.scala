@@ -1181,6 +1181,9 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
   self: AggregationTestBase[CONTEXT] =>
   private val userAggregationFunctions = {
+    val noArgument = UserFunctionSignature.functionSignature("test", "foo0")
+      .out(Neo4jTypes.NTInteger)
+      .build()
     val oneArgument = UserFunctionSignature.functionSignature("test", "foo1")
       .out(Neo4jTypes.NTInteger)
       .in("in", Neo4jTypes.NTInteger)
@@ -1201,6 +1204,17 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
       .build()
 
     Seq(
+      new BasicUserAggregationFunction(noArgument) {
+        override def create(ctx: Context): UserAggregator = new UserAggregator {
+          private var count = 0L
+
+          override def update(input: Array[AnyValue]): Unit = {
+            count += 1
+          }
+
+          override def result(): AnyValue = Values.longValue(count)
+        }
+      },
       new BasicUserAggregationFunction(oneArgument) {
         override def create(ctx: Context): UserAggregator = new UserAggregator {
           private var count = 0L
@@ -1258,7 +1272,43 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("p").withRows(singleRow(sizeHint * (sizeHint - 1) / 2))
+    runtimeResult should beColumns("p").withSingleRow(sizeHint * (sizeHint - 1) / 2)
+  }
+
+  test("should handle user-defined aggregation that is never called") {
+    //given no data
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(Seq.empty, Seq("test.foo1(x.num) AS p"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withSingleRow(0)
+  }
+
+  test("should support user-defined aggregation with no argument") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("num" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(Seq.empty, Seq("test.foo0() AS p"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withSingleRow(sizeHint)
   }
 
   test("should support user-defined aggregation with grouping") {
