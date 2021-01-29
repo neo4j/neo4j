@@ -553,7 +553,7 @@ public class Database extends LifecycleAdapter
     {
         DatabaseUpgradeTransactionHandler handler =
                 new DatabaseUpgradeTransactionHandler( storageEngine, globalDependencies.resolveDependency( DbmsRuntimeRepository.class ),
-                        storageEngine.metadataProvider(), databaseTransactionEventListeners, UpgradeLocker.DEFAULT );
+                        storageEngine.metadataProvider(), databaseTransactionEventListeners, UpgradeLocker.DEFAULT, internalLogProvider );
 
         handler.registerUpgradeListener( commands ->
         {

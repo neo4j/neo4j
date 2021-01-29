@@ -32,6 +32,8 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.lock.Lock;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -62,15 +64,18 @@ class DatabaseUpgradeTransactionHandler
     //
     // I.e. the upgrade transaction wouldn't be a strong barrier. This lock prevents this scenario.
     private final UpgradeLocker locker;
+    private final Log log;
 
     DatabaseUpgradeTransactionHandler( StorageEngine storageEngine, DbmsRuntimeRepository dbmsRuntimeRepository,
-            KernelVersionRepository kernelVersionRepository, DatabaseTransactionEventListeners transactionEventListeners, UpgradeLocker locker )
+            KernelVersionRepository kernelVersionRepository, DatabaseTransactionEventListeners transactionEventListeners, UpgradeLocker locker,
+            LogProvider logProvider )
     {
         this.storageEngine = storageEngine;
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         this.kernelVersionRepository = kernelVersionRepository;
         this.transactionEventListeners = transactionEventListeners;
         this.locker = locker;
+        this.log = logProvider.getLog( this.getClass() );
     }
 
     interface InternalTransactionCommitHandler
@@ -119,7 +124,9 @@ class DatabaseUpgradeTransactionHandler
                         KernelVersion currentKernelVersion = kernelVersionRepository.kernelVersion();
                         if ( kernelVersionToUpgradeTo.isGreaterThan( currentKernelVersion ) )
                         {
+                            log.info( "Upgrade transaction from %s to %s started", currentKernelVersion, kernelVersionToUpgradeTo );
                             internalTransactionCommitHandler.commit( storageEngine.createUpgradeCommands( kernelVersionToUpgradeTo ) );
+                            log.info( "Upgrade transaction from %s to %s completed", currentKernelVersion, kernelVersionToUpgradeTo );
                         }
                     }
                 }
@@ -127,6 +134,8 @@ class DatabaseUpgradeTransactionHandler
                 {
                     //This can happen if there is an ongoing committing transaction waiting for locks that the "trigger tx" has
                     //Let the "trigger tx" continue and try the upgrade again on the next write
+                    log.info( "Upgrade transaction from %s to %s not possible right now due to conflicting transaction, will retry on next write",
+                            checkKernelVersion, dbmsRuntimeRepository.getVersion().kernelVersion() );
                 }
 
             }

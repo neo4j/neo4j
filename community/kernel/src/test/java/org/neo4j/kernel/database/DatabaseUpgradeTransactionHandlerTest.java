@@ -34,15 +34,15 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
+import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.lock.Lock;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogAssertions;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -61,7 +61,7 @@ class DatabaseUpgradeTransactionHandlerTest
 {
     private volatile KernelVersion currentKernelVersion;
     private volatile DbmsRuntimeVersion currentDbmsRuntimeVersion;
-    private TransactionEventListener<Object> listener;
+    private InternalTransactionEventListener<Object> listener;
     private volatile boolean listenerUnregistered;
     private final ConcurrentLinkedQueue<RegisteredTransaction> registeredTransactions = new ConcurrentLinkedQueue<>();
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -85,6 +85,10 @@ class DatabaseUpgradeTransactionHandlerTest
         //Then
         assertThat( currentKernelVersion ).isEqualTo( KernelVersion.LATEST );
         assertThat( listenerUnregistered ).isTrue();
+
+        LogAssertions.assertThat( logProvider )
+                .containsMessageWithArguments( "Upgrade transaction from %s to %s started", KernelVersion.V4_2, KernelVersion.LATEST )
+                .containsMessageWithArguments( "Upgrade transaction from %s to %s completed", KernelVersion.V4_2, KernelVersion.LATEST );
     }
 
     @Test
@@ -229,12 +233,12 @@ class DatabaseUpgradeTransactionHandlerTest
         doAnswer( inv -> currentDbmsRuntimeVersion ).when( dbmsRuntimeRepository ).getVersion();
         KernelVersionRepository kernelVersionRepository = this::getKernelVersion;
         DatabaseTransactionEventListeners databaseTransactionEventListeners = mock( DatabaseTransactionEventListeners.class );
-        doAnswer( inv -> listener = inv.getArgument( 0, TransactionEventListener.class ) )
+        doAnswer( inv -> listener = inv.getArgument( 0, InternalTransactionEventListener.class ) )
                 .when( databaseTransactionEventListeners ).registerTransactionEventListener( any() );
         doAnswer( inv -> listenerUnregistered = true ).when( databaseTransactionEventListeners ).unregisterTransactionEventListener( any() );
 
-        DatabaseUpgradeTransactionHandler handler =
-                new DatabaseUpgradeTransactionHandler( storageEngine, dbmsRuntimeRepository, kernelVersionRepository, databaseTransactionEventListeners, lock );
+        DatabaseUpgradeTransactionHandler handler = new DatabaseUpgradeTransactionHandler( storageEngine, dbmsRuntimeRepository, kernelVersionRepository,
+                databaseTransactionEventListeners, lock, logProvider );
         handler.registerUpgradeListener( commands -> setKernelVersion( ((FakeKernelVersionUpgradeCommand) commands.iterator().next()).version ) );
     }
 
@@ -270,7 +274,7 @@ class DatabaseUpgradeTransactionHandlerTest
         {
             try
             {
-                Object state = listener.beforeCommit( mock( TransactionData.class ), mock( Transaction.class ), mock( GraphDatabaseService.class ) );
+                Object state = listener.beforeCommit( mock( TransactionData.class ), mock( KernelTransaction.class ), mock( GraphDatabaseService.class ) );
                 KernelVersion currentKernelVersion = this.currentKernelVersion;
                 if ( doSomeSleeping )
                 {
