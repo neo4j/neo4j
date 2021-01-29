@@ -32,6 +32,12 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.Node
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntBoolean
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntByteArray
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntFloat
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntInteger
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntMap
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntString
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.UserAggregator
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
@@ -1184,6 +1190,15 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
       .in("in1", Neo4jTypes.NTInteger)
       .in("in2", Neo4jTypes.NTInteger)
       .build()
+    val defaultArgumets = UserFunctionSignature.functionSignature("test", "defaultValues")
+      .out(Neo4jTypes.NTString)
+      .in("in1", Neo4jTypes.NTInteger, ntInteger(0L))
+      .in("in2", Neo4jTypes.NTFloat, ntFloat(Math.PI))
+      .in("in3", Neo4jTypes.NTBoolean, ntBoolean(true))
+      .in("in4", Neo4jTypes.NTMap, ntMap(java.util.Map.of("default", "yes")))
+      .in("in5", Neo4jTypes.NTByteArray, ntByteArray(Array[Byte](1,2,3)))
+      .in("in6", Neo4jTypes.NTString, ntString("hello"))
+      .build()
 
     Seq(
       new BasicUserAggregationFunction(oneArgument) {
@@ -1206,6 +1221,17 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
           }
 
           override def result(): AnyValue = Values.longValue(count)
+        }
+      },
+      new BasicUserAggregationFunction(defaultArgumets) {
+        override def create(ctx: Context): UserAggregator = new UserAggregator {
+
+          override def update(input: Array[AnyValue]): Unit = {
+            input should have size 6
+
+          }
+
+          override def result(): AnyValue = Values.stringValue("yes")
         }
       }
     )
@@ -1381,5 +1407,25 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
     // then
     runtimeResult should beColumns("p", "c").withRows(singleRow((sizeHint - 1) * sizeHint * (2 * sizeHint - 1) / 6, sizeHint))
+  }
+
+  test("should support user-defined aggregation with multiple inputs with default") {
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i: Int => Map("num1" -> i, "num2" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(Seq.empty, Seq("test.defaultValues() AS p"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withSingleRow("yes")
   }
 }
