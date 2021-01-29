@@ -31,11 +31,20 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-/**
- * Tests that the parboiled and JavaCC parsers produce the same AST and error positions.
- */
 abstract class ParserComparisonTestBase() extends Assertions with Matchers {
 
+  protected def assertSyntaxException(query: String): Unit = {
+    val exceptionFactory = new OpenCypherExceptionFactory(None)
+    val parser = new Cypher(new Neo4jASTFactory(query), new Neo4jASTExceptionFactory(exceptionFactory), new CypherCharStream(query))
+
+    an[OpenCypherExceptionFactory.SyntaxException] should be thrownBy {
+      parser.Statements()
+    }
+  }
+
+  /**
+   * Tests that the parboiled and JavaCC parsers produce the same AST and error positions.
+   */
   protected def assertSameAST(query: String): Assertion = {
     withClue(query+System.lineSeparator()) {
       val parboiledParser = new org.neo4j.cypher.internal.parser.CypherParser()

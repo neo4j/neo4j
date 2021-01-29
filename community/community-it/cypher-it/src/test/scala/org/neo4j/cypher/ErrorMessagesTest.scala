@@ -52,10 +52,11 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   }
 
   test("badStart") {
+    //temporary fallback to parboiled parser since error message includes java cc Parsing.FALLBACK_TRIGGERS removed
     expectSyntaxError(
       "starta = node(0) return a",
-      "Invalid input 'starta'",
-      0
+      "Invalid input 'a'",
+      5
     )
   }
 

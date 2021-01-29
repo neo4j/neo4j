@@ -43,6 +43,10 @@ PARSER_BEGIN(Cypher)
  */
 package org.neo4j.cypher.internal.parser.javacc;
 
+import scala.util.Either;
+import scala.util.Left;
+import scala.util.Right;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
@@ -66,9 +70,13 @@ public class Cypher<STATEMENT,
                     CALL_RESULT_ITEM,
                     HINT,
                     EXPRESSION,
+                    PARAMETER extends EXPRESSION,
                     VARIABLE extends EXPRESSION,
                     PROPERTY extends EXPRESSION,
                     MAP_PROJECTION_ITEM,
+                    USE_GRAPH extends CLAUSE,
+                    ADMINISTRATION_COMMAND extends STATEMENT,
+                    YIELD,
                     POS> {
 
     ASTExceptionFactory exceptionFactory;
@@ -88,9 +96,13 @@ public class Cypher<STATEMENT,
                CALL_RESULT_ITEM,
                HINT,
                EXPRESSION,
+               PARAMETER,
                VARIABLE,
                PROPERTY,
                MAP_PROJECTION_ITEM,
+               USE_GRAPH,
+               ADMINISTRATION_COMMAND,
+               YIELD,
                POS> astFactory;
 
     public Cypher(ASTFactory<STATEMENT,
@@ -109,9 +121,13 @@ public class Cypher<STATEMENT,
                              CALL_RESULT_ITEM,
                              HINT,
                              EXPRESSION,
+                             PARAMETER,
                              VARIABLE,
                              PROPERTY,
                              MAP_PROJECTION_ITEM,
+                             USE_GRAPH,
+                             ADMINISTRATION_COMMAND,
+                             YIELD,
                              POS> astFactory,
                   ASTExceptionFactory exceptionFactory,
                   CharStream stream) {
@@ -328,6 +344,19 @@ TOKEN [IGNORE_CASE] :
 | < LCURLY: "{" >
 | < RCURLY: "}" >
 | < BAR: "|" >
+| < CATALOG: "CATALOG">
+| < SHOW: "SHOW">
+| < POPULATED: "POPULATED">
+| < ROLES: "ROLES">
+| < ROLE: "ROLE">
+| < USERS: "USERS">
+| < REPLACE: "REPLACE" >
+| < GRANT: "GRANT">
+| < REVOKE: "REVOKE">
+| < IF: "IF" >
+| < COPY: "COPY" >
+| < OF: "OF" >
+| < TO: "TO" >
 }
 
 /* IDENTIFIERS */
@@ -1010,9 +1039,10 @@ List<STATEMENT> Statements() throws Exception :
 STATEMENT Statement() :
 {STATEMENT x;}
 {
-  (
-    x=Query()
-  )
+    (
+    x=AdministrationCommand()
+    | x=Query()
+    )
   { return x; }
 }
 
@@ -1120,7 +1150,7 @@ CLAUSE FromClause() :
   { return astFactory.fromClause(pos(t), e); }
 }
 
-CLAUSE UseClause() :
+USE_GRAPH UseClause() :
 {
   Token t;
   EXPRESSION e;
@@ -1142,6 +1172,18 @@ CLAUSE ReturnClause() :
   (
     LOOKAHEAD(2) t=<GRAPH> { return astFactory.newReturnGraphClause(pos(t)); }
   | clause=ReturnBody(t) { return clause; }
+  )
+}
+
+RETURN_CLAUSE ReturnWithoutGraphClause() :
+{
+  Token t;
+  RETURN_CLAUSE clause = null;
+}
+{
+  t=<RETURN>
+  (
+    clause=ReturnBody(t) { return clause; }
   )
 }
 
@@ -2169,6 +2211,20 @@ EXPRESSION NumberLiteral() :
   )
 }
 
+EXPRESSION SignedIntegerLiteral():
+{
+ Token sign = null;
+ Token number;
+ boolean negated = false;
+}
+{
+  ( sign=<MINUS> { negated = true; })?
+  number=<UNSIGNED_DECIMAL_INTEGER>
+  {
+    return astFactory.newDecimalInteger(pos(sign != null ? sign : number), token.image, negated);
+  }
+}
+
 EXPRESSION ListLiteral() :
 {
   Token t;
@@ -2202,11 +2258,26 @@ StringPos<POS> PropertyKeyName() :
 }
 
 EXPRESSION Parameter() :
-{Token t; VARIABLE v;}
+{
+    Token t;
+    VARIABLE v;
+}
 {
   t="$" (
     v=Variable() { return astFactory.newParameter(pos(t), v); }
   | <UNSIGNED_DECIMAL_INTEGER> { return astFactory.newParameter(pos(t), token.image); }
+  )
+}
+
+PARAMETER StringParameter() :
+{
+    Token t;
+    VARIABLE v;
+}
+{
+  t="$" (
+    v=Variable() { return astFactory.newStringParameter(pos(t), v); }
+  | <UNSIGNED_DECIMAL_INTEGER> { return astFactory.newStringParameter(pos(t), token.image); }
   )
 }
 
@@ -2284,6 +2355,150 @@ List<String> SymbolicNameList1() :
   {
     return list;
   }
+}
+
+STATEMENT AdministrationCommand():
+{
+    ADMINISTRATION_COMMAND s;
+    USE_GRAPH useGraph = null;
+}
+{
+    ( useGraph = UseClause() )?
+    (<CATALOG>)?
+    (
+        s = ShowRoles()
+        | s = CreateRole()
+        | s = DropRole()
+        | s = GrantRole()
+        | s = RevokeRole()
+    )
+    {
+        return astFactory.useGraph( s, useGraph );
+    }
+}
+
+ADMINISTRATION_COMMAND ShowRoles():
+{
+    Token start;
+    boolean withUsers = false;
+    boolean showAll = true;
+    YIELD yield = null;
+    RETURN_CLAUSE returnClause = null;
+    EXPRESSION where = null;
+}
+{
+    start = <SHOW> ((<POPULATED> { showAll = false; }) | <ALL>)? <ROLES>
+    (<WITH> <USERS> { withUsers = true; })?
+     ( ( yield = YieldClause() (returnClause = ReturnWithoutGraphClause())? )
+       | (where = Where()) )?
+    {
+        return astFactory.showRoles( pos(start), withUsers, showAll, yield, returnClause, where );
+    }
+}
+
+YIELD YieldClause():
+{
+    Token start;
+    boolean returnAll = false;
+    RETURN_ITEM item;
+    List<RETURN_ITEM> returnItems = new ArrayList<>();
+    List<ORDER_ITEM> orders = new ArrayList<>();
+    EXPRESSION skip = null;
+    EXPRESSION limit = null;
+    EXPRESSION where = null;
+}
+{
+    start=<YIELD>
+    ( <TIMES> { returnAll = true; }  |
+    ( item=ReturnItem() { returnItems.add(item); } ("," item=ReturnItem() { returnItems.add(item); } )*))?
+    ( orders=Order() )?
+    ( <SKIPROWS> skip=SignedIntegerLiteral() )?
+    ( <LIMITROWS> limit=SignedIntegerLiteral() )?
+    ( where = Where() ) ?
+    {
+        return astFactory.yieldClause(pos(start), returnAll, returnItems, orders, skip, limit, where);
+    }
+}
+
+ADMINISTRATION_COMMAND CreateRole():
+{
+    Token start;
+    Either<String, PARAMETER> roleName = null;
+    Either<String, PARAMETER>  sourceRoleName = null;
+    boolean replace = false;
+    boolean ifNotExists = false;
+}
+{
+    start=<CREATE> (<OR> <REPLACE> { replace = true; })? <ROLE>
+    roleName=SymbolicNameOrStringParameter()
+    (<IF> <NOT> <EXISTS> { ifNotExists = true; })?
+    (<AS> <COPY> <OF> sourceRoleName=SymbolicNameOrStringParameter())?
+    {
+        return astFactory.createRole( pos(start), replace, roleName, sourceRoleName, ifNotExists );
+    }
+}
+
+ADMINISTRATION_COMMAND DropRole():
+{
+    Token start;
+    Either<String, PARAMETER> roleName = null;
+    boolean ifExists = false;
+}
+{
+    start=<DROP> <ROLE>
+    roleName=SymbolicNameOrStringParameter()
+    (<IF> <EXISTS> {ifExists = true;})?
+    {
+        return astFactory.dropRole( pos(start), roleName, ifExists );
+    }
+}
+
+ADMINISTRATION_COMMAND GrantRole():
+{
+    Token start;
+    List<Either<String, PARAMETER>> roles;
+    List<Either<String, PARAMETER>> users;
+}
+{
+    start = <GRANT> (<ROLE> | <ROLES>) roles=SymbolicNamerOrStringParameterList() <TO> users=SymbolicNamerOrStringParameterList()
+    {
+        return astFactory.grantRoles( pos(start), roles, users );
+    }
+}
+
+ADMINISTRATION_COMMAND RevokeRole():
+{
+    Token start;
+    List<Either<String, PARAMETER>> roles;
+    List<Either<String, PARAMETER>> users;
+}
+{
+    start = <REVOKE> (<ROLE> | <ROLES>) roles=SymbolicNamerOrStringParameterList() <FROM> users=SymbolicNamerOrStringParameterList()
+    {
+        return astFactory.revokeRoles( pos(start), roles, users  );
+    }
+}
+
+List<Either<String, PARAMETER>> SymbolicNamerOrStringParameterList() :
+{
+    Either<String, PARAMETER> entry;
+    List<Either<String, PARAMETER>> list = new ArrayList<>();
+}
+{
+    entry=SymbolicNameOrStringParameter() {list.add(entry);} ( "," entry=SymbolicNameOrStringParameter() {list.add(entry);} )*
+    {
+        return list;
+    }
+}
+
+Either<String, PARAMETER> SymbolicNameOrStringParameter():
+{
+   Token name;
+   PARAMETER parameter;
+}
+{
+   name=SymbolicNameString() { return new Left<String, PARAMETER>(name.image); }
+   | parameter=StringParameter() { return new Right<String, PARAMETER>(parameter); }
 }
 
 Token SymbolicNameString() :
@@ -2365,5 +2580,18 @@ Token SymbolicNameString() :
   | t=<NULL>
   | t=<TRUE>
   | t=<FALSE>
+  | t=<CATALOG>
+  | t=<SHOW>
+  | t=<POPULATED>
+  | t=<ROLES>
+  | t=<ROLE>
+  | t=<USERS>
+  | t=<REPLACE>
+  | t=<GRANT>
+  | t=<REVOKE>
+  | t=<IF>
+  | t=<COPY>
+  | t=<OF>
+  | t=<TO>
   ) { return t; }
 }
