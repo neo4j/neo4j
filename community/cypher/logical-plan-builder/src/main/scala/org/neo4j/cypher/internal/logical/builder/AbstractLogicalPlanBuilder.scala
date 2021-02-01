@@ -79,6 +79,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.Eager
+import org.neo4j.cypher.internal.logical.plans.EitherApply
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
@@ -114,6 +115,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NonFuseable
+import org.neo4j.cypher.internal.logical.plans.OnMatchApply
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -821,6 +823,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def assertSameNode(node: String): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AssertSameNode(node, lhs, rhs)(_)))
+
+  def eitherApply(): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => EitherApply(lhs, rhs)(_)))
+
+  def onMatchApply(): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => OnMatchApply(lhs, rhs)(_)))
 
   def expandAll(pattern: String): IMPL = expand(pattern, ExpandAll)
 

@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
+import org.neo4j.cypher.internal.logical.plans.EitherApply
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
@@ -80,6 +81,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NonFuseable
 import org.neo4j.cypher.internal.logical.plans.NonPipelined
+import org.neo4j.cypher.internal.logical.plans.OnMatchApply
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -153,6 +155,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipT
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DistinctPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerAggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.EitherPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EmptyResultPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ErrorPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExhaustiveLimitPipe
@@ -182,6 +185,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeLeftOuterHashJoinPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeRightOuterHashJoinPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OnMatchPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandAllPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandIntoPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalPipe
@@ -738,6 +742,12 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case RollUpApply(_, _, collectionName, identifierToCollection) =>
         RollUpApplyPipe(lhs, rhs, collectionName, identifierToCollection)(id = id)
+
+      case OnMatchApply(_, _) =>
+        OnMatchPipe(lhs, rhs)(id = id)
+
+      case EitherApply(_, _) =>
+        EitherPipe(lhs, rhs)(id = id)
 
       case x =>
         throw new InternalException(s"Received a logical plan that has no physical operator $x")
