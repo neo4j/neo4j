@@ -52,6 +52,7 @@ public class IndexAccessors implements Closeable
     private final MutableLongObjectMap<IndexAccessor> accessors = new LongObjectHashMap<>();
     private final List<IndexDescriptor> onlineIndexRules = new ArrayList<>();
     private final List<IndexDescriptor> notOnlineIndexRules = new ArrayList<>();
+    private final List<IndexDescriptor> inconsistentRules = new ArrayList<>();
 
     public IndexAccessors(
             IndexProviderMap providers,
@@ -117,10 +118,19 @@ public class IndexAccessors implements Closeable
         // Default to instantiate new accessors
         accessorLookup = accessorLookup != null ? accessorLookup
                                                 : index -> provider( providers, index ).getOnlineAccessor( index, samplingConfig, tokenNameLookup );
-        for ( IndexDescriptor indexRule : onlineIndexRules )
+        for ( int i = 0; i < onlineIndexRules.size(); i++ )
         {
+            IndexDescriptor indexRule = onlineIndexRules.get( i );
             long indexId = indexRule.getId();
-            accessors.put( indexId, accessorLookup.apply( indexRule ) );
+            try
+            {
+                accessors.put( indexId, accessorLookup.apply( indexRule ) );
+            }
+            catch ( RuntimeException e )
+            {
+               onlineIndexRules.remove( i-- );
+               inconsistentRules.add( indexRule );
+            }
         }
     }
 
@@ -132,6 +142,11 @@ public class IndexAccessors implements Closeable
     public Collection<IndexDescriptor> notOnlineRules()
     {
         return notOnlineIndexRules;
+    }
+
+    public Collection<IndexDescriptor> inconsistentRules()
+    {
+        return inconsistentRules;
     }
 
     public IndexAccessor accessorFor( IndexDescriptor indexRule )

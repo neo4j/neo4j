@@ -207,6 +207,10 @@ class SchemaChecker
                         {
                             reporter.forSchema( record ).schemaRuleNotOnline( rule );
                         }
+                        if ( indexAccessors.inconsistentRules().contains( rule ) )
+                        {
+                            reporter.forSchema( record ).malformedSchemaRule();
+                        }
                     }
                     else if ( schemaRule instanceof ConstraintDescriptor )
                     {
