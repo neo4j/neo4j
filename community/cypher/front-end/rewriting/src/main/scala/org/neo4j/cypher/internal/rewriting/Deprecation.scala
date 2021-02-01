@@ -236,6 +236,12 @@ object Deprecations {
           () => c,
           () => Some(DeprecatedShowExistenceConstraintSyntax(c.position))
         )
+
+      case s: ShowConstraints if s.verbose.isDefined =>
+        Deprecation(
+          () => s,
+          () => Some(DeprecatedShowSchemaSyntax(s.position))
+        )
     }
   }
 

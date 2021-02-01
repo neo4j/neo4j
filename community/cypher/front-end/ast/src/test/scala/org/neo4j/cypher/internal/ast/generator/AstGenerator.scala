@@ -1174,12 +1174,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     props <- oneOrMore(_variableProperty)
   } yield props
 
-  def _existenceSyntax: Gen[(ExistenceConstraintSyntax, Boolean)] = for {
-    verbose <- boolean
-    exists  <- oneOf((NewSyntax, false), (DeprecatedSyntax, verbose), (OldValidSyntax, verbose))
+  def _existenceSyntax: Gen[(ExistenceConstraintSyntax, Option[Boolean])] = for {
+    verbose <- option(boolean)
+    exists  <- oneOf((NewSyntax, None), (DeprecatedSyntax, verbose), (OldValidSyntax, verbose))
   } yield exists
 
-  def _constraintType: Gen[(ShowConstraintType, Boolean)] = for {
+  def _constraintType: Gen[(ShowConstraintType, Option[Boolean])] = for {
     (exists, verbose) <- _existenceSyntax
     types             <- oneOf(AllConstraints, UniqueConstraints, ExistsConstraints(exists), NodeExistsConstraints(exists), RelExistsConstraints(exists), NodeKeyConstraints)
   } yield (types, verbose)

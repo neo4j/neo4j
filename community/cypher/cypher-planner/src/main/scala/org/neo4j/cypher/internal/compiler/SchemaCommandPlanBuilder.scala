@@ -53,9 +53,7 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 
 /**
- * This planner takes on queries that requires no planning such as schema commands.
- *
- * Take on queries that require no planning such as schema commands.
+ * This planner takes on queries that requires no planning such as schema commands
  */
 case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, LogicalPlanState] {
 
@@ -138,7 +136,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
 
       // SHOW [ALL|UNIQUE|NODE EXIST|RELATIONSHIP EXIST|EXIST|NODE KEY] CONSTRAINT[S] [BRIEF|VERBOSE[OUTPUT]]
       case sc@ShowConstraints(constraintType, verbose, _) =>
-        Some(plans.ShowConstraints(constraintType, verbose, sc.defaultColumnNames))
+        Some(plans.ShowConstraints(constraintType, verbose.getOrElse(false), sc.defaultColumnNames))
         
       // CREATE INDEX ON :LABEL(prop)
       case CreateIndexOldSyntax(label, props, _) =>

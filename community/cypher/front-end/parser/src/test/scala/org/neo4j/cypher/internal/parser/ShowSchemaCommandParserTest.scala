@@ -250,11 +250,11 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
         case (constraintTypeKeyword, constraintType) =>
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword") {
-            yields(ast.ShowConstraints(constraintType, verbose = false))
+            yields(ast.ShowConstraints(constraintType, None))
           }
 
           test(s"USE db SHOW $constraintTypeKeyword $constraintKeyword") {
-            yields(ast.ShowConstraints(constraintType, verbose = false, Some(use(varFor("db")))))
+            yields(ast.ShowConstraints(constraintType, None, Some(use(varFor("db")))))
           }
 
       }
@@ -263,19 +263,19 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
         case (constraintTypeKeyword, constraintType) =>
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword BRIEF") {
-            yields(ast.ShowConstraints(constraintType, verbose = false))
+            yields(ast.ShowConstraints(constraintType, Some(false)))
           }
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword BRIEF OUTPUT") {
-            yields(ast.ShowConstraints(constraintType, verbose = false))
+            yields(ast.ShowConstraints(constraintType, Some(false)))
           }
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword VERBOSE") {
-            yields(ast.ShowConstraints(constraintType, verbose = true))
+            yields(ast.ShowConstraints(constraintType, Some(true)))
           }
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword VERBOSE OUTPUT") {
-            yields(ast.ShowConstraints(constraintType, verbose = true))
+            yields(ast.ShowConstraints(constraintType, Some(true)))
           }
       }
   }

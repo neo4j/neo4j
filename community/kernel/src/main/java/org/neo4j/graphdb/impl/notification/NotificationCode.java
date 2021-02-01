@@ -127,7 +127,8 @@ public enum NotificationCode
     DEPRECATED_SHOW_SCHEMA_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "The `BRIEF` and `VERBOSE` keywords for `SHOW INDEXES` are deprecated, please omit `BRIEF` and use `YIELD *` instead of `VERBOSE`"
+            "The `BRIEF` and `VERBOSE` keywords for `SHOW INDEXES` and `SHOW CONSTRAINTS` are deprecated, " +
+                    "please omit `BRIEF` and use `YIELD *` instead of `VERBOSE`"
     ),
     DEPRECATED_SHOW_EXISTENCE_CONSTRAINT_SYNTAX(
             SeverityLevel.WARNING,

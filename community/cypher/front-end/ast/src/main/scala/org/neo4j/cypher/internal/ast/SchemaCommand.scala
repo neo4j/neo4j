@@ -235,12 +235,12 @@ case class DropConstraintOnName(name: String, ifExists: Boolean, useGraph: Optio
   def semanticCheck = Seq()
 }
 
-case class ShowConstraints(constraintType: ShowConstraintType, verbose: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends ReadSchemaCommand {
+case class ShowConstraints(constraintType: ShowConstraintType, verbose: Option[Boolean], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends ReadSchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
 
   private val briefColumnNames: List[String] = List("id", "name", "type", "entityType", "labelsOrTypes", "properties", "ownedIndexId")
-  val defaultColumnNames: List[String] = if (verbose) briefColumnNames ++ List("options", "createStatement") else briefColumnNames
+  val defaultColumnNames: List[String] = if (verbose.getOrElse(false)) briefColumnNames ++ List("options", "createStatement") else briefColumnNames
 
   override def returnColumns: List[LogicalVariable] = defaultColumnNames.map(name => Variable(name)(position))
 }

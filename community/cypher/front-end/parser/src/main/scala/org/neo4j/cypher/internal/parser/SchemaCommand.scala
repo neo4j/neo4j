@@ -192,9 +192,9 @@ trait SchemaCommand extends Parser
 
   private def ShowConstraints: Rule1[ast.ShowConstraints] = rule("SHOW CONSTRAINTS") {
     keyword("SHOW") ~~ OldConstraintType ~~ ConstraintKeyword ~~ SchemaOutput ~~>>
-      ((constraintType, verbose) => ast.ShowConstraints(constraintType, verbose)) |
+      ((constraintType, verbose) => ast.ShowConstraints(constraintType, Some(verbose))) |
     keyword("SHOW") ~~ ConstraintType ~~ ConstraintKeyword ~~>>
-      (constraintType => ast.ShowConstraints(constraintType, verbose = false))
+      (constraintType => ast.ShowConstraints(constraintType, None))
   }
 
   private def OldConstraintType: Rule1[ast.ShowConstraintType] = rule("old type of constraints") {

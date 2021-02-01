@@ -214,6 +214,16 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
+    void deprecatedShowConstraintSyntax()
+    {
+        // Note: Show constraints was introduced in Neo4j 4.2
+        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW CONSTRAINTS BRIEF", containsItem( deprecatedShowSchemaSyntax ) );
+        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW CONSTRAINTS BRIEF OUTPUT", containsItem( deprecatedShowSchemaSyntax ) );
+        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW CONSTRAINTS VERBOSE", containsItem( deprecatedShowSchemaSyntax ) );
+        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW CONSTRAINTS VERBOSE OUTPUT", containsItem( deprecatedShowSchemaSyntax ) );
+    }
+
+    @Test
     void deprecatedShowExistenceConstraintSyntax()
     {
         // Note: Show constraints was introduced in Neo4j 4.2
@@ -419,7 +429,8 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
                          "All other uses are deprecated." );
 
     private final Matcher<Notification> deprecatedShowSchemaSyntax =
-            deprecation( "The `BRIEF` and `VERBOSE` keywords for `SHOW INDEXES` are deprecated, please omit `BRIEF` and use `YIELD *` instead of `VERBOSE`" );
+            deprecation( "The `BRIEF` and `VERBOSE` keywords for `SHOW INDEXES` and `SHOW CONSTRAINTS` are deprecated, " +
+                    "please omit `BRIEF` and use `YIELD *` instead of `VERBOSE`" );
 
     private final Matcher<Notification> deprecatedShowExistenceConstraintSyntax =
             deprecation( "The `EXISTS` keyword for `SHOW CONSTRAINTS` are deprecated, please use `EXIST` instead" );

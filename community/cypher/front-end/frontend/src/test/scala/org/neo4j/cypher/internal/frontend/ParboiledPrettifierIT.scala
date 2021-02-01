@@ -523,13 +523,13 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       "DROP CONSTRAINT foo IF EXISTS",
 
     "show constraints" ->
-      "SHOW ALL CONSTRAINTS BRIEF",
+      "SHOW ALL CONSTRAINTS",
 
     "show exists constraint brief" ->
       "SHOW EXISTS CONSTRAINTS BRIEF",
 
     "show exist constraint" ->
-      "SHOW EXIST CONSTRAINTS BRIEF",
+      "SHOW EXIST CONSTRAINTS",
 
     "show property existence constraint" ->
       "SHOW EXISTENCE CONSTRAINTS",
@@ -538,7 +538,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       "SHOW NODE EXISTS CONSTRAINTS BRIEF",
 
     "SHOW NODE EXIST constraint" ->
-      "SHOW NODE EXIST CONSTRAINTS BRIEF",
+      "SHOW NODE EXIST CONSTRAINTS",
 
     "SHOW NODE property EXIST constraint" ->
       "SHOW NODE EXISTENCE CONSTRAINTS",
@@ -547,7 +547,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       "SHOW RELATIONSHIP EXISTS CONSTRAINTS VERBOSE",
 
     "show relationship EXIST cOnStRaInTs" ->
-      "SHOW RELATIONSHIP EXIST CONSTRAINTS BRIEF",
+      "SHOW RELATIONSHIP EXIST CONSTRAINTS",
 
     "show relationship EXISTENCE cOnStRaInTs" ->
       "SHOW RELATIONSHIP EXISTENCE CONSTRAINTS",
@@ -562,7 +562,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       "SHOW UNIQUE CONSTRAINTS VERBOSE",
 
     "show node key CONSTRAINTS" ->
-      "SHOW NODE KEY CONSTRAINTS BRIEF",
+      "SHOW NODE KEY CONSTRAINTS",
   )
 
   def administrationTests(): Seq[(String, String)] = Seq[(String, String)](

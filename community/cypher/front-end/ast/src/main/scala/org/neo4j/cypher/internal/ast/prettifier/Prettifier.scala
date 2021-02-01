@@ -63,7 +63,6 @@ import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
-import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FunctionAllQualifier
 import org.neo4j.cypher.internal.ast.FunctionQualifier
@@ -90,10 +89,8 @@ import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.MergeAction
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedGraphScope
-import org.neo4j.cypher.internal.ast.NewSyntax
 import org.neo4j.cypher.internal.ast.NodeByIds
 import org.neo4j.cypher.internal.ast.NodeByParameter
-import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OrderBy
@@ -112,7 +109,6 @@ import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipByIds
 import org.neo4j.cypher.internal.ast.RelationshipByParameter
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
-import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
@@ -276,12 +272,7 @@ case class Prettifier(
         s"DROP CONSTRAINT ${backtick(name)}$ifExistsString"
 
       case ShowConstraints(constraintType, verbose, _) =>
-        val output = constraintType match {
-          case ExistsConstraints(NewSyntax) => ""
-          case NodeExistsConstraints(NewSyntax) => ""
-          case RelExistsConstraints(NewSyntax) => ""
-          case _ => if (verbose) " VERBOSE" else " BRIEF"
-        }
+        val output = verbose.map(v => if (v) " VERBOSE" else " BRIEF").getOrElse("")
         s"SHOW ${constraintType.prettyPrint} CONSTRAINTS$output"
 
       case _ => throw new IllegalStateException(s"Unknown command: $command")
