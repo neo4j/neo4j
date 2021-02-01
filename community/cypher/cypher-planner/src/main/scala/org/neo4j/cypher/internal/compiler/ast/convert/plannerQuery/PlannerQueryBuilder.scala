@@ -19,24 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.ast.RelationshipStartItem
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.ListSupport
-import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
-import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
-import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.util.NonEmptyList.IterableConverter
-import org.neo4j.cypher.internal.util.UnNamedNameGenerator
 
 case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable: SemanticTable)
   extends ListSupport {
@@ -132,22 +127,6 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
       updatePQ.updateTail(fixArgumentIdsOnMerge)
     }
 
-    def fixQueriesWithOnlyRelationshipIndex(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
-      val qg = plannerQuery.queryGraph
-      val patternRelationships = qg.hints.collect {
-        case r: RelationshipStartItem if !qg.patternRelationships.exists(_.name == r.name) =>
-          val lNode = UnNamedNameGenerator.name(r.position)
-          val rNode = UnNamedNameGenerator.name(r.position.newUniquePos())
-
-          PatternRelationship(r.name, (lNode, rNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-      }.toSeq
-
-      val patternNodes = patternRelationships.flatMap(relationship => Set(relationship.nodes._1, relationship.nodes._2))
-      plannerQuery
-        .amendQueryGraph(_.addPatternRelationships(patternRelationships).addPatternNodes(patternNodes:_*))
-        .updateTail(fixQueriesWithOnlyRelationshipIndex)
-    }
-
     val fixedArgumentIds = q.foldMap {
       case (head, tail) =>
         val symbols = head.horizon.exposedSymbols(head.queryGraph.allCoveredIds)
@@ -172,7 +151,7 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
     val withFixedOptionalMatchArgumentIds = fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
     val withFixedMergeArgumentIds = fixArgumentIdsOnMerge(withFixedOptionalMatchArgumentIds)
     val groupedInequalities = groupInequalities(withFixedMergeArgumentIds)
-    fixQueriesWithOnlyRelationshipIndex(groupedInequalities)
+    groupedInequalities
   }
 }
 
