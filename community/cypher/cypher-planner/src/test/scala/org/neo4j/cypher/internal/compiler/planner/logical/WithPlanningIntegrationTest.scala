@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SelectionMatcher
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -244,36 +245,38 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("WHERE clause on WITH DISTINCT uses argument from previous WITH"){
-    val result = planFor( normalizeNewLines("""
+    val plan = planFor( normalizeNewLines("""
                       WITH 0.1 AS p
                       MATCH (n1)
                       WITH DISTINCT n1, p LIMIT 10 WHERE rand() < p
                       RETURN n1"""))._2
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(plan)
 
-    result should beLike {
+    dedupedPlan should beLike {
       case
         SelectionMatcher(Seq(
         LessThan(FunctionInvocation(Namespace(List()), FunctionName("rand"), false, Vector()),
-        Variable("  p@111"))),
+        Variable("p"))),
         Limit(
         Distinct(
         Projection(
-        AllNodesScan("  n1@66", _), _),
+        AllNodesScan("n1", _), _),
          _), _)
         ) => ()
     }
   }
 
   test("WHERE clause on WITH AGGREGATION uses argument from previous WITH"){
-    val result = planFor( normalizeNewLines("""
+    val plan = planFor( normalizeNewLines("""
                       WITH 0.1 AS p
                       MATCH (n1)
                       WITH count(n1) AS n, p WHERE rand() < p
                       RETURN n"""))._2
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(plan)
 
-    result should beLike {
+    dedupedPlan should beLike {
       case
-        SelectionMatcher(Seq(LessThan(FunctionInvocation(Namespace(List()),FunctionName("rand"),false,Vector()),Variable("  p@114"))),
+        SelectionMatcher(Seq(LessThan(FunctionInvocation(Namespace(List()),FunctionName("rand"),false,Vector()),Variable("p"))),
         Aggregation(
         Projection(
         AllNodesScan("n1", _), _),

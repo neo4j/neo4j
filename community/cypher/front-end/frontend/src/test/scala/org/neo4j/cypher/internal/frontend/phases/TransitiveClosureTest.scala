@@ -16,13 +16,21 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
-import org.neo4j.cypher.internal.rewriting.AstRewritingTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class TransitiveClosureTest extends CypherFunSuite with AstRewritingTestSupport with RewritePhaseTest {
+class TransitiveClosureTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest {
 
-  override def rewriterPhaseUnderTest: Transformer[BaseContext, BaseState, BaseState] = transitiveClosure andThen CNFNormalizer
-  override def rewriterPhaseForExpected: Transformer[BaseContext, BaseState, BaseState] = CNFNormalizer
+  private val removeGeneratedNames = new Transformer[BaseContext, BaseState, BaseState] {
+    override def transform(from: BaseState, context: BaseContext): BaseState = from.withStatement(removeGeneratedNamesAndParamsOnTree(from.statement()))
+    override def name: String = "do nothing"
+    override def postConditions: Set[StepSequencer.Condition] = Set.empty
+  }
+
+  override def rewriterPhaseUnderTest: Transformer[BaseContext, BaseState, BaseState] = transitiveClosure andThen CNFNormalizer andThen removeGeneratedNames
+  override def rewriterPhaseForExpected: Transformer[BaseContext, BaseState, BaseState] = CNFNormalizer andThen removeGeneratedNames
 
   test("MATCH (a)-->(b) WHERE a.prop = b.prop AND b.prop = 42") {
     assertRewritten(

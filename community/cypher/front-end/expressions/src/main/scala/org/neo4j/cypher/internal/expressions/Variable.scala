@@ -24,7 +24,7 @@ case class Variable(name: String)(val position: InputPosition) extends LogicalVa
 
   override def renameId(newName: String): Variable = copy(name = newName)(position)
 
-  override def bumpId: Variable = copy()(position.bumped())
+  override def newUniqueVariable: Variable = copy()(position.newUniquePos())
 }
 
 object Variable {

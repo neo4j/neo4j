@@ -145,8 +145,14 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
           if (warnForMissingAliases && i.alias.isEmpty) {
             notificationLogger.log(MissingAliasNotification(i.position))
           }
-          val newPosition = i.expression.position.bumped()
-          AliasedReturnItem(i.expression, Variable(i.name)(newPosition))(i.position)
+          val alias = i.alias match {
+            case Some(value) => value
+            case None =>
+              val newPosition = i.expression.position.newUniquePos()
+              Variable(i.name)(newPosition)
+          }
+
+          AliasedReturnItem(i.expression, alias)(i.position)
         case x => x
       }
     ri.copy(items = aliasedReturnItems)(ri.position)
@@ -160,7 +166,7 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
     val newItems =
       ri.items.map {
         case i: UnaliasedReturnItem if i.alias.isDefined =>
-          AliasedReturnItem(i.expression, i.alias.get.copyId)(i.position)
+          AliasedReturnItem(i.expression, i.alias.get)(i.position)
         case x => x
       }
     ri.copy(items = newItems)(ri.position)
@@ -169,7 +175,7 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
   private val rewriteProjectionsRecursively: Rewriter = topDown(Rewriter.lift {
     // Only alias return items
     case clause@ProjectionClause(_, ri: ReturnItems, None, _, _, None) =>
-      val replacer: ReturnItems => ReturnItems = if(clause.isReturn) aliasUnaliasedReturnItems(_, warnForMissingAliases = true) else aliasImplicitlyAliasedReturnItems
+      val replacer: ReturnItems => ReturnItems = if (clause.isReturn) aliasUnaliasedReturnItems(_, warnForMissingAliases = true) else aliasImplicitlyAliasedReturnItems
       clause.copyProjection(returnItems = replacer(ri))
 
     // Alias return items and rewrite ORDER BY and WHERE
@@ -183,7 +189,7 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
       val updatedOrderBy = orderBy.map(aliasOrderBy(existingAliases, _))
       val updatedWhere = where.map(aliasWhere(existingAliases, _))
 
-      val replacer: ReturnItems => ReturnItems = if(clause.isReturn) aliasUnaliasedReturnItems(_, warnForMissingAliases = true) else aliasImplicitlyAliasedReturnItems
+      val replacer: ReturnItems => ReturnItems = if (clause.isReturn) aliasUnaliasedReturnItems(_, warnForMissingAliases = true) else aliasImplicitlyAliasedReturnItems
       clause.copyProjection(returnItems = replacer(ri), orderBy = updatedOrderBy, where = updatedWhere)
   })
 

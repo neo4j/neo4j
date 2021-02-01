@@ -32,14 +32,15 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class FindDuplicateRelationshipsTest extends CypherFunSuite {
 
   private val pos = DummyPosition(0)
+  private val pos2 = DummyPosition(1)
   private val node = NodePattern(None, Seq.empty, None)(pos)
   private val relR = Variable("r")(pos)
-  private val relRBumped = Variable("r")(pos.bumped())
+  private val relRCopy = Variable("r")(pos2)
   private val relS = Variable("s")(pos)
 
   test("find duplicate relationships across pattern parts") {
     val relPath0 = EveryPath(RelationshipChain(node, relPattern(relR), node)(pos))
-    val relPath1 = EveryPath(RelationshipChain(node, relPattern(relRBumped), node)(pos))
+    val relPath1 = EveryPath(RelationshipChain(node, relPattern(relRCopy), node)(pos))
     val pattern = Pattern(Seq(relPath0, relPath1))(pos)
 
     RelationshipChain.findDuplicateRelationships(pattern) should equal(Seq(relR))
@@ -47,7 +48,7 @@ class FindDuplicateRelationshipsTest extends CypherFunSuite {
   }
 
   test("find duplicate relationships in a long rel chain") {
-    val relPath = expressions.EveryPath(relChain(relR, relS, relRBumped))
+    val relPath = expressions.EveryPath(relChain(relR, relS, relRCopy))
     val pattern = Pattern(Seq(relPath))(pos)
 
     RelationshipChain.findDuplicateRelationships(pattern) should equal(Seq(relR))

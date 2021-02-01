@@ -22,7 +22,7 @@ package org.neo4j.cypher.planmatching
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer
-import org.neo4j.cypher.internal.plandescription.renderAsTreeTable.UNNAMED_PATTERN
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.UNNAMED_PATTERN
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
@@ -33,9 +33,10 @@ import scala.util.matching.Regex
  * contain some arguments, as serialized with [[PlanDescriptionArgumentSerializer.serialize()]]
  */
 trait StringArgumentsMatcher extends Matcher[InternalPlanDescription] {
-  val expected: Set[String]
+  def expected: Set[String]
+
   def planArgs(plan: InternalPlanDescription): Set[String] = plan.arguments.toSet.map { arg: Argument =>
-    PlanDescriptionArgumentSerializer.serialize(arg).toString.replaceAll(UNNAMED_PATTERN, "")
+    UNNAMED_PATTERN.replaceAllIn(PlanDescriptionArgumentSerializer.serialize(arg).toString, "")
   }
 }
 

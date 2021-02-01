@@ -17,9 +17,10 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.ParserFixture
+import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
 trait AstRewritingTestSupport extends CypherTestSupport with AstConstructionTestSupport {
-  val parser = ParserFixture.parser
+  val parser: CypherParser = ParserFixture.parser
 }

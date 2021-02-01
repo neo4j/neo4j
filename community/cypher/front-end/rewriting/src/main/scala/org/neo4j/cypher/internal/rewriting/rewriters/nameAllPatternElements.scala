@@ -56,11 +56,11 @@ case object nameAllPatternElements extends Rewriter with StepSequencer.Step with
 
   private val namingRewriter: Rewriter = bottomUp(Rewriter.lift {
     case pattern: NodePattern if pattern.variable.isEmpty =>
-      val syntheticName = NodeNameGenerator.name(pattern.position.bumped())
+      val syntheticName = NodeNameGenerator.name(pattern.position.newUniquePos())
       pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
 
     case pattern: RelationshipPattern if pattern.variable.isEmpty  =>
-      val syntheticName = RelNameGenerator.name(pattern.position.bumped())
+      val syntheticName = RelNameGenerator.name(pattern.position.newUniquePos())
       pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
   }, stopper = {
     case _: ShortestPathExpression => true

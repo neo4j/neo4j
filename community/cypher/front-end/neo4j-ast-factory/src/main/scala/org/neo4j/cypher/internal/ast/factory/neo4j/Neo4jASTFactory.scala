@@ -375,7 +375,7 @@ class Neo4jASTFactory(query: String)
       Namespace(namespace.asScala.toList)(p),
       ProcedureName(name)(p),
       if (arguments == null) None else Some(arguments.asScala.toList),
-      Option(resultItems).map(items => ProcedureResult(items.asScala.toList.toIndexedSeq, Option(where).map(Where(_)(p)))(p)),
+      Option(resultItems).map(items => ProcedureResult(items.asScala.toList.toIndexedSeq, Option(where).map(w => Where(w)(w.position)))(p)),
       yieldAll
     )(p)
 

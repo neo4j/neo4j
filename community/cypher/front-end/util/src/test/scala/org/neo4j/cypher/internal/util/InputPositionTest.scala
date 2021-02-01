@@ -20,22 +20,32 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class InputPositionTest extends CypherFunSuite {
 
-  test("should bump the input position") {
+  test("should create unique input positions") {
     val pos = InputPosition(2, 1, 1)
 
-    val bumped = pos.bumped()
+    val posCopy = pos.newUniquePos()
 
-    bumped.offset should equal(pos.offset + 1)
-    bumped.column should equal(pos.column)
-    bumped.line should equal(pos.line)
+    posCopy.offset should equal(pos.offset)
+    posCopy.column should equal(pos.column)
+    posCopy.line should equal(pos.line)
 
-    pos should not equal bumped
-    pos should equal(InputPosition(2, 1, 1))
-    bumped should equal(InputPosition(2, 1, 1).bumped())
+    pos should not equal posCopy
+  }
+
+  test("copy should create unique input positions") {
+    val pos = InputPosition(2, 1, 1)
+
+    val posCopy = pos.copy(line = 1) // Same line
+
+    posCopy.offset should equal(pos.offset)
+    posCopy.column should equal(pos.column)
+    posCopy.line should equal(pos.line)
+
+    pos should not equal posCopy
   }
 
   test("should print offset") {
-    InputPosition(2, 1, 1).toOffsetString should equal("2")
-    InputPosition(2, 1, 1).bumped().toOffsetString should equal("3")
+    InputPosition(2, 1, 1).toUniqueOffsetString should startWith("2")
+    InputPosition(2, 1, 1).newUniquePos().toUniqueOffsetString should startWith("2")
   }
 }

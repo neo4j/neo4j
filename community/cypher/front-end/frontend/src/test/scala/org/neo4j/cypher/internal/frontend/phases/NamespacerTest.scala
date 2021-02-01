@@ -103,14 +103,14 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       List(varFor("  a@7"), varFor("  a@43"))
     ),
     TestCase(
-      "MATCH p=(a:Start)-->(b) RETURN *",
-      "MATCH p=(a:Start)-->(b) RETURN *",
+      "MATCH p=(a:Start)-[r]->(b) RETURN *",
+      "MATCH p=(a:Start)-[r]->(b) RETURN *",
       List.empty
     ),
     TestCase(
-      "MATCH (n) RETURN n, count(*) AS c order by c",
+      "MATCH (n) RETURN n AS n, count(*) AS c order by c",
       """MATCH (`  n@7`)
-        |RETURN `  n@7` AS `  n@18`, count(*) AS c ORDER BY c""".stripMargin,
+        |RETURN `  n@7` AS `  n@22`, count(*) AS c ORDER BY c""".stripMargin,
       List(varFor("  n@7"))
     ),
     TestCase(

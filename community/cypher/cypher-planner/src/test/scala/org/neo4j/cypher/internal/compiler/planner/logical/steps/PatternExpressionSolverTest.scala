@@ -39,10 +39,14 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
 
 class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
+  private val patExpr1 = newPatExpr("a", 0, 1, 2, SemanticDirection.OUTGOING)
+  private val patExpr2 = newPatExpr("a", 3, 4, 5, SemanticDirection.INCOMING)
 
   test("Rewrites single pattern expression") {
     // given MATCH (a) RETURN (a)-->() as x
@@ -112,20 +116,20 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
     val stringToEquals1 = Map("x" -> equals(patExpr1, patExpr2))
     val solver = PatternExpressionSolver.solverFor(source, context)
-    val expressions = stringToEquals1.map{ case (k,v) => (k, solver.solve(v, Some(k))) }
-    val resultPlan = solver.rewrittenPlan()
+    val expressions = stringToEquals1.map{ case (k,v) => (k, removeGeneratedNamesAndParamsOnTree(solver.solve(v, Some(k)))) }
+    val resultPlan = removeGeneratedNamesAndParamsOnTree(solver.rewrittenPlan())
 
     // then
     resultPlan should beLike {
       case RollUpApply(
       RollUpApply(`source`,
-      Projection(`b1`, MapKeys("  FRESHID0")),
-      "  FRESHID1", "  FRESHID0"),
-      Projection(`b2`, MapKeys("  FRESHID3")),
-      "  FRESHID4", "  FRESHID3") => ()
+      Projection(`b1`, MapKeys("anon_0")),
+      "anon_0", "anon_0"),
+      Projection(`b2`, MapKeys("anon_3")),
+      "anon_3", "anon_3") => ()
     }
 
-    expressions should equal(Map("x" -> equals(varFor("  FRESHID1"), varFor("  FRESHID4"))))
+    expressions should equal(Map("x" -> equals(varFor("anon_0"), varFor("anon_3"))))
   }
 
   test("Rewrites pattern expression inside complex expression, as a WHERE predicate") {
@@ -139,27 +143,24 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
     val predicate = equals(patExpr1, patExpr2)
     val solver = PatternExpressionSolver.solverFor(source, context)
-    val expression = solver.solve(predicate)
-    val resultPlan = solver.rewrittenPlan()
+    val expression = removeGeneratedNamesAndParamsOnTree(solver.solve(predicate))
+    val resultPlan = removeGeneratedNamesAndParamsOnTree(solver.rewrittenPlan())
 
     // then
     resultPlan should beLike {
       case RollUpApply(
       RollUpApply(`source`,
-      Projection(`b1`, MapKeys("  FRESHID0")),
-      "  FRESHID1", "  FRESHID0"),
-      Projection(`b2`, MapKeys("  FRESHID3")),
-      "  FRESHID4", "  FRESHID3") => ()
+      Projection(`b1`, MapKeys("anon_0")),
+      "anon_0", "anon_0"),
+      Projection(`b2`, MapKeys("anon_3")),
+      "anon_3", "anon_3") => ()
     }
 
-    expression should equal(equals(varFor("  FRESHID1"), varFor("  FRESHID4")))
+    expression should equal(equals(varFor("anon_0"), varFor("anon_3")))
   }
 
   private def logicalPlanningContext(strategy: QueryGraphSolver): LogicalPlanningContext =
     newMockedLogicalPlanningContext(newMockedPlanContext(), semanticTable = new SemanticTable(), strategy = strategy)
-
-  private val patExpr1 = newPatExpr("a", 0, 1, 2, SemanticDirection.OUTGOING)
-  private val patExpr2 = newPatExpr("a", 3, 4, 5, SemanticDirection.INCOMING)
 
   private def newPatExpr(left: String, position: Int, rightOffset: Int, relOffset: Int, dir: SemanticDirection): PatternExpression =
     newPatExpr(left, position, Left(rightOffset), Left(relOffset), dir)

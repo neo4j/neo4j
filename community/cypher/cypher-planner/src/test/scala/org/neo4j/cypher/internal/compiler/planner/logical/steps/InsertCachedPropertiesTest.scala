@@ -75,16 +75,16 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   private val foo = PropertyKeyName("foo")(InputPosition.NONE)
   // Same property in different positions
   private val nProp1 = Property(n, prop)(InputPosition.NONE)
-  private val nProp2 = Property(n, prop)(InputPosition.NONE.bumped())
-  private val nProp3 = Property(n, prop)(InputPosition.NONE.bumped().bumped())
+  private val nProp2 = Property(n, prop)(InputPosition.NONE.newUniquePos())
+  private val nProp3 = Property(n, prop)(InputPosition.NONE.newUniquePos())
   // Same property in different positions
   private val nFoo1 = Property(n, foo)(InputPosition.NONE)
-  private val cachedNProp1 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE)
-  private val cachedNFoo1 = CachedProperty("n", n, foo, NODE_TYPE)(InputPosition.NONE)
-  private val cachedNProp2 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE.bumped())
-  private val cachedNProp3 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE.bumped().bumped())
-  private val cachedNRelProp1 = CachedProperty("n", n, prop, RELATIONSHIP_TYPE)(InputPosition.NONE)
-  private val cachedNRelProp2 = CachedProperty("n", n, prop, RELATIONSHIP_TYPE)(InputPosition.NONE.bumped())
+  private val cachedNProp1 = CachedProperty("n", n, prop, NODE_TYPE)(nProp1.position)
+  private val cachedNFoo1 = CachedProperty("n", n, foo, NODE_TYPE)(nFoo1.position)
+  private val cachedNProp2 = CachedProperty("n", n, prop, NODE_TYPE)(nProp2.position)
+  private val cachedNProp3 = CachedProperty("n", n, prop, NODE_TYPE)(nProp3.position)
+  private val cachedNRelProp1 = CachedProperty("n", n, prop, RELATIONSHIP_TYPE)(nProp1.position)
+  private val cachedNRelProp2 = CachedProperty("n", n, prop, RELATIONSHIP_TYPE)(nProp2.position)
 
   private val xProp = Property(x, prop)(InputPosition.NONE)
 
@@ -226,7 +226,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   test("should rewrite [prop(n, prop)] to [CachedProperty(n.prop)] with usage in selection after index scan") {
     val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
     val plan = Selection(
-      Seq(equals(listOf(prop("n", "prop")), listOfInt(1))),
+      Seq(equals(listOf(nProp1), listOfInt(1))),
       indexScan("n", "L", "prop", CanGetValue)
     )
     val (newPlan, newTable) = replace(plan, initialTable)
@@ -244,7 +244,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   test("should rewrite {foo: prop(n, prop)} to {foo: CachedProperty(n.prop)} with usage in selection after index scan") {
     val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
     val plan = Selection(
-      Seq(equals(mapOf("foo" -> prop("n", "prop")), mapOfInt(("foo", 1)))),
+      Seq(equals(mapOf("foo" -> nProp1), mapOfInt(("foo", 1)))),
       indexScan("n", "L", "prop", CanGetValue)
     )
     val (newPlan, newTable) = replace(plan, initialTable)
@@ -264,7 +264,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val propWithoutSemanticType = propEquality("m", "prop", 2)
 
     val plan = Selection(
-      Seq(propEquality("n", "prop", 1), propWithoutSemanticType),
+      Seq(equals(nProp1, literalInt(1)), propWithoutSemanticType),
       NodeHashJoin(Set("n"),
         indexScan("n", "L", "prop", CanGetValue),
         indexScan("m", "L", "prop", CanGetValue)
@@ -431,10 +431,13 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   }
 
   test("renamed variable: n AS x, reading in 2 Selection operators") {
+    val cpASx = cachedNProp1.copy(entityVariable = x)(cachedNProp1.position)
+    val cpFromStore = cachedNProp1.copy(knownToAccessStore = true)(cachedNProp1.position)
+
     val builder = new LogicalPlanBuilder(wholePlan = false)
-      .filter("x.prop > 42")
+      .filterExpression(greaterThan(xProp, literalInt(42)))
       .projection("n AS x")
-      .filter("n.prop > 42")
+      .filterExpression(greaterThan(nProp1, literalInt(42)))
       .allNodeScan("n")
 
     builder.newNode(varFor("x"))
@@ -448,14 +451,14 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val (newPlan, newTable) = replace(builder.build(), initialTable)
     newPlan should be(
       new LogicalPlanBuilder(wholePlan = false)
-        .filterExpression(greaterThan(cachedNodeProp("n", "prop", "x"), literalInt(42) ))
+        .filterExpression(greaterThan(cpASx, literalInt(42)))
         .projection("n AS x")
-        .filterExpression(greaterThan(cachedNodePropFromStore("n", "prop"), literalInt(42) ))
+        .filterExpression(greaterThan(cpFromStore, literalInt(42)))
         .allNodeScan("n")
         .build()
     )
-    newTable.types(cachedNodePropFromStore("n", "prop")) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNodeProp("n", "prop", "x")) should be(ExpressionTypeInfo(CTInteger))
+    newTable.types(cpASx) should be(ExpressionTypeInfo(CTInteger))
+    newTable.types(cpFromStore) should be(ExpressionTypeInfo(CTInteger))
   }
 
   test("renamed variable: n AS n") {
@@ -637,10 +640,12 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   }
 
   test("should cache in nested plan expression") {
+    val cp2FromStore = cachedNProp2.copy(knownToAccessStore = true)(cachedNProp2.position)
+
     val builder = new LogicalPlanBuilder(wholePlan = false)
       .nestedPlanExistsExpressionProjection("list")
-      .|.projection("n.prop AS bar")
-      .|.projection("n.prop AS foo")
+      .|.projection(Map("bar" -> nProp1))
+      .|.projection(Map("foo" -> nProp2))
       .|.allNodeScan("n")
       .argument()
 
@@ -648,6 +653,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val initialTable = builderTable
       .copy(types = builderTable.types
         .updated(nProp1, ExpressionTypeInfo(CTInteger))
+        .updated(nProp2, ExpressionTypeInfo(CTInteger))
       )
 
     val (newPlan, newTable) = replace(builder.build(), initialTable)
@@ -655,13 +661,13 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       new LogicalPlanBuilder(wholePlan = false)
         .nestedPlanExistsExpressionProjection("list")
         .|.projection(Map("bar" -> cachedNProp1))
-        .|.projection(Map("foo" -> cachedNProp1.copy(knownToAccessStore = true)(cachedNProp1.position)))
+        .|.projection(Map("foo" -> cp2FromStore))
         .|.allNodeScan("n")
         .argument()
         .build()
     )
     newTable.types(cachedNProp1) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNProp1.copy(knownToAccessStore = true)(cachedNProp1.position)) should be(ExpressionTypeInfo(CTInteger))
+    newTable.types(cp2FromStore) should be(ExpressionTypeInfo(CTInteger))
   }
 
   test("should cache in LHS and RHS with Apply") {
@@ -673,16 +679,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .projection("n.prop AS foo", "n.lr AS fooLR", "n.lt AS fooLT")
       .allNodeScan("n")
 
-    val builderTable = builder.getSemanticTable
-    val initialTable = builderTable
-      .copy(types = builderTable.types
-        .updated(nProp1, ExpressionTypeInfo(CTInteger))
-        .updated(prop("n", "lt"), ExpressionTypeInfo(CTInteger))
-        .updated(prop("n", "lr"), ExpressionTypeInfo(CTInteger))
-        .updated(prop("n", "rt"), ExpressionTypeInfo(CTInteger))
-      )
-
-    val (newPlan, newTable) = replace(builder.build(), initialTable)
+    val (newPlan, newTable) = replace(builder.build(), builder.getSemanticTable)
     newPlan should be(
       new LogicalPlanBuilder(wholePlan = false)
         .projection(Map("baz" -> cachedNProp1, "bazLT" -> cachedNodeProp("n", "lt"), "bazRT" -> cachedNodeProp("n", "rt")))
@@ -693,14 +690,6 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
         .allNodeScan("n")
         .build()
     )
-    newTable.types(cachedNProp1.copy(knownToAccessStore = true)(cachedNProp1.position)) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNProp1) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNodePropFromStore("n", "lt")) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNodeProp("n", "lt")) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNodePropFromStore("n", "lr")) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNodeProp("n", "lr")) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNodePropFromStore("n", "rt")) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNodeProp("n", "rt")) should be(ExpressionTypeInfo(CTInteger))
   }
 
   test("should not cache in Apply plan with only 1 usage in LHS") {
@@ -730,16 +719,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .projection("n.prop AS foo", "n.lr AS fooLR", "n.lt AS fooLT")
       .allNodeScan("n")
 
-    val builderTable = builder.getSemanticTable
-    val initialTable = builderTable
-      .copy(types = builderTable.types
-        .updated(nProp1, ExpressionTypeInfo(CTInteger))
-        .updated(prop("n", "lt"), ExpressionTypeInfo(CTInteger))
-        .updated(prop("n", "lr"), ExpressionTypeInfo(CTInteger))
-        .updated(prop("n", "rt"), ExpressionTypeInfo(CTInteger))
-      )
-
-    val (newPlan, newTable) = replace(builder.build(), initialTable)
+    val (newPlan, newTable) = replace(builder.build(), builder.getSemanticTable)
     newPlan should be(
       new LogicalPlanBuilder(wholePlan = false)
         .projection(Map("baz" -> cachedNProp1, "bazLT" -> cachedNodeProp("n", "lt"), "bazRT" -> cachedNodeProp("n", "rt")))
@@ -750,14 +730,6 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
         .allNodeScan("n")
         .build()
     )
-    newTable.types(cachedNProp1.copy(knownToAccessStore = true)(cachedNProp1.position)) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNProp1) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNodePropFromStore("n", "lt")) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNodeProp("n", "lt")) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNodePropFromStore("n", "lr")) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNodeProp("n", "lr")) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNodePropFromStore("n", "rt")) should be(ExpressionTypeInfo(CTInteger))
-    newTable.types(cachedNodeProp("n", "rt")) should be(ExpressionTypeInfo(CTInteger))
   }
 
   private def replace(plan: LogicalPlan,

@@ -88,6 +88,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
@@ -105,17 +106,18 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         case _ => 4000000
       }
     } getLogicalPlanFor """MATCH (a:Person)-[:KNOWS]->(b:Person) WITH a, collect(b) AS friends RETURN a, [f IN friends WHERE (f)-[:WORKS_AT]->(:ComedyClub)] AS clowns""")._2
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(plan)
 
-    plan match {
+    dedupedPlan match {
       case Projection(_, expressions) =>
         expressions("clowns") match {
           case ListComprehension(ExtractScope(_, Some(NestedPlanExistsExpression(nestedPlan, _)), _), _) =>
             nestedPlan should equal(
               Selection(
-                ands(hasLabels("  NODE116", "ComedyClub")),
+                ands(hasLabels("anon_115", "ComedyClub")),
                 Expand(
                   Argument(Set("f")),
-                  "f", OUTGOING, Seq(RelTypeName("WORKS_AT")_), "  NODE116", "  REL102", ExpandAll
+                  "f", OUTGOING, Seq(RelTypeName("WORKS_AT")_), "anon_115", "anon_101", ExpandAll
                 )
               )
             )
@@ -129,7 +131,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     val patternComprehensionExpressionKeyString = "size(PatternComprehension(None,RelationshipsPattern(RelationshipChain(NodePattern(Some(Variable(u)),List(),None,None),RelationshipPattern(Some(Variable(r)),List(RelTypeName(FOLLOWS)),None,None,OUTGOING,false,None),NodePattern(Some(Variable(u2)),List(LabelName(User)),None,None))),None,Property(Variable(u2),PropertyKeyName(id))))"
 
-    planFor("MATCH (u:User) RETURN u.id ORDER BY size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])")._2 should equal(
+    val plan = planFor("MATCH (u:User) RETURN u.id ORDER BY size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])")._2
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(plan)
+
+    dedupedPlan should equal(
       Projection(
         Sort(
           Projection(
@@ -147,12 +152,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
                     "r"
                   )
                 ),
-                Map("  FRESHID41" -> prop("u2", "id"))
+                Map("anon_41" -> prop("u2", "id"))
               ),
-              "  FRESHID42",
-              "  FRESHID41"
+              "anon_41",
+              "anon_41"
             ),
-            Map(patternComprehensionExpressionKeyString -> function("size", Variable("  FRESHID42")(pos)))
+            Map(patternComprehensionExpressionKeyString -> function("size", Variable("anon_41")(pos)))
           ),
           Seq(Ascending(patternComprehensionExpressionKeyString))
         ),
@@ -167,11 +172,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with SemiApply for a single pattern predicate") {
     val logicalPlan = planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.expandAll("(a)-[`  REL20`:X]->(`  NODE27`)")
+        .|.expandAll("(a)-[anon_19:X]->(anon_26)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -180,11 +186,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with AntiSemiApply for a single negated pattern predicate") {
     val logicalPlan = planFor("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .antiSemiApply()
-        .|.expandAll("(a)-[`  REL24`:X]->(`  NODE31`)")
+        .|.expandAll("(a)-[anon_23:X]->(anon_30)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -193,11 +200,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with SemiApply for a single pattern predicate with exists") {
     val logicalPlan = planFor("MATCH (a) WHERE exists((a)-[:X]->()) RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.expandAll("(a)-[`  REL27`:X]->(`  NODE34`)")
+        .|.expandAll("(a)-[anon_26:X]->(anon_33)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -206,11 +214,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with AntiSemiApply for a single negated pattern predicate with exists") {
     val logicalPlan = planFor("MATCH (a) WHERE NOT exists((a)-[:X]->()) RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .antiSemiApply()
-        .|.expandAll("(a)-[`  REL31`:X]->(`  NODE38`)")
+        .|.expandAll("(a)-[anon_30:X]->(anon_37)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -219,11 +228,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with SemiApply for a single pattern predicate with size") {
     val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->())>0 RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.expandAll("(a)-[`  REL25`:X]->(`  NODE32`)")
+        .|.expandAll("(a)-[anon_24:X]->(anon_31)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -232,11 +242,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with AntiSemiApply for a single negated pattern predicate with size") {
     val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->())=0 RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .antiSemiApply()
-        .|.expandAll("(a)-[`  REL25`:X]->(`  NODE32`)")
+        .|.expandAll("(a)-[anon_24:X]->(anon_31)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -245,14 +256,15 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with 2 SemiApplies for two pattern predicates") {
     val logicalPlan = planFor("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.expandAll("(a)-[`  REL37`:Y]->(`  NODE44`)")
+        .|.expandAll("(a)-[anon_36:Y]->(anon_43)")
         .|.argument("a")
         .semiApply()
-        .|.expandAll("(a)-[`  REL20`:X]->(`  NODE27`)")
+        .|.expandAll("(a)-[anon_19:X]->(anon_26)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -261,11 +273,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with SelectOrSemiApply for a pattern predicate and an expression") {
     val logicalPlan = planFor("MATCH (a) WHERE (a)-[:X]->() OR a.prop > 4 RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .selectOrSemiApply("a.prop > 4")
-        .|.expandAll("(a)-[`  REL20`:X]->(`  NODE27`)")
+        .|.expandAll("(a)-[anon_19:X]->(anon_26)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -274,11 +287,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with SelectOrSemiApply for a pattern predicate and multiple expressions") {
     val logicalPlan = planFor("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .selectOrSemiApply("a.prop > 4 OR a.prop2 = 9")
-        .|.expandAll("(a)-[`  REL35`:X]->(`  NODE42`)")
+        .|.expandAll("(a)-[anon_34:X]->(anon_41)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -287,11 +301,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with SelectOrAntiSemiApply for a single negated pattern predicate and an expression") {
     val logicalPlan = planFor("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->() RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .selectOrAntiSemiApply("a.prop = 9")
-        .|.expandAll("(a)-[`  REL38`:X]->(`  NODE45`)")
+        .|.expandAll("(a)-[anon_37:X]->(anon_44)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -300,14 +315,15 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with LetSelectOrSemiApply and SelectOrAntiSemiApply for two pattern predicates and expressions") {
     val logicalPlan = planFor("MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .selectOrAntiSemiApply("`  FRESHID30`")
-        .|.expandAll("(a)-[`  REL54`:X]->(`  NODE61`)")
+        .selectOrAntiSemiApply("anon_30")
+        .|.expandAll("(a)-[anon_53:X]->(anon_60)")
         .|.argument("a")
-        .letSelectOrSemiApply("  FRESHID30", "a.prop = 9") // FRESHID30 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
-        .|.expandAll("(a)-[`  REL34`:Y]->(`  NODE41`)")
+        .letSelectOrSemiApply("anon_30", "a.prop = 9") // anon_30 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
+        .|.expandAll("(a)-[anon_33:Y]->(anon_40)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -316,14 +332,15 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with LetSemiApply and SelectOrAntiSemiApply for two pattern predicates with one negation") {
     val logicalPlan = planFor("MATCH (a) WHERE (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .selectOrAntiSemiApply("`  FRESHID16`")
-        .|.expandAll("(a)-[`  REL40`:X]->(`  NODE47`)")
+        .selectOrAntiSemiApply("anon_16")
+        .|.expandAll("(a)-[anon_39:X]->(anon_46)")
         .|.argument("a")
-        .letSemiApply("  FRESHID16") // FRESHID16 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
-        .|.expandAll("(a)-[`  REL20`:Y]->(`  NODE27`)")
+        .letSemiApply("anon_16") // anon_16 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
+        .|.expandAll("(a)-[anon_19:Y]->(anon_26)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -332,14 +349,15 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with LetAntiSemiApply and SelectOrAntiSemiApply for two negated pattern predicates") {
     val logicalPlan = planFor("MATCH (a) WHERE NOT (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
-        .selectOrAntiSemiApply("`  FRESHID20`")
-        .|.expandAll("(a)-[`  REL44`:X]->(`  NODE51`)")
+        .selectOrAntiSemiApply("anon_20")
+        .|.expandAll("(a)-[anon_43:X]->(anon_50)")
         .|.argument("a")
-        .letAntiSemiApply("  FRESHID20") // FRESHID20 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
-        .|.expandAll("(a)-[`  REL24`:Y]->(`  NODE31`)")
+        .letAntiSemiApply("anon_20") // anon_20 is used to not go into the RHS of SelectOrAntiSemiApply if not needed
+        .|.expandAll("(a)-[anon_23:Y]->(anon_30)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -348,12 +366,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with SemiApply for a single pattern predicate with Label on other node") {
     val logicalPlan = planFor("MATCH (a) WHERE (a)-[:X]->(:Foo) RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.filterExpression(hasLabels("  NODE27", "Foo"))
-        .|.expandAll("(a)-[`  REL20`:X]->(`  NODE27`)")
+        .|.filterExpression(hasLabels("anon_26", "Foo"))
+        .|.expandAll("(a)-[anon_19:X]->(anon_26)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -362,12 +381,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with AntiSemiApply for a single negated pattern predicate with Label on other node") {
     val logicalPlan = planFor("MATCH (a) WHERE NOT (a)-[:X]->(:Foo) RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .antiSemiApply()
-        .|.filterExpression(hasLabels("  NODE31", "Foo"))
-        .|.expandAll("(a)-[`  REL24`:X]->(`  NODE31`)")
+        .|.filterExpression(hasLabels("anon_30", "Foo"))
+        .|.expandAll("(a)-[anon_23:X]->(anon_30)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -376,12 +396,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with SemiApply for a single pattern predicate with exists with Label on other node") {
     val logicalPlan = planFor("MATCH (a) WHERE exists((a)-[:X]->(:Foo)) RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.filterExpression(hasLabels("  NODE34", "Foo"))
-        .|.expandAll("(a)-[`  REL27`:X]->(`  NODE34`)")
+        .|.filterExpression(hasLabels("anon_33", "Foo"))
+        .|.expandAll("(a)-[anon_26:X]->(anon_33)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -390,12 +411,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with AntiSemiApply for a single negated pattern predicate with exists with Label on other node") {
     val logicalPlan = planFor("MATCH (a) WHERE NOT exists((a)-[:X]->(:Foo)) RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .antiSemiApply()
-        .|.filterExpression(hasLabels("  NODE38", "Foo"))
-        .|.expandAll("(a)-[`  REL31`:X]->(`  NODE38`)")
+        .|.filterExpression(hasLabels("anon_37", "Foo"))
+        .|.expandAll("(a)-[anon_30:X]->(anon_37)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -404,12 +426,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with SemiApply for a single pattern predicate with size with Label on other node") {
     val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->(:Foo))>0 RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .semiApply()
-        .|.filterExpression(hasLabels("  NODE32", "Foo"))
-        .|.expandAll("(a)-[`  REL25`:X]->(`  NODE32`)")
+        .|.filterExpression(hasLabels("anon_31", "Foo"))
+        .|.expandAll("(a)-[anon_24:X]->(anon_31)")
         .|.argument("a")
         .allNodeScan("a")
         .build()
@@ -418,12 +441,13 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with AntiSemiApply for a single negated pattern predicate with size with Label on other node") {
     val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->(:Foo))=0 RETURN a", stripProduceResults = false)._2
-    logicalPlan should equal(
+    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(logicalPlan)
+    dedupedPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
         .antiSemiApply()
-        .|.filterExpression(hasLabels("  NODE32", "Foo"))
-        .|.expandAll("(a)-[`  REL25`:X]->(`  NODE32`)")
+        .|.filterExpression(hasLabels("anon_31", "Foo"))
+        .|.expandAll("(a)-[anon_24:X]->(anon_31)")
         .|.argument("a")
         .allNodeScan("a")
         .build()

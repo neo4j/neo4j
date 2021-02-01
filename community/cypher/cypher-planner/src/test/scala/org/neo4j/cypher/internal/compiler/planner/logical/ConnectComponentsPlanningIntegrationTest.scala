@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.BOTH
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.util.Random
@@ -973,15 +974,19 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         |OPTIONAL MATCH (p0)-->(p0_1)-->(p0_2)
         |RETURN * ORDER BY p1.name
         |""".stripMargin
-    val volcanoPlan = builder
+    val volcanoPlan = removeGeneratedNamesAndParamsOnTree(
+      builder
       .setExecutionModel(Volcano)
       .build()
       .plan(query)
+    )
 
-    val batchedPlan = builder
+    val batchedPlan = removeGeneratedNamesAndParamsOnTree(
+      builder
       .setExecutionModel(Batched.default)
       .build()
       .plan(query)
+    )
 
     // Because of the order by, the CartesianProduct will have a provided order, and thus it will not get cheaper with batched execution.
     // Both execution models should find the same plan.

@@ -47,8 +47,8 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cost
-import org.neo4j.cypher.internal.util.NodeNameGenerator
 import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -353,10 +353,10 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     when(context.semanticTable.isRelationship(rel)).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
+    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context).map(removeGeneratedNamesAndParamsOnTree)
 
     // then
-    val newFrom = NodeNameGenerator.name(rel.position.bumped())
+    val newFrom = "anon_0"
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .filter(s"from = `$newFrom`")
       .directedRelationshipByIdSeek("r", newFrom, end, Set(from), 42, 43, 43)
@@ -388,11 +388,11 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     when(context.semanticTable.isRelationship(rel)).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context)
+    val resultPlans = idSeekLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context).map(removeGeneratedNamesAndParamsOnTree)
 
     // then
-    val newFrom = NodeNameGenerator.name(rel.position.bumped())
-    val newEnd = NodeNameGenerator.name(rel.position.bumped().bumped())
+    val newFrom = "anon_0"
+    val newEnd = "anon_0"
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .filter(s"$from = `$newFrom`", s"$end = `$newEnd``")
       .directedRelationshipByIdSeek("r", newFrom, newEnd, Set(from, end), 42, 43, 43)

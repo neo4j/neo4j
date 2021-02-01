@@ -136,8 +136,8 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with Leaf
                                        argumentIds: Set[String],
                                        pos: InputPosition): (String, String) = {
     val (left, right) = oldNodes
-    val newLeft = if (!argumentIds.contains(left)) left else NodeNameGenerator.name(pos.bumped())
-    val newRight = if (!argumentIds.contains(right)) right else NodeNameGenerator.name(pos.bumped().bumped())
+    val newLeft = if (!argumentIds.contains(left)) left else NodeNameGenerator.name(pos.newUniquePos())
+    val newRight = if (!argumentIds.contains(right)) right else NodeNameGenerator.name(pos.newUniquePos())
     (newLeft, newRight)
   }
 

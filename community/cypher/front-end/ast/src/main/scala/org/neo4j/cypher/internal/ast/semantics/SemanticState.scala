@@ -43,7 +43,7 @@ final case class SymbolUse(name: String, position: InputPosition) {
 
   def asVariable: Variable = Variable(name)(position)
 
-  def nameWithPosition = s"$name@${position.toOffsetString}"
+  def nameWithPosition = s"$name@${position.toUniqueOffsetString}"
 }
 
 // A symbol collects all uses of a position within the current scope and
@@ -177,7 +177,7 @@ final case class Scope(symbolTable: Map[String, Symbol],
       val symbol = symbolTable(key)
       val generatedText = if (symbol.generated) " (generated)" else ""
       val keyText = s"$key$generatedText"
-      val symbolText = symbol.positions.map(_.toOffsetString).toSeq.sorted.mkString(" ")
+      val symbolText = symbol.positions.map(_.toUniqueOffsetString).toSeq.sorted.mkString(" ")
       builder.append(s"$indent$keyText: $symbolText$EOL")
     }
     children.foreach { child => child.dumpSingle(indent, includeId, builder) }

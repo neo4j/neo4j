@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.SourceCode
 import org.neo4j.cypher.internal.plandescription.Arguments.Time
 import org.neo4j.cypher.internal.plandescription.Arguments.Version
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.UNNAMED_PATTERN
 
 import scala.annotation.tailrec
 import scala.collection.Map
@@ -46,8 +47,6 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object renderAsTreeTable {
-  val UNNAMED_PATTERN = """  (REL|NODE|UNNAMED|FRESHID|AGGREGATION)(\d+)"""
-  val UNNAMED_PARAMS_PATTERN = """  (AUTOINT|AUTODOUBLE|AUTOSTRING|AUTOLIST)(\d+)"""
   val OPERATOR = "Operator"
   val DETAILS = "Details"
   private val ESTIMATED_ROWS = "Estimated Rows"
@@ -327,7 +326,7 @@ object renderAsTreeTable {
   }
 
   private def other(description: InternalPlanDescription): String = {
-    otherFields(description).mkString("; ").replaceAll(UNNAMED_PATTERN, "")
+    UNNAMED_PATTERN.replaceAllIn(otherFields(description).mkString("; "), "")
   }
 
   private def format(effectiveCardinality: Double, cardinality: Option[Double], withRawCardinalities: Boolean) =

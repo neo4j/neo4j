@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasTyp
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -160,7 +161,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
           RETURN DISTINCT b as b""").
     is_rewritten_to(
       """MATCH (a)
-          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[`  UNNAMED0`:T2]->(`  UNNAMED-3`)
+          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[`  UNNAMED0`:T2]->(`  UNNAMED0(1)`)
           RETURN DISTINCT b as b""")
 
   assert_that(
@@ -169,7 +170,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
           RETURN DISTINCT b as b""").
     is_rewritten_to(
       """MATCH (a)
-          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE b:B and (b)-[`  UNNAMED0`:T2]->(`  UNNAMED-3`)
+          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE b:B and (b)-[`  UNNAMED0`:T2]->(`  UNNAMED0(1)`)
           RETURN DISTINCT b as b""")
 
   assert_that(
@@ -184,7 +185,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
           RETURN DISTINCT b as b""").
     is_rewritten_to(
       """MATCH (a)
-          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[`  UNNAMED0`:T2]->(`  UNNAMED-4`:A:B {id: 42, foo: 'apa'})
+          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[`  UNNAMED0`:T2]->(`  UNNAMED0(1)`:A:B {id: 42, foo: 'apa'})
           RETURN DISTINCT b as b""")
 
   assert_that(
@@ -193,7 +194,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |RETURN a AS a, count(distinct z.key) as zCount""".stripMargin).
     is_rewritten_to(
       """MATCH (a:A)
-        |OPTIONAL MATCH (z) WHERE (z)-[`  UNNAMED0`]->(`  UNNAMED-3`) AND z:Z
+        |OPTIONAL MATCH (z) WHERE (z)-[`  UNNAMED0`]->(`  UNNAMED0(1)`) AND z:Z
         |RETURN a AS a, count(distinct z.key) as zCount""".stripMargin)
 
   assert_that(
@@ -347,22 +348,13 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     smallestGraphIncluding(qg, Set(n, m)) should equal(Set(n, m))
   }
 
-  def is_rewritten_to(newQuery: String): Unit = {
-    val originalQuery = testName
-    val expected = getTheWholePlannerQueryFrom(newQuery.stripMargin)
-    val original = getTheWholePlannerQueryFrom(originalQuery.stripMargin)
-
-    val result = original.endoRewrite(fixedPoint(rewriter))
-    assert(result === expected, "\nWas not rewritten correctly\n" + originalQuery)
-  }
-
   case class RewriteTester(originalQuery: String) {
     def is_rewritten_to(newQuery: String): Unit =
       test(originalQuery) {
-        val expected = getTheWholePlannerQueryFrom(newQuery.stripMargin)
+        val expected = removeGeneratedNamesAndParamsOnTree(getTheWholePlannerQueryFrom(newQuery.stripMargin))
         val original = getTheWholePlannerQueryFrom(originalQuery.stripMargin)
 
-        val result = original.endoRewrite(fixedPoint(rewriter))
+        val result = removeGeneratedNamesAndParamsOnTree(original.endoRewrite(fixedPoint(rewriter)))
         assert(result === expected, "\nWas not rewritten correctly\n" + originalQuery)
       }
 

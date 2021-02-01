@@ -16,39 +16,60 @@
  */
 package org.neo4j.cypher.internal.util
 
-case class InputPosition(offset: Int, line: Int, column: Int) {
-  self =>
+import java.util.UUID
 
-  override def hashCode = 41 * offset
+/**
+ * The position of an AST node.
+ *
+ * @param offset the offset in characters from the beginning of the query string
+ * @param line   the line in the query string
+ * @param column the column in the query string
+ * @param uuid   a unique identifier to disambiguate positions of generated AST nodes that do not have a real position in the query string
+ */
+case class InputPosition(offset: Int,
+                         line: Int,
+                         column: Int,
+                         private val uuid: Option[UUID] = None) {
 
-  override def equals(that: Any): Boolean = that match {
-    case that: InputPosition =>
-      (that canEqual this) && offset == that.offset
-    case _ =>
-      false
+  /**
+   * This method is mostly defined to make the otherwise generated copy method inaccessible.
+   * We want to prevent copying input positions without changing the uuid.
+   */
+  private[util] def copy(offset: Int = this.offset,
+                         line: Int = this.line,
+                         column: Int = this.column): InputPosition = InputPosition(offset, line, column, Some(UUID.randomUUID()))
+
+  override def toString = s"line $line, column $column (offset: $toUniqueOffsetString)"
+
+  /**
+   * @return a string that consists of the offset and the uuid, thus uniquely identifying an InputPosition.
+   */
+  def toUniqueOffsetString: String = uuid match {
+    case Some(uuidVal) => s"$offset($uuidVal)"
+    case None => offset.toString
   }
 
-  def canEqual(that: Any): Boolean = that.isInstanceOf[InputPosition]
-
-  override def toString = s"line $line, column $column (offset: $toOffsetString)"
-
-  def toOffsetString = offset.toString
-
-  def withOffset(pos: Option[InputPosition]) = pos match {
+  /**
+   * Offset this position by a number of characters and return the new position.
+   */
+  def withOffset(pos: Option[InputPosition]): InputPosition = pos match {
     case Some(p) =>
       val newColumn = if (line == p.line) column + p.column - 1 else column
-      copy(offset + p.offset, line + p.line - 1, newColumn)
-    case None => self
+      InputPosition(offset + p.offset, line + p.line - 1, newColumn)
+    case None => this
   }
 
-  def bumped() = copy(offset = offset + 1) // HACKISH
+  /**
+   * @return a new unique InputPosition with the same offset, line and column.
+   */
+  def newUniquePos(): InputPosition = InputPosition(offset, line, column, Some(UUID.randomUUID()))
 }
 
 object InputPosition {
-  implicit val byOffset =
+  implicit val byOffset: Ordering[InputPosition] =
     Ordering.by { pos: InputPosition =>
       pos.offset
     }
 
-  val NONE = InputPosition(0, 0, 0)
+  val NONE: InputPosition = InputPosition(0, 0, 0)
 }

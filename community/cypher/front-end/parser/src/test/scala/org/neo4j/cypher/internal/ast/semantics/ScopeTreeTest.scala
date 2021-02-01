@@ -229,16 +229,16 @@ class ScopeTreeTest extends CypherFunSuite {
 
   //////00000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122222222223333333333444444444455555555556666666666
   //////01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
-  test("with 1 as p, count(*) as rng return p order by rng ==> { {} { with 1 as p, count(*) as rng return p } { order by rng } }") {
-    val ast = parse("with 1 as p, count(*) as rng return p order by rng")
+  test("with 1 as p, count(*) as rng return p as p order by rng ==> { {} { with 1 as p, count(*) as rng return p } { order by rng } }") {
+    val ast = parse("with 1 as p, count(*) as rng return p as p order by rng")
 
     val actual = ast.scope
     val expected = scope()(
       scope()(),
       scope(intSymbol("p", 10, 36), intSymbol("rng", 25))(
-        scope(intSymbol("p", 10, 36, 37), intSymbol("rng", 25, 47))()
+        scope(intSymbol("p", 10, 36, 41), intSymbol("rng", 25, 52))()
       ),
-      scope(intSymbol("p", 10, 36, 37))()
+      scope(intSymbol("p", 10, 36, 41))()
     )
 
     actual should equal(expected)

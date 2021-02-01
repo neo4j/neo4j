@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -539,8 +540,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where (a)-->() return a")
 
     // Then inner pattern query graph
-    val relName = "  REL20"
-    val nodeName = "  NODE23"
+    val relName = "anon_19"
+    val nodeName = "anon_22"
     val exp = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
@@ -549,7 +550,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val predicate= Predicate(Set("a"), exp)
     val selections = Selections(Set(predicate))
 
-    query.queryGraph.selections should equal(selections)
+    removeGeneratedNamesAndParamsOnTree(query.queryGraph.selections) should equal(selections)
     query.queryGraph.patternNodes should equal(Set("a"))
   }
 
@@ -585,8 +586,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where a.prop = 42 OR (a)-->() return a")
 
     // Then inner pattern query graph
-    val relName = "  REL35"
-    val nodeName = "  NODE38"
+    val relName = "anon_34"
+    val nodeName = "anon_37"
     val exp1 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
@@ -596,7 +597,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val orPredicate = Predicate(Set("a"), ors(exp1, exp2))
     val selections = Selections(Set(orPredicate))
 
-    query.queryGraph.selections should equal(selections)
+    removeGeneratedNamesAndParamsOnTree(query.queryGraph.selections) should equal(selections)
     query.queryGraph.patternNodes should equal(Set("a"))
   }
 
@@ -605,8 +606,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where (a)-->() OR a.prop = 42 return a")
 
     // Then inner pattern query graph
-    val relName = "  REL20"
-    val nodeName = "  NODE23"
+    val relName = "anon_19"
+    val nodeName = "anon_22"
     val exp1 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
@@ -616,7 +617,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val orPredicate = Predicate(Set("a"), ors(exp1, exp2))
     val selections = Selections(Set(orPredicate))
 
-    query.queryGraph.selections should equal(selections)
+    removeGeneratedNamesAndParamsOnTree(query.queryGraph.selections) should equal(selections)
     query.queryGraph.patternNodes should equal(Set("a"))
   }
 
@@ -625,8 +626,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (a) where a.prop2 = 21 OR (a)-->() OR a.prop = 42 return a")
 
     // Then inner pattern query graph
-    val relName = "  REL36"
-    val nodeName = "  NODE39"
+    val relName = "anon_35"
+    val nodeName = "anon_38"
     val exp1 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Variable("a")(pos)), Seq(), None) _,
       RelationshipPattern(Some(Variable(relName)(pos)), Seq.empty, None, None, OUTGOING) _,
@@ -638,7 +639,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val selections = Selections(Set(orPredicate))
 
-    query.queryGraph.selections should equal(selections)
+    removeGeneratedNamesAndParamsOnTree(query.queryGraph.selections) should equal(selections)
     query.queryGraph.patternNodes should equal(Set("a"))
   }
 
@@ -922,24 +923,25 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN owner") {
-    val result = buildSinglePlannerQuery("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN owner")
+    val result = removeGeneratedNamesAndParamsOnTree(
+      buildSinglePlannerQuery("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN owner"))
 
-    // (owner)-[`  REL62`]-(`  NODE64`)
+    // (owner)-[anon_61]-(anon_63)
     val patternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("  owner@20")), Seq.empty, None)(pos),
-      RelationshipPattern(Some(varFor("  REL62")), Seq.empty, None, None, BOTH)(pos),
-      NodePattern(Some(varFor("  NODE64")), Seq.empty, None)(pos))(pos))(pos))(Set(varFor("  REL62"), varFor("  NODE64")))
+      NodePattern(Some(varFor("owner")), Seq.empty, None)(pos),
+      RelationshipPattern(Some(varFor("anon_61")), Seq.empty, None, None, BOTH)(pos),
+      NodePattern(Some(varFor("anon_63")), Seq.empty, None)(pos))(pos))(pos))(Set(varFor("anon_61"), varFor("anon_63")))
 
     val expectation = RegularSinglePlannerQuery(
-      queryGraph = QueryGraph(patternNodes = Set("  owner@7")),
+      queryGraph = QueryGraph(patternNodes = Set("owner")),
       horizon = AggregatingQueryProjection(
-        groupingExpressions = Map("  owner@20" -> varFor("  owner@7")),
+        groupingExpressions = Map("owner" -> varFor("owner")),
         aggregationExpressions = Map("collected" -> CountStar()(pos)),
-        selections = Selections(Set(Predicate(Set("  owner@20"),
+        selections = Selections(Set(Predicate(Set("owner"),
           exists(patternExpression))))),
       tail = Some(RegularSinglePlannerQuery(
-        queryGraph = QueryGraph(argumentIds = Set("collected", "  owner@20")),
-        horizon = RegularQueryProjection(projections = Map("  owner@20" -> varFor("  owner@20")))
+        queryGraph = QueryGraph(argumentIds = Set("collected", "owner")),
+        horizon = RegularQueryProjection(projections = Map("owner" -> varFor("owner")))
       ))
     )
 

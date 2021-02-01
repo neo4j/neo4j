@@ -29,7 +29,7 @@ class VariableTest extends CypherFunSuite {
 
       override def renameId(newName: String): LogicalVariable = ???
 
-      override def bumpId: LogicalVariable = ???
+      override def newUniqueVariable: LogicalVariable = ???
 
       override def position: InputPosition = ???
 

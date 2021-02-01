@@ -25,7 +25,7 @@ abstract class LogicalVariable extends Expression {
 
   def renameId(newName: String): LogicalVariable
 
-  def bumpId: LogicalVariable
+  def newUniqueVariable: LogicalVariable
 
   def position: InputPosition
 

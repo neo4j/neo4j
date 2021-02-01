@@ -207,8 +207,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
 
     def nextPosition(): InputPosition = {
       val current = pos
-      //this is not nice but we want to make sure don't collide with "real positions"
-      pos = pos.copy(offset = current.offset - 1)
+      pos = pos.newUniquePos()
       current
     }
   }

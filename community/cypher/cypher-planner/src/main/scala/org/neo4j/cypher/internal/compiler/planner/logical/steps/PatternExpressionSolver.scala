@@ -231,7 +231,7 @@ object PatternExpressionSolver {
 
     def solveUsingRollUpApply(source: LogicalPlan, expr: T, maybeKey: Option[String], context: LogicalPlanningContext): (LogicalPlan, Variable) = {
 
-      val key = maybeKey.getOrElse(FreshIdNameGenerator.name(expr.position.bumped()))
+      val key = maybeKey.getOrElse(FreshIdNameGenerator.name(expr.position))
       val subQueryPlan = planSubQuery(source, expr, context)
       val producedPlan = context.logicalPlanProducer.ForPatternExpressionSolver.planRollup(source,
         subQueryPlan.innerPlan,

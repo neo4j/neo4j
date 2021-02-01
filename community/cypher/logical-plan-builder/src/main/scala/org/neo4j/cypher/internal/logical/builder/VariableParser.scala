@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.logical.builder
 
 object VariableParser {
 
-  private val raw = "([a-zA-Z0-9]*)".r
+  private val raw = "([a-zA-Z0-9_]*)".r
   private val escaped = "`(.*)`".r
 
   def unescaped(varName: String): String = unapply(varName) match {

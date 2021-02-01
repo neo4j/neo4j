@@ -49,7 +49,7 @@ trait RewritePhaseTest {
       override def name: String = "do nothing"
     }
 
-  val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
+  val prettifier: Prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
 
   private val plannerName = new PlannerName {
     override def name: String = "fake"

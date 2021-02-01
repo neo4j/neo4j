@@ -19,98 +19,85 @@ package org.neo4j.cypher.internal.rewriting
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.rewriters.nameAllPatternElements
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class nameAllPatternElementsTest extends CypherFunSuite {
 
   private val exceptionFactory = OpenCypherExceptionFactory(None)
 
-  test("name all NodePatterns in Query") {
-    val original = parser.parse("MATCH (n)-[r:Foo]->() RETURN n", exceptionFactory)
-    val expected = parser.parse("MATCH (n)-[r:Foo]->(`  NODE20`) RETURN n", exceptionFactory)
+  private def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {
+    val original = parser.parse(originalQuery, exceptionFactory)
+    val expected = removeGeneratedNamesAndParamsOnTree(parser.parse(expectedQuery, exceptionFactory))
+    val result = removeGeneratedNamesAndParamsOnTree(original.rewrite(nameAllPatternElements))
 
-    val result = original.rewrite(nameAllPatternElements)
     assert(result === expected)
+  }
+
+  test("name all NodePatterns in Query") {
+    assertRewrite(
+      "MATCH (n)-[r:Foo]->() RETURN n",
+      "MATCH (n)-[r:Foo]->(`  NODE19`) RETURN n")
   }
 
   test("name all RelationshipPatterns in Query") {
-    val original = parser.parse("MATCH (n)-[:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n", exceptionFactory)
-    val expected = parser.parse("MATCH (n)-[`  REL10`:Foo]->(m) WHERE (n)-[`  REL32`:Bar]->(m) RETURN n", exceptionFactory)
-
-    val result = original.rewrite(nameAllPatternElements)
-    assert(result === expected)
+    assertRewrite(
+      "MATCH (n)-[:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n",
+    "MATCH (n)-[`  REL9`:Foo]->(m) WHERE (n)-[`  REL31`:Bar]->(m) RETURN n")
   }
 
   test("rename unnamed varlength paths") {
-    val original = parser.parse("MATCH (n)-[:Foo*]->(m) RETURN n", exceptionFactory)
-    val expected = parser.parse("MATCH (n)-[`  REL10`:Foo*]->(m) RETURN n", exceptionFactory)
-
-    val result = original.rewrite(nameAllPatternElements)
-    assert(result === expected)
+    assertRewrite(
+      "MATCH (n)-[:Foo*]->(m) RETURN n",
+    "MATCH (n)-[`  REL9`:Foo*]->(m) RETURN n")
   }
 
   test("match (a) create (a)-[:X]->() return a") {
-    val original = parser.parse("match (a) create (a)-[:X]->() return a", exceptionFactory)
-    val expected = parser.parse("match (a) create (a)-[`  REL21`:X]->(`  NODE28`) return a", exceptionFactory)
-
-    val result = original.rewrite(nameAllPatternElements)
-    assert(result === expected)
+    assertRewrite(
+      "match (a) create (a)-[:X]->() return a",
+    "match (a) create (a)-[`  REL20`:X]->(`  NODE27`) return a")
   }
 
   test("merge (a) merge p = (a)-[:R]->() return p") {
-    val original = parser.parse("merge (a) merge p = (a)-[:R]->() return p", exceptionFactory)
-    val expected = parser.parse("merge (a) merge p = (a)-[`  REL24`:R]->(`  NODE31`) return p", exceptionFactory)
-
-    val result = original.rewrite(nameAllPatternElements)
-    assert(result === expected)
+    assertRewrite(
+      "merge (a) merge p = (a)-[:R]->() return p",
+    "merge (a) merge p = (a)-[`  REL23`:R]->(`  NODE30`) return p")
   }
 
   test("merge (a)-[:R]->() return a") {
-    val original = parser.parse("merge (a)-[:R]->() return a", exceptionFactory)
-    val expected = parser.parse("merge (a)-[`  REL10`:R]->(`  NODE17`) return a", exceptionFactory)
-
-    val result = original.rewrite(nameAllPatternElements)
-    assert(result === expected)
+    assertRewrite(
+      "merge (a)-[:R]->() return a",
+    "merge (a)-[`  REL9`:R]->(`  NODE16`) return a")
   }
 
   test("does not touch parameters") {
-    val original = parser.parse("MATCH (n)-[r:Foo]->($p) RETURN n", exceptionFactory)
-    val expected = parser.parse("MATCH (n)-[r:Foo]->(`  NODE20` $p) RETURN n", exceptionFactory)
-
-    val result = original.rewrite(nameAllPatternElements)
-    assert(result === expected)
+    assertRewrite(
+      "MATCH (n)-[r:Foo]->($p) RETURN n",
+    "MATCH (n)-[r:Foo]->(`  NODE19` $p) RETURN n")
   }
 
   test("names all unnamed var length relationships") {
-    val original = parser.parse("MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *", exceptionFactory)
-    val expected = parser.parse("MATCH (a:Artist)-[`  REL17`:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *", exceptionFactory)
-
-    val result = original.rewrite(nameAllPatternElements)
-    assert(result === expected)
+    assertRewrite(
+      "MATCH (a:Artist)-[:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *",
+    "MATCH (a:Artist)-[`  REL16`:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *")
   }
 
   test("should name all pattern elements in a pattern comprehension") {
-    val original = parser.parse("RETURN [()-->() | 'foo'] AS foo", exceptionFactory)
-    val expected = parser.parse("RETURN [(`  NODE9`)-[`  REL11`]->(`  NODE14`) | 'foo'] AS foo", exceptionFactory)
-
-    val result = original.rewrite(nameAllPatternElements)
-    assert(result === expected)
+    assertRewrite(
+      "RETURN [()-->() | 'foo'] AS foo",
+    "RETURN [(`  NODE8`)-[`  REL10`]->(`  NODE13`) | 'foo'] AS foo")
   }
 
   test("should name all pattern elements in a pattern expressions") {
-    val original = parser.parse("MATCH (a) WHERE (a)-[:R]->()", exceptionFactory)
-    val expected = parser.parse("MATCH (a) WHERE (a)-[`  REL20`:R]->(`  NODE27`)", exceptionFactory)
-
-    val result = original.rewrite(nameAllPatternElements)
-    assert(result === expected)
+    assertRewrite(
+      "MATCH (a) WHERE (a)-[:R]->()",
+    "MATCH (a) WHERE (a)-[`  REL19`:R]->(`  NODE26`)")
   }
 
   test("should name all pattern elements in a EXISTS") {
-    val original = parser.parse("MATCH (a) WHERE EXISTS { MATCH (a)-[:R]->() }", exceptionFactory)
-    val expected = parser.parse("MATCH (a) WHERE EXISTS { MATCH (a)-[`  REL35`:R]->(`  NODE42`) }", exceptionFactory)
-
-    val result = original.rewrite(nameAllPatternElements)
-    assert(result === expected)
+    assertRewrite(
+      "MATCH (a) WHERE EXISTS { MATCH (a)-[:R]->() }",
+    "MATCH (a) WHERE EXISTS { MATCH (a)-[`  REL34`:R]->(`  NODE41`) }")
   }
 
   test("should not change names of already named things") {

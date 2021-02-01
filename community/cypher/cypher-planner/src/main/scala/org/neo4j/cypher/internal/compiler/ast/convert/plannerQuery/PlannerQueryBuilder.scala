@@ -137,7 +137,7 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
       val patternRelationships = qg.hints.collect {
         case r: RelationshipStartItem if !qg.patternRelationships.exists(_.name == r.name) =>
           val lNode = UnNamedNameGenerator.name(r.position)
-          val rNode = UnNamedNameGenerator.name(r.position.bumped())
+          val rNode = UnNamedNameGenerator.name(r.position.newUniquePos())
 
           PatternRelationship(r.name, (lNode, rNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
       }.toSeq
