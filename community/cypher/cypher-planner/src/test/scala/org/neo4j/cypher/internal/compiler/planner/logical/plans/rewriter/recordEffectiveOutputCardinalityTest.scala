@@ -19,25 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.compiler.ExecutionModel
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
-import org.neo4j.cypher.internal.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.logical.plans.Create
-import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
-import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
-import org.neo4j.cypher.internal.logical.plans.ProduceResult
+import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
-import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
-  val leafCardinality = 10
+  private val precision = 0.00001
+  private val leafCardinality = 10
 
   private def noAttributes(idGen: IdGen) = Attributes[LogicalPlan](idGen)
 
@@ -56,16 +56,20 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val (plan, cardinalities) = rewrite(initialPlan)
 
     // THEN
-    plan shouldEqual initialPlan.build() // assert that shape is the same
+    val expected = new LogicalPlanBuilder()
+      .produceResults("n").withCardinality(limit)
+      .limit(limit).withCardinality(limit)
+      .cartesianProduct().withCardinality(limit)
+      .|.allNodeScan("m").withCardinality(Math.sqrt(limit))
+      .allNodeScan("n").withCardinality(Math.sqrt(limit))
 
-    shouldIncludePlanWithCardinality[AllNodesScan](args = Seq("n"), cardinality = limit, plan, cardinalities, lessThan = true)
-    shouldIncludePlanWithCardinality[AllNodesScan](args = Seq("m"), cardinality = limit, plan, cardinalities, lessThan = true)
-    shouldIncludePlanWithCardinality[CartesianProduct](args = Seq(), cardinality = limit, plan, cardinalities)
-    shouldIncludePlanWithCardinality[Limit](args = Seq(), cardinality = limit, plan, cardinalities)
-    shouldIncludePlanWithCardinality[ProduceResult](args = Seq(), cardinality = limit, plan, cardinalities)
+    val expectedPlan = expected.build()
+    val expectedCards = expected.cardinalities
+
+    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
-  test("Should not update past earlier limit") {
+  test("Should favour lower limit") {
     // GIVEN
     val lowLimit = 2
     val highLimit = 8
@@ -82,13 +86,18 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val (plan, cardinalities) = rewrite(initialPlan)
 
     // THEN
-    plan shouldEqual initialPlan.build() // assert that shape is the same
+    val expected = new LogicalPlanBuilder()
+      .produceResults("n").withCardinality(lowLimit)
+      .limit(lowLimit).withCardinality(lowLimit)
+      .limit(highLimit).withCardinality(lowLimit)
+      .cartesianProduct().withCardinality(lowLimit)
+      .|.allNodeScan("m").withCardinality(Math.sqrt(lowLimit))
+      .allNodeScan("n").withCardinality(Math.sqrt(lowLimit))
 
-    shouldIncludePlanWithCardinality[AllNodesScan](args = Seq("n"), cardinality = leafCardinality, plan, cardinalities, lessThan = true)
-    shouldIncludePlanWithCardinality[AllNodesScan](args = Seq("m"), cardinality = leafCardinality, plan, cardinalities, lessThan = true)
-    shouldIncludePlanWithCardinality[CartesianProduct](args = Seq(), cardinality = lowLimit, plan, cardinalities)
-    shouldIncludePlanWithCardinality[Limit](args = Seq(), cardinality = lowLimit, plan, cardinalities)
-    shouldIncludePlanWithCardinality[ProduceResult](args = Seq(), cardinality = lowLimit, plan, cardinalities)
+    val expectedPlan = expected.build()
+    val expectedCards = expected.cardinalities
+
+    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
   test("Should update HashJoin correctly") {
@@ -105,13 +114,17 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val (plan, cardinalities) = rewrite(initialPlan)
 
     // THEN
-    plan shouldEqual initialPlan.build() // assert that shape is the same
+    val expected = new LogicalPlanBuilder()
+      .produceResults("n").withCardinality(limit)
+      .limit(limit).withCardinality(limit)
+      .nodeHashJoin("n").withCardinality(limit)
+      .|.allNodeScan("n").withCardinality(limit)
+      .allNodeScan("m").withCardinality(leafCardinality)
 
-    shouldIncludePlanWithCardinality[AllNodesScan](args = Seq("m"), cardinality = leafCardinality, plan, cardinalities)
-    shouldIncludePlanWithCardinality[AllNodesScan](args = Seq("n"), cardinality = leafCardinality, plan, cardinalities, lessThan = true)
-    shouldIncludePlanWithCardinality[NodeHashJoin](args = Seq(), cardinality = leafCardinality, plan, cardinalities, lessThan = true)
-    shouldIncludePlanWithCardinality[Limit](args = Seq(), cardinality = limit, plan, cardinalities)
-    shouldIncludePlanWithCardinality[ProduceResult](args = Seq(), cardinality = limit, plan, cardinalities)
+    val expectedPlan = expected.build()
+    val expectedCards = expected.cardinalities
+
+    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
   test("Updates under ExhaustiveLimit should have full cardinality") {
@@ -126,31 +139,174 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val (plan, cardinalities) = rewrite(initialPlan)
 
     // THEN
-    plan shouldEqual initialPlan.build() // assert that shape is the same
+    val expected = new LogicalPlanBuilder()
+      .produceResults("n").withCardinality(10)
+      .exhaustiveLimit(10).withCardinality(10)
+      .create(createNode("n", "N")).withCardinality(100)
+      .argument()
 
-    shouldIncludePlanWithCardinality[Create](args = Seq(), cardinality = 100, plan, cardinalities)
-    shouldIncludePlanWithCardinality[ExhaustiveLimit](args = Seq(), cardinality = 10, plan, cardinalities)
-    shouldIncludePlanWithCardinality[ProduceResult](args = Seq(), cardinality = 10, plan, cardinalities)
+    val expectedPlan = expected.build()
+    val expectedCards = expected.cardinalities
+
+    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
-  private def shouldIncludePlanWithCardinality[T <: LogicalPlan : Manifest](args: Seq[Any],
-                                                                            cardinality: Double,
-                                                                            plan: LogicalPlan,
-                                                                            effectiveCardinalities: EffectiveCardinalities,
-                                                                            lessThan: Boolean = false) = {
-    val maybePlan = plan.treeFind[LogicalPlan] { case p: T if args.forall(a => p.productIterator.contains(a)) => true }
+  test("Should multiply RHS of cartesian product") {
+    // GIVEN
+    val initialPlan = new LogicalPlanBuilder()
+      .produceResults("o")
+      .cartesianProduct().withCardinality(100)
+      .|.projection("n as `n`").withCardinality(10)
+      .|.allNodeScan("n").withCardinality(10)
+      .allNodeScan("o").withCardinality(10)
 
-    maybePlan should not be None
+    // WHEN
+    val (plan, cardinalities) = rewrite(initialPlan, ExecutionModel.Volcano)
 
-    if (lessThan) {
-      effectiveCardinalities(maybePlan.get.id) should be < EffectiveCardinality(cardinality)
-    } else {
-      effectiveCardinalities(maybePlan.get.id).amount shouldEqual cardinality
+    // THEN
+    val expected = new LogicalPlanBuilder()
+      .produceResults("o")
+      .cartesianProduct().withCardinality(100)
+      .|.projection("n as `n`").withCardinality(100)
+      .|.allNodeScan("n").withCardinality(100)
+      .allNodeScan("o").withCardinality(10)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.cardinalities
+
+    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+  test("Should multiple RHSs of nested cartesian product in slotted") {
+    // GIVEN
+    val initialPlan = new LogicalPlanBuilder()
+      .produceResults("m")
+      .cartesianProduct().withCardinality(1000)
+      .|.cartesianProduct().withCardinality(100)
+      .|.|.projection("m AS `m`").withCardinality(10)
+      .|.|.allNodeScan("m").withCardinality(10)
+      .|.allNodeScan("n").withCardinality(10)
+      .allNodeScan("o").withCardinality(10)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initialPlan, ExecutionModel.Volcano)
+
+    // THEN
+    val expected = new LogicalPlanBuilder()
+      .produceResults("m")
+      .cartesianProduct().withCardinality(1000)
+      .|.cartesianProduct().withCardinality(1000)
+      .|.|.projection("m AS `m`").withCardinality(1000)
+      .|.|.allNodeScan("m").withCardinality(1000)
+      .|.allNodeScan("n").withCardinality(100)
+      .allNodeScan("o").withCardinality(10)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.cardinalities
+
+    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+  test("Should multiple RHSs of nested cartesian product for batched execution") {
+    val batchSize = 4
+    // GIVEN
+    val initialPlan = new LogicalPlanBuilder()
+      .produceResults("m")
+      .cartesianProduct().withCardinality(1000)
+      .|.cartesianProduct().withCardinality(100)
+      .|.|.projection("m AS `m`").withCardinality(10)
+      .|.|.allNodeScan("m").withCardinality(10)
+      .|.allNodeScan("n").withCardinality(10)
+      .allNodeScan("o").withCardinality(10)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initialPlan, Batched(batchSize, batchSize))
+
+    // THEN
+    val expected = new LogicalPlanBuilder()
+      .produceResults("m")
+      .cartesianProduct().withCardinality(1000)
+      .|.cartesianProduct().withCardinality(300)
+      .|.|.projection("m AS `m`").withCardinality(90)
+      .|.|.allNodeScan("m").withCardinality(90)
+      .|.allNodeScan("n").withCardinality(30)
+      .allNodeScan("o").withCardinality(10)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.cardinalities
+
+    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+  test("Should multiple RHSs of nested cartesian product under limit for batched execution") {
+    // GIVEN
+    val initialPlan = new LogicalPlanBuilder()
+      .produceResults("m").withCardinality(1000)
+      .cartesianProduct().withCardinality(1000)
+      .|.cartesianProduct().withCardinality(100)
+      .|.|.projection("m AS `m`").withCardinality(10)
+      .|.|.allNodeScan("m").withCardinality(10)
+      .|.allNodeScan("n").withCardinality(10)
+      .allNodeScan("o").withCardinality(10)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initialPlan, Volcano)
+
+    // THEN
+
+    val expected = new LogicalPlanBuilder()
+      .produceResults("m").withCardinality(1000)
+      .cartesianProduct().withCardinality(1000)
+      .|.cartesianProduct().withCardinality(1000)
+      .|.|.projection("m AS `m`").withCardinality(1000)
+      .|.|.allNodeScan("m").withCardinality(1000)
+      .|.allNodeScan("n").withCardinality(100)
+      .allNodeScan("o").withCardinality(10)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.cardinalities
+
+    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+  def haveSameCardinalitiesAs(expected: (LogicalPlan, Cardinalities)): Matcher[(LogicalPlan, Cardinalities)] =
+    (actual: (LogicalPlan, Cardinalities)) => {
+      val (actPlan, actCards) = actual
+      val (expPlan, expCards) = expected
+      val planPairs = actPlan.flatten.zip(expPlan.flatten)
+
+      val planMismatch = planPairs.collectFirst {
+        case (act, exp) if act != exp =>
+          val actPlanString = LogicalPlanToPlanBuilderString(act)
+          val expPlanString = LogicalPlanToPlanBuilderString(exp)
+          MatchResult(
+            matches = false,
+            rawFailureMessage = s"Expected same plan structure but actual contained:\n$actPlanString\nand expected contained:\n$expPlanString",
+            rawNegatedFailureMessage = "")
+      }
+
+      val results = planPairs.map {
+        case (act, exp) =>
+          val actCard = actCards(act.id)
+          val expCard = expCards(exp.id)
+          val actPlanString = LogicalPlanToPlanBuilderString(act)
+          MatchResult(
+            matches = (actCard.amount - expCard.amount).abs < precision,
+            rawFailureMessage = s"Expected cardinality $expCard but was $actCard for plan:\n$actPlanString",
+            rawNegatedFailureMessage = "")
+      }
+
+      val cardinalityMismatch = results.find(!_.matches)
+      val ok = MatchResult(
+        matches = true,
+        rawFailureMessage = "",
+        rawNegatedFailureMessage = "")
+
+      (planMismatch orElse cardinalityMismatch) getOrElse ok
     }
-  }
 
-  private def rewrite(pb: LogicalPlanBuilder): (LogicalPlan, EffectiveCardinalities) = {
-    val plan = pb.build().endoRewrite(recordEffectiveOutputCardinality(pb.cardinalities, pb.effectiveCardinalities, noAttributes(pb.idGen)))
+  private def rewrite(pb: LogicalPlanBuilder, executionModel: ExecutionModel = ExecutionModel.default): (LogicalPlan, EffectiveCardinalities) = {
+    val plan = pb.build().endoRewrite(recordEffectiveOutputCardinality(executionModel, pb.cardinalities, pb.effectiveCardinalities, noAttributes(pb.idGen)))
     (plan, pb.effectiveCardinalities)
   }
 }

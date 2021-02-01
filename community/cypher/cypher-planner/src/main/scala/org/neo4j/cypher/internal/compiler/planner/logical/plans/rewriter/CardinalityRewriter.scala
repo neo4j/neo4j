@@ -43,7 +43,7 @@ case object CardinalityRewriter extends LogicalPlanRewriter with StepSequencer.S
                         effectiveCardinalities: EffectiveCardinalities,
                         providedOrders: ProvidedOrders,
                         otherAttributes: Attributes[LogicalPlan]): Rewriter =
-    recordEffectiveOutputCardinality(cardinalities, effectiveCardinalities, otherAttributes.withAlso(solveds, providedOrders))
+    recordEffectiveOutputCardinality(context.executionModel, cardinalities, effectiveCardinalities, otherAttributes.withAlso(solveds, providedOrders))
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // The rewriters operate on the LogicalPlan
