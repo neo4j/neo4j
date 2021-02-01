@@ -302,6 +302,12 @@ public class TestFabricTransaction implements InternalTransaction
     }
 
     @Override
+    public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key, String template, StringSearchMode searchMode )
+    {
+        return kernelInternalTransaction.findRelationships( relationshipType, key, template, searchMode );
+    }
+
+    @Override
     public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key, Object value )
     {
         return kernelInternalTransaction.findRelationships( relationshipType, key, value );

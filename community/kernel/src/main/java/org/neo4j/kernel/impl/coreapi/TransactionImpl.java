@@ -361,6 +361,12 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( myLabel.name() );
         int propertyId = tokenRead.propertyKey( key );
+        IndexQuery query = getIndexQuery( value, searchMode, propertyId );
+        return nodesByLabelAndProperty( transaction, labelId, query );
+    }
+
+    private IndexQuery getIndexQuery( String value, StringSearchMode searchMode, int propertyId )
+    {
         IndexQuery query;
         switch ( searchMode )
         {
@@ -379,7 +385,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         default:
             throw new IllegalStateException( "Unknown string search mode: " + searchMode );
         }
-        return nodesByLabelAndProperty( transaction, labelId, query );
+        return query;
     }
 
     @Override
@@ -461,6 +467,20 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                 }
             };
         };
+    }
+
+    @Override
+    public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key, String template, StringSearchMode searchMode )
+    {
+        checkRelationshipType( relationshipType );
+        checkPropertyKey( key );
+        checkArgument( template != null, "Template must not be null" );
+        KernelTransaction transaction = kernelTransaction();
+        TokenRead tokenRead = transaction.tokenRead();
+        int typeId = tokenRead.relationshipType( relationshipType.name() );
+        int propertyId = tokenRead.propertyKey( key );
+        IndexQuery query = getIndexQuery( template, searchMode, propertyId );
+        return relationshipsByTypeAndProperty( transaction, typeId, query );
     }
 
     @Override

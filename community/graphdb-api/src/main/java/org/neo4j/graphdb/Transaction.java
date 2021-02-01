@@ -374,13 +374,44 @@ public interface Transaction extends AutoCloseable
     ResourceIterator<Node> findNodes( Label label );
 
     /**
-     * Equivalent to {@link #findRelationships(RelationshipType, String, Object)}, however it must find no more than one
-     * {@link Relationship relationship} or it will throw an exception.
+     * Returns all {@link Relationship relationships} having the {@link RelationshipType type}, and a property value of type String or Character matching the
+     * given value template and search mode.
+     * <p>
+     * If an online index is found, it will be used to look up the requested
+     * relationships.
+     * If no indexes exist for the type/property combination, the database will
+     * scan all relationships of a specific type looking for matching property values.
+     * <p>
+     * The search mode and value template are used to select relationships of interest. The search mode can
+     * be one of
+     * <ul>
+     *   <li>EXACT: The value has to match the template exactly. This is the same behavior
+     *              as {@link Transaction#findRelationships(RelationshipType, String, Object)}.</li>
+     *   <li>PREFIX: The value must have a prefix matching the template.</li>
+     *   <li>SUFFIX: The value must have a suffix matching the template.</li>
+     *   <li>CONTAINS: The value must contain the template. Only exact matches are supported.</li>
+     * </ul>
+     * Note that in Neo4j the Character 'A' will be treated the same way as the String 'A'.
+     * <p>
+     * Please ensure that the returned {@link ResourceIterator} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
      *
      * @param relationshipType consider relationships with this type
-     * @param key   required property key
-     * @param value required property value
-     * @return the matching relatioonship or <code>null</code> if none could be found
+     * @param key              required property key
+     * @param template         required property value template
+     * @param searchMode       required property value template
+     * @return an iterator containing all matching relationships. See {@link ResourceIterator} for responsibilities.
+     */
+    ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key, String template, StringSearchMode searchMode );
+
+    /**
+     * Equivalent to {@link #findRelationships(RelationshipType, String, Object)}, however it must find no more than one {@link Relationship relationship} or it
+     * will throw an exception.
+     *
+     * @param relationshipType consider relationships with this type
+     * @param key              required property key
+     * @param value            required property value
+     * @return the matching relationship or <code>null</code> if none could be found
      * @throws MultipleFoundException if more than one matching {@link Relationship relationship} is found
      */
     Relationship findRelationship( RelationshipType relationshipType, String key, Object value );
@@ -404,8 +435,8 @@ public interface Transaction extends AutoCloseable
      * inside your transaction to avoid potential blocking of write operations.
      *
      * @param relationshipType consider relationships with this type
-     * @param key   required property key
-     * @param value required property value
+     * @param key              required property key
+     * @param value            required property value
      * @return an iterator containing all matching relationships. See {@link ResourceIterator} for responsibilities.
      */
     ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key, Object value );
