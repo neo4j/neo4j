@@ -43,7 +43,6 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -53,6 +52,7 @@ import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
+import org.neo4j.cypher.internal.logical.plans.EitherApply
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
@@ -73,7 +73,6 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
-import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
@@ -884,17 +883,14 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       """.stripMargin
 
     planFor(q)._2 should beLike {
-      case AntiConditionalApply(
-      Optional(
-               Selection(_,
-                         RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _) // Match part
-                        ), _
-              ),
-      MergeCreateNode(
-                      RollUpApply(
-                        Argument(SetExtractor()),
+      case EitherApply(
+            Selection(_,
+              RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _) // Match part
+            ),
+            MergeCreateNode(
+              RollUpApply(Argument(SetExtractor()),
                       _/* <- This is the subQuery */, _, _), _,_ ,_ // Create part
-                     ), _
+                     )
       ) => ()
     }
   }
@@ -908,17 +904,15 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     new given {
       addTypeToSemanticTable(varFor("r"), CTRelationship)
     }.getLogicalPlanFor(q)._2 should beLike {
-      case AntiConditionalApply(
-      Optional(
+      case EitherApply(
                Selection(_,
                        RollUpApply(
                           Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _) // Match part
-               ), _
-              ),
+               ),
       MergeCreateRelationship(
                       RollUpApply(
                                   _: MergeCreateNode, _/* <- This is the subQuery */, _, _), _,_ ,_, _, _ // Create part
-                     ), _
+                     )
       ) => ()
     }
   }

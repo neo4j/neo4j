@@ -22,21 +22,21 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
-import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
+import org.neo4j.cypher.internal.logical.plans.EitherApply
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
 import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.OnMatchApply
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
@@ -209,17 +209,17 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
     )
   }
 
-  test("ConditionalApply with update should eliminate provided order and cause planning Sort") {
+  test("OnMatchApply with update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "MERGE (x) ON MATCH SET x.prop = 1",
-      {case _:ConditionalApply  => true}
+      {case _:OnMatchApply  => true}
     )
   }
 
-  test("AntiConditionalApply with update should eliminate provided order and cause planning Sort") {
+  test("EitherApply with update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "MERGE (x) ON CREATE SET x.prop = 1",
-      {case _:AntiConditionalApply  => true}
+      {case _:EitherApply  => true}
     )
   }
 

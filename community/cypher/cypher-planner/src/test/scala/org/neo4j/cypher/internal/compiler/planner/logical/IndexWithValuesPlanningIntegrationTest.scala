@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.Aggregation
-import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.EitherApply
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.GetValue
@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
-import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
@@ -592,21 +591,19 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        AntiConditionalApply(
-          Optional(
-            NodeUniqueIndexSeek(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-              Seq(indexedProperty("prop", 0, GetValue)),
-              SingleQueryExpression(literalString("foo")),
-              Set.empty,
-              IndexOrderNone)
-          ),
+        EitherApply(
+          NodeUniqueIndexSeek(
+            "n",
+            LabelToken("Awesome", LabelId(0)),
+            Seq(indexedProperty("prop", 0, GetValue)),
+            SingleQueryExpression(literalString("foo")),
+            Set.empty,
+            IndexOrderNone),
           MergeCreateNode(
             Argument(Set()),
             "n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo"))))
-          ),
-          Seq("n")),
+          )
+        ),
         Map("n.prop" -> cachedNodeProp("n", "prop")))
     )
   }
@@ -618,21 +615,19 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        AntiConditionalApply(
-          Optional(
-            NodeUniqueIndexSeek(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-              Seq(indexedProperty("prop", 0, GetValue)),
-              SingleQueryExpression(literalString("foo")),
-              Set.empty,
-              IndexOrderNone)
-          ),
+        EitherApply(
+          NodeUniqueIndexSeek(
+            "n",
+            LabelToken("Awesome", LabelId(0)),
+            Seq(indexedProperty("prop", 0, GetValue)),
+            SingleQueryExpression(literalString("foo")),
+            Set.empty,
+            IndexOrderNone),
           MergeCreateNode(
             Argument(Set()),
             "n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo"))))
-          ),
-          Seq("n")),
+          )
+        ),
         Map("n.prop" -> cachedNodeProp("n", "prop")))
     )
   }
@@ -645,21 +640,19 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        AntiConditionalApply(
-          Optional(
-            NodeUniqueIndexSeek(
-              "n",
-              LabelToken("Awesome", LabelId(0)),
-              Seq(indexedProperty("prop", 0, DoNotGetValue)),
-              SingleQueryExpression(literalString("foo")),
-              Set.empty,
-              IndexOrderNone)
-          ),
+        EitherApply(
+          NodeUniqueIndexSeek(
+            "n",
+            LabelToken("Awesome", LabelId(0)),
+            Seq(indexedProperty("prop", 0, DoNotGetValue)),
+            SingleQueryExpression(literalString("foo")),
+            Set.empty,
+            IndexOrderNone),
           MergeCreateNode(
             Argument(Set()),
             "n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo"))))
-          ),
-          Seq("n")),
+          )
+        ),
         Map(propertyProj("n", "foo")))
     )
   }

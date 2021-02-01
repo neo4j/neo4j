@@ -22,25 +22,13 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
- * For every row in left, set that row as the argument, and produce all rows from right
- *
- * {{{
- * for ( leftRow <- left ) {
- *   right.setArgument( leftRow )
- *   for ( rightRow <- right ) {
- *     produce rightRow
- *   }
- * }
- * }}}
+ * OnMatchApply produces the left-hand side and for each produced row from the left-hand side it performs
+ * its right-hand side as a side-effect.
  */
-case class Apply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with ApplyPlan {
+case class OnMatchApply(input: LogicalPlan, onMatch: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with ApplyPlan {
+  override def lhs: Option[LogicalPlan] = Some(input)
 
-  val lhs: Option[LogicalPlan] = Some(left)
-  val rhs: Option[LogicalPlan] = Some(right)
+  override def rhs: Option[LogicalPlan] = Some(onMatch)
 
-  def createNew(left: LogicalPlan, right: LogicalPlan, idGen: IdGen): Apply =
-    Apply(left, right)(idGen)
-
-  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
+  override def availableSymbols: Set[String] = input.availableSymbols ++ onMatch.availableSymbols
 }

@@ -108,6 +108,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
+import org.neo4j.cypher.internal.logical.plans.EitherApply
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
@@ -141,6 +142,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.OnMatchApply
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
@@ -310,6 +312,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     // We don't want to keep the arguments that this Apply is inserting on the RHS, so we remove them here.
     val rhsSolved = solveds.get(right.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.withArgumentIds(Set.empty)))
     val solved = solveds.get(left.id).asSinglePlannerQuery ++ rhsSolved
+    val plan = Apply(left, right)
+    val providedOrder = providedOrderOfApply(left, right)
+    annotate(plan, solved, providedOrder, context)
+  }
+
+  //As of now this plans a normal apply, however that will be subject to change
+  def planMergeApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext, solved: SinglePlannerQuery): LogicalPlan = {
     val plan = Apply(left, right)
     val providedOrder = providedOrderOfApply(left, right)
     annotate(plan, solved, providedOrder, context)
@@ -1196,6 +1205,18 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(plan, solved, providedOrder, context)
   }
 
+  def planOnMatch(read: LogicalPlan, onMatch: LogicalPlan, context: LogicalPlanningContext): OnMatchApply = {
+    val solved = solveds.get(read.id).asSinglePlannerQuery ++ solveds.get(onMatch.id).asSinglePlannerQuery
+    val providedOrder = providedOrders.get(read.id).fromLeft
+    annotate(OnMatchApply(read, onMatch), solved, providedOrder, context)
+  }
+
+  def planEither(read: LogicalPlan, writePlan: LogicalPlan, context: LogicalPlanningContext): EitherApply = {
+    val solved = solveds.get(read.id).asSinglePlannerQuery ++ solveds.get(writePlan.id).asSinglePlannerQuery
+    val providedOrder = providedOrders.get(read.id).fromLeft
+    annotate(EitherApply(read, writePlan), solved, providedOrder, context)
+  }
+
   def planMergeCreateNode(inner: LogicalPlan, pattern: CreateNode, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(CreatePattern(List(pattern), Nil)))
     val (rewrittenPattern, rewrittenInner) = PatternExpressionSolver.ForMappable().solve(inner, pattern, context)
@@ -1224,6 +1245,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val providedOrder = providedOrderOfApply(lhs, rhs)
     annotate(AntiConditionalApply(lhs, rhs, idNames), solved, providedOrder, context)
   }
+
 
   def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(delete))
@@ -1418,7 +1440,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
    *
    * @return the same plan
    */
-  private def annotate(plan: LogicalPlan, solved: PlannerQueryPart, providedOrder: ProvidedOrder, context: LogicalPlanningContext): LogicalPlan = {
+  private def annotate[T <: LogicalPlan](plan: T, solved: PlannerQueryPart, providedOrder: ProvidedOrder, context: LogicalPlanningContext): T = {
     assertNoBadExpressionsExists(plan)
     assertRhsDoesNotInvalidateLhsOrder(plan, providedOrder)
     val cardinality = cardinalityModel(solved, context.input, context.semanticTable)
