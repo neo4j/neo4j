@@ -42,4 +42,6 @@ case class MergeCreateNode(source: LogicalPlan, idName: String, labels: Seq[Labe
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): MergeCreateNode = copy(source = source)
 }

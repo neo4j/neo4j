@@ -40,4 +40,6 @@ case class MergeCreateRelationship(source: LogicalPlan, idName: String, startNod
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): MergeCreateRelationship = copy(source = source)
 }

@@ -731,9 +731,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     planFor(q)._2 should beLike {
       case EmptyResult(
-        Apply(_,
-          DeleteExpression(_, ContainerIndex(Variable("rels"), FunctionInvocation(_, _, _, Vector(ReduceExpression(_, _, NestedPlanExpression(_, _))))
-      )))) => ()
+        DeleteExpression(_, ContainerIndex(Variable("rels"), FunctionInvocation(_, _, _, Vector(ReduceExpression(_, _, NestedPlanExpression(_, _))))
+      ))) => ()
     }
   }
 
