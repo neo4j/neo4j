@@ -37,4 +37,6 @@ case class DetachDeleteExpression(source: LogicalPlan, expression: Expression)(i
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): DetachDeleteExpression = copy(source = source)
 }

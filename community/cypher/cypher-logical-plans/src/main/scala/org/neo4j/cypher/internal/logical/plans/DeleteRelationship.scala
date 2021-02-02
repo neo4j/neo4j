@@ -35,4 +35,6 @@ case class DeleteRelationship(source: LogicalPlan, expression: Expression)(impli
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): DeleteRelationship = copy(source = source)
 }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.expressions.LabelName
 
 /**
  * For each source row, add the labels in 'labelNamed' to the node 'idName'.
@@ -36,4 +36,6 @@ case class SetLabels(source: LogicalPlan, idName: String, labelNames: Seq[LabelN
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): SetLabels = copy(source = source)
 }
