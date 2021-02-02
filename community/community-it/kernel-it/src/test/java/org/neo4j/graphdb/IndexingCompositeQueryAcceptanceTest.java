@@ -34,202 +34,224 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.schema.IndexCreator;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
 
-@ImpermanentDbmsExtension
+@ImpermanentDbmsExtension( configurationCallback = "configure" )
 public class IndexingCompositeQueryAcceptanceTest
 {
     @Inject
     private GraphDatabaseAPI db;
 
-    public static Stream<Arguments> data()
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        return Stream.of(
-                testCase( array( 2, 3 ), biIndexSeek, true ),
-                testCase( array( 2, 3 ), biIndexSeek, false ),
-                testCase( array( 2, 3, 4 ), triIndexSeek, true ),
-                testCase( array( 2, 3, 4 ), triIndexSeek, false ),
-                testCase( array( 2, 3, 4, 5, 6 ), mapIndexSeek, true ),
-                testCase( array( 2, 3, 4, 5, 6 ), mapIndexSeek, false )
-        );
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
     }
 
-    private static final Label LABEL = Label.label( "LABEL1" );
-
-    public void setup( boolean withIndex, String[] keys )
+    public static Stream<Arguments> data()
     {
-        if ( withIndex )
-        {
-            try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-            {
-                tx.schema().indexFor( LABEL ).on( keys[0] ).create();
+        return generate( DataSet.values(), array( IndexingMode.PROPERTY, IndexingMode.TOKEN ), EntityTypes.values() );
+    }
 
-                IndexCreator indexCreator = tx.schema().indexFor( LABEL );
-                for ( String key : keys )
+    private static Stream<Arguments> generate( DataSet[] dataSets, IndexingMode[] indexingModes, EntityControl[] entityControls )
+    {
+        Stream.Builder<Arguments> builder = Stream.builder();
+        for ( DataSet dataSet : dataSets )
+        {
+            for ( IndexingMode indexingMode : indexingModes )
+            {
+                for ( EntityControl enityControl : entityControls )
                 {
-                    indexCreator = indexCreator.on( key );
+                    builder.add( arguments( dataSet, indexingMode, enityControl ) );
                 }
-                indexCreator.create();
+            }
+        }
+        return builder.build();
+    }
+
+    public static final String TOKEN_NAME = "TOKEN1";
+
+    public void createIndex( IndexingMode withIndex, String[] keys, EntityControl entityControl )
+    {
+        switch ( withIndex )
+        {
+        case PROPERTY:
+            try ( Transaction tx = db.beginTx() )
+            {
+                entityControl.createIndex( tx, TOKEN_NAME, keys );
                 tx.commit();
             }
 
-            try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+            try ( Transaction tx = db.beginTx() )
             {
                 tx.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
                 tx.commit();
             }
+            break;
+        case TOKEN:
+        case NONE:
+        default:
+            break;
         }
     }
 
-    @ParameterizedTest
+    @ParameterizedTest( name = "shouldSupportIndexSeek using {0} with {1} index for {2}" )
     @MethodSource( "data" )
-    public void shouldSupportIndexSeek( String[] keys, Object[] values, Object[][] nonMatching, IndexSeek indexSeek, boolean withIndex )
+    public void shouldSupportIndexSeek( DataSet dataSet, IndexingMode withIndex, EntityControl entityControl )
     {
-        setup( withIndex, keys );
+        createIndex( withIndex, dataSet.keys, entityControl );
 
         // GIVEN
-        createNodes( db, LABEL, keys, nonMatching );
-        LongSet expected = createNodes( db, LABEL, keys, values );
+        createEntities( db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.nonMatching );
+        LongSet expected = createEntities( db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.values );
 
         // WHEN
-        MutableLongSet found = new LongHashSet();
+        LongSet found;
         try ( Transaction tx = db.beginTx() )
         {
-            collectNodes( found, indexSeek.findNodes( keys, values, db, tx ) );
+            found = dataSet.indexSeek.findEntities( tx, dataSet.keys, dataSet.values, entityControl );
         }
 
         // THEN
         assertThat( found ).isEqualTo( expected );
     }
 
-    @ParameterizedTest
+    @ParameterizedTest( name = "shouldSupportIndexSeekBackwardsOrder using {0} with {1} index for {2}" )
     @MethodSource( "data" )
-    public void shouldSupportIndexSeekBackwardsOrder( String[] keys, Object[] values, Object[][] nonMatching, IndexSeek indexSeek, boolean withIndex )
+    public void shouldSupportIndexSeekBackwardsOrder( DataSet dataSet, IndexingMode withIndex,
+                                                      EntityControl entityControl )
     {
-        setup( withIndex, keys );
+        createIndex( withIndex, dataSet.keys, entityControl );
 
         // GIVEN
-        createNodes( db, LABEL, keys, nonMatching );
-        LongSet expected = createNodes( db, LABEL, keys, values );
+        createEntities( db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.nonMatching );
+        LongSet expected = createEntities( db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.values );
 
         // WHEN
-        MutableLongSet found = new LongHashSet();
-        String[] reversedKeys = new String[keys.length];
-        Object[] reversedValues = new Object[keys.length];
-        for ( int i = 0; i < keys.length; i++ )
+        LongSet found;
+        String[] reversedKeys = new String[dataSet.keys.length];
+        Object[] reversedValues = new Object[dataSet.keys.length];
+        for ( int i = 0; i < dataSet.keys.length; i++ )
         {
-            reversedValues[keys.length - 1 - i] = values[i];
-            reversedKeys[keys.length - 1 - i] = keys[i];
+            reversedValues[dataSet.keys.length - 1 - i] = dataSet.values[i];
+            reversedKeys[dataSet.keys.length - 1 - i] = dataSet.keys[i];
         }
         try ( Transaction tx = db.beginTx() )
         {
-            collectNodes( found, indexSeek.findNodes( reversedKeys, reversedValues, db, tx ) );
+            found = dataSet.indexSeek.findEntities( tx, reversedKeys, reversedValues, entityControl );
         }
 
         // THEN
         assertThat( found ).isEqualTo( expected );
     }
 
-    @ParameterizedTest
+    @ParameterizedTest( name = "shouldIncludeEntitiesCreatedInSameTxInIndexSeek using {0} with {1} index for {2}" )
     @MethodSource( "data" )
-    public void shouldIncludeNodesCreatedInSameTxInIndexSeek( String[] keys, Object[] values, Object[][] nonMatching, IndexSeek indexSeek, boolean withIndex )
+    public void shouldIncludeEntitiesCreatedInSameTxInIndexSeek( DataSet dataSet, IndexingMode withIndex,
+                                                                 EntityControl entityControl )
     {
-        setup( withIndex, keys );
+        createIndex( withIndex, dataSet.keys, entityControl );
 
         // GIVEN
-        createNodes( db, LABEL, keys, nonMatching[0], nonMatching[1] );
-        MutableLongSet expected = createNodes( db, LABEL, keys, values );
+        createEntities( db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.nonMatching[0], dataSet.nonMatching[1] );
+        MutableLongSet expected = createEntities( db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.values );
         // WHEN
-        MutableLongSet found = new LongHashSet();
+        LongSet found;
         try ( Transaction tx = db.beginTx() )
         {
-            expected.add( createNode( tx, propertyMap( keys, values ), LABEL ).getId() );
-            createNode( tx, propertyMap( keys, nonMatching[2] ), LABEL );
+            expected.add( entityControl.createEntity( tx, TOKEN_NAME, propertyMap( dataSet.keys, dataSet.values ) ) );
+            entityControl.createEntity( tx, TOKEN_NAME, propertyMap( dataSet.keys, dataSet.nonMatching[2] ) );
 
-            collectNodes( found, indexSeek.findNodes( keys, values, db, tx ) );
+            found = dataSet.indexSeek.findEntities( tx, dataSet.keys, dataSet.values, entityControl );
         }
         // THEN
         assertThat( found ).isEqualTo( expected );
     }
 
-    @ParameterizedTest
+    @ParameterizedTest( name = "shouldNotIncludeEntitiesDeletedInSameTxInIndexSeek using {0} with {1} index for {2}" )
     @MethodSource( "data" )
-    public void shouldNotIncludeNodesDeletedInSameTxInIndexSeek( String[] keys, Object[] values, Object[][] nonMatching, IndexSeek indexSeek,
-            boolean withIndex )
+    public void shouldNotIncludeEntitiesDeletedInSameTxInIndexSeek( DataSet dataSet,
+                                                                    IndexingMode withIndex, EntityControl entityControl )
     {
-        setup( withIndex, keys );
+        createIndex( withIndex, dataSet.keys, entityControl );
 
         // GIVEN
-        createNodes( db, LABEL, keys, nonMatching[0] );
-        LongSet toDelete = createNodes( db, LABEL, keys, values, nonMatching[1], nonMatching[2] );
-        MutableLongSet expected = createNodes( db, LABEL, keys, values );
+        createEntities( db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.nonMatching[0] );
+        LongSet toDelete = createEntities( db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.values, dataSet.nonMatching[1], dataSet.nonMatching[2] );
+        MutableLongSet expected = createEntities( db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.values );
         // WHEN
-        MutableLongSet found = new LongHashSet();
+        LongSet found;
         try ( Transaction tx = db.beginTx() )
         {
             LongIterator deleting = toDelete.longIterator();
             while ( deleting.hasNext() )
             {
                 long id = deleting.next();
-                tx.getNodeById( id ).delete();
+                entityControl.deleteEntity( tx, id );
                 expected.remove( id );
             }
 
-            collectNodes( found, indexSeek.findNodes( keys, values, db, tx ) );
+            found = dataSet.indexSeek.findEntities( tx, dataSet.keys, dataSet.values, entityControl );
         }
         // THEN
         assertThat( found ).isEqualTo( expected );
     }
 
-    @ParameterizedTest
+    @ParameterizedTest( name = "shouldConsiderEntitiesChangedInSameTxInIndexSeek using {0} with {1} index for {2}" )
     @MethodSource( "data" )
-    public void shouldConsiderNodesChangedInSameTxInIndexSeek( String[] keys, Object[] values, Object[][] nonMatching, IndexSeek indexSeek, boolean withIndex )
+    public void shouldConsiderEntitiesChangedInSameTxInIndexSeek( DataSet dataSet, IndexingMode withIndex,
+                                                                  EntityControl entityControl )
     {
-        setup( withIndex, keys );
+        createIndex( withIndex, dataSet.keys, entityControl );
 
         // GIVEN
-        createNodes( db, LABEL, keys, nonMatching[0] );
-        LongSet toChangeToMatch = createNodes( db, LABEL, keys, nonMatching[1] );
-        LongSet toChangeToNotMatch = createNodes( db, LABEL, keys, values );
-        MutableLongSet expected = createNodes( db, LABEL, keys, values );
+        createEntities( db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.nonMatching[0] );
+        LongSet toChangeToMatch = createEntities( db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.nonMatching[1] );
+        LongSet toChangeToNotMatch = createEntities( db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.values );
+        MutableLongSet expected = createEntities( db, entityControl, TOKEN_NAME, dataSet.keys, dataSet.values );
         // WHEN
-        MutableLongSet found = new LongHashSet();
+        LongSet found;
         try ( Transaction tx = db.beginTx() )
         {
             LongIterator toMatching = toChangeToMatch.longIterator();
             while ( toMatching.hasNext() )
             {
                 long id = toMatching.next();
-                setProperties( tx, id, keys, values );
+                entityControl.setProperties( tx, id, dataSet.keys, dataSet.values );
                 expected.add( id );
             }
             LongIterator toNotMatching = toChangeToNotMatch.longIterator();
             while ( toNotMatching.hasNext() )
             {
                 long id = toNotMatching.next();
-                setProperties( tx, id, keys, nonMatching[2] );
+                entityControl.setProperties( tx, id, dataSet.keys, dataSet.nonMatching[2] );
                 expected.remove( id );
             }
 
-            collectNodes( found, indexSeek.findNodes( keys, values, db, tx ) );
+            found = dataSet.indexSeek.findEntities( tx, dataSet.keys, dataSet.values, entityControl );
         }
         // THEN
         assertThat( found ).isEqualTo( expected );
     }
 
-    private MutableLongSet createNodes( GraphDatabaseService db, Label label, String[] keys, Object[]... propertyValueTuples )
+    private MutableLongSet createEntities( GraphDatabaseService db, EntityControl entityControl,
+                                           String label, String[] keys, Object[]... propertyValueTuples )
     {
         MutableLongSet expected = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
         {
             for ( Object[] valueTuple : propertyValueTuples )
             {
-                expected.add( createNode( tx, propertyMap( keys, valueTuple ), label ).getId() );
+                expected.add( entityControl.createEntity( tx, label, propertyMap( keys, valueTuple ) ) );
             }
             tx.commit();
         }
@@ -246,32 +268,7 @@ public class IndexingCompositeQueryAcceptanceTest
         return propertyValues;
     }
 
-    private void collectNodes( MutableLongSet bucket, ResourceIterator<Node> toCollect )
-    {
-        while ( toCollect.hasNext() )
-        {
-            bucket.add( toCollect.next().getId() );
-        }
-    }
-
-    public Node createNode( Transaction transaction, Map<String, Object> properties, Label... labels )
-    {
-        Node node = transaction.createNode( labels );
-        for ( Map.Entry<String,Object> property : properties.entrySet() )
-        {
-            node.setProperty( property.getKey(), property.getValue() );
-        }
-        return node;
-    }
-
-    private static Arguments testCase( Integer[] values, IndexSeek indexSeek, boolean withIndex )
-    {
-        Object[][] nonMatching = {plus( values, 1 ), plus( values, 2 ), plus( values, 3 )};
-        String[] keys = Arrays.stream( values ).map( v -> "key" + v ).toArray( String[]::new );
-        return Arguments.of( keys, values, nonMatching, indexSeek, withIndex );
-    }
-
-    private static <T> Object[] plus( Integer[] values, int offset )
+    private static Object[] plus( Integer[] values, int offset )
     {
         Object[] result = new Object[values.length];
         for ( int i = 0; i < values.length; i++ )
@@ -281,36 +278,199 @@ public class IndexingCompositeQueryAcceptanceTest
         return result;
     }
 
-    private void setProperties( Transaction tx, long id, String[] keys, Object[] values )
-    {
-        Node node = tx.getNodeById( id );
-        for ( int i = 0; i < keys.length; i++ )
-        {
-            node.setProperty( keys[i], values[i] );
-        }
-    }
-
     private interface IndexSeek
     {
-        ResourceIterator<Node> findNodes( String[] keys, Object[] values, GraphDatabaseService db, Transaction tx );
+        LongSet findEntities( Transaction tx, String[] keys, Object[] values, EntityControl entityControl );
     }
 
     private static final IndexSeek biIndexSeek =
-            ( keys, values, db, tx ) ->
+            ( tx, keys, values, entityControl ) ->
             {
                 assert keys.length == 2;
                 assert values.length == 2;
-                return tx.findNodes( LABEL, keys[0], values[0], keys[1], values[1] );
+                return entityControl.findEntities( tx, TOKEN_NAME, keys[0], values[0], keys[1], values[1] );
             };
 
     private static final IndexSeek triIndexSeek =
-            ( keys, values, db, tx ) ->
+            ( tx, keys, values, entityControl ) ->
             {
                 assert keys.length == 3;
                 assert values.length == 3;
-                return tx.findNodes( LABEL, keys[0], values[0], keys[1], values[1], keys[2], values[2] );
+                return entityControl.findEntities( tx, TOKEN_NAME, keys[0], values[0], keys[1], values[1], keys[2], values[2] );
             };
 
     private static final IndexSeek mapIndexSeek =
-            ( keys, values, db, tx ) -> tx.findNodes( LABEL, propertyMap( keys, values ) );
+            ( tx, keys, values, entityControl ) -> entityControl.findEntities( tx, TOKEN_NAME, propertyMap( keys, values ) );
+
+    private enum IndexingMode
+    {
+        NONE, // to be used when NLSS and RTSS become optional
+        TOKEN, // NLSS or RTSS only
+        PROPERTY // property index
+    }
+
+    enum DataSet
+    {
+        BI_SEEK( array( 2, 3 ), biIndexSeek ),
+        TRI_SEEK( array( 2, 3, 4 ), triIndexSeek ),
+        MAP_SEEK( array( 2, 3, 4, 5, 6 ), mapIndexSeek );
+
+        String[] keys;
+        Object[] values;
+        Object[][] nonMatching;
+        IndexSeek indexSeek;
+
+        DataSet( Integer[] values, IndexSeek indexSeek )
+        {
+            this.values = values;
+            this.indexSeek = indexSeek;
+            this.nonMatching = array( plus( values, 1 ), plus( values, 2 ), plus( values, 3 ) );
+            this.keys = Arrays.stream( values ).map( v -> "key" + v ).toArray( String[]::new );
+        }
+    }
+
+    private interface EntityControl
+    {
+
+        void createIndex( Transaction tx, String tokenName, String[] keys );
+
+        long createEntity( Transaction tx, String token, Map<String,Object> properties );
+
+        void deleteEntity( Transaction tx, long id );
+
+        void setProperties( Transaction tx, long id, String[] keys, Object[] values );
+
+        LongSet findEntities( Transaction tx, String token, String key1, Object value1, String key2, Object value2 );
+
+        LongSet findEntities( Transaction tx, String token, String key1, Object value1, String key2, Object value2, String key3, Object value3 );
+
+        LongSet findEntities( Transaction tx, String token, Map<String,Object> propertyValues );
+    }
+
+    private enum EntityTypes implements EntityControl
+    {
+        NODE
+                {
+                    @Override
+                    public void createIndex( Transaction tx, String tokenName, String[] keys )
+                    {
+                        IndexCreator indexCreator = tx.schema().indexFor( Label.label( tokenName ) );
+                        for ( String key : keys )
+                        {
+                            indexCreator = indexCreator.on( key );
+                        }
+                        indexCreator.create();
+                    }
+
+                    @Override
+                    public long createEntity( Transaction tx, String token, Map<String,Object> properties )
+                    {
+                        Node node = tx.createNode( Label.label( token ) );
+                        properties.forEach( node::setProperty );
+                        return node.getId();
+                    }
+
+                    @Override
+                    public void deleteEntity( Transaction tx, long id )
+                    {
+                        tx.getNodeById( id ).delete();
+                    }
+
+                    @Override
+                    public void setProperties( Transaction tx, long id, String[] keys, Object[] values )
+                    {
+                        Node node = tx.getNodeById( id );
+                        for ( int i = 0; i < keys.length; i++ )
+                        {
+                            node.setProperty( keys[i], values[i] );
+                        }
+                    }
+
+                    @Override
+                    public LongSet findEntities( Transaction tx, String token, String key1, Object value1, String key2, Object value2 )
+                    {
+                        return mapToIds( tx.findNodes( Label.label( token ), key1, value1, key2, value2 ) );
+                    }
+
+                    @Override
+                    public LongSet findEntities( Transaction tx, String token, String key1, Object value1, String key2, Object value2, String key3,
+                                                 Object value3 )
+                    {
+                        return mapToIds( tx.findNodes( Label.label( token ), key1, value1, key2, value2, key3, value3 ) );
+                    }
+
+                    @Override
+                    public LongSet findEntities( Transaction tx, String token, Map<String,Object> propertyValues )
+                    {
+                        return mapToIds( tx.findNodes( Label.label( token ), propertyValues ) );
+                    }
+                },
+        RELATIONSHIP
+                {
+                    @Override
+                    public void createIndex( Transaction tx, String tokenName, String[] keys )
+                    {
+                        IndexCreator indexCreator = tx.schema().indexFor( RelationshipType.withName( tokenName ) );
+                        for ( String key : keys )
+                        {
+                            indexCreator = indexCreator.on( key );
+                        }
+                        indexCreator.create();
+                    }
+
+                    @Override
+                    public long createEntity( Transaction tx, String token, Map<String,Object> properties )
+                    {
+                        Node from = tx.createNode( Label.label( "node" ) );
+                        Node to = tx.createNode( Label.label( "node" ) );
+                        Relationship rel = from.createRelationshipTo( to, RelationshipType.withName( token ) );
+                        properties.forEach( rel::setProperty );
+                        return rel.getId();
+                    }
+
+                    @Override
+                    public void deleteEntity( Transaction tx, long id )
+                    {
+                        tx.getRelationshipById( id ).delete();
+                    }
+
+                    @Override
+                    public void setProperties( Transaction tx, long id, String[] keys, Object[] values )
+                    {
+                        Relationship rel = tx.getRelationshipById( id );
+                        for ( int i = 0; i < keys.length; i++ )
+                        {
+                            rel.setProperty( keys[i], values[i] );
+                        }
+                    }
+
+                    @Override
+                    public LongSet findEntities( Transaction tx, String token, String key1, Object value1, String key2, Object value2 )
+                    {
+                        return mapToIds( tx.findRelationships( RelationshipType.withName( token ), key1, value1, key2, value2 ) );
+                    }
+
+                    @Override
+                    public LongSet findEntities( Transaction tx, String token, String key1, Object value1, String key2, Object value2, String key3,
+                                                 Object value3 )
+                    {
+                        return mapToIds( tx.findRelationships( RelationshipType.withName( token ), key1, value1, key2, value2, key3, value3 ) );
+                    }
+
+                    @Override
+                    public LongSet findEntities( Transaction tx, String token, Map<String,Object> propertyValues )
+                    {
+                        return mapToIds( tx.findRelationships( RelationshipType.withName( token ), propertyValues ) );
+                    }
+                }
+    }
+
+    private static LongSet mapToIds( ResourceIterator<? extends Entity> nodes )
+    {
+        MutableLongSet found = new LongHashSet();
+        nodes.stream()
+             .mapToLong( Entity::getId )
+             .forEach( found::add );
+        return found;
+    }
 }

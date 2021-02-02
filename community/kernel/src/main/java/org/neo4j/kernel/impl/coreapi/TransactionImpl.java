@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
@@ -60,6 +61,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
@@ -99,6 +101,7 @@ import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.stream;
 import static java.util.Collections.emptyMap;
 import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
@@ -427,12 +430,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         KernelTransaction transaction = kernelTransaction();
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( label.name() );
-        IndexQuery.ExactPredicate[] queries = new IndexQuery.ExactPredicate[propertyValues.size()];
-        int i = 0;
-        for ( Map.Entry<String,Object> entry : propertyValues.entrySet() )
-        {
-            queries[i++] = IndexQuery.exact( tokenRead.propertyKey( entry.getKey() ), Values.of( entry.getValue(), false ) );
-        }
+        IndexQuery.ExactPredicate[] queries = convertToQueries( propertyValues, tokenRead );
         return nodesByLabelAndProperties( transaction, labelId, queries );
     }
 
@@ -481,6 +479,49 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         int propertyId = tokenRead.propertyKey( key );
         IndexQuery query = getIndexQuery( template, searchMode, propertyId );
         return relationshipsByTypeAndProperty( transaction, typeId, query );
+    }
+
+    @Override
+    public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, Map<String,Object> propertyValues )
+    {
+        checkRelationshipType( relationshipType );
+        checkArgument( propertyValues != null, "Property values can not be null" );
+        KernelTransaction transaction = kernelTransaction();
+        TokenRead tokenRead = transaction.tokenRead();
+        int typeId = tokenRead.relationshipType( relationshipType.name() );
+        IndexQuery.ExactPredicate[] queries = convertToQueries( propertyValues, tokenRead );
+        return relationshipsByTypeAndProperties( transaction, typeId, queries );
+    }
+
+    @Override
+    public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key1, Object value1, String key2, Object value2,
+                                                             String key3, Object value3 )
+    {
+        checkRelationshipType( relationshipType );
+        checkPropertyKey( key1 );
+        checkPropertyKey( key2 );
+        checkPropertyKey( key3 );
+        KernelTransaction transaction = kernelTransaction();
+        TokenRead tokenRead = transaction.tokenRead();
+        int typeId = tokenRead.relationshipType( relationshipType.name() );
+        return relationshipsByTypeAndProperties( transaction, typeId,
+                                                 IndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1, false ) ),
+                                                 IndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2, false ) ),
+                                                 IndexQuery.exact( tokenRead.propertyKey( key3 ), Values.of( value3, false ) ) );
+    }
+
+    @Override
+    public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key1, Object value1, String key2, Object value2 )
+    {
+        checkRelationshipType( relationshipType );
+        checkPropertyKey( key1 );
+        checkPropertyKey( key2 );
+        KernelTransaction transaction = kernelTransaction();
+        TokenRead tokenRead = transaction.tokenRead();
+        int typeId = tokenRead.relationshipType( relationshipType.name() );
+        return relationshipsByTypeAndProperties( transaction, typeId,
+                                                 IndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1, false ) ),
+                                                 IndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2, false ) ) );
     }
 
     @Override
@@ -872,7 +913,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         }
 
         int[] propertyIds = getPropertyIds( queries );
-        IndexDescriptor index = findMatchingIndex( transaction, labelId, propertyIds );
+        IndexDescriptor index = findMatchingCompositeIndex( transaction, SchemaDescriptor.forLabel( labelId, propertyIds ), propertyIds,
+                                                            () -> transaction.schemaRead().indexesGetForLabel( labelId ) );
 
         if ( index != IndexDescriptor.NO_INDEX )
         {
@@ -939,17 +981,55 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return new RelationshipCursorResourceIterator<>( cursor, this::newRelationshipEntity );
     }
 
-    private static IndexDescriptor findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )
+    private ResourceIterator<Relationship> relationshipsByTypeAndProperties( KernelTransaction tx, int typeId, IndexQuery.ExactPredicate... queries )
+    {
+        Read read = tx.dataRead();
+
+        if ( isInvalidQuery( typeId, queries ) )
+        {
+            return emptyResourceIterator();
+        }
+
+        int[] propertyIds = getPropertyIds( queries );
+        IndexDescriptor index = findMatchingCompositeIndex( tx, SchemaDescriptor.forRelType( typeId, propertyIds ), propertyIds,
+                                                            () -> tx.schemaRead().indexesGetForRelationshipType( typeId ) );
+
+        if ( index != IndexDescriptor.NO_INDEX )
+        {
+            try
+            {
+                RelationshipValueIndexCursor cursor = tx.cursors().allocateRelationshipValueIndexCursor( tx.pageCursorTracer(), tx.memoryTracker() );
+                IndexReadSession indexSession = read.indexReadSession( index );
+                read.relationshipIndexSeek( indexSession, cursor, unconstrained(), getReorderedIndexQueries( index.schema().getPropertyIds(), queries ) );
+                return new RelationshipCursorResourceIterator<>( cursor, this::newRelationshipEntity );
+            }
+            catch ( KernelException e )
+            {
+                // weird at this point but ignore and fallback to a label scan
+            }
+        }
+        return getRelationshipsByTypeAndPropertyWithoutIndex( typeId, queries );
+    }
+
+    private IndexQuery.ExactPredicate[] convertToQueries( Map<String,Object> propertyValues, TokenRead tokenRead )
+    {
+        IndexQuery.ExactPredicate[] queries = new IndexQuery.ExactPredicate[propertyValues.size()];
+        int i = 0;
+        for ( Map.Entry<String,Object> entry : propertyValues.entrySet() )
+        {
+            queries[i++] = IndexQuery.exact( tokenRead.propertyKey( entry.getKey() ), Values.of( entry.getValue(), false ) );
+        }
+        return queries;
+    }
+
+    private static IndexDescriptor findMatchingCompositeIndex( KernelTransaction transaction, SchemaDescriptor schemaDescriptor, int[] propertyIds,
+                                                               Supplier<Iterator<IndexDescriptor>> indexesSupplier )
     {
         // Try a direct schema match first.
-        Iterator<IndexDescriptor> iterator = transaction.schemaRead().index( SchemaDescriptor.forLabel( labelId, propertyIds ) );
-        while ( iterator.hasNext() )
+        var directMatch = findMatchingIndex( transaction, schemaDescriptor );
+        if ( directMatch != IndexDescriptor.NO_INDEX )
         {
-            IndexDescriptor index = iterator.next();
-            if ( index.getIndexType() == IndexType.BTREE )
-            {
-                return index;
-            }
+            return directMatch;
         }
 
         // Attempt to find matching index with different property order
@@ -958,7 +1038,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
         int[] workingCopy = new int[propertyIds.length];
 
-        Iterator<IndexDescriptor> indexes = transaction.schemaRead().indexesGetForLabel( labelId );
+        Iterator<IndexDescriptor> indexes = indexesSupplier.get();
         while ( indexes.hasNext() )
         {
             IndexDescriptor index = indexes.next();
@@ -1025,15 +1105,13 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return propertyIds;
     }
 
-    private static boolean isInvalidQuery( int labelId, IndexQuery[] queries )
+    private static boolean isInvalidQuery( int tokenId, IndexQuery[] queries )
     {
-        boolean invalidQuery = labelId == TokenRead.NO_TOKEN;
-        for ( IndexQuery query : queries )
+        if ( tokenId == TokenRead.NO_TOKEN )
         {
-            int propertyKeyId = query.propertyKeyId();
-            invalidQuery = invalidQuery || propertyKeyId == TokenRead.NO_TOKEN;
+            return true;
         }
-        return invalidQuery;
+        return stream( queries ).mapToInt( IndexQuery::propertyKeyId ).anyMatch( propertyKeyId -> propertyKeyId == TokenRead.NO_TOKEN );
     }
 
     private <T> Iterable<T> allInUse( final TokenAccess<T> tokens )

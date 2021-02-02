@@ -270,7 +270,10 @@ org.neo4j.graphdb.Transaction::findNodes(org.neo4j.graphdb.Label, java.util.Map<
 org.neo4j.graphdb.Transaction::findRelationship(org.neo4j.graphdb.RelationshipType, java.lang.String, java.lang.Object) org.neo4j.graphdb.Relationship public abstract
 org.neo4j.graphdb.Transaction::findRelationships(org.neo4j.graphdb.RelationshipType) org.neo4j.graphdb.ResourceIterator<org.neo4j.graphdb.Relationship> public abstract
 org.neo4j.graphdb.Transaction::findRelationships(org.neo4j.graphdb.RelationshipType, java.lang.String, java.lang.Object) org.neo4j.graphdb.ResourceIterator<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.Transaction::findRelationships(org.neo4j.graphdb.RelationshipType, java.lang.String, java.lang.Object, java.lang.String, java.lang.Object) org.neo4j.graphdb.ResourceIterator<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.Transaction::findRelationships(org.neo4j.graphdb.RelationshipType, java.lang.String, java.lang.Object, java.lang.String, java.lang.Object, java.lang.String, java.lang.Object) org.neo4j.graphdb.ResourceIterator<org.neo4j.graphdb.Relationship> public abstract
 org.neo4j.graphdb.Transaction::findRelationships(org.neo4j.graphdb.RelationshipType, java.lang.String, java.lang.String, org.neo4j.graphdb.StringSearchMode) org.neo4j.graphdb.ResourceIterator<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.Transaction::findRelationships(org.neo4j.graphdb.RelationshipType, java.util.Map<java.lang.String,java.lang.Object>) org.neo4j.graphdb.ResourceIterator<org.neo4j.graphdb.Relationship> public abstract
 org.neo4j.graphdb.Transaction::getAllLabels() java.lang.Iterable<org.neo4j.graphdb.Label> public abstract
 org.neo4j.graphdb.Transaction::getAllLabelsInUse() java.lang.Iterable<org.neo4j.graphdb.Label> public abstract
 org.neo4j.graphdb.Transaction::getAllNodes() org.neo4j.graphdb.ResourceIterable<org.neo4j.graphdb.Node> public abstract

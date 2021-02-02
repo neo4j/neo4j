@@ -405,6 +405,87 @@ public interface Transaction extends AutoCloseable
     ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key, String template, StringSearchMode searchMode );
 
     /**
+     * Returns all {@link Relationship relationships} having the {@link RelationshipType type}, and the wanted property values.
+     * If an online index is found, it will be used to look up the requested
+     * relationships.
+     * <p>
+     * If no indexes exist for the type with all provided properties, the database will
+     * scan all relationships of a specific type looking for matching values.
+     * <p>
+     * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
+     * other 42 numbers, regardless of whether they are encoded as Integer, Long, Float, Short, Byte or Double.
+     * <p>
+     * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
+     * <p>
+     * Finally - arrays also follow these rules. An int[] {1,2,3} is equal to a double[] {1.0, 2.0, 3.0}
+     * <p>
+     * Please ensure that the returned {@link ResourceIterator} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @param relationshipType  consider relationships with this type
+     * @param propertyValues    required property key-value combinations
+     * @return an iterator containing all matching relationships. See {@link ResourceIterator} for responsibilities.
+     */
+    ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, Map<String, Object> propertyValues );
+
+    /**
+     * Returns all {@link Relationship relationships} having the {@link RelationshipType type}, and the wanted property values.
+     * If an online index is found, it will be used to look up the requested
+     * nodes.
+     * <p>
+     * If no indexes exist for the type with all provided properties, the database will
+     * scan all relationships of a specific type looking for matching values.
+     * <p>
+     * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
+     * other 42 numbers, regardless of whether they are encoded as Integer, Long, Float, Short, Byte or Double.
+     * <p>
+     * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
+     * <p>
+     * Finally - arrays also follow these rules. An int[] {1,2,3} is equal to a double[] {1.0, 2.0, 3.0}
+     * <p>
+     * Please ensure that the returned {@link ResourceIterator} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @param relationshipType  consider relationships with this type
+     * @param key1              required property key1
+     * @param value1            required property value of key1
+     * @param key2              required property key2
+     * @param value2            required property value of key2
+     * @param key3              required property key3
+     * @param value3            required property value of key3
+     * @return an iterator containing all matching relationships. See {@link ResourceIterator} for responsibilities.
+     */
+    ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key1, Object value1,
+                                                      String key2, Object value2, String key3, Object value3 );
+
+    /**
+     * Returns all {@link Relationship relationships} having the {@link RelationshipType type}, and the wanted property values.
+     * If an online index is found, it will be used to look up the requested
+     * nodes.
+     * <p>
+     * If no indexes exist for the type with all provided properties, the database will
+     * scan all relationships of a specific type looking for matching values.
+     * <p>
+     * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
+     * other 42 numbers, regardless of whether they are encoded as Integer, Long, Float, Short, Byte or Double.
+     * <p>
+     * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
+     * <p>
+     * Finally - arrays also follow these rules. An int[] {1,2,3} is equal to a double[] {1.0, 2.0, 3.0}
+     * <p>
+     * Please ensure that the returned {@link ResourceIterator} is closed correctly and as soon as possible
+     * inside your transaction to avoid potential blocking of write operations.
+     *
+     * @param relationshipType  consider relationships with this type
+     * @param key1              required property key1
+     * @param value1            required property value of key1
+     * @param key2              required property key2
+     * @param value2            required property value of key2
+     * @return an iterator containing all matching relationships. See {@link ResourceIterator} for responsibilities.
+     */
+    ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key1, Object value1, String key2, Object value2 );
+
+    /**
      * Equivalent to {@link #findRelationships(RelationshipType, String, Object)}, however it must find no more than one {@link Relationship relationship} or it
      * will throw an exception.
      *

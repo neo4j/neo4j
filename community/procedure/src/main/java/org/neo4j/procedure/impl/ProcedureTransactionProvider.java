@@ -174,6 +174,25 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         }
 
         @Override
+        public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, Map<String,Object> propertyValues )
+        {
+            return transaction.findRelationships( relationshipType, propertyValues );
+        }
+
+        @Override
+        public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key1, Object value1, String key2, Object value2,
+                                                                 String key3, Object value3 )
+        {
+            return transaction.findRelationships( relationshipType, key1, value1, key2, value2, key3, value3 );
+        }
+
+        @Override
+        public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key1, Object value1, String key2, Object value2 )
+        {
+            return transaction.findRelationships( relationshipType, key1, value1, key2, value2 );
+        }
+
+        @Override
         public Relationship findRelationship( RelationshipType relationshipType, String key, Object value )
         {
             return transaction.findRelationship( relationshipType, key, value );
