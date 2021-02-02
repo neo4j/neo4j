@@ -130,6 +130,21 @@ class RelationshipDeleter
         updateNodeForDeletedRelationship( rel, recordChanges, groupDegreesUpdater, rel.getSecondNode(), !loop, nodeDataLookup, locks );
     }
 
+    /**
+     * Disconnects the deleted relationship R from the relevant surrounding records. There are three cases:
+     * <pre>
+     * - This is the last relationship in the chain
+     *     [RelationshipGroup] -X-> [R]
+     *     Also if the relationship group becomes completely empty after this it is attempted to be deleted, if locks can be acquired,
+     *     otherwise another operation later will again notice this fact and attempt to delete the group.
+     * - This relationships sits In between two other relationships
+     *     [prev neighbour Relationship] -X-> [R] -X-> [next neighbour Relationship]
+     * - At the end of the chain
+     *     [prev neighbour Relationship] -X-> [R]
+     * </pre>
+     *
+     * Degree of the modified chain is also decremented.
+     */
     private void updateNodeForDeletedRelationship( RelationshipRecord rel, RecordAccessSet recordChanges,
             RelationshipGroupDegreesStore.Updater groupDegreesUpdater, long nodeId, boolean updateDegree, MappedNodeDataLookup nodeDataLookup,
             ResourceLocker locks )

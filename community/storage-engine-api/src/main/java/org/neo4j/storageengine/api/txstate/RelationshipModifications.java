@@ -259,6 +259,10 @@ public interface RelationshipModifications
         }
     }
 
+    /**
+     * A way to carry tx state information lookup about relationships into places that needs it. In a way it's a very specific sub-interface of a bigger
+     * transaction state interface which isn't really available in this component.
+     */
     interface IdDataDecorator
     {
         <E extends Exception> void accept( long id, RelationshipVisitor<E> visitor ) throws E;

@@ -236,6 +236,19 @@ public class RelationshipCreator
         }
     }
 
+    /**
+     * Connects the created relationship R to the relevant surrounding records. There are three cases:
+     * <pre>
+     * - First in the chain
+     *     [RelationshipGroup] --> [R]
+     * - In between two other relationships
+     *     [prev neighbour Relationship] --> [R] --> [next neighbour Relationship]
+     * - At the end of the chain
+     *     [prev neighbour Relationship] --> [R]
+     * </pre>
+     *
+     * Degree of the modified chain is also incremented.
+     */
     private void connectDense( NodeRecord node, RecordProxy<RelationshipGroupRecord,Integer> groupProxy, DirectionWrapper direction,
             RelationshipRecord createdRelationship, RecordAccess<RelationshipRecord,Void> relRecords, RelationshipGroupDegreesStore.Updater groupDegreesUpdater,
             RecordProxy<RelationshipRecord,Void> insertionPoint )
@@ -245,10 +258,10 @@ public class RelationshipCreator
         long firstRelId = direction.getNextRel( group );
         RecordProxy<RelationshipRecord,Void> relationshipBefore = null;
         RecordProxy<RelationshipRecord,Void> relationshipAfter = null;
-        //We need a place to insert the relationship. We have three cases
-        //  First in chain (between group and potentially the previously first relationship)
-        //  Between two relationships somewhere in the chain
-        //  After the last in the chain
+        // We need a place to insert the relationship. We have three cases
+        // - First in chain (between group and potentially the previously first relationship)
+        // - Between two relationships somewhere in the chain
+        // - After the last in the chain
 
         if ( insertionPoint != null )
         {
