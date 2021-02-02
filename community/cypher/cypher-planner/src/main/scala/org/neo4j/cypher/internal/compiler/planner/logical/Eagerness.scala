@@ -22,22 +22,11 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Apply
-import org.neo4j.cypher.internal.logical.plans.Create
-import org.neo4j.cypher.internal.logical.plans.DeleteNode
-import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
-import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
-import org.neo4j.cypher.internal.logical.plans.RemoveLabels
-import org.neo4j.cypher.internal.logical.plans.SetLabels
-import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
-import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
-import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
-import org.neo4j.cypher.internal.logical.plans.SetProperty
-import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
-import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
@@ -302,14 +291,8 @@ object Eagerness {
     Glossary:
       Ax : Apply
       L,R: Arbitrary operator, named Left and Right
-      CN : CreateNode
-      Dn : Delete node
-      Dr : Delete relationship
       E : Eager
-      Sp : SetProperty
-      Sm : SetPropertiesFromMap
-      Sl : SetLabels
-      U : Unwind
+      Up : UpdatingPlan
      */
 
     private val instance: Rewriter = fixedPoint(bottomUp(Rewriter.lift {
@@ -320,78 +303,11 @@ object Eagerness {
         solveds.copy(apply.id, res.id)
         res
 
-      // L Ax (Cr R) => Cr Ax (L R)
-      case apply@Apply(lhs, create@Create(rhs, nodes, relationships)) =>
-        val res = create.copy(source = Apply(lhs, rhs)(SameId(apply.id)), nodes, relationships)(attributes.copy(create.id))
+     // L Ax (Up R) => Up Ax (L R)
+      case apply@Apply(lhs, updatingPlan: UpdatingPlan) =>
+        val res = updatingPlan.withSource(Apply(lhs, updatingPlan.source)(SameId(apply.id)))(attributes.copy(updatingPlan.id))
         solveds.copy(apply.id, res.id)
         res
-
-      // L Ax (Dn R) => Dn Ax (L R)
-      case apply@Apply(lhs, delete@DeleteNode(rhs, expr)) =>
-        val res = delete.copy(source = Apply(lhs, rhs)(SameId(apply.id)), expr)(attributes.copy(delete.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Dn R) => Dn Ax (L R)
-      case apply@Apply(lhs, delete@DetachDeleteNode(rhs, expr)) =>
-        val res = delete.copy(source = Apply(lhs, rhs)(SameId(apply.id)), expr)(attributes.copy(delete.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Dr R) => Dr Ax (L R)
-      case apply@Apply(lhs, delete@DeleteRelationship(rhs, expr)) =>
-        val res = delete.copy(source = Apply(lhs, rhs)(SameId(apply.id)), expr)(attributes.copy(delete.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Sp R) => Sp Ax (L R)
-      case apply@Apply(lhs, set@SetNodeProperty(rhs, idName, key, value)) =>
-        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, key, value)(attributes.copy(set.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Sp R) => Sp Ax (L R)
-      case apply@Apply(lhs, set@SetRelationshipProperty(rhs, idName, key, value)) =>
-        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, key, value)(attributes.copy(set.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Sp R) => Sp Ax (L R)
-      case apply@Apply(lhs, set@SetProperty(rhs, idName, key, value)) =>
-        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, key, value)(attributes.copy(set.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Sm R) => Sm Ax (L R)
-      case apply@Apply(lhs, set@SetNodePropertiesFromMap(rhs, idName, expr, removes)) =>
-        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, expr, removes)(attributes.copy(set.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Sm R) => Sm Ax (L R)
-      case apply@Apply(lhs, set@SetRelationshipPropertiesFromMap(rhs, idName, expr, removes)) =>
-        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, expr, removes)(attributes.copy(set.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Sm R) => Sm Ax (L R)
-      case apply@Apply(lhs, set@SetPropertiesFromMap(rhs, idName, expr, removes)) =>
-        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, expr, removes)(attributes.copy(set.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Sl R) => Sl Ax (L R)
-      case apply@Apply(lhs, set@SetLabels(rhs, idName, labelNames)) =>
-        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, labelNames)(attributes.copy(set.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Rl R) => Rl Ax (L R)
-      case apply@Apply(lhs, remove@RemoveLabels(rhs, idName, labelNames)) =>
-        val res = remove.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, labelNames)(attributes.copy(remove.id))
-        solveds.copy(apply.id, res.id)
-        res
-
     }))
 
     override def apply(input: AnyRef): AnyRef = instance.apply(input)

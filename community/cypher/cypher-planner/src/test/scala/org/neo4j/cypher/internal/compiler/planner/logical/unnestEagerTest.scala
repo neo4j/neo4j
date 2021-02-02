@@ -25,10 +25,16 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
+import org.neo4j.cypher.internal.logical.plans.DeletePath
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
+import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
+import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
@@ -52,13 +58,13 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     rewrite(input) should equal(create.copy(source = Apply(lhs, rhs)))
   }
 
-  test("should unnest delete relationship from rhs of apply") {
+  test("should unnest delete expression from rhs of apply") {
     val lhs = newMockedLogicalPlan()
     val rhs = newMockedLogicalPlan()
-    val delete = DeleteRelationship(rhs, null)
+    val delete = DeleteExpression(rhs, null)
     val input = Apply(lhs, delete)
 
-    rewrite(input) should equal(DeleteRelationship(Apply(lhs, rhs), null))
+    rewrite(input) should equal(DeleteExpression(Apply(lhs, rhs), null))
   }
 
   test("should unnest delete node from rhs of apply") {
@@ -70,6 +76,33 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     rewrite(input) should equal(DeleteNode(Apply(lhs, rhs), null))
   }
 
+  test("should unnest delete path from rhs of apply") {
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
+    val delete = DeletePath(rhs, null)
+    val input = Apply(lhs, delete)
+
+    rewrite(input) should equal(DeletePath(Apply(lhs, rhs), null))
+  }
+
+  test("should unnest delete relationship from rhs of apply") {
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
+    val delete = DeleteRelationship(rhs, null)
+    val input = Apply(lhs, delete)
+
+    rewrite(input) should equal(DeleteRelationship(Apply(lhs, rhs), null))
+  }
+
+  test("should unnest detach delete expression from rhs of apply") {
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
+    val delete = DetachDeleteExpression(rhs, null)
+    val input = Apply(lhs, delete)
+
+    rewrite(input) should equal(DetachDeleteExpression(Apply(lhs, rhs), null))
+  }
+
   test("should unnest detach delete node from rhs of apply") {
     val lhs = newMockedLogicalPlan()
     val rhs = newMockedLogicalPlan()
@@ -77,6 +110,33 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val input = Apply(lhs, delete)
 
     rewrite(input) should equal(DetachDeleteNode(Apply(lhs, rhs), null))
+  }
+
+  test("should unnest detach delete path from rhs of apply") {
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
+    val delete = DetachDeletePath(rhs, null)
+    val input = Apply(lhs, delete)
+
+    rewrite(input) should equal(DetachDeletePath(Apply(lhs, rhs), null))
+  }
+
+  test("should unnest merge create node from rhs of apply") {
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
+    val merge = MergeCreateNode(rhs, null, null, null)
+    val input = Apply(lhs, merge)
+
+    rewrite(input) should equal(MergeCreateNode(Apply(lhs, rhs), null, null, null))
+  }
+
+  test("should unnest merge create relationship from rhs of apply") {
+    val lhs = newMockedLogicalPlan()
+    val rhs = newMockedLogicalPlan()
+    val merge = MergeCreateRelationship(rhs, null, null, null, null, null)
+    val input = Apply(lhs, merge)
+
+    rewrite(input) should equal(MergeCreateRelationship(Apply(lhs, rhs), null, null, null, null, null))
   }
 
   test("should unnest set node property from rhs of apply") {

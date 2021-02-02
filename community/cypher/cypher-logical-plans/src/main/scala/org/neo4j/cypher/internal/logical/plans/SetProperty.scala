@@ -38,11 +38,13 @@ case class SetProperty(
                         value: Expression
                       )(implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
 
-  override def lhs = Some(source)
+  override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def rhs = None
+  override def rhs: Option[LogicalPlan] = None
 
   override val availableSymbols: Set[String] = source.availableSymbols
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): SetProperty = copy(source = source)
 }
