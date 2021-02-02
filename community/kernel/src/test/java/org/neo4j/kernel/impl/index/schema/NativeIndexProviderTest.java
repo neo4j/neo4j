@@ -19,12 +19,23 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
-class NativeIndexProviderTest extends NativeIndexProviderTests
+class NativeIndexProviderTest extends IndexProviderTests
 {
     private static final ProviderFactory factory =
             ( pageCache, fs, dir, monitors, collector, readOnly ) -> {
@@ -34,6 +45,26 @@ class NativeIndexProviderTest extends NativeIndexProviderTests
 
     NativeIndexProviderTest()
     {
-        super( factory, POPULATING, Values.of( 1 ) );
+        super( factory );
+    }
+
+    @Test
+    void shouldNotCheckConflictsWhenApplyingUpdatesInOnlineAccessor() throws IOException, IndexEntryConflictException
+    {
+        // given
+        Value someValue = Values.of( 1 );
+        provider = newProvider();
+
+        // when
+        IndexDescriptor descriptor = descriptorUnique();
+        try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig(), tokenNameLookup );
+              IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        {
+            indexUpdater.process( IndexEntryUpdate.add( 1, descriptor.schema(), someValue ) );
+
+            // then
+            // ... expect no failure on duplicate value
+            indexUpdater.process( IndexEntryUpdate.add( 2, descriptor.schema(), someValue ) );
+        }
     }
 }

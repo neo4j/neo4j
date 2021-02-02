@@ -33,23 +33,17 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.api.schema.SchemaTestUtil;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -65,7 +59,7 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @EphemeralPageCacheExtension
-abstract class NativeIndexProviderTests
+abstract class IndexProviderTests
 {
     private static final int indexId = 1;
     private static final int labelId = 1;
@@ -81,16 +75,12 @@ abstract class NativeIndexProviderTests
     private final AssertableLogProvider logging;
     private final Monitors monitors;
     private final ProviderFactory factory;
-    private final InternalIndexState expectedStateOnNonExistingSubIndex;
-    private final Value someValue;
-    private final TokenNameLookup tokenNameLookup = SchemaTestUtil.SIMPLE_NAME_LOOKUP;
-    private IndexProvider provider;
+    final TokenNameLookup tokenNameLookup = SchemaTestUtil.SIMPLE_NAME_LOOKUP;
+    IndexProvider provider;
 
-    NativeIndexProviderTests( ProviderFactory factory, InternalIndexState expectedStateOnNonExistingSubIndex, Value someValue )
+    IndexProviderTests( ProviderFactory factory )
     {
         this.factory = factory;
-        this.expectedStateOnNonExistingSubIndex = expectedStateOnNonExistingSubIndex;
-        this.someValue = someValue;
         this.logging = new AssertableLogProvider();
         this.monitors = new Monitors();
         this.monitors.addMonitorListener( new LoggingMonitor( logging.getLog( "test" ) ) );
@@ -113,27 +103,6 @@ abstract class NativeIndexProviderTests
 
         assertThrows( UnsupportedOperationException.class, () -> provider.getPopulator( descriptor(), samplingConfig(),
                 heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ) );
-    }
-
-    /* getOnlineAccessor */
-
-    @Test
-    void shouldNotCheckConflictsWhenApplyingUpdatesInOnlineAccessor() throws IOException, IndexEntryConflictException
-    {
-        // given
-        provider = newProvider();
-
-        // when
-        IndexDescriptor descriptor = descriptorUnique();
-        try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig(), tokenNameLookup );
-              IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
-        {
-            indexUpdater.process( IndexEntryUpdate.add( 1, descriptor.schema(), someValue ) );
-
-            // then
-            // ... expect no failure on duplicate value
-            indexUpdater.process( IndexEntryUpdate.add( 2, descriptor.schema(), someValue ) );
-        }
     }
 
     /* getPopulationFailure */
@@ -159,7 +128,7 @@ abstract class NativeIndexProviderTests
         // given
         provider = newProvider();
 
-        int nonFailedIndexId = NativeIndexProviderTests.indexId;
+        int nonFailedIndexId = IndexProviderTests.indexId;
         IndexPopulator nonFailedPopulator = provider.getPopulator( descriptor( nonFailedIndexId ), samplingConfig(),
                 heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         nonFailedPopulator.create();
@@ -263,16 +232,8 @@ abstract class NativeIndexProviderTests
         InternalIndexState state = provider.getInitialState( descriptor(), NULL );
 
         // then
-        assertEquals( expectedStateOnNonExistingSubIndex, state );
-        var logAssert = assertThat( logging );
-        if ( InternalIndexState.POPULATING == expectedStateOnNonExistingSubIndex )
-        {
-            logAssert.containsMessages( "Failed to open index" );
-        }
-        else
-        {
-            logAssert.doesNotContainMessage( "Failed to open index" );
-        }
+        assertEquals( InternalIndexState.POPULATING, state );
+        assertThat( logging ).containsMessages( "Failed to open index" );
     }
 
     @Test
@@ -330,7 +291,7 @@ abstract class NativeIndexProviderTests
         return factory.create( pageCache, fs, directoriesByProvider( testDirectory.absolutePath() ), monitors, immediate(), readOnly );
     }
 
-    private IndexProvider newProvider()
+    IndexProvider newProvider()
     {
         return newProvider( false );
     }
@@ -340,7 +301,7 @@ abstract class NativeIndexProviderTests
         return newProvider( true );
     }
 
-    private static IndexSamplingConfig samplingConfig()
+    static IndexSamplingConfig samplingConfig()
     {
         return new IndexSamplingConfig( Config.defaults() );
     }
@@ -355,7 +316,7 @@ abstract class NativeIndexProviderTests
         return completeConfiguration( forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "index_" + indexId ).materialise( indexId ) );
     }
 
-    private IndexDescriptor descriptorUnique()
+    IndexDescriptor descriptorUnique()
     {
         return completeConfiguration( uniqueForSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "constraint" ).materialise( indexId ) );
     }
