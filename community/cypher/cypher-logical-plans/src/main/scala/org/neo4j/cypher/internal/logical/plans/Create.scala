@@ -38,4 +38,6 @@ case class Create(source: LogicalPlan,
   }
 
   override def rhs: Option[LogicalPlan] = None
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): Create = copy(source = source)
 }

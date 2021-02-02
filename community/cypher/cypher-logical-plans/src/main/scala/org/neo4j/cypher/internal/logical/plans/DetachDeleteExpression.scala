@@ -27,11 +27,14 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *   node) all it's relationships are also deleted
  *   path) all nodes in the path and all their relationships are deleted.
  */
-case class DetachDeleteExpression(source: LogicalPlan, expression: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
+case class DetachDeleteExpression(source: LogicalPlan, expression: Expression)
+                                 (implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
   override val availableSymbols: Set[String] = source.availableSymbols
 
   override def rhs: Option[LogicalPlan] = None
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): DetachDeleteExpression = copy(source = source)
 }

@@ -32,4 +32,6 @@ case class DetachDeleteNode(source: LogicalPlan, expression: Expression)(implici
   override val availableSymbols: Set[String] = source.availableSymbols
 
   override def rhs: Option[LogicalPlan] = None
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): DetachDeleteNode = copy(source = source)
 }

@@ -42,4 +42,6 @@ case class SetRelationshipPropertiesFromMap(
   override val availableSymbols: Set[String] = source.availableSymbols + idName
 
   override def rhs: Option[LogicalPlan] = None
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): SetRelationshipPropertiesFromMap = copy(source = source)
 }

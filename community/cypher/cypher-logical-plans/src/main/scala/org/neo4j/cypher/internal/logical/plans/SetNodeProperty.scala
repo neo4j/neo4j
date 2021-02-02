@@ -42,4 +42,6 @@ case class SetNodeProperty(source: LogicalPlan,
   override val availableSymbols: Set[String] = source.availableSymbols + idName
 
   override def rhs: Option[LogicalPlan] = None
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): SetNodeProperty = copy(source = source)
 }

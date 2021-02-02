@@ -32,4 +32,6 @@ case class DeletePath(source: LogicalPlan, expression: Expression)(implicit idGe
   override val availableSymbols: Set[String] = source.availableSymbols
 
   override def rhs: Option[LogicalPlan] = None
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): DeletePath = copy(source = source)
 }

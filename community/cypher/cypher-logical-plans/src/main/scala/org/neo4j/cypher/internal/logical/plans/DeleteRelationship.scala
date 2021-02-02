@@ -32,4 +32,6 @@ case class DeleteRelationship(source: LogicalPlan, expression: Expression)(impli
   override val availableSymbols: Set[String] = source.availableSymbols
 
   override def rhs: Option[LogicalPlan] = None
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): DeleteRelationship = copy(source = source)
 }

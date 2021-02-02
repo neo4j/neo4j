@@ -38,4 +38,6 @@ case class MergeCreateRelationship(source: LogicalPlan, idName: String, startNod
   override val availableSymbols: Set[String] = source.availableSymbols + idName + startNode + endNode
 
   override def rhs: Option[LogicalPlan] = None
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): MergeCreateRelationship = copy(source = source)
 }

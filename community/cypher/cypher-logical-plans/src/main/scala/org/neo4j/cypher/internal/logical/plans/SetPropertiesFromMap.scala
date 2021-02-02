@@ -41,4 +41,6 @@ case class SetPropertiesFromMap(source: LogicalPlan,
   override val availableSymbols: Set[String] = source.availableSymbols
 
   override def rhs: Option[LogicalPlan] = None
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): SetPropertiesFromMap = copy(source = source)
 }
