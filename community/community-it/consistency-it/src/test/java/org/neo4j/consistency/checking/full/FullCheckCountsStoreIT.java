@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Function;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -64,21 +65,38 @@ public class FullCheckCountsStoreIT
         {
             Files.delete( path );
             return true;
-        } );
+        }, DatabaseLayout::countStore, RecordType.COUNTS );
     }
 
     @Test
     void shouldReportBrokenCountsStore() throws Exception
     {
-        shouldReportBadCountsStore( this::corruptFileIfExists );
+        shouldReportBadCountsStore( this::corruptFileIfExists, DatabaseLayout::countStore, RecordType.COUNTS );
     }
 
-    private void shouldReportBadCountsStore( ThrowingFunction<Path,Boolean,IOException> fileAction ) throws Exception
+    @Test
+    void shouldReportMissingGroupDegreesStore() throws Exception
+    {
+        shouldReportBadCountsStore( path ->
+        {
+            Files.delete( path );
+            return true;
+        }, DatabaseLayout::relationshipGroupDegreesStore, RecordType.RELATIONSHIP_GROUP );
+    }
+
+    @Test
+    void shouldReportBrokenGroupDegreesStore() throws Exception
+    {
+        shouldReportBadCountsStore( this::corruptFileIfExists, DatabaseLayout::relationshipGroupDegreesStore, RecordType.RELATIONSHIP_GROUP );
+    }
+
+    private void shouldReportBadCountsStore( ThrowingFunction<Path,Boolean,IOException> fileAction, Function<DatabaseLayout,Path> store,
+            RecordType recordType ) throws Exception
     {
         // given
         DatabaseLayout databaseLayout = db.databaseLayout();
         dbms.shutdown();
-        boolean corrupted = fileAction.apply( databaseLayout.countStore() );
+        boolean corrupted = fileAction.apply( store.apply( databaseLayout ));
         assertTrue( corrupted );
 
         // when
@@ -86,7 +104,7 @@ public class FullCheckCountsStoreIT
                 defaults( GraphDatabaseSettings.logs_directory, databaseLayout.databaseDirectory() ), NONE, nullLogProvider(), false, DEFAULT );
 
         // then
-        assertThat( result.summary().getInconsistencyCountForRecordType( RecordType.COUNTS ) ).isEqualTo( 1 );
+        assertThat( result.summary().getInconsistencyCountForRecordType( recordType ) ).isEqualTo( 1 );
     }
 
     private boolean corruptFileIfExists( Path file ) throws IOException

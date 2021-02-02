@@ -59,6 +59,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
@@ -2411,7 +2412,7 @@ public class FullCheckIntegrationTest
     protected ConsistencySummaryStatistics check() throws ConsistencyCheckIncompleteException
     {
         DirectStoreAccess stores = fixture.readOnlyDirectStoreAccess();
-        return check( fixture.getInstantiatedPageCache(), stores, fixture.counts() );
+        return check( fixture.getInstantiatedPageCache(), stores, fixture.counts(), fixture.groupDegrees() );
     }
 
     private ConsistencySummaryStatistics check( Config config, ConsistencyFlags consistencyFlags )
@@ -2419,26 +2420,25 @@ public class FullCheckIntegrationTest
     {
         PageCache pageCache = fixture.getInstantiatedPageCache();
         DirectStoreAccess stores = fixture.readOnlyDirectStoreAccess();
-        ThrowingSupplier<CountsStore,IOException> counts = fixture.counts();
-        return check( pageCache, stores, counts, config, consistencyFlags );
+        return check( pageCache, stores, fixture.counts(), fixture.groupDegrees(), config, consistencyFlags );
     }
 
-    private ConsistencySummaryStatistics check( PageCache pageCache, DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> counts )
-            throws ConsistencyCheckIncompleteException
+    private ConsistencySummaryStatistics check( PageCache pageCache, DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> counts,
+            ThrowingSupplier<RelationshipGroupDegreesStore,IOException> groupDegrees ) throws ConsistencyCheckIncompleteException
     {
         Config config = config();
         boolean checkRelationshipTypeScanStore = config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store );
         final var consistencyFlags = new ConsistencyFlags( true, true, true, true, checkRelationshipTypeScanStore, true );
-        return check( pageCache, stores, counts, config, consistencyFlags );
+        return check( pageCache, stores, counts, groupDegrees, config, consistencyFlags );
     }
 
     private ConsistencySummaryStatistics check( PageCache pageCache, DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> counts,
-            Config config, ConsistencyFlags consistencyFlags )
+            ThrowingSupplier<RelationshipGroupDegreesStore,IOException> groupDegrees, Config config, ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
     {
         FullCheck checker =
                 new FullCheck( ProgressMonitorFactory.NONE, defaultConsistencyCheckThreadsNumber(), consistencyFlags, config, false, memoryLimit() );
-        return checker.execute( pageCache, stores, counts, fixture.indexAccessorLookup(), PageCacheTracer.NULL, INSTANCE,
+        return checker.execute( pageCache, stores, counts, groupDegrees, fixture.indexAccessorLookup(), PageCacheTracer.NULL, INSTANCE,
                 logProvider.getLog( "test" ) );
     }
 

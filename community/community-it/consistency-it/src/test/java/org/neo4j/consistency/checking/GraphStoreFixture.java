@@ -42,6 +42,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -117,6 +118,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
     private IndexingService indexingService;
     private RecordStorageEngine storageEngine;
     private CountsAccessor countsStore;
+    private RelationshipGroupDegreesStore groupDegreesStore;
 
     protected GraphStoreFixture( String formatName, TestDirectory testDirectory )
     {
@@ -158,6 +160,7 @@ public abstract class GraphStoreFixture implements AutoCloseable
                 dependencyResolver.resolveDependency( IndexStatisticsStore.class ),
                 dependencyResolver.resolveDependency( IdGeneratorFactory.class ) );
         countsStore = storageEngine.countsAccessor();
+        groupDegreesStore = storageEngine.relationshipGroupDegreesStore();
         pageCache = dependencyResolver.resolveDependency( PageCache.class );
 
     }
@@ -208,6 +211,11 @@ public abstract class GraphStoreFixture implements AutoCloseable
     public ThrowingSupplier<CountsStore,IOException> counts()
     {
         return () -> (CountsStore) countsStore;
+    }
+
+    public ThrowingSupplier<RelationshipGroupDegreesStore,IOException> groupDegrees()
+    {
+        return () -> groupDegreesStore;
     }
 
     public IndexAccessors.IndexAccessorLookup indexAccessorLookup()

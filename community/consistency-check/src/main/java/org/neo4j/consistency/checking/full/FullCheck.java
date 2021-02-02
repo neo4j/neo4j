@@ -36,6 +36,7 @@ import org.neo4j.consistency.report.InconsistencyReport;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
@@ -78,13 +79,15 @@ public class FullCheck
     }
 
     public ConsistencySummaryStatistics execute( PageCache pageCache, DirectStoreAccess stores, ThrowingSupplier<CountsStore,IOException> countsSupplier,
+            ThrowingSupplier<RelationshipGroupDegreesStore,IOException> groupDegreesStoreSupplier,
             IndexAccessors.IndexAccessorLookup indexAccessorLookup, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, Log log )
             throws ConsistencyCheckIncompleteException
     {
         ConsistencySummaryStatistics summary = new ConsistencySummaryStatistics();
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( log ), summary );
         CountsStore countsStore = getCountsStore( countsSupplier, log, summary );
-        execute( pageCache, stores, report, countsStore, indexAccessorLookup, pageCacheTracer, memoryTracker );
+        RelationshipGroupDegreesStore groupDegreesStore = getGroupDegreesStore( groupDegreesStoreSupplier, log, summary );
+        execute( pageCache, stores, report, countsStore, groupDegreesStore, indexAccessorLookup, pageCacheTracer, memoryTracker );
 
         if ( !summary.isConsistent() )
         {
@@ -113,7 +116,27 @@ public class FullCheck
         return countsStore;
     }
 
+    private RelationshipGroupDegreesStore getGroupDegreesStore( ThrowingSupplier<RelationshipGroupDegreesStore,IOException> groupDegreesStoreSupplier, Log log,
+            ConsistencySummaryStatistics summary )
+    {
+        RelationshipGroupDegreesStore store = null;
+        if ( flags.isCheckIndexStructure() )
+        {
+            try
+            {
+                store = groupDegreesStoreSupplier.get();
+            }
+            catch ( Exception e )
+            {
+                log.error( "Relationship group degrees store is missing, broken or of an older format and will not be consistency checked", e );
+                summary.update( RecordType.RELATIONSHIP_GROUP, 1, 0 );
+            }
+        }
+        return store;
+    }
+
     void execute( PageCache pageCache, final DirectStoreAccess directStoreAccess, final InconsistencyReport report, CountsStore countsStore,
+            RelationshipGroupDegreesStore groupDegreesStore,
             IndexAccessors.IndexAccessorLookup indexAccessorLookup, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
             throws ConsistencyCheckIncompleteException
     {
@@ -132,8 +155,8 @@ public class FullCheck
             if ( flags.isCheckIndexStructure() )
             {
                 consistencyCheckIndexStructure( directStoreAccess.labelScanStore(), directStoreAccess.relationshipTypeScanStore(),
-                        directStoreAccess.indexStatisticsStore(), countsStore, indexes, allIdGenerators( directStoreAccess ), report, progressFactory,
-                        pageCacheTracer );
+                        directStoreAccess.indexStatisticsStore(), countsStore, groupDegreesStore, indexes, allIdGenerators( directStoreAccess ), report,
+                        progressFactory, pageCacheTracer );
             }
 
             try ( RecordStorageConsistencyChecker checker = new RecordStorageConsistencyChecker( pageCache,
@@ -159,7 +182,7 @@ public class FullCheck
 
     private static void consistencyCheckIndexStructure( LabelScanStore labelScanStore,
             RelationshipTypeScanStore relationshipTypeScanStore, IndexStatisticsStore indexStatisticsStore,
-            CountsStore countsStore, IndexAccessors indexes,
+            CountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore, IndexAccessors indexes,
             List<IdGenerator> idGenerators, InconsistencyReport report, ProgressMonitorFactory progressMonitorFactory, PageCacheTracer pageCacheTracer )
     {
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_STRUCTURE_CHECKER_TAG ) )
@@ -171,8 +194,8 @@ public class FullCheck
             var listener = progressMonitorFactory.singlePart( "Index structure consistency check", totalCount );
             listener.started();
 
-            consistencyCheckNonSchemaIndexes( report, listener, labelScanStore, relationshipTypeScanStore, indexStatisticsStore, countsStore, idGenerators,
-                    cursorTracer );
+            consistencyCheckNonSchemaIndexes( report, listener, labelScanStore, relationshipTypeScanStore, indexStatisticsStore, countsStore, groupDegreesStore,
+                    idGenerators, cursorTracer );
             consistencyCheckSchemaIndexes( indexes, report, listener, cursorTracer );
             listener.done();
         }
@@ -180,13 +203,20 @@ public class FullCheck
 
     private static void consistencyCheckNonSchemaIndexes( InconsistencyReport report, ProgressListener listener,
             LabelScanStore labelScanStore, RelationshipTypeScanStore relationshipTypeScanStore,
-            IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, List<IdGenerator> idGenerators,
+            IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore, List<IdGenerator> idGenerators,
             PageCursorTracer cursorTracer )
     {
         consistencyCheckSingleCheckable( report, listener, labelScanStore, RecordType.LABEL_SCAN_DOCUMENT, cursorTracer );
         consistencyCheckSingleCheckable( report, listener, relationshipTypeScanStore, RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, cursorTracer );
         consistencyCheckSingleCheckable( report, listener, indexStatisticsStore, RecordType.INDEX_STATISTICS, cursorTracer );
         consistencyCheckSingleCheckable( report, listener, countsStore, RecordType.COUNTS, cursorTracer );
+        if ( groupDegreesStore != null )
+        {
+            // The relationship group degrees store has no "NULL_STORE" because it's otherwise not needed and it's not
+            // checked in the other parts of the consistency checker since degrees in general aren't checked (due to performance implications).
+            // This is why we use null instead for this particular store.
+            consistencyCheckSingleCheckable( report, listener, groupDegreesStore, RecordType.RELATIONSHIP_GROUP, cursorTracer );
+        }
         for ( IdGenerator idGenerator : idGenerators )
         {
             consistencyCheckSingleCheckable( report, listener, idGenerator, RecordType.ID_STORE, cursorTracer );

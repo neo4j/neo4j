@@ -33,11 +33,14 @@ import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsStorage;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
+import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
+import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.StoreTokens;
@@ -205,10 +208,11 @@ public class ConsistencyCheckService
         final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, logProvider, pageCacheTracer );
-        CountsManager countsManager = new CountsManager( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker );
-        // Don't start the counts store here as part of life, instead only shut down. This is because it's better to let FullCheck
+        // Don't start the counts stores here as part of life, instead only shut down. This is because it's better to let FullCheck
         // start it and add its missing/broken detection where it can report to user.
-        life.add( countsManager );
+        CountsStoreManager countsStoreManager = life.add( new CountsStoreManager( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker ) );
+        RelationshipGroupDegreesStoreManager groupDegreesStoreManager =
+                life.add( new RelationshipGroupDegreesStoreManager( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker ) );
 
         ConsistencySummaryStatistics summary;
         final Path reportFile = chooseReportPath( reportDir );
@@ -255,7 +259,8 @@ public class ConsistencyCheckService
                     new DirectStoreAccess( neoStores, labelScanStore, relationshipTypeScanstore, indexes, tokenHolders, indexStatisticsStore,
                             idGeneratorFactory );
             FullCheck check = new FullCheck( progressFactory, numberOfThreads, consistencyFlags, config, verbose, NodeBasedMemoryLimiter.DEFAULT );
-            summary = check.execute( pageCache, stores, countsManager, null, pageCacheTracer, memoryTracker, new DuplicatingLog( log, reportLog ) );
+            summary = check.execute( pageCache, stores, countsStoreManager, groupDegreesStoreManager, null, pageCacheTracer, memoryTracker,
+                    new DuplicatingLog( log, reportLog ) );
         }
         finally
         {
@@ -363,21 +368,37 @@ public class ConsistencyCheckService
         }
     }
 
+    private static class RebuildPreventingDegreesInitializer implements GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder
+    {
+        @Override
+        public void rebuild( RelationshipGroupDegreesStore.Updater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
+        {
+            throw new UnsupportedOperationException(
+                    "Relationship group degrees store needed rebuild, consistency checker will instead report broken or missing store" );
+        }
+
+        @Override
+        public long lastCommittedTxId()
+        {
+            return 0;
+        }
+    }
+
     /**
-     * This weird little thing exists because we want to provide {@link CountsStore} from outside checker, but we want to actually instantiate
+     * This weird little thing exists because we want to provide {@link CountsStorage} from outside checker, but we want to actually instantiate
      * and start it inside the checker where we have the report instance available. So we pass in something that can supply the store...
      * and it can also close it (we do here in {@link ConsistencyCheckService}.
      */
-    private static class CountsManager extends LifecycleAdapter implements ThrowingSupplier<CountsStore,IOException>
+    private abstract static class CountsStorageManager<T extends CountsStorage> extends LifecycleAdapter implements ThrowingSupplier<T,IOException>
     {
-        private final PageCache pageCache;
-        private final FileSystemAbstraction fileSystem;
-        private final DatabaseLayout databaseLayout;
-        private final PageCacheTracer pageCacheTracer;
-        private final MemoryTracker memoryTracker;
-        private GBPTreeCountsStore counts;
+        protected final PageCache pageCache;
+        protected final FileSystemAbstraction fileSystem;
+        protected final DatabaseLayout databaseLayout;
+        protected final PageCacheTracer pageCacheTracer;
+        protected final MemoryTracker memoryTracker;
+        private T store;
 
-        CountsManager( PageCache pageCache, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer,
+        CountsStorageManager( PageCache pageCache, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer,
                 MemoryTracker memoryTracker )
         {
             this.pageCache = pageCache;
@@ -388,21 +409,54 @@ public class ConsistencyCheckService
         }
 
         @Override
-        public CountsStore get() throws IOException
+        public T get() throws IOException
         {
-            counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
-                    RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingCountsInitializer(), true, pageCacheTracer, GBPTreeCountsStore.NO_MONITOR );
-            counts.start( NULL, memoryTracker );
-            return counts;
+            store = open();
+            store.start( NULL, memoryTracker );
+            return store;
         }
+
+        protected abstract T open() throws IOException;
 
         @Override
         public void shutdown()
         {
-            if ( counts != null )
+            if ( store != null )
             {
-                counts.close();
+                store.close();
             }
+        }
+    }
+
+    private static class CountsStoreManager extends CountsStorageManager<CountsStore>
+    {
+        CountsStoreManager( PageCache pageCache, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer,
+                MemoryTracker memoryTracker )
+        {
+            super( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker );
+        }
+
+        @Override
+        protected CountsStore open() throws IOException
+        {
+            return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
+                    RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingCountsInitializer(), true, pageCacheTracer, GBPTreeCountsStore.NO_MONITOR );
+        }
+    }
+
+    private static class RelationshipGroupDegreesStoreManager extends CountsStorageManager<RelationshipGroupDegreesStore>
+    {
+        RelationshipGroupDegreesStoreManager( PageCache pageCache, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
+                PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+        {
+            super( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker );
+        }
+
+        @Override
+        protected RelationshipGroupDegreesStore open() throws IOException
+        {
+            return new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem,
+                    RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingDegreesInitializer(), true, pageCacheTracer, GBPTreeCountsStore.NO_MONITOR );
         }
     }
 }
