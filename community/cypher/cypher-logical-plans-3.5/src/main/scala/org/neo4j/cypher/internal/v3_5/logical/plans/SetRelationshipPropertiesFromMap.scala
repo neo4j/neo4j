@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_5.StrictnessMode
+import org.neo4j.cypher.internal.v3_5.expressions.Expression
 import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 
 /**
@@ -36,7 +36,7 @@ case class SetRelationshipPropertiesFromMap(
                                              idName: String,
                                              expression: Expression,
                                              removeOtherProps: Boolean
-                                           )(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+                                           )(implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
@@ -45,4 +45,6 @@ case class SetRelationshipPropertiesFromMap(
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): SetRelationshipPropertiesFromMap = copy(source = source)
 }

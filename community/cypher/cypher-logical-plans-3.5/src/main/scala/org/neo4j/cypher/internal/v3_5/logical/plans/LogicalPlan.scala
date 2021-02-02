@@ -19,21 +19,14 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import java.lang.reflect.Method
-
-import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
-import org.neo4j.cypher.internal.ir.v3_5.Strictness
+import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, Strictness}
 import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.util.Foldable._
 import org.neo4j.cypher.internal.v3_5.util.Rewritable._
-import org.neo4j.cypher.internal.v3_5.util.attribution.Id
-import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
-import org.neo4j.cypher.internal.v3_5.util.attribution.SameId
-import org.neo4j.cypher.internal.v3_5.util.Foldable
-import org.neo4j.cypher.internal.v3_5.util.InputPosition
-import org.neo4j.cypher.internal.v3_5.util.InternalException
-import org.neo4j.cypher.internal.v3_5.util.Rewritable
+import org.neo4j.cypher.internal.v3_5.util.attribution.{Id, IdGen, SameId}
+import org.neo4j.cypher.internal.v3_5.util.{Foldable, InternalException, Rewritable}
 
+import java.lang.reflect.Method
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
@@ -206,6 +199,12 @@ abstract class LogicalPlan(idGen: IdGen)
         acc => acc :+ SchemaIndexScanUsage(idName, label.nameId.id, label.name, property.propertyKeyToken.name)
       }
   }
+}
+
+// Marker interface for all plans that performs updates
+trait UpdatingPlan extends LogicalPlan {
+  def source: LogicalPlan
+  def withSource(source: LogicalPlan)(implicit idGen: IdGen): UpdatingPlan
 }
 
 abstract class LogicalLeafPlan(idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {

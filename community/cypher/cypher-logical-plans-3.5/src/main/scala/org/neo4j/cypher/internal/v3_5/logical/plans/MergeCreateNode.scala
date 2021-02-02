@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_5.StrictnessMode
-import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 import org.neo4j.cypher.internal.v3_5.expressions.{Expression, LabelName}
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 
 /**
   * For each input row, create a new node with the provided labels and properties,
@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.v3_5.expressions.{Expression, LabelName}
   * labels and properties exist.
   */
 case class MergeCreateNode(source: LogicalPlan, idName: String, labels: Seq[LabelName], properties: Option[Expression])(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) {
+  extends LogicalPlan(idGen) with UpdatingPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
@@ -42,4 +42,6 @@ case class MergeCreateNode(source: LogicalPlan, idName: String, labels: Seq[Labe
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): MergeCreateNode = copy(source = source)
 }

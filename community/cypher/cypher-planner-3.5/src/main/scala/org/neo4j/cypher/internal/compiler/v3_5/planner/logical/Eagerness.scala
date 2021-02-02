@@ -283,14 +283,8 @@ object Eagerness {
     Glossary:
       Ax : Apply
       L,R: Arbitrary operator, named Left and Right
-      CN : CreateNode
-      Dn : Delete node
-      Dr : Delete relationship
       E : Eager
-      Sp : SetProperty
-      Sm : SetPropertiesFromMap
-      Sl : SetLabels
-      U : Unwind
+      Up : UpdatingPlan
      */
 
     private val instance: Rewriter = fixedPoint(bottomUp(Rewriter.lift {
@@ -301,78 +295,11 @@ object Eagerness {
         solveds.copy(apply.id, res.id)
         res
 
-      // L Ax (Cr R) => Cr Ax (L R)
-      case apply@Apply(lhs, create@Create(rhs, nodes, relationships)) =>
-        val res = create.copy(source = Apply(lhs, rhs)(SameId(apply.id)), nodes, relationships)(attributes.copy(create.id))
+      // L Ax (Up R) => Up Ax (L R)
+      case apply@Apply(lhs, updatingPlan: UpdatingPlan) =>
+        val res = updatingPlan.withSource(Apply(lhs, updatingPlan.source)(SameId(apply.id)))(attributes.copy(updatingPlan.id))
         solveds.copy(apply.id, res.id)
         res
-
-      // L Ax (Dn R) => Dn Ax (L R)
-      case apply@Apply(lhs, delete@DeleteNode(rhs, expr)) =>
-        val res = delete.copy(source = Apply(lhs, rhs)(SameId(apply.id)), expr)(attributes.copy(delete.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Dn R) => Dn Ax (L R)
-      case apply@Apply(lhs, delete@DetachDeleteNode(rhs, expr)) =>
-        val res = delete.copy(source = Apply(lhs, rhs)(SameId(apply.id)), expr)(attributes.copy(delete.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Dr R) => Dr Ax (L R)
-      case apply@Apply(lhs, delete@DeleteRelationship(rhs, expr)) =>
-        val res = delete.copy(source = Apply(lhs, rhs)(SameId(apply.id)), expr)(attributes.copy(delete.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Sp R) => Sp Ax (L R)
-      case apply@Apply(lhs, set@SetNodeProperty(rhs, idName, key, value)) =>
-        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, key, value)(attributes.copy(set.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Sp R) => Sp Ax (L R)
-      case apply@Apply(lhs, set@SetRelationshipProperty(rhs, idName, key, value)) =>
-        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, key, value)(attributes.copy(set.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Sp R) => Sp Ax (L R)
-      case apply@Apply(lhs, set@SetProperty(rhs, idName, key, value)) =>
-        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, key, value)(attributes.copy(set.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Sm R) => Sm Ax (L R)
-      case apply@Apply(lhs, set@SetNodePropertiesFromMap(rhs, idName, expr, removes)) =>
-        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, expr, removes)(attributes.copy(set.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Sm R) => Sm Ax (L R)
-      case apply@Apply(lhs, set@SetRelationshipPropertiesFromMap(rhs, idName, expr, removes)) =>
-        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, expr, removes)(attributes.copy(set.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Sm R) => Sm Ax (L R)
-      case apply@Apply(lhs, set@SetPropertiesFromMap(rhs, idName, expr, removes)) =>
-        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, expr, removes)(attributes.copy(set.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Sl R) => Sl Ax (L R)
-      case apply@Apply(lhs, set@SetLabels(rhs, idName, labelNames)) =>
-        val res = set.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, labelNames)(attributes.copy(set.id))
-        solveds.copy(apply.id, res.id)
-        res
-
-      // L Ax (Rl R) => Rl Ax (L R)
-      case apply@Apply(lhs, remove@RemoveLabels(rhs, idName, labelNames)) =>
-        val res = remove.copy(source = Apply(lhs, rhs)(SameId(apply.id)), idName, labelNames)(attributes.copy(remove.id))
-        solveds.copy(apply.id, res.id)
-        res
-
     }))
 
     override def apply(input: AnyRef): AnyRef = instance.apply(input)

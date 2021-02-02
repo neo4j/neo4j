@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_5.StrictnessMode
-import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 import org.neo4j.cypher.internal.v3_5.expressions.{Expression, PropertyKeyName}
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 
 /**
   * for ( row <- source )
@@ -35,7 +35,7 @@ case class SetRelationshipProperty(
                                    idName: String,
                                    propertyKey: PropertyKeyName,
                                    expression: Expression
-                                 )(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+                                 )(implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
@@ -44,4 +44,6 @@ case class SetRelationshipProperty(
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): SetRelationshipProperty = copy(source = source)
 }

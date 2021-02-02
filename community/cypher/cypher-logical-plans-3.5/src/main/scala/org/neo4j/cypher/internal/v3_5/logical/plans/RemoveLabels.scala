@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_5.StrictnessMode
-import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 import org.neo4j.cypher.internal.v3_5.expressions.LabelName
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 
 /**
   * For each source row, the labels in 'labelNamed' are removed from the node 'idName'.
   * The source row is produced.
   */
-case class RemoveLabels(source: LogicalPlan, idName: String, labelNames: Seq[LabelName])(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+case class RemoveLabels(source: LogicalPlan, idName: String, labelNames: Seq[LabelName])(implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
@@ -36,4 +36,6 @@ case class RemoveLabels(source: LogicalPlan, idName: String, labelNames: Seq[Lab
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): RemoveLabels = copy(source = source)
 }

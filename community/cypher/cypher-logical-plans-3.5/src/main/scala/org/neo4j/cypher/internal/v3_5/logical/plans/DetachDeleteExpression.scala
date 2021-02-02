@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_5.StrictnessMode
+import org.neo4j.cypher.internal.v3_5.expressions.Expression
 import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 
 /**
@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
   *   node) all it's relationships are also deleted
   *   path) all nodes in the path and all their relationships are deleted.
   */
-case class DetachDeleteExpression(source: LogicalPlan, expression: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+case class DetachDeleteExpression(source: LogicalPlan, expression: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
@@ -37,4 +37,6 @@ case class DetachDeleteExpression(source: LogicalPlan, expression: Expression)(i
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): DetachDeleteExpression = copy(source = source)
 }

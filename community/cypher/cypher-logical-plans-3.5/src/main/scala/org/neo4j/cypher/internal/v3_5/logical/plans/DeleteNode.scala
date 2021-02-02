@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_5.StrictnessMode
+import org.neo4j.cypher.internal.v3_5.expressions.Expression
 import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 
 /**
   * For each input row, delete the node specified by 'expression' from the graph.
   */
-case class DeleteNode(source: LogicalPlan, expression: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+case class DeleteNode(source: LogicalPlan, expression: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
@@ -35,4 +35,6 @@ case class DeleteNode(source: LogicalPlan, expression: Expression)(implicit idGe
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): DeleteNode = copy(source = source)
 }

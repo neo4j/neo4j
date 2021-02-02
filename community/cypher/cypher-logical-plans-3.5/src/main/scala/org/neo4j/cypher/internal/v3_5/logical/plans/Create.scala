@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 case class Create(source: LogicalPlan,
                   nodes: Seq[CreateNode],
                   relationships: Seq[CreateRelationship])
-                 (implicit idGen: IdGen) extends LogicalPlan(idGen) {
+                 (implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
@@ -39,4 +39,6 @@ case class Create(source: LogicalPlan,
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): Create = copy(source = source)
 }

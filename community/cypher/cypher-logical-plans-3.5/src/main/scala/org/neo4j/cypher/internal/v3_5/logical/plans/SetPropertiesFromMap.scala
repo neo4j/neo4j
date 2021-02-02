@@ -35,7 +35,7 @@ case class SetPropertiesFromMap(source: LogicalPlan,
                                 entity: Expression,
                                 expression: Expression,
                                 removeOtherProps: Boolean
-                               )(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+                               )(implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 
@@ -44,4 +44,6 @@ case class SetPropertiesFromMap(source: LogicalPlan,
   override def rhs: Option[LogicalPlan] = None
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): SetPropertiesFromMap = copy(source = source)
 }

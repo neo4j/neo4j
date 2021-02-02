@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_5.StrictnessMode
-import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 import org.neo4j.cypher.internal.v3_5.expressions.{Expression, PropertyKeyName}
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 
 /**
   * for ( row <- source )
@@ -35,13 +35,15 @@ case class SetProperty(
                         entity: Expression,
                         propertyKey: PropertyKeyName,
                         value: Expression
-                      )(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+                      )(implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
 
-  override def lhs = Some(source)
+  override def lhs: Option[LogicalPlan] = Some(source)
 
-  override def rhs = None
+  override def rhs: Option[LogicalPlan] = None
 
   override val availableSymbols: Set[String] = source.availableSymbols
 
   override def strictness: StrictnessMode = source.strictness
+
+  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): SetProperty = copy(source = source)
 }
