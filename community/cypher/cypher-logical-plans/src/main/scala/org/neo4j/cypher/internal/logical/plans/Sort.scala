@@ -24,12 +24,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * Buffer all source rows and sort them according to 'sortItems'. Produce the rows in sorted order.
  */
-case class Sort(source: LogicalPlan,
+case class Sort(override val source: LogicalPlan,
                 sortItems: Seq[ColumnOrder])
-                (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan  {
+                (implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with EagerLogicalPlan  {
 
-  val lhs = Some(source)
-  val rhs = None
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   val availableSymbols: Set[String] = source.availableSymbols
 }

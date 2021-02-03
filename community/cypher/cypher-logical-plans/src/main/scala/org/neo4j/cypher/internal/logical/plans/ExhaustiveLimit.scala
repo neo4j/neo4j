@@ -26,9 +26,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * Only produce the first 'count' rows from source but exhausts the source. Used for plan where the source has side effects that need to happen
  * regardless of the limit.
  */
-case class ExhaustiveLimit(source: LogicalPlan, count: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) with ExhaustiveLogicalPlan {
-  val lhs: Option[LogicalPlan] = Some(source)
-  val rhs: Option[LogicalPlan] = None
+case class ExhaustiveLimit(override val source: LogicalPlan, count: Expression)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with ExhaustiveLogicalPlan {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   val availableSymbols: Set[String] = source.availableSymbols
 }

@@ -37,8 +37,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *   }
  * }
  */
-case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String, expr: Expression)(implicit idGen: IdGen)
-  extends AbstractLetSelectOrSemiApply(left, right, idName, expr)(idGen)
+case class LetSelectOrSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, idName: String, expr: Expression)(implicit idGen: IdGen)
+  extends AbstractLetSelectOrSemiApply(left, idName)(idGen) {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
+  override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
+}
 
 /**
  * Like LetAntiSemiApply, but with a precondition 'expr'. If 'expr' is true, 'idName' will be set to true without
@@ -55,16 +58,14 @@ case class LetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: S
  *   }
  * }
  */
-case class LetSelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String, expr: Expression)(implicit idGen: IdGen)
-  extends AbstractLetSelectOrSemiApply(left, right, idName, expr)(idGen)
+case class LetSelectOrAntiSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, idName: String, expr: Expression)(implicit idGen: IdGen)
+  extends AbstractLetSelectOrSemiApply(left, idName)(idGen) {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
+  override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
+}
 
-abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String, expr: Expression)(idGen: IdGen)
-  extends LogicalPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
-  val lhs = Some(left)
-  val rhs = Some(right)
-
-  val source: LogicalPlan = left
-  val inner: LogicalPlan = right
+abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, idName: String)(idGen: IdGen)
+  extends LogicalBinaryPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
 
   override val availableSymbols: Set[String] = left.availableSymbols + idName
 }

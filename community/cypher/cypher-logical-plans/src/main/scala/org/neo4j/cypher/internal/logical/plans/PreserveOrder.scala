@@ -24,11 +24,10 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * Plan used to indicate that order needs to be preserved.
  */
-case class PreserveOrder(source: LogicalPlan)
-                        (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
+case class PreserveOrder(override val source: LogicalPlan)
+                        (implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
 
-  val lhs = Some(source)
-  val rhs = None
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   val availableSymbols: Set[String] = source.availableSymbols
 }

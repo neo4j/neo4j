@@ -24,11 +24,9 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * Consumes and buffers all source rows, marks the transaction as stable, and then produces all rows.
  */
-case class Eager(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
+case class Eager(override val source: LogicalPlan)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
+
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols
-
-  override def lhs: Option[LogicalPlan] = Some(source)
-
-  override def rhs: Option[LogicalPlan] = None
 }

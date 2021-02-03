@@ -30,16 +30,12 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * This is a special version of CreateNode, which is used in a merge plan after checking that no node with the same
  * labels and properties exist.
  */
-case class MergeCreateNode(source: LogicalPlan, idName: String, labels: Seq[LabelName], properties: Option[Expression])(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with UpdatingPlan {
+case class MergeCreateNode(override val source: LogicalPlan, idName: String, labels: Seq[LabelName], properties: Option[Expression])(implicit idGen: IdGen)
+  extends LogicalUnaryPlan(idGen) with UpdatingPlan {
 
-  override def lhs: Option[LogicalPlan] = Some(source)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = {
     source.availableSymbols + idName
   }
-
-  override def rhs: Option[LogicalPlan] = None
-
-  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): MergeCreateNode = copy(source = source)
 }

@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *   for ( rightRow <- right )
  *     produce (leftRow merge rightRow)
  */
-case class CartesianProduct(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+case class CartesianProduct(override val left: LogicalPlan, override val right: LogicalPlan)(implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) {
 
-  val lhs = Some(left)
-  val rhs = Some(right)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
+  override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
 }

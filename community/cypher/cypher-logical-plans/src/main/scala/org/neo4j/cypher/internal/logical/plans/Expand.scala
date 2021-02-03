@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * provided constraints. Produce one row per traversed relationships, and add the
  * relationship and end node as values on the produced rows.
  */
-case class Expand(source: LogicalPlan,
+case class Expand(override val source: LogicalPlan,
                   from: String,
                   dir: SemanticDirection,
                   types: Seq[RelTypeName],
@@ -39,10 +39,8 @@ case class Expand(source: LogicalPlan,
                   relName: String,
                   mode: ExpansionMode = ExpandAll)
                  (implicit idGen: IdGen)
-  extends LogicalPlan(idGen) {
-
-  override val lhs: Option[LogicalPlan] = Some(source)
-  override def rhs: Option[LogicalPlan] = None
+  extends LogicalUnaryPlan(idGen) {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[String] = source.availableSymbols + relName + to
 }
 
@@ -51,7 +49,7 @@ case class Expand(source: LogicalPlan,
  * row is produced instead populated by the argument, and the 'relName' and 'to' variables
  * are set to NO_VALUE.
  */
-case class OptionalExpand(source: LogicalPlan,
+case class OptionalExpand(override val source: LogicalPlan,
                           from: String,
                           dir: SemanticDirection,
                           types: Seq[RelTypeName],
@@ -60,10 +58,9 @@ case class OptionalExpand(source: LogicalPlan,
                           mode: ExpansionMode = ExpandAll,
                           predicate: Option[Expression] = None)
                          (implicit idGen: IdGen)
-  extends LogicalPlan(idGen) {
+  extends LogicalUnaryPlan(idGen) {
 
-  override val lhs: Option[LogicalPlan] = Some(source)
-  override def rhs: Option[LogicalPlan] = None
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[String] = source.availableSymbols + relName + to
 }
 
@@ -75,7 +72,7 @@ case class OptionalExpand(source: LogicalPlan,
  *
  * The relationships and end node of the corresponding path are added to the produced row.
  */
-case class VarExpand(source: LogicalPlan,
+case class VarExpand(override val source: LogicalPlan,
                      from: String,
                      dir: SemanticDirection,
                      projectedDir: SemanticDirection,
@@ -86,9 +83,8 @@ case class VarExpand(source: LogicalPlan,
                      mode: ExpansionMode = ExpandAll,
                      nodePredicate: Option[VariablePredicate] = None,
                      relationshipPredicate: Option[VariablePredicate] = None)
-                    (implicit idGen: IdGen) extends LogicalPlan(idGen) {
-  override val lhs: Option[LogicalPlan] = Some(source)
-  override def rhs: Option[LogicalPlan] = None
+                    (implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[String] = source.availableSymbols + relName + to
 }
 
@@ -100,7 +96,7 @@ case class VarExpand(source: LogicalPlan,
  *
  * Only the end node is added to produced rows.
  */
-case class PruningVarExpand(source: LogicalPlan,
+case class PruningVarExpand(override val source: LogicalPlan,
                             from: String,
                             dir: SemanticDirection,
                             types: Seq[RelTypeName],
@@ -110,10 +106,9 @@ case class PruningVarExpand(source: LogicalPlan,
                             nodePredicate: Option[VariablePredicate] = None,
                             relationshipPredicate: Option[VariablePredicate] = None)
                            (implicit idGen: IdGen)
-  extends LogicalPlan(idGen)  {
+  extends LogicalUnaryPlan(idGen)  {
 
-  override val lhs: Option[LogicalPlan] = Some(source)
-  override def rhs: Option[LogicalPlan] = None
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols + to
 }

@@ -29,14 +29,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * @param skipSortingPrefixLength skip sorting so many rows at the beginning.
  *                                This is an improvement if we know that these rows are skipped afterwards anyway.
  */
-case class PartialSort(source: LogicalPlan,
+case class PartialSort(override val source: LogicalPlan,
                        alreadySortedPrefix: Seq[ColumnOrder],
                        stillToSortSuffix: Seq[ColumnOrder],
                        skipSortingPrefixLength: Option[Expression] = None)
-                      (implicit idGen: IdGen) extends LogicalPlan(idGen)  {
-
-  val lhs = Some(source)
-  val rhs = None
-
+                      (implicit idGen: IdGen) extends LogicalUnaryPlan(idGen)  {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   val availableSymbols: Set[String] = source.availableSymbols
 }

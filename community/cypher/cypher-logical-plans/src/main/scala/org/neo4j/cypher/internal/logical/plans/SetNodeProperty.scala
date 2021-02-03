@@ -30,18 +30,13 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *
  *   produce row
  */
-case class SetNodeProperty(source: LogicalPlan,
+case class SetNodeProperty(override val source: LogicalPlan,
                            idName: String,
                            propertyKey: PropertyKeyName,
                            value: Expression
                           )(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with UpdatingPlan {
-
-  override def lhs: Option[LogicalPlan] = Some(source)
+  extends LogicalUnaryPlan(idGen) with UpdatingPlan {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols + idName
-
-  override def rhs: Option[LogicalPlan] = None
-
-  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): SetNodeProperty = copy(source = source)
 }

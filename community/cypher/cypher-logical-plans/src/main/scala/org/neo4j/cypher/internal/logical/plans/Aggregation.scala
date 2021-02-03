@@ -30,11 +30,13 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *
  * If there are no groupingExpressions, aggregates are computed over all source rows.
  */
-case class Aggregation(source: LogicalPlan,
+case class Aggregation(override val source: LogicalPlan,
                        override val groupingExpressions: Map[String, Expression],
                        override val aggregationExpressions: Map[String, Expression])
                       (implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with EagerLogicalPlan with AggregatingPlan with ProjectingPlan {
+  extends LogicalUnaryPlan(idGen) with EagerLogicalPlan with AggregatingPlan with ProjectingPlan {
+
+ override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
  override val projectExpressions: Map[String, Expression] = groupingExpressions
 

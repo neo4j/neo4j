@@ -24,10 +24,9 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * NOTE: This plan is only for testing
  */
-case class NonPipelined(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen)  {
+case class NonPipelined(override val source: LogicalPlan)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen)  {
 
-  val lhs: Option[LogicalPlan] = Some(source)
-  def rhs: Option[LogicalPlan] = None
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   val availableSymbols: Set[String] = source.availableSymbols
 }

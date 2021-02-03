@@ -29,12 +29,12 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * This is equivalent to a right outer join in relational algebra.
  */
 case class RightOuterHashJoin(nodes: Set[String],
-                             left: LogicalPlan,
-                             right: LogicalPlan)
-                            (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
+                             override val left: LogicalPlan,
+                             override val right: LogicalPlan)
+                            (implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
 
-  val lhs = Some(left)
-  val rhs = Some(right)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
+  override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
 

@@ -27,9 +27,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * which have been produced before. That is, the order of rows is unchanged, but each
  * unique combination of values is only produced once.
  */
-case class Distinct(source: LogicalPlan,
+case class Distinct(override val source: LogicalPlan,
                     override val groupingExpressions: Map[String, Expression])
-                   (implicit idGen: IdGen) extends LogicalPlan(idGen) with ProjectingPlan with AggregatingPlan {
+                   (implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with ProjectingPlan with AggregatingPlan {
+
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val projectExpressions: Map[String, Expression] = groupingExpressions
   override val availableSymbols: Set[String] = groupingExpressions.keySet

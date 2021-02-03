@@ -27,12 +27,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * For each source row, produce it if all predicates are true.
  */
 case class Selection(predicate: Ands,
-                     source: LogicalPlan
-                    )(implicit idGen: IdGen) extends LogicalPlan(idGen)  {
+                     override val source: LogicalPlan
+                    )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen)  {
   assert(predicate.exprs.nonEmpty, "A selection plan should never be created without predicates")
 
-  val lhs = Some(source)
-  def rhs = None
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   def numPredicates: Int = predicate.exprs.size
 

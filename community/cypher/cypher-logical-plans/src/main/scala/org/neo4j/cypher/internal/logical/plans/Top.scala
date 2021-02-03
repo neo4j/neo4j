@@ -26,10 +26,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * Sort source rows according to the ordering in 'sortItems'. Only retain the first 'limit' rows, which are
  * produced once source if fully consumed.
  */
-case class Top(source: LogicalPlan, sortItems: Seq[ColumnOrder], limit: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
-  override def lhs: Option[LogicalPlan] = Some(source)
-
-  override def rhs: Option[LogicalPlan] = None
-
+case class Top(override val source: LogicalPlan, sortItems: Seq[ColumnOrder], limit: Expression)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with EagerLogicalPlan {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override val availableSymbols: Set[String] = source.availableSymbols
 }

@@ -33,14 +33,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * }
  * }}}
  */
-case class Apply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with ApplyPlan {
+case class Apply(override val left: LogicalPlan, override val right: LogicalPlan)(implicit idGen: IdGen)
+  extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
-  val lhs: Option[LogicalPlan] = Some(left)
-  val rhs: Option[LogicalPlan] = Some(right)
-
-  def createNew(left: LogicalPlan, right: LogicalPlan, idGen: IdGen): Apply =
-    Apply(left, right)(idGen)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
+  override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
 }

@@ -30,14 +30,10 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * This is a special version of CreateRelationship, which is used in a merge plan after checking that no relationship
  * with the same type and properties exist between the given nodes.
  */
-case class MergeCreateRelationship(source: LogicalPlan, idName: String, startNode: String, typ: RelTypeName, endNode: String, properties: Option[Expression])
-                                  (implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
+case class MergeCreateRelationship(override val source: LogicalPlan, idName: String, startNode: String, typ: RelTypeName, endNode: String, properties: Option[Expression])
+                                  (implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
 
-  override def lhs: Option[LogicalPlan] = Some(source)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols + idName + startNode + endNode
-
-  override def rhs: Option[LogicalPlan] = None
-
-  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): MergeCreateRelationship = copy(source = source)
 }

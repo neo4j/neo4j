@@ -31,7 +31,10 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *   produce leftRow
  * }
  */
-case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)(implicit idGen: IdGen) extends AbstractLetSemiApply(left, right, idName)(idGen)
+case class LetSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, idName: String)(implicit idGen: IdGen) extends AbstractLetSemiApply(left, right, idName)(idGen) {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
+  override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
+}
 
 /**
  * For every row in left, set that row as the argument, and apply to right. Produce left row, and set 'idName' =
@@ -43,15 +46,13 @@ case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)(i
  *   produce leftRow
  * }
  */
-case class LetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)(implicit idGen: IdGen) extends AbstractLetSemiApply(left, right, idName)(idGen)
+case class LetAntiSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, idName: String)(implicit idGen: IdGen) extends AbstractLetSemiApply(left, right, idName)(idGen) {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
+  override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
+}
 
 abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
-  val lhs = Some(left)
-  val rhs = Some(right)
-
-  val source: LogicalPlan = left
-  val inner: LogicalPlan = right
+  extends LogicalBinaryPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
 
   override val availableSymbols: Set[String] = left.availableSymbols + idName
 }

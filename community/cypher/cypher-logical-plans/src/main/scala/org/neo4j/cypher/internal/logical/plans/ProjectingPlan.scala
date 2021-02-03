@@ -22,13 +22,12 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 
-trait ProjectingPlan extends LogicalPlan {
-  val source: LogicalPlan
-  // The projected expressions
-  val projectExpressions: Map[String, Expression]
+trait ProjectingPlan extends LogicalUnaryPlan {
 
-  override val lhs: Option[LogicalPlan] = Some(source)
-  override val rhs: Option[LogicalPlan] = None
+  /**
+   * override def withLhs(newLHS: LogicalPlan): LogicalUnaryPlan = copy(source = newLHS)
+   */
+  def projectExpressions: Map[String, Expression]
 
   def aliases: Map[String, Expression] =
     projectExpressions.filter { case (_, expr) => expr.isInstanceOf[LogicalVariable] }

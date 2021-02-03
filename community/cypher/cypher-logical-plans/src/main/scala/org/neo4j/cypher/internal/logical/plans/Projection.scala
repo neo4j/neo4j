@@ -27,8 +27,9 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * 'expressions', the produced row get an extra variable name as the key, with the value of
  * the expression.
  */
-case class Projection(source: LogicalPlan, projectExpressions: Map[String, Expression])
-                     (implicit idGen: IdGen) extends LogicalPlan(idGen)  with ProjectingPlan {
+case class Projection(override val source: LogicalPlan, projectExpressions: Map[String, Expression])
+                     (implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with ProjectingPlan {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   val availableSymbols: Set[String] = source.availableSymbols ++ projectExpressions.keySet
 }

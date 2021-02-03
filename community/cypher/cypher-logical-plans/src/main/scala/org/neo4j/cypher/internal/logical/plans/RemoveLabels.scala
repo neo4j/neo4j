@@ -26,13 +26,9 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * For each source row, the labels in 'labelNamed' are removed from the node 'idName'.
  * The source row is produced.
  */
-case class RemoveLabels(source: LogicalPlan, idName: String, labelNames: Seq[LabelName])(implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
+case class RemoveLabels(override val source: LogicalPlan, idName: String, labelNames: Seq[LabelName])(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
 
-  override def lhs: Option[LogicalPlan] = Some(source)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols + idName
-
-  override def rhs: Option[LogicalPlan] = None
-
-  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): RemoveLabels = copy(source = source)
 }

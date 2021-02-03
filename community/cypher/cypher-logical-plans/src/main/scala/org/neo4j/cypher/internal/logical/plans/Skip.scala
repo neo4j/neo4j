@@ -25,9 +25,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /*
  * Produce source rows except the first 'count' rows, which are ignored.
  */
-case class Skip(source: LogicalPlan, count: Expression)(implicit idGen: IdGen) extends LogicalPlan(idGen)  {
-  val lhs = Some(source)
-  val rhs = None
+case class Skip(override val source: LogicalPlan, count: Expression)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen)  {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols
 }

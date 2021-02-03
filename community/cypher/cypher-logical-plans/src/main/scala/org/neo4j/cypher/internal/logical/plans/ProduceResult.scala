@@ -25,10 +25,9 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * For every source row, produce a row containing only the variables in 'columns'. The ProduceResult operator is
  * always planned as the root operator in a logical plan tree.
  */
-case class ProduceResult(source: LogicalPlan, columns: Seq[String])(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+case class ProduceResult(override val source: LogicalPlan, columns: Seq[String])(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
 
-  val lhs = Some(source)
-  def rhs = None
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   val availableSymbols: Set[String] = source.availableSymbols
 }

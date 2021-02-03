@@ -58,18 +58,17 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * |
  * +<source>         (a)
  */
-case class TriadicSelection(left: LogicalPlan,
-                            right: LogicalPlan,
+case class TriadicSelection(override val left: LogicalPlan,
+                            override val right: LogicalPlan,
                             positivePredicate: Boolean,
                             sourceId: String,
                             seenId: String,
                             targetId: String
                            )(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with ApplyPlan {
+  extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
-  override def lhs: Option[LogicalPlan] = Some(left)
-
-  override def rhs: Option[LogicalPlan] = Some(right)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
+  override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
 }
@@ -77,27 +76,25 @@ case class TriadicSelection(left: LogicalPlan,
 // TriadicBuild and TriadicFilter are used by Pipelined to perform the same logic as TriadicSelection.
 // 'triadicSelectionId' is used to link corresponding Build and Filter plans.
 
-case class TriadicBuild(source: LogicalPlan,
+case class TriadicBuild(override val source: LogicalPlan,
                         sourceId: String,
                         seenId: String,
                         triadicSelectionId: Some[Id]) // wrapped in Some because Id is a value class and doesn't play well with rewriting
                        (implicit idGen: IdGen)
-  extends LogicalPlan(idGen)  {
+  extends LogicalUnaryPlan(idGen)  {
 
-  override def lhs: Option[LogicalPlan] = Some(source)
-  override def rhs: Option[LogicalPlan] = None
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+
   override def availableSymbols: Set[String] = source.availableSymbols
 }
 
-case class TriadicFilter(source: LogicalPlan,
+case class TriadicFilter(override val source: LogicalPlan,
                          positivePredicate: Boolean,
                          sourceId: String,
                          targetId: String,
                          triadicSelectionId: Some[Id]) // wrapped in Some because Id is a value class and doesn't play well with rewriting
                         (implicit idGen: IdGen)
-  extends LogicalPlan(idGen)  {
-
-  override def lhs: Option[LogicalPlan] = Some(source)
-  override def rhs: Option[LogicalPlan] = None
+  extends LogicalUnaryPlan(idGen)  {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
   override def availableSymbols: Set[String] = source.availableSymbols
 }

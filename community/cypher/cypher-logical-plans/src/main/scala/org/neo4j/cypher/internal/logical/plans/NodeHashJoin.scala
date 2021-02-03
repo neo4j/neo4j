@@ -37,12 +37,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *     produce (leftRow merge rightRow)
  */
 case class NodeHashJoin(nodes: Set[String],
-                        left: LogicalPlan,
-                        right: LogicalPlan)
-                       (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
-
-  val lhs = Some(left)
-  val rhs = Some(right)
+                        override val left: LogicalPlan,
+                        override val right: LogicalPlan)
+                       (implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
+  override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
 }

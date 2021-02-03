@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import java.lang.reflect.Method
-
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
@@ -35,6 +33,7 @@ import org.neo4j.cypher.internal.util.attribution.Identifiable
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.exceptions.InternalException
 
+import java.lang.reflect.Method
 import scala.collection.mutable
 import scala.collection.mutable.ArrayStack
 import scala.util.hashing.MurmurHash3
@@ -209,12 +208,41 @@ trait AggregatingPlan extends LogicalPlan {
 // Marker interface for all plans that performs updates
 trait UpdatingPlan extends LogicalPlan {
   def source: LogicalPlan
-  def withSource(source: LogicalPlan)(implicit idGen: IdGen): UpdatingPlan
+  def withLhs(source: LogicalPlan)(idGen: IdGen): UpdatingPlan
+}
+
+abstract class LogicalBinaryPlan(idGen: IdGen) extends LogicalPlan(idGen) {
+  final def lhs: Option[LogicalPlan] = Some(left)
+  final def rhs: Option[LogicalPlan] = Some(right)
+
+  def left: LogicalPlan
+  def right: LogicalPlan
+
+  /**
+   * A copy of this plan with a new LHS
+   */
+  def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan
+  /**
+   * A copy of this plan with a new LHS
+   */
+  def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan
+}
+
+abstract class LogicalUnaryPlan(idGen: IdGen) extends LogicalPlan(idGen) {
+  final def lhs: Option[LogicalPlan] = Some(source)
+  final def rhs: Option[LogicalPlan] = None
+
+  def source: LogicalPlan
+
+  /**
+   * A copy of this plan with a new LHS
+   */
+  def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan
 }
 
 abstract class LogicalLeafPlan(idGen: IdGen) extends LogicalPlan(idGen)  {
-  final val lhs = None
-  final val rhs = None
+  final def lhs: Option[LogicalPlan] = None
+  final def rhs: Option[LogicalPlan] = None
   def argumentIds: Set[String]
 
   def usedVariables: Set[String]

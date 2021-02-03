@@ -26,18 +26,14 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * For each input row, create new nodes and relationships.
  */
-case class Create(source: LogicalPlan,
+case class Create(override val source: LogicalPlan,
                   nodes: Seq[CreateNode],
                   relationships: Seq[CreateRelationship])
-                 (implicit idGen: IdGen) extends LogicalPlan(idGen) with UpdatingPlan {
+                 (implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
 
-  override def lhs: Option[LogicalPlan] = Some(source)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = {
     source.availableSymbols ++ nodes.map(_.idName) ++ relationships.map(_.idName)
   }
-
-  override def rhs: Option[LogicalPlan] = None
-
-  override def withSource(source: LogicalPlan)(implicit idGen: IdGen): Create = copy(source = source)
 }

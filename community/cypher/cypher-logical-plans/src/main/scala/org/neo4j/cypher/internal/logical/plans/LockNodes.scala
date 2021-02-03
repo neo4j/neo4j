@@ -24,11 +24,10 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * For every source row, the nodes assigned to each of the 'nodesToLock' are locked exclusively.
  */
-case class LockNodes(source: LogicalPlan, nodesToLock: Set[String])(implicit idGen: IdGen)
-  extends LogicalPlan(idGen)  {
-  override def lhs: Option[LogicalPlan] = Some(source)
+case class LockNodes(override val source: LogicalPlan, nodesToLock: Set[String])(implicit idGen: IdGen)
+  extends LogicalUnaryPlan(idGen)  {
 
-  override def rhs: Option[LogicalPlan] = None
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols
 }

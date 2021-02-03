@@ -35,11 +35,11 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *
  *   produce leftRow
  */
-case class ForeachApply(left: LogicalPlan, right: LogicalPlan, variable: String, expression: Expression)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with ApplyPlan {
+case class ForeachApply(override val left: LogicalPlan, override val right: LogicalPlan, variable: String, expression: Expression)(implicit idGen: IdGen)
+  extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
-  val lhs = Some(left)
-  val rhs = Some(right)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
+  override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[String] = left.availableSymbols // NOTE: right.availableSymbols and variable are not available outside
 }

@@ -307,7 +307,7 @@ object Eagerness {
 
      // L Ax (Up R) => Up Ax (L R)
       case apply@Apply(lhs, updatingPlan: UpdatingPlan) =>
-        val res = updatingPlan.withSource(Apply(lhs, updatingPlan.source)(SameId(apply.id)))(attributes.copy(updatingPlan.id))
+        val res = updatingPlan.withLhs(Apply(lhs, updatingPlan.source)(SameId(apply.id)))(attributes.copy(updatingPlan.id))
         solveds.copy(apply.id, res.id)
         res
     }))

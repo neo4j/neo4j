@@ -24,11 +24,9 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * Throws exception if evaluated.
  */
-case class ErrorPlan(source: LogicalPlan, exception: Exception)(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+case class ErrorPlan(override val source: LogicalPlan, exception: Exception)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
 
-  override val lhs: Option[LogicalPlan] = Some(source)
-
-  override val rhs: Option[LogicalPlan] = None
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols
 }

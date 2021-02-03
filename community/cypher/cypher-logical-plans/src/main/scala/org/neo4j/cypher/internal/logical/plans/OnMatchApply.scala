@@ -25,10 +25,13 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * OnMatchApply produces the left-hand side and for each produced row from the left-hand side it performs
  * its right-hand side as a side-effect.
  */
-case class OnMatchApply(input: LogicalPlan, onMatch: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with ApplyPlan {
-  override def lhs: Option[LogicalPlan] = Some(input)
+case class OnMatchApply(input: LogicalPlan, onMatch: LogicalPlan)(implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) with ApplyPlan {
+  override def left: LogicalPlan = input
 
-  override def rhs: Option[LogicalPlan] = Some(onMatch)
+  override def right: LogicalPlan = onMatch
+
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(input = newLHS)(idGen)
+  override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(onMatch = newRHS)(idGen)
 
   override def availableSymbols: Set[String] = input.availableSymbols ++ onMatch.availableSymbols
 }

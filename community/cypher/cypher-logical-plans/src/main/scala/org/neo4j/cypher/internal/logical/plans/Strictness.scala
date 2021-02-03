@@ -22,34 +22,23 @@ package org.neo4j.cypher.internal.logical.plans
 /**
  * A plan that limits selectivity on child plans.
  */
-trait LimitingLogicalPlan {
-  self: LogicalPlan =>
-
-  val source: LogicalPlan
-}
+trait LimitingLogicalPlan extends LogicalUnaryPlan
 
 /**
  * A plan that eventually exhausts all input from LHS.
  */
-trait ExhaustiveLogicalPlan {
-  self: LogicalPlan =>
-}
-
+trait ExhaustiveLogicalPlan extends LogicalPlan
 
 
 /**
  * A plan that exhausts all input from LHS before producing it's first output.
  */
-trait EagerLogicalPlan extends ExhaustiveLogicalPlan {
-  self: LogicalPlan =>
-}
+trait EagerLogicalPlan extends ExhaustiveLogicalPlan
 
 /**
  * A plan that consumes only a single row from RHS for every row in LHS
  */
-trait SingleFromRightLogicalPlan {
-  self: LogicalPlan =>
-
-  val source: LogicalPlan
-  val inner: LogicalPlan
+trait SingleFromRightLogicalPlan extends LogicalBinaryPlan {
+  final def source: LogicalPlan = left
+  final def inner: LogicalPlan = right
 }

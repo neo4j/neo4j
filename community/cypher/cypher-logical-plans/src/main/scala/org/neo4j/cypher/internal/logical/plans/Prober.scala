@@ -27,10 +27,9 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *
  * NOTE: This plan is only for testing
  */
-case class Prober(source: LogicalPlan, probe: Probe)(implicit idGen: IdGen) extends LogicalPlan(idGen)  {
+case class Prober(override val source: LogicalPlan, probe: Probe)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen)  {
 
-  val lhs: Option[LogicalPlan] = Some(source)
-  def rhs: Option[LogicalPlan] = None
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   val availableSymbols: Set[String] = source.availableSymbols
 }

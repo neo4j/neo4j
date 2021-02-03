@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * Either executes the left-hand side or if the left-hand side is empty it executes the right-hand side.
  */
-case class EitherPlan(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen)  {
-  override def lhs: Option[LogicalPlan] = Some(left)
+case class EitherPlan(override val left: LogicalPlan, override val right: LogicalPlan)(implicit idGen: IdGen) extends LogicalBinaryPlan(idGen)  {
 
-  override def rhs: Option[LogicalPlan] = Some(right)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
+  override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override def availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
 }

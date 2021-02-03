@@ -19,17 +19,17 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
  * The definition of a value join is an equality predicate between two expressions that
  * have different, non-empty variable-dependency sets.
  */
-case class ValueHashJoin(left: LogicalPlan, right: LogicalPlan, join: Equals)
-                        (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
-  override val lhs = Some(left)
-  override val rhs = Some(right)
+case class ValueHashJoin(override val left: LogicalPlan, override val right: LogicalPlan, join: Equals)
+                        (implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
+  override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
 }
