@@ -65,7 +65,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <licenseHeaderFile>${project.basedir}/license-header.txt</licenseHeaderFile>
+                    <licenseHeaderFile>../../../build-resources/src/main/resources/${license-text.header}</licenseHeaderFile> <!-- Relative path because this plugin does not read from resources -->
                     <assembleDirectory>${project.build.directory}/generated</assembleDirectory>
                     <generateRepository>false</generateRepository>
                     <endorsedDir>lib</endorsedDir>
