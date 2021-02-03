@@ -68,14 +68,14 @@ case object planShortestPaths {
       (predicate.dependencies.map(_.name) intersect variables).isEmpty
     }
 
-    val (safePredicates, needFallbackPredicates) = predicates.partition {
+    val (_, needFallbackPredicates) = predicates.partition {
       case NoneIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
       case AllIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
       case _ => false
     }
 
     if (needFallbackPredicates.nonEmpty) {
-      planShortestPathsWithFallback(inner, shortestPaths, predicates, safePredicates, needFallbackPredicates, queryGraph, context)
+      planShortestPathsWithFallback(inner, shortestPaths, predicates, queryGraph, context)
     }
     else {
       context.logicalPlanProducer.planShortestPath(inner, shortestPaths, predicates, withFallBack = false,
@@ -93,8 +93,6 @@ case object planShortestPaths {
   private def planShortestPathsWithFallback(inner: LogicalPlan,
                                             shortestPath: ShortestPathPattern,
                                             predicates: Seq[Expression],
-                                            safePredicates: Seq[Expression],
-                                            unsafePredicates: Seq[Expression],
                                             queryGraph: QueryGraph,
                                             context: LogicalPlanningContext) = {
     // create warning for planning a shortest path fallback
@@ -104,13 +102,22 @@ case object planShortestPaths {
 
     // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
     // the graph algorithm does not find anything (left-hand-side)
-    val lhsArgument = lpp.planArgumentFrom(inner, context)
+    val lhsArgument = context.logicalPlanProducer.planArgument(
+      patternNodes = Set(shortestPath.rel.nodes._1, shortestPath.rel.nodes._2),
+      patternRels = Set.empty,
+      other = Set.empty,
+      context = context)
+
     val lhsSp = lpp.planShortestPath(lhsArgument, shortestPath, predicates, withFallBack = true,
       disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime, context = context)
     val lhsOption = lpp.planOptional(lhsSp, lhsArgument.availableSymbols, context)
     val lhs = lpp.planApply(inner, lhsOption, context)
 
-    val rhsArgument = lpp.planArgumentFrom(lhs, context)
+    val rhsArgument = context.logicalPlanProducer.planArgument(
+      patternNodes = Set(shortestPath.rel.nodes._1, shortestPath.rel.nodes._2),
+      patternRels = Set.empty,
+      other = Set.empty,
+      context = context)
 
     val rhs = if (context.errorIfShortestPathFallbackUsedAtRuntime) {
       lpp.planError(rhsArgument, new ExhaustiveShortestPathForbiddenException, context)

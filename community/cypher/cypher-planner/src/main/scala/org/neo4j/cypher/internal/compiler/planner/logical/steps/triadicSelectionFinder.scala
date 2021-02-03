@@ -112,7 +112,11 @@ object triadicSelectionFinder extends SelectionCandidateGenerator {
       else
         exp1
 
-      val argument = context.logicalPlanProducer.planArgumentFrom(left, context)
+      val argument = context.logicalPlanProducer.planArgument(
+        patternNodes = Set(exp2.from),
+        patternRels = Set(exp1.relName),
+        other = Set.empty,
+        context = context)
       val newExpand2 = Expand(argument, exp2.from, exp2.dir, exp2.types, exp2.to, exp2.relName, ExpandAll)(SameId(exp2.id))
       val right = if (incomingPredicates.nonEmpty)
         context.logicalPlanProducer.planSelection(newExpand2, incomingPredicates, context)

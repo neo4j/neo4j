@@ -776,20 +776,16 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planQueryArgument(queryGraph: QueryGraph, context: LogicalPlanningContext): LogicalPlan = {
     val patternNodes = queryGraph.argumentIds intersect queryGraph.patternNodes
-    val patternRels = queryGraph.patternRelationships.filter(rel => queryGraph.argumentIds.contains(rel.name))
+    val patternRels = queryGraph.patternRelationships.filter(rel => queryGraph.argumentIds.contains(rel.name)).map(_.name)
     val otherIds = queryGraph.argumentIds -- patternNodes
     planArgument(patternNodes, patternRels, otherIds, context)
   }
 
-  def planArgumentFrom(plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
-    annotate(Argument(plan.availableSymbols), solveds.get(plan.id), ProvidedOrder.empty, context)
-
   def planArgument(patternNodes: Set[String],
-                   patternRels: Set[PatternRelationship] = Set.empty,
+                   patternRels: Set[String] = Set.empty,
                    other: Set[String] = Set.empty,
                    context: LogicalPlanningContext): LogicalPlan = {
-    val relIds = patternRels.map(_.name)
-    val coveredIds = patternNodes ++ relIds ++ other
+    val coveredIds = patternNodes ++ patternRels ++ other
 
     val solved = RegularSinglePlannerQuery(queryGraph =
       QueryGraph(

@@ -178,7 +178,7 @@ trait SinglePlannerQuery extends PlannerQueryPart {
   }
 
   private def either[T](a: Option[T], b: Option[T]): Option[T] = (a, b) match {
-    case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
+    case (Some(aa), Some(bb)) => throw new InternalException(s"Can't join two query graphs. First: $aa, Second: $bb")
     case (s@Some(_), None) => s
     case (None, s) => s
   }

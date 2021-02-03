@@ -274,7 +274,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
                                      r2Types: Seq[String] = Seq.empty,
                                      r2Direction: SemanticDirection = OUTGOING,
                                      cLabels: Seq[String] = Seq.empty): TriadicSelection = {
-    val argument = Argument(expand1.availableSymbols)
+    val argument = Argument(Set("b", "r1"))
     val expand2B = Expand(argument, "b", r2Direction, r2Types.map(RelTypeName(_)(pos)), "c", "r2", ExpandAll)
     val relationshipUniqueness = not(equals(varFor("r1"), varFor("r2")))
     val labelPredicates = cLabels.map(lbl => hasLabels("c", lbl))
