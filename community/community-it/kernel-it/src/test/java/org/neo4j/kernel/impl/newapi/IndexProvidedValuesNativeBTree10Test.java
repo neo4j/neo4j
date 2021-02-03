@@ -27,14 +27,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -46,24 +47,27 @@ import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @ExtendWith( RandomExtension.class )
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
-public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<ReadTestSupport>
+abstract class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<ReadTestSupport>
 {
-    private static final int N_NODES = 10000;
+    private static final int N_ENTITIES = 10000;
+    public static final String TOKEN = "Token";
+    public static final String PROP = "prop";
+    public static final String PRIP = "prip";
+    public static final String PROP_INDEX = "propIndex";
+    public static final String PROP_PRIP_INDEX = "propPripIndex";
 
     @Inject
     private RandomRule randomRule;
 
     private List<Value> singlePropValues = new ArrayList<>();
     private List<ValueTuple> doublePropValues = new ArrayList<>();
-    private IndexDescriptor indexNodeProp;
-    private IndexDescriptor indexNodePropPrip;
 
     @Override
     public ReadTestSupport newTestSupport()
@@ -73,13 +77,15 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
         return readTestSupport;
     }
 
+    abstract EntityControl getEntityControl();
+
     @Override
     public void createTestGraph( GraphDatabaseService graphDb )
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            indexNodeProp = unwrap( tx.schema().indexFor( label( "Node" ) ).on( "prop" ).create() );
-            indexNodePropPrip = unwrap( tx.schema().indexFor( label( "Node" ) ).on( "prop" ).on( "prip" ).create() );
+            getEntityControl().createIndex( tx, TOKEN, PROP, PROP_INDEX );
+            getEntityControl().createIndex( tx, TOKEN, PROP, PRIP, PROP_PRIP_INDEX );
             tx.commit();
         }
         try ( Transaction tx = graphDb.beginTx() )
@@ -94,13 +100,13 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
 
             ValueType[] allExceptNonSortable = RandomValues.excluding( ValueType.STRING, ValueType.STRING_ARRAY );
 
-            for ( int i = 0; i < N_NODES; i++ )
+            for ( int i = 0; i < N_ENTITIES; i++ )
             {
-                Node node = tx.createNode( label( "Node" ) );
+                var node = getEntityControl().createEntity( tx, TOKEN );
                 Value propValue = randomValues.nextValueOfTypes( allExceptNonSortable );
-                node.setProperty( "prop", propValue.asObject() );
+                node.setProperty( PROP, propValue.asObject() );
                 Value pripValue = randomValues.nextValueOfTypes( allExceptNonSortable );
-                node.setProperty( "prip", pripValue.asObject() );
+                node.setProperty( PRIP, pripValue.asObject() );
 
                 singlePropValues.add( propValue );
                 doublePropValues.add( ValueTuple.of( propValue, pripValue ) );
@@ -112,52 +118,141 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
         doublePropValues.sort( ValueTuple.COMPARATOR );
     }
 
-    private IndexDescriptor unwrap( IndexDefinition indexDefinition )
-    {
-        return ((IndexDefinitionImpl) indexDefinition).getIndexReference();
-    }
-
     @Test
     void shouldGetAllSinglePropertyValues() throws Exception
     {
-        IndexReadSession index = read.indexReadSession( indexNodeProp );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
-        {
-            read.nodeIndexScan( index, node, unorderedValues() );
+        IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( PROP_INDEX ) );
+        var values = getEntityControl().findValues( tx, cursors, index );
 
-            List<Value> values = new ArrayList<>();
-            while ( node.next() )
-            {
-                values.add( node.propertyValue( 0 ) );
-            }
-
-            values.sort( Values.COMPARATOR );
-            for ( int i = 0; i < singlePropValues.size(); i++ )
-            {
-                assertEquals( singlePropValues.get( i ), values.get( i ) );
-            }
-        }
+        assertThat( values ).as( "index should return all single property values" ).containsExactlyInAnyOrderElementsOf( singlePropValues );
     }
 
     @Test
     void shouldGetAllDoublePropertyValues() throws Exception
     {
-        IndexReadSession index = read.indexReadSession( indexNodePropPrip );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE) )
-        {
-            read.nodeIndexScan( index, node, unorderedValues() );
+        IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( PROP_PRIP_INDEX ) );
+        var values = getEntityControl().findValuePairs( tx, cursors, index );
+        assertThat( values ).as( "index should return all double property values" ).containsExactlyInAnyOrderElementsOf( doublePropValues );
+    }
 
-            List<ValueTuple> values = new ArrayList<>();
-            while ( node.next() )
-            {
-                values.add( ValueTuple.of( node.propertyValue( 0 ), node.propertyValue( 1 ) ) );
-            }
+    enum EntityControl
+    {
+        NODE
+                {
+                    @Override
+                    public void createIndex( Transaction tx, String token, String propertyKey, String indexName )
+                    {
+                        tx.schema().indexFor( label( token ) ).on( propertyKey ).withName( indexName ).create();
+                    }
 
-            values.sort( ValueTuple.COMPARATOR );
-            for ( int i = 0; i < doublePropValues.size(); i++ )
-            {
-                assertEquals( doublePropValues.get( i ), values.get( i ) );
-            }
-        }
+                    @Override
+                    void createIndex( Transaction tx, String token, String propertyKey1, String propertyKey2, String indexName )
+                    {
+                        tx.schema().indexFor( label( token ) ).on( propertyKey1 ).on( propertyKey2 ).withName( indexName ).create();
+                    }
+
+                    @Override
+                    public List<Value> findValues( KernelTransaction tx, CursorFactory cursors, IndexReadSession index ) throws KernelException
+                    {
+                        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
+                        {
+                            tx.dataRead().nodeIndexScan( index, cursor, unorderedValues() );
+
+                            var values = new ArrayList<Value>();
+                            while ( cursor.next() )
+                            {
+                                values.add( cursor.propertyValue( 0 ) );
+                            }
+                            return values;
+                        }
+                    }
+
+                    @Override
+                    public List<ValueTuple> findValuePairs( KernelTransaction tx, CursorFactory cursors, IndexReadSession index ) throws KernelException
+                    {
+                        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor( NULL, EmptyMemoryTracker.INSTANCE ) )
+                        {
+                            tx.dataRead().nodeIndexScan( index, cursor, unorderedValues() );
+
+                            var values = new ArrayList<ValueTuple>();
+                            while ( cursor.next() )
+                            {
+                                values.add( ValueTuple.of( cursor.propertyValue( 0 ), cursor.propertyValue( 1 ) ) );
+                            }
+                            return values;
+                        }
+                    }
+
+                    @Override
+                    public Entity createEntity( Transaction tx, String token )
+                    {
+                        return tx.createNode( label( token ) );
+                    }
+                },
+
+        RELATIONSHIP
+                {
+                    @Override
+                    public void createIndex( Transaction tx, String token, String propertyKey, String indexName )
+                    {
+                        tx.schema().indexFor( RelationshipType.withName( token ) ).on( propertyKey ).withName( indexName ).create();
+                    }
+
+                    @Override
+                    void createIndex( Transaction tx, String token, String propertyKey1, String propertyKey2, String indexName )
+                    {
+                        tx.schema().indexFor( RelationshipType.withName( token ) ).on( propertyKey1 ).on( propertyKey2 ).withName( indexName ).create();
+                    }
+
+                    @Override
+                    public List<Value> findValues( KernelTransaction tx, CursorFactory cursors, IndexReadSession index ) throws KernelException
+                    {
+                        try ( var cursor = cursors.allocateRelationshipValueIndexCursor( NULL, tx.memoryTracker() ) )
+                        {
+                            tx.dataRead().relationshipIndexScan( index, cursor, unorderedValues() );
+
+                            var values = new ArrayList<Value>();
+                            while ( cursor.next() )
+                            {
+                                values.add( cursor.propertyValue( 0 ) );
+                            }
+
+                            return values;
+                        }
+                    }
+
+                    @Override
+                    public List<ValueTuple> findValuePairs( KernelTransaction tx, CursorFactory cursors, IndexReadSession index ) throws KernelException
+                    {
+                        try ( var cursor = cursors.allocateRelationshipValueIndexCursor( NULL, tx.memoryTracker() ) )
+                        {
+                            tx.dataRead().relationshipIndexScan( index, cursor, unorderedValues() );
+
+                            var values = new ArrayList<ValueTuple>();
+                            while ( cursor.next() )
+                            {
+                                values.add( ValueTuple.of( cursor.propertyValue( 0 ), cursor.propertyValue( 1 ) ) );
+                            }
+
+                            return values;
+                        }
+                    }
+
+                    @Override
+                    public Entity createEntity( Transaction tx, String token )
+                    {
+                        return tx.createNode().createRelationshipTo( tx.createNode(), RelationshipType.withName( token ) );
+                    }
+                };
+
+        abstract void createIndex( Transaction tx, String token, String propertyKey, String indexName );
+
+        abstract void createIndex( Transaction tx, String token, String propertyKey1, String propertyKey2, String indexName );
+
+        abstract List<Value> findValues( KernelTransaction tx, CursorFactory cursors, IndexReadSession index ) throws KernelException;
+
+        public abstract List<ValueTuple> findValuePairs( KernelTransaction tx, CursorFactory cursors, IndexReadSession index ) throws KernelException;
+
+        abstract Entity createEntity( Transaction tx, String token );
     }
 }
