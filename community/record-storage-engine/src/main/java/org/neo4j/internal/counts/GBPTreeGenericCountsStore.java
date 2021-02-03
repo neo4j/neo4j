@@ -167,19 +167,14 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         // Execute the initial counts building if we need to, i.e. if instantiation of this counts store had to create it
         if ( rebuilder != null )
         {
-            if ( readOnly )
-            {
-                throw new IllegalStateException( "Counts store needs rebuilding, most likely this database needs to be recovered." );
-            }
-            Lock lock = lock( this.lock.writeLock() );
-            long txId = rebuilder.lastCommittedTxId();
-            try ( CountUpdater updater = new CountUpdater( new TreeWriter( tree.writer( cursorTracer ) ), lock ) )
+            Preconditions.checkState( !readOnly, "Counts store needs rebuilding, most likely this database needs to be recovered." );
+            try ( CountUpdater updater = directUpdater( cursorTracer ) )
             {
                 rebuilder.rebuild( updater, cursorTracer, memoryTracker );
             }
             finally
             {
-                idSequence.set( txId, ArrayUtils.EMPTY_LONG_ARRAY );
+                idSequence.set( rebuilder.lastCommittedTxId(), ArrayUtils.EMPTY_LONG_ARRAY );
             }
         }
         started = true;
@@ -221,6 +216,31 @@ public class GBPTreeGenericCountsStore implements CountsStorage
             return null;
         }
         return new CountUpdater( new MapWriter( key -> readCountFromTree( key, cursorTracer ), changes, idSequence, txId ), lock );
+    }
+
+    /**
+     * Opens and returns a {@link CountUpdater} which makes direct insertions into the backing tree. This comes from the use case of having a way
+     * to build the initial data set without the context of transactions, such as batch-insertion or initial import.
+     */
+    protected CountUpdater directUpdater( PageCursorTracer cursorTracer ) throws IOException
+    {
+        Preconditions.checkState( !readOnly, "This counts store is read-only" );
+        boolean success = false;
+        Lock lock = this.lock.writeLock();
+        lock.lock();
+        try
+        {
+            CountUpdater updater = new CountUpdater( new TreeWriter( tree.writer( cursorTracer ) ), lock );
+            success = true;
+            return updater;
+        }
+        finally
+        {
+            if ( !success )
+            {
+                lock.unlock();
+            }
+        }
     }
 
     @Override

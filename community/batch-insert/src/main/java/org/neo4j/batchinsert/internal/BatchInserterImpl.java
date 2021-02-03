@@ -252,7 +252,7 @@ public class BatchInserterImpl implements BatchInserter
     private final PropertyKeyTokenStore propertyKeyTokenStore;
     private final PropertyStore propertyStore;
     private final SchemaStore schemaStore;
-    private final RelationshipGroupDegreesStore groupDegreesStore;
+    private final GBPTreeRelationshipGroupDegreesStore groupDegreesStore;
     private final NeoStoreIndexStoreView storeIndexStoreView;
 
     private final LabelTokenStore labelTokenStore;
@@ -328,7 +328,7 @@ public class BatchInserterImpl implements BatchInserter
                     new DegreesRebuildFromStore( neoStores ), config.get( GraphDatabaseSettings.read_only ), pageCacheTracer, NO_MONITOR );
             groupDegreesStore.start( cursorTracer, memoryTracker );
 
-            degreeUpdater = groupDegreesStore.apply( neoStores.getMetaDataStore().getLastCommittedTransactionId(), cursorTracer );
+            degreeUpdater = groupDegreesStore.directApply( cursorTracer );
 
             TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( this::createNewPropertyKeyId, TokenHolder.TYPE_PROPERTY_KEY );
             TokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder( this::createNewRelationshipType, TokenHolder.TYPE_RELATIONSHIP_TYPE );
@@ -1130,8 +1130,8 @@ public class BatchInserterImpl implements BatchInserter
               var ignore = new Lifespan( life );
               locker;
               neoStores;
-              degreeUpdater;
-              groupDegreesStore )
+              groupDegreesStore;
+              degreeUpdater )
         {
             rebuildCounts( pageCacheTracer, memoryTracker );
             LabelScanStore labelIndex = buildLabelIndex();

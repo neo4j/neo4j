@@ -51,12 +51,19 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
         super( pageCache, file, fileSystem, recoveryCollector, new RebuilderWrapper( rebuilder ), readOnly, NAME, pageCacheTracer, monitor );
     }
 
+    @Override
     public Updater apply( long txId, PageCursorTracer cursorTracer )
     {
         CountUpdater updater = updater( txId, cursorTracer );
         return updater != null ? new DegreeUpdater( updater ) : NO_OP_UPDATER;
     }
 
+    public Updater directApply( PageCursorTracer cursorTracer ) throws IOException
+    {
+        return new DegreeUpdater( directUpdater( cursorTracer ) );
+    }
+
+    @Override
     public long degree( long groupId, RelationshipDirection direction, PageCursorTracer cursorTracer )
     {
         return read( degreeKey( groupId, direction ), cursorTracer );
