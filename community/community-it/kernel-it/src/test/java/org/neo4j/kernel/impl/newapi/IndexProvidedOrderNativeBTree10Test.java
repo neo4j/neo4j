@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 
-class IndexProvidedOrderNativeBTree10Test extends AbstractIndexProvidedOrderTest
+abstract class IndexProvidedOrderNativeBTree10Test extends AbstractIndexProvidedOrderTest
 {
     @Override
     GraphDatabaseSettings.SchemaIndex getSchemaIndex()

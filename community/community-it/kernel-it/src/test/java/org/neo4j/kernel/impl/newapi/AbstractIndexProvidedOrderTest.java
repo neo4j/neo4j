@@ -31,17 +31,16 @@ import java.util.stream.Collectors;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
-import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -51,7 +50,7 @@ import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.ValueType;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -61,16 +60,17 @@ import static org.neo4j.values.storable.ValueTuple.COMPARATOR;
 @ExtendWith( RandomExtension.class )
 public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBase<ReadTestSupport>
 {
-    private static final int N_NODES = 10000;
+    private static final int N_ENTITIES = 10000;
     private static final int N_ITERATIONS = 100;
+    private static final String TOKEN = "Node";
+    private static final String PROPERTY_KEY = "prop";
+    private static final String INDEX_NAME = "propIndex";
 
     @Inject
     RandomRule randomRule;
 
-    private TreeSet<NodeValueTuple> singlePropValues = new TreeSet<>( COMPARATOR );
-    private TreeSet<NodeValueTuple> doublePropValues = new TreeSet<>( COMPARATOR );
+    private TreeSet<EntityValueTuple> singlePropValues = new TreeSet<>( COMPARATOR );
     private ValueType[] targetedTypes;
-    private IndexDescriptor indexNodeProp;
 
     @Override
     public ReadTestSupport newTestSupport()
@@ -82,13 +82,14 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
 
     abstract GraphDatabaseSettings.SchemaIndex getSchemaIndex();
 
+    abstract EntityControl getEntityControl();
+
     @Override
     public void createTestGraph( GraphDatabaseService graphDb )
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            indexNodeProp = unwrap( tx.schema().indexFor( label( "Node" ) ).on( "prop" ).create() );
-            tx.schema().indexFor( label( "Node" ) ).on( "prop" ).on( "prip" ).create();
+            getEntityControl().createIndex( tx, TOKEN, PROPERTY_KEY, INDEX_NAME );
             tx.commit();
         }
         try ( Transaction tx = graphDb.beginTx() )
@@ -115,43 +116,32 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
         targetedTypes = ensureHighEnoughCardinality( targetedTypes );
         try ( Transaction tx = graphDb.beginTx() )
         {
-            for ( int i = 0; i < N_NODES; i++ )
+            for ( int i = 0; i < N_ENTITIES; i++ )
             {
-                Node node = tx.createNode( label( "Node" ) );
+                var node = getEntityControl().createEntity( tx, TOKEN );
                 Value propValue;
-                Value pripValue;
-                NodeValueTuple singleValue;
-                NodeValueTuple doubleValue;
+                EntityValueTuple singleValue;
                 do
                 {
                     propValue = randomValues.nextValueOfTypes( targetedTypes );
-                    pripValue = randomValues.nextValueOfTypes( targetedTypes );
-                    singleValue = new NodeValueTuple( node.getId(), propValue );
-                    doubleValue = new NodeValueTuple( node.getId(), propValue, pripValue );
+                    singleValue = new EntityValueTuple( node.getId(), propValue );
                 }
-                while ( singlePropValues.contains( singleValue ) || doublePropValues.contains( doubleValue ) );
+                while ( singlePropValues.contains( singleValue ) );
                 singlePropValues.add( singleValue );
-                doublePropValues.add( doubleValue );
 
-                node.setProperty( "prop", propValue.asObject() );
-                node.setProperty( "prip", pripValue.asObject() );
+                node.setProperty( PROPERTY_KEY, propValue.asObject() );
             }
             tx.commit();
         }
     }
 
-    private IndexDescriptor unwrap( IndexDefinition indexDefinition )
-    {
-        return ((IndexDefinitionImpl) indexDefinition).getIndexReference();
-    }
-
     @Test
     void shouldProvideResultInOrderIfCapable() throws KernelException
     {
-        int prop = token.propertyKey( "prop" );
+        int prop = token.propertyKey( PROPERTY_KEY );
 
         RandomValues randomValues = randomRule.randomValues();
-        IndexReadSession index = read.indexReadSession( indexNodeProp );
+        IndexReadSession index = read.indexReadSession( tx.schemaRead().indexGetForName( INDEX_NAME ) );
         for ( int i = 0; i < N_ITERATIONS; i++ )
         {
             ValueType type = randomValues.among( targetedTypes );
@@ -173,39 +163,30 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
                                       IndexReadSession index,
                                       IndexOrder indexOrder ) throws KernelException
     {
-        NodeValueTuple from = new NodeValueTuple( Long.MIN_VALUE, randomValues.nextValueOfType( type ) );
-        NodeValueTuple to = new NodeValueTuple( Long.MAX_VALUE, randomValues.nextValueOfType( type ) );
+        EntityValueTuple from = new EntityValueTuple( Long.MIN_VALUE, randomValues.nextValueOfType( type ) );
+        EntityValueTuple to = new EntityValueTuple( Long.MAX_VALUE, randomValues.nextValueOfType( type ) );
         if ( COMPARATOR.compare( from, to ) > 0 )
         {
-            NodeValueTuple tmp = from;
+            EntityValueTuple tmp = from;
             from = to;
             to = tmp;
         }
         boolean fromInclusive = randomValues.nextBoolean();
         boolean toInclusive = randomValues.nextBoolean();
         PropertyIndexQuery.RangePredicate<?> range = PropertyIndexQuery.range( prop, from.getOnlyValue(), fromInclusive, to.getOnlyValue(), toInclusive );
+        List<Long> expectedIdsInOrder = expectedIdsInOrder( from, fromInclusive, to, toInclusive, indexOrder );
 
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
-        {
-            read.nodeIndexSeek( index, node, constrained( indexOrder, false ), range );
-
-            List<Long> expectedIdsInOrder = expectedIdsInOrder( from, fromInclusive, to, toInclusive, indexOrder );
-            List<Long> actualIdsInOrder = new ArrayList<>();
-            while ( node.next() )
-            {
-                actualIdsInOrder.add( node.nodeReference() );
-            }
-
-            assertEquals( expectedIdsInOrder, actualIdsInOrder, "actual node ids not in same order as expected for value type " + type );
-        }
+        var actualIdsInOrder = getEntityControl().findEntities( tx, cursors, index, indexOrder, range );
+        assertThat( actualIdsInOrder ).as( "actual node ids not in same order as expected for value type " + type )
+                                      .containsExactlyElementsOf( expectedIdsInOrder );
     }
 
-    private List<Long> expectedIdsInOrder( NodeValueTuple from, boolean fromInclusive, NodeValueTuple to, boolean toInclusive, IndexOrder indexOrder )
+    private List<Long> expectedIdsInOrder( EntityValueTuple from, boolean fromInclusive, EntityValueTuple to, boolean toInclusive, IndexOrder indexOrder )
     {
         List<Long> expectedIdsInOrder = singlePropValues.subSet( from, fromInclusive, to, toInclusive )
-                .stream()
-                .map( NodeValueTuple::nodeId )
-                .collect( Collectors.toList() );
+                                                        .stream()
+                                                        .map( EntityValueTuple::nodeId )
+                                                        .collect( Collectors.toList() );
         if ( indexOrder == IndexOrder.DESCENDING )
         {
             Collections.reverse( expectedIdsInOrder );
@@ -234,11 +215,11 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
         return result.toArray( new ValueType[0] );
     }
 
-    private static class NodeValueTuple extends ValueTuple
+    private static class EntityValueTuple extends ValueTuple
     {
         private final long nodeId;
 
-        private NodeValueTuple( long nodeId, Value... values )
+        private EntityValueTuple( long nodeId, Value... values )
         {
             super( values );
             this.nodeId = nodeId;
@@ -248,5 +229,81 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
         {
             return nodeId;
         }
+    }
+
+    enum EntityControl
+    {
+        NODE
+                {
+                    @Override
+                    public void createIndex( Transaction tx, String token, String propertyKey, String indexName )
+                    {
+                        tx.schema().indexFor( label( token ) ).on( propertyKey ).withName( indexName ).create();
+                    }
+
+                    @Override
+                    public List<Long> findEntities( KernelTransaction tx, CursorFactory cursors, IndexReadSession index, IndexOrder indexOrder,
+                                                    PropertyIndexQuery.RangePredicate<?> range ) throws KernelException
+                    {
+                        try ( var cursor = cursors.allocateNodeValueIndexCursor( NULL, tx.memoryTracker() ) )
+                        {
+                            tx.dataRead().nodeIndexSeek( index, cursor, constrained( indexOrder, false ), range );
+
+                            List<Long> actualIdsInOrder = new ArrayList<>();
+                            while ( cursor.next() )
+                            {
+                                actualIdsInOrder.add( cursor.nodeReference() );
+                            }
+
+                            return actualIdsInOrder;
+                        }
+                    }
+
+                    @Override
+                    public Entity createEntity( Transaction tx, String token )
+                    {
+                        return tx.createNode( label( token ) );
+                    }
+                },
+
+        RELATIONSHIP
+                {
+                    @Override
+                    public void createIndex( Transaction tx, String token, String propertyKey, String indexName )
+                    {
+                        tx.schema().indexFor( RelationshipType.withName( token ) ).on( propertyKey ).withName( indexName ).create();
+                    }
+
+                    @Override
+                    public List<Long> findEntities( KernelTransaction tx, CursorFactory cursors, IndexReadSession index, IndexOrder indexOrder,
+                                                    PropertyIndexQuery.RangePredicate<?> range ) throws KernelException
+                    {
+                        try ( var cursor = cursors.allocateRelationshipValueIndexCursor( NULL, tx.memoryTracker() ) )
+                        {
+                            tx.dataRead().relationshipIndexSeek( index, cursor, constrained( indexOrder, false ), range );
+
+                            List<Long> actualIdsInOrder = new ArrayList<>();
+                            while ( cursor.next() )
+                            {
+                                actualIdsInOrder.add( cursor.relationshipReference() );
+                            }
+
+                            return actualIdsInOrder;
+                        }
+                    }
+
+                    @Override
+                    public Entity createEntity( Transaction tx, String token )
+                    {
+                        return tx.createNode().createRelationshipTo( tx.createNode(), RelationshipType.withName( token ) );
+                    }
+                };
+
+        abstract void createIndex( Transaction tx, String token, String propertyKey, String indexName );
+
+        abstract List<Long> findEntities( KernelTransaction tx, CursorFactory cursors, IndexReadSession index, IndexOrder indexOrder,
+                                          PropertyIndexQuery.RangePredicate<?> range ) throws KernelException;
+
+        abstract Entity createEntity( Transaction tx, String token );
     }
 }
