@@ -1171,6 +1171,29 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     // then
     runtimeResult should beColumns("x", "prop").withSingleRow(nodes(10), 10).withLocks((SHARED, INDEX_ENTRY), (SHARED, LABEL))
   }
+
+  test("should verify that two nodes are identical with locking reads") {
+    val nodes = given {
+      uniqueIndex("Honey", "prop")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .assertSameNode("x")
+      .|.nodeIndexOperator("x:Honey(prop = 20)", unique = true)
+      .nodeIndexOperator("x:Honey(prop = 20)", unique = true)
+      .build(false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(20)
+    runtimeResult should beColumns("x").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, LABEL))
+  }
 }
 
 // Supported by slotted, pipelined, parallel (not compiled though because of composite index)
