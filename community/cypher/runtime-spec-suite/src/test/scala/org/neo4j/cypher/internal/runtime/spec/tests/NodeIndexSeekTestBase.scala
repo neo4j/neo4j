@@ -1016,71 +1016,6 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 // Supported by interpreted, slotted, pipelined, not by parallel
 trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   self: NodeIndexSeekTestBase[CONTEXT] =>
-  test("should exact seek nodes of a locking unique index with a property") {
-    val nodes = given {
-      uniqueIndex("Honey", "prop")
-      nodeGraph(5, "Milk")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("prop" -> i)
-      }, "Honey")
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .nodeIndexOperator("x:Honey(prop = 20)", unique = true)
-      .build(readOnly = false)
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = nodes(20)
-    runtimeResult should beColumns("x").withSingleRow(expected)
-  }
-
-  test("should exact (multiple, but identical) seek nodes of a locking unique index with a property") {
-    val nodes = given {
-      uniqueIndex("Honey", "prop")
-      nodeGraph(5, "Milk")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("prop" -> i)
-      }, "Honey")
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .nodeIndexOperator("x:Honey(prop = 20 OR 20)", unique = true)
-      .build(readOnly = false)
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    val expected = Seq(nodes(20))
-    runtimeResult should beColumns("x").withRows(singleColumn(expected))
-  }
-
-  test("should cache properties in locking unique index") {
-    val nodes = given {
-      uniqueIndex("Honey", "prop")
-      nodeGraph(5, "Milk")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("prop" -> i)
-      }, "Honey")
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x", "prop")
-      .projection("cache[x.prop] AS prop")
-      .nodeIndexOperator("x:Honey(prop = 10)", GetValue, unique = true)
-      .build(readOnly = false)
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x", "prop").withSingleRow(nodes(10), 10)
-  }
 
   test("should grab shared lock when finding a node") {
     val nodes = given {
@@ -1125,6 +1060,116 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     runtimeResult should beColumns("x").withNoRows().withLocks((EXCLUSIVE, INDEX_ENTRY), (SHARED, LABEL))
+  }
+
+  test("should exact seek nodes of a locking unique index with a property") {
+    val nodes = given {
+      uniqueIndex("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop = 20)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(20)
+    runtimeResult should beColumns("x").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, LABEL))
+  }
+
+  test("should exact (multiple, but identical) seek nodes of a locking unique index with a property") {
+    val nodes = given {
+      uniqueIndex("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop = 20 OR 20)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = Seq(nodes(20))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withLocks((SHARED, INDEX_ENTRY), (SHARED, LABEL))
+  }
+
+  test("should exact (multiple, not identical) seek nodes of a locking unique index with a property") {
+    val nodes = given {
+      uniqueIndex("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop = 20 OR 30)", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = Seq(nodes(20), nodes(30))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withLocks((SHARED, INDEX_ENTRY), (SHARED, INDEX_ENTRY), (SHARED, LABEL))
+  }
+
+  test("should support composite index and unique locking") {
+    val nodes = given {
+      index("Honey", "prop", "prop2")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i, "prop2" -> i.toString)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop = 10, prop2 = '10')", unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(10)
+    runtimeResult should beColumns("x").withSingleRow(expected).withLocks((SHARED, INDEX_ENTRY), (SHARED, LABEL))
+  }
+
+  test("should cache properties in locking unique index") {
+    val nodes = given {
+      uniqueIndex("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "prop")
+      .projection("cache[x.prop] AS prop")
+      .nodeIndexOperator("x:Honey(prop = 10)", GetValue, unique = true)
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x", "prop").withSingleRow(nodes(10), 10).withLocks((SHARED, INDEX_ENTRY), (SHARED, LABEL))
   }
 }
 
