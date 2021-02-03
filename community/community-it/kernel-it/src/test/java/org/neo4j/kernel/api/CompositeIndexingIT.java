@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -32,13 +33,14 @@ import java.util.stream.Stream;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -48,25 +50,28 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Values;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 
 @ImpermanentDbmsExtension
 @Timeout( 20 )
 class CompositeIndexingIT
 {
     private static final int LABEL_ID = 1;
+    private static final int REL_TYPE_ID = 1;
 
     @Inject
     private GraphDatabaseAPI graphDatabaseAPI;
     private IndexDescriptor index;
 
-    void setup( IndexPrototype prototype ) throws Exception
+    @BeforeEach
+    void setup() throws Exception
     {
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
@@ -74,12 +79,18 @@ class CompositeIndexingIT
             TokenWrite tokenWrite = ktx.tokenWrite();
             tokenWrite.labelGetOrCreateForName( "Label0" );
             assertEquals( LABEL_ID, tokenWrite.labelGetOrCreateForName( "Label1" ) );
+            tokenWrite.relationshipTypeGetOrCreateForName( "Type0" );
+            assertEquals( REL_TYPE_ID, tokenWrite.relationshipTypeGetOrCreateForName( "Type1" ) );
             for ( int i = 0; i < 10; i++ )
             {
                 tokenWrite.propertyKeyGetOrCreateForName( "prop" + i );
             }
             tx.commit();
         }
+    }
+
+    void setup( IndexPrototype prototype ) throws Exception
+    {
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
@@ -97,17 +108,19 @@ class CompositeIndexingIT
 
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            while ( ktx.schemaRead().indexGetState( index ) != InternalIndexState.ONLINE )
-            {
-                Thread.sleep( 10 );
-            } // Will break loop on test timeout
+            tx.schema().awaitIndexesOnline( 5, MINUTES );
+            tx.commit();
         }
     }
 
     @AfterEach
     void clean() throws Exception
     {
+        if ( index == null )
+        {
+            // setup no happened
+            return;
+        }
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
@@ -130,6 +143,7 @@ class CompositeIndexingIT
         {
             for ( Node node : tx.getAllNodes() )
             {
+                node.getRelationships().forEach( Relationship::delete );
                 node.delete();
             }
             tx.commit();
@@ -139,225 +153,165 @@ class CompositeIndexingIT
     private static Stream<Arguments> params()
     {
         return Stream.of(
-            arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1 ) ) ),
-            arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1, 2 ) ) ),
-            arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1, 2, 3, 4 ) ) ),
-            arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ) ),
-            arguments( IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, 1 ) ) ),
-            arguments( IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, 1, 2 ) ) ),
-            arguments( IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ) )
+                arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1 ) ), EntityControl.NODE ),
+                arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1, 2 ) ), EntityControl.NODE ),
+                arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1, 2, 3, 4 ) ), EntityControl.NODE ),
+                arguments( IndexPrototype.forSchema( forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ), EntityControl.NODE ),
+                arguments( IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, 1 ) ), EntityControl.NODE ),
+                arguments( IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, 1, 2 ) ), EntityControl.NODE ),
+                arguments( IndexPrototype.uniqueForSchema( forLabel( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ), EntityControl.NODE ),
+                arguments( IndexPrototype.forSchema( forRelType( LABEL_ID, 1 ) ), EntityControl.RELATIONSHIP ),
+                arguments( IndexPrototype.forSchema( forRelType( LABEL_ID, 1, 2 ) ), EntityControl.RELATIONSHIP ),
+                arguments( IndexPrototype.forSchema( forRelType( LABEL_ID, 1, 2, 3, 4 ) ), EntityControl.RELATIONSHIP ),
+                arguments( IndexPrototype.forSchema( forRelType( LABEL_ID, 1, 2, 3, 4, 5, 6, 7 ) ), EntityControl.RELATIONSHIP )
         );
     }
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeNodeAddedByPropertyToIndexInTranslation( IndexPrototype prototype ) throws Exception
+    void shouldSeeEntityAddedByPropertyToIndexInTranslation( IndexPrototype prototype, EntityControl entityControl ) throws Exception
     {
         setup( prototype );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            Write write = ktx.dataWrite();
-            long nodeID = write.nodeCreate();
-            write.nodeAddLabel( nodeID, LABEL_ID );
-            for ( int propID : index.schema().getPropertyIds() )
-            {
-                write.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
-            }
-            try ( NodeValueIndexCursor cursor = seek( ktx ) )
-            {
-                assertTrue( cursor.next() );
-                assertThat( cursor.nodeReference() ).isEqualTo( nodeID );
-                assertFalse( cursor.next() );
-            }
+            var entity = entityControl.createEntity( ktx, index );
+
+            var found = entityControl.seek( ktx, index );
+            assertThat( found ).containsExactly( entity );
         }
     }
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeNodeAddedToByLabelIndexInTransaction( IndexPrototype prototype ) throws Exception
+    void shouldSeeEntityAddedByTokenToIndexInTransaction( IndexPrototype prototype, EntityControl entityControl ) throws Exception
     {
+        assumeTrue( entityControl == EntityControl.NODE );
         setup( prototype );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            Write write = ktx.dataWrite();
-            long nodeID = write.nodeCreate();
-            for ( int propID : index.schema().getPropertyIds() )
-            {
-                write.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
-            }
-            write.nodeAddLabel( nodeID, LABEL_ID );
-            try ( NodeValueIndexCursor cursor = seek( ktx ) )
-            {
-                assertTrue( cursor.next() );
-                assertThat( cursor.nodeReference() ).isEqualTo( nodeID );
-                assertFalse( cursor.next() );
-            }
+            var entity = entityControl.createEntityReverse( ktx, index );
+
+            var found = entityControl.seek( ktx, index );
+            assertThat( found ).containsExactly( entity );
         }
     }
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeNodeThatWasDeletedInTransaction( IndexPrototype prototype ) throws Exception
+    void shouldNotSeeEntityThatWasDeletedInTransaction( IndexPrototype prototype, EntityControl entityControl ) throws Exception
     {
         setup( prototype );
-        long nodeID = createNode();
+        long nodeID = createEntity( entityControl );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            ktx.dataWrite().nodeDelete( nodeID );
-            try ( NodeValueIndexCursor cursor = seek( ktx ) )
-            {
-                assertFalse( cursor.next() );
-            }
+            entityControl.deleteEntity( ktx, nodeID );
+
+            assertThat( entityControl.seek( ktx, index ) ).isEmpty();
         }
     }
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeNodeThatHasItsLabelRemovedInTransaction( IndexPrototype prototype ) throws Exception
+    void shouldNotSeeEntityThatHasItsTokenRemovedInTransaction( IndexPrototype prototype, EntityControl entityControl ) throws Exception
     {
+        assumeTrue( entityControl == EntityControl.NODE );
         setup( prototype );
-        long nodeID = createNode();
+        long nodeID = createEntity( entityControl );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            ktx.dataWrite().nodeRemoveLabel( nodeID, LABEL_ID );
-            try ( NodeValueIndexCursor cursor = seek( ktx ) )
-            {
-                assertFalse( cursor.next() );
-            }
+            entityControl.removeToken( ktx, nodeID );
+
+            assertThat( entityControl.seek( ktx, index ) ).isEmpty();
         }
     }
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeNodeThatHasAPropertyRemovedInTransaction( IndexPrototype prototype ) throws Exception
+    void shouldNotSeeEntityhatHasAPropertyRemovedInTransaction( IndexPrototype prototype, EntityControl entityControl ) throws Exception
     {
         setup( prototype );
-        long nodeID = createNode();
+        long entity = createEntity( entityControl );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            ktx.dataWrite().nodeRemoveProperty( nodeID, index.schema().getPropertyIds()[0] );
-            try ( NodeValueIndexCursor cursor = seek( ktx ) )
-            {
-                assertFalse( cursor.next() );
-            }
+            entityControl.removeProperty( ktx, entity, index.schema().getPropertyIds()[0] );
+
+            assertThat( entityControl.seek( ktx, index ) ).isEmpty();
         }
     }
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeAllNodesAddedInTransaction( IndexPrototype prototype ) throws Exception
+    void shouldSeeAllEntitiesAddedInTransaction( IndexPrototype prototype, EntityControl entityControl ) throws Exception
     {
         setup( prototype );
         if ( !index.isUnique() ) // this test does not make any sense for UNIQUE indexes
         {
-            long nodeID1 = createNode();
-            long nodeID2 = createNode();
-            long nodeID3 = createNode();
             try ( Transaction tx = graphDatabaseAPI.beginTx() )
             {
                 KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-                Set<Long> result = new HashSet<>();
-                try ( NodeValueIndexCursor cursor = seek( ktx ) )
-                {
-                    while ( cursor.next() )
-                    {
-                        result.add( cursor.nodeReference() );
-                    }
-                }
-                assertThat( result ).contains( nodeID1, nodeID2, nodeID3 );
+
+                long entity1 = entityControl.createEntity( ktx, index );
+                long entity2 = entityControl.createEntity( ktx, index );
+                long entity3 = entityControl.createEntity( ktx, index );
+
+                assertThat( entityControl.seek( ktx, index ) ).contains( entity1, entity2, entity3 );
             }
         }
     }
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldSeeAllNodesAddedBeforeTransaction( IndexPrototype prototype ) throws Exception
+    void shouldSeeAllEntitiesAddedBeforeTransaction( IndexPrototype prototype, EntityControl entityControl ) throws Exception
     {
         setup( prototype );
         if ( !index.isUnique() ) // this test does not make any sense for UNIQUE indexes
         {
-            long nodeID1 = createNode();
-            long nodeID2 = createNode();
-            long nodeID3 = createNode();
+            long entity1 = createEntity( entityControl );
+            long entity2 = createEntity( entityControl );
+            long entity3 = createEntity( entityControl );
             try ( Transaction tx = graphDatabaseAPI.beginTx() )
             {
                 KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-                Set<Long> result = new HashSet<>();
-                try ( NodeValueIndexCursor cursor = seek( ktx ) )
-                {
-                    while ( cursor.next() )
-                    {
-                        result.add( cursor.nodeReference() );
-                    }
-                }
-                assertThat( result ).contains( nodeID1, nodeID2, nodeID3 );
+
+                assertThat( entityControl.seek( ktx, index ) ).contains( entity1, entity2, entity3 );
             }
         }
     }
 
     @ParameterizedTest
     @MethodSource( "params" )
-    void shouldNotSeeNodesLackingOneProperty( IndexPrototype prototype ) throws Exception
+    void shouldNotSeeEntitiesLackingOneProperty( IndexPrototype prototype, EntityControl entityControl ) throws Exception
     {
         setup( prototype );
-        long nodeID1 = createNode();
+        long entity = createEntity( entityControl );
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            Write write = ktx.dataWrite();
-            long irrelevantNodeID = write.nodeCreate();
-            write.nodeAddLabel( irrelevantNodeID, LABEL_ID );
-            int[] propertyIds = index.schema().getPropertyIds();
-            for ( int i = 0; i < propertyIds.length - 1; i++ )
-            {
-                int propID = propertyIds[i];
-                write.nodeSetProperty( irrelevantNodeID, propID, Values.intValue( propID ) );
-            }
-            Set<Long> result = new HashSet<>();
-            try ( NodeValueIndexCursor cursor = seek( ktx ) )
-            {
-                while ( cursor.next() )
-                {
-                    result.add( cursor.nodeReference() );
-                }
-            }
-            assertThat( result ).containsExactly( nodeID1 );
+            entityControl.createEntity( ktx, index, true );
+
+            assertThat( entityControl.seek( ktx, index ) ).containsExactly( entity );
         }
     }
 
-    private long createNode()
+    private long createEntity( EntityControl entityControl )
             throws KernelException
     {
-        long nodeID;
+        long id;
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ((InternalTransaction) tx).kernelTransaction();
-            Write write = ktx.dataWrite();
-            nodeID = write.nodeCreate();
-            write.nodeAddLabel( nodeID, LABEL_ID );
-            for ( int propID : index.schema().getPropertyIds() )
-            {
-                write.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
-            }
+            id = entityControl.createEntity( ktx, index );
             tx.commit();
         }
-        return nodeID;
+        return id;
     }
 
-    private NodeValueIndexCursor seek( KernelTransaction transaction ) throws KernelException
-    {
-        NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor( transaction.pageCursorTracer(), transaction.memoryTracker() );
-        IndexReadSession indexSession = transaction.dataRead().indexReadSession( index );
-        transaction.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), exactQuery() );
-        return cursor;
-    }
-
-    private PropertyIndexQuery[] exactQuery()
+    private static PropertyIndexQuery[] exactQuery( IndexDescriptor index )
     {
         int[] propertyIds = index.schema().getPropertyIds();
         PropertyIndexQuery[] query = new PropertyIndexQuery[propertyIds.length];
@@ -367,5 +321,154 @@ class CompositeIndexingIT
             query[i] = PropertyIndexQuery.exact( propID, Values.of( propID ) );
         }
         return query;
+    }
+
+    enum EntityControl
+    {
+        NODE
+                {
+                    @Override
+                    long createEntity( KernelTransaction ktx, IndexDescriptor index, boolean excludeFirstProperty ) throws KernelException
+                    {
+                        Write write = ktx.dataWrite();
+                        var nodeID = write.nodeCreate();
+                        write.nodeAddLabel( nodeID, LABEL_ID );
+                        for ( int propID : index.schema().getPropertyIds() )
+                        {
+                            if ( excludeFirstProperty )
+                            {
+                                excludeFirstProperty = false;
+                                continue;
+                            }
+                            write.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
+                        }
+                        return nodeID;
+                    }
+
+                    @Override
+                    long createEntityReverse( KernelTransaction ktx, IndexDescriptor index ) throws KernelException
+                    {
+                        Write write = ktx.dataWrite();
+                        var nodeID = write.nodeCreate();
+                        for ( int propID : index.schema().getPropertyIds() )
+                        {
+                            write.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
+                        }
+                        write.nodeAddLabel( nodeID, LABEL_ID );
+                        return nodeID;
+                    }
+
+                    @Override
+                    public void deleteEntity( KernelTransaction ktx, long id ) throws InvalidTransactionTypeKernelException
+                    {
+                        ktx.dataWrite().nodeDelete( id );
+                    }
+
+                    @Override
+                    public void removeToken( KernelTransaction ktx, long entityId ) throws InvalidTransactionTypeKernelException, EntityNotFoundException
+                    {
+                        ktx.dataWrite().nodeRemoveLabel( entityId, LABEL_ID );
+                    }
+
+                    @Override
+                    public void removeProperty( KernelTransaction ktx, long entity, int propertyId ) throws KernelException
+                    {
+                        ktx.dataWrite().nodeRemoveProperty( entity, propertyId );
+                    }
+
+                    @Override
+                    Set<Long> seek( KernelTransaction ktx, IndexDescriptor index ) throws KernelException
+                    {
+                        IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
+                        Set<Long> result = new HashSet<>();
+                        try ( var cursor = ktx.cursors().allocateNodeValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
+                        {
+                            ktx.dataRead().nodeIndexSeek( indexSession, cursor, unconstrained(), exactQuery( index ) );
+                            while ( cursor.next() )
+                            {
+                                result.add( cursor.nodeReference() );
+                            }
+                        }
+                        return result;
+                    }
+                },
+        RELATIONSHIP
+                {
+                    @Override
+                    long createEntity( KernelTransaction ktx, IndexDescriptor index, boolean excludeFirstProperty ) throws KernelException
+                    {
+                        Write write = ktx.dataWrite();
+                        var from = write.nodeCreate();
+                        var to = write.nodeCreate();
+                        var rel = write.relationshipCreate( from, REL_TYPE_ID, to );
+                        for ( int propID : index.schema().getPropertyIds() )
+                        {
+                            if ( excludeFirstProperty )
+                            {
+                                excludeFirstProperty = false;
+                                continue;
+                            }
+                            write.relationshipSetProperty( rel, propID, Values.intValue( propID ) );
+                        }
+                        return rel;
+                    }
+
+                    @Override
+                    long createEntityReverse( KernelTransaction ktx, IndexDescriptor index ) throws KernelException
+                    {
+                        return createEntity( ktx, index, false );
+                    }
+
+                    @Override
+                    public void deleteEntity( KernelTransaction ktx, long id ) throws InvalidTransactionTypeKernelException
+                    {
+                        ktx.dataWrite().relationshipDelete( id );
+                    }
+
+                    @Override
+                    public void removeToken( KernelTransaction ktx, long entityId )
+                    {
+                        throw new IllegalStateException( "Not supported" );
+                    }
+
+                    @Override
+                    public void removeProperty( KernelTransaction ktx, long entity, int propertyId ) throws KernelException
+                    {
+                        ktx.dataWrite().relationshipRemoveProperty( entity, propertyId );
+                    }
+
+                    @Override
+                    Set<Long> seek( KernelTransaction ktx, IndexDescriptor index ) throws KernelException
+                    {
+                        IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
+                        Set<Long> result = new HashSet<>();
+                        try ( var cursor = ktx.cursors().allocateRelationshipValueIndexCursor( ktx.pageCursorTracer(), ktx.memoryTracker() ) )
+                        {
+                            ktx.dataRead().relationshipIndexSeek( indexSession, cursor, unconstrained(), exactQuery( index ) );
+                            while ( cursor.next() )
+                            {
+                                result.add( cursor.relationshipReference() );
+                            }
+                        }
+                        return result;
+                    }
+                };
+
+        long createEntity( KernelTransaction ktx, IndexDescriptor index ) throws KernelException
+        {
+            return createEntity( ktx, index, false );
+        }
+
+        abstract long createEntity( KernelTransaction ktx, IndexDescriptor index, boolean excludeFirstProperty ) throws KernelException;
+
+        abstract long createEntityReverse( KernelTransaction ktx, IndexDescriptor index ) throws KernelException;
+
+        abstract Set<Long> seek( KernelTransaction transaction, IndexDescriptor index ) throws KernelException;
+
+        public abstract void deleteEntity( KernelTransaction ktx, long id ) throws KernelException;
+
+        public abstract void removeToken( KernelTransaction ktx, long entityId ) throws KernelException;
+
+        public abstract void removeProperty( KernelTransaction ktx, long entity, int propertyId ) throws KernelException;
     }
 }
