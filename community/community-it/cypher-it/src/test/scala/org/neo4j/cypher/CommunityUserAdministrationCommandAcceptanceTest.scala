@@ -493,7 +493,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet shouldBe Set(defaultUser)
   }
 
-  test("should not be able to create user with a default database in community") {
+  ignore("should not be able to create user with a default database in community") {
     // WHEN
     assertFailure("CREATE USER foo SET PASSWORD 'password' SET DEFAULT DATABASE foo",
       "Failed to create the specified user 'foo': 'DEFAULT DATABASE' is not available in community edition.")
@@ -502,7 +502,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet shouldBe Set(defaultUser)
   }
 
-  test("should not be able to alter a users default database in community") {
+  ignore("should not be able to alter a users default database in community") {
     // WHEN
     assertFailure("ALTER USER foo SET DEFAULT DATABASE foo",
       "Failed to alter the specified user 'foo': 'DEFAULT DATABASE' is not available in community edition.")

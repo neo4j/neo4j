@@ -579,9 +579,6 @@ class PrettifierIT extends CypherFunSuite {
       "alter user abc set plaintext password $password" ->
         "ALTER USER abc SET PASSWORD $password",
 
-      "alter user abc set status active set default database db1 set password change not required" ->
-        "ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE SET DEFAULT DATABASE db1",
-
       "alter user abc set status active set password change not required" ->
         "ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE",
 
@@ -1480,9 +1477,6 @@ class PrettifierIT extends CypherFunSuite {
 
           s"$action set user status on dbms $preposition role" ->
             s"$action SET USER STATUS ON DBMS $preposition role",
-
-          s"$action set user default database on dbms $preposition role" ->
-            s"$action SET USER DEFAULT DATABASE ON DBMS $preposition role",
 
           s"$action alter user on dbms $preposition role" ->
             s"$action ALTER USER ON DBMS $preposition role",

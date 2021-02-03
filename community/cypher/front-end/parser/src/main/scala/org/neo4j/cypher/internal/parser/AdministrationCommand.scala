@@ -79,7 +79,7 @@ trait AdministrationCommand extends Parser
   }
 
   def CreateUser: Rule1[ast.CreateUser] = rule("CREATE USER") {
-    // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE} | {SET DEFAULT DATABASE name}]*
+    // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE}]*
     group(CreateUserStart ~~ SetPassword ~~ optional(UserOptions)) ~~>>
       ((userName, ifExistsDo, isEncryptedPassword, initialPassword, userOptions) => {
         val createUserOptions = userOptions.map {
@@ -106,11 +106,11 @@ trait AdministrationCommand extends Parser
   }
 
   def AlterUser: Rule1[ast.AlterUser] = rule("ALTER USER") {
-    // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE} | {SET DEFAULT DATABASE name}]*
+    // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE}]*
     group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetPassword ~~ optional(UserOptions)) ~~>>
       ((userName, isEncryptedPassword, initialPassword, userOptions) => ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), userOptions.getOrElse(ast.UserOptions(None, None, None)))) |
     //
-    // ALTER USER username [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE} | {SET DEFAULT DATABASE name}]+
+    // ALTER USER username [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE}]+
     group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ UserOptionsWithSetPart) ~~>>
       ((userName, userOptions) => ast.AlterUser(userName, None, None, userOptions))
   }
@@ -132,29 +132,15 @@ trait AdministrationCommand extends Parser
   def PasswordExpression: Rule1[Expression] = group(SensitiveStringLiteral | SensitiveStringParameter)
 
   def UserOptions: Rule1[ast.UserOptions] =
-    RequirePasswordChangeNoSetKeyword ~~ SetStatus ~~ SetDefaultDatabase ~~> ((password, status, database) => ast.UserOptions(Some(password), Some(status), Some(database))) |
-    RequirePasswordChangeNoSetKeyword ~~ SetDefaultDatabase ~~ SetStatus ~~> ((password, database, status) => ast.UserOptions(Some(password), Some(status), Some(database))) |
     RequirePasswordChangeNoSetKeyword ~~ SetStatus                       ~~> ((password, status)           => ast.UserOptions(Some(password), Some(status), None)) |
-    RequirePasswordChangeNoSetKeyword ~~ SetDefaultDatabase              ~~> ((password, database)         => ast.UserOptions(Some(password), None, Some(database))) |
     RequirePasswordChangeNoSetKeyword                                    ~~> (password                     => ast.UserOptions(Some(password), None, None)) |
     UserOptionsWithSetPart
 
   def UserOptionsWithSetPart: Rule1[ast.UserOptions] =
-    RequirePasswordChange ~~ SetStatus ~~ SetDefaultDatabase ~~> ((password, status, database) => ast.UserOptions(Some(password), Some(status), Some(database))) |
-    RequirePasswordChange ~~ SetDefaultDatabase ~~ SetStatus ~~> ((password, database, status) => ast.UserOptions(Some(password), Some(status), Some(database))) |
-    SetStatus ~~ RequirePasswordChange ~~ SetDefaultDatabase ~~> ((status, password, database) => ast.UserOptions(Some(password), Some(status), Some(database))) |
-    SetStatus ~~ SetDefaultDatabase ~~ RequirePasswordChange ~~> ((status, database, password) => ast.UserOptions(Some(password), Some(status), Some(database))) |
-    SetDefaultDatabase ~~ RequirePasswordChange ~~ SetStatus ~~> ((database, password, status) => ast.UserOptions(Some(password), Some(status), Some(database))) |
-    SetDefaultDatabase ~~ SetStatus ~~ RequirePasswordChange ~~> ((database, status, password) => ast.UserOptions(Some(password), Some(status), Some(database))) |
     RequirePasswordChange ~~ SetStatus                       ~~> ((password, status)           => ast.UserOptions(Some(password), Some(status), None)) |
-    RequirePasswordChange ~~ SetDefaultDatabase              ~~> ((password, database)         => ast.UserOptions(Some(password), None, Some(database))) |
     SetStatus ~~ RequirePasswordChange                       ~~> ((status, password)           => ast.UserOptions(Some(password), Some(status), None)) |
-    SetStatus ~~ SetDefaultDatabase                          ~~> ((status, database)           => ast.UserOptions(None, Some(status), Some(database))) |
-    SetDefaultDatabase ~~ RequirePasswordChange              ~~> ((database, password)         => ast.UserOptions(Some(password), None, Some(database))) |
-    SetDefaultDatabase ~~ SetStatus                          ~~> ((database, status)           => ast.UserOptions(None, Some(status), Some(database))) |
     RequirePasswordChange                                    ~~> (password                     => ast.UserOptions(Some(password), None, None)) |
-    SetStatus                                                ~~> (status                       => ast.UserOptions(None, Some(status), None)) |
-    SetDefaultDatabase                                       ~~> (database                     => ast.UserOptions(None, None, Some(database)))
+    SetStatus                                                ~~> (status                       => ast.UserOptions(None, Some(status), None))
 
   def RequirePasswordChangeNoSetKeyword: Rule1[Boolean] =
     keyword("CHANGE NOT REQUIRED") ~>>> (_ => _ => false) |
@@ -168,9 +154,6 @@ trait AdministrationCommand extends Parser
   def SetStatus: Rule1[Boolean] =
     keyword("SET STATUS SUSPENDED") ~>>> (_ => _ => true) |
     keyword("SET STATUS ACTIVE") ~>>> (_ => _ => false)
-
-  def SetDefaultDatabase: Rule1[Either[String, Parameter]] =
-    keyword("SET DEFAULT DATABASE") ~~ SymbolicDatabaseNameOrStringParameter
 
   // Role management commands
 
@@ -329,7 +312,6 @@ trait AdministrationCommand extends Parser
     keyword("DROP USER") ~~~> (_ => ast.DropUserAction) |
     keyword("SHOW USER") ~~~> (_ => ast.ShowUserAction) |
     keyword("SET USER STATUS") ~~~> (_ => ast.SetUserStatusAction) |
-    keyword("SET USER DEFAULT DATABASE") ~~~> (_ => ast.SetUserDefaultDatabaseAction) |
     keyword("SET") ~~ PasswordKeyword ~~~> (_ => ast.SetPasswordsAction) |
     keyword("ALTER USER") ~~~> (_ => ast.AlterUserAction) |
     keyword("USER MANAGEMENT") ~~~> (_ => ast.AllUserActions) |

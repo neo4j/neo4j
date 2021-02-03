@@ -314,8 +314,7 @@ case class Prettifier(
         val password = expr.escapePassword(initialPassword)
         val passwordString = s"$setPasswordString $password CHANGE ${if (userOptions.requirePasswordChange.getOrElse(true)) "" else "NOT "}REQUIRED"
         val statusString = if (userOptions.suspended.isDefined) s" SET STATUS ${if (userOptions.suspended.get) "SUSPENDED" else "ACTIVE"}" else ""
-        val defaultDatabaseString = userOptions.defaultDatabase.map(dbName => s" SET DEFAULT DATABASE ${Prettifier.escapeName(dbName)}").getOrElse("")
-        s"${x.name} $userNameString$ifNotExists $passwordString$statusString$defaultDatabaseString"
+        s"${x.name} $userNameString$ifNotExists $passwordString$statusString"
 
       case x @ DropUser(userName, ifExists) =>
         if (ifExists) s"${x.name} ${Prettifier.escapeName(userName)} IF EXISTS"
@@ -331,8 +330,7 @@ case class Prettifier(
         val setPasswordString = if(isEncryptedPassword.getOrElse(false)) "SET ENCRYPTED PASSWORD" else "SET PASSWORD"
         val passwordPrefix = if (passwordString.nonEmpty || passwordModeString.nonEmpty) s" $setPasswordString" else ""
         val statusString = if (userOptions.suspended.isDefined) s" SET STATUS ${if (userOptions.suspended.get) "SUSPENDED" else "ACTIVE"}" else ""
-        val defaultDatabaseString = userOptions.defaultDatabase.map(dbName => s" SET DEFAULT DATABASE ${Prettifier.escapeName(dbName)}").getOrElse("")
-        s"${x.name} $userNameString$passwordPrefix$passwordString$passwordModeString$statusString$defaultDatabaseString"
+        s"${x.name} $userNameString$passwordPrefix$passwordString$passwordModeString$statusString"
 
       case x @ SetOwnPassword(newPassword, currentPassword) =>
         s"${x.name} FROM ${expr.escapePassword(currentPassword)} TO ${expr.escapePassword(newPassword)}"

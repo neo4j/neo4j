@@ -178,7 +178,6 @@ import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetPropertyAction
 import org.neo4j.cypher.internal.ast.SetPropertyItem
-import org.neo4j.cypher.internal.ast.SetUserDefaultDatabaseAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.ShowConstraintAction
@@ -1296,11 +1295,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     requirePasswordChange <- boolean
     suspended             <- option(boolean)
     ifExistsDo            <- _ifExistsDo
-    defaultDatabase       <- option(_nameAsEither)
     // requirePasswordChange is parsed as 'Some(true)' if omitted in query,
     // prettifier explicitly adds it so 'None' would be prettified and re-parsed to 'Some(true)'
     // hence the explicit 'Some(requirePasswordChange)'
-  } yield CreateUser(userName, isEncryptedPassword, password, UserOptions(Some(requirePasswordChange), suspended, defaultDatabase), ifExistsDo)(pos)
+  } yield CreateUser(userName, isEncryptedPassword, password, UserOptions(Some(requirePasswordChange), suspended, None), ifExistsDo)(pos)
 
   def _dropUser: Gen[DropUser] = for {
     userName <- _nameAsEither
@@ -1313,8 +1311,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     requirePasswordChange <- option(boolean)
     isEncryptedPassword   <- if (password.isEmpty) const(None) else some(boolean)
     suspended             <- if (password.isEmpty && requirePasswordChange.isEmpty) some(boolean) else option(boolean) // All three are not allowed to be None
-    defaultDatabase       <- option(_nameAsEither)
-  } yield AlterUser(userName, isEncryptedPassword, password, UserOptions(requirePasswordChange, suspended, defaultDatabase))(pos)
+  } yield AlterUser(userName, isEncryptedPassword, password, UserOptions(requirePasswordChange, suspended, None))(pos)
 
   def _setOwnPassword: Gen[SetOwnPassword] = for {
     newPassword <- _password
@@ -1375,7 +1372,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     AllDbmsAction,
     ExecuteProcedureAction, ExecuteBoostedProcedureAction, ExecuteAdminProcedureAction,
     ExecuteFunctionAction, ExecuteBoostedFunctionAction,
-    AllUserActions, ShowUserAction, CreateUserAction, SetUserStatusAction, SetPasswordsAction, SetUserDefaultDatabaseAction, AlterUserAction, DropUserAction,
+    AllUserActions, ShowUserAction, CreateUserAction, SetUserStatusAction, SetPasswordsAction, AlterUserAction, DropUserAction,
     AllRoleActions, ShowRoleAction, CreateRoleAction, DropRoleAction, AssignRoleAction, RemoveRoleAction,
     AllDatabaseManagementActions, CreateDatabaseAction, DropDatabaseAction,
     AllPrivilegeActions, ShowPrivilegeAction, AssignPrivilegeAction, RemovePrivilegeAction
