@@ -68,7 +68,7 @@ case class InputPosition(offset: Int,
 object InputPosition {
   implicit val byOffset: Ordering[InputPosition] =
     Ordering.by { pos: InputPosition =>
-      pos.offset
+      (pos.offset, pos.uuid.isDefined)
     }
 
   val NONE: InputPosition = InputPosition(0, 0, 0)
