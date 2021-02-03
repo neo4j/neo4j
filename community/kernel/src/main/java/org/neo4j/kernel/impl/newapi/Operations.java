@@ -614,6 +614,7 @@ public class Operations implements Write, SchemaWrite
     public Value nodeSetProperty( long node, int propertyKey, Value value )
             throws EntityNotFoundException, ConstraintValidationException
     {
+        assert value != NO_VALUE;
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
 
