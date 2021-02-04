@@ -28,10 +28,26 @@ import org.neo4j.storageengine.api.RelationshipDirection;
  */
 public interface RelationshipGroupDegreesStore extends CountsStorage
 {
+    /**
+     * @param txId for which transaction ID the changes will be made.
+     * @param cursorTracer tracer for page cache access.
+     * @return an {@link Updater} which is able to make counts updates.
+     */
     Updater apply( long txId, PageCursorTracer cursorTracer );
 
+    /**
+     * @param groupId the relationship group ID to look for.
+     * @param direction the direction to look for.
+     * @param cursorTracer tracer for page cache access.
+     * @return the degree for the given groupId and direction, or {@code 0} if it wasn't found.
+     */
     long degree( long groupId, RelationshipDirection direction, PageCursorTracer cursorTracer );
 
+    /**
+     * Accepts a visitor observing all entries in this store.
+     * @param visitor to receive the entries.
+     * @param cursorTracer tracer for page cache access.
+     */
     void accept( GroupDegreeVisitor visitor, PageCursorTracer cursorTracer );
 
     interface Updater extends AutoCloseable
@@ -39,11 +55,24 @@ public interface RelationshipGroupDegreesStore extends CountsStorage
         @Override
         void close();
 
+        /**
+         * Changes the degree of the given groupId and direction.
+         *
+         * @param groupId the relationship group ID to make the change for.
+         * @param direction the direction to make the change for.
+         * @param delta delta value to apply, can be either positive or negative.
+         */
         void increment( long groupId, RelationshipDirection direction, long delta );
     }
 
     interface GroupDegreeVisitor
     {
+        /**
+         * Receives data about a degree.
+         * @param groupId relationship group ID of the degree.
+         * @param direction direction of the degree.
+         * @param degree the absolute degree for the group and direction.
+         */
         void degree( long groupId, RelationshipDirection direction, long degree );
     }
 }

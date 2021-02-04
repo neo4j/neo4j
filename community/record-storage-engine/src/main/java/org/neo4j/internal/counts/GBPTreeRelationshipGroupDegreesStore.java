@@ -22,6 +22,7 @@ package org.neo4j.internal.counts;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.Map;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -29,6 +30,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -97,6 +99,21 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
         }
     }
 
+    /**
+     * Public utility method for instantiating a {@link CountsKey} for a degree.
+     *
+     * Key data layout for this type:
+     * <pre>
+     * first:  [gggg,gggg][gggg,gggg][gggg,gggg][gggg,gggg] [gggg,gggg][gggg,gggg][gggg,gggg][gggg,ggdd]
+     *         g: relationship group id, {@link RelationshipGroupRecord#getId()}
+     *         d: {@link RelationshipDirection#id()}
+     * second: 0
+     * </pre>
+     *
+     * @param groupId relationship group ID.
+     * @param direction direction for the relationship chain.
+     * @return a {@link CountsKey for the relationship chain (group+direction). The returned key can be put into {@link Map maps} and similar.
+     */
     static CountsKey degreeKey( long groupId, RelationshipDirection direction )
     {
         return new CountsKey( TYPE_DEGREE, groupId << 2 | direction.id(), 0 );
