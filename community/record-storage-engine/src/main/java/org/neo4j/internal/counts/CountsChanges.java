@@ -100,10 +100,9 @@ class CountsChanges
 
     Iterable<Map.Entry<CountsKey,AtomicLong>> sortedChanges( Comparator<CountsKey> comparator )
     {
-        List<Map.Entry<CountsKey,AtomicLong>> changeList = new ArrayList<>( changes.entrySet() );
-        changeList.sort( ( e1, e2 ) -> comparator.compare( e1.getKey(), e2.getKey() ) );
-
-        return changes.entrySet();
+        List<Map.Entry<CountsKey,AtomicLong>> sortedChanges = new ArrayList<>( changes.entrySet() );
+        sortedChanges.sort( ( e1, e2 ) -> comparator.compare( e1.getKey(), e2.getKey() ) );
+        return sortedChanges;
     }
 
     /**

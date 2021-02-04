@@ -23,7 +23,9 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -273,6 +275,33 @@ class CountsChangesTest
             long expectedCountFromChanges = changes.containsChange( key ) ? expectedCount.longValue() : ABSENT;
             assertThat( changes.get( key ) ).as( key.toString() ).isEqualTo( expectedCountFromChanges );
         } );
+    }
+
+    @Test
+    void shouldSortChanges()
+    {
+        // given
+        CountsChanges changes = new CountsChanges();
+        List<CountsKey> expectedChanges = new ArrayList<>();
+        for ( int i = 0; i < 100; i++ )
+        {
+            CountsKey key = randomKey( random.random() );
+            changes.add( key, 1, k -> new AtomicLong() );
+            expectedChanges.add( key );
+        }
+        CountsLayout comparator = new CountsLayout();
+        expectedChanges.sort( comparator );
+
+        // when
+        Iterable<Map.Entry<CountsKey,AtomicLong>> sortedChanges = changes.sortedChanges( comparator );
+
+        // then
+        Iterator<CountsKey> expectedChangesIterator = expectedChanges.iterator();
+        for ( Map.Entry<CountsKey,AtomicLong> change : sortedChanges )
+        {
+            CountsKey expectedChange = expectedChangesIterator.next();
+            assertThat( comparator.compare( expectedChange, change.getKey() ) ).isEqualTo( 0 );
+        }
     }
 
     private CountsKey randomKey( Random random )
