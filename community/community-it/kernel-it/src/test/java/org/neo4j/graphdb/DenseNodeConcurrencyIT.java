@@ -945,7 +945,7 @@ class DenseNodeConcurrencyIT
                             Set<Relationship> allRelationships, RandomRule random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
                     {
                         Node onNode = randomDenseNode( tx, denseNodeIds, random );
-                        switch ( random.nextInt( 4 ) )
+                        switch ( random.nextInt( 5 ) )
                         {
                         case 0:
                             onNode.setProperty( "KEY_" + random.nextInt( 3 ), random.nextInt() );

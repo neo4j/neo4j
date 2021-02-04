@@ -28,6 +28,12 @@ import java.util.stream.Stream;
  */
 public interface ResourceLocker
 {
+    /**
+     * Tries to exclusively lock the given resource if it isn't currently locks.
+     * @param resourceType type or resource to lock.
+     * @param resourceId id of resources to lock.
+     * @return {@code true} if the resource was locked as part of this call, otherwise {@code false} and will return without blocking.
+     */
     boolean tryExclusiveLock( ResourceType resourceType, long resourceId );
 
     /**
@@ -43,12 +49,33 @@ public interface ResourceLocker
      */
     void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds );
 
+    /**
+     * Releases previously {@link #acquireExclusive(LockTracer, ResourceType, long...) acquired} exclusive locks.
+     * @param resourceType type or resource(s) to unlock.
+     * @param resourceIds id(s) of resources to unlock. Multiple ids should be ordered consistently by all callers
+     */
     void releaseExclusive( ResourceType resourceType, long... resourceIds );
 
+    /**
+     * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,
+     * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
+     *
+     * @param tracer a tracer for listening on lock events.
+     * @param resourceType type or resource(s) to lock.
+     * @param resourceIds id(s) of resources to lock. Multiple ids should be ordered consistently by all callers
+     */
     void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds );
 
+    /**
+     * Releases previously {@link #acquireShared(LockTracer, ResourceType, long...) acquired} shared locks.
+     * @param resourceType type or resource(s) to unlock.
+     * @param resourceIds id(s) of resources to unlock. Multiple ids should be ordered consistently by all callers
+     */
     void releaseShared( ResourceType resourceType, long... resourceIds );
 
+    /**
+     * @return all locks that are "active", i.e. either locked or being awaited to be locked.
+     */
     Stream<ActiveLock> activeLocks();
 
     ResourceLocker PREVENT = new ResourceLocker()
