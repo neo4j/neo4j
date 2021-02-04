@@ -242,6 +242,15 @@ class HeapTrackingLongEnumerationListTest
         } );
         assertEquals( 9999L, table.lastKey() );
         assertHeapUsageWithNumberOfLongs( 1000 );
+
+        table.removeUntil( 20000L, ( removedKey, removedValue ) ->
+        {
+            assertEquals( ia[0], removedKey );
+            assertEquals( ia[0] + 100000, removedValue );
+            ia[0]++;
+        } );
+        assertEquals( 9999L, table.lastKey() );
+        assertHeapUsageWithNumberOfLongs( 0 );
     }
 
     @Test
