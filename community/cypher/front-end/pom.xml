@@ -35,6 +35,7 @@
         <module>util</module>
         <module>expressions</module>
         <module>cypher-macros</module>
+        <module>ast-factory</module>
     </modules>
 
     <dependencies>
