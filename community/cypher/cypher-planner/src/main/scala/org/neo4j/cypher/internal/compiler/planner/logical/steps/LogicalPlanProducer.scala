@@ -1205,7 +1205,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(plan, solved, providedOrder, context)
   }
 
-  def planOnMatch(read: LogicalPlan, onMatch: LogicalPlan, context: LogicalPlanningContext): OnMatchApply = {
+  def planOnMatchApply(read: LogicalPlan, onMatch: LogicalPlan, context: LogicalPlanningContext): OnMatchApply = {
     val solved = solveds.get(read.id).asSinglePlannerQuery ++ solveds.get(onMatch.id).asSinglePlannerQuery
     val providedOrder = providedOrders.get(read.id).fromLeft
     annotate(OnMatchApply(read, onMatch), solved, providedOrder, context)
@@ -1245,7 +1245,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val providedOrder = providedOrderOfApply(lhs, rhs)
     annotate(AntiConditionalApply(lhs, rhs, idNames), solved, providedOrder, context)
   }
-
 
   def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(delete))

@@ -185,7 +185,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeLeftOuterHashJoinPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeRightOuterHashJoinPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.OnMatchPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.OnMatchApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandAllPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandIntoPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalPipe
@@ -744,7 +744,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         RollUpApplyPipe(lhs, rhs, collectionName, identifierToCollection)(id = id)
 
       case OnMatchApply(_, _) =>
-        OnMatchPipe(lhs, rhs)(id = id)
+        OnMatchApplyPipe(lhs, rhs)(id = id)
 
       case Either(_, _) =>
         EitherPipe(lhs, rhs)(id = id)

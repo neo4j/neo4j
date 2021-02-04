@@ -242,7 +242,7 @@ case object PlanUpdates extends UpdatesPlanner {
       val onMatch = onMatchPatterns.foldLeft[LogicalPlan](producer.planQueryArgument(qgWithAllNeededArguments, context)) {
         case (src, current) => planUpdate(src, current, first, interestingOrderConfig, context)
       }
-      producer.planOnMatch(mergeMatch, onMatch, innerContext)
+      producer.planOnMatchApply(mergeMatch, onMatch, innerContext)
     } else mergeMatch
 
     //       either

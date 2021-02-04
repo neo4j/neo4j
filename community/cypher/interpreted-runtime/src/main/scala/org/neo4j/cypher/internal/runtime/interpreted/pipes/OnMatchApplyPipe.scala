@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class OnMatchPipe(matchPipe: Pipe, onMatch: Pipe)
-                      (val id: Id = Id.INVALID_ID)
+case class OnMatchApplyPipe(matchPipe: Pipe, onMatch: Pipe)
+                           (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(matchPipe) {
 
   override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
