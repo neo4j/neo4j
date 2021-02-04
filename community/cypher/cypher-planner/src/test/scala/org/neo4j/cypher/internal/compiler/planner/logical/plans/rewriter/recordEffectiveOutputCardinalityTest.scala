@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -53,18 +52,18 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
       .allNodeScan("n").withCardinality(leafCardinality)
 
     // WHEN
-    val (plan, cardinalities) = rewrite(initialPlan)
+    val (plan, cardinalities) = rewrite(initialPlan, Volcano)
 
     // THEN
     val expected = new LogicalPlanBuilder()
-      .produceResults("n").withCardinality(limit)
-      .limit(limit).withCardinality(limit)
-      .cartesianProduct().withCardinality(limit)
-      .|.allNodeScan("m").withCardinality(Math.sqrt(limit))
-      .allNodeScan("n").withCardinality(Math.sqrt(limit))
+      .produceResults("n").withEffectiveCardinality(limit)
+      .limit(limit).withEffectiveCardinality(limit)
+      .cartesianProduct().withEffectiveCardinality(limit)
+      .|.allNodeScan("m").withEffectiveCardinality(limit)
+      .allNodeScan("n").withEffectiveCardinality(1)
 
     val expectedPlan = expected.build()
-    val expectedCards = expected.cardinalities
+    val expectedCards = expected.effectiveCardinalities
 
     (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
   }
@@ -83,19 +82,19 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
       .allNodeScan("n").withCardinality(leafCardinality)
 
     // WHEN
-    val (plan, cardinalities) = rewrite(initialPlan)
+    val (plan, cardinalities) = rewrite(initialPlan, Volcano)
 
     // THEN
     val expected = new LogicalPlanBuilder()
-      .produceResults("n").withCardinality(lowLimit)
-      .limit(lowLimit).withCardinality(lowLimit)
-      .limit(highLimit).withCardinality(lowLimit)
-      .cartesianProduct().withCardinality(lowLimit)
-      .|.allNodeScan("m").withCardinality(Math.sqrt(lowLimit))
-      .allNodeScan("n").withCardinality(Math.sqrt(lowLimit))
+      .produceResults("n").withEffectiveCardinality(lowLimit)
+      .limit(lowLimit).withEffectiveCardinality(lowLimit)
+      .limit(highLimit).withEffectiveCardinality(lowLimit)
+      .cartesianProduct().withEffectiveCardinality(lowLimit)
+      .|.allNodeScan("m").withEffectiveCardinality(lowLimit)
+      .allNodeScan("n").withEffectiveCardinality(1)
 
     val expectedPlan = expected.build()
-    val expectedCards = expected.cardinalities
+    val expectedCards = expected.effectiveCardinalities
 
     (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
   }
@@ -115,14 +114,14 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
 
     // THEN
     val expected = new LogicalPlanBuilder()
-      .produceResults("n").withCardinality(limit)
-      .limit(limit).withCardinality(limit)
-      .nodeHashJoin("n").withCardinality(limit)
-      .|.allNodeScan("n").withCardinality(limit)
-      .allNodeScan("m").withCardinality(leafCardinality)
+      .produceResults("n").withEffectiveCardinality(limit)
+      .limit(limit).withEffectiveCardinality(limit)
+      .nodeHashJoin("n").withEffectiveCardinality(limit)
+      .|.allNodeScan("n").withEffectiveCardinality(limit)
+      .allNodeScan("m").withEffectiveCardinality(leafCardinality)
 
     val expectedPlan = expected.build()
-    val expectedCards = expected.cardinalities
+    val expectedCards = expected.effectiveCardinalities
 
     (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
   }
@@ -140,13 +139,13 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
 
     // THEN
     val expected = new LogicalPlanBuilder()
-      .produceResults("n").withCardinality(10)
-      .exhaustiveLimit(10).withCardinality(10)
-      .create(createNode("n", "N")).withCardinality(100)
+      .produceResults("n").withEffectiveCardinality(10)
+      .exhaustiveLimit(10).withEffectiveCardinality(10)
+      .create(createNode("n", "N")).withEffectiveCardinality(100)
       .argument()
 
     val expectedPlan = expected.build()
-    val expectedCards = expected.cardinalities
+    val expectedCards = expected.effectiveCardinalities
 
     (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
   }
@@ -166,13 +165,13 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     // THEN
     val expected = new LogicalPlanBuilder()
       .produceResults("o")
-      .cartesianProduct().withCardinality(100)
-      .|.projection("n as `n`").withCardinality(100)
-      .|.allNodeScan("n").withCardinality(100)
-      .allNodeScan("o").withCardinality(10)
+      .cartesianProduct().withEffectiveCardinality(100)
+      .|.projection("n as `n`").withEffectiveCardinality(100)
+      .|.allNodeScan("n").withEffectiveCardinality(100)
+      .allNodeScan("o").withEffectiveCardinality(10)
 
     val expectedPlan = expected.build()
-    val expectedCards = expected.cardinalities
+    val expectedCards = expected.effectiveCardinalities
 
     (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
   }
@@ -194,15 +193,15 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     // THEN
     val expected = new LogicalPlanBuilder()
       .produceResults("m")
-      .cartesianProduct().withCardinality(1000)
-      .|.cartesianProduct().withCardinality(1000)
-      .|.|.projection("m AS `m`").withCardinality(1000)
-      .|.|.allNodeScan("m").withCardinality(1000)
-      .|.allNodeScan("n").withCardinality(100)
-      .allNodeScan("o").withCardinality(10)
+      .cartesianProduct().withEffectiveCardinality(1000)
+      .|.cartesianProduct().withEffectiveCardinality(1000)
+      .|.|.projection("m AS `m`").withEffectiveCardinality(1000)
+      .|.|.allNodeScan("m").withEffectiveCardinality(1000)
+      .|.allNodeScan("n").withEffectiveCardinality(100)
+      .allNodeScan("o").withEffectiveCardinality(10)
 
     val expectedPlan = expected.build()
-    val expectedCards = expected.cardinalities
+    val expectedCards = expected.effectiveCardinalities
 
     (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
   }
@@ -225,15 +224,15 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     // THEN
     val expected = new LogicalPlanBuilder()
       .produceResults("m")
-      .cartesianProduct().withCardinality(1000)
-      .|.cartesianProduct().withCardinality(300)
-      .|.|.projection("m AS `m`").withCardinality(90)
-      .|.|.allNodeScan("m").withCardinality(90)
-      .|.allNodeScan("n").withCardinality(30)
-      .allNodeScan("o").withCardinality(10)
+      .cartesianProduct().withEffectiveCardinality(1000)
+      .|.cartesianProduct().withEffectiveCardinality(300)
+      .|.|.projection("m AS `m`").withEffectiveCardinality(90)
+      .|.|.allNodeScan("m").withEffectiveCardinality(90)
+      .|.allNodeScan("n").withEffectiveCardinality(30)
+      .allNodeScan("o").withEffectiveCardinality(10)
 
     val expectedPlan = expected.build()
-    val expectedCards = expected.cardinalities
+    val expectedCards = expected.effectiveCardinalities
 
     (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
   }
@@ -255,22 +254,22 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     // THEN
 
     val expected = new LogicalPlanBuilder()
-      .produceResults("m").withCardinality(1000)
-      .cartesianProduct().withCardinality(1000)
-      .|.cartesianProduct().withCardinality(1000)
-      .|.|.projection("m AS `m`").withCardinality(1000)
-      .|.|.allNodeScan("m").withCardinality(1000)
-      .|.allNodeScan("n").withCardinality(100)
-      .allNodeScan("o").withCardinality(10)
+      .produceResults("m").withEffectiveCardinality(1000)
+      .cartesianProduct().withEffectiveCardinality(1000)
+      .|.cartesianProduct().withEffectiveCardinality(1000)
+      .|.|.projection("m AS `m`").withEffectiveCardinality(1000)
+      .|.|.allNodeScan("m").withEffectiveCardinality(1000)
+      .|.allNodeScan("n").withEffectiveCardinality(100)
+      .allNodeScan("o").withEffectiveCardinality(10)
 
     val expectedPlan = expected.build()
-    val expectedCards = expected.cardinalities
+    val expectedCards = expected.effectiveCardinalities
 
     (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
-  def haveSameCardinalitiesAs(expected: (LogicalPlan, Cardinalities)): Matcher[(LogicalPlan, Cardinalities)] =
-    (actual: (LogicalPlan, Cardinalities)) => {
+  def haveSameCardinalitiesAs(expected: (LogicalPlan, EffectiveCardinalities)): Matcher[(LogicalPlan, EffectiveCardinalities)] =
+    (actual: (LogicalPlan, EffectiveCardinalities)) => {
       val (actPlan, actCards) = actual
       val (expPlan, expCards) = expected
       val planPairs = actPlan.flatten.zip(expPlan.flatten)

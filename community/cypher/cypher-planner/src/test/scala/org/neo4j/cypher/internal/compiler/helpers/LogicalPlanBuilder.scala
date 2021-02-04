@@ -77,6 +77,11 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
     this
   }
 
+  def withEffectiveCardinality(x: Double): LogicalPlanBuilder = {
+    effectiveCardinalities.set(idOfLastPlan, EffectiveCardinality(x))
+    this
+  }
+
   def withProvidedOrder(order: ProvidedOrder): LogicalPlanBuilder = {
     providedOrders.set(idOfLastPlan, order)
     this

@@ -34,6 +34,7 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
   def map(f: Double => Double): Cardinality = f(amount)
 
   def inverse: Multiplier = Multiplier(1.0d / amount)
+  def ceil: Cardinality = Math.ceil(amount)
 }
 
 object Cardinality {
@@ -106,6 +107,9 @@ case class Multiplier(coefficient: Double) extends Ordered[Multiplier] {
   def -(other: Multiplier): Multiplier = other.coefficient - coefficient
   def *(other: Multiplier): Multiplier = other.coefficient * coefficient
   def *(selectivity: Selectivity): Multiplier = coefficient * selectivity.factor
+  def *(cardinality: Cardinality): Cardinality = coefficient * cardinality.amount
+
+  def ceil: Multiplier = Math.ceil(coefficient)
 
   override def compare(that: Multiplier): Int = coefficient.compareTo(that.coefficient)
 }

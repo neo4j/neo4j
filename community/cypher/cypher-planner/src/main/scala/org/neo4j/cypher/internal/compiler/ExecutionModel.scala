@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.cypher.internal.compiler.ExecutionModel.SelectedBatchSize
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
@@ -38,6 +39,8 @@ sealed trait ExecutionModel {
    * @return an Ordering for plans to combine them with Cartesian Products.
    */
   def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering
+
+  def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): SelectedBatchSize
 }
 
 object ExecutionModel {
@@ -45,6 +48,7 @@ object ExecutionModel {
 
   case object Volcano extends ExecutionModel {
     override def cartesianOrdering(maxCardinality: Cardinality): CartesianOrdering = VolcanoCartesianOrdering
+    override def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): SelectedBatchSize = VolcanoBatchSize
   }
 
   case class Batched(smallBatchSize: Int, bigBatchSize: Int) extends ExecutionModel {
@@ -52,9 +56,9 @@ object ExecutionModel {
     /**
      * Select the batch size for executing a logical plan.
      */
-    def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): Int = {
+    def selectBatchSize(logicalPlan: LogicalPlan, cardinalities: Cardinalities): SelectedBatchSize = {
       val maxCardinality = logicalPlan.flatten.map(plan => cardinalities.get(plan.id)).max
-      selectBatchSize(maxCardinality.amount)
+      BatchedBatchSize(selectBatchSize(maxCardinality.amount))
     }
 
     /**
@@ -78,4 +82,20 @@ object ExecutionModel {
       GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big.defaultValue()
     )
   }
+
+  trait SelectedBatchSize {
+    def size: Cardinality
+    def numBatchesFor(cardinality: Cardinality): Cardinality
+  }
+
+  case object VolcanoBatchSize extends SelectedBatchSize {
+    val size: Cardinality = 1
+    def numBatchesFor(cardinality: Cardinality): Cardinality = cardinality
+  }
+
+  case class BatchedBatchSize(size: Cardinality) extends SelectedBatchSize {
+    def numBatchesFor(cardinality: Cardinality): Cardinality = (cardinality * size.inverse).ceil
+  }
+
+
 }

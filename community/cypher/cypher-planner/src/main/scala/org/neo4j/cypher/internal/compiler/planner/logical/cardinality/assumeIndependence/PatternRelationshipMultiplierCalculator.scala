@@ -120,7 +120,7 @@ case class PatternRelationshipMultiplierCalculator(stats: GraphStatistics, combi
                     val rhsCardinality = nbrOfNodesInGraph * calculateLabelSelectivity(labelsOnR, nbrOfNodesInGraph)
                     val relMultiplier = calculateMultiplierForSingleRelHop(types, labelsOnL, labelsOnR, pattern.dir, lhsCardinality, rhsCardinality, nbrOfNodesInGraph)
                     // Since the base cardinality that the Multiplier is applied to is the cross product of the start and end of the path, we need to multiply with the cardinality of the intermediate nodes as well
-                    if (i == length) relMultiplier else relMultiplier * rhsCardinality.amount
+                    if (i == length) relMultiplier else relMultiplier * Multiplier(rhsCardinality.amount)
                   }
                   // We multiply for each step to get the overall multiplier for the path.
                   // Since the relationship uniqueness is not added as an extra predicate, like for any pair of simple length relationships,

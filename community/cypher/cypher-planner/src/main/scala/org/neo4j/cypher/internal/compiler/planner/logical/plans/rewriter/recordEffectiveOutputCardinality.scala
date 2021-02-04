@@ -20,14 +20,12 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.ExecutionModel
-import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
-import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.WorkReduction
@@ -45,15 +43,14 @@ import scala.collection.mutable
  */
 case class recordEffectiveOutputCardinality(executionModel: ExecutionModel, cardinalities: Cardinalities, effectiveCardinalities: EffectiveCardinalities, attributes: Attributes[LogicalPlan]) extends Rewriter {
 
+  private val costModel = CardinalityCostModel(executionModel)
+
   override def apply(input: AnyRef): AnyRef = {
 
     val workReductions: mutable.Map[Id, WorkReduction] = mutable.Map().withDefaultValue(WorkReduction.NoReduction)
     val cartesianRHSMultiplier: mutable.Map[Id, Cardinality] = mutable.Map().withDefaultValue(Cardinality.SINGLE)
 
-    val batchSize = executionModel match {
-      case b: Batched => b.selectBatchSize(input.asInstanceOf[LogicalPlan], cardinalities)
-      case _ => 1
-    }
+    val batchSize = executionModel.selectBatchSize(input.asInstanceOf[LogicalPlan], cardinalities)
 
     val rewriter: Rewriter = {
       topDown(Rewriter.lift {
@@ -61,14 +58,15 @@ case class recordEffectiveOutputCardinality(executionModel: ExecutionModel, card
           val reduction = workReductions(p.id)
           val multiplier = cartesianRHSMultiplier(p.id)
 
-          val theseEffectiveCardinalities = CardinalityCostModel.effectiveCardinalities(p, reduction, cardinalities)
+          val theseEffectiveCardinalities = costModel.effectiveCardinalities(p, reduction, batchSize, cardinalities)
           p.lhs.foreach { lhs => workReductions += (lhs.id -> theseEffectiveCardinalities.lhsReduction) }
           p.rhs.foreach { rhs => workReductions += (rhs.id -> theseEffectiveCardinalities.rhsReduction) }
 
           p match {
             case CartesianProduct(left, right) =>
               // The RHS is executed for each chunk of LHS rows
-              val rhsInvocations = Math.ceil(theseEffectiveCardinalities.lhsReduction.calculate(cardinalities.get(left.id)).amount / batchSize)
+              val lhsEffective = theseEffectiveCardinalities.lhsReduction.calculate(cardinalities.get(left.id))
+              val rhsInvocations = batchSize.numBatchesFor(lhsEffective)
               val rhsMultiplier = rhsInvocations * cartesianRHSMultiplier(right.id)
               right.flatten.foreach{c => cartesianRHSMultiplier(c.id) = rhsMultiplier}
             case _ =>
