@@ -50,6 +50,7 @@ import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.Version;
+import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.time.Stopwatch;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
@@ -279,10 +280,10 @@ class Neo4jCommandTest
             assertThat( execute( "start" ) ).isEqualTo( 0 );
             assertThat( out.toString() ).containsSubsequence(
                     IS_OS_WINDOWS ? "--Classpath" : "-cp",
-                    config.get( BootloaderSettings.lib_directory ).toString() + File.separator + "*",
                     config.get( GraphDatabaseSettings.plugin_dir ).toString() + File.separator + "*",
-                    confFile.getParent() + File.separator + "*"
-            );
+                    confFile.getParent() + File.separator + "*",
+                    config.get( BootloaderSettings.lib_directory ).toString() + File.separator + "*"
+                    );
         }
 
         @Test
@@ -427,6 +428,7 @@ class Neo4jCommandTest
         }
 
         @DisabledOnOs( OS.WINDOWS )
+        @DisabledForRoot //Turns out root can always read the file anyway, causing test issues on TC
         @Test
         void shouldGetReasonableErrorWhenUnableToReadPidFile() throws IOException
         {

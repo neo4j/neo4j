@@ -43,10 +43,7 @@ import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
-import static org.neo4j.configuration.SettingValueParsers.STRING;
 import static org.neo4j.server.startup.Bootloader.ENV_HEAP_SIZE;
-import static org.neo4j.server.startup.Bootloader.ENV_JAVA_CMD;
-import static org.neo4j.server.startup.Bootloader.ENV_JAVA_HOME;
 import static org.neo4j.server.startup.Bootloader.PROP_JAVA_CP;
 import static org.neo4j.server.startup.Bootloader.PROP_JAVA_VERSION;
 import static org.neo4j.server.startup.Bootloader.PROP_VM_NAME;
@@ -148,12 +145,6 @@ abstract class BootloaderOsAbstraction
     protected String getJavaCmd()
     {
         Path java = getJava();
-        if ( !Files.exists( java ) )
-        {
-            throw new BootFailureException( String.format( "ERROR: Unable to find java at %s (the executable does not exist) %s is %s, %s is %s.", java,
-                    ENV_JAVA_HOME, ctx.getEnv( ENV_JAVA_HOME, "not defined", STRING ),
-                    ENV_JAVA_CMD, ctx.getEnv( ENV_JAVA_CMD, "not defined", STRING ) ) );
-        }
         checkJavaVersion();
         return java.toString();
     }
@@ -256,10 +247,9 @@ abstract class BootloaderOsAbstraction
         String libCp = classPathFromDir( ctx.config().get( BootloaderSettings.lib_directory ) );
 
         List<String> paths = Lists.mutable.with(
-                libCp,
                 classPathFromDir( ctx.config().get( GraphDatabaseSettings.plugin_dir ) ),
                 classPathFromDir( ctx.confDir() ),
-                StringUtils.isBlank( libCp ) ? ctx.getProp( PROP_JAVA_CP ) : null
+                StringUtils.isNotBlank( libCp ) ? libCp : ctx.getProp( PROP_JAVA_CP )
         );
         return paths.stream().filter( StringUtils::isNotBlank ).collect( Collectors.joining( File.pathSeparator ) );
     }
