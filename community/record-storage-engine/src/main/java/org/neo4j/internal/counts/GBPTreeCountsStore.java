@@ -49,8 +49,8 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
 {
     private static final String NAME = "Counts store";
 
-    static final byte TYPE_NODE = 1;
-    static final byte TYPE_RELATIONSHIP = 2;
+    private static final byte TYPE_NODE = 1;
+    private static final byte TYPE_RELATIONSHIP = 2;
 
     /**
      * Public utility method for instantiating a {@link CountsKey} for a node label id.

@@ -162,6 +162,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
 
     // === Life cycle ===
 
+    @Override
     public void start( PageCursorTracer cursorTracer, MemoryTracker memoryTracker ) throws IOException
     {
         // Execute the initial counts building if we need to, i.e. if instantiation of this counts store had to create it
