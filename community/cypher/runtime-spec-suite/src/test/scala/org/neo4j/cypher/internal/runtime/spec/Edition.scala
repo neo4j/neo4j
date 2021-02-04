@@ -39,8 +39,15 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
+trait RuntimeContextManagerFactory[CONTEXT <: RuntimeContext] {
+  def newRuntimeContextManager(cypherRuntimeConfiguration: CypherRuntimeConfiguration,
+                               dependencyResolver: DependencyResolver,
+                               lifeSupport: LifeSupport,
+                               logProvider: LogProvider): RuntimeContextManager[CONTEXT]
+}
+
 class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabaseManagementServiceBuilder,
-                                         newRuntimeContextManager: (CypherRuntimeConfiguration, DependencyResolver, LifeSupport, LogProvider) => RuntimeContextManager[CONTEXT],
+                                         runtimeContextManagerFactory: RuntimeContextManagerFactory[CONTEXT],
                                          configs: (Setting[_], Object)*) {
 
   //----------------------------------------------
@@ -63,7 +70,12 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
 
   def copyWith(additionalConfigs: (Setting[_], Object)*): Edition[CONTEXT] = {
     val newConfigs = configs ++ additionalConfigs
-    new Edition(graphBuilderFactory, newRuntimeContextManager, newConfigs: _*)
+    new Edition(graphBuilderFactory, runtimeContextManagerFactory, newConfigs: _*)
+  }
+
+  def copyWith(newRuntimeContextManagerFactory: RuntimeContextManagerFactory[CONTEXT], additionalConfigs: (Setting[_], Object)*): Edition[CONTEXT] = {
+    val newConfigs = configs ++ additionalConfigs
+    new Edition(graphBuilderFactory, newRuntimeContextManagerFactory, newConfigs: _*)
   }
 
   def getSetting[T](setting: Setting[T]): Option[T] = {
@@ -71,7 +83,7 @@ class Edition[CONTEXT <: RuntimeContext](graphBuilderFactory: () => TestDatabase
   }
 
   def newRuntimeContextManager(resolver: DependencyResolver, lifeSupport: LifeSupport, logProvider: LogProvider): RuntimeContextManager[CONTEXT] =
-    newRuntimeContextManager(runtimeConfig(), resolver, lifeSupport, logProvider)
+    runtimeContextManagerFactory.newRuntimeContextManager(runtimeConfig(), resolver, lifeSupport, logProvider)
 
   def runtimeConfig(): CypherRuntimeConfiguration = {
     CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig())
