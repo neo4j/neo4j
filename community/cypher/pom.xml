@@ -49,7 +49,6 @@
                 <module>spec-suite-tools</module>
                 <module>logical-plan-builder</module>
                 <module>neo4j-ast-factory</module>
-                <module>javacc-parser</module>
                 <module>logical-plan-generator</module>
                 <module>runtime-spec-suite</module>
                 <module>expression-evaluator</module>

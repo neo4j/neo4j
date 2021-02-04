@@ -36,6 +36,7 @@
         <module>expressions</module>
         <module>cypher-macros</module>
         <module>ast-factory</module>
+        <module>javacc-parser</module>
     </modules>
 
     <dependencies>
