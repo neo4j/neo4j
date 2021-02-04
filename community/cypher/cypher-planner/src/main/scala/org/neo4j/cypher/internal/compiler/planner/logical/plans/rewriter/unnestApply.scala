@@ -19,27 +19,31 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.topDown
 
-case class unnestApply(solveds: Solveds, attributes: Attributes[LogicalPlan]) extends Rewriter {
+case class unnestApply(solveds: Solveds, cardinalities: Cardinalities, attributes: Attributes[LogicalPlan]) extends Rewriter {
 
   /*
   Based on the paper
@@ -57,97 +61,116 @@ case class unnestApply(solveds: Solveds, attributes: Attributes[LogicalPlan]) ex
     ROJ: Right Outer Join
     CN : CreateNode
     FE : Foreach
+    UP : Unary Plan
+    BP : Binary Plan
    */
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     // Arg Ax R => R
-    case Apply(_: Argument, rhs) =>
+    case Apply(arg: Argument, rhs) =>
+      assertArgumentHasCardinality1(arg)
       rhs
 
     // L Ax Arg => L
     case Apply(lhs, _: Argument) =>
       lhs
 
-    // L Ax (Arg Ax R) => L Ax R
-    case original@Apply(lhs, Apply(_: Argument, rhs)) =>
-      Apply(lhs, rhs)(SameId(original.id))
-
     // L Ax (Arg FE R) => L FE R
-    case original@Apply(lhs, foreach@ForeachApply(_: Argument, rhs, _, _)) =>
-      val res = foreach.copy(left = lhs, right = rhs)(attributes.copy(foreach.id))
-      solveds.copy(original.id, res.id)
-      res
-
-    // L Ax (Arg Ax R) => L Ax R
-    case original@AntiConditionalApply(lhs, Apply(_: Argument, rhs), _) =>
-      original.copy(lhs, rhs)(SameId(original.id))
+    case apply@Apply(lhs, foreach@ForeachApply(arg: Argument, _, _, _)) =>
+      assertArgumentHasCardinality1(arg)
+      unnestRightBinaryLeft(apply, lhs, foreach)
 
     // L Ax (σ R) => σ(L Ax R)
-    case o@Apply(lhs, sel@Selection(predicate, rhs)) =>
-      val res = Selection(predicate, Apply(lhs, rhs)(SameId(o.id)))(attributes.copy(sel.id))
-      solveds.copy(o.id, res.id)
-      res
+    case apply@Apply(lhs, sel:Selection) =>
+      unnestRightUnary(apply, lhs, sel)
 
     // L Ax ((σ L2) Ax R) => (σ L) Ax (L2 Ax R) iff σ does not have dependencies on L
     case original@Apply(lhs, Apply(sel@Selection(predicate, lhs2), rhs))
-      if predicate.exprs.forall(lhs.satisfiesExpressionDependencies)=>
+      if predicate.exprs.forall(lhs.satisfiesExpressionDependencies) =>
+      val maybeSelectivity = cardinalities(sel.id) / cardinalities(lhs2.id)
       val selectionLHS = Selection(predicate, lhs)(attributes.copy(sel.id))
       solveds.copy(original.id, selectionLHS.id)
+      cardinalities.set(selectionLHS.id, maybeSelectivity.fold(cardinalities(sel.id))(cardinalities(lhs.id) * _))
+
       val apply2 = Apply(lhs2, rhs)(attributes.copy(lhs.id))
       solveds.copy(original.id, apply2.id)
+      cardinalities.set(apply2.id, cardinalities(lhs2.id) * cardinalities(rhs.id))
+
       Apply(selectionLHS, apply2)(SameId(original.id))
 
     // L Ax (π R) => π(L Ax R)
-    case origApply@Apply(lhs, p@Projection(rhs, _)) =>
-      val newApply = Apply(lhs, rhs)(SameId(origApply.id))
-      val res = p.copy(source = newApply)(attributes.copy(p.id))
-      solveds.copy(origApply.id, res.id)
-      res
+    case apply@Apply(lhs, p:Projection) =>
+      unnestRightUnary(apply, lhs, p)
 
     // L Ax (EXP R) => EXP( L Ax R ) (for single step pattern relationships)
     case apply@Apply(lhs, expand: Expand) =>
-      val newApply = apply.copy(right = expand.source)(SameId(apply.id))
-      val res = expand.copy(source = newApply)(attributes.copy(expand.id))
-      solveds.copy(apply.id, res.id)
-      res
+      unnestRightUnary(apply, lhs, expand)
 
     // L Ax (EXP R) => EXP( L Ax R ) (for varlength pattern relationships)
     case apply@Apply(lhs, expand: VarExpand) =>
-      val newApply = apply.copy(right = expand.source)(SameId(apply.id))
-      val res = expand.copy(source = newApply)(attributes.copy(expand.id))
-      solveds.copy(apply.id, res.id)
-      res
+      unnestRightUnary(apply, lhs, expand)
 
     // L Ax (Arg LOJ R) => L LOJ R
-    case apply@Apply(lhs, join@LeftOuterHashJoin(_, _:Argument, _)) =>
-      val res = join.copy(left = lhs)(attributes.copy(join.id))
-      solveds.copy(apply.id, res.id)
-      res
+    case apply@Apply(lhs, join@LeftOuterHashJoin(_, arg:Argument, _)) =>
+      assertArgumentHasCardinality1(arg)
+      unnestRightBinaryLeft(apply, lhs, join)
 
     // L Ax (L2 ROJ Arg) => L2 ROJ L
-    case apply@Apply(lhs, join@RightOuterHashJoin(_, _, _:Argument)) =>
-      val res = join.copy(right = lhs)(attributes.copy(join.id))
-      solveds.copy(apply.id, res.id)
-      res
+    case apply@Apply(lhs, join@RightOuterHashJoin(_, _, arg:Argument)) =>
+      assertArgumentHasCardinality1(arg)
+      unnestRightBinaryRight(apply, lhs, join)
 
     // L Ax (OEX Arg) => OEX L
     case apply@Apply(lhs, oex@OptionalExpand(_:Argument, _, _, _, _, _, _, _)) =>
-      val res = oex.copy(source = lhs)(attributes.copy(oex.id))
-      solveds.copy(apply.id, res.id)
-      res
+      unnestRightUnary(apply, lhs, oex)
 
-    // L Ax (Cr R) => Cr Ax (L R)
-    case apply@Apply(lhs, create@Create(rhs, nodes, relationships)) =>
-      val res = Create(Apply(lhs, rhs)(SameId(apply.id)), nodes, relationships)(attributes.copy(create.id))
-      solveds.copy(apply.id, res.id)
-      res
+    // L Ax (Cr R) => Cr (L Ax R)
+    case apply@Apply(lhs, create:Create) =>
+      unnestRightUnary(apply, lhs, create)
 
     // π (Arg) Ax R => π (R) // if R is leaf and R is not using columns from π
-    case Apply(projection@Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan)
+    case apply@Apply(projection@Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan)
       if !projections.keys.exists(rhsLeaf.usedVariables.contains) =>
       val rhsCopy = rhsLeaf.withoutArgumentIds(projections.keySet)
-      projection.copy(rhsCopy, projections)(SameId(projection.id))
+      val res = projection.copy(rhsCopy, projections)(attributes.copy(projection.id))
+      solveds.copy(projection.id, res.id)
+      cardinalities.copy(apply.id, res.id)
+      res
   })
+
+  // L Ax (UP R) => UP (L Ax R)
+  private def unnestRightUnary(apply: Apply, lhs: LogicalPlan, rhs: LogicalUnaryPlan): LogicalPlan = {
+    val newApply = apply.copy(right = rhs.source)(attributes.copy(apply.id))
+    solveds.copy(apply.id, newApply.id)
+    cardinalities.set(newApply.id, cardinalities(lhs.id) * cardinalities(rhs.source.id))
+
+    val res = rhs.withLhs(newApply)(attributes.copy(rhs.id))
+    solveds.copy(apply.id, res.id)
+    cardinalities.set(res.id, cardinalities(lhs.id) * cardinalities(rhs.id))
+    res
+  }
+
+  // L Ax (_ BP R) => L BP R
+  private def unnestRightBinaryLeft(apply: Apply, lhs: LogicalPlan, rhs: LogicalBinaryPlan): LogicalPlan = {
+    val res = rhs.withLhs(lhs)(attributes.copy(rhs.id))
+    solveds.copy(apply.id, res.id)
+    cardinalities.copy(apply.id, res.id)
+    res
+  }
+
+  // L Ax (L2 BP _) => L2 BP L
+  private def unnestRightBinaryRight(apply: Apply, lhs: LogicalPlan, rhs: LogicalBinaryPlan): LogicalPlan = {
+    val res = rhs.withRhs(lhs)(attributes.copy(rhs.id))
+    solveds.copy(apply.id, res.id)
+    cardinalities.copy(apply.id, res.id)
+    res
+  }
+
+  private def assertArgumentHasCardinality1(arg: Argument): Unit = {
+    // Argument plans are always supposed to have a Cardinality of 1.
+    // If this should not hold, we would need to multiply Cardinality for this rewrite rule.
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(cardinalities(arg.id) == Cardinality.SINGLE, s"Argument plans should always have Cardinality 1. Had: ${cardinalities(arg.id)}")
+  }
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 }

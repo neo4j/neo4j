@@ -57,7 +57,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
                         providedOrders: ProvidedOrders,
                         otherAttributes: Attributes[LogicalPlan]): Rewriter = fixedPoint(inSequence(
     fuseSelections,
-    unnestApply(solveds, otherAttributes.withAlso(cardinalities, effectiveCardinalities, providedOrders)),
+    unnestApply(solveds, cardinalities, otherAttributes.withAlso(effectiveCardinalities, providedOrders)),
     unnestCartesianProduct,
     cleanUpEager(solveds, otherAttributes.withAlso(cardinalities, effectiveCardinalities, providedOrders)),
     simplifyPredicates,

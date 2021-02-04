@@ -112,6 +112,17 @@ trait Attribute[KEY, VALUE] {
     sb.result()
   }
 
+  /**
+   * Returns a copy of the underlying storage of values, as a Seq.
+   */
+  def toSeq: Seq[Unchangeable[VALUE]] = {
+    array.map { original =>
+      val copied = new Unchangeable[VALUE]()
+      copied.copyFrom(original)
+      copied
+    }
+  }
+
   private def resizeArray(requiredSize: Int): Unit = {
     while (array.size < requiredSize)
       array += new Unchangeable

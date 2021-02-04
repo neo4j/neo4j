@@ -19,100 +19,61 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
-import org.neo4j.cypher.internal.logical.plans.Apply
-import org.neo4j.cypher.internal.logical.plans.Argument
-import org.neo4j.cypher.internal.logical.plans.Expand
-import org.neo4j.cypher.internal.logical.plans.ExpandAll
-import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDs
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.Optional
-import org.neo4j.cypher.internal.logical.plans.OptionalExpand
-import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.attribution.Attributes
+import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.Assertion
 
 class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should unnest apply with a single Argument on the lhs") {
-    val rhs = newMockedLogicalPlan()
-    val argument = Argument()
-    val input = Apply(argument, rhs)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.nodeByLabelScan("m", "M", "n").withCardinality(20)
+      .argument().withCardinality(1)
 
-    rewrite(input) should equal(rhs)
-  }
-
-  test("should unnest apply with a single Argument on the rhs") {
-    val lhs = newMockedLogicalPlan()
-    val argument = Argument(Set.empty)
-    val input = Apply(lhs, argument)
-
-    rewrite(input) should equal(lhs)
-  }
-
-  test("should unnest also when deeper in the structure") {
-    val lhs = newMockedLogicalPlan()
-    val argument = Argument(Set.empty)
-    val apply = Apply(lhs, argument)
-    val optional = Optional(apply)
-
-    rewrite(optional) should equal(Optional(lhs))
-  }
-
-  test("should unnest one level deeper") {
-    /*
-           Apply
-         LHS  OuterJoin
-              Arg   RHS
-     */
-    val argPlan = Argument(Set("a"))
-    val lhs = newMockedLogicalPlan("a")
-    val rhs = newMockedLogicalPlan("a")
-
-    val input =
-      Apply(lhs,
-        LeftOuterHashJoin(Set("a"),
-          argPlan,
-          rhs
-        )
-      )
-
-    rewrite(input) should equal(
-      LeftOuterHashJoin(Set("a"), lhs, rhs)
+    inputBuilder shouldRewriteToPlanWithCardinalities(new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20)
     )
   }
 
-  test("should unnest optional expand") {
-    /*
-           Apply
-         LHS  OptionalExpand
-                  Arg
-     */
-    val argPlan = Argument(Set("a"))
-    val lhs = newMockedLogicalPlan("a")
+  test("should unnest apply with a single Argument on the rhs") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.argument().withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20)
 
-    val input =
-      Apply(lhs,
-        OptionalExpand(argPlan, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
-      )
-
-    rewrite(input) should equal(
-      OptionalExpand(lhs, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
+    inputBuilder shouldRewriteToPlanWithCardinalities(new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20)
     )
   }
 
   test("should not cross OPTIONAL boundaries") {
-    val argPlan = Argument(Set("a"))
-    val lhs = newMockedLogicalPlan("a")
-    val rhs = Selection(Seq(propEquality("a", "prop", 42)), argPlan)
-    val optional = Optional(rhs)
-
-    val input = Apply(lhs, optional)
+    val input = new LogicalPlanBuilder()
+      .produceResults("x", "n")
+      .apply()
+      .|.optional("n")
+      .|.filter("n.prop = 42")
+      .|.argument("n")
+      .nodeByLabelScan("n", "N")
+      .build()
 
     rewrite(input) should equal(input)
   }
@@ -125,19 +86,24 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
                                       Arg2
      */
 
-    // Given
-    val lhs = newMockedLogicalPlan("a")
-    val arg1 = Argument(Set("a"))
-    val arg2 = Argument(Set("a"))
-    val expand = Expand(arg2, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll)
-    val apply2 = Apply(arg1, expand)
-    val apply = Apply(lhs, apply2)
 
-    // When
-    val result = rewrite(apply)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m", "o").withCardinality(300)
+      .apply().withCardinality(300)
+      .|.apply().withCardinality(3)
+      .|.|.expand("(n)-->(m)").withCardinality(6)
+      .|.|.argument("n").withCardinality(1)
+      .|.filter("n.prop = 42").withCardinality(0.5)
+      .|.argument("n").withCardinality(1)
+      .nodeByLabelScan("n", "N").withCardinality(100)
 
-    // Then
-    result should equal(Expand(lhs, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll))
+    inputBuilder shouldRewriteToPlanWithCardinalities(
+      new LogicalPlanBuilder()
+        .produceResults("n", "m", "o").withCardinality(300)
+        .expand("(n)-->(m)").withCardinality(300)
+        .filter("n.prop = 42").withCardinality(50)
+        .nodeByLabelScan("n", "N").withCardinality(100)
+    )
   }
 
   test("apply on apply should be extracted nicely 2") {
@@ -149,24 +115,24 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
                            LHS2
      */
 
-    // Given
-    val lhs1 = newMockedLogicalPlan("a")
-    val lhs2 = newMockedLogicalPlan("a")
-    val rhs = newMockedLogicalPlan("a")
-    val predicates = Seq(propEquality("a", "prop", 42))
-    val filter = Selection(predicates, lhs2)
-    val apply2 = Apply(filter, rhs)
-    val apply1 = Apply(lhs1, apply2)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(40000)
+      .apply().withCardinality(40000)
+      .|.apply().withCardinality(400)
+      .|.|.nodeByLabelScan("o", "O", "n", "m").withCardinality(40)
+      .|.filter("n.prop > 10").withCardinality(10)
+      .|.nodeByLabelScan("m", "M", "n").withCardinality(20)
+      .allNodeScan("n").withCardinality(100)
 
-    // When
-    val result = rewrite(apply1)
-
-    // Then
-    val filterNew = Selection(predicates, lhs1)
-    val apply2New = Apply(lhs2, rhs)
-    val apply1New = Apply(filterNew, apply2New)
-
-    result should equal(apply1New)
+    inputBuilder shouldRewriteToPlanWithCardinalities(new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(40000)
+      .apply().withCardinality(40000)
+      .|.apply().withCardinality(800)
+      .|.|.nodeByLabelScan("o", "O", "n", "m").withCardinality(40)
+      .|.nodeByLabelScan("m", "M", "n").withCardinality(20)
+      .filter("n.prop > 10").withCardinality(50)
+      .allNodeScan("n").withCardinality(100)
+    )
   }
 
   test("apply on apply should be left unchanged") {
@@ -176,45 +142,20 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
                             Apply1
                          LHS1     Apply2       =>  remains unchanged
                               Filter   RHS
-                           Expand
                            LHS2
      */
 
-    // Given
-    val lhs1 = newMockedLogicalPlan("a")
-    val lhs2 = newMockedLogicalPlan("a")
-    val rhs = newMockedLogicalPlan("a")
-    val expand = Expand(lhs2, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll)
-    val predicates = Seq(propEquality("r", "prop", 42))
-    val filter = Selection(predicates, expand)
-    val apply2 = Apply(filter, rhs)
-    val apply1 = Apply(lhs1, apply2)
+    val input = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(40000)
+      .apply().withCardinality(40000)
+      .|.apply().withCardinality(400)
+      .|.|.nodeByLabelScan("o", "O", "n", "m").withCardinality(40)
+      .|.filter("m.prop > 10").withCardinality(10)
+      .|.nodeByLabelScan("m", "M", "n").withCardinality(20)
+      .allNodeScan("n").withCardinality(100)
+      .build()
 
-    // When
-    val result = rewrite(apply1)
-
-    // Then
-    result should equal(apply1)
-  }
-
-  test("unnesting varlength expands should work well") {
-    /*
-                            Apply
-                         LHS   VarExpand
-                                     Arg
-     */
-
-    // Given
-    val lhs = newMockedLogicalPlan("a")
-    val arg = Argument(Set("a"))
-    val expand = VarExpand(arg, "a", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, "b", "r", VarPatternLength(1, None), ExpandAll)
-    val apply = Apply(lhs, expand)
-
-    // When
-    val result = rewrite(apply)
-
-    // Then
-    result should equal(VarExpand(lhs, "a", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, "b", "r", VarPatternLength(1, None), ExpandAll))
+    rewrite(input) should equal(input)
   }
 
   test("apply on apply on optional should be OK") {
@@ -226,24 +167,24 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
                                        Arg2
      */
 
-    // Given
-    val lhs = newMockedLogicalPlan("a")
-    val arg1 = Argument(Set("a"))
-    val arg2 = Argument(Set("a"))
-    val expand = Expand(arg2, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll)
-    val optional = Optional(expand)
-    val apply2 = Apply(arg1, optional)
-    val apply = Apply(lhs, apply2)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(1000)
+      .apply().withCardinality(1000)
+      .|.apply().withCardinality(10)
+      .|.|.optional("n").withCardinality(10)
+      .|.|.expand("(n)-->(m)").withCardinality(15)
+      .|.|.argument("n").withCardinality(1)
+      .|.argument("n").withCardinality(1)
+      .allNodeScan("n").withCardinality(100)
 
-    // When
-    val result = rewrite(apply)
-
-    // Then
-    result should equal(Apply(
-      lhs,
-      Optional(
-        Expand(arg2, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll))
-    ))
+    inputBuilder shouldRewriteToPlanWithCardinalities(new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(1000)
+      .apply().withCardinality(1000)
+      .|.optional("n").withCardinality(10)
+      .|.expand("(n)-->(m)").withCardinality(15)
+      .|.argument("n").withCardinality(1)
+      .allNodeScan("n").withCardinality(100)
+    )
   }
 
   test("AntiConditionalApply on apply on optional should be OK") {
@@ -255,62 +196,57 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
                                        Arg2
      */
 
-    // Given
-    val lhs = newMockedLogicalPlan("a")
-    val arg1 = Argument(Set("a"))
-    val arg2 = Argument(Set("a"))
-    val expand = Expand(arg2, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll)
-    val optional = Optional(expand)
-    val apply2 = Apply(arg1, optional)
-    val aca = AntiConditionalApply(lhs, apply2, Seq("a"))
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(1000)
+      .antiConditionalApply("n").withCardinality(1000)
+      .|.apply().withCardinality(10)
+      .|.|.optional("n").withCardinality(10)
+      .|.|.expand("(n)-->(m)").withCardinality(15)
+      .|.|.argument("n").withCardinality(1)
+      .|.argument("n").withCardinality(1)
+      .allNodeScan("n").withCardinality(100)
 
-    // When
-    val result = rewrite(aca)
-
-    // Then
-    result should equal(AntiConditionalApply(
-      lhs,
-      Optional(
-        Expand(arg2, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll)),
-      Seq("a")
-    ))
+    inputBuilder shouldRewriteToPlanWithCardinalities(new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(1000)
+      .antiConditionalApply("n").withCardinality(1000)
+      .|.optional("n").withCardinality(10)
+      .|.expand("(n)-->(m)").withCardinality(15)
+      .|.argument("n").withCardinality(1)
+      .allNodeScan("n").withCardinality(100)
+    )
   }
 
   test("π (Arg) Ax R => π (R)") {
-    val input = new LogicalPlanBuilder()
-      .produceResults("x", "n")
-      .apply()
-      .|.allNodeScan("n", "x")
-      .projection("5 AS x")
-      .argument()
-      .build()
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(100)
+      .apply().withCardinality(100)
+      .|.allNodeScan("n", "x").withCardinality(100)
+      .projection("5 AS x").withCardinality(1)
+      .argument().withCardinality(1)
 
-    rewrite(input) should equal(new LogicalPlanBuilder()
-      .produceResults("x", "n")
-      .projection("5 as x")
-      .allNodeScan("n")
-      .build()
+    inputBuilder shouldRewriteToPlanWithCardinalities(new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(100)
+      .projection("5 as x").withCardinality(100)
+      .allNodeScan("n").withCardinality(100)
     )
   }
 
   test("π (Arg) Ax R => π (R): keeps arguments if nested under another apply") {
-    val input = new LogicalPlanBuilder()
-      .produceResults("x", "n")
-      .apply()
-      .|.apply()
-      .|.|.allNodeScan("n", "x", "m")
-      .|.projection("5 AS x")
-      .|.argument("m")
-      .allNodeScan("m")
-      .build()
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(10000)
+      .apply().withCardinality(10000)
+      .|.apply().withCardinality(100)
+      .|.|.allNodeScan("n", "x", "m").withCardinality(100)
+      .|.projection("5 AS x").withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .allNodeScan("m").withCardinality(100)
 
-    rewrite(input) should equal(new LogicalPlanBuilder()
-      .produceResults("x", "n")
-      .projection("5 as x")
-      .apply()
-      .|.allNodeScan("n", "m")
-      .allNodeScan("m")
-      .build()
+    inputBuilder shouldRewriteToPlanWithCardinalities(new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(10000)
+      .projection("5 as x").withCardinality(10000)
+      .apply().withCardinality(10000)
+      .|.allNodeScan("n", "m").withCardinality(100)
+      .allNodeScan("m").withCardinality(100)
     )
   }
 
@@ -326,6 +262,260 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
     rewrite(input) should equal(input)
   }
 
-  private def rewrite(p: LogicalPlan): LogicalPlan =
-    fixedPoint((p: LogicalPlan) => p.endoRewrite(unnestApply(new StubSolveds, Attributes(idGen))))(p)
+  test("should unnest Expand and multiply cardinality") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m").withCardinality(200)
+      .apply().withCardinality(200)
+      .|.expand("(n)-->(m)").withCardinality(2)
+      .|.argument("n").withCardinality(1)
+      .nodeByLabelScan("n", "N").withCardinality(100)
+
+    inputBuilder shouldRewriteToPlanWithCardinalities(
+    new LogicalPlanBuilder()
+      .produceResults("n", "m").withCardinality(200)
+      .expand("(n)-->(m)").withCardinality(200)
+      .nodeByLabelScan("n", "N").withCardinality(100)
+    )
+  }
+
+  test("should unnest two Expands and multiply cardinality") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m", "o").withCardinality(400)
+      .apply().withCardinality(400)
+      .|.expand("(m)-->(o)").withCardinality(4)
+      .|.expand("(n)-->(m)").withCardinality(2)
+      .|.argument("n").withCardinality(1)
+      .nodeByLabelScan("n", "N").withCardinality(100)
+
+    inputBuilder shouldRewriteToPlanWithCardinalities(
+      new LogicalPlanBuilder()
+        .produceResults("n", "m", "o").withCardinality(400)
+        .expand("(m)-->(o)").withCardinality(400)
+        .expand("(n)-->(m)").withCardinality(200)
+        .nodeByLabelScan("n", "N").withCardinality(100)
+    )
+  }
+
+  test("should unnest Expand but keep Apply and multiply cardinality") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m").withCardinality(200)
+      .apply().withCardinality(200)
+      .|.expandInto("(n)-->(m)").withCardinality(2)
+      .|.allNodeScan("m").withCardinality(1000)
+      .nodeByLabelScan("n", "N").withCardinality(100)
+
+    inputBuilder shouldRewriteToPlanWithCardinalities(
+      new LogicalPlanBuilder()
+        .produceResults("n", "m").withCardinality(200)
+        .expandInto("(n)-->(m)").withCardinality(200)
+        .apply().withCardinality(100000)
+        .|.allNodeScan("m").withCardinality(1000)
+        .nodeByLabelScan("n", "N").withCardinality(100)
+    )
+  }
+
+  test("should unnest Selection and multiply cardinality") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n").withCardinality(50)
+      .apply().withCardinality(50)
+      .|.filter("n.prop > 0").withCardinality(0.5)
+      .|.argument("n").withCardinality(1)
+      .nodeByLabelScan("n", "N").withCardinality(100)
+
+    inputBuilder shouldRewriteToPlanWithCardinalities(
+      new LogicalPlanBuilder()
+        .produceResults("n").withCardinality(50)
+        .filter("n.prop > 0").withCardinality(50)
+        .nodeByLabelScan("n", "N").withCardinality(100)
+    )
+  }
+
+  test("should unnest Projection and multiply cardinality") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m").withCardinality(50)
+      .apply().withCardinality(50)
+      .|.projection("n AS m").withCardinality(1)
+      .|.argument("n").withCardinality(1)
+      .nodeByLabelScan("n", "N").withCardinality(100)
+
+    inputBuilder shouldRewriteToPlanWithCardinalities(
+      new LogicalPlanBuilder()
+        .produceResults("n", "m").withCardinality(50)
+        .projection("n AS m").withCardinality(100)
+        .nodeByLabelScan("n", "N").withCardinality(100)
+    )
+  }
+
+  test("should unnest VarExpand and multiply cardinality") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m").withCardinality(200)
+      .apply().withCardinality(200)
+      .|.expand("(n)-[*]->(m)").withCardinality(2)
+      .|.argument("n").withCardinality(1)
+      .nodeByLabelScan("n", "N").withCardinality(100)
+
+    inputBuilder shouldRewriteToPlanWithCardinalities(
+      new LogicalPlanBuilder()
+        .produceResults("n", "m").withCardinality(200)
+        .expand("(n)-[*]->(m)").withCardinality(200)
+        .nodeByLabelScan("n", "N").withCardinality(100)
+    )
+  }
+
+  test("should unnest OptionalExpand and multiply cardinality") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m").withCardinality(200)
+      .apply().withCardinality(200)
+      .|.optionalExpandAll("(n)-->(m)").withCardinality(2)
+      .|.argument("n").withCardinality(1)
+      .nodeByLabelScan("n", "N").withCardinality(100)
+
+    inputBuilder shouldRewriteToPlanWithCardinalities(
+      new LogicalPlanBuilder()
+        .produceResults("n", "m").withCardinality(200)
+        .optionalExpandAll("(n)-->(m)").withCardinality(200)
+        .nodeByLabelScan("n", "N").withCardinality(100)
+    )
+  }
+
+  test("should not unnest OptionalExpand on top of non-Argument") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("n", "m").withCardinality(400)
+      .apply().withCardinality(400)
+      .|.optionalExpandAll("(n)-->(o)").withCardinality(4)
+      .|.optionalExpandAll("(n)-->(m)").withCardinality(2)
+      .|.argument("n").withCardinality(1)
+      .nodeByLabelScan("n", "N").withCardinality(100)
+      .build()
+
+    rewrite(input) should equal(input)
+  }
+
+  test("should unnest Create and multiply cardinality") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m").withCardinality(100)
+      .apply().withCardinality(100)
+      .|.create(createNode("m")).withCardinality(1)
+      .|.argument("n").withCardinality(1)
+      .nodeByLabelScan("n", "N").withCardinality(100)
+
+    inputBuilder shouldRewriteToPlanWithCardinalities(
+      new LogicalPlanBuilder()
+        .produceResults("n", "m").withCardinality(100)
+        .create(createNode("m")).withCardinality(100)
+        .nodeByLabelScan("n", "N").withCardinality(100)
+    )
+  }
+
+  test("should unnest ForeachApply and multiply cardinality") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n").withCardinality(100)
+      .apply().withCardinality(100)
+      .|.foreachApply("n", "[1, 2, 3]").withCardinality(1)
+      .|.|.setProperty("n", "prop", "5").withCardinality(1)
+      .|.|.argument("n").withCardinality(1)
+      .|.argument("n").withCardinality(1)
+      .nodeByLabelScan("n", "N").withCardinality(100)
+
+    inputBuilder shouldRewriteToPlanWithCardinalities(
+      new LogicalPlanBuilder()
+        .produceResults("n").withCardinality(100)
+        .foreachApply("n", "[1, 2, 3]").withCardinality(100)
+        .|.setProperty("n", "prop", "5").withCardinality(1)
+        .|.argument("n").withCardinality(1)
+        .nodeByLabelScan("n", "N").withCardinality(100)
+    )
+  }
+
+  test("should unnest LeftOuterHashJoin and multiply cardinality") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m").withCardinality(2500)
+      .apply().withCardinality(2500)
+      .|.leftOuterHashJoin("n").withCardinality(25)
+      .|.|.expand("(m)--(n)").withCardinality(50)
+      .|.|.nodeByLabelScan("m", "M").withCardinality(10)
+      .|.argument("n").withCardinality(1)
+      .nodeByLabelScan("n", "N").withCardinality(100)
+
+    inputBuilder shouldRewriteToPlanWithCardinalities(
+      new LogicalPlanBuilder()
+        .produceResults("n", "m").withCardinality(2500)
+        .leftOuterHashJoin("n").withCardinality(2500)
+        .|.expand("(m)--(n)").withCardinality(50)
+        .|.nodeByLabelScan("m", "M").withCardinality(10)
+        .nodeByLabelScan("n", "N").withCardinality(100)
+    )
+  }
+
+  test("should unnest RightOuterHashJoin and multiply cardinality") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m").withCardinality(2500)
+      .apply().withCardinality(2500)
+      .|.rightOuterHashJoin("n").withCardinality(25)
+      .|.|.argument("n").withCardinality(1)
+      .|.expand("(m)--(n)").withCardinality(50)
+      .|.nodeByLabelScan("m", "M").withCardinality(10)
+      .nodeByLabelScan("n", "N").withCardinality(100)
+
+    inputBuilder shouldRewriteToPlanWithCardinalities(
+      new LogicalPlanBuilder()
+        .produceResults("n", "m").withCardinality(2500)
+        .rightOuterHashJoin("n").withCardinality(2500)
+        .|.nodeByLabelScan("n", "N").withCardinality(100)
+        .expand("(m)--(n)").withCardinality(50)
+        .nodeByLabelScan("m", "M").withCardinality(10)
+    )
+  }
+
+  implicit private class AssertableInputBuilder(inputBuilder: LogicalPlanBuilder) {
+    def shouldRewriteToPlanWithCardinalities(expectedBuilder: LogicalPlanBuilder): Assertion = {
+      val (resultPlan, newCardinalities) = rewrite(inputBuilder.build(), inputBuilder.cardinalities, inputBuilder.idGen)
+      val (expectedPlan, expectedCardinalities) = compressIds(expectedBuilder.build(), expectedBuilder.cardinalities)
+
+      resultPlan should equal(expectedPlan)
+      newCardinalities.toSeq should equal(expectedCardinalities.toSeq)
+    }
+  }
+
+  private def attributes(cardinalities: Cardinalities): PlanningAttributes = PlanningAttributes(
+    new StubSolveds,
+    cardinalities,
+    new StubEffectiveCardinalities,
+    new StubProvidedOrders,
+    new StubLeveragedOrders
+  )
+
+  private def compressIds(p: LogicalPlan, cardinalities: Cardinalities): (LogicalPlan, Cardinalities) = compressIds(p, attributes(cardinalities))
+
+  private def compressIds(p: LogicalPlan, attributes: PlanningAttributes): (LogicalPlan, Cardinalities) = {
+    val logicalPlanState = LogicalPlanState(
+      "<query text>",
+      None,
+      IDPPlannerName,
+      attributes,
+      maybeLogicalPlan = Some(p)
+    )
+    val plannerContext = mock[PlannerContext]
+    when(plannerContext.tracer).thenReturn(NO_TRACING)
+    val compactedState = CompressPlanIDs.transform(logicalPlanState, plannerContext)
+    (compactedState.logicalPlan, compactedState.planningAttributes.cardinalities)
+  }
+
+  private def rewrite(p: LogicalPlan, cardinalities: Cardinalities, idGen: IdGen): (LogicalPlan, Cardinalities) = {
+    val atts = attributes(cardinalities)
+
+    val unnestedPlan = fixedPoint((p: LogicalPlan) => p.endoRewrite(unnestApply(
+      atts.solveds,
+      atts.cardinalities,
+      Attributes(idGen)
+    )))(p)
+
+    compressIds(unnestedPlan, atts)
+  }
+
+  private def stubCardinalities(): StubCardinalities = new StubCardinalities {
+    override def defaultValue: Cardinality = Cardinality.SINGLE
+  }
+
+  private def rewrite(p: LogicalPlan): LogicalPlan = rewrite(p, stubCardinalities(), idGen)._1
 }

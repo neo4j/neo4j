@@ -16,10 +16,12 @@
  */
 package org.neo4j.cypher.internal.util
 
+import scala.util.hashing.MurmurHash3
+
 // Freely after the ATOM idea presented by Daniel Spiewak (@djspiewak) in
 // the video "Functional Compilers: From CFG to EXE"
 // This is a wrapper that allows values to be set multiple times, but can be trusted to never change once seen.
-class Unchangeable[A]() {
+final class Unchangeable[A]() {
   private var _seen = false
   private var _value: Option[A] = None
 
@@ -43,4 +45,15 @@ class Unchangeable[A]() {
     value_=(other.value)
 
   override def toString: String = s"Unchangeable(${_value.getOrElse("NOT SET")})"
+
+  override def hashCode(): Int = MurmurHash3.productHash((_seen, _value))
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case that:Unchangeable[_] =>
+        if (this eq that) return true
+        this._seen == that._seen && this._value == that._value
+      case _ => false
+    }
+  }
 }
