@@ -188,7 +188,11 @@ public class FullCheck
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_STRUCTURE_CHECKER_TAG ) )
         {
             final long schemaIndexCount = Iterables.count( indexes.onlineRules() );
-            final long additionalCount = 1 /*LabelScanStore*/ + 1 /*RelationshipTypeScanStore*/ + 1 /*IndexStatisticsStore*/ + 1 /*countsStore*/;
+            long additionalCount = 1 /*LabelScanStore*/ + 1 /*RelationshipTypeScanStore*/ + 1 /*IndexStatisticsStore*/ + 1 /*countsStore*/;
+            if ( hasGroupDegreesStore( groupDegreesStore ) )
+            {
+                additionalCount += 1;
+            }
             final long idGeneratorsCount = idGenerators.size();
             final long totalCount = schemaIndexCount + additionalCount + idGeneratorsCount;
             var listener = progressMonitorFactory.singlePart( "Index structure consistency check", totalCount );
@@ -210,7 +214,7 @@ public class FullCheck
         consistencyCheckSingleCheckable( report, listener, relationshipTypeScanStore, RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, cursorTracer );
         consistencyCheckSingleCheckable( report, listener, indexStatisticsStore, RecordType.INDEX_STATISTICS, cursorTracer );
         consistencyCheckSingleCheckable( report, listener, countsStore, RecordType.COUNTS, cursorTracer );
-        if ( groupDegreesStore != null )
+        if ( hasGroupDegreesStore( groupDegreesStore ) )
         {
             // The relationship group degrees store has no "NULL_STORE" because it's otherwise not needed and it's not
             // checked in the other parts of the consistency checker since degrees in general aren't checked (due to performance implications).
@@ -254,5 +258,10 @@ public class FullCheck
         {
             indexes.remove( toRemove );
         }
+    }
+
+    private static boolean hasGroupDegreesStore( RelationshipGroupDegreesStore groupDegreesStore )
+    {
+        return groupDegreesStore != null;
     }
 }
