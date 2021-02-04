@@ -21,4 +21,4 @@ package org.neo4j.cypher.internal.runtime.ast
 
 import org.neo4j.values.AnyValue
 
-case class RuntimeLiteral(value: AnyValue) extends RuntimeExpression
+case class DefaultValueLiteral(value: AnyValue) extends RuntimeExpression

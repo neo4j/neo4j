@@ -107,7 +107,7 @@ import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
-import org.neo4j.cypher.internal.runtime.ast.RuntimeLiteral
+import org.neo4j.cypher.internal.runtime.ast.DefaultValueLiteral
 import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.GroupingExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands
@@ -297,7 +297,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case CoerceToPredicate(inner) => predicates.CoercedPredicate(self.toCommandExpression(id, inner))
       case e: internal.expressions.CollectAll=>
         commands.expressions.CollectAll(self.toCommandExpression(id, e.arguments.head))
-      case e: RuntimeLiteral => commands.expressions.Literal(e.value)
+      case e: DefaultValueLiteral => commands.expressions.Literal(e.value)
       case _ => null
     }
 
