@@ -26,13 +26,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Litera
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 
-class ForeachPipeTest extends CypherFunSuite {
+class ForeachApplyPipeTest extends CypherFunSuite {
   test("Each row should immediately close RHS. Exhaust should close LHS.") {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
     val lhs = new FakePipe(Seq(Map("a"->10),Map("a"->11)))
     val rhs = new FakePipe(Seq(Map("b"->20),Map("b"->21)))
-    val pipe = ForeachPipe(lhs, rhs, "c", ListLiteral(Literal(Values.intValue(42))))()
+    val pipe = ForeachApplyPipe(lhs, rhs, "c", ListLiteral(Literal(Values.intValue(42))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithResourceManager(resourceManager))
     result.next() // First row
     lhs.wasClosed shouldBe false

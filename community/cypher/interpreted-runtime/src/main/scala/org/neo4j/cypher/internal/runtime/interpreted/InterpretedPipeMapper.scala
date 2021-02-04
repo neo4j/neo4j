@@ -162,7 +162,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExhaustiveLimitPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandAllPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.FilterPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ForeachPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ForeachApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeekModeFactory
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.InputPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
@@ -738,7 +738,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         ValueHashJoinPipe(buildExpression(lhsExpression), buildExpression(rhsExpression), lhs, rhs)(id = id)
 
       case ForeachApply(_, _, variable, expression) =>
-        ForeachPipe(lhs, rhs, variable, buildExpression(expression))(id = id)
+        ForeachApplyPipe(lhs, rhs, variable, buildExpression(expression))(id = id)
 
       case RollUpApply(_, _, collectionName, identifierToCollection) =>
         RollUpApplyPipe(lhs, rhs, collectionName, identifierToCollection)(id = id)

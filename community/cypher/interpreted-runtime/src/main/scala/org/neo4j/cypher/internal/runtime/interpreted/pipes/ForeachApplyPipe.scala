@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
 
-case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: Expression)
-                      (val id: Id = Id.INVALID_ID)
+case class ForeachApplyPipe(source: Pipe, inner: Pipe, variable: String, expression: Expression)
+                           (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(source) with ListSupport {
 
   override protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
@@ -35,7 +35,10 @@ case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: 
         val values = makeTraversable(expression(outerContext, state)).iterator()
         while (values.hasNext) {
           val innerState = state.withInitialContext(rowFactory.copyWith(outerContext, variable, values.next()))
-          inner.createResults(innerState).length // exhaust the iterator, in case there's a merge read increasing cardinality inside the foreach
+          val ignoredResult = inner.createResults(innerState)
+          while (ignoredResult.hasNext) {
+            ignoredResult.next()
+          }
         }
         outerContext
     }
