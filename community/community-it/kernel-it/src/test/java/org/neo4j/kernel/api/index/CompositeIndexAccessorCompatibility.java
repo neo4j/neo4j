@@ -102,12 +102,12 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending IndexProviderCompatibilityTestSuite." +
+        " must create their own test class extending PropertyIndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    CompositeIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
+    CompositeIndexAccessorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
         super( testSuite, prototype );
     }
@@ -1331,7 +1331,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Ignore( "Not a test. This is a compatibility suite" )
     public static class General extends CompositeIndexAccessorCompatibility
     {
-        public General( IndexProviderCompatibilityTestSuite testSuite )
+        public General( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100, 200 ) ) );
         }
@@ -1422,7 +1422,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     @Ignore( "Not a test. This is a compatibility suite" )
     public static class Unique extends CompositeIndexAccessorCompatibility
     {
-        public Unique( IndexProviderCompatibilityTestSuite testSuite )
+        public Unique( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             super( testSuite, IndexPrototype.uniqueForSchema( forLabel( 1000, 100, 200 ) ) );
         }

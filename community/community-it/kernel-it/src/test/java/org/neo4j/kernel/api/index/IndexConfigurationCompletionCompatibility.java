@@ -26,9 +26,7 @@ import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrderCapability;
-import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexValueCapability;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.Values;
 
@@ -45,14 +43,13 @@ public class IndexConfigurationCompletionCompatibility extends IndexProviderComp
 {
     public IndexConfigurationCompletionCompatibility( IndexProviderCompatibilityTestSuite testSuite )
     {
-        super( testSuite, IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ) );
+        super( testSuite, testSuite.indexPrototype() );
     }
 
     @Test
     public void configurationCompletionMustNotOverwriteExistingConfiguration()
     {
-        SchemaDescriptor schema = SchemaDescriptor.forLabel( 1, 1 );
-        IndexDescriptor index = IndexPrototype.forSchema( schema ).withName( "index" ).materialise( 0 );
+        IndexDescriptor index = descriptor;
         index = index.withIndexConfig( IndexConfig.with( "Bob", Values.stringValue( "Howard" ) ) );
         index = indexProvider.completeConfiguration( index );
         assertEquals( index.getIndexConfig().get( "Bob" ), Values.stringValue( "Howard" ) );
@@ -61,8 +58,7 @@ public class IndexConfigurationCompletionCompatibility extends IndexProviderComp
     @Test
     public void configurationCompletionMustBeIdempotent()
     {
-        SchemaDescriptor schema = SchemaDescriptor.forLabel( 1, 1 );
-        IndexDescriptor index = IndexPrototype.forSchema( schema ).withName( "index" ).materialise( 0 );
+        IndexDescriptor index = descriptor;
         IndexDescriptor onceCompleted = indexProvider.completeConfiguration( index );
         IndexDescriptor twiceCompleted = indexProvider.completeConfiguration( onceCompleted );
         assertEquals( onceCompleted.getIndexConfig(), twiceCompleted.getIndexConfig() );
@@ -71,8 +67,7 @@ public class IndexConfigurationCompletionCompatibility extends IndexProviderComp
     @Test
     public void mustAssignCapabilitiesToDescriptorsThatHaveNone()
     {
-        SchemaDescriptor schema = SchemaDescriptor.forLabel( 1, 1 );
-        IndexDescriptor index = IndexPrototype.forSchema( schema ).withName( "index" ).materialise( 0 );
+        IndexDescriptor index = descriptor;
         IndexDescriptor completed = indexProvider.completeConfiguration( index );
         assertNotEquals( completed.getCapability(), IndexCapability.NO_CAPABILITY );
         completed = completed.withIndexCapability( IndexCapability.NO_CAPABILITY );
@@ -97,8 +92,7 @@ public class IndexConfigurationCompletionCompatibility extends IndexProviderComp
                 return IndexValueCapability.NO;
             }
         };
-        SchemaDescriptor schema = SchemaDescriptor.forLabel( 1, 1 );
-        IndexDescriptor index = IndexPrototype.forSchema( schema ).withName( "index" ).materialise( 0 ).withIndexCapability( capability );
+        IndexDescriptor index = descriptor.withIndexCapability( capability );
         IndexDescriptor completed = indexProvider.completeConfiguration( index );
         assertSame( capability, completed.getCapability() );
     }

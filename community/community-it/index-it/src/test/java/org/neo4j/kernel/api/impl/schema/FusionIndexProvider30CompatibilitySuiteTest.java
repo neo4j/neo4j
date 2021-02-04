@@ -27,7 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
+import org.neo4j.kernel.api.index.PropertyIndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.monitoring.Monitors;
@@ -35,7 +35,7 @@ import org.neo4j.monitoring.Monitors;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 
-public class FusionIndexProvider30CompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
+public class FusionIndexProvider30CompatibilitySuiteTest extends PropertyIndexProviderCompatibilityTestSuite
 {
     @Override
     protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config )

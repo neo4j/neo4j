@@ -56,12 +56,12 @@ import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending IndexProviderCompatibilityTestSuite." +
+        " must create their own test class extending PropertyIndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    CompositeRandomizedIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
+    CompositeRandomizedIndexAccessorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
         super( testSuite, prototype );
     }
@@ -69,7 +69,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
     @Ignore( "Not a test. This is a compatibility suite" )
     public static class Exact extends CompositeRandomizedIndexAccessorCompatibility
     {
-        public Exact( IndexProviderCompatibilityTestSuite testSuite )
+        public Exact( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             // composite index of 4 properties
             super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100, 101, 102, 103 ) ) );
@@ -117,7 +117,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
     @Ignore( "Not a test. This is a compatibility suite" )
     public static class Range extends CompositeRandomizedIndexAccessorCompatibility
     {
-        public Range( IndexProviderCompatibilityTestSuite testSuite )
+        public Range( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             // composite index of 2 properties
             super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100, 101 ) ) );

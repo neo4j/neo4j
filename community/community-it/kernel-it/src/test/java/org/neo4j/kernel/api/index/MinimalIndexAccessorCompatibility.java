@@ -61,7 +61,7 @@ public class MinimalIndexAccessorCompatibility extends IndexProviderCompatibilit
 
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ) );
+            super( testSuite, testSuite.indexPrototype() );
         }
 
         @Before
@@ -106,7 +106,7 @@ public class MinimalIndexAccessorCompatibility extends IndexProviderCompatibilit
     {
         public ReadOnly( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ) );
+            super( testSuite, testSuite.indexPrototype() );
         }
 
         @Override

@@ -76,7 +76,6 @@ import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringContains;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringPrefix;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringSuffix;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.epochDate;
@@ -88,12 +87,12 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending IndexProviderCompatibilityTestSuite." +
+        " must create their own test class extending PropertyIndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    SimpleIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
+    SimpleIndexAccessorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
         super( testSuite, prototype );
     }
@@ -986,9 +985,9 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     @Ignore( "Not a test. This is a compatibility suite" )
     public static class General extends SimpleIndexAccessorCompatibility
     {
-        public General( IndexProviderCompatibilityTestSuite testSuite )
+        public General( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100 ) ) );
+            super( testSuite, testSuite.indexPrototype() );
         }
 
         @Test
@@ -1225,9 +1224,9 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     @Ignore( "Not a test. This is a compatibility suite" )
     public static class Unique extends SimpleIndexAccessorCompatibility
     {
-        public Unique( IndexProviderCompatibilityTestSuite testSuite )
+        public Unique( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexPrototype.uniqueForSchema( forLabel( 1000, 100 ) ) );
+            super( testSuite, testSuite.uniqueIndexPrototype() );
         }
 
         @Test

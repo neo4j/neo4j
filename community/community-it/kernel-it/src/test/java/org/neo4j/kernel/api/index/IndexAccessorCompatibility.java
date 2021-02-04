@@ -58,13 +58,13 @@ import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
-public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
+public abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibilityTestSuite.Compatibility
 {
     IndexAccessor accessor;
     // This map is for spatial values, so that the #query method can lookup the values for the results and filter properly
     private final Map<Long,Value[]> committedValues = new HashMap<>();
 
-    IndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
+    IndexAccessorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
         super( testSuite, prototype );
     }

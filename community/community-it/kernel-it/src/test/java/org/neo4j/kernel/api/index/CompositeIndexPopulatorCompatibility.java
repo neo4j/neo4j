@@ -49,12 +49,12 @@ import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending IndexProviderCompatibilityTestSuite." +
+        " must create their own test class extending PropertyIndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
-public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
+public class CompositeIndexPopulatorCompatibility extends PropertyIndexProviderCompatibilityTestSuite.Compatibility
 {
-    CompositeIndexPopulatorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
+    CompositeIndexPopulatorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
         super( testSuite, prototype );
     }
@@ -62,7 +62,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
     @Ignore( "Not a test. This is a compatibility suite" )
     public static class General extends CompositeIndexPopulatorCompatibility
     {
-        public General( IndexProviderCompatibilityTestSuite testSuite )
+        public General( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100, 200 ) ) );
         }
@@ -100,7 +100,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         int nodeId1 = 3;
         int nodeId2 = 4;
 
-        public Unique( IndexProviderCompatibilityTestSuite testSuite )
+        public Unique( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
             super( testSuite, IndexPrototype.uniqueForSchema( forLabel( 1000, 100, 200 ) ) );
         }

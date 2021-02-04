@@ -40,8 +40,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
@@ -58,17 +56,17 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provi
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending IndexProviderCompatibilityTestSuite." +
+        " must create their own test class extending PropertyIndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
-public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
+public class UniqueConstraintCompatibility extends PropertyIndexProviderCompatibilityTestSuite.Compatibility
 {
 
     private DatabaseManagementService managementService;
 
-    public UniqueConstraintCompatibility( IndexProviderCompatibilityTestSuite testSuite )
+    public UniqueConstraintCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite )
     {
-        super( testSuite, IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ) );
+        super( testSuite, testSuite.uniqueIndexPrototype() );
     }
 
     /*

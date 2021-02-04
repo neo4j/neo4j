@@ -58,7 +58,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -67,12 +66,12 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending IndexProviderCompatibilityTestSuite." +
+        " must create their own test class extending PropertyIndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
-public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
+public class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCompatibilityTestSuite.Compatibility
 {
-    public SimpleIndexPopulatorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
+    public SimpleIndexPopulatorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
     {
         super( testSuite, prototype );
     }
@@ -346,9 +345,9 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     @Ignore( "Not a test. This is a compatibility suite" )
     public static class General extends SimpleIndexPopulatorCompatibility
     {
-        public General( IndexProviderCompatibilityTestSuite testSuite )
+        public General( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100 ) ) );
+            super( testSuite, testSuite.indexPrototype() );
         }
 
         @Test
@@ -384,9 +383,9 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     @Ignore( "Not a test. This is a compatibility suite" )
     public static class Unique extends SimpleIndexPopulatorCompatibility
     {
-        public Unique( IndexProviderCompatibilityTestSuite testSuite )
+        public Unique( PropertyIndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexPrototype.uniqueForSchema( forLabel( 1000, 100 ) ) );
+            super( testSuite, testSuite.uniqueIndexPrototype() );
         }
 
         /**

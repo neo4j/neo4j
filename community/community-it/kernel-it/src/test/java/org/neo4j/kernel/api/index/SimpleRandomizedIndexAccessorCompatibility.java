@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
-import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
@@ -44,21 +43,20 @@ import org.neo4j.values.storable.Values;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
-        " must create their own test class extending IndexProviderCompatibilityTestSuite." +
+        " must create their own test class extending PropertyIndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
-    public SimpleRandomizedIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
+    public SimpleRandomizedIndexAccessorCompatibility( PropertyIndexProviderCompatibilityTestSuite testSuite )
     {
-        super( testSuite, IndexPrototype.forSchema( forLabel( 1000, 100 ) ) );
+        super( testSuite, testSuite.indexPrototype() );
     }
 
     @Test
