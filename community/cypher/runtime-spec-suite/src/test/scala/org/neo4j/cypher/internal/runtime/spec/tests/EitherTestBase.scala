@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.internal.helpers.collection.Iterables
 
-abstract class EitherApplyTestBase[CONTEXT <: RuntimeContext](
+abstract class EitherTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
                                                                runtime: CypherRuntime[CONTEXT],
                                                                sizeHint: Int

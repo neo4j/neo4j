@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.logical.plans.EitherApply
+import org.neo4j.cypher.internal.logical.plans.Either
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
@@ -53,7 +53,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
 
     val onCreate = MergeCreateRelationship(createNodeB, "r", "a", RelTypeName("R")(pos), "b", None)
 
-    val mergeNode = EitherApply(expand, onCreate)
+    val mergeNode = Either(expand, onCreate)
     val emptyResult = EmptyResult(mergeNode)
 
     planFor("MERGE (a:A)-[r:R]->(b)")._2 should equal(emptyResult)
@@ -72,7 +72,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
 
     val onCreate = MergeCreateRelationship(createNodeB, "r", "a", RelTypeName("R")(pos), "b", None)
 
-    val mergeNode = EitherApply(expand, onCreate)
+    val mergeNode = Either(expand, onCreate)
     val apply = Apply(projection, mergeNode)
     val emptyResult = EmptyResult(apply)
 
@@ -103,8 +103,8 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
       EmptyResult(
         Apply(
           AllNodesScan("n", Set()),
-          EitherApply(
-            EitherApply(
+          Either(
+            Either(
                 Expand(
                   Argument(Set("n")),
                   "n", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll),
@@ -131,8 +131,8 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
           AllNodesScan("n", Set()),
           AllNodesScan("m", Set())
         ),
-        EitherApply(
-          EitherApply(
+        Either(
+          Either(
             Expand(
               Argument(Set("n", "m")),
               "n", OUTGOING, List(RelTypeName("T")(pos)), "m", "r", ExpandInto),
@@ -162,8 +162,8 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
             ),
             Map("a" -> varFor("n"), "b" -> varFor("m"))
           ),
-          EitherApply(
-            EitherApply(
+          Either(
+            Either(
               Expand(
                 Argument(Set("a", "b")),
                 "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandInto),
@@ -189,8 +189,8 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
             AllNodesScan("n", Set()),
             Map("a" -> varFor("n"))
           ),
-          EitherApply(
-            EitherApply(
+          Either(
+            Either(
               Expand(
                 Argument(Set("a")),
                 "a", OUTGOING, List(RelTypeName("T")(pos)), "b", "r", ExpandAll),

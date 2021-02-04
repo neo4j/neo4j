@@ -79,7 +79,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.Eager
-import org.neo4j.cypher.internal.logical.plans.EitherApply
+import org.neo4j.cypher.internal.logical.plans.Either
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
@@ -825,7 +825,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AssertSameNode(node, lhs, rhs)(_)))
 
   def eitherApply(): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => EitherApply(lhs, rhs)(_)))
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Either(lhs, rhs)(_)))
 
   def onMatchApply(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => OnMatchApply(lhs, rhs)(_)))

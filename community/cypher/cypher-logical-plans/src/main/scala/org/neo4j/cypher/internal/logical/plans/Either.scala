@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * EitherApply executes the left-hand side or if the left-hand side is empty it executes the right-hand side.
  */
-case class EitherApply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with ApplyPlan {
+case class Either(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen)  {
   override def lhs: Option[LogicalPlan] = Some(left)
 
   override def rhs: Option[LogicalPlan] = Some(right)

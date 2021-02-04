@@ -87,7 +87,6 @@ import org.neo4j.cypher.internal.logical.plans.DropNodePropertyExistenceConstrai
 import org.neo4j.cypher.internal.logical.plans.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.Eager
-import org.neo4j.cypher.internal.logical.plans.EitherApply
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
@@ -767,8 +766,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
       case _: OnMatchApply =>
         PlanDescriptionImpl(id = plan.id, "OnMatchApply", children, Seq.empty, variables)
 
-      case _: EitherApply =>
-        PlanDescriptionImpl(id = plan.id, "EitherApply", children, Seq.empty, variables)
+      case _: plans.Either =>
+        PlanDescriptionImpl(id = plan.id, "Either", children, Seq.empty, variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
