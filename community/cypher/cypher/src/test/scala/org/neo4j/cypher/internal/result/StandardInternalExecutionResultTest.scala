@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.result
 
-import java.io.PrintWriter
-
 import org.mockito.Mockito.RETURNS_DEEP_STUBS
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
@@ -44,6 +42,8 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.memory.OptionalMemoryTracker
 import org.neo4j.values.storable.Values.intValue
+
+import java.io.PrintWriter
 
 //noinspection NameBooleanParameters,RedundantDefaultArgument
 class StandardInternalExecutionResultTest extends CypherFunSuite {
@@ -152,7 +152,8 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
       queryType,
       NormalMode,
       mock[PlanDescriptionBuilder],
-      subscriber
+      subscriber,
+      Seq.empty
     )
 
   case class TestRuntimeResult(values: Seq[Int],

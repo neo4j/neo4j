@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.runtime.READ_ONLY
 import org.neo4j.cypher.internal.runtime.WRITE
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
@@ -39,7 +40,8 @@ class StandardInternalExecutionResult(runtimeResult: RuntimeResult,
                                       override val queryType: InternalQueryType,
                                       override val executionMode: ExecutionMode,
                                       planDescriptionBuilder: PlanDescriptionBuilder,
-                                      subscriber: QuerySubscriber)
+                                      subscriber: QuerySubscriber,
+                                      val internalNotifications: Seq[InternalNotification])
   extends InternalExecutionResult {
 
   self =>

@@ -363,7 +363,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
           internalQueryType,
           innerExecutionMode,
           planDescriptionBuilder,
-          subscriber)
+          subscriber,
+          executionPlan.notifications.toSeq)
       }
 
       ClosingExecutionResult.wrapAndInitiate(

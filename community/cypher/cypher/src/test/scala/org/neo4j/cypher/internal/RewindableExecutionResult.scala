@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
 import org.neo4j.cypher.internal.runtime.isGraphKernelResultValue
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Notification
@@ -47,6 +48,7 @@ trait RewindableExecutionResult {
   protected def planDescription: InternalPlanDescription
   protected def statistics: QueryStatistics
   def notifications: Iterable[Notification]
+  def internalNotifications: Seq[InternalNotification]
 
   def columnAs[T](column: String): Iterator[T] = result.iterator.map(row => row(column).asInstanceOf[T])
   def toList: List[Map[String, AnyRef]] = result.toList
@@ -77,7 +79,8 @@ class RewindableExecutionResultImplementation(val columns: Array[String],
                                               val executionMode: ExecutionMode,
                                               protected val planDescription: InternalPlanDescription,
                                               protected val statistics: QueryStatistics,
-                                              val notifications: Iterable[Notification]) extends RewindableExecutionResult
+                                              val notifications: Iterable[Notification],
+                                              override val internalNotifications: Seq[InternalNotification]) extends RewindableExecutionResult
 
 object RewindableExecutionResult {
 
@@ -92,6 +95,7 @@ object RewindableExecutionResult {
         NormalMode,
         in.getExecutionPlanDescription.asInstanceOf[InternalPlanDescription],
         QueryStatistics(in.getQueryStatistics),
+        Seq.empty,
         Seq.empty)
     } finally in.close()
   }
@@ -105,13 +109,14 @@ object RewindableExecutionResult {
         runtimeResult.fieldNames(),
         NormalMode,
         () => InternalPlanDescription.error("Can't get plan description from RuntimeResult"),
-        Set.empty
+        Set.empty,
+        Seq.empty
       )
     } finally runtimeResult.close()
   }
 
   def apply(result: QueryExecution, queryContext: QueryContext,
-            subscriber: RecordingQuerySubscriber): RewindableExecutionResult = {
+            subscriber: RecordingQuerySubscriber, internalNotification: Seq[InternalNotification] = Seq.empty): RewindableExecutionResult = {
     try {
       val (executionMode, notifications) = result match {
         case r: InternalExecutionResult => (r.executionMode, r.notifications.toSet)
@@ -124,7 +129,8 @@ object RewindableExecutionResult {
         result.fieldNames(),
         executionMode,
         () => result.executionPlanDescription().asInstanceOf[InternalPlanDescription],
-        notifications
+        notifications,
+        internalNotification
       )
     } finally result.cancel()
   }
@@ -135,7 +141,8 @@ object RewindableExecutionResult {
             columns: Array[String],
             executionMode: ExecutionMode,
             planDescription: () => InternalPlanDescription,
-            notifications: Set[Notification]): RewindableExecutionResult = {
+            notifications: Set[Notification],
+            internalNotifications: Seq[InternalNotification]): RewindableExecutionResult = {
     try {
       subscription.request(Long.MaxValue)
       subscriber.assertNoErrors()
@@ -156,7 +163,8 @@ object RewindableExecutionResult {
         executionMode,
         planDescription(),
         QueryStatistics(subscriber.queryStatistics()),
-        notifications)
+        notifications,
+        internalNotifications)
     } finally subscription.cancel()
   }
 
