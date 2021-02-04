@@ -141,7 +141,7 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>cypher-ast-factory</artifactId>
+            <artifactId>cypher-literal-interpreter</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.parser.javacc;
+package org.neo4j.cypher.internal.literal.interpreter;
 
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +27,9 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cypher.internal.ast.factory.LiteralInterpreter;
+import org.neo4j.cypher.internal.parser.javacc.Cypher;
+import org.neo4j.cypher.internal.parser.javacc.CypherCharStream;
+import org.neo4j.cypher.internal.parser.javacc.ParseException;
 import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -48,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.cypher.internal.ast.factory.LiteralInterpreter.DEFAULT_ZONE_ID;
+import static org.neo4j.cypher.internal.literal.interpreter.LiteralInterpreter.DEFAULT_ZONE_ID;
 
 @SuppressWarnings( "ConstantConditions" )
 public class LiteralJavaccParserTest

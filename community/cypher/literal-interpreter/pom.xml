@@ -9,11 +9,11 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>cypher-ast-factory</artifactId>
+    <artifactId>cypher-literal-interpreter</artifactId>
     <packaging>jar</packaging>
-    <name>Neo4j - Cypher AST factory</name>
+    <name>Neo4j - Cypher Literal Interpreter</name>
 
-    <description>Cypher AST factory</description>
+    <description>Cypher Literal Interpreter</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <scm>
@@ -24,7 +24,7 @@
 
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
-        <moduleName>org.neo4j.cypher.internal.ast.factory</moduleName>
+        <moduleName>org.neo4j.cypher.internal.literal.interpreter</moduleName>
     </properties>
 
     <licenses>
@@ -52,15 +52,41 @@
 
         <!-- shared versions are defined in the parent pom -->
 
-        <!-- scala -->
         <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-values</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
         </dependency>
-
         <dependency>
-            <artifactId>scala-reflect</artifactId>
-            <groupId>org.scala-lang</groupId>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-javacc-parser</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>cypher-ast-factory</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <!-- disable scala-maven-plugin, because we have no scala -->
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>scala-compile</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

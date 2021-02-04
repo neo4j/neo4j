@@ -19,16 +19,15 @@
  */
 package org.neo4j.shell;
 
-import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
-import org.neo4j.cypher.internal.ast.factory.LiteralInterpreter;
 import org.neo4j.cypher.internal.evaluator.EvaluationException;
 import org.neo4j.cypher.internal.evaluator.Evaluator;
 import org.neo4j.cypher.internal.evaluator.ExpressionEvaluator;
+import org.neo4j.cypher.internal.literal.interpreter.LiteralInterpreter;
 import org.neo4j.cypher.internal.parser.javacc.Cypher;
 import org.neo4j.cypher.internal.parser.javacc.CypherCharStream;
 import org.neo4j.cypher.internal.parser.javacc.ParseException;

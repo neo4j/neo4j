@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ast.factory;
+package org.neo4j.cypher.internal.literal.interpreter;
 
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+
+import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
