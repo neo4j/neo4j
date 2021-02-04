@@ -540,6 +540,128 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
   }
 
+  test("should deallocate memory for limit on RHS of apply") {
+    val ys = Seq(1,2,3,4,5,6,7,8,9)
+    val nRows = sizeHint
+    val input1 = finiteInput(nRows)
+    val input2 = finiteInput(nRows*3)
+
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .apply()
+      .|.limit(5)
+      .|.unwind(s"[${ys.mkString(",")}] AS y")
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
+  }
+
+  test("should deallocate memory for empty limit on RHS of apply") {
+    val ys = Seq()
+    val nRows = sizeHint
+    val input1 = finiteInput(nRows)
+    val input2 = finiteInput(nRows*3)
+
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .apply()
+      .|.limit(5)
+      .|.unwind(s"[${ys.mkString(",")}] AS y")
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
+  }
+
+  test("should deallocate memory for skip on RHS of apply") {
+    val ys = Seq(1,2,3,4,5,6,7,8,9)
+    val nRows = sizeHint
+    val input1 = finiteInput(nRows)
+    val input2 = finiteInput(nRows*3)
+
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .apply()
+      .|.skip(5)
+      .|.unwind(s"[${ys.mkString(",")}] AS y")
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
+  }
+
+  test("should deallocate memory for empty skip on RHS of apply") {
+    val ys = Seq()
+    val nRows = sizeHint
+    val input1 = finiteInput(nRows)
+    val input2 = finiteInput(nRows*3)
+
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .apply()
+      .|.skip(5)
+      .|.unwind(s"[${ys.mkString(",")}] AS y")
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
+  }
+
+  test("should deallocate memory for partial top on RHS of apply") {
+    val nRows = sizeHint
+    val topLimit = 17
+    val input1 = finiteInput(nRows)
+    val input2 = finiteInput(nRows*3)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "c")
+      .apply()
+      .|.partialTop(Seq(Ascending("b")), Seq(Ascending("c")), topLimit)
+      .|.unwind("range(a, b, -1) AS c")
+      .|.unwind("range(0, a) AS b")
+      .|.argument("a")
+      .input(variables = Seq("a"))
+      .build()
+
+    // then
+    compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
+  }
+
+  test("should deallocate memory for empty partial top on RHS of apply") {
+    val nRows = sizeHint
+    val topLimit = 17
+    val input1 = finiteInput(nRows)
+    val input2 = finiteInput(nRows*3)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "c")
+      .apply()
+      .|.partialTop(Seq(Ascending("b")), Seq(Ascending("c")), topLimit)
+      .|.unwind("[] AS c")
+      .|.unwind("[] AS b")
+      .|.argument("a")
+      .input(variables = Seq("a"))
+      .build()
+
+    // then
+    compareMemoryUsageWithInputStreams(logicalQuery, logicalQuery, input1, input2, 0.01) // Pipelined is not exact
+  }
+
   protected def compareMemoryUsage(logicalQuery1: LogicalQuery,
                                    logicalQuery2: LogicalQuery,
                                    toleratedDeviation: Double = 0.0d): Unit = {
