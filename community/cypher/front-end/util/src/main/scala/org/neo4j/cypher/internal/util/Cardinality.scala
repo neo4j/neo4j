@@ -113,7 +113,9 @@ object Multiplier {
   def max(l: Multiplier, r: Multiplier): Multiplier =
     Multiplier(Math.max(l.coefficient, r.coefficient))
 
-  def ofDivision(dividend: Cardinality, divisor: Cardinality): Multiplier = Multiplier(dividend.amount / divisor.amount)
+  def ofDivision(dividend: Cardinality, divisor: Cardinality): Option[Multiplier] = if (divisor.amount == 0) None else Multiplier.of(dividend.amount / divisor.amount)
+
+  def of(value: Double): Option[Multiplier] = if (value.isInfinite || value.isNaN || value < 0.0) None else Some(Multiplier(value))
 
   object NumericMultiplier extends Numeric[Multiplier] {
     def toDouble(x: Multiplier): Double = x.coefficient

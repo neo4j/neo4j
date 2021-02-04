@@ -111,7 +111,7 @@ case class PatternRelationshipMultiplierCalculator(stats: GraphStatistics, combi
                    * Since the base cardinality that the Multiplier is applied to is CARDINALITY( (:A),(:B) )
                    * and we want the result to be CARDINALITY ( (:A:B) ), we need to divide by CARDINALITY ( () )
                    */
-                  Multiplier.ofDivision(1, nbrOfNodesInGraph)
+                  Multiplier.ofDivision(1, nbrOfNodesInGraph).getOrElse(Multiplier.ZERO)
                 case _ =>
                   val stepMultipliers = for (i <- 1 to length) yield {
                     val labelsOnL: Seq[TokenSpec[LabelId]] = if (i == 1) labelsOnLhs else Seq(Unspecified)
@@ -185,7 +185,7 @@ case class PatternRelationshipMultiplierCalculator(stats: GraphStatistics, combi
     val combinedCardinality = cardinalitiesPerType.sum
 
     // To get a multiplier, we divide by the cardinality of the cross product of (lhs,rhs)
-    Multiplier.ofDivision(combinedCardinality, lhsCardinality * rhsCardinality)
+    Multiplier.ofDivision(combinedCardinality, lhsCardinality * rhsCardinality).getOrElse(Multiplier.ZERO)
   }
 
   private def calculateLabelSelectivity(specs: Seq[TokenSpec[LabelId]], totalNbrOfNodes: Cardinality): Selectivity = {
