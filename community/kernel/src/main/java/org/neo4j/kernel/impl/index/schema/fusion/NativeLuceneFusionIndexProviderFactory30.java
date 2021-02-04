@@ -27,6 +27,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.schema.IndexProviderFactoryUtil;
@@ -69,8 +70,8 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
 
     @Override
     protected IndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors, String monitorTag,
-                                            Config config, OperationalMode operationalMode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                                            PageCacheTracer pageCacheTracer )
+            Config config, OperationalMode operationalMode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer )
     {
         return create( pageCache, storeDir, fs, monitors, monitorTag, config, operationalMode, recoveryCleanupWorkCollector, pageCacheTracer );
     }

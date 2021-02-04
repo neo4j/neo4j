@@ -52,7 +52,8 @@ public class SchemaIndexExtensionLoader
                                                             PageCacheTracer pageCacheTracer )
     {
         Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors, jobScheduler, tokenHolders, pageCacheTracer );
+        deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors, jobScheduler, tokenHolders, pageCacheTracer,
+                databaseLayout );
         @SuppressWarnings( "rawtypes" )
         Iterable extensions = Services.loadAll( ExtensionFactory.class );
         DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, dbmsInfo, deps );

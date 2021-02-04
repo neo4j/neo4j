@@ -455,7 +455,7 @@ public final class Recovery
         Dependencies deps = new Dependencies();
         NonListenableMonitors nonListenableMonitors = new NonListenableMonitors( monitors, logService.getInternalLogProvider() );
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, nonListenableMonitors, jobScheduler,
-                tokenHolders, recoveryCleanupCollector, pageCacheTracer );
+                tokenHolders, recoveryCleanupCollector, pageCacheTracer, databaseLayout );
         DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, dbmsInfo, deps );
         return new DatabaseExtensions( extensionContext, recoveryExtensions, deps, ExtensionFailureStrategies.fail() );
     }

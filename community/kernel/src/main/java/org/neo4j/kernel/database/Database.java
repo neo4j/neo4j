@@ -332,6 +332,7 @@ public class Database extends LifecycleAdapter
                     databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
 
             databaseDependencies.satisfyDependency( this );
+            databaseDependencies.satisfyDependency( databaseLayout );
             databaseDependencies.satisfyDependency( startupController );
             databaseDependencies.satisfyDependency( databaseConfig );
             databaseDependencies.satisfyDependency( databaseMonitors );
@@ -351,7 +352,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( lockService );
             databaseDependencies.satisfyDependency( versionContextSupplier );
             databaseDependencies.satisfyDependency( tracers.getDatabaseTracer() );
-            databaseDependencies.satisfyDependencies( tracers.getPageCacheTracer() );
+            databaseDependencies.satisfyDependency( tracers.getPageCacheTracer() );
 
             recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
             databaseDependencies.satisfyDependency( recoveryCleanupWorkCollector );

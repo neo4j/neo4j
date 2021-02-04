@@ -26,6 +26,8 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -47,6 +49,10 @@ class DbmsExtensionInjectionTest
     private GraphDatabaseService db;
     @Inject
     private GraphDatabaseAPI dbApi;
+    @Inject
+    private Neo4jLayout neo4jLayout;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Test
     void shouldInject()
@@ -56,11 +62,16 @@ class DbmsExtensionInjectionTest
         assertNotNull( dbms );
         assertNotNull( db );
         assertNotNull( dbApi );
+        assertNotNull( neo4jLayout );
+        assertNotNull( databaseLayout );
 
         assertEquals( testDirectory.getFileSystem(), fs );
         assertTrue( fs instanceof DefaultFileSystemAbstraction );
 
         assertSame( db, dbApi );
+        assertEquals( testDirectory.homePath(), neo4jLayout.homeDirectory() );
+        assertEquals( db.databaseName(), databaseLayout.getDatabaseName() );
+        assertEquals( databaseLayout.getNeo4jLayout(), neo4jLayout );
     }
 
     @Nested

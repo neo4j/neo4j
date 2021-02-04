@@ -25,6 +25,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -60,7 +61,9 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
         OperationalMode operationalMode = context.dbmsInfo().operationalMode;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
         PageCacheTracer pageCacheTracer = dependencies.pageCacheTracer();
-        return internalCreate( pageCache, databaseDir, fs, monitors, monitorTag, config, operationalMode, recoveryCleanupWorkCollector, pageCacheTracer );
+        DatabaseLayout databaseLayout = dependencies.databaseLayout();
+        return internalCreate( pageCache, databaseDir, fs, monitors, monitorTag, config, operationalMode, recoveryCleanupWorkCollector, databaseLayout,
+                pageCacheTracer );
     }
 
     protected abstract Class<?> loggingClass();
@@ -68,8 +71,8 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
     public abstract IndexProviderDescriptor descriptor();
 
     protected abstract IndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs,
-                                                     Monitors monitors, String monitorTag, Config config, OperationalMode operationalMode,
-                                                     RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer );
+            Monitors monitors, String monitorTag, Config config, OperationalMode operationalMode,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer );
 
     public interface Dependencies
     {
@@ -84,6 +87,8 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
         Config getConfig();
 
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector();
+
+        DatabaseLayout databaseLayout();
 
         PageCacheTracer pageCacheTracer();
     }

@@ -323,7 +323,7 @@ public class DatabaseCompositeIndexAccessorTest
 
         Dependencies deps = new Dependencies();
         deps.satisfyDependencies( pageCache, jobScheduler, fileSystem, new SimpleLogService( logProvider ), new Monitors(), CONFIG,
-                                  RecoveryCleanupWorkCollector.ignore(), PageCacheTracer.NULL );
+                                  RecoveryCleanupWorkCollector.ignore(), DatabaseLayout.ofFlat( testDirectory.homePath() ), PageCacheTracer.NULL );
         testDirectory.prepareDirectory( DatabaseCompositeIndexAccessorTest.class, "null" );
         Config config = Config.defaults( neo4j_home, testDirectory.homePath() );
         DatabaseExtensionContext context = new DatabaseExtensionContext( DatabaseLayout.of( config ), DbmsInfo.UNKNOWN, deps );
