@@ -40,7 +40,7 @@ abstract class OnMatchApplyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .onMatchApply()
       .|.setNodeProperty("n", "prop", "42")
-      .|.argument()
+      .|.argument("n")
       .allNodeScan("n")
       .build(readOnly = false)
 
@@ -59,7 +59,7 @@ abstract class OnMatchApplyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .onMatchApply()
       .|.setNodeProperty("n", "prop", "42")
-      .|.argument()
+      .|.argument("n")
       .allNodeScan("n")
       .build(readOnly = false)
 
