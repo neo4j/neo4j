@@ -224,17 +224,6 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     assertFailWhenNotOnSystem("SHOW DEFAULT DATABASE", "SHOW DEFAULT DATABASE")
   }
 
-  test("should show default DBMS database") {
-    // GIVEN
-    setup(defaultConfig)
-
-    // WHEN
-    val result = execute("SHOW DEFAULT DBMS DATABASE")
-
-    // THEN
-    result.head("name") shouldBe "neo4j"
-  }
-
   // yield / skip / limit / order by / where
 
   test("should show database with yield") {
@@ -384,18 +373,6 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
     // THEN
     result.toList should be(List(Map("foo" -> DEFAULT_DATABASE_NAME)))
-  }
-
-  test("should show default DBMS database with YIELD and WHERE") {
-    // GIVEN
-    setup(defaultConfig)
-
-    // WHEN
-    val result = execute("SHOW DEFAULT DBMS DATABASE YIELD name WHERE name = 'neo4j'")
-
-    // THEN
-    result.size should be (1)
-    result.toList.head should be (Map("name" -> "neo4j"))
   }
 
   test("should not show database with invalid yield") {
@@ -568,8 +545,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
       "requestedStatus" -> onlineStatus,
       "currentStatus" -> onlineStatus,
       "error" -> "",
-      "default" -> default,
-      "systemDefault" -> systemDefault
+      "default" -> systemDefault
     )
 
   private def defaultDb(name: String): Map[String, String] =

@@ -71,7 +71,7 @@ public class SystemGraphRealmHelper
             Credential credential = SystemGraphCredential.deserialize( (String) userNode.getProperty( "credentials" ), secureHasher );
             boolean requirePasswordChange = (boolean) userNode.getProperty( "passwordChangeRequired" );
             boolean suspended = (boolean) userNode.getProperty( "suspended" );
-            String defaultDatabase = (String) userNode.getProperty( "defaultDatabase", null );
+            String defaultDatabase = (String) userNode.getProperty( "homeDatabase", null );
             tx.commit();
 
             User.Builder builder = new User.Builder( username, credential ).withRequiredPasswordChange( requirePasswordChange );

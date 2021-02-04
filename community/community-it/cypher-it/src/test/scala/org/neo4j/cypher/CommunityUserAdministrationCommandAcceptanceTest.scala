@@ -1363,8 +1363,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   private def user(username: String, passwordChangeRequired: Boolean = true,
                    defaultDatabase: String = DEFAULT_DATABASE_NAME): Map[String, Any] = {
-    Map("user" -> username, "roles" -> null, "passwordChangeRequired" -> passwordChangeRequired, "suspended" -> null,
-      "defaultDatabase" -> defaultDatabase)
+    Map("user" -> username, "roles" -> null, "passwordChangeRequired" -> passwordChangeRequired, "suspended" -> null)
   }
 
   private def testUserLogin(username: String, password: String, expected: AuthenticationResult): Unit = {

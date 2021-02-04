@@ -457,8 +457,7 @@ trait AdministrationCommand extends Parser
   private def ScopeForShowDatabase: Rule1[ast.DatabaseScope] = rule("show database scope") {
     group(keyword("DATABASE") ~~ SymbolicDatabaseNameOrStringParameter) ~~>> (ast.NamedDatabaseScope(_)) |
     keyword("DATABASES") ~~~> ast.AllDatabasesScope() |
-    keyword("DEFAULT DATABASE") ~~~> ast.DefaultDatabaseScope() |
-    keyword("DEFAULT DBMS DATABASE") ~~~> ast.DefaultDBMSDatabaseScope()
+    keyword("DEFAULT DATABASE") ~~~> ast.DefaultDatabaseScope()
   }
 
   def CreateDatabase: Rule1[ast.CreateDatabase] = rule("CREATE DATABASE") {

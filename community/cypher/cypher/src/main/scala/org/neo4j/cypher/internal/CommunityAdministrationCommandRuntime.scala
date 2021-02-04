@@ -23,7 +23,6 @@ import org.neo4j.common.DependencyResolver
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.ast.AdminAction
-import org.neo4j.cypher.internal.ast.DefaultDBMSDatabaseScope
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.Return
@@ -152,10 +151,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case ShowUsers(source, symbols, yields, returns) => context =>
       SystemCommandExecutionPlan("ShowUsers", normalExecutionEngine,
         s"""MATCH (u:User)
-          |MATCH (systemDefaultDatabase:Database)
-          |WHERE systemDefaultDatabase.default = true
-          |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended,
-          |systemDefaultDatabase.name AS defaultDatabase
+          |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended
           |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
           |""".stripMargin,
         VirtualValues.EMPTY_MAP,
@@ -167,10 +163,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       val currentUserKey = internalKey("currentUser")
       SystemCommandExecutionPlan("ShowCurrentUser", normalExecutionEngine,
         s"""MATCH (u:User)
-           |MATCH (systemDefaultDatabase:Database)
-           |WHERE systemDefaultDatabase.default = true
-           |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended,
-           |systemDefaultDatabase.name AS defaultDatabase
+           |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended
            |WHERE user = $$`$currentUserKey`
            |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
            |""".stripMargin,
@@ -288,15 +281,13 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         parameterConverter = (tx, m) => newPw.mapValueConverter(tx, currentConverterBytes(m))
       )
 
-    // SHOW DATABASES | SHOW DEFAULT DATABASE | SHOW DATABASE foo | SHOW DEFAULT DBMS DATABASE
+    // SHOW DATABASES | SHOW DEFAULT DATABASE | SHOW DATABASE foo
     case ShowDatabase(scope, symbols, yields, returns) => _ =>
       val usernameKey = internalKey("username")
       val paramGenerator: (Transaction, SecurityContext) => MapValue = (tx, securityContext) => generateShowAccessibleDatabasesParameter(tx, securityContext)
       val (extraFilter, params, paramConverter) = scope match {
         // show default database
         case _: DefaultDatabaseScope => (s"WHERE default = true", VirtualValues.EMPTY_MAP, IdentityConverter)
-        // show default DBMS database
-        case _: DefaultDBMSDatabaseScope => ("WHERE systemDefault = true", VirtualValues.EMPTY_MAP, IdentityConverter)
         // show database name
         case NamedDatabaseScope(p) =>
           val nameFields = getNameFields("databaseName", p, valueMapper = s => new NormalizedDatabaseName(s).name())
@@ -313,10 +304,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
       val query = s"""MATCH (d: Database)
                      |WHERE d.name IN $$`$accessibleDbsKey`
-                     |OPTIONAL MATCH (user:User {name: $$`$usernameKey`})
                      |CALL dbms.database.state(d.name) yield status, error, address, role
                      |WITH d.name as name, address, role, d.status as requestedStatus, status as currentStatus, error,
-                     |coalesce(d.name = user.defaultDatabase, d.default) as default, d.default as systemDefault
+                     |d.default as default
                      |$extraFilter
                      |$returnClause""".stripMargin
       SystemCommandExecutionPlan(scope.showCommandName, normalExecutionEngine, query, params, parameterGenerator = paramGenerator, parameterConverter = paramConverter)

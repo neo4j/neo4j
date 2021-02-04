@@ -187,7 +187,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                             normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
     val passwordChangeRequiredKey = internalKey("passwordChangeRequired")
     val suspendedKey = internalKey("suspended")
-    val defaultDatabaseFields= defaultDatabase.map(d => getNameFields("defaultDatabase", d))
+    val defaultDatabaseFields= defaultDatabase.map(d => getNameFields("homeDatabase", d))
     val userNameFields = getNameFields("username", userName)
     val credentials = getPasswordExpression(password, isEncryptedPassword)
     val defaultDatabaseCypher = defaultDatabaseFields.map(ddf => s", defaultDatabase: $$`${ddf.nameKey}`").getOrElse("")
@@ -236,13 +236,13 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                           (sourcePlan: Option[ExecutionPlan],
                                            normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
     val userNameFields = getNameFields("username", userName)
-    val defaultDatabaseFields= defaultDatabase.map(d => getNameFields("defaultDatabase", d))
+    val defaultDatabaseFields= defaultDatabase.map(d => getNameFields("homeDatabase", d))
     val maybePw = password.map(p => getPasswordExpression(p, isEncryptedPassword.getOrElse(false)))
     val params = Seq(
       maybePw -> "credentials",
       requirePasswordChange -> "passwordChangeRequired",
       suspended -> "suspended",
-      defaultDatabaseFields -> "defaultDatabase"
+      defaultDatabaseFields -> "homeDatabase"
     ).flatMap { param =>
       param._1 match {
         case None => Seq.empty
