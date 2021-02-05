@@ -31,9 +31,9 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
+import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.LeaseService;
-import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -43,8 +43,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.locking.NoOpClient;
-import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
-import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.memory.MemoryPools;
@@ -62,7 +60,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
-public class KernelTransactionFactory
+public final class KernelTransactionFactory
 {
     public static class Instances
     {
@@ -98,9 +96,7 @@ public class KernelTransactionFactory
                                                      mock( IndexStatisticsStore.class ), dependencies, new TestDatabaseIdRepository().defaultDatabase(),
                                                      LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, ReadOnlyDatabaseChecker.neverReadOnly() );
 
-        StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
-
-        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.IMPLICIT,
+        transaction.initialize( 0, 0, new NoOpClient(), KernelTransaction.Type.IMPLICIT,
                 loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME ), 0L, 1L, EMBEDDED_CONNECTION );
 
         return new Instances( transaction );

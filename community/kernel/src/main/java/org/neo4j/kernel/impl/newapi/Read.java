@@ -150,7 +150,7 @@ abstract class Read implements TxStateHolder,
         assertIndexOnline( index );
         assertPredicatesMatchSchema( index, predicates );
 
-        Locks.Client locks = ktx.statementLocks().lockClient();
+        Locks.Client locks = ktx.lockClient();
         LockTracer lockTracer = ktx.lockTracer();
 
         return LockingNodeUniqueIndexSeek.apply( locks, lockTracer, (DefaultNodeValueIndexCursor)cursor, this, this, index, predicates );
@@ -421,7 +421,7 @@ abstract class Read implements TxStateHolder,
     {
         SchemaDescriptor schema = schemaLike.schema();
         long[] lockingKeys = schema.lockingKeys();
-        ktx.statementLocks().lockClient().acquireShared( ktx.lockTracer(), schema.keyType(), lockingKeys );
+        ktx.lockClient().acquireShared( ktx.lockTracer(), schema.keyType(), lockingKeys );
         return schemaLike;
     }
 
@@ -429,12 +429,12 @@ abstract class Read implements TxStateHolder,
     {
         SchemaDescriptor schema = schemaLike.schema();
         long[] lockingKeys = schema.lockingKeys();
-        ktx.statementLocks().lockClient().releaseShared( schema.keyType(), lockingKeys );
+        ktx.lockClient().releaseShared( schema.keyType(), lockingKeys );
     }
 
     void acquireSharedLock( ResourceType resource, long resourceId )
     {
-        ktx.statementLocks().lockClient().acquireShared( ktx.lockTracer(), resource, resourceId );
+        ktx.lockClient().acquireShared( ktx.lockTracer(), resource, resourceId );
     }
 
     @Override
@@ -445,22 +445,22 @@ abstract class Read implements TxStateHolder,
 
     private void acquireExclusiveLock( ResourceTypes types, long... ids )
     {
-        ktx.statementLocks().lockClient().acquireExclusive( ktx.lockTracer(), types, ids );
+        ktx.lockClient().acquireExclusive( ktx.lockTracer(), types, ids );
     }
 
     private void releaseExclusiveLock( ResourceTypes types, long... ids )
     {
-        ktx.statementLocks().lockClient().releaseExclusive( types, ids );
+        ktx.lockClient().releaseExclusive( types, ids );
     }
 
     private void acquireSharedLock( ResourceTypes types, long... ids )
     {
-        ktx.statementLocks().lockClient().acquireShared( ktx.lockTracer(), types, ids );
+        ktx.lockClient().acquireShared( ktx.lockTracer(), types, ids );
     }
 
     private void releaseSharedLock( ResourceTypes types, long... ids )
     {
-        ktx.statementLocks().lockClient().releaseShared( types, ids );
+        ktx.lockClient().releaseShared( types, ids );
     }
 
     private void assertIndexOnline( IndexDescriptor index )

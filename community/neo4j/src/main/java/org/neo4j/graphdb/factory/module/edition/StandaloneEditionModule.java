@@ -23,14 +23,14 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.Dependencies;
-import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.CommunityDatabaseStateService;
+import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultDatabaseManager;
-import org.neo4j.dbms.database.StandaloneDbmsRuntimeRepository;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
+import org.neo4j.dbms.database.StandaloneDbmsRuntimeRepository;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
 import org.neo4j.graphdb.factory.module.edition.context.StandaloneDatabaseComponents;
@@ -38,7 +38,6 @@ import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
@@ -50,7 +49,6 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     IdContextFactory idContextFactory;
     Function<NamedDatabaseId,TokenHolders> tokenHoldersProvider;
     Supplier<Locks> locksSupplier;
-    Function<Locks,StatementLocksFactory> statementLocksFactoryProvider;
 
     @Override
     public EditionDatabaseComponents createDatabaseComponents( NamedDatabaseId namedDatabaseId )
@@ -76,11 +74,6 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     public Supplier<Locks> getLocksSupplier()
     {
         return locksSupplier;
-    }
-
-    public Function<Locks,StatementLocksFactory> getStatementLocksFactoryProvider()
-    {
-        return statementLocksFactoryProvider;
     }
 
     @Override

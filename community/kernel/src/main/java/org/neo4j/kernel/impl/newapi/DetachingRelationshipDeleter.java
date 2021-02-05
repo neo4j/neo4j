@@ -44,7 +44,7 @@ class DetachingRelationshipDeleter
 
     int lockNodesAndDeleteRelationships( long nodeId, KernelTransactionImplementation ktx )
     {
-        Locks.Client locks = ktx.statementLocks().lockClient();
+        Locks.Client locks = ktx.lockClient();
         LockTracer lockTracer = ktx.lockTracer();
         PageCursorTracer cursorTracer = ktx.pageCursorTracer();
         NodeCursor nodes = ktx.ambientNodeCursor();

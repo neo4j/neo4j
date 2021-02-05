@@ -98,7 +98,6 @@ import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.LoggingMonitor;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -196,7 +195,6 @@ public class Database extends LifecycleAdapter
     private final DatabaseLogProvider internalLogProvider;
     private final DatabaseLogProvider userLogProvider;
     private final TokenHolders tokenHolders;
-    private final StatementLocksFactory statementLocksFactory;
     private final GlobalTransactionEventListeners transactionEventListeners;
     private final IdGeneratorFactory idGeneratorFactory;
     private final JobScheduler scheduler;
@@ -271,7 +269,6 @@ public class Database extends LifecycleAdapter
         this.userLogProvider = context.getDatabaseLogService().getUserLogProvider();
         this.tokenHolders = context.getTokenHolders();
         this.locks = context.getLocks();
-        this.statementLocksFactory = context.getStatementLocksFactory();
         this.transactionEventListeners = context.getTransactionEventListeners();
         this.fs = context.getFs();
         this.transactionStats = context.getTransactionStats();
@@ -788,7 +785,7 @@ public class Database extends LifecycleAdapter
         DatabaseTransactionEventListeners databaseTransactionEventListeners =
                 new DatabaseTransactionEventListeners( facade, transactionEventListeners, namedDatabaseId );
         KernelTransactions kernelTransactions = life.add(
-                new KernelTransactions( databaseConfig, statementLocksFactory, constraintIndexCreator,
+                new KernelTransactions( databaseConfig, locks, constraintIndexCreator,
                         transactionCommitProcess, databaseTransactionEventListeners, transactionStats,
                         databaseAvailabilityGuard,
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,

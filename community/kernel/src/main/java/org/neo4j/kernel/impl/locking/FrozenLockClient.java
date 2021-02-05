@@ -21,92 +21,135 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
 
+import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 
-public class NoOpClient implements Locks.Client
+/**
+ * A lock client that prevents interactions with the state of the locks. This is used to guarantee that we do not perform any locking while reading from
+ * the transaction in parallel, which would be dangerous since {@link Locks.Client} are not thread safe.
+ */
+public class FrozenLockClient implements Locks.Client
 {
+    private final Locks.Client delegate;
+    private int nesting;
+
+    public FrozenLockClient( Locks.Client delegate )
+    {
+        this.delegate = delegate;
+        this.nesting = 1;
+    }
+
+    public Locks.Client getRealLockClient()
+    {
+        return delegate;
+    }
+
+    public void freeze()
+    {
+        nesting++;
+    }
+
+    public boolean thaw()
+    {
+        nesting--;
+        return nesting == 0;
+    }
+
     @Override
     public void initialize( LeaseClient leaseClient, long transactionId )
     {
+        delegate.initialize( leaseClient, transactionId );
     }
 
     @Override
     public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
+        throw frozenLockException();
     }
 
     @Override
     public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
     {
+        throw frozenLockException();
     }
 
     @Override
     public boolean tryExclusiveLock( ResourceType resourceType, long resourceId )
     {
-        return false;
+        throw frozenLockException();
     }
 
     @Override
     public boolean trySharedLock( ResourceType resourceType, long resourceId )
     {
-        return false;
+        throw frozenLockException();
     }
 
     @Override
     public boolean reEnterShared( ResourceType resourceType, long resourceId )
     {
-        return false;
+        throw frozenLockException();
     }
 
     @Override
     public boolean reEnterExclusive( ResourceType resourceType, long resourceId )
     {
-        return false;
+        throw frozenLockException();
     }
 
     @Override
     public void releaseShared( ResourceType resourceType, long... resourceIds )
     {
+        throw frozenLockException();
     }
 
     @Override
     public void releaseExclusive( ResourceType resourceType, long... resourceIds )
     {
+        throw frozenLockException();
     }
 
     @Override
     public void prepareForCommit()
     {
+        throw frozenLockException();
     }
 
     @Override
     public void stop()
     {
+        delegate.stop();
     }
 
     @Override
     public void close()
     {
+        throw frozenLockException();
     }
 
     @Override
     public int getLockSessionId()
     {
-        return -1;
+        return delegate.getLockSessionId();
     }
 
     @Override
     public Stream<ActiveLock> activeLocks()
     {
-        return Stream.empty();
+        return delegate.activeLocks();
     }
 
     @Override
     public long activeLockCount()
     {
-        return 0;
+        return delegate.activeLockCount();
+    }
+
+    private FrozenLocksException frozenLockException()
+    {
+        return new FrozenLocksException( delegate.getLockSessionId() );
     }
 }

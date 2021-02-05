@@ -34,8 +34,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
-import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
-import org.neo4j.kernel.impl.locking.StatementLocks;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockClient;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
@@ -110,7 +109,7 @@ class KernelStatementTest
         try ( var statement = createStatement( transaction ) )
         {
             var cursorTracer = new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" );
-            statement.initialize( Mockito.mock( StatementLocks.class ), cursorTracer, 100 );
+            statement.initialize( Mockito.mock( Locks.Client.class ), cursorTracer, 100 );
             statement.acquire();
 
             cursorTracer.beginPin( false, 1, null ).hit();
@@ -132,7 +131,7 @@ class KernelStatementTest
         var queryFactory = new ExecutingQueryFactory( Clocks.nanoClock(), cpuClockRef, Config.defaults() );
         var transaction = mock( KernelTransactionImplementation.class, RETURNS_DEEP_STUBS );
         var statement = createStatement( transaction );
-        statement.initialize( new SimpleStatementLocks( mock( CommunityLockClient.class ) ), PageCursorTracer.NULL, 100 );
+        statement.initialize( mock( CommunityLockClient.class ), PageCursorTracer.NULL, 100 );
 
         var query1 = queryFactory.createForStatement( statement, "test1", MapValue.EMPTY );
         var query2 = queryFactory.createForStatement( statement, "test2", MapValue.EMPTY );

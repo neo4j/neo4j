@@ -33,8 +33,8 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -87,9 +87,8 @@ import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.locking.ActiveLock;
-import org.neo4j.kernel.impl.locking.FrozenStatementLocks;
+import org.neo4j.kernel.impl.locking.FrozenLockClient;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
@@ -176,7 +175,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile TransactionWriteState writeState;
     private final KernelStatement currentStatement;
     private SecurityContext securityContext;
-    private volatile StatementLocks statementLocks;
+    private volatile Locks.Client lockClient;
     private volatile long userTransactionId;
     private LeaseClient leaseClient;
     private volatile boolean closing;
@@ -277,14 +276,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /**
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
-    public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp, StatementLocks statementLocks, Type type,
+    public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp, Locks.Client lockClient, Type type,
             SecurityContext frozenSecurityContext, long transactionTimeout, long userTransactionId, ClientConnectionInfo clientInfo )
     {
         this.type = type;
-        this.statementLocks = statementLocks;
+        this.lockClient = lockClient;
         this.userTransactionId = userTransactionId;
         this.leaseClient = leaseService.newClient();
-        this.statementLocks.initialize( leaseClient, userTransactionId );
+        this.lockClient.initialize( leaseClient, userTransactionId );
         this.terminationReason = null;
         this.closing = false;
         this.closed = false;
@@ -302,7 +301,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         this.clientInfo = clientInfo;
         this.statistics.init( currentThread().getId(), pageCursorTracer );
-        this.currentStatement.initialize( statementLocks, pageCursorTracer, startTimeMillis );
+        this.currentStatement.initialize( lockClient, pageCursorTracer, startTimeMillis );
         this.operations.initialize();
         this.initializationTrace = traceProvider.getTraceInfo();
         this.memoryTracker.setLimit( transactionHeapBytesLimit );
@@ -428,9 +427,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             failure = true;
             terminationReason = reason;
-            if ( statementLocks != null )
+            if ( lockClient != null )
             {
-                statementLocks.stop();
+                lockClient.stop();
             }
             transactionMonitor.transactionTerminated( hasTxStateWithChanges() );
 
@@ -724,11 +723,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if ( hasChanges() )
             {
                 forceThawLocks();
-
-                // grab all optimistic locks now, locks can't be deferred any further
-                statementLocks.prepareForCommit( currentStatement.lockTracer() );
-                // use pessimistic locks for the rest of the commit process, locks can't be deferred any further
-                Locks.Client commitLocks = statementLocks.lockClient();
+                lockClient.prepareForCommit();
 
                 // Gather up commands from the various sources
                 HeapTrackingArrayList<StorageCommand> extractedCommands = HeapTrackingCollections.newArrayList( memoryTracker );
@@ -737,7 +732,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         txState,
                         storageReader,
                         commandCreationContext,
-                        commitLocks,
+                        lockClient,
                         lastTransactionIdWhenStarted,
                         this::enforceConstraints,
                         pageCursorTracer,
@@ -873,27 +868,27 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public void freezeLocks()
     {
-        StatementLocks locks = statementLocks;
-        if ( !(locks instanceof FrozenStatementLocks) )
+        Locks.Client locks = lockClient;
+        if ( !(locks instanceof FrozenLockClient) )
         {
-            this.statementLocks = new FrozenStatementLocks( locks );
+            this.lockClient = new FrozenLockClient( locks );
         }
         else
         {
-            ((FrozenStatementLocks)locks).freeze();
+            ((FrozenLockClient)locks).freeze();
         }
     }
 
     @Override
     public void thawLocks() throws LocksNotFrozenException
     {
-        StatementLocks locks = statementLocks;
-        if ( locks instanceof FrozenStatementLocks )
+        Locks.Client locks = lockClient;
+        if ( locks instanceof FrozenLockClient )
         {
-            FrozenStatementLocks frozenLocks = (FrozenStatementLocks) locks;
+            FrozenLockClient frozenLocks = (FrozenLockClient) locks;
             if ( frozenLocks.thaw() )
             {
-                statementLocks = frozenLocks.getRealStatementLocks();
+                lockClient = frozenLocks.getRealLockClient();
             }
         }
         else
@@ -904,17 +899,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private void forceThawLocks()
     {
-        StatementLocks locks = statementLocks;
-        if ( locks instanceof FrozenStatementLocks )
+        Locks.Client locks = lockClient;
+        if ( locks instanceof FrozenLockClient )
         {
-            statementLocks = ((FrozenStatementLocks) locks).getRealStatementLocks();
+            lockClient = ((FrozenLockClient) locks).getRealLockClient();
         }
     }
 
-    public StatementLocks statementLocks()
+    public Locks.Client lockClient()
     {
         assertOpen();
-        return statementLocks;
+        return lockClient;
     }
 
     @Override
@@ -1020,8 +1015,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         try
         {
             forceThawLocks();
-            statementLocks.close();
-            statementLocks = null;
+            lockClient.close();
+            lockClient = null;
             terminationReason = null;
             type = null;
             securityContext = null;
@@ -1119,14 +1114,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     /**
      * This method will be invoked by concurrent threads for inspecting the locks held by this transaction.
      * <p>
-     * The fact that {@link #statementLocks} is a volatile fields, grants us enough of a read barrier to get a good
+     * The fact that {@link #lockClient} is a volatile fields, grants us enough of a read barrier to get a good
      * enough snapshot of the lock state (as long as the underlying methods give us such guarantees).
      *
      * @return the locks held by this transaction.
      */
     public Stream<ActiveLock> activeLocks()
     {
-        StatementLocks locks = this.statementLocks;
+        Locks.Client locks = this.lockClient;
         return locks == null ? Stream.empty() : locks.activeLocks();
     }
 

@@ -43,7 +43,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.impl.locking.StatementLocks;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
 
@@ -59,14 +59,14 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.trace_tx_sta
  * <ol>
  * <li>Construct {@link KernelStatement} when {@link KernelTransactionImplementation} is constructed</li>
  * <li>For every transaction...</li>
- * <li>Call {@link #initialize(StatementLocks, PageCursorTracer, long)} which makes this instance
+ * <li>Call {@link #initialize(Locks.Client, PageCursorTracer, long)} which makes this instance
  * full available and ready to use. Call when the {@link KernelTransactionImplementation} is initialized.</li>
  * <li>Alternate {@link #acquire()} / {@link #close()} when acquiring / closing a statement for the transaction...
  * Temporarily asymmetric number of calls to {@link #acquire()} / {@link #close()} is supported, although in
  * the end an equal number of calls must have been issued.</li>
  * <li>To be safe call {@link #forceClose()} at the end of a transaction to force a close of the statement,
  * even if there are more than one current call to {@link #acquire()}. This instance is now again ready
- * to be {@link #initialize(StatementLocks, PageCursorTracer, long)}  initialized} and used for the transaction
+ * to be {@link #initialize(Locks.Client, PageCursorTracer, long)}  initialized} and used for the transaction
  * instance again, when it's initialized.</li>
  * </ol>
  */
@@ -81,7 +81,7 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
     private final NamedDatabaseId namedDatabaseId;
     private final boolean traceStatements;
     private final boolean trackStatementClose;
-    private StatementLocks statementLocks;
+    private Locks.Client lockClient;
     private PageCursorTracer pageCursorTracer = PageCursorTracer.NULL;
     private int referenceCount;
     private volatile ExecutingQuery executingQuery;
@@ -144,16 +144,16 @@ public class KernelStatement extends CloseableResourceManager implements Stateme
         } );
     }
 
-    public void initialize( StatementLocks statementLocks, PageCursorTracer pageCursorCounters, long startTimeMillis )
+    public void initialize( Locks.Client lockClient, PageCursorTracer pageCursorCounters, long startTimeMillis )
     {
-        this.statementLocks = statementLocks;
+        this.lockClient = lockClient;
         this.pageCursorTracer = pageCursorCounters;
         this.clockContext.initializeTransaction( startTimeMillis );
     }
 
-    public StatementLocks locks()
+    public Locks.Client locks()
     {
-        return statementLocks;
+        return lockClient;
     }
 
     public LockTracer lockTracer()

@@ -57,8 +57,7 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
-import org.neo4j.kernel.impl.locking.StatementLocks;
-import org.neo4j.kernel.impl.locking.StatementLocksFactory;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
@@ -86,7 +85,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_d
  */
 public class KernelTransactions extends LifecycleAdapter implements Supplier<IdController.ConditionSnapshot>
 {
-    private final StatementLocksFactory statementLocksFactory;
+    private final Locks locks;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final TransactionCommitProcess transactionCommitProcess;
     private final DatabaseTransactionEventListeners eventListeners;
@@ -127,8 +126,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
      */
     private final Set<KernelTransactionImplementation> allTransactions = ConcurrentHashMap.newKeySet();
 
-    // This is the factory that actually builds brand-new instances.
-    private final Factory<KernelTransactionImplementation> factory;
     // Global pool of transactions, wrapped by the thread-local marshland pool and so is not used directly.
     private final LinkedQueuePool<KernelTransactionImplementation> globalTxPool;
     // Pool of unused transactions.
@@ -145,7 +142,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
      */
     private volatile boolean stopped = true;
 
-    public KernelTransactions( Config config, StatementLocksFactory statementLocksFactory, ConstraintIndexCreator constraintIndexCreator,
+    public KernelTransactions( Config config, Locks locks, ConstraintIndexCreator constraintIndexCreator,
             TransactionCommitProcess transactionCommitProcess,
             DatabaseTransactionEventListeners eventListeners, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard,
             StorageEngine storageEngine, GlobalProcedures globalProcedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
@@ -157,7 +154,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             GlobalMemoryGroupTracker transactionsMemoryPool, ReadOnlyDatabaseChecker readOnlyDatabaseChecker )
     {
         this.config = config;
-        this.statementLocksFactory = statementLocksFactory;
+        this.locks = locks;
         this.constraintIndexCreator = constraintIndexCreator;
         this.transactionCommitProcess = transactionCommitProcess;
         this.eventListeners = eventListeners;
@@ -183,8 +180,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.constraintSemantics = constraintSemantics;
         this.schemaState = schemaState;
         this.leaseService = leaseService;
-        this.factory = new KernelTransactionImplementationFactory( allTransactions, tracers );
-        this.globalTxPool = new GlobalKernelTransactionPool( allTransactions, factory );
+        this.globalTxPool = new GlobalKernelTransactionPool( allTransactions, new KernelTransactionImplementationFactory( allTransactions, tracers ) );
         this.localTxPool = new LocalKernelTransactionPool( globalTxPool, activeTransactionCounter, config );
         this.transactionMemoryPool = transactionsMemoryPool.newDatabasePool( namedDatabaseId.name(),
                 config.get( memory_transaction_database_max_size ), memory_transaction_database_max_size.name() );
@@ -207,9 +203,9 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                 assertRunning();
                 TransactionId lastCommittedTransaction = transactionIdStore.getLastCommittedTransaction();
                 KernelTransactionImplementation tx = localTxPool.acquire();
-                StatementLocks statementLocks = statementLocksFactory.newInstance();
+                Locks.Client lockClient = locks.newClient();
                 tx.initialize( lastCommittedTransaction.transactionId(), lastCommittedTransaction.commitTimestamp(),
-                        statementLocks, type, securityContext, timeout, userTransactionIdCounter.incrementAndGet(), clientInfo );
+                        lockClient, type, securityContext, timeout, userTransactionIdCounter.incrementAndGet(), clientInfo );
                 return tx;
             }
             finally

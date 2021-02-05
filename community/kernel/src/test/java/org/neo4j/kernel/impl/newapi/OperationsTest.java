@@ -82,8 +82,6 @@ import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceIds;
-import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
-import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -153,7 +151,7 @@ class OperationsTest
         TxState realTxState = new TxState();
         txState = Mockito.spy( realTxState );
         when( transaction.getReasonIfTerminated() ).thenReturn( Optional.empty() );
-        when( transaction.statementLocks() ).thenReturn( new SimpleStatementLocks( locks ) );
+        when( transaction.lockClient() ).thenReturn( locks );
         when( transaction.dataWrite() ).thenReturn( write );
         when( transaction.isOpen() ).thenReturn( true );
         when( transaction.lockTracer() ).thenReturn( LockTracer.NONE );
@@ -1063,10 +1061,9 @@ class OperationsTest
         SecurityContext sctx = mock(SecurityContext.class);
         KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
         when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
-        StatementLocks statementLocks = mock( StatementLocks.class );
-        when( ktx.statementLocks() ).thenReturn( statementLocks );
+        Locks.Client lockClient = mock( Locks.Client.class );
+        when( ktx.lockClient() ).thenReturn( lockClient );
         when( ktx.securityContext() ).thenReturn( sctx );
-        when( statementLocks.lockClient() ).thenReturn( mock( Locks.Client.class ) );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
         DefaultPooledCursors cursors = mock( DefaultPooledCursors.class );
         when( cursors.allocateFullAccessNodeCursor( NULL ) ).thenReturn( mock( FullAccessNodeCursor.class ) );
@@ -1095,11 +1092,9 @@ class OperationsTest
         SecurityContext sctx = mock( SecurityContext.class );
         KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
         when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
-        StatementLocks statementLocks = mock( StatementLocks.class );
-        when( ktx.statementLocks() ).thenReturn( statementLocks );
+        Locks.Client lockClient = mock( Locks.Client.class );
+        when( ktx.lockClient() ).thenReturn( lockClient );
         when( ktx.securityContext() ).thenReturn( sctx );
-        when( statementLocks.lockClient() ).thenReturn( mock( Locks.Client.class ) );
-        when( statementLocks.lockClient() ).thenReturn( mock( Locks.Client.class ) );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
         AllStoreHolder allStoreHolder = mock( AllStoreHolder.class );
         when( allStoreHolder.nodeExists( anyLong() ) ).thenReturn( true );
@@ -1126,10 +1121,8 @@ class OperationsTest
         // given
         KernelTransactionImplementation ktx = mock( KernelTransactionImplementation.class );
         when( ktx.txState() ).thenReturn( mock( TransactionState.class ) );
-        StatementLocks statementLocks = mock( StatementLocks.class );
-        when( ktx.statementLocks() ).thenReturn( statementLocks );
-        when( statementLocks.lockClient() ).thenReturn( mock( Locks.Client.class ) );
-        when( statementLocks.lockClient() ).thenReturn( mock( Locks.Client.class ) );
+        Locks.Client lockClient = mock( Locks.Client.class );
+        when( ktx.lockClient() ).thenReturn( lockClient );
         CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
         IndexingProvidersService indexingProvidersService = mock( IndexingProvidersService.class );
         when( indexingProvidersService.getDefaultProvider() ).thenReturn( mock( IndexProviderDescriptor.class ) );

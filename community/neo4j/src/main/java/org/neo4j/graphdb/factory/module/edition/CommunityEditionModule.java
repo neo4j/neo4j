@@ -66,10 +66,7 @@ import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
-import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
-import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
@@ -127,7 +124,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
         LocksFactory lockFactory = createLockFactory( globalConfig, logService );
         locksSupplier = () -> createLockManager( lockFactory, globalConfig, globalClock );
-        statementLocksFactoryProvider = locks -> createStatementLocksFactory( locks, globalConfig, logService );
 
         idContextFactory = tryResolveOrCreate( IdContextFactory.class, externalDependencies, () -> createIdContextFactory( globalModule ) );
 
@@ -182,11 +178,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
     protected ConstraintSemantics createSchemaRuleVerifier()
     {
         return new StandardConstraintSemantics();
-    }
-
-    protected StatementLocksFactory createStatementLocksFactory( Locks locks, Config config, LogService logService )
-    {
-        return new SimpleStatementLocksFactory( locks );
     }
 
     protected static TokenCreator createRelationshipTypeCreator( Config config, NamedDatabaseId namedDatabaseId, Supplier<Kernel> kernelSupplier )

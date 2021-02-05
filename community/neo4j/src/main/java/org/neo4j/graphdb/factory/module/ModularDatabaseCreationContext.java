@@ -49,7 +49,6 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
@@ -81,7 +80,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DependencyResolver globalDependencies;
     private final TokenHolders tokenHolders;
     private final Locks locks;
-    private final StatementLocksFactory statementLocksFactory;
     private final FileSystemAbstraction fs;
     private final DatabaseTransactionStats transactionStats;
     private final Factory<DatabaseHealth> databaseHealthFactory;
@@ -132,7 +130,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.globalDependencies = globalDependencies;
         this.tokenHolders = editionComponents.getTokenHolders();
         this.locks = editionComponents.getLocks();
-        this.statementLocksFactory = editionComponents.getStatementLocksFactory();
         this.transactionEventListeners = globalModule.getTransactionEventListeners();
         this.parentMonitors = parentMonitors;
         this.fs = globalModule.getFileSystem();
@@ -219,12 +216,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public Locks getLocks()
     {
         return locks;
-    }
-
-    @Override
-    public StatementLocksFactory getStatementLocksFactory()
-    {
-        return statementLocksFactory;
     }
 
     @Override

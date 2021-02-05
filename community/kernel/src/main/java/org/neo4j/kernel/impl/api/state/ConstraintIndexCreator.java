@@ -115,7 +115,7 @@ public class ConstraintIndexCreator
 
         boolean success = false;
         boolean reacquiredLabelLock = false;
-        Client locks = transaction.statementLocks().lockClient();
+        Client locks = transaction.lockClient();
         ResourceType keyType = constraint.schema().keyType();
         long[] lockingKeys = constraint.schema().lockingKeys();
         try

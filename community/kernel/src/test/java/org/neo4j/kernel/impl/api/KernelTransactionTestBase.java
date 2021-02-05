@@ -55,8 +55,6 @@ import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
-import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
-import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
@@ -160,9 +158,8 @@ class KernelTransactionTestBase
             Locks.Client locks, long transactionTimeout )
     {
         KernelTransactionImplementation tx = newNotInitializedTransaction();
-        StatementLocks statementLocks = new SimpleStatementLocks( locks );
         SecurityContext securityContext = loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME );
-        tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.EXPLICIT,
+        tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP, locks, KernelTransaction.Type.EXPLICIT,
                 securityContext, transactionTimeout, 1L, EMBEDDED_CONNECTION );
         return tx;
     }

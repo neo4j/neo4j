@@ -115,13 +115,13 @@ public interface Locks
          * transaction lives or dies, and in either case, the lock client will end up releasing all locks via the
          * {@link #close()} method.
          */
-        void prepare();
+        void prepareForCommit();
 
         /**
          * Stop all active lock waiters and release them.
          * All new attempts to acquire any locks will cause exceptions.
          * This client can and should only be {@link #close() closed} afterwards.
-         * If this client has been {@link #prepare() prepared}, then all currently acquired locks will remain held,
+         * If this client has been {@link #prepareForCommit() prepared}, then all currently acquired locks will remain held,
          * otherwise they will be released immediately.
          */
         void stop();

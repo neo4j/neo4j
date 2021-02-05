@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.token.TokenHolders;
@@ -47,7 +46,6 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     private final Locks locks;
     private final DatabaseTransactionStats transactionMonitor;
     private final DatabaseIdContext idContext;
-    private final StatementLocksFactory statementLocksFactory;
     private final QueryEngineProvider queryEngineProvider;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final DatabaseStartupController startupController;
@@ -61,7 +59,6 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
         this.idContext = editionModule.getIdContextFactory().createIdContext( namedDatabaseId );
         this.tokenHolders = editionModule.getTokenHoldersProvider().apply( namedDatabaseId );
         this.locks = editionModule.getLocksSupplier().get();
-        this.statementLocksFactory = editionModule.getStatementLocksFactoryProvider().apply( locks );
         this.transactionMonitor = editionModule.createTransactionMonitor();
         this.queryEngineProvider = editionModule.getQueryEngineProvider();
         this.startupController = editionModule.getDatabaseStartupController();
@@ -108,12 +105,6 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     public Locks getLocks()
     {
         return locks;
-    }
-
-    @Override
-    public StatementLocksFactory getStatementLocksFactory()
-    {
-        return statementLocksFactory;
     }
 
     @Override

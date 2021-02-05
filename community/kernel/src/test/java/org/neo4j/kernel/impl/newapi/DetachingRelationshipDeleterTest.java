@@ -33,7 +33,6 @@ import org.neo4j.internal.kernel.api.helpers.StubRelationshipCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.inOrder;
@@ -66,7 +65,7 @@ class DetachingRelationshipDeleterTest
                         .outgoing( 2L, 3L, TYPE )
                         .incoming( 3L, 49L, TYPE )
                         .outgoing( 50L, 41L, TYPE ) );
-        when( ktx.statementLocks() ).thenReturn( new SimpleStatementLocks( locks ) );
+        when( ktx.lockClient() ).thenReturn( locks );
         InOrder inOrder = inOrder( locks );
 
         // when
@@ -88,7 +87,7 @@ class DetachingRelationshipDeleterTest
         Collector collector = new Collector();
         DetachingRelationshipDeleter locking = new DetachingRelationshipDeleter( collector );
         returnRelationships( ktx, new TestRelationshipChain( 42 ) );
-        when( ktx.statementLocks() ).thenReturn( new SimpleStatementLocks( locks ) );
+        when( ktx.lockClient() ).thenReturn( locks );
 
         locking.lockNodesAndDeleteRelationships( nodeId, ktx );
 

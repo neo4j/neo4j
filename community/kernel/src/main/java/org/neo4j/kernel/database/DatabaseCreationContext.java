@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
@@ -82,8 +81,6 @@ public interface DatabaseCreationContext
     TokenHolders getTokenHolders();
 
     Locks getLocks();
-
-    StatementLocksFactory getStatementLocksFactory();
 
     GlobalTransactionEventListeners getTransactionEventListeners();
 

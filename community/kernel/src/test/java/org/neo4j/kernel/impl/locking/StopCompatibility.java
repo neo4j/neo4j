@@ -103,7 +103,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport
         // Given
         clientA.acquireShared( TRACER, NODE, 1L );
         clientA.acquireExclusive( TRACER, NODE, 2L );
-        clientA.prepare();
+        clientA.prepareForCommit();
 
         // When
         clientA.stop();
@@ -153,7 +153,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport
     void prepareMustAllowAcquiringNewLocksAfterStop()
     {
         // Given
-        clientA.prepare();
+        clientA.prepareForCommit();
         clientA.stop();
 
         // When
@@ -169,7 +169,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport
     @Test
     void prepareMustThrowWhenClientStopped()
     {
-        assertThrows( LockClientStoppedException.class, () -> stoppedClient().prepare() );
+        assertThrows( LockClientStoppedException.class, () -> stoppedClient().prepareForCommit() );
     }
 
     @Test

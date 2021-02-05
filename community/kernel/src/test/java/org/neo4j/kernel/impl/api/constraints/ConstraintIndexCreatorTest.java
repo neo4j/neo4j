@@ -58,7 +58,7 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
-import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -199,10 +199,10 @@ class ConstraintIndexCreatorTest
         creator.createUniquenessConstraintIndex( transaction, constraint, prototype );
 
         // then
-        verify( transaction.statementLocks().lockClient() )
+        verify( transaction.lockClient() )
                 .releaseExclusive( ResourceTypes.LABEL, schema.getLabelId() );
 
-        verify( transaction.statementLocks().lockClient() )
+        verify( transaction.lockClient() )
                 .acquireExclusive( transaction.lockTracer(), ResourceTypes.LABEL, schema.getLabelId() );
     }
 
@@ -402,8 +402,8 @@ class ConstraintIndexCreatorTest
             StorageReader storageReader = mock( StorageReader.class );
             when( storageEngine.newReader() ).thenReturn( storageReader );
 
-            SimpleStatementLocks locks = new SimpleStatementLocks( mock( org.neo4j.kernel.impl.locking.Locks.Client.class ) );
-            when( transaction.statementLocks() ).thenReturn( locks );
+            Locks.Client locks = mock( Locks.Client.class );
+            when( transaction.lockClient() ).thenReturn( locks );
             when( transaction.tokenRead() ).thenReturn( tokenRead );
             when( transaction.schemaRead() ).thenReturn( schemaRead );
             when( transaction.schemaWrite() ).thenReturn( schemaWrite );
