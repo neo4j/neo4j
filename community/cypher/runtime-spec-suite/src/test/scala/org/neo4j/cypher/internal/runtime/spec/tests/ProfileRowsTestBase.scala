@@ -1062,7 +1062,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // given
     val nodesPerLabel = 100
     given {
-      index("A", "prop")
+      nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", 42))
     }
@@ -1087,7 +1087,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // given
     val nodesPerLabel = 100
     given {
-      index("A", "prop")
+      nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", 42))
     }
@@ -1112,7 +1112,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // given
     val nodesPerLabel = 100
     given {
-      index("A", "prop")
+      nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.zipWithIndex.foreach {
         case (node, i) if i % 2 == 0 => node.setProperty("prop", 42)
@@ -1140,7 +1140,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // given
     val nodesPerLabel = 100
     given {
-      index("A", "prop")
+      nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", "hello"))
     }
@@ -1166,7 +1166,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // given
     val nodesPerLabel = 100
     val node = given {
-      index("A", "prop")
+      nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", "hello"))
       aNodes.head
@@ -1192,7 +1192,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // given
     val nodesPerLabel = 100
     val aNodes = given {
-      index("A", "prop")
+      nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", 42))
       aNodes
@@ -1219,7 +1219,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // given
     val nodesPerLabel = 100
     val aNodes = given {
-      index("A", "prop")
+      nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", 42))
       aNodes
@@ -1365,7 +1365,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // given
     val nodesPerLabel = 100
     val aNodes = given {
-      index("A", "prop")
+      nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", "hello"))
       aNodes
@@ -1391,7 +1391,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // given
     val nodesPerLabel = 100
     val aNodes = given {
-      index("A", "prop")
+      nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", "hello"))
       aNodes
@@ -1605,7 +1605,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
 
   test("should profile rows of nodeIndexSeek + produce results") {
     given {
-      index("L1", "prop")
+      nodeIndex("L1", "prop")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i)
       }, "L1")

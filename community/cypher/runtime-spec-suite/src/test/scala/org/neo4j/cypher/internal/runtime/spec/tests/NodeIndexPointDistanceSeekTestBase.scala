@@ -39,7 +39,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 2d cartesian points (inclusively)") {
     given {
-      index("Place", "location")
+      nodeIndex("Place", "location")
       nodePropertyGraph(sizeHint, {
         case i => Map("location" -> pointValue(Cartesian, i, 0))
       }, "Place")
@@ -60,7 +60,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 2d cartesian points (non-inclusively)") {
     given {
-      index("Place", "location")
+      nodeIndex("Place", "location")
       nodePropertyGraph(sizeHint, {
         case i => Map("location" -> pointValue(Cartesian, i, 0))
       }, "Place")
@@ -81,7 +81,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 3d cartesian points (inclusively)") {
     given {
-      index("Place", "location")
+      nodeIndex("Place", "location")
       nodePropertyGraph(sizeHint, {
         case i => Map("location" -> pointValue(Cartesian_3D, i, 0, 0))
       }, "Place")
@@ -102,7 +102,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 3d cartesian points (non-inclusively)") {
     given {
-      index("Place", "location")
+      nodeIndex("Place", "location")
       nodePropertyGraph(sizeHint, {
         case i => Map("location" -> pointValue(Cartesian_3D, i, 0, 0))
       }, "Place")
@@ -123,7 +123,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 2d geographic points") {
     given {
-      index("Place", "location")
+      nodeIndex("Place", "location")
       nodePropertyGraph(180, {
         case i => Map("location" -> pointValue(WGS84, i % 180, 0))
       }, "Place")
@@ -146,7 +146,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 3d geographic points") {
     given {
-      index("Place", "location")
+      nodeIndex("Place", "location")
       nodePropertyGraph(180, {
         case i => Map("location" -> pointValue(WGS84_3D, i % 180, 0, 0))
       }, "Place")
@@ -170,7 +170,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should cache properties") {
     given {
-      index("Place", "location")
+      nodeIndex("Place", "location")
       nodePropertyGraph(sizeHint, {
         case i => Map("location" -> pointValue(Cartesian, i, 0))
       }, "Place")

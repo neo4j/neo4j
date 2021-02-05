@@ -25,10 +25,10 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotification
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.logical.plans.IndexSeek
+import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.planner.spi
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexBehaviour
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.SlowContains
 import org.neo4j.cypher.internal.util.LabelId
@@ -40,7 +40,7 @@ class CheckForIndexBehaviourTest extends CypherFunSuite with LogicalPlanningTest
   test("should notify for NodeIndexContainsScan backed by limited index") {
     val planContext = mock[PlanContext]
     when(planContext.indexGetForLabelAndProperties(anyString(), any())).thenReturn(Some(spi.IndexDescriptor(LabelId(1), Seq(PropertyKeyId(1)), Set[IndexBehaviour](SlowContains))))
-    val plan = IndexSeek("id:label(prop CONTAINS 'tron')")
+    val plan = nodeIndexSeek("id:label(prop CONTAINS 'tron')")
 
     checkForSuboptimalIndexBehaviours(planContext)(plan) should equal(Set(SuboptimalIndexForConstainsQueryNotification("label", Seq("prop"))))
   }
@@ -48,7 +48,7 @@ class CheckForIndexBehaviourTest extends CypherFunSuite with LogicalPlanningTest
   test("should notify for NodeIndexEndsWithScan backed by limited index") {
     val planContext = mock[PlanContext]
     when(planContext.indexGetForLabelAndProperties(anyString(), any())).thenReturn(Some(IndexDescriptor(LabelId(1), Seq(PropertyKeyId(1)), Set[IndexBehaviour](SlowContains))))
-    val plan = IndexSeek("id:label(prop ENDS WITH 'tron')")
+    val plan = nodeIndexSeek("id:label(prop ENDS WITH 'tron')")
 
     checkForSuboptimalIndexBehaviours(planContext)(plan) should equal(Set(SuboptimalIndexForEndsWithQueryNotification("label", Seq("prop"))))
   }
@@ -56,7 +56,7 @@ class CheckForIndexBehaviourTest extends CypherFunSuite with LogicalPlanningTest
   test("should not notify for NodeIndexContainsScan backed by index with no limitations") {
     val planContext = mock[PlanContext]
     when(planContext.indexGetForLabelAndProperties(anyString(), any())).thenReturn(Some(IndexDescriptor(LabelId(1), Seq(PropertyKeyId(1)), Set.empty[IndexBehaviour])))
-    val plan = IndexSeek("id:label(prop CONTAINS 'tron')")
+    val plan = nodeIndexSeek("id:label(prop CONTAINS 'tron')")
 
     checkForSuboptimalIndexBehaviours(planContext)(plan) should be(empty)
   }
@@ -64,7 +64,7 @@ class CheckForIndexBehaviourTest extends CypherFunSuite with LogicalPlanningTest
   test("should not notify for NodeIndexEndsWithScan backed by index with no limitations") {
     val planContext = mock[PlanContext]
     when(planContext.indexGetForLabelAndProperties(anyString(), any())).thenReturn(Some(IndexDescriptor(LabelId(1), Seq(PropertyKeyId(1)), Set.empty[IndexBehaviour])))
-    val plan = IndexSeek("id:label(prop ENDS WITH 'tron')")
+    val plan = nodeIndexSeek("id:label(prop ENDS WITH 'tron')")
 
     checkForSuboptimalIndexBehaviours(planContext)(plan) should be(empty)
   }

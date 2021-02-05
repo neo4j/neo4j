@@ -46,10 +46,10 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
-import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
@@ -88,11 +88,11 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
   private val xProp = Property(x, prop)(InputPosition.NONE)
 
-  def indexScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): IndexLeafPlan = IndexSeek(s"$node:$label($property)", getValueFromIndex)
-  def indexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): IndexLeafPlan = IndexSeek(s"$node:$label($property = 42)", getValueFromIndex)
-  def uniqueIndexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): IndexLeafPlan = IndexSeek(s"$node:$label($property = 42)", getValueFromIndex, unique = true)
-  def indexContainsScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): IndexLeafPlan = IndexSeek("n:Awesome(prop CONTAINS 'foo')", getValueFromIndex)
-  def indexEndsWithScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): IndexLeafPlan = IndexSeek("n:Awesome(prop ENDS WITH 'foo')", getValueFromIndex)
+  def indexScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property)", getValueFromIndex)
+  def indexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property = 42)", getValueFromIndex)
+  def uniqueIndexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property = 42)", getValueFromIndex, unique = true)
+  def indexContainsScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek("n:Awesome(prop CONTAINS 'foo')", getValueFromIndex)
+  def indexEndsWithScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek("n:Awesome(prop ENDS WITH 'foo')", getValueFromIndex)
 
   for((indexOperator, name) <- Seq((indexScan _, "indexScan"), (indexSeek _, "indexSeek"), (uniqueIndexSeek _, "uniqueIndexSeek"), (indexContainsScan _, "indexContainsScan"), (indexEndsWithScan _, "indexEndsWithScan"))) {
     test(s"should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in selection after index operator: $name") {

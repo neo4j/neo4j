@@ -346,7 +346,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
   test("should work on RHS of apply") {
     val chunkSize = 17
     val topLimit = chunkSize + 1
-    index("B", "x")
+    nodeIndex("B", "x")
     val aNodes = given {
       val aNodes = nodeGraph(2, "A")
       nodePropertyGraph(sizeHint, {
@@ -381,7 +381,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     val chunkSize = 17
     val skip = chunkSize + 1
     val topLimit = chunkSize + skip
-    index("B", "x")
+    nodeIndex("B", "x")
     val aNodes = given {
       val aNodes = nodeGraph(2, "A")
       nodePropertyGraph(sizeHint, {

@@ -87,7 +87,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile dbHits of node index seek") {
     given {
-      index("Language", "difficulty")
+      nodeIndex("Language", "difficulty")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("difficulty" -> i)
       }, "Language")
@@ -101,7 +101,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile dbHits of node index scan") {
     given {
-      index("Language", "difficulty")
+      nodeIndex("Language", "difficulty")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("difficulty" -> i)
       }, "Language")
@@ -115,7 +115,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile dbHits of node index contains") {
     given {
-      index("Language", "difficulty")
+      nodeIndex("Language", "difficulty")
       nodePropertyGraph(sizeHint, {
         case i => Map("difficulty" -> s"x${i % 2}")
       }, "Language")

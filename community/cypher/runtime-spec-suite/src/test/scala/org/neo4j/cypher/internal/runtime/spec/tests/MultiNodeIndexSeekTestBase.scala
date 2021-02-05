@@ -37,7 +37,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   test("should do double index seek") {
     // given
     val size = Math.max(sizeHint, 10)
-    index("Label", "prop")
+    nodeIndex("Label", "prop")
     val nodes = given {
       nodePropertyGraph(size, {
         case i: Int => Map("prop" -> i % 10)
@@ -47,8 +47,8 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m")
-      .multiNodeIndexSeekOperator(_.indexSeek("n:Label(prop=7)"),
-                                  _.indexSeek("m:Label(prop=3)"))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)"),
+                                  _.nodeIndexSeek("m:Label(prop=3)"))
       .build()
 
     // then
@@ -64,7 +64,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   test("should do triple index seek") {
     // given
     val size = 100
-    index("Label", "prop")
+    nodeIndex("Label", "prop")
     val nodes = given {
       nodePropertyGraph(size, {
         case i: Int => Map("prop" -> i % 10)
@@ -74,9 +74,9 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m", "o")
-      .multiNodeIndexSeekOperator(_.indexSeek("n:Label(prop=7)"),
-                                  _.indexSeek("m:Label(prop=3)"),
-                                  _.indexSeek("o:Label(prop=5)"))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)"),
+                                  _.nodeIndexSeek("m:Label(prop=3)"),
+                                  _.nodeIndexSeek("o:Label(prop=5)"))
       .build()
 
     // then
@@ -93,7 +93,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle lots of index seeks") {
     // given
-    index("Label", "prop")
+    nodeIndex("Label", "prop")
     given {
       nodePropertyGraph(sizeHint, {
         case i: Int => Map("prop" -> i)
@@ -111,7 +111,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults(columns: _*)
       .projection(projections: _*)
-      .multiNodeIndexSeekOperator(indexSeeks.map(s => (b: LogicalQueryBuilder) => b.indexSeek(s)): _*)
+      .multiNodeIndexSeekOperator(indexSeeks.map(s => (b: LogicalQueryBuilder) => b.nodeIndexSeek(s)): _*)
       .build()
 
     // then
@@ -122,7 +122,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle various seeks") {
     // given
     val size = 100
-    index("Label", "prop")
+    nodeIndex("Label", "prop")
     val nodes = given {
       nodePropertyGraph(size, {
         case i: Int => Map("prop" -> i % 10)
@@ -132,9 +132,9 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m", "o")
-      .multiNodeIndexSeekOperator(_.indexSeek("n:Label(prop IN ???)",  paramExpr = Some(listOfInt(0, 1, 2))),
-                                  _.indexSeek("m:Label(prop IN ???)",  paramExpr = Some(listOfInt(5, 6))),
-                                  _.indexSeek("o:Label(prop > 8)"))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop IN ???)",  paramExpr = Some(listOfInt(0, 1, 2))),
+                                  _.nodeIndexSeek("m:Label(prop IN ???)",  paramExpr = Some(listOfInt(5, 6))),
+                                  _.nodeIndexSeek("o:Label(prop > 8)"))
       .build()
 
     // then
@@ -152,7 +152,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   test("should produce no rows if one seek is empty") {
     // given
     val size = 100
-    index("Label", "prop")
+    nodeIndex("Label", "prop")
     given {
       nodePropertyGraph(size, {
         case i: Int => Map("prop" -> i % 10)
@@ -162,9 +162,9 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m", "o")
-      .multiNodeIndexSeekOperator(_.indexSeek("n:Label(prop IN ???)",  paramExpr = Some(listOfInt(0, 1, 2))),
-                                  _.indexSeek("m:Label(prop IN ???)",  paramExpr = Some(listOfInt(5, 6))),
-                                  _.indexSeek("o:Label(prop > 10)"))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop IN ???)",  paramExpr = Some(listOfInt(0, 1, 2))),
+                                  _.nodeIndexSeek("m:Label(prop IN ???)",  paramExpr = Some(listOfInt(5, 6))),
+                                  _.nodeIndexSeek("o:Label(prop > 10)"))
       .build()
 
     // then
@@ -175,7 +175,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   test("should do double index seek on rhs of apply - multiple input rows") {
     // given
     val size = Math.max(sizeHint, 10)
-    index("Label", "prop")
+    nodeIndex("Label", "prop")
     val nodes = given {
       nodePropertyGraph(size, {
         case i: Int => Map("prop" -> i % 10)
@@ -186,8 +186,8 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m")
       .apply()
-      .|.multiNodeIndexSeekOperator(_.indexSeek("n:Label(prop=???)", paramExpr = Some(varFor("i"))),
-                                    _.indexSeek("m:Label(prop=???)", paramExpr = Some(varFor("i"))))
+      .|.multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=???)", paramExpr = Some(varFor("i"))),
+                                    _.nodeIndexSeek("m:Label(prop=???)", paramExpr = Some(varFor("i"))))
       .unwind("range(0, 2) AS i")
       .argument()
       .build()
@@ -209,7 +209,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle empty multi node seek") {
     // given
     val size = Math.max(sizeHint, 10)
-    index("Label", "prop")
+    nodeIndex("Label", "prop")
     given {
       nodePropertyGraph(size, {
         case i: Int => Map("prop" -> i % 10)
@@ -219,8 +219,8 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m")
-      .multiNodeIndexSeekOperator(_.indexSeek("n:Label(prop=7)"),
-        _.indexSeek("m:Label(prop IN ???)", paramExpr = Some(listOfInt())))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)"),
+        _.nodeIndexSeek("m:Label(prop IN ???)", paramExpr = Some(listOfInt())))
       .build()
 
     // then
@@ -231,7 +231,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle null multi node seek") {
     // given
     val size = Math.max(sizeHint, 10)
-    index("Label", "prop")
+    nodeIndex("Label", "prop")
     given {
       nodePropertyGraph(size, {
         case i: Int => Map("prop" -> i % 10)
@@ -241,8 +241,8 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m")
-      .multiNodeIndexSeekOperator(_.indexSeek("n:Label(prop=7)"),
-        _.indexSeek("m:Label(prop IN ???)", paramExpr = Some(nullLiteral)))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)"),
+        _.nodeIndexSeek("m:Label(prop IN ???)", paramExpr = Some(nullLiteral)))
       .build()
 
     // then

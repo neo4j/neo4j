@@ -161,7 +161,7 @@ import org.neo4j.cypher.internal.logical.plans.GrantDbmsAction
 import org.neo4j.cypher.internal.logical.plans.GrantGraphAction
 import org.neo4j.cypher.internal.logical.plans.GrantRoleToUser
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.IndexSeek
+import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexSeekLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
@@ -390,80 +390,80 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("IndexSeek") {
     assertGood(
-      attach(IndexSeek("x:Label(Prop)"), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop)"), 23.0),
       planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop) WHERE Prop IS NOT NULL")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop)"), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop)"), 23.0),
       planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop) WHERE Prop IS NOT NULL")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop)", getValue = GetValue), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop)", getValue = GetValue), 23.0),
       planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop) WHERE Prop IS NOT NULL, cache[x.Prop]")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop,Foo)"), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop,Foo)"), 23.0),
       planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop, Foo) WHERE Prop IS NOT NULL AND Foo IS NOT NULL")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop,Foo)", getValue = GetValue), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop,Foo)", getValue = GetValue), 23.0),
       planDescription(id, "NodeIndexScan", NoChildren,
         Seq(details("x:Label(Prop, Foo) WHERE Prop IS NOT NULL AND Foo IS NOT NULL, cache[x.Prop], cache[x.Foo]")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop = 'Andres')"), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop = 'Andres')"), 23.0),
       planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("x:Label(Prop) WHERE Prop = \"Andres\"")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop = 'Andres')", getValue = GetValue), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop = 'Andres')", getValue = GetValue), 23.0),
       planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("x:Label(Prop) WHERE Prop = \"Andres\", cache[x.Prop]")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop = 'Andres')", unique = true), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop = 'Andres')", unique = true), 23.0),
       planDescription(id, "NodeUniqueIndexSeek", NoChildren, Seq(details("UNIQUE x:Label(Prop) WHERE Prop = \"Andres\"")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop = 'Andres' OR 'Pontus')"), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop = 'Andres' OR 'Pontus')"), 23.0),
       planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("x:Label(Prop) WHERE Prop IN [\"Andres\", \"Pontus\"]")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop = 'Andres' OR 'Pontus')", unique = true), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop = 'Andres' OR 'Pontus')", unique = true), 23.0),
       planDescription(id, "NodeUniqueIndexSeek", NoChildren, Seq(details("UNIQUE x:Label(Prop) WHERE Prop IN [\"Andres\", \"Pontus\"]")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop > 9)"), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop > 9)"), 23.0),
       planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("x:Label(Prop) WHERE Prop > 9")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop < 9)"), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop < 9)"), 23.0),
       planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("x:Label(Prop) WHERE Prop < 9")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(9 <= Prop <= 11)"), 23.0),
+      attach(nodeIndexSeek("x:Label(9 <= Prop <= 11)"), 23.0),
       planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("x:Label(Prop) WHERE Prop >= 9 AND Prop <= 11")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop STARTS WITH 'Foo')"), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop STARTS WITH 'Foo')"), 23.0),
       planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("x:Label(Prop) WHERE Prop STARTS WITH \"Foo\"")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop ENDS WITH 'Foo')"), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop ENDS WITH 'Foo')"), 23.0),
       planDescription(id, "NodeIndexEndsWithScan", NoChildren, Seq(details("x:Label(Prop) WHERE Prop ENDS WITH \"Foo\"")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop CONTAINS 'Foo')"), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop CONTAINS 'Foo')"), 23.0),
       planDescription(id, "NodeIndexContainsScan", NoChildren, Seq(details("x:Label(Prop) WHERE Prop CONTAINS \"Foo\"")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop = 10,Foo = 12)"), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop = 10,Foo = 12)"), 23.0),
       planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("x:Label(Prop, Foo) WHERE Prop = 10 AND Foo = 12")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop = 10,Foo = 12)", unique = true), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop = 10,Foo = 12)", unique = true), 23.0),
       planDescription(id, "NodeUniqueIndexSeek", NoChildren, Seq(details("UNIQUE x:Label(Prop, Foo) WHERE Prop = 10 AND Foo = 12")), Set("x")))
 
     assertGood(
-      attach(IndexSeek("x:Label(Prop > 10,Foo)"), 23.0),
+      attach(nodeIndexSeek("x:Label(Prop > 10,Foo)"), 23.0),
       planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("x:Label(Prop, Foo) WHERE Prop > 10 AND Foo IS NOT NULL")), Set("x")))
 
     // This is ManyQueryExpression with only a single expression. That is possible to get, but the test utility IndexSeek cannot create those.
@@ -488,7 +488,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("MultiNodeIndexSeek") {
     assertGood(
-      attach(MultiNodeIndexSeek(Seq(IndexSeek("x:Label(Prop = 10,Foo = 12)", unique = true).asInstanceOf[IndexSeekLeafPlan], IndexSeek("y:Label(Prop = 12)", unique = false).asInstanceOf[IndexSeekLeafPlan])), 230.0),
+      attach(MultiNodeIndexSeek(Seq(nodeIndexSeek("x:Label(Prop = 10,Foo = 12)", unique = true).asInstanceOf[IndexSeekLeafPlan], nodeIndexSeek("y:Label(Prop = 12)", unique = false).asInstanceOf[IndexSeekLeafPlan])), 230.0),
       planDescription(id, "MultiNodeIndexSeek", NoChildren, Seq(details(Seq("UNIQUE x:Label(Prop, Foo) WHERE Prop = 10 AND Foo = 12", "y:Label(Prop) WHERE Prop = 12"))), Set("x", "y"))
     )
   }

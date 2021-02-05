@@ -39,6 +39,7 @@ class TestPlanBuilder extends AbstractLogicalPlanBuilder[LogicalPlan, TestPlanBu
 
 class TestResolver extends Resolver {
   private val labels = new ArrayBuffer[String]()
+  private val relTypes = new ArrayBuffer[String]()
   private val properties = new ArrayBuffer[String]()
 
   override def getLabelId(label: String): Int = {
@@ -46,6 +47,16 @@ class TestResolver extends Resolver {
     if (index == -1) {
       labels += label
       labels.size - 1
+    } else {
+      index
+    }
+  }
+
+  override def getRelTypeId(label: String): Int = {
+    val index = relTypes.indexOf(label)
+    if (index == -1) {
+      relTypes += label
+      relTypes.size - 1
     } else {
       index
     }

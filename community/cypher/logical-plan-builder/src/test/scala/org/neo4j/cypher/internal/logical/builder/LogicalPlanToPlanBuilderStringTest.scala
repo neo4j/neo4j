@@ -793,11 +793,143 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     builder.build()
   })
 
+  // Formatting paramExpr and customQueryExpression is currently not supported.
+  // These cases will need manual fixup.
+  testPlan("relationshipIndexOperator", {
+    val builder = new TestPlanBuilder().produceResults("r")
+
+    // directed RelationshipIndexSeek
+    builder
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20)]->(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20 OR 30)]->(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop > 20)]->(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop < 20)]->(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop <= 20)]->(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop < 20)]->(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop <= 20)->(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop >= 20)]->(y)", indexOrder = IndexOrderNone)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop < 20)->(y)", getValue = DoNotGetValue)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop <= 20)->(y)", getValue = GetValue)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 10, prop2 = '20')->(y)", indexOrder = IndexOrderDescending)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 10 OR 20, prop2 = '10' OR '30')->(y)", argumentIds = Set("a", "b"))
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Label(text STARTS WITH 'as')->(y)", indexOrder = IndexOrderAscending)
+
+    // undirected RelationshipIndexSeek
+    builder
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20)]-(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 20 OR 30)]-(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop > 20)]-(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop < 20)]-(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(10 < prop <= 20)]-(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop < 20)]-(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(10 <= prop <= 20)-(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop >= 20)]-(y)", indexOrder = IndexOrderNone)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop < 20)-(y)", getValue = DoNotGetValue)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop <= 20)-(y)", getValue = GetValue)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 10, prop2 = '20')-(y)", indexOrder = IndexOrderDescending)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(prop = 10 OR 20, prop2 = '10' OR '30')-(y)", argumentIds = Set("a", "b"))
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Label(text STARTS WITH 'as')-(y)", indexOrder = IndexOrderAscending)
+
+    // directed relationship indexScan
+    builder
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(calories)->(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)->(y)", getValue = GetValue)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)->(y)", indexOrder = IndexOrderDescending)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)->(y)", argumentIds = Set("a", "b"))
+
+    // undirected relationship indexScan
+    builder
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(calories)-(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)-(y)", getValue = GetValue)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)-(y)", indexOrder = IndexOrderDescending)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(calories, taste)-(y)", argumentIds = Set("a", "b"))
+
+    // directed contains scan
+    builder
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Label(text CONTAINS 'as')->(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')->(y)", getValue = GetValue)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')->(y)", indexOrder = IndexOrderDescending)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')->(y)", argumentIds = Set("a", "b"))
+
+    // undirected contains scan
+    builder
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Label(text CONTAINS 'as')-(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')-(y)", getValue = GetValue)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')-(y)", indexOrder = IndexOrderDescending)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(text CONTAINS 'as')-(y)", argumentIds = Set("a", "b"))
+
+
+    // directed ends with scan
+    builder
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Label(text ENDS WITH 'as')->(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')->(y)", getValue = GetValue)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')->(y)", indexOrder = IndexOrderDescending)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')->(y)", argumentIds = Set("a", "b"))
+
+    // undirected ends with scan
+    builder
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Label(text ENDS WITH 'as')-(y)")
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')-(y)", getValue = GetValue)
+      .apply()
+      .|.relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')-(y)", indexOrder = IndexOrderDescending)
+      .relationshipIndexOperator("(x)-[r:Honey(text ENDS WITH 'as')-(y)", argumentIds = Set("a", "b"))
+
+    builder.build()
+  })
+
   testPlan("multiNodeIndexSeekOperator",
     new TestPlanBuilder()
      .produceResults("n", "m")
-     .multiNodeIndexSeekOperator(_.indexSeek("n:Label(prop=5)"),
-                                 _.indexSeek("m:Label(prop=6)"))
+     .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=5)"),
+                                 _.nodeIndexSeek("m:Label(prop=6)"))
      .build())
 
   testPlan("triadicSelection",

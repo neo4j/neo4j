@@ -44,7 +44,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   test("handle cached properties and cartesian product on LHS of apply") {
     // given
-    index("Label", "prop")
+    nodeIndex("Label", "prop")
     val nodes = given {
       nodePropertyGraph(sizeHint, {
         case i: Int => Map("prop" -> i)
@@ -604,7 +604,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong, i.toLong)
     }.toArray: _*)
 
-    index("Label", "prop")
+    nodeIndex("Label", "prop")
     given {
       nodePropertyGraph(nValues, {
         case i: Int => Map("prop" -> (nValues + 3 - i) % nValues) // Reverse and offset when creating the values so we do not accidentally get them in order

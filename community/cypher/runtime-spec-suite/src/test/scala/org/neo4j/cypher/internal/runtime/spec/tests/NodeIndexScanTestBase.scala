@@ -34,7 +34,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes of an index with a property") {
     val nodes = given {
-      index("Honey", "calories")
+      nodeIndex("Honey", "calories")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("calories" -> i)
@@ -78,7 +78,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes of an index with multiple properties") {
     val nodes = given {
-      index("Honey", "calories", "taste")
+      nodeIndex("Honey", "calories", "taste")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("calories" -> i, "taste" -> i)
@@ -101,7 +101,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should cache properties") {
     val nodes = given {
-      index("Honey", "calories")
+      nodeIndex("Honey", "calories")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("calories" -> i)

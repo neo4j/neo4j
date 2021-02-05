@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.IndexSeek
+import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
@@ -66,8 +66,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 > 42 OR n.prop2 > 3 RETURN n.prop1, n.prop2"
 
     Seq(
-      IndexSeek("n:Awesome(prop1 > 42)", GetValue),
-      IndexSeek("n:Awesome(prop2 > 3)", GetValue, propIds = Some(Map("prop2" -> 1)))
+      nodeIndexSeek("n:Awesome(prop1 > 42)", GetValue),
+      nodeIndexSeek("n:Awesome(prop2 > 3)", GetValue, propIds = Some(Map("prop2" -> 1)))
     ).permutations.map {
       case Seq(seek1, seek2) =>
         Projection(
@@ -88,8 +88,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       indexOn("Awesome", "prop1").providesValues()
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 > 42 OR n.prop1 < 3 RETURN n.prop1, n.prop2"
     Seq(
-      IndexSeek("n:Awesome(prop1 > 42)", GetValue),
-      IndexSeek("n:Awesome(prop1 < 3)", GetValue)
+      nodeIndexSeek("n:Awesome(prop1 > 42)", GetValue),
+      nodeIndexSeek("n:Awesome(prop1 < 3)", GetValue)
     ).permutations.map {
       case Seq(seek1, seek2) =>
         Projection(
@@ -112,8 +112,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 3 RETURN n.prop1, n.prop2"
 
     Seq(
-      IndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1))),
-      IndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)))
+      nodeIndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1))),
+      nodeIndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)))
     ).permutations.map {
       case Seq(seek1, seek2) =>
         Projection(
@@ -139,10 +139,10 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
 
     Seq(
-      IndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1))),
-      IndexSeek("n:Awesome2(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1)), labelId = 1),
-      IndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0))),
-      IndexSeek("n:Awesome2(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)), labelId = 1)
+      nodeIndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1))),
+      nodeIndexSeek("n:Awesome2(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1)), labelId = 1),
+      nodeIndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0))),
+      nodeIndexSeek("n:Awesome2(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)), labelId = 1)
     ).permutations.map {
       case Seq(seek1, seek2, seek3, seek4) =>
         Projection(
@@ -176,7 +176,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop = 42)", GetValue),
+        nodeIndexSeek("n:Awesome(prop = 42)", GetValue),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -189,7 +189,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop = 42)", GetValue),
+        nodeIndexSeek("n:Awesome(prop = 42)", GetValue),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -203,7 +203,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop = 42)", DoNotGetValue),
+        nodeIndexSeek("n:Awesome(prop = 42)", DoNotGetValue),
         Map(propertyProj("n", "foo")))
     )
   }
@@ -216,7 +216,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop = 42)", GetValue),
+        nodeIndexSeek("n:Awesome(prop = 42)", GetValue),
         Map(propertyProj("n", "foo"), cachedNodePropertyProj("n", "prop")))
     )
   }
@@ -229,7 +229,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._2 should equal(
       Projection(
         Selection(ands(equals(modulo(cachedNodeProp("n", "prop"), literalInt(2)), literalInt(0))),
-          IndexSeek("n:Awesome(prop <= 42)", GetValue)),
+          nodeIndexSeek("n:Awesome(prop <= 42)", GetValue)),
         Map(propertyProj("n", "foo")))
     )
   }
@@ -244,7 +244,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         Selection(ands(equals(modulo(cachedNodeProp("n", "prop"), prop("m", "foo")), literalInt(0))),
           Expand(
             CacheProperties(
-              IndexSeek("n:Awesome(prop <= 42)", GetValue),
+              nodeIndexSeek("n:Awesome(prop <= 42)", GetValue),
               Set(cachedNodePropFromStore("n", "foo"))
             ),
             "n", SemanticDirection.OUTGOING, Seq.empty, "m", "r")
@@ -284,7 +284,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Expand(
         Selection(ands(lessThan(cachedNodeProp("n", "prop", "m"), literalInt(50))),
           Projection(
-            IndexSeek("n:Awesome(prop > 42)", GetValue),
+            nodeIndexSeek("n:Awesome(prop > 42)", GetValue),
             Map("m" -> varFor("n")))),
         "m", SemanticDirection.BOTH, Seq.empty, "o", "r")
     )
@@ -297,7 +297,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop = 42)", GetValue),
+        nodeIndexSeek("n:Awesome(prop = 42)", GetValue),
         Map(cachedNodePropertyProj("foo", "n", "prop")))
     )
   }
@@ -310,7 +310,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._2 should equal(
       Projection(
         Projection(
-          IndexSeek("n:Awesome(prop = 42)", GetValue),
+          nodeIndexSeek("n:Awesome(prop = 42)", GetValue),
           Map(cachedNodePropertyProj("foo", "n", "prop"), "bar" -> trueLiteral)),
         Map("baz" -> varFor("bar")))
     )
@@ -347,7 +347,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._2 should equal(
       Projection(
         Expand(
-          IndexSeek("n:Awesome(prop = 42)", GetValue),
+          nodeIndexSeek("n:Awesome(prop = 42)", GetValue),
           "n", SemanticDirection.BOTH, Seq.empty, "m", "r"),
         Map(cachedNodePropertyProj("n", "prop"))
       )
@@ -361,7 +361,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop = 'foo')", GetValue),
+        nodeIndexSeek("n:Awesome(prop = 'foo')", GetValue),
         Map("toUpper(n.prop)" -> function("toUpper", cachedNodeProp("n", "prop")))
       )
     )
@@ -376,7 +376,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         Sort(
           Projection(
-            IndexSeek(
+            nodeIndexSeek(
               "n:Awesome(prop = 'foo')", GetValue),
             Map("toUpper(n.prop)" -> function("toUpper", cachedNodeProp("n", "prop")))),
           Seq(Ascending("toUpper(n.prop)"))),
@@ -392,7 +392,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Aggregation(
-        IndexSeek("n:Awesome(prop = 42)", GetValue),
+        nodeIndexSeek("n:Awesome(prop = 42)", GetValue),
         Map("nums" -> prop("n", "foo")),
         Map("sum(n.prop)" -> sum(cachedNodeProp("n", "prop")))
       )
@@ -407,7 +407,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._2 should equal(
       Sort(
         Aggregation(
-          IndexSeek("n:Awesome(prop = 'foo')", GetValue),
+          nodeIndexSeek("n:Awesome(prop = 'foo')", GetValue),
           Map(cachedNodePropertyProj("n.prop", "n", "prop")),
           Map("sum(n.foo)" -> sum(prop("n", "foo")))
         ),
@@ -422,7 +422,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Distinct(
-        IndexSeek("n:Awesome(prop = 42)", GetValue),
+        nodeIndexSeek("n:Awesome(prop = 42)", GetValue),
         Map(cachedNodePropertyProj("n", "prop")))
     )
   }
@@ -434,7 +434,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       UnwindCollection(
-        IndexSeek("n:Awesome(prop = 'foo')", GetValue),
+        nodeIndexSeek("n:Awesome(prop = 'foo')", GetValue),
         "foo", listOf(cachedNodeProp("n", "prop"))
       )
     )
@@ -455,7 +455,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       ProcedureCall(
-        IndexSeek("n:Awesome(prop = 'foo')", GetValue),
+        nodeIndexSeek("n:Awesome(prop = 'foo')", GetValue),
         ResolvedCall(signature,
           IndexedSeq(coerceTo(cachedNodeProp("n", "prop"), CTString)),
           IndexedSeq(ProcedureResultItem(None, varFor("value"))(pos)))(pos))
@@ -471,7 +471,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop STARTS WITH 'foo')", GetValue),
+        nodeIndexSeek("n:Awesome(prop STARTS WITH 'foo')", GetValue),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -484,7 +484,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop STARTS WITH 'foo')", DoNotGetValue),
+        nodeIndexSeek("n:Awesome(prop STARTS WITH 'foo')", DoNotGetValue),
         Map(propertyProj("n", "prop")))
     )
   }
@@ -497,7 +497,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop STARTS WITH 'foo')", DoNotGetValue),
+        nodeIndexSeek("n:Awesome(prop STARTS WITH 'foo')", DoNotGetValue),
         Map(propertyProj("n", "foo")))
     )
   }
@@ -511,7 +511,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop > 'foo')", GetValue),
+        nodeIndexSeek("n:Awesome(prop > 'foo')", GetValue),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -524,7 +524,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop > 'foo')", DoNotGetValue),
+        nodeIndexSeek("n:Awesome(prop > 'foo')", DoNotGetValue),
         Map(propertyProj("n", "prop")))
     )
   }
@@ -537,7 +537,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop > 'foo')", DoNotGetValue),
+        nodeIndexSeek("n:Awesome(prop > 'foo')", DoNotGetValue),
         Map(propertyProj("n", "foo")))
     )
   }
@@ -551,7 +551,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop > 'foo')", GetValue, unique = true),
+        nodeIndexSeek("n:Awesome(prop > 'foo')", GetValue, unique = true),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -564,7 +564,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop > 'foo')", DoNotGetValue, unique = true),
+        nodeIndexSeek("n:Awesome(prop > 'foo')", DoNotGetValue, unique = true),
         Map(propertyProj("n", "prop")))
     )
   }
@@ -577,7 +577,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop > 'foo')", DoNotGetValue, unique = true),
+        nodeIndexSeek("n:Awesome(prop > 'foo')", DoNotGetValue, unique = true),
         Map(propertyProj("n", "foo")))
     )
   }
@@ -666,7 +666,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop = 42, foo = 21)", GetValue),
+        nodeIndexSeek("n:Awesome(prop = 42, foo = 21)", GetValue),
         Map(cachedNodePropertyProj("n", "prop"), cachedNodePropertyProj("n", "foo"))
       )
     )
@@ -679,7 +679,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop = 42, foo = 21)", GetValue),
+        nodeIndexSeek("n:Awesome(prop = 42, foo = 21)", GetValue),
         Map(cachedNodePropertyProj("n", "prop"), cachedNodePropertyProj("n", "foo"))
       )
     )
@@ -692,7 +692,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop = 42, foo = 21)", DoNotGetValue),
+        nodeIndexSeek("n:Awesome(prop = 42, foo = 21)", DoNotGetValue),
         Map("n.bar" -> prop("n", "bar")))
     )
   }
@@ -725,7 +725,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop CONTAINS 'foo')", GetValue),
+        nodeIndexSeek("n:Awesome(prop CONTAINS 'foo')", GetValue),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -738,7 +738,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop CONTAINS 'foo')", DoNotGetValue),
+        nodeIndexSeek("n:Awesome(prop CONTAINS 'foo')", DoNotGetValue),
         Map(propertyProj("n", "prop")))
     )
   }
@@ -751,7 +751,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop CONTAINS 'foo')", DoNotGetValue),
+        nodeIndexSeek("n:Awesome(prop CONTAINS 'foo')", DoNotGetValue),
         Map(propertyProj("n", "foo")))
     )
   }
@@ -881,7 +881,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop ENDS WITH 'foo')", GetValue),
+        nodeIndexSeek("n:Awesome(prop ENDS WITH 'foo')", GetValue),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )
@@ -894,7 +894,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop ENDS WITH 'foo')", DoNotGetValue),
+        nodeIndexSeek("n:Awesome(prop ENDS WITH 'foo')", DoNotGetValue),
         Map(propertyProj("n", "prop")))
     )
   }
@@ -907,7 +907,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        IndexSeek("n:Awesome(prop ENDS WITH 'foo')", DoNotGetValue),
+        nodeIndexSeek("n:Awesome(prop ENDS WITH 'foo')", DoNotGetValue),
         Map(propertyProj("n", "foo")))
     )
   }
@@ -922,7 +922,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         Sort(
           Projection(
-            IndexSeek("n:Awesome(prop < 2)", GetValue),
+            nodeIndexSeek("n:Awesome(prop < 2)", GetValue),
             Map("n.foo" -> prop("n", "foo"))),
           Seq(Ascending("n.foo"))
         ),

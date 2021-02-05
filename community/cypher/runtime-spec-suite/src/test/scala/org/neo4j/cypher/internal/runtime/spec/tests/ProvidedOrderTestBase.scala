@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.ir.ordering.NonEmptyProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.Parser
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -81,7 +80,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         )
       }).reduce(_ ++ _)
       val nodes = given {
-        index("Honey", "prop")
+        nodeIndex("Honey", "prop")
         val nodes = nodePropertyGraph(n, {
           case i if i % 10 == 0 => Map("prop" -> i)
         },"Honey")
@@ -113,7 +112,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       val zGreaterThanFilter = 10
 
       given {
-        index("Honey", "prop")
+        nodeIndex("Honey", "prop")
         nodePropertyGraph(n, {
           case i => Map("prop" -> i % modulo)
         }, "Honey")
@@ -151,7 +150,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       // given
       val n = sizeHint
       given {
-        index("Honey", "prop")
+        nodeIndex("Honey", "prop")
         nodePropertyGraph(n, {
           case i => Map("prop" -> i % 100)
         }, "Honey")
@@ -184,7 +183,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       }).reduce(_ ++ _)
 
       given {
-        index("Honey", "prop")
+        nodeIndex("Honey", "prop")
         val nodes = nodePropertyGraph(n, {
           case i => Map("prop" -> i % modulo)
         }, "Honey")
@@ -236,7 +235,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       }).reduce(_ ++ _)
 
       given {
-        index("Honey", "prop")
+        nodeIndex("Honey", "prop")
         val nodes = nodePropertyGraph(n, {
           case i => Map("prop" -> i % modulo)
         }, "Honey")
@@ -274,7 +273,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       val zGTFilter = 50
 
       val nodes = given {
-        index("Honey", "prop")
+        nodeIndex("Honey", "prop")
         nodePropertyGraph(n, {
           case i => Map("prop" -> i % modulo)
         }, "Honey")
@@ -314,7 +313,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     test(s"Aggregation on RHS of Apply keeps $orderString order from Apply's LHS") {
       // Size set up to not match with any Morsel size
       val size = (2 * 3 * 4 * 5) + 1
-      index("Honey", "num")
+      nodeIndex("Honey", "num")
       val nodes = given {
         nodePropertyGraph(size, {
           case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
@@ -341,7 +340,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     test(s"Sort on RHS of Apply keeps $orderString order from Apply's LHS") {
       // Size set up to not match with any Morsel size
       val size = (2 * 3 * 4 * 5) + 1
-      index("Honey", "num")
+      nodeIndex("Honey", "num")
       val nodes = given {
         nodePropertyGraph(size, {
           case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
@@ -372,7 +371,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     test(s"Top on RHS of Apply keeps $orderString order from Apply's LHS") {
       // Size set up to not match with any Morsel size
       val size = (2 * 3 * 4 * 5) + 1
-      index("Honey", "num")
+      nodeIndex("Honey", "num")
       val nodes = given {
         nodePropertyGraph(size, {
           case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
@@ -406,7 +405,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     test(s"Cartesian Product on RHS of Apply keeps $orderString order from Apply's LHS") {
       // Size set up to not match with any Morsel size
       val size = (2 * 3 * 4 * 5) + 1
-      index("Honey", "num")
+      nodeIndex("Honey", "num")
       val nodes = given {
         nodePropertyGraph(size, {
           case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
@@ -438,7 +437,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     test(s"Hash join on RHS of Apply keeps $orderString order from Apply's LHS") {
       // Size set up to not match with any Morsel size
       val size = (2 * 3 * 4 * 5) + 1
-      index("Honey", "num")
+      nodeIndex("Honey", "num")
       val nodes = given {
         nodePropertyGraph(size, {
           case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
@@ -470,7 +469,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     test(s"Optional on RHS of Apply keeps $orderString order from Apply's LHS") {
       // Size set up to not match with any Morsel size
       val size = (2 * 3 * 4 * 5) + 1
-      index("Honey", "num")
+      nodeIndex("Honey", "num")
       val nodes = given {
         nodePropertyGraph(size, {
           case i: Int => Map("num" -> i, "name" -> s"bob${i % 10}")
@@ -505,7 +504,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       val zGreaterThanFilter = 10
 
       given {
-        index("Honey", "prop")
+        nodeIndex("Honey", "prop")
         nodePropertyGraph(n, {
           case i => Map("prop" -> i % modulo)
         }, "Honey")
@@ -567,7 +566,7 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       val zGreaterThanFilter = 10
 
       given {
-        index("Honey", "prop")
+        nodeIndex("Honey", "prop")
         nodePropertyGraph(n, {
           case i => Map("prop" -> i % modulo)
         }, "Honey")
@@ -600,7 +599,7 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       val zGreaterThanFilter = 10
 
       given {
-        index("Honey", "prop")
+        nodeIndex("Honey", "prop")
         nodePropertyGraph(n, {
           case i => Map("prop" -> i % modulo)
         }, "Honey")

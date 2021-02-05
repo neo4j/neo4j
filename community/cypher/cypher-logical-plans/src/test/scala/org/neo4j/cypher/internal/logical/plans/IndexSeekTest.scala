@@ -24,12 +24,16 @@ import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
+import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.IndexSeek.relationshipIndexSeek
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
@@ -40,12 +44,12 @@ class IndexSeekTest extends CypherFunSuite {
   implicit val idGen: IdGen = SameId(Id(42))
   private val pos = InputPosition.NONE
 
-  def createSeek(idName: String,
-                 label: LabelToken,
-                 properties: Seq[IndexedProperty],
-                 valueExpr: QueryExpression[Expression],
-                 argumentIds: Set[String],
-                 indexOrder: IndexOrder): Boolean => IndexSeekLeafPlan = { unique =>
+  def createNodeIndexSeek(idName: String,
+                          label: LabelToken,
+                          properties: Seq[IndexedProperty],
+                          valueExpr: QueryExpression[Expression],
+                          argumentIds: Set[String],
+                          indexOrder: IndexOrder): Boolean => IndexSeekLeafPlan = { unique =>
     if (unique) {
       NodeUniqueIndexSeek(idName, label, properties, valueExpr, argumentIds, indexOrder)
     } else {
@@ -53,39 +57,56 @@ class IndexSeekTest extends CypherFunSuite {
     }
   }
 
-  val testCaseCreators: List[(GetValueFromIndexBehavior, Set[String], IndexOrder) => (String, Boolean => LogicalPlan)] = List(
-    (getValue, args, indexOrder) => "a:X(prop = 1)" -> createSeek("a", label("X"), Seq(prop("prop", getValue)), exactInt(1), args, indexOrder),
-    (getValue, args, indexOrder) => "b:X(prop = 1)" -> createSeek("b", label("X"), Seq(prop("prop", getValue)), exactInt(1), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(prop = 1)" -> createSeek("b", label("Y"), Seq(prop("prop", getValue)), exactInt(1), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(dogs = 1)" -> createSeek("b", label("Y"), Seq(prop("dogs", getValue)), exactInt(1), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(dogs = 2)" -> createSeek("b", label("Y"), Seq(prop("dogs", getValue)), exactInt(2), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(dogs = 2 OR 5)" -> createSeek("b", label("Y"), Seq(prop("dogs", getValue)), exactInts(2, 5), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(dogs = 2, cats = 4)" -> createSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInt(2), exactInt(4))), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(dogs = 2 OR 5, cats = 4)" -> createSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInts(2, 5), exactInt(4))), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(dogs = 2, cats = 4 OR 5)" -> createSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInt(2), exactInts(4, 5))), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(dogs = 2 OR 3, cats = 4 OR 5)" -> createSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInts(2, 3), exactInts(4, 5))), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(name = 'hi')" -> createSeek("b", label("Y"), Seq(prop("name", getValue)), exactString("hi"), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(name < 'hi')" -> createSeek("b", label("Y"), Seq(prop("name", getValue)), lt(string("hi")), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(name <= 'hi')" -> createSeek("b", label("Y"), Seq(prop("name", getValue)), lte(string("hi")), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(name > 'hi')" -> createSeek("b", label("Y"), Seq(prop("name", getValue)), gt(string("hi")), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(name >= 'hi')" -> createSeek("b", label("Y"), Seq(prop("name", getValue)), gte(string("hi")), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(3 < name < 4)" -> createSeek("b", label("Y"), Seq(prop("name", getValue)), gt_lt(intLiteral(3), intLiteral(4)), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(3 <= name < 4)" -> createSeek("b", label("Y"), Seq(prop("name", getValue)), gte_lt(intLiteral(3), intLiteral(4)), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(3 < name <= 4)" -> createSeek("b", label("Y"), Seq(prop("name", getValue)), gt_lte(intLiteral(3), intLiteral(4)), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(3 <= name <= 4)" -> createSeek("b", label("Y"), Seq(prop("name", getValue)), gte_lte(intLiteral(3), intLiteral(4)), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(dogs < 3, cats >= 4)" -> createSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(lt(intLiteral(3)), exists())), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(dogs = 3, cats >= 4)" -> createSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInt(3), gte(intLiteral(4)))), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(name STARTS WITH 'hi')" -> createSeek("b", label("Y"), Seq(prop("name", getValue)), startsWith("hi"), args, indexOrder),
-    (getValue, args, indexOrder) => "b:Y(name STARTS WITH 'hi', cats)" -> createSeek("b", label("Y"), Seq(prop("name", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(startsWith("hi"), exists())), args, indexOrder),
+  def createRelIndexSeek(idName: String,
+                         startNode: String,
+                         endNode: String,
+                         relId: RelationshipTypeToken,
+                         properties: Seq[IndexedProperty],
+                         valueExpr: QueryExpression[Expression],
+                         argumentIds: Set[String],
+                         indexOrder: IndexOrder) = {
+    DirectedRelationshipIndexSeek(idName, startNode, endNode, relId, properties, valueExpr, argumentIds, indexOrder)
+  }
+
+  val nodeTestCaseCreators: List[(GetValueFromIndexBehavior, Set[String], IndexOrder) => (String, Boolean => LogicalPlan)] = List(
+    (getValue, args, indexOrder) => "a:X(prop = 1)" -> createNodeIndexSeek("a", label("X"), Seq(prop("prop", getValue)), exactInt(1), args, indexOrder),
+    (getValue, args, indexOrder) => "b:X(prop = 1)" -> createNodeIndexSeek("b", label("X"), Seq(prop("prop", getValue)), exactInt(1), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(prop = 1)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("prop", getValue)), exactInt(1), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs = 1)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue)), exactInt(1), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs = 2)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue)), exactInt(2), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs = 2 OR 5)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue)), exactInts(2, 5), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs = 2, cats = 4)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInt(2), exactInt(4))), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs = 2 OR 5, cats = 4)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInts(2, 5), exactInt(4))), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs = 2, cats = 4 OR 5)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInt(2), exactInts(4, 5))), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs = 2 OR 3, cats = 4 OR 5)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInts(2, 3), exactInts(4, 5))), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(name = 'hi')" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), exactString("hi"), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(name < 'hi')" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), lt(string("hi")), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(name <= 'hi')" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), lte(string("hi")), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(name > 'hi')" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), gt(string("hi")), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(name >= 'hi')" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), gte(string("hi")), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(3 < name < 4)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), gt_lt(intLiteral(3), intLiteral(4)), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(3 <= name < 4)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), gte_lt(intLiteral(3), intLiteral(4)), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(3 < name <= 4)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), gt_lte(intLiteral(3), intLiteral(4)), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(3 <= name <= 4)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), gte_lte(intLiteral(3), intLiteral(4)), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs < 3, cats >= 4)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(lt(intLiteral(3)), exists())), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs = 3, cats >= 4)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInt(3), gte(intLiteral(4)))), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(name STARTS WITH 'hi')" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), startsWith("hi"), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(name STARTS WITH 'hi', cats)" -> createNodeIndexSeek("b", label("Y"), Seq(prop("name", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(startsWith("hi"), exists())), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(name ENDS WITH 'hi')" -> (_ => NodeIndexEndsWithScan("b", label("Y"), prop("name", getValue), string("hi"), args, indexOrder)),
-    (getValue, args, indexOrder) => "b:Y(dogs = 1, name ENDS WITH 'hi')" -> createSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("name", getValue, 1)), CompositeQueryExpression(Seq(exactInt(1), exists())), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs = 1, name ENDS WITH 'hi')" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("name", getValue, 1)), CompositeQueryExpression(Seq(exactInt(1), exists())), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(name ENDS WITH 'hi', dogs = 1)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue, 0), prop("dogs", getValue, 1)), args, indexOrder)),
     (getValue, args, indexOrder) => "b:Y(name CONTAINS 'hi')" -> (_ => NodeIndexContainsScan("b", label("Y"), prop("name", getValue), string("hi"), args, indexOrder)),
-    (getValue, args, indexOrder) => "b:Y(dogs = 1, name CONTAINS 'hi')" -> createSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("name", getValue, 1)), CompositeQueryExpression(Seq(exactInt(1), exists())), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs = 1, name CONTAINS 'hi')" -> createNodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("name", getValue, 1)), CompositeQueryExpression(Seq(exactInt(1), exists())), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(name CONTAINS 'hi', dogs)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue, 0), prop("dogs", getValue, 1)), args, indexOrder)),
     (getValue, args, indexOrder) => "b:Y(name)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue)), args, indexOrder)),
     (getValue, args, indexOrder) => "b:Y(name, dogs)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue, 0), prop("dogs", getValue, 1)), args, indexOrder)),
     (getValue, args, indexOrder) => "b:Y(name, dogs = 3)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue, 0), prop("dogs", getValue, 1)), args, indexOrder))
+  )
+
+  val relTestCaseCreators: List[(GetValueFromIndexBehavior, Set[String], IndexOrder) => (String, LogicalPlan)] = List(
+    (getValue, args, indexOrder) => "(a)-[r:R(prop = 1)]->(b)" -> DirectedRelationshipIndexSeek("r", "a", "b", typ("R"), Seq(prop("prop", getValue)), exactInt(1), args, indexOrder),
+    (getValue, args, indexOrder) => "(a)<-[r:R(prop = 1)]-(b)" -> DirectedRelationshipIndexSeek("r", "b", "a", typ("R"), Seq(prop("prop", getValue)), exactInt(1), args, indexOrder),
+    (getValue, args, indexOrder) => "(a)-[r:R(prop = 1)]-(b)" -> UndirectedRelationshipIndexSeek("r", "a", "b", typ("R"), Seq(prop("prop", getValue)), exactInt(1), args, indexOrder),
   )
 
   for {
@@ -93,21 +114,32 @@ class IndexSeekTest extends CypherFunSuite {
     args <- List(Set.empty[String], Set("n", "m"))
     order <- List(IndexOrderNone, IndexOrderAscending, IndexOrderDescending)
     unique <- List(true, false)
-    (str, expectedPlan) <- testCaseCreators.map(f => f(getValue, args, order))
+    (str, expectedPlan) <- nodeTestCaseCreators.map(f => f(getValue, args, order))
   } {
     test(s"[$getValue, args=$args, order=$order, unique=$unique] should parse `$str`") {
-      IndexSeek(str, getValue, argumentIds = args, indexOrder=order, unique=unique) should be(expectedPlan(unique))
+      nodeIndexSeek(str, getValue, argumentIds = args, indexOrder=order, unique=unique) should be(expectedPlan(unique))
+    }
+  }
+
+  for {
+    getValue <- List(CanGetValue, GetValue, DoNotGetValue)
+    args <- List(Set.empty[String], Set("n", "m"))
+    order <- List(IndexOrderNone, IndexOrderAscending, IndexOrderDescending)
+    (str, expectedPlan) <- relTestCaseCreators.map(f => f(getValue, args, order))
+  } {
+    test(s"[$getValue, args=$args, order=$order] should parse `$str`") {
+      relationshipIndexSeek(str, getValue, argumentIds = args, indexOrder=order) should be(expectedPlan)
     }
   }
 
   test("custom value expression") {
-    IndexSeek("a:X(prop = ???)", paramExpr = Some(string("101"))) should be(
+    nodeIndexSeek("a:X(prop = ???)", paramExpr = Some(string("101"))) should be(
       NodeIndexSeek("a", label("X"), Seq(prop("prop", DoNotGetValue)), exactString("101"), Set.empty, IndexOrderNone)
     )
   }
 
   test("custom query expression") {
-    IndexSeek("a:X(prop)", customQueryExpression = Some(exactInts(1, 2, 3)) ) should be(
+    nodeIndexSeek("a:X(prop)", customQueryExpression = Some(exactInts(1, 2, 3)) ) should be(
       NodeIndexSeek("a", label("X"), Seq(prop("prop", DoNotGetValue)), exactInts(1, 2, 3), Set.empty, IndexOrderNone)
     )
   }
@@ -115,6 +147,7 @@ class IndexSeekTest extends CypherFunSuite {
   // HELPERS
 
   private def label(str:String) = LabelToken(str, LabelId(0))
+  private def typ(str: String) = RelationshipTypeToken(str, RelTypeId(0))
 
   private def prop(name: String, getValue: GetValueFromIndexBehavior, propId: Int = 0) =
     IndexedProperty(PropertyKeyToken(name, PropertyKeyId(propId)), getValue)

@@ -45,10 +45,10 @@ import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.GetValue
-import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
+import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -224,7 +224,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
               accWithProps.addPreviousNames(newRenamings)
 
             // Find index plans that can provide cached properties
-            case indexPlan: IndexLeafPlan =>
+            case indexPlan: NodeIndexLeafPlan =>
               indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(accWithProps) { (innerAcc, indexedProp) =>
                 innerAcc.addIndexNodeProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
               }
@@ -276,7 +276,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
         }
 
       // Rewrite index plans to either GetValue or DoNotGetValue
-      case indexPlan: IndexLeafPlan =>
+      case indexPlan: NodeIndexLeafPlan =>
         indexPlan.withMappedProperties { indexedProp =>
           acc.properties.get(property(indexPlan.idName, indexedProp.propertyKeyToken.name)) match {
             // Get the value since we use it later

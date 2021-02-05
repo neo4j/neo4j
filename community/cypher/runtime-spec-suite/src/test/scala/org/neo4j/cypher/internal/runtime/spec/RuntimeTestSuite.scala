@@ -156,6 +156,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     tx.kernelTransaction().tokenRead().nodeLabel(label)
   }
 
+  override def getRelTypeId(relType: String): Int = {
+    tx.kernelTransaction().tokenRead().relationshipType(relType)
+  }
+
   override def getPropertyKeyId(prop: String): Int = {
     tx.kernelTransaction().tokenRead().propertyKey(prop)
   }

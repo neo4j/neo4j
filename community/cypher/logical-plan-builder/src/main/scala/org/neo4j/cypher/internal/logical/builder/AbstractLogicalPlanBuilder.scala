@@ -90,7 +90,6 @@ import org.neo4j.cypher.internal.logical.plans.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
-import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
@@ -113,6 +112,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NonFuseable
 import org.neo4j.cypher.internal.logical.plans.OnMatchApply
@@ -137,6 +137,7 @@ import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
+import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
@@ -188,6 +189,8 @@ trait Resolver {
    * Obtain the token of a label by name.
    */
   def getLabelId(label: String): Int
+
+  def getRelTypeId(label: String): Int
 
   def getPropertyKeyId(prop: String): Int
 
@@ -695,31 +698,66 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                         customQueryExpression: Option[QueryExpression[Expression]] = None): IMPL = {
 
     val planBuilder = (idGen: IdGen) => {
-      val plan = indexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, unique, customQueryExpression)(idGen)
+      val plan = nodeIndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, unique, customQueryExpression)(idGen)
       plan
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }
 
-  def indexSeek(indexSeekString: String,
-                getValue: GetValueFromIndexBehavior = DoNotGetValue,
-                indexOrder: IndexOrder = IndexOrderNone,
-                paramExpr: Option[Expression] = None,
-                argumentIds: Set[String] = Set.empty,
-                unique: Boolean = false,
-                customQueryExpression: Option[QueryExpression[Expression]] = None): IdGen => IndexLeafPlan = {
-    val label = resolver.getLabelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
-    val propIds: PartialFunction[String, Int] = { case x => resolver.getPropertyKeyId(x) }
+  def relationshipIndexOperator(indexSeekString: String,
+                                getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                                indexOrder: IndexOrder = IndexOrderNone,
+                                paramExpr: Option[Expression] = None,
+                                argumentIds: Set[String] = Set.empty,
+                                customQueryExpression: Option[QueryExpression[Expression]] = None): IMPL = {
+
     val planBuilder = (idGen: IdGen) => {
-      val plan = IndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, Some(propIds), label, unique,
-                           customQueryExpression)(idGen)
+      val plan = relationshipIndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, customQueryExpression)(idGen)
+      plan
+    }
+    appendAtCurrentIndent(LeafOperator(planBuilder))
+  }
+
+  def nodeIndexSeek(indexSeekString: String,
+                    getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                    indexOrder: IndexOrder = IndexOrderNone,
+                    paramExpr: Option[Expression] = None,
+                    argumentIds: Set[String] = Set.empty,
+                    unique: Boolean = false,
+                    customQueryExpression: Option[QueryExpression[Expression]] = None): IdGen => NodeIndexLeafPlan = {
+    val label = resolver.getLabelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
+    val propIds: PartialFunction[String, Int] = {
+      case x => resolver.getPropertyKeyId(x)
+    }
+    val planBuilder = (idGen: IdGen) => {
+      val plan = IndexSeek.nodeIndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, Some(propIds), label, unique,
+        customQueryExpression)(idGen)
       newNode(varFor(plan.idName))
       plan
     }
     planBuilder
   }
 
-  def multiNodeIndexSeekOperator(seeks: (IMPL => IdGen => IndexLeafPlan)*): IMPL = {
+  def relationshipIndexSeek(indexSeekString: String,
+                            getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                            indexOrder: IndexOrder = IndexOrderNone,
+                            paramExpr: Option[Expression] = None,
+                            argumentIds: Set[String] = Set.empty,
+                            customQueryExpression: Option[QueryExpression[Expression]] = None): IdGen => RelationshipIndexLeafPlan = {
+    val relType = resolver.getRelTypeId(IndexSeek.relTypeFromIndexSeekString(indexSeekString))
+    val propIds: PartialFunction[String, Int] = {
+      case x => resolver.getPropertyKeyId(x)
+    }
+    val planBuilder = (idGen: IdGen) => {
+      val plan = IndexSeek.relationshipIndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, Some(propIds), relType,
+        customQueryExpression)(idGen)
+      newNode(varFor(plan.idName))
+      plan
+    }
+    planBuilder
+  }
+
+  def multiNodeIndexSeekOperator(seeks: (IMPL => IdGen => NodeIndexLeafPlan)*): IMPL = {
     val planBuilder = (idGen: IdGen) => {
       MultiNodeIndexSeek(seeks.map(_(this)(idGen).asInstanceOf[IndexSeekLeafPlan]))(idGen)
     }

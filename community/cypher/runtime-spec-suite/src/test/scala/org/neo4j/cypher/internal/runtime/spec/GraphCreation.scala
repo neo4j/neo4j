@@ -448,9 +448,23 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   /**
    * Creates an index and restarts the transaction. This should be called before any data creation operation.
    */
-  def index(label: String, properties: String*): Unit = {
+  def nodeIndex(label: String, properties: String*): Unit = {
     try {
       var creator = runtimeTestSupport.tx.schema().indexFor(Label.label(label))
+      properties.foreach(p => creator = creator.on(p))
+      creator.create()
+    } finally {
+      runtimeTestSupport.restartTx()
+    }
+    runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+  }
+
+  /**
+   * Creates an index and restarts the transaction. This should be called before any data creation operation.
+   */
+  def relationshipIndex(relType: String, properties: String*): Unit = {
+    try {
+      var creator = runtimeTestSupport.tx.schema().indexFor(RelationshipType.withName(relType))
       properties.foreach(p => creator = creator.on(p))
       creator.create()
     } finally {

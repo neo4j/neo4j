@@ -107,7 +107,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseO
 
   test("should profile page cache stats of branched plan") {
     given {
-      index("M", "prop")
+      nodeIndex("M", "prop")
       nodePropertyGraph(SIZE, {
         case i => Map("prop" -> i)
       }, "N", "M")
@@ -149,7 +149,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseO
 
   test("should profile page cache stats of plan with apply over aggregation") {
     given {
-      index("M", "prop")
+      nodeIndex("M", "prop")
       nodePropertyGraph(SIZE, {
         case i => Map("prop" -> i)
       }, "N", "M")

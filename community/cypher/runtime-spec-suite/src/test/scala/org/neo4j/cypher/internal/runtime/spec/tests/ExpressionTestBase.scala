@@ -66,7 +66,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // given
     val size = 100
     given {
-      index("Label", "prop")
+      nodeIndex("Label", "prop")
       for (i <- 0 until size) {
         if (i % 2 == 0) {
           tx.createNode(label("Label"), label("Other")).setProperty("prop", i)
@@ -92,7 +92,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // given
     val size = 100
     given {
-      index("Label", "prop")
+      nodeIndex("Label", "prop")
       for (i <- 0 until size) {
         if (i % 2 == 0) {
           tx.createNode(label("Label"), label("Other")).setProperty("prop", i)
@@ -181,7 +181,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // given
     val size = 100
     given {
-      index("Label", "prop")
+      nodeIndex("Label", "prop")
       nodePropertyGraph(size, {
         case i: Int => Map("prop" -> i)
       }, "Label")
@@ -247,7 +247,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     // given
     val size = 100
     given {
-      index("Label", "other")
+      nodeIndex("Label", "other")
       nodePropertyGraph(size, {
         case i if i % 2 == 0 => Map("prop" -> i, "other" -> i)
         case i => Map("other" -> i)

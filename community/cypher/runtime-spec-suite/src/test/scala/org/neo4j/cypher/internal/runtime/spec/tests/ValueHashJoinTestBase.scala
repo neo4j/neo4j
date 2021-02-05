@@ -370,7 +370,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
 
   test("should work under a cartesian product with cache property in join expression") {
     // given
-    index("A", "row")
+    nodeIndex("A", "row")
     val nodes = given {
       nodePropertyGraph(sizeHint, {
         case i: Int => Map("row" -> i)

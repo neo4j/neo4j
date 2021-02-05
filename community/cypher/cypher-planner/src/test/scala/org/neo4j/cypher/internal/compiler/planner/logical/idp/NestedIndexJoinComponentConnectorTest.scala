@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
-import org.neo4j.cypher.internal.logical.plans.IndexSeek
+import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -72,8 +72,8 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       val step = NestedIndexJoinComponentConnector(singleComponentPlanner).solverStep(GoalBitAllocation(2, 0, Seq.empty), fullQg, order, kit)
       val plans = step(registry, goal, table, ctx).toSeq
       plans should contain theSameElementsAs Seq(
-        Apply(mPlan, IndexSeek("n:N(prop = ???)", CanGetValue, paramExpr = Some(mProp), argumentIds = Set("m"), labelId = 0)),
-        Apply(nPlan, IndexSeek("m:M(prop = ???)", CanGetValue, paramExpr = Some(nProp), argumentIds = Set("n"), labelId = 1)),
+        Apply(mPlan, nodeIndexSeek("n:N(prop = ???)", CanGetValue, paramExpr = Some(mProp), argumentIds = Set("m"), labelId = 0)),
+        Apply(nPlan, nodeIndexSeek("m:M(prop = ???)", CanGetValue, paramExpr = Some(nProp), argumentIds = Set("n"), labelId = 1)),
       )
     }
   }
@@ -168,7 +168,7 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       val step = NestedIndexJoinComponentConnector(singleComponentPlanner).solverStep(GoalBitAllocation(2, 0, Seq.empty), fullQg, order, kit)
       val plans = step(registry, goal, table, ctx).toSeq
       plans should contain theSameElementsAs Seq(
-        Apply(mPlan, IndexSeek("n:N(prop = ???)", CanGetValue, paramExpr = Some(mProp), argumentIds = Set("m"), labelId = 0)),
+        Apply(mPlan, nodeIndexSeek("n:N(prop = ???)", CanGetValue, paramExpr = Some(mProp), argumentIds = Set("m"), labelId = 0)),
       )
     }
   }

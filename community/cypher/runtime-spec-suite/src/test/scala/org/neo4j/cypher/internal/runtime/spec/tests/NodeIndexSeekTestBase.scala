@@ -47,7 +47,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should exact (single) seek nodes of an index with a property") {
     val nodes = given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i)
@@ -70,7 +70,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   test("should exact (single) seek nodes of an index with a property with multiple matches") {
     val numMatches = sizeHint / 5
     val nodes = given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i < numMatches => Map("prop" -> "foo")
@@ -91,7 +91,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("exact single seek should handle null") {
     given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i)
@@ -112,7 +112,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should exact (multiple) seek nodes of an index with a property") {
     val nodes = given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i)
@@ -134,7 +134,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle null in exact multiple seek") {
     given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i)
@@ -155,7 +155,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should exact (multiple, but empty) seek nodes of an index with a property") {
     given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i)
@@ -176,7 +176,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should exact (multiple, with null) seek nodes of an index with a property") {
     val nodes = given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i)
@@ -197,7 +197,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should exact (multiple, but identical) seek nodes of an index with a property") {
     val nodes = given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i)
@@ -285,7 +285,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   // RANGE queries
   test("should seek nodes of an index with a property") {
     val nodes = given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i)
@@ -307,7 +307,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle range seeks: > false") {
     given {
-      index("L", "boolean")
+      nodeIndex("L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", 42)
       tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
       tx.createNode(Label.label("L")).setProperty("boolean", false)
@@ -331,7 +331,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle range seeks: >= false") {
     given {
-      index("L", "boolean")
+      nodeIndex("L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", 42)
       tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
       tx.createNode(Label.label("L")).setProperty("boolean", false)
@@ -355,7 +355,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle range seeks: < false") {
     given {
-      index("L", "boolean")
+      nodeIndex("L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", 42)
       tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
       tx.createNode(Label.label("L")).setProperty("boolean", false)
@@ -379,7 +379,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle range seeks: <= false") {
     given {
-      index("L", "boolean")
+      nodeIndex("L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", 42)
       tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
       tx.createNode(Label.label("L")).setProperty("boolean", false)
@@ -403,7 +403,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle range seeks: > true") {
     given {
-      index("L", "boolean")
+      nodeIndex("L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", 42)
       tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
       tx.createNode(Label.label("L")).setProperty("boolean", false)
@@ -427,7 +427,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle range seeks: >= true") {
     given {
-      index("L", "boolean")
+      nodeIndex("L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", 42)
       tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
       tx.createNode(Label.label("L")).setProperty("boolean", false)
@@ -451,7 +451,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle range seeks: < true") {
     given {
-      index("L", "boolean")
+      nodeIndex("L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", 42)
       tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
       tx.createNode(Label.label("L")).setProperty("boolean", false)
@@ -475,7 +475,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle range seeks: <= true") {
     given {
-      index("L", "boolean")
+      nodeIndex("L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", false)
       tx.createNode(Label.label("L")).setProperty("boolean", false)
       tx.createNode(Label.label("L")).setProperty("boolean", true)
@@ -497,7 +497,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek nodes with multiple less than bounds") {
     val nodes = given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodeGraph(5, "Honey")
       nodePropertyGraph(sizeHint, {
@@ -520,7 +520,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek nodes with multiple less than bounds with different types") {
     given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodeGraph(5, "Honey")
       nodePropertyGraph(sizeHint, {
@@ -542,7 +542,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek nodes with multiple less than bounds one inclusive") {
     val nodes = given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodeGraph(5, "Honey")
       nodePropertyGraph(sizeHint, {
@@ -566,7 +566,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek nodes with multiple greater than bounds") {
     val nodes = given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodeGraph(5, "Honey")
       nodePropertyGraph(sizeHint, {
@@ -589,7 +589,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek nodes with multiple greater than bounds with different types") {
     given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodeGraph(5, "Honey")
       nodePropertyGraph(sizeHint, {
@@ -611,7 +611,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek nodes with multiple greater than bounds one inclusive") {
     val nodes = given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodeGraph(5, "Honey")
       nodePropertyGraph(sizeHint, {
@@ -656,7 +656,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should support composite index") {
     val nodes = given {
-      index("Honey", "prop", "prop2")
+      nodeIndex("Honey", "prop", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i, "prop2" -> i.toString)
@@ -678,7 +678,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should support composite index (multiple results)") {
     val nodes = given {
-      index("Honey", "prop", "prop2")
+      nodeIndex("Honey", "prop", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 2 == 0 => Map("prop" -> i % 5, "prop2" -> i % 3)
@@ -700,7 +700,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should support composite index (multiple values)") {
     val nodes = given {
-      index("Honey", "prop", "prop2")
+      nodeIndex("Honey", "prop", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i, "prop2" -> i.toString)
@@ -722,7 +722,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should support composite index with equality and existence check") {
     val nodes = given {
-      index("Honey", "prop", "prop2")
+      nodeIndex("Honey", "prop", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 3 == 0  => Map("prop" -> i % 20, "prop2" -> i.toString)
@@ -745,7 +745,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should support composite index with equality and range check") {
     val nodes = given {
-      index("Honey", "prop", "prop2")
+      nodeIndex("Honey", "prop", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i  => Map("prop" -> i % 20, "prop2" -> i)
@@ -767,7 +767,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should support composite index with range check and existence check") {
     val nodes = given {
-      index("Honey", "prop", "prop2")
+      nodeIndex("Honey", "prop", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 3 == 0  => Map("prop" -> i, "prop2" -> i.toString)
@@ -790,7 +790,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should cache properties") {
     val nodes = given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i)
@@ -813,7 +813,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should cache properties in composite index") {
     val nodes = given {
-      index("Honey", "prop", "prop2")
+      nodeIndex("Honey", "prop", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i, "prop2" -> i.toString)
@@ -835,7 +835,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should use existing values from arguments when available") {
     val nodes = given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i)
@@ -860,7 +860,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek nodes of an index with a property in ascending order") {
     val nodes = given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i)
@@ -882,7 +882,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek nodes of an index with a property in descending order") {
     val nodes = given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i)
@@ -905,7 +905,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle order in multiple index seek, ascending") {
     val nodes =
       given {
-        index("Honey", "prop")
+        nodeIndex("Honey", "prop")
         nodeGraph(5, "Milk")
         nodePropertyGraph(sizeHint, {
           case i => Map("prop" -> i % 10)
@@ -934,7 +934,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle order in multiple index seek, descending") {
     val nodes =
       given {
-        index("Honey", "prop")
+        nodeIndex("Honey", "prop")
         nodeGraph(5, "Milk")
         nodePropertyGraph(sizeHint, {
           case i => Map("prop" -> i % 10)
@@ -964,7 +964,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle multiple index seek with overflowing morsels") {
     // given
     given {
-      index("A", "prop")
+      nodeIndex("A", "prop")
       val nodes = nodePropertyGraph(sizeHint, {
         case i if i % 2 == 0 => Map("prop" -> 42)
         case _ => Map("prop" -> 1337)
@@ -992,7 +992,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
   test("should exact (single) seek nodes of an index with an array property") {
     val nodes = given {
-      index("Honey", "prop")
+      nodeIndex("Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> Array[Int](i))

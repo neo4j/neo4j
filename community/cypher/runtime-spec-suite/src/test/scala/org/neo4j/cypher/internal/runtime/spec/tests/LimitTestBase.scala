@@ -773,7 +773,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
   test("should support nodeIndexScan + limit under apply") {
     val nodes = given {
-      index("A", "prop")
+      nodeIndex("A", "prop")
       nodePropertyGraph(sizeHint, {
         case i => Map("prop" -> i)
       }, "A")
@@ -798,7 +798,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
   test("should support nodeIndexSeek + limit under apply") {
     val nodes = given {
-      index("A", "prop")
+      nodeIndex("A", "prop")
       nodePropertyGraph(sizeHint, {
         case _ => Map("prop" -> 42)
       }, "A")
@@ -823,7 +823,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
   test("should support multi-nodeIndexSeek + limit under apply") {
     val nodes = given {
-      index("A", "prop")
+      nodeIndex("A", "prop")
       nodePropertyGraph(sizeHint, {
         case _ => Map("prop" -> 42)
       }, "A")
@@ -848,7 +848,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
 
   test("should support composite-nodeIndexSeek + limit under apply") {
     val nodes = given {
-      index("A", "prop1", "prop2")
+      nodeIndex("A", "prop1", "prop2")
       nodePropertyGraph(sizeHint, {
         case _ => Map("prop1" -> 42, "prop2" -> 1337)
       }, "A")

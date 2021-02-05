@@ -194,7 +194,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
     // given
     val size = Math.sqrt(sizeHint).toInt
     given {
-      index("B", "prop")
+      nodeIndex("B", "prop")
       bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
     }
 

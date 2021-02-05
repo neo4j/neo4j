@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
-import org.neo4j.cypher.internal.logical.plans.IndexSeek
+import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -128,7 +128,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Person", "name")
     } getLogicalPlanFor "MATCH (a)-[r]->(b) USING INDEX b:Person(name) WHERE b:Person AND b.name = 'Andres' return r")._2 should equal(
         Expand(
-          IndexSeek("b:Person(name = 'Andres')"),
+          nodeIndexSeek("b:Person(name = 'Andres')"),
           "b", SemanticDirection.INCOMING, Seq.empty, "a", "r"
         )
     )

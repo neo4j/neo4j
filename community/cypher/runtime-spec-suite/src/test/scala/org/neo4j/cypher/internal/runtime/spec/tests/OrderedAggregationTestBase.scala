@@ -380,7 +380,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count on single ordered grouping column under apply") {
     val nodesPerLabel = 100
-    index("B", "prop")
+    nodeIndex("B", "prop")
     val (aNodes, bNodes) = given {
       val aNodes = nodeGraph(nodesPerLabel, "A")
       val bNodes = nodePropertyGraph(nodesPerLabel, {
@@ -432,7 +432,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
   test("should count on single ordered, single unordered grouping column under apply") {
     val propValue = 10
     val nodesPerLabel = 100
-    index("B", "prop")
+    nodeIndex("B", "prop")
     val (aNodes, bNodes) = given {
       val aNodes = nodeGraph(nodesPerLabel, "A")
       val bNodes = nodePropertyGraph(nodesPerLabel, {
