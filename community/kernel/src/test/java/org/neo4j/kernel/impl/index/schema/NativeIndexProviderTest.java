@@ -22,9 +22,15 @@ package org.neo4j.kernel.impl.index.schema;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -33,12 +39,17 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
+import static org.neo4j.internal.schema.SchemaDescriptor.forAllEntityTokens;
+import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 class NativeIndexProviderTest extends IndexProviderTests
 {
     private static final ProviderFactory factory =
-            ( pageCache, fs, dir, monitors, collector, readOnly ) -> {
+            ( pageCache, fs, dir, monitors, collector, readOnly, databaseLayout ) -> {
                 DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).withMonitors( monitors ).withReadOnly( readOnly ).build();
                 return new GenericNativeIndexProvider( context, dir, collector, Config.defaults() );
             };
@@ -66,5 +77,44 @@ class NativeIndexProviderTest extends IndexProviderTests
             // ... expect no failure on duplicate value
             indexUpdater.process( IndexEntryUpdate.add( 2, descriptor.schema(), someValue ) );
         }
+    }
+
+    private IndexDescriptor descriptorUnique()
+    {
+        return completeConfiguration( uniqueForSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "constraint" ).materialise( indexId ) );
+    }
+
+    @Override
+    IndexDescriptor descriptor()
+    {
+        return completeConfiguration( forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "index" ).materialise( indexId ) );
+    }
+
+    @Override
+    IndexDescriptor otherDescriptor()
+    {
+        return completeConfiguration( forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "otherIndex" ).materialise( indexId + 1 ) );
+    }
+
+    @Override
+    IndexPrototype validPrototype()
+    {
+        return forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "index" );
+    }
+
+    @Override
+    List<IndexPrototype> invalidPrototypes()
+    {
+        return List.of(
+                forSchema( forAllEntityTokens( EntityType.NODE ) ).withName( "unsupported" ),
+                forSchema( forLabel( labelId, propId ) ).withIndexType( IndexType.FULLTEXT ).withName( "unsupported" ),
+                forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.TOKEN ).withName( "unsupported" ) );
+    }
+
+    @Override
+    void setupIndexFolders( FileSystemAbstraction fs ) throws IOException
+    {
+        Path nativeSchemaIndexStoreDirectory = newProvider().directoryStructure().rootDirectory();
+        fs.mkdirs( nativeSchemaIndexStoreDirectory );
     }
 }

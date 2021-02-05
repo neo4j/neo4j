@@ -24,14 +24,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.nio.file.Path;
+import java.util.List;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -41,29 +43,28 @@ import org.neo4j.kernel.api.schema.SchemaTestUtil;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
-import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @EphemeralPageCacheExtension
+@EphemeralNeo4jLayoutExtension
 abstract class IndexProviderTests
 {
-    private static final int indexId = 1;
-    private static final int labelId = 1;
-    private static final int propId = 1;
+    static final int indexId = 1;
+    static final int labelId = 1;
+    static final int propId = 1;
 
     @Inject
     private PageCache pageCache;
@@ -71,6 +72,8 @@ abstract class IndexProviderTests
     private TestDirectory testDirectory;
     @Inject
     private FileSystemAbstraction fs;
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     private final AssertableLogProvider logging;
     private final Monitors monitors;
@@ -89,8 +92,44 @@ abstract class IndexProviderTests
     @BeforeEach
     void setup() throws IOException
     {
-        Path nativeSchemaIndexStoreDirectory = newProvider().directoryStructure().rootDirectory();
-        fs.mkdirs( nativeSchemaIndexStoreDirectory );
+        setupIndexFolders( fs );
+    }
+
+    abstract void setupIndexFolders( FileSystemAbstraction fs ) throws IOException;
+    abstract IndexDescriptor descriptor();
+    abstract IndexDescriptor otherDescriptor();
+    abstract IndexPrototype validPrototype();
+    abstract List<IndexPrototype> invalidPrototypes();
+
+    /* validatePrototype */
+
+    @Test
+    void validatePrototypeMustAcceptValidPrototype()
+    {
+        // given
+        provider = newProvider();
+
+        // when
+        IndexPrototype validPrototype = validPrototype();
+
+        // then
+        assertDoesNotThrow( () -> provider.validatePrototype( validPrototype ) );
+    }
+
+    @Test
+    void validatePrototypeMustThrowOnInvalidPrototype()
+    {
+        // given
+        provider = newProvider();
+
+        // when
+        List<IndexPrototype> invalidPrototypes = invalidPrototypes();
+
+        // then
+        for ( IndexPrototype invalidPrototype : invalidPrototypes )
+        {
+            assertThrows( IllegalArgumentException.class, () -> provider.validatePrototype( invalidPrototype ) );
+        }
     }
 
     /* getPopulator */
@@ -128,14 +167,12 @@ abstract class IndexProviderTests
         // given
         provider = newProvider();
 
-        int nonFailedIndexId = IndexProviderTests.indexId;
-        IndexPopulator nonFailedPopulator = provider.getPopulator( descriptor( nonFailedIndexId ), samplingConfig(),
+        IndexPopulator nonFailedPopulator = provider.getPopulator( descriptor(), samplingConfig(),
                 heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         nonFailedPopulator.create();
         nonFailedPopulator.close( true, NULL );
 
-        int failedIndexId = 2;
-        IndexPopulator failedPopulator = provider.getPopulator( descriptor( failedIndexId ), samplingConfig(),
+        IndexPopulator failedPopulator = provider.getPopulator( otherDescriptor(), samplingConfig(),
                 heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         failedPopulator.create();
 
@@ -143,7 +180,7 @@ abstract class IndexProviderTests
         failedPopulator.markAsFailed( "failure" );
         failedPopulator.close( false, NULL );
 
-        var populationFailure = provider.getPopulationFailure( descriptor( nonFailedIndexId ), NULL );
+        var populationFailure = provider.getPopulationFailure( descriptor(), NULL );
         assertEquals( StringUtils.EMPTY, populationFailure );
     }
 
@@ -171,32 +208,24 @@ abstract class IndexProviderTests
     {
         // given
         provider = newProvider();
-        int first = 1;
-        int second = 2;
-        int third = 3;
-        IndexPopulator firstPopulator = provider.getPopulator( descriptor( first ), samplingConfig(),
+        IndexPopulator firstPopulator = provider.getPopulator( descriptor(), samplingConfig(),
                 heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         firstPopulator.create();
-        IndexPopulator secondPopulator = provider.getPopulator( descriptor( second ), samplingConfig(),
+        IndexPopulator secondPopulator = provider.getPopulator( otherDescriptor(), samplingConfig(),
                 heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
         secondPopulator.create();
-        IndexPopulator thirdPopulator = provider.getPopulator( descriptor( third ), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
-        thirdPopulator.create();
 
         // when
         String firstFailure = "first failure";
         firstPopulator.markAsFailed( firstFailure );
         firstPopulator.close( false, NULL );
-        secondPopulator.close( true, NULL );
-        String thirdFailure = "third failure";
-        thirdPopulator.markAsFailed( thirdFailure );
-        thirdPopulator.close( false, NULL );
+        String secondFailure = "second failure";
+        secondPopulator.markAsFailed( secondFailure );
+        secondPopulator.close( false, NULL );
 
         // then
-        assertThat( provider.getPopulationFailure( descriptor( first ), NULL ) ).isEqualTo( firstFailure );
-        assertThat( provider.getPopulationFailure( descriptor( third ), NULL ) ).isEqualTo( thirdFailure );
-        assertEquals( StringUtils.EMPTY, provider.getPopulationFailure( descriptor( second ), NULL ) );
+        assertThat( provider.getPopulationFailure( descriptor(), NULL ) ).isEqualTo( firstFailure );
+        assertThat( provider.getPopulationFailure( otherDescriptor(), NULL ) ).isEqualTo( secondFailure );
     }
 
     @Test
@@ -288,7 +317,7 @@ abstract class IndexProviderTests
 
     private IndexProvider newProvider( boolean readOnly )
     {
-        return factory.create( pageCache, fs, directoriesByProvider( testDirectory.absolutePath() ), monitors, immediate(), readOnly );
+        return factory.create( pageCache, fs, directoriesByProvider( testDirectory.absolutePath() ), monitors, immediate(), readOnly, databaseLayout );
     }
 
     IndexProvider newProvider()
@@ -306,22 +335,7 @@ abstract class IndexProviderTests
         return new IndexSamplingConfig( Config.defaults() );
     }
 
-    private IndexDescriptor descriptor()
-    {
-        return completeConfiguration( forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "index" ).materialise( indexId ) );
-    }
-
-    private IndexDescriptor descriptor( long indexId )
-    {
-        return completeConfiguration( forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "index_" + indexId ).materialise( indexId ) );
-    }
-
-    IndexDescriptor descriptorUnique()
-    {
-        return completeConfiguration( uniqueForSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "constraint" ).materialise( indexId ) );
-    }
-
-    private IndexDescriptor completeConfiguration( IndexDescriptor indexDescriptor )
+    IndexDescriptor completeConfiguration( IndexDescriptor indexDescriptor )
     {
         return provider.completeConfiguration( indexDescriptor );
     }
@@ -330,6 +344,6 @@ abstract class IndexProviderTests
     interface ProviderFactory
     {
         IndexProvider create( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-                Monitors monitors, RecoveryCleanupWorkCollector collector, boolean readOnly );
+                Monitors monitors, RecoveryCleanupWorkCollector collector, boolean readOnly, DatabaseLayout databaseLayout );
     }
 }

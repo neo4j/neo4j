@@ -182,6 +182,13 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     public void validatePrototype( IndexPrototype prototype )
     {
         super.validatePrototype( prototype );
+        if (  !( prototype.schema().isLabelSchemaDescriptor() || prototype.schema().isRelationshipTypeSchemaDescriptor() ) )
+        {
+            throw new IllegalArgumentException(
+                    "The " + prototype.schema() + " index schema is not a btree index schema, which it is required to be for the '" +
+                    getProviderDescriptor().name() + "' index provider to be able to create an index." );
+        }
+
         IndexConfig indexConfig = prototype.getIndexConfig();
         indexConfig = completeSpatialConfiguration( indexConfig );
         try

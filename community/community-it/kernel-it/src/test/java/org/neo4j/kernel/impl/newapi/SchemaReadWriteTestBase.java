@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -1206,7 +1207,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             {
                 overlapping.schemaWrite().indexCreate( forLabel( label, prop1 ), "a" );
                 overlapping.schemaWrite().indexCreate( IndexPrototype.forSchema(
-                        fulltext( RELATIONSHIP, new int[] {type}, new int[] {prop2} ) ).withName( "b" ) );
+                        fulltext( RELATIONSHIP, new int[] {type}, new int[] {prop2} ) ).withIndexType( IndexType.FULLTEXT ).withName( "b" ) );
                 overlapping.commit();
             }
 
