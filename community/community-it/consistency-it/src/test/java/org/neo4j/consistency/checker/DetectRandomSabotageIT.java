@@ -85,6 +85,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -94,6 +95,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
@@ -210,6 +212,37 @@ public class DetectRandomSabotageIT
         boolean hasSomeErrorOrWarning = result.summary().getTotalInconsistencyCount() > 0 || result.summary().getTotalWarningCount() > 0;
         assertTrue( hasSomeErrorOrWarning );
         // TODO also assert there being a report about the sabotaged area
+    }
+
+    /* Failures/bugs found by the random sabotage are fixed and tested below, if they don't fit into any other FullCheck IT*/
+
+    @Test //From Seed 1608234007554L
+    void shouldDetectIndexConfigCorruption() throws Exception
+    {
+        //Given
+        SchemaStore schemaStore = neoStores.getSchemaStore();
+        long indexId = resolver.resolveDependency( IndexingService.class ).getIndexIds().longIterator().next();
+        SchemaRecord schemaRecord = schemaStore.getRecord( indexId, schemaStore.newRecord(), RecordLoad.FORCE, NULL );
+
+        PropertyStore propertyStore = schemaStore.propertyStore();
+        PropertyRecord indexConfigPropertyRecord = propertyStore.getRecord( schemaRecord.getNextProp(), propertyStore.newRecord(), RecordLoad.FORCE, NULL );
+        propertyStore.ensureHeavy( indexConfigPropertyRecord, NULL );
+
+        //When
+        int[] tokenId = new int[1];
+        resolver.resolveDependency( TokenHolders.class ).propertyKeyTokens().getOrCreateInternalIds( new String[]{ "foo"}, tokenId );
+
+        PropertyBlock block = indexConfigPropertyRecord.iterator().next();
+        indexConfigPropertyRecord.removePropertyBlock( block.getKeyIndexId() );
+        PropertyBlock newBlock = new PropertyBlock();
+        propertyStore.encodeValue( newBlock, tokenId[0], intValue( 11 ), NULL, INSTANCE );
+        indexConfigPropertyRecord.addPropertyBlock( newBlock );
+        propertyStore.updateRecord( indexConfigPropertyRecord, NULL );
+
+        // then
+        ConsistencyCheckService.Result result = shutDownAndRunConsistencyChecker();
+        boolean hasSomeErrorOrWarning = result.summary().getTotalInconsistencyCount() > 0 || result.summary().getTotalWarningCount() > 0;
+        assertTrue( hasSomeErrorOrWarning );
     }
 
     private void createSchema( GraphDatabaseAPI db )
