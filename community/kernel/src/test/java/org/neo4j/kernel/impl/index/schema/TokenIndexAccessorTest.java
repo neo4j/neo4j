@@ -54,13 +54,11 @@ import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.test.rule.TestDirectory;
@@ -83,8 +81,9 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
     IndexAccessor createAccessor( PageCache pageCache )
     {
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
-        return new TokenIndexAccessor( false, new Monitors(), "", pageCache, indexFiles, fs, PageCacheTracer.NULL,
-                "Label Scan Store", cleanup, Config.defaults(), DatabaseLayout.ofFlat( directory.homePath() ), EntityType.NODE );
+        DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).withReadOnly( false ).build();
+        return new TokenIndexAccessor( context, DatabaseLayout.ofFlat( directory.homePath() ), indexFiles, Config.defaults(), EntityType.NODE,
+                "Label Scan Store", cleanup );
     }
 
     @Override

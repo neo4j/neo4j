@@ -131,16 +131,15 @@ public class TokenIndex implements ConsistencyCheckable
      */
     private final String tokenStoreName;
 
-    public TokenIndex( boolean readOnly, Monitors monitors, String monitorTag, PageCache pageCache, IndexFiles indexFiles, FileSystemAbstraction fs,
-            PageCacheTracer cacheTracer, String tokenStoreName )
+    public TokenIndex( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, String tokenStoreName )
     {
-        this.readOnly = readOnly;
-        this.monitors = monitors;
-        this.monitorTag = monitorTag;
-        this.pageCache = pageCache;
+        this.readOnly = databaseIndexContext.readOnly;
+        this.monitors = databaseIndexContext.monitors;
+        this.monitorTag = databaseIndexContext.monitorTag;
+        this.pageCache = databaseIndexContext.pageCache;
+        this.fs = databaseIndexContext.fileSystem;
+        this.cacheTracer = databaseIndexContext.pageCacheTracer;
         this.indexFiles = indexFiles;
-        this.fs = fs;
-        this.cacheTracer = cacheTracer;
         this.tokenStoreName = tokenStoreName;
     }
 

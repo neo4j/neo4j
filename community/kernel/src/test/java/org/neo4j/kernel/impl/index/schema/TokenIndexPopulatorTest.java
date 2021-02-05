@@ -37,7 +37,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.monitoring.Monitors;
@@ -101,8 +100,10 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
 
     private TokenIndexPopulator createPopulator( PageCache pageCache, Monitors monitors, String monitorTag )
     {
-        return new TokenIndexPopulator( pageCache, DatabaseLayout.ofFlat( directory.homePath() ), indexFiles, fs, false, Config.defaults(),
-                monitors, monitorTag, EntityType.NODE, PageCacheTracer.NULL, "Label Scan Store" );
+        DatabaseIndexContext context =
+                DatabaseIndexContext.builder( pageCache, fs ).withMonitors( monitors ).withTag( monitorTag ).withReadOnly( false ).build();
+        return new TokenIndexPopulator( context, DatabaseLayout.ofFlat( directory.homePath() ), indexFiles, Config.defaults(),
+                EntityType.NODE, "Label Scan Store" );
     }
 
     @Test

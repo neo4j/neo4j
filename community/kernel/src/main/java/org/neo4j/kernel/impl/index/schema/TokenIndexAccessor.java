@@ -28,18 +28,14 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
@@ -47,12 +43,10 @@ import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 
 public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
 {
-    public TokenIndexAccessor( boolean readOnly, Monitors monitors, String monitorTag, PageCache pageCache,
-            IndexFiles indexFiles, FileSystemAbstraction fs, PageCacheTracer cacheTracer,
-            String tokenStoreName, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Config config,
-            DatabaseLayout directoryStructure, EntityType entityType )
+    public TokenIndexAccessor( DatabaseIndexContext databaseIndexContext, DatabaseLayout directoryStructure, IndexFiles indexFiles, Config config,
+            EntityType entityType, String tokenStoreName, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        super( readOnly, monitors, monitorTag, pageCache, indexFiles, fs, cacheTracer, tokenStoreName );
+        super( databaseIndexContext, indexFiles, tokenStoreName );
 
         instantiateTree( recoveryCleanupWorkCollector, new NativeIndexHeaderWriter( ONLINE ) );
         instantiateUpdater( config, directoryStructure, entityType );

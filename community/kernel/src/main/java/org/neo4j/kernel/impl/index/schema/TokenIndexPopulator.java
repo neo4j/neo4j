@@ -27,17 +27,13 @@ import java.util.Collection;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.util.Preconditions;
@@ -61,11 +57,10 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
     private boolean dropped;
     private boolean closed;
 
-    TokenIndexPopulator( PageCache pageCache, DatabaseLayout directoryStructure, IndexFiles indexFiles, FileSystemAbstraction fs,
-            boolean readOnly, Config config, Monitors monitors, String monitorTag, EntityType entityType, PageCacheTracer cacheTracer,
-            String tokenStoreName )
+    TokenIndexPopulator( DatabaseIndexContext databaseIndexContext, DatabaseLayout directoryStructure, IndexFiles indexFiles, Config config,
+            EntityType entityType, String tokenStoreName )
     {
-        super( readOnly, monitors, monitorTag, pageCache, indexFiles, fs, cacheTracer, tokenStoreName );
+        super( databaseIndexContext, indexFiles, tokenStoreName );
         this.directoryStructure = directoryStructure;
         this.config = config;
         this.entityType = entityType;
