@@ -64,6 +64,28 @@ public abstract class IndexDirectoryStructure
         }
     }
 
+    private static class NoSubDirectory extends IndexDirectoryStructure
+    {
+        private final Path rootDirectory;
+
+        private NoSubDirectory( Path rootDirectory )
+        {
+            this.rootDirectory = rootDirectory;
+        }
+
+        @Override
+        public Path rootDirectory()
+        {
+            return rootDirectory;
+        }
+
+        @Override
+        public Path directoryForIndex( long indexId )
+        {
+            return rootDirectory;
+        }
+    }
+
     /**
      * Returns the base schema index directory, i.e.
      *
@@ -90,6 +112,15 @@ public abstract class IndexDirectoryStructure
     public static Factory directoriesByProvider( Path databaseStoreDir )
     {
         return descriptor -> new SubDirectoryByIndexId( baseSchemaIndexFolder( databaseStoreDir ).resolve( fileNameFriendly( descriptor ) ) );
+    }
+
+    /**
+     * @param databaseStoreDir store directory of database.
+     * @return {@link Factory} for creating {@link IndexDirectoryStructure} used for indexes that should reside directly in the store dir.
+     */
+    public static Factory noSubDirectory( Path databaseStoreDir )
+    {
+        return descriptor -> new NoSubDirectory( databaseStoreDir );
     }
 
     /**
