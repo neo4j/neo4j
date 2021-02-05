@@ -38,11 +38,11 @@ import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
-import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.logical.plans.OnMatchApply
+import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
@@ -178,7 +178,7 @@ case object PushdownPropertyReads {
 
           val propertiesFromPlan: Seq[Property] =
             plan match {
-              case indexPlan: IndexLeafPlan =>
+              case indexPlan: NodeIndexLeafPlan =>
                 indexPlan.properties
                   .filter(_.getValueFromIndex == CanGetValue)
                   // NOTE: as we pushdown before inserting cached properties

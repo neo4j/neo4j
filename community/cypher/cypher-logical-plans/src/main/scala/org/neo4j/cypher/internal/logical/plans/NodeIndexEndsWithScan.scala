@@ -37,7 +37,7 @@ case class NodeIndexEndsWithScan(idName: String,
                                  argumentIds: Set[String],
                                  indexOrder: IndexOrder)
                                 (implicit idGen: IdGen)
-  extends IndexLeafPlan(idGen) {
+  extends NodeIndexLeafPlan(idGen) {
 
   override def properties: Seq[IndexedProperty] = Seq(property)
 
@@ -50,6 +50,6 @@ case class NodeIndexEndsWithScan(idName: String,
   override def copyWithoutGettingValues: NodeIndexEndsWithScan =
     NodeIndexEndsWithScan(idName, label, IndexedProperty(property.propertyKeyToken, DoNotGetValue), valueExpr, argumentIds, indexOrder)(SameId(this.id))
 
-  override def withMappedProperties(f: IndexedProperty => IndexedProperty): IndexLeafPlan =
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeIndexLeafPlan =
     NodeIndexEndsWithScan(idName, label, f(property), valueExpr, argumentIds, indexOrder)(SameId(this.id))
 }

@@ -284,19 +284,27 @@ trait IndexedPropertyProvidingPlan {
   def copyWithoutGettingValues: IndexedPropertyProvidingPlan
 }
 
-abstract class IndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) with IndexedPropertyProvidingPlan {
+abstract class NodeIndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) with IndexedPropertyProvidingPlan {
   override def cachedProperties: Seq[CachedProperty] = properties.flatMap(_.maybeCachedProperty(idName))
 
-  override def withMappedProperties(f: IndexedProperty => IndexedProperty): IndexLeafPlan
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeIndexLeafPlan
 
-  override def copyWithoutGettingValues: IndexLeafPlan
+  override def copyWithoutGettingValues: NodeIndexLeafPlan
+}
+
+abstract class RelationshipIndexLeafPlan(idGen: IdGen) extends RelationshipLogicalLeafPlan(idGen) with IndexedPropertyProvidingPlan {
+  override def cachedProperties: Seq[CachedProperty] = properties.flatMap(_.maybeCachedProperty(idName))
+
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): RelationshipIndexLeafPlan
+
+  override def copyWithoutGettingValues: RelationshipIndexLeafPlan
 }
 
 abstract class MultiNodeIndexLeafPlan(idGen: IdGen) extends MultiNodeLogicalLeafPlan(idGen) with IndexedPropertyProvidingPlan {
 
 }
 
-abstract class IndexSeekLeafPlan(idGen: IdGen) extends IndexLeafPlan(idGen) {
+abstract class IndexSeekLeafPlan(idGen: IdGen) extends NodeIndexLeafPlan(idGen) {
 
   def valueExpr: QueryExpression[Expression]
 
