@@ -67,8 +67,13 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.DeleteExpression
+import org.neo4j.cypher.internal.logical.plans.DeleteNode
+import org.neo4j.cypher.internal.logical.plans.DeletePath
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
+import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
@@ -504,6 +509,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
+  def deleteNode(node: String): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => DeleteNode(lp, Parser.parseExpression(node))(_)))
+    self
+  }
+
   def detachDeleteNode(node: String): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => DetachDeleteNode(lp, Parser.parseExpression(node))(_)))
     self
@@ -513,6 +523,27 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp => DeleteRelationship(lp, Parser.parseExpression(rel))(_)))
     self
   }
+
+  def deletePath(path: String): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => DeletePath(lp, Parser.parseExpression(path))(_)))
+    self
+  }
+
+  def detachDeletePath(path: String): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => DetachDeletePath(lp, Parser.parseExpression(path))(_)))
+    self
+  }
+
+  def deleteExpression(expression: String): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => DeleteExpression(lp, Parser.parseExpression(expression))(_)))
+    self
+  }
+
+  def detachDeleteExpression(expression: String): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => DetachDeleteExpression(lp, Parser.parseExpression(expression))(_)))
+    self
+  }
+
 
   def unwind(projectionString: String): IMPL = {
     val (name, expression) = Parser.parseProjections(projectionString).head

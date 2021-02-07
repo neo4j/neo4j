@@ -36,6 +36,13 @@ import org.neo4j.cypher.internal.runtime.spec.tests.CartesianProductProvidedOrde
 import org.neo4j.cypher.internal.runtime.spec.tests.CartesianProductTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ConditionalApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.CreateTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.DeleteDetachExpressionTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.DeleteDetachNodeTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.DeleteDetachPathTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.DeleteExpressionTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.DeleteNodeTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.DeletePathTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.DeleteRelationshipTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DirectedRelationshipByIdSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DistinctTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.EagerLimitProfileRowsTestBase
@@ -244,3 +251,10 @@ class InterpretedLockNodesTest extends LockNodesTestBase(COMMUNITY.EDITION, Inte
 class InterpretedForEachApplyTest extends ForeachApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedSetRelationshipPropertyTest extends SetRelationshipPropertyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
+class InterpretedDeleteNodeTest extends DeleteNodeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedDetachDeleteNodeTest extends DeleteDetachNodeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedDeleteRelationshipTest extends DeleteRelationshipTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedDeletePathTest extends DeletePathTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedDeleteDetachPathTest extends DeleteDetachPathTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedDeleteExpressionTest extends DeleteExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedDeleteDetachExpressionTest extends DeleteDetachExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

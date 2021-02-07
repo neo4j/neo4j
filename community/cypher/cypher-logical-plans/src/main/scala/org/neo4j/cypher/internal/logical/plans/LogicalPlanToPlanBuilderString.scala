@@ -264,6 +264,16 @@ object LogicalPlanToPlanBuilderString {
         wrapInQuotations(expressionStringifier(expression))
       case DeleteRelationship(_, expression) =>
         wrapInQuotations(expressionStringifier(expression))
+      case DeleteNode(_, expression) =>
+        wrapInQuotations(expressionStringifier(expression))
+      case DeletePath(_, expression) =>
+        wrapInQuotations(expressionStringifier(expression))
+      case DetachDeletePath(_, expression) =>
+        wrapInQuotations(expressionStringifier(expression))
+      case DeleteExpression(_, expression) =>
+        wrapInQuotations(expressionStringifier(expression))
+      case DetachDeleteExpression(_, expression) =>
+        wrapInQuotations(expressionStringifier(expression))
       case SetProperty(_, entity, propertyKey, value) =>
         wrapInQuotationsAndMkString(Seq(expressionStringifier(entity), propertyKey.name, expressionStringifier(value)))
       case SetNodeProperty(_, idName, propertyKey, value) =>
@@ -334,6 +344,7 @@ object LogicalPlanToPlanBuilderString {
         wrapInQuotations(idName)
       case LockNodes(_, nodesToLock) => wrapInQuotationsAndMkString(nodesToLock)
       case Prober(_, _) => "Prober.NoopProbe" // We do not preserve the object reference through the string transformation
+
     }
     val plansWithContent2: PartialFunction[LogicalPlan, String] = {
       case MultiNodeIndexSeek(indexSeekLeafPlans: Seq[IndexSeekLeafPlan]) =>

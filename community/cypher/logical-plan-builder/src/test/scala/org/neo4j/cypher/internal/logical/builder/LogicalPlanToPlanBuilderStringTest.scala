@@ -823,6 +823,42 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .allNodeScan("x")
       .build())
 
+
+  testPlan("deleteNode",
+    new TestPlanBuilder()
+      .produceResults("n")
+      .deleteNode("n")
+      .allNodeScan("n")
+      .build())
+
+  testPlan("deletePath",
+    new TestPlanBuilder()
+      .produceResults("p")
+      .deletePath("p")
+      .argument("p")
+      .build())
+
+  testPlan("detachDeletePath",
+    new TestPlanBuilder()
+      .produceResults("p")
+      .deletePath("p")
+      .argument("p")
+      .build())
+
+  testPlan("deleteExpression",
+    new TestPlanBuilder()
+      .produceResults("e")
+      .deletePath("e")
+      .argument("e")
+      .build())
+
+  testPlan("detachDeleteExpression",
+    new TestPlanBuilder()
+      .produceResults("e")
+      .deletePath("e")
+      .argument("e")
+      .build())
+
   private def interpretPlanBuilder(code: String): LogicalPlan = {
     val completeCode =
       s"""
