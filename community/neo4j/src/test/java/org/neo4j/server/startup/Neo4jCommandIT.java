@@ -66,6 +66,7 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
     void shouldBeAbleToStartAndStopRealServerOnNonWindows()
     {
         shouldBeAbleToStartAndStopRealServer();
+        assertThat( err.toString() ).isEmpty();
     }
 
     @EnabledOnOs( OS.WINDOWS )
@@ -83,6 +84,7 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
         {
             assertThat( execute( "uninstall-service" ) ).isEqualTo( 0 );
         }
+        assertThat( err.toString() ).isEmpty();
     }
 
     private void shouldBeAbleToStartAndStopRealServer()

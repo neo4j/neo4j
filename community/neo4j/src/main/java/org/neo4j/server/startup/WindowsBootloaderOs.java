@@ -191,7 +191,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         try ( PrintStream out = new PrintStream( buffer ) )
         {
-            ctx.processManager().run( asExternalCommand( List.of( command ), true ), behaviour().blocking().outputConsumer( out ) );
+            ctx.processManager().run( asExternalCommand( List.of( command ), true ), behaviour().blocking().outputConsumer( out ).errorConsumer( out ) );
             return buffer.toString().split( format( "%n" ) );
         }
     }
