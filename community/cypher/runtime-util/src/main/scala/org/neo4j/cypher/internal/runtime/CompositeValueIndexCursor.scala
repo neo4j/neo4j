@@ -25,6 +25,9 @@ import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.KernelReadTracer
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.internal.kernel.api.RelationshipScanCursor
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
+import org.neo4j.internal.kernel.api.ValueIndexCursor
 import org.neo4j.io.IOUtils
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values.COMPARATOR
@@ -35,12 +38,12 @@ import scala.collection.mutable
 /**
   * Cursor used for joining several cursors into one composite cursor.
   */
-abstract class CompositeValueIndexCursor extends DefaultCloseListenable with NodeValueIndexCursor {
+abstract class CompositeValueIndexCursor[T <: ValueIndexCursor] extends DefaultCloseListenable with ValueIndexCursor {
 
-  private[this] var closed = false
-  protected var current: NodeValueIndexCursor = _
+  protected var closed = false
+  protected var current: T = _
 
-  protected def cursors: Array[NodeValueIndexCursor]
+  protected def innerNext(t: T): Boolean
 
   override def numberOfProperties(): Int = current.numberOfProperties()
 
@@ -48,30 +51,11 @@ abstract class CompositeValueIndexCursor extends DefaultCloseListenable with Nod
 
   override def propertyValue(offset: Int): Value = current.propertyValue(offset)
 
-  override def node(cursor: NodeCursor): Unit = current.node(cursor)
-
-  override def nodeReference(): Long = current.nodeReference()
-
-  override def score(): Float = current.score()
-
-  override def setTracer(tracer: KernelReadTracer): Unit = {
-    cursors.foreach(_.setTracer(tracer))
-  }
-
-  override def removeTracer(): Unit = {
-    cursors.foreach(_.removeTracer())
-  }
-
-  override def closeInternal(): Unit = {
-    closed = true
-    IOUtils.closeAll(cursors:_*)
-  }
-
   override def isClosed: Boolean = closed
 }
 
 object CompositeValueIndexCursor {
-  private def compare(x: NodeValueIndexCursor, y: NodeValueIndexCursor, comparator: Comparator[Value]): Int = {
+  private def compare(x: ValueIndexCursor, y: ValueIndexCursor, comparator: Comparator[Value]): Int = {
     val np = x.numberOfProperties()
     require(y.numberOfProperties() == np)
     var i = 0
@@ -88,24 +72,28 @@ object CompositeValueIndexCursor {
   private val REVERSE_COMPARATOR = new Comparator[Value] {
     override def compare(o1: Value, o2: Value): Int = -COMPARATOR.compare(o1, o2)
   }
-  private val ASCENDING: Ordering[NodeValueIndexCursor] =
-    (x: NodeValueIndexCursor, y: NodeValueIndexCursor) => compare(x, y, REVERSE_COMPARATOR)
+  private val ASCENDING: Ordering[ValueIndexCursor] =
+    (x: ValueIndexCursor, y: ValueIndexCursor) => compare(x, y, REVERSE_COMPARATOR)
 
-  private val DESCENDING: Ordering[NodeValueIndexCursor] =
-    (x: NodeValueIndexCursor, y: NodeValueIndexCursor) => compare(x, y, COMPARATOR)
+  private val DESCENDING: Ordering[ValueIndexCursor] =
+    (x: ValueIndexCursor, y: ValueIndexCursor) => compare(x, y, COMPARATOR)
 
-  def ascending(cursors: Array[NodeValueIndexCursor]): NodeValueIndexCursor = new MergeSortCursor(cursors, ASCENDING)
-  def descending(cursors: Array[NodeValueIndexCursor]): NodeValueIndexCursor = new MergeSortCursor(cursors, DESCENDING)
-  def unordered(cursors: Array[NodeValueIndexCursor]): NodeValueIndexCursor = new UnorderedCursor(cursors)
+  def ascending(cursors: Array[NodeValueIndexCursor]): NodeValueIndexCursor =  new MergeSortNodeCursor(cursors, ASCENDING)
+  def descending(cursors: Array[NodeValueIndexCursor]): NodeValueIndexCursor = new MergeSortNodeCursor(cursors, DESCENDING)
+  def unordered(cursors: Array[NodeValueIndexCursor]): NodeValueIndexCursor = new UnorderedNodeCursor(cursors)
+
+  def ascending(cursors: Array[RelationshipValueIndexCursor]): RelationshipValueIndexCursor =  new MergeSortRelationshipCursor(cursors, ASCENDING)
+  def descending(cursors: Array[RelationshipValueIndexCursor]): RelationshipValueIndexCursor = new MergeSortRelationshipCursor(cursors, DESCENDING)
+  def unordered(cursors: Array[RelationshipValueIndexCursor]): RelationshipValueIndexCursor = new UnorderedRelationshipCursor(cursors)
 }
 
-private class UnorderedCursor(override val cursors: Array[NodeValueIndexCursor]) extends CompositeValueIndexCursor {
+private abstract class UnorderedCursor[T <: ValueIndexCursor](cursors: Array[T]) extends CompositeValueIndexCursor[T]{
   private[this] var index = 0
-  current = if (cursors.nonEmpty) cursors.head else null
+  current = if (cursors.nonEmpty) cursors.head else null.asInstanceOf[T]
 
   @tailrec
-  override final def next(): Boolean = {
-    if (current != null && current.next()) true
+  final def next(): Boolean = {
+    if (current != null && innerNext(current)) true
     else {
       if (index < cursors.length - 1) {
         index += 1
@@ -116,31 +104,129 @@ private class UnorderedCursor(override val cursors: Array[NodeValueIndexCursor])
   }
 }
 
+private class UnorderedNodeCursor(cursors: Array[NodeValueIndexCursor]) extends UnorderedCursor[NodeValueIndexCursor](cursors) with NodeValueIndexCursor {
+    override def setTracer(tracer: KernelReadTracer): Unit = {
+      cursors.foreach(_.setTracer(tracer))
+    }
+    override def score(): Float = current.score()
+    override def removeTracer(): Unit = {
+      cursors.foreach(_.removeTracer())
+    }
+    override def closeInternal(): Unit = {
+      closed = true
+      IOUtils.closeAll(cursors:_*)
+    }
+
+  override def node(cursor: NodeCursor): Unit = current.node(cursor)
+
+  override def nodeReference(): Long = current.nodeReference()
+
+  override protected def innerNext(cursor: NodeValueIndexCursor): Boolean = cursor.next()
+}
+
+private class UnorderedRelationshipCursor(cursors: Array[RelationshipValueIndexCursor]) extends UnorderedCursor[RelationshipValueIndexCursor](cursors) with RelationshipValueIndexCursor {
+  override def setTracer(tracer: KernelReadTracer): Unit = {
+    cursors.foreach(_.setTracer(tracer))
+  }
+  override def score(): Float = current.score()
+  override def removeTracer(): Unit = {
+    cursors.foreach(_.removeTracer())
+  }
+  override def closeInternal(): Unit = {
+    closed = true
+    IOUtils.closeAll(cursors:_*)
+  }
+
+  override protected def innerNext(cursor: RelationshipValueIndexCursor): Boolean = cursor.next()
+
+  override def relationship(cursor: RelationshipScanCursor): Unit = current.relationship(cursor)
+
+  override def sourceNode(cursor: NodeCursor): Unit = current.sourceNode(cursor)
+
+  override def targetNode(cursor: NodeCursor): Unit = current.targetNode(cursor)
+
+  override def `type`(): Int = current.`type`()
+
+  override def sourceNodeReference(): Long = current.sourceNodeReference()
+
+  override def targetNodeReference(): Long = current.targetNodeReference()
+
+  override def relationshipReference(): Long = current.relationshipReference()
+}
+
 /**
   * NOTE: this assumes that cursors internally are correctly sorted which is guaranteed by the index.
   */
-private class MergeSortCursor(override val cursors: Array[NodeValueIndexCursor], ordering: Ordering[NodeValueIndexCursor] ) extends CompositeValueIndexCursor {
-  private[this] val queue: mutable.PriorityQueue[NodeValueIndexCursor] = mutable.PriorityQueue.empty[NodeValueIndexCursor](ordering)
+private abstract class MergeSortCursor[T <: ValueIndexCursor](cursors: Array[T], ordering: Ordering[ValueIndexCursor]) extends CompositeValueIndexCursor[T] {
+  private[this] val queue: mutable.PriorityQueue[ValueIndexCursor] = mutable.PriorityQueue.empty[ValueIndexCursor](ordering)
 
   cursors.foreach(c => {
-    if (c.next()) {
+    if (innerNext(c)) {
       queue.enqueue(c)
     }
   })
 
-  override def next(): Boolean = {
-    if (current != null && current.next()) {
+  final def next(): Boolean = {
+    if (current != null && innerNext(current)) {
       queue.enqueue(current)
     }
 
     if (queue.isEmpty) {
-      current = null
+      current = null.asInstanceOf[T]
       false
     }
     else {
-      current = queue.dequeue()
+      current = queue.dequeue().asInstanceOf[T]
       true
     }
   }
+}
+
+private class MergeSortNodeCursor(cursors: Array[NodeValueIndexCursor], ordering: Ordering[ValueIndexCursor]) extends MergeSortCursor[NodeValueIndexCursor](cursors, ordering) with NodeValueIndexCursor {
+  override def setTracer(tracer: KernelReadTracer): Unit = {
+    cursors.foreach(_.setTracer(tracer))
+  }
+  override def score(): Float = current.score()
+  override def removeTracer(): Unit = {
+    cursors.foreach(_.removeTracer())
+  }
+  override def closeInternal(): Unit = {
+    closed = true
+    IOUtils.closeAll(cursors:_*)
+  }
+
+  override def node(cursor: NodeCursor): Unit = current.node(cursor)
+  override def nodeReference(): Long = current.nodeReference()
+  override protected def innerNext(cursor: NodeValueIndexCursor): Boolean = cursor.next()
+}
+
+private class MergeSortRelationshipCursor(cursors: Array[RelationshipValueIndexCursor], ordering: Ordering[ValueIndexCursor]) extends MergeSortCursor[RelationshipValueIndexCursor](cursors, ordering) with RelationshipValueIndexCursor {
+  override def setTracer(tracer: KernelReadTracer): Unit = {
+    cursors.foreach(_.setTracer(tracer))
+  }
+  override def score(): Float = current.score()
+  override def removeTracer(): Unit = {
+    cursors.foreach(_.removeTracer())
+  }
+  override def closeInternal(): Unit = {
+    closed = true
+    IOUtils.closeAll(cursors:_*)
+  }
+
+  override def relationship(cursor: RelationshipScanCursor): Unit = current.relationship(cursor)
+
+  override def sourceNode(cursor: NodeCursor): Unit = current.sourceNode(cursor)
+
+  override def targetNode(cursor: NodeCursor): Unit = current.targetNode(cursor)
+
+  override def `type`(): Int = current.`type`()
+
+  override def sourceNodeReference(): Long = current.sourceNodeReference()
+
+  override def targetNodeReference(): Long = current.targetNodeReference()
+
+  override def relationshipReference(): Long = current.relationshipReference()
+
+  override protected def innerNext(cursor: RelationshipValueIndexCursor): Boolean = cursor.next()
 }
 

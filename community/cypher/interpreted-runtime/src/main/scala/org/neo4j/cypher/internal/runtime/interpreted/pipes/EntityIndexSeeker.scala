@@ -51,6 +51,7 @@ import org.neo4j.exceptions.InternalException
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.PointValue
@@ -66,7 +67,7 @@ import scala.collection.JavaConverters.asScalaBufferConverter
  * This trait maps the logical IndexSeekMode and QueryExpression into the kernel IndexQuery classes, which
  * are passed to the QueryContext for executing the index seek.
  */
-trait NodeIndexSeeker {
+trait EntityIndexSeeker {
 
   // dependencies
 
@@ -99,9 +100,28 @@ trait NodeIndexSeeker {
         }
     }
 
+  protected def relationshipIndexSeek(state: QueryState,
+                                      index: IndexReadSession,
+                                      needsValues: Boolean,
+                                      indexOrder: IndexOrder,
+                                      baseContext: CypherRow): RelationshipValueIndexCursor = {
+    val indexQueries: Seq[Seq[PropertyIndexQuery]] = computeIndexQueries(state, baseContext)
+    if (indexQueries.size == 1) {
+      state.query.relationshipIndexSeek(index, needsValues, indexOrder, indexQueries.head)
+    } else {
+      orderedCursor(indexOrder, indexQueries.map(query => state.query.relationshipIndexSeek(index, needsValues = needsValues || indexOrder != IndexOrderNone, indexOrder, query)).toArray)
+    }
+  }
+
   // helpers
 
   private def orderedCursor(indexOrder: IndexOrder, cursors: Array[NodeValueIndexCursor]) = indexOrder match {
+    case IndexOrderNone => CompositeValueIndexCursor.unordered(cursors)
+    case IndexOrderAscending => CompositeValueIndexCursor.ascending(cursors)
+    case IndexOrderDescending => CompositeValueIndexCursor.descending(cursors)
+  }
+
+  private def orderedCursor(indexOrder: IndexOrder, cursors: Array[RelationshipValueIndexCursor]) = indexOrder match {
     case IndexOrderNone => CompositeValueIndexCursor.unordered(cursors)
     case IndexOrderAscending => CompositeValueIndexCursor.ascending(cursors)
     case IndexOrderDescending => CompositeValueIndexCursor.descending(cursors)

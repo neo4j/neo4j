@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.internal.kernel.api.Cursor
 
 import scala.collection.Iterator
 
-abstract class IndexIteratorBase[T](state: QueryState, val cursor: NodeValueIndexCursor) extends ClosingIterator[T] {
+abstract class IndexIteratorBase[T](state: QueryState, val cursor: Cursor) extends ClosingIterator[T] {
   private var _next: T = fetchNext()
 
   protected def fetchNext(): T

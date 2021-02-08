@@ -36,7 +36,7 @@ case class NodeIndexSeekPipe(ident: String,
                              valueExpr: QueryExpression[Expression],
                              indexMode: IndexSeekMode = IndexSeek,
                              indexOrder: IndexOrder)
-                            (val id: Id = Id.INVALID_ID) extends Pipe with NodeIndexSeeker with IndexPipeWithValues {
+                            (val id: Id = Id.INVALID_ID) extends Pipe with EntityIndexSeeker with IndexPipeWithValues {
 
   override val propertyIds: Array[Int] = properties.map(_.propertyKeyToken.nameId.id)
 
@@ -48,7 +48,7 @@ case class NodeIndexSeekPipe(ident: String,
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val index = state.queryIndexes(queryIndexId)
     val baseContext = state.newRowWithArgument(rowFactory)
-    new IndexIterator(state, state.query, baseContext, indexSeek(state, index, needsValues, indexOrder, baseContext))
+    new NodeIndexIterator(state, state.query, baseContext, indexSeek(state, index, needsValues, indexOrder, baseContext))
   }
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[NodeIndexSeekPipe]

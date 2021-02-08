@@ -20,7 +20,11 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
+import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.NameId
+import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.schema.IndexDescriptor
@@ -45,7 +49,21 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
 
   def registerQueryIndex(label: LabelToken,
                          properties: Seq[IndexedProperty]): Int = {
-    val reference = InternalIndexReference(label.nameId.id, properties.map(_.propertyKeyToken.nameId.id))
+    val reference = InternalIndexReference(label.nameId, properties.map(_.propertyKeyToken.nameId.id))
+    val index = buffer.indexOf(reference)
+    if ( index > 0 ) index
+    else {
+      val queryIndexId = buffer.size
+      buffer += reference
+      queryIndexId
+    }
+  }
+
+  def registerQueryIndex(typeToken: RelationshipTypeToken, property: IndexedProperty): Int = registerQueryIndex(typeToken, Seq(property))
+
+  def registerQueryIndex(typeToken: RelationshipTypeToken,
+                         properties: Seq[IndexedProperty]): Int = {
+    val reference = InternalIndexReference(typeToken.nameId, properties.map(_.propertyKeyToken.nameId.id))
     val index = buffer.indexOf(reference)
     if ( index > 0 ) index
     else {
@@ -57,13 +75,18 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
 
   def result(): QueryIndexes = {
     val indexes =
-      buffer.flatMap(index => schemaRead.indexForSchemaNonTransactional(
-        SchemaDescriptor.forLabel(index.label, index.properties: _*)).asScala).toArray
+      buffer.flatMap {
+        case InternalIndexReference(LabelId(token), properties) =>
+          schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forLabel(token, properties: _*)).asScala
+        case InternalIndexReference(RelTypeId(token), properties) =>
+          schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forRelType(token, properties: _*)).asScala
+        case _ => throw new IllegalStateException()
+      }.toArray
 
     QueryIndexes(labelScan, indexes)
   }
 
-  private case class InternalIndexReference(label: Int, properties: Seq[Int])
+  private case class InternalIndexReference(token: NameId, properties: Seq[Int])
 }
 
 case class QueryIndexes(private val hasLabelScan: Boolean,

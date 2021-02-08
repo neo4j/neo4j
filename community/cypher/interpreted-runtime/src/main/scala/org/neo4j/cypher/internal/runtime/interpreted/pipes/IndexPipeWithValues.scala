@@ -23,24 +23,27 @@ import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.RelationshipValue
 
 /**
  * Provides a helper method for index pipes that get nodes together with actual property values.
  */
 trait IndexPipeWithValues extends Pipe {
 
-  // Name of the node variable
+  // Name of the entity variable
   val ident: String
   // all indices where the index can provide values
   val indexPropertyIndices: Array[Int]
   // the cached properties where we will get values
   val indexCachedProperties: Array[CachedProperty]
 
-  class IndexIterator(state: QueryState,
-                      queryContext: QueryContext,
-                      baseContext: CypherRow,
-                      cursor: NodeValueIndexCursor
-                     ) extends IndexIteratorBase[CypherRow](state, cursor) {
+  class NodeIndexIterator(state: QueryState,
+                          queryContext: QueryContext,
+                          baseContext: CypherRow,
+                          cursor: NodeValueIndexCursor
+                         ) extends IndexIteratorBase[CypherRow](state, cursor) {
 
     override protected def fetchNext(): CypherRow = {
       if (cursor.next()) {
@@ -54,4 +57,68 @@ trait IndexPipeWithValues extends Pipe {
       } else null
     }
   }
+
+  class RelIndexIterator(state: QueryState,
+                         startNode: String,
+                         endNode: String,
+                         queryContext: QueryContext,
+                         baseContext: CypherRow,
+                         cursor: RelationshipValueIndexCursor
+                        ) extends IndexIteratorBase[CypherRow](state, cursor) {
+
+    override protected def fetchNext(): CypherRow = {
+      if (cursor.next()) {
+
+        val relationship = state.query.relationshipById(cursor.relationshipReference())
+        val newContext = rowFactory.copyWith(baseContext, ident, relationship, startNode, relationship.startNode(), endNode, relationship.endNode())
+        var i = 0
+        while (i < indexPropertyIndices.length) {
+          newContext.setCachedProperty(indexCachedProperties(i).runtimeKey, cursor.propertyValue(indexPropertyIndices(i)))
+          i += 1
+        }
+        newContext
+      } else {
+        null
+      }
+    }
+  }
+
+  class UndirectedRelIndexIterator(state: QueryState,
+                                   startNode: String,
+                                   endNode: String,
+                                   queryContext: QueryContext,
+                                   baseContext: CypherRow,
+                                   cursor: RelationshipValueIndexCursor) extends IndexIteratorBase[CypherRow](state, cursor) {
+
+    //base class is falling fetchNext, meaning that `fetchNext` is called before this constructor runs
+    private var emitSibling: Boolean = if (emitSibling) true else false
+    private var lastRelationship: RelationshipValue = _
+    private var lastStart: NodeValue = _
+    private var lastEnd: NodeValue = _
+
+    override protected def fetchNext(): CypherRow = {
+      val newContext = if (emitSibling) {
+        emitSibling = false
+        rowFactory.copyWith(baseContext, ident, lastRelationship, startNode, lastEnd, endNode, lastStart)
+      } else if (cursor.next()) {
+        emitSibling = true
+        lastRelationship = queryContext.relationshipById(cursor.relationshipReference())
+        lastStart = lastRelationship.startNode()
+        lastEnd = lastRelationship.endNode()
+        rowFactory.copyWith(baseContext, ident, lastRelationship, startNode, lastStart, endNode, lastEnd)
+      } else {
+        null
+      }
+
+      if (newContext != null) {
+        var i = 0
+        while (i < indexPropertyIndices.length) {
+          newContext.setCachedProperty(indexCachedProperties(i).runtimeKey, cursor.propertyValue(indexPropertyIndices(i)))
+          i += 1
+        }
+      }
+      newContext
+    }
+  }
+
 }
