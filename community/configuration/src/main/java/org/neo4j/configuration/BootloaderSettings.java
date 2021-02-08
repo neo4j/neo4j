@@ -42,7 +42,7 @@ public class BootloaderSettings implements SettingsDeclaration
     @Internal
     @Description( "Path of the lib directory" )
     public static final Setting<Path> windows_tools_directory =
-            newBuilder( "unsupported.dbms.directories.windows_tools", PATH, Path.of( "lib", "tools" ) ).setDependency( neo4j_home ).immutable().build();
+            newBuilder( "unsupported.dbms.directories.windows_tools", PATH, Path.of( "bin", "tools" ) ).setDependency( neo4j_home ).immutable().build();
 
     @Description( "Additional JVM arguments. Argument order can be significant. To use a Java commercial feature, the argument to unlock " +
             "commercial features must precede the argument to enable the specific feature in the config value string. For example, " +
