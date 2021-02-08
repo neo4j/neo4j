@@ -52,8 +52,8 @@ import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Union
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
+import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
@@ -70,7 +70,7 @@ import scala.collection.mutable
 case object PushdownPropertyReads {
 
   // Negligible quantity of cardinality when considering pushdown
-  private val CARDINALITY_EPSILON = 0.0000001
+  private val CARDINALITY_EPSILON = EffectiveCardinality(0.0000001)
 
   /**
    * Rewrites the specified plan to include CacheProperties at cardinality optimums.
@@ -78,7 +78,7 @@ case object PushdownPropertyReads {
    * Note, input position is NOT guaranteed to be accurate in cached properties.
    */
   def pushdown(logicalPlan: LogicalPlan,
-               cardinalities: Cardinalities,
+               effectiveCardinalities: EffectiveCardinalities,
                attributes: Attributes[LogicalPlan],
                semanticTable: SemanticTable): LogicalPlan = {
 
@@ -86,12 +86,12 @@ case object PushdownPropertyReads {
       semanticTable.types.get(variable)
         .exists(t => t.actual == CTNode.invariant || t.actual == CTRelationship.invariant)
 
-    case class CardinalityOptimum(cardinality: Cardinality, logicalPlanId: Id, variableName: String)
+    case class CardinalityOptimum(cardinality: EffectiveCardinality, logicalPlanId: Id, variableName: String)
     case class Acc(variableOptima: Map[String, CardinalityOptimum],
                    propertyReadOptima: Seq[(CardinalityOptimum, Property)],
                    availableProperties: Set[Property],
                    availableWholeEntities: Set[String],
-                   incomingCardinality: Cardinality)
+                   incomingCardinality: EffectiveCardinality)
 
     def foldSingleChildPlan(acc: Acc, argumentAcc: Acc, plan: LogicalPlan): Acc = {
       val newPropertyExpressions =
@@ -120,7 +120,7 @@ case object PushdownPropertyReads {
           case e => throw new IllegalStateException(s"$e is not a valid property expression")
         }
 
-      val outgoingCardinality = cardinalities(plan.id)
+      val outgoingCardinality = effectiveCardinalities(plan.id)
       val outgoingReadOptima = acc.propertyReadOptima ++ newPropertyReadOptima
 
       plan match {
@@ -222,7 +222,7 @@ case object PushdownPropertyReads {
       plan match {
         case _: Union =>
           val newVariables = plan.availableSymbols
-          val outgoingCardinality = cardinalities(plan.id)
+          val outgoingCardinality = effectiveCardinalities(plan.id)
           val outgoingVariableOptima = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
           Acc(outgoingVariableOptima, lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima, Set.empty, Set.empty, outgoingCardinality)
 
@@ -258,12 +258,12 @@ case object PushdownPropertyReads {
             lhsAcc.propertyReadOptima ++ rhsAcc.propertyReadOptima,
             lhsAcc.availableProperties ++ rhsAcc.availableProperties,
             lhsAcc.availableWholeEntities ++ rhsAcc.availableWholeEntities,
-            cardinalities(plan.id))
+            effectiveCardinalities(plan.id))
       }
     }
 
     val Acc(_, propertyReadOptima, _, _, _) =
-      LogicalPlans.foldPlan(Acc(Map.empty, Seq.empty, Set.empty, Set.empty, Cardinality.SINGLE))(
+      LogicalPlans.foldPlan(Acc(Map.empty, Seq.empty, Set.empty, Set.empty, EffectiveCardinality(1)))(
         logicalPlan,
         foldSingleChildPlan,
         foldTwoChildPlan

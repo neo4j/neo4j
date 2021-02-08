@@ -55,7 +55,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
@@ -593,15 +593,15 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     // MATCH (n:A) WITH n AS n2, count(n) AS count MATCH (n2), (m:B) WITH n2 AS n3 MATCH (n3) RETURN n3.prop
     val n2InputPosition = InputPosition(10, 2, 3)
     val plan = new LogicalPlanBuilder()
-      .produceResults("`n3.prop`").withCardinality(200)
-      .projection("n3.prop as `n3.prop`").withCardinality(200)
-      .projection("n2 AS n3").withCardinality(200).newVar("n3", CTNode)
-      .apply().withCardinality(200)
-      .|.nodeByLabelScan("m", "B").withCardinality(200)
+      .produceResults("`n3.prop`").withEffectiveCardinality(200)
+      .projection("n3.prop as `n3.prop`").withEffectiveCardinality(200)
+      .projection("n2 AS n3").withEffectiveCardinality(200).newVar("n3", CTNode)
+      .apply().withEffectiveCardinality(200)
+      .|.nodeByLabelScan("m", "B").withEffectiveCardinality(200)
       // Note, push down properties don't keep track of input position in all cases and can produce output like the following
       .cacheProperties(Set[LogicalProperty](Property(Variable("n2")(InputPosition.NONE), PropertyKeyName("prop")(InputPosition.NONE))(InputPosition.NONE)))
-      .aggregation(Seq("n as n2"), Seq("count(n) AS count")).withCardinality(3).newVar("n2", n2InputPosition, CTNode)
-      .nodeByLabelScan("n", "A").withCardinality(10)
+      .aggregation(Seq("n as n2"), Seq("count(n) AS count")).withEffectiveCardinality(3).newVar("n2", n2InputPosition, CTNode)
+      .nodeByLabelScan("n", "A").withEffectiveCardinality(10)
 
     val (resultPlan, _) = replace(plan.build(), plan.getSemanticTable)
     resultPlan shouldBe
@@ -619,12 +619,12 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
   test("pushed down properties should be knownToAccessStore") {
     val plan = new LogicalPlanBuilder()
-      .produceResults("x").withCardinality(50)
-      .projection("n.prop AS x").withCardinality(50)
-      .expandAll("(n)-->(m)").withCardinality(50)
-      .allNodeScan("n").withCardinality(5)
+      .produceResults("x").withEffectiveCardinality(50)
+      .projection("n.prop AS x").withEffectiveCardinality(50)
+      .expandAll("(n)-->(m)").withEffectiveCardinality(50)
+      .allNodeScan("n").withEffectiveCardinality(5)
 
-    val (resultPlan, _) = replace(plan.build(), plan.getSemanticTable, plan.cardinalities, plan.idGen, pushdownPropertyReads = true)
+    val (resultPlan, _) = replace(plan.build(), plan.getSemanticTable, plan.effectiveCardinalities, plan.idGen, pushdownPropertyReads = true)
 
     resultPlan shouldBe
       new LogicalPlanBuilder()
@@ -762,13 +762,13 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
   private def replace(plan: LogicalPlan,
                       initialTable: SemanticTable,
-                      cardinalities: Cardinalities = new Cardinalities,
+                      effectiveCardinalities: EffectiveCardinalities = new EffectiveCardinalities,
                       idGen: IdGen = new SequentialIdGen(),
                       pushdownPropertyReads: Boolean = false): (LogicalPlan, SemanticTable) = {
     val state = LogicalPlanState(InitialState("", None, IDPPlannerName))
       .withSemanticTable(initialTable)
       .withMaybeLogicalPlan(Some(plan))
-      .withNewPlanningAttributes(PlanningAttributes.newAttributes.copy(cardinalities = cardinalities))
+      .withNewPlanningAttributes(PlanningAttributes.newAttributes.copy(effectiveCardinalities = effectiveCardinalities))
 
     val icp = new InsertCachedProperties(pushdownPropertyReads = pushdownPropertyReads) {
       // Override so that we do not have to provide so many mocks.

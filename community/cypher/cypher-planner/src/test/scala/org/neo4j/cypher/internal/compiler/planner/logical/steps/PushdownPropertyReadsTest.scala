@@ -34,11 +34,11 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown read in projection") {
     val plan = new LogicalPlanBuilder()
       .produceResults("x")
-      .projection("n.prop AS x").withCardinality(50)
-      .expandAll("(n)-->(m)").withCardinality(50)
-      .allNodeScan("n").withCardinality(5)
+      .projection("n.prop AS x").withEffectiveCardinality(50)
+      .expandAll("(n)-->(m)").withEffectiveCardinality(50)
+      .allNodeScan("n").withEffectiveCardinality(5)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -52,12 +52,12 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown read in projection, but not too beyond optimum") {
     val plan = new LogicalPlanBuilder()
       .produceResults("x")
-      .projection("n.prop AS x").withCardinality(50)
-      .expandAll("(n)-->(m)").withCardinality(50)
-      .filter("id(n) <> 0").withCardinality(5)
-      .allNodeScan("n").withCardinality(10)
+      .projection("n.prop AS x").withEffectiveCardinality(50)
+      .expandAll("(n)-->(m)").withEffectiveCardinality(50)
+      .filter("id(n) <> 0").withEffectiveCardinality(5)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -72,9 +72,9 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should not pushdown past a leaf") {
     val plan = new LogicalPlanBuilder()
       .produceResults("x")
-      .nodeIndexOperator("n:N(prop > 0)").withCardinality(1)
+      .nodeIndexOperator("n:N(prop > 0)").withEffectiveCardinality(1)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -85,12 +85,12 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown from RHS to LHS of apply") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n")
-      .apply().withCardinality(50)
-      .|.filter("m.prop > 10").withCardinality(50)
-      .|.allNodeScan("n", "m").withCardinality(100)
-      .allNodeScan("m").withCardinality(10)
+      .apply().withEffectiveCardinality(50)
+      .|.filter("m.prop > 10").withEffectiveCardinality(50)
+      .|.allNodeScan("n", "m").withEffectiveCardinality(100)
+      .allNodeScan("m").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -105,11 +105,11 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should not pushdown from the RHS leaf to LHS of apply if cardinalities are the same") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n")
-      .apply().withCardinality(50)
-      .|.nodeIndexOperator("n:N(prop > ???)", paramExpr = Some(prop("m", "prop")), argumentIds = Set("m")).withCardinality(50)
-      .allNodeScan("m").withCardinality(10)
+      .apply().withEffectiveCardinality(50)
+      .|.nodeIndexOperator("n:N(prop > ???)", paramExpr = Some(prop("m", "prop")), argumentIds = Set("m")).withEffectiveCardinality(50)
+      .allNodeScan("m").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -122,12 +122,12 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown from the RHS leaf to LHS of apply if beneficial") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n")
-      .apply().withCardinality(55)
-      .|.nodeIndexOperator("n:N(prop > ???)", paramExpr = Some(prop("m", "prop")), argumentIds = Set("m")).withCardinality(55)
-      .expandAll("(m)-->(q)").withCardinality(50)
-      .allNodeScan("m").withCardinality(10)
+      .apply().withEffectiveCardinality(55)
+      .|.nodeIndexOperator("n:N(prop > ???)", paramExpr = Some(prop("m", "prop")), argumentIds = Set("m")).withEffectiveCardinality(55)
+      .expandAll("(m)-->(q)").withEffectiveCardinality(50)
+      .allNodeScan("m").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -142,12 +142,12 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown past an apply into LHS") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n")
-      .filter("m.prop > 10").withCardinality(50)
-      .apply().withCardinality(100)
-      .|.allNodeScan("n", "m").withCardinality(100)
-      .allNodeScan("m").withCardinality(10)
+      .filter("m.prop > 10").withEffectiveCardinality(50)
+      .apply().withEffectiveCardinality(100)
+      .|.allNodeScan("n", "m").withEffectiveCardinality(100)
+      .allNodeScan("m").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -162,14 +162,14 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown past an apply into RHS") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n")
-      .filter("m.prop > 10").withCardinality(50)
-      .apply().withCardinality(20)
-      .|.expandAll("(m)-->(q)").withCardinality(20)
-      .|.filter("n.prop > 10").withCardinality(2)
-      .|.allNodeScan("n", "m").withCardinality(100)
-      .allNodeScan("m").withCardinality(10)
+      .filter("m.prop > 10").withEffectiveCardinality(50)
+      .apply().withEffectiveCardinality(20)
+      .|.expandAll("(m)-->(q)").withEffectiveCardinality(20)
+      .|.filter("n.prop > 10").withEffectiveCardinality(2)
+      .|.allNodeScan("n", "m").withEffectiveCardinality(100)
+      .allNodeScan("m").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -186,95 +186,95 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should not pushdown from RHS to LHS of cartesian product") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .apply().withCardinality(50)
-      .|.cartesianProduct().withCardinality(50)
-      .|.|.filter("n.prop > 10").withCardinality(5)
-      .|.|.argument("n").withCardinality(10)
-      .|.expandAll("(n)-->(m)").withCardinality(1)
-      .|.argument("n").withCardinality(10)
-      .allNodeScan("n").withCardinality(10)
+      .apply().withEffectiveCardinality(50)
+      .|.cartesianProduct().withEffectiveCardinality(50)
+      .|.|.filter("n.prop > 10").withEffectiveCardinality(5)
+      .|.|.argument("n").withEffectiveCardinality(10)
+      .|.expandAll("(n)-->(m)").withEffectiveCardinality(1)
+      .|.argument("n").withEffectiveCardinality(10)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown through Anti") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .filter("n.prop > 10").withCardinality(10)
-      .apply().withCardinality(10)
-      .|.anti().withCardinality(10)
-      .|.optionalExpandAll("(n)-[:INFURIATES]->(m)").withCardinality(1)
-      .|.argument().withCardinality(10)
-      .allNodeScan("n").withCardinality(10)
+      .filter("n.prop > 10").withEffectiveCardinality(10)
+      .apply().withEffectiveCardinality(10)
+      .|.anti().withEffectiveCardinality(10)
+      .|.optionalExpandAll("(n)-[:INFURIATES]->(m)").withEffectiveCardinality(1)
+      .|.argument().withEffectiveCardinality(10)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown through SemiApply") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .filter("n.prop > 10").withCardinality(10)
-      .semiApply().withCardinality(10)
-      .|.optionalExpandAll("(n)-->(m)").withCardinality(1)
-      .|.argument().withCardinality(10)
-      .allNodeScan("n").withCardinality(10)
+      .filter("n.prop > 10").withEffectiveCardinality(10)
+      .semiApply().withEffectiveCardinality(10)
+      .|.optionalExpandAll("(n)-->(m)").withEffectiveCardinality(1)
+      .|.argument().withEffectiveCardinality(10)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should pushdown lhs of SemiApply") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .filter("n.prop > 10").withCardinality(10)
-      .semiApply().withCardinality(10)
-      .|.optionalExpandAll("(n)-->(m)").withCardinality(1)
-      .|.argument().withCardinality(10)
-      .expandAll("(n)-->(x)").withCardinality(20)
-      .allNodeScan("n").withCardinality(10)
+      .filter("n.prop > 10").withEffectiveCardinality(10)
+      .semiApply().withEffectiveCardinality(10)
+      .|.optionalExpandAll("(n)-->(m)").withEffectiveCardinality(1)
+      .|.argument().withEffectiveCardinality(10)
+      .expandAll("(n)-->(x)").withEffectiveCardinality(20)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
-      .filter("n.prop > 10").withCardinality(10)
-      .semiApply().withCardinality(10)
-      .|.optionalExpandAll("(n)-->(m)").withCardinality(1)
-      .|.argument().withCardinality(10)
-      .expandAll("(n)-->(x)").withCardinality(20)
+      .filter("n.prop > 10").withEffectiveCardinality(10)
+      .semiApply().withEffectiveCardinality(10)
+      .|.optionalExpandAll("(n)-->(m)").withEffectiveCardinality(1)
+      .|.argument().withEffectiveCardinality(10)
+      .expandAll("(n)-->(x)").withEffectiveCardinality(20)
       .cacheProperties("n.prop")
-      .allNodeScan("n").withCardinality(10)
+      .allNodeScan("n").withEffectiveCardinality(10)
       .build()
   }
 
   test("should not pushdown through AntiSemiApply") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .filter("n.prop > 10").withCardinality(10)
-      .antiSemiApply().withCardinality(10)
-      .|.optionalExpandAll("(n)-[:INFURIATES]->(m)").withCardinality(1)
-      .|.argument().withCardinality(10)
-      .allNodeScan("n").withCardinality(10)
+      .filter("n.prop > 10").withEffectiveCardinality(10)
+      .antiSemiApply().withEffectiveCardinality(10)
+      .|.optionalExpandAll("(n)-[:INFURIATES]->(m)").withEffectiveCardinality(1)
+      .|.argument().withEffectiveCardinality(10)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should pushdown past a cartesian product into LHS") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n")
-      .filter("m.prop > 10").withCardinality(50)
-      .cartesianProduct().withCardinality(100)
-      .|.allNodeScan("n").withCardinality(100)
-      .allNodeScan("m").withCardinality(10)
+      .filter("m.prop > 10").withEffectiveCardinality(50)
+      .cartesianProduct().withEffectiveCardinality(100)
+      .|.allNodeScan("n").withEffectiveCardinality(100)
+      .allNodeScan("m").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -289,14 +289,14 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown past a cartesian product into RHS") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n")
-      .filter("n.prop > 10").withCardinality(50)
-      .cartesianProduct().withCardinality(20)
-      .|.expandAll("(n)-->(q)").withCardinality(20)
-      .|.filter("1 <> 2").withCardinality(2)
-      .|.allNodeScan("n").withCardinality(100)
-      .allNodeScan("m").withCardinality(10)
+      .filter("n.prop > 10").withEffectiveCardinality(50)
+      .cartesianProduct().withEffectiveCardinality(20)
+      .|.expandAll("(n)-->(q)").withEffectiveCardinality(20)
+      .|.filter("1 <> 2").withEffectiveCardinality(2)
+      .|.allNodeScan("n").withEffectiveCardinality(100)
+      .allNodeScan("m").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -313,33 +313,33 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should not pushdown from RHS to LHS of join") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .apply().withCardinality(50)
-      .|.nodeHashJoin("n").withCardinality(50)
-      .|.|.filter("n.prop > 10").withCardinality(5)
-      .|.|.argument("n").withCardinality(10)
-      .|.expandAll("(n)-->(m)").withCardinality(1)
-      .|.argument("n").withCardinality(10)
-      .allNodeScan("n").withCardinality(10)
+      .apply().withEffectiveCardinality(50)
+      .|.nodeHashJoin("n").withEffectiveCardinality(50)
+      .|.|.filter("n.prop > 10").withEffectiveCardinality(5)
+      .|.|.argument("n").withEffectiveCardinality(10)
+      .|.expandAll("(n)-->(m)").withEffectiveCardinality(1)
+      .|.argument("n").withEffectiveCardinality(10)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should pushdown from both RHS and LHS of join into LHS of apply") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .apply().withCardinality(5)
-      .|.nodeHashJoin("n").withCardinality(5)
-      .|.|.filter("n.prop > 10").withCardinality(5)
-      .|.|.argument("n").withCardinality(100)
-      .|.filter("n.foo > 10 AND n.prop < 20").withCardinality(1)
-      .|.argument("n").withCardinality(100)
-      .expandAll("(n)-->(m)").withCardinality(100)
-      .allNodeScan("n").withCardinality(1)
+      .apply().withEffectiveCardinality(5)
+      .|.nodeHashJoin("n").withEffectiveCardinality(5)
+      .|.|.filter("n.prop > 10").withEffectiveCardinality(5)
+      .|.|.argument("n").withEffectiveCardinality(100)
+      .|.filter("n.foo > 10 AND n.prop < 20").withEffectiveCardinality(1)
+      .|.argument("n").withEffectiveCardinality(100)
+      .expandAll("(n)-->(m)").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(1)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
       .apply()
@@ -357,13 +357,13 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown past a join into LHS and RHS") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n")
-      .projection("n.prop AS x", "m.prop AS y").withCardinality(100)
-      .nodeHashJoin("n").withCardinality(100)
-      .|.expandAll("(m)-->(n)").withCardinality(50)
-      .|.allNodeScan("m").withCardinality(10)
-      .allNodeScan("n").withCardinality(10)
+      .projection("n.prop AS x", "m.prop AS y").withEffectiveCardinality(100)
+      .nodeHashJoin("n").withEffectiveCardinality(100)
+      .|.expandAll("(m)-->(n)").withEffectiveCardinality(50)
+      .|.allNodeScan("m").withEffectiveCardinality(10)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -380,59 +380,59 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should not pushdown past a join into LHS if already cached in RHS") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .projection("n.prop AS x").withCardinality(100)
-      .nodeHashJoin("n").withCardinality(100)
-      .|.filter("n.prop <> 0").withCardinality(50)
-      .|.expandAll("(m)-->(n)").withCardinality(50)
-      .|.allNodeScan("m").withCardinality(10)
-      .allNodeScan("n").withCardinality(10)
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .nodeHashJoin("n").withEffectiveCardinality(100)
+      .|.filter("n.prop <> 0").withEffectiveCardinality(50)
+      .|.expandAll("(m)-->(n)").withEffectiveCardinality(50)
+      .|.allNodeScan("m").withEffectiveCardinality(10)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown past a join into RHS if already cached in LHS") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .projection("n.prop AS x").withCardinality(100)
-      .nodeHashJoin("n").withCardinality(100)
-      .|.expandAll("(m)-->(n)").withCardinality(50)
-      .|.allNodeScan("m").withCardinality(10)
-      .filter("n.prop <> 0").withCardinality(100)
-      .allNodeScan("n").withCardinality(100)
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .nodeHashJoin("n").withEffectiveCardinality(100)
+      .|.expandAll("(m)-->(n)").withEffectiveCardinality(50)
+      .|.allNodeScan("m").withEffectiveCardinality(10)
+      .filter("n.prop <> 0").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(100)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown if already cached") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .projection("n.prop AS x").withCardinality(100)
-      .expandAll("(m)-->(q)").withCardinality(100)
-      .expandAll("(n)-->(m)").withCardinality(1)
-      .filter("n.prop <> 0").withCardinality(100)
-      .allNodeScan("n").withCardinality(100)
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .expandAll("(m)-->(q)").withEffectiveCardinality(100)
+      .expandAll("(n)-->(m)").withEffectiveCardinality(1)
+      .filter("n.prop <> 0").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(100)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should pushdown to aggregation even if already cached before aggregation") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .projection("m.prop AS x").withCardinality(100)
-      .expandAll("(m)-->(q)").withCardinality(100)
-      .aggregation(Seq("m AS m"), Seq("count(*) AS c")).withCardinality(1)
-      .filter("m.prop < 5000").withCardinality(250)
-      .expandAll("(m)-->(r)").withCardinality(500)
-      .allNodeScan("m").withCardinality(10)
+      .projection("m.prop AS x").withEffectiveCardinality(100)
+      .expandAll("(m)-->(q)").withEffectiveCardinality(100)
+      .aggregation(Seq("m AS m"), Seq("count(*) AS c")).withEffectiveCardinality(1)
+      .filter("m.prop < 5000").withEffectiveCardinality(250)
+      .expandAll("(m)-->(r)").withEffectiveCardinality(500)
+      .allNodeScan("m").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe new LogicalPlanBuilder()
       .produceResults("n")
       .projection("m.prop AS x")
@@ -449,11 +449,11 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown read in filter") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n")
-      .filter("n.prop > 0").withCardinality(1)
-      .expandAll("(n)-->(m)").withCardinality(50)
-      .allNodeScan("n").withCardinality(5)
+      .filter("n.prop > 0").withEffectiveCardinality(1)
+      .expandAll("(n)-->(m)").withEffectiveCardinality(50)
+      .allNodeScan("n").withEffectiveCardinality(5)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -467,12 +467,12 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown read in projection with multiple properties") {
     val plan = new LogicalPlanBuilder()
       .produceResults("x")
-      .projection("n.prop AS x", "n.foo AS y", "m.bar AS z").withCardinality(50)
-      .expandAll("(n)-->(m)").withCardinality(50)
-      .filter("id(n) <> 0").withCardinality(5)
-      .allNodeScan("n").withCardinality(10)
+      .projection("n.prop AS x", "n.foo AS y", "m.bar AS z").withEffectiveCardinality(50)
+      .expandAll("(n)-->(m)").withEffectiveCardinality(50)
+      .filter("id(n) <> 0").withEffectiveCardinality(5)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -487,14 +487,14 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown read in projection with multiple properties to different points") {
     val plan = new LogicalPlanBuilder()
       .produceResults("x")
-      .projection("n.prop AS x", "n.foo AS y", "m.bar AS z").withCardinality(100)
-      .projection("n.prop AS x0").withCardinality(100)
-      .expandAll("(m)-->(q)").withCardinality(100)
-      .expandAll("(n)-->(m)").withCardinality(50)
-      .filter("id(n) <> 0").withCardinality(5)
-      .allNodeScan("n").withCardinality(10)
+      .projection("n.prop AS x", "n.foo AS y", "m.bar AS z").withEffectiveCardinality(100)
+      .projection("n.prop AS x0").withEffectiveCardinality(100)
+      .expandAll("(m)-->(q)").withEffectiveCardinality(100)
+      .expandAll("(n)-->(m)").withEffectiveCardinality(50)
+      .filter("id(n) <> 0").withEffectiveCardinality(5)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -512,12 +512,12 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown read in aggregation") {
     val plan = new LogicalPlanBuilder()
       .produceResults("x")
-      .aggregation(Seq("n.prop AS x"), Seq("count(*) AS c")).withCardinality(20)
-      .expandAll("(n)-->(m)").withCardinality(50)
-      .filter("id(n) <> 0").withCardinality(5)
-      .allNodeScan("n").withCardinality(10)
+      .aggregation(Seq("n.prop AS x"), Seq("count(*) AS c")).withEffectiveCardinality(20)
+      .expandAll("(n)-->(m)").withEffectiveCardinality(50)
+      .filter("id(n) <> 0").withEffectiveCardinality(5)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -532,14 +532,14 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should not pushdown read past aggregation") {
     val plan = new LogicalPlanBuilder()
       .produceResults("x")
-      .projection("n.prop AS x").withCardinality(100)
-      .expandAll("(n)-->(q)").withCardinality(100)
-      .aggregation(Seq("n AS n"), Seq("count(*) AS c")).withCardinality(10)
-      .expandAll("(n)-->(m)").withCardinality(50)
-      .filter("id(n) <> 0").withCardinality(5)
-      .allNodeScan("n").withCardinality(10)
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .expandAll("(n)-->(q)").withEffectiveCardinality(100)
+      .aggregation(Seq("n AS n"), Seq("count(*) AS c")).withEffectiveCardinality(10)
+      .expandAll("(n)-->(m)").withEffectiveCardinality(50)
+      .filter("id(n) <> 0").withEffectiveCardinality(5)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -556,14 +556,14 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should not pushdown read past ordered aggregation") {
     val plan = new LogicalPlanBuilder()
       .produceResults("x")
-      .projection("n.prop AS x").withCardinality(100)
-      .expandAll("(n)-->(q)").withCardinality(100)
-      .orderedAggregation(Seq("n AS n"), Seq("count(*) AS c"), Seq("n")).withCardinality(10)
-      .expandAll("(n)-->(m)").withCardinality(50)
-      .filter("id(n) <> 0").withCardinality(5)
-      .allNodeScan("n").withCardinality(10)
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .expandAll("(n)-->(q)").withEffectiveCardinality(100)
+      .orderedAggregation(Seq("n AS n"), Seq("count(*) AS c"), Seq("n")).withEffectiveCardinality(10)
+      .expandAll("(n)-->(m)").withEffectiveCardinality(50)
+      .filter("id(n) <> 0").withEffectiveCardinality(5)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -580,61 +580,61 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should ignore expression variable property reads (for now)") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("list")
-      .projection("[x IN [n] | x.prop] AS list").withCardinality(5).newVar("x", CTNode)
-      .allNodeScan("n").withCardinality(5)
+      .projection("[x IN [n] | x.prop] AS list").withEffectiveCardinality(5).newVar("x", CTNode)
+      .allNodeScan("n").withEffectiveCardinality(5)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown read past union into LHS") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("x")
-      .projection("n.prop AS x").withCardinality(100)
-      .union().withCardinality(100)
-      .|.nodeByLabelScan("n", "A", IndexOrderNone).withCardinality(90)
-      .nodeByLabelScan("n", "B", IndexOrderNone).withCardinality(10)
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .union().withEffectiveCardinality(100)
+      .|.nodeByLabelScan("n", "A", IndexOrderNone).withEffectiveCardinality(90)
+      .nodeByLabelScan("n", "B", IndexOrderNone).withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown read past union into RHS") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("x")
-      .projection("n.prop AS x").withCardinality(100)
-      .union().withCardinality(100)
-      .|.nodeByLabelScan("n", "A", IndexOrderNone).withCardinality(10)
-      .nodeByLabelScan("n", "B", IndexOrderNone).withCardinality(90)
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .union().withEffectiveCardinality(100)
+      .|.nodeByLabelScan("n", "A", IndexOrderNone).withEffectiveCardinality(10)
+      .nodeByLabelScan("n", "B", IndexOrderNone).withEffectiveCardinality(90)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown read if property is available from index") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
-      .expand("(n)-->(m)").withCardinality(235)
-      .nodeIndexOperator("n:L(prop > 100)", getValue = CanGetValue).withCardinality(90)
+      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .expand("(n)-->(m)").withEffectiveCardinality(235)
+      .nodeIndexOperator("n:L(prop > 100)", getValue = CanGetValue).withEffectiveCardinality(90)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should pushdown read through renaming projection") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("mysteryNode.prop == 'NOT-IMPORTANT'").withCardinality(100)
-      .projection("n AS mysteryNode").withCardinality(235).newVar("mysteryNode", CTNode)
-      .expand("(n)-->(m)").withCardinality(235)
-      .allNodeScan("n").withCardinality(90)
+      .filter("mysteryNode.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .projection("n AS mysteryNode").withEffectiveCardinality(235).newVar("mysteryNode", CTNode)
+      .expand("(n)-->(m)").withEffectiveCardinality(235)
+      .allNodeScan("n").withEffectiveCardinality(90)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n", "m")
@@ -649,13 +649,13 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown read through 2 renaming projections") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("unknownNode.prop == 'NOT-IMPORTANT'").withCardinality(100)
-      .projection("mysteryNode AS unknownNode").withCardinality(235).newVar("unknownNode", CTNode)
-      .projection("n AS mysteryNode").withCardinality(235).newVar("mysteryNode", CTNode)
-      .expand("(n)-->(m)").withCardinality(235)
-      .allNodeScan("n").withCardinality(90)
+      .filter("unknownNode.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .projection("mysteryNode AS unknownNode").withEffectiveCardinality(235).newVar("unknownNode", CTNode)
+      .projection("n AS mysteryNode").withEffectiveCardinality(235).newVar("mysteryNode", CTNode)
+      .expand("(n)-->(m)").withEffectiveCardinality(235)
+      .allNodeScan("n").withEffectiveCardinality(90)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n", "m")
@@ -671,12 +671,12 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown read through unrelated renaming projection") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
-      .projection("m AS mysteryNode").withCardinality(235).newVar("mysteryNode", CTNode)
-      .expand("(n)-->(m)").withCardinality(235)
-      .allNodeScan("n").withCardinality(90)
+      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .projection("m AS mysteryNode").withEffectiveCardinality(235).newVar("mysteryNode", CTNode)
+      .expand("(n)-->(m)").withEffectiveCardinality(235)
+      .allNodeScan("n").withEffectiveCardinality(90)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n", "m")
@@ -691,158 +691,158 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should not pushdown read if property is available, but renamed") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("mysteryNode.prop == 'NOT-IMPORTANT'").withCardinality(100)
-      .projection("n AS mysteryNode").withCardinality(235).newVar("mysteryNode", CTNode)
-      .expand("(n)-->(m)").withCardinality(235)
-      .nodeIndexOperator("n:L(prop > 100)", getValue = CanGetValue).withCardinality(90)
+      .filter("mysteryNode.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .projection("n AS mysteryNode").withEffectiveCardinality(235).newVar("mysteryNode", CTNode)
+      .expand("(n)-->(m)").withEffectiveCardinality(235)
+      .nodeIndexOperator("n:L(prop > 100)", getValue = CanGetValue).withEffectiveCardinality(90)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should ignore unrelated renaming") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .projection("x AS mysteryVariable").withCardinality(5).newVar("mysteryVariable", CTInteger)
-      .projection("1 AS x").withCardinality(5).newVar("x", CTInteger)
-      .allNodeScan("n").withCardinality(5)
+      .projection("x AS mysteryVariable").withEffectiveCardinality(5).newVar("mysteryVariable", CTInteger)
+      .projection("1 AS x").withEffectiveCardinality(5).newVar("x", CTInteger)
+      .allNodeScan("n").withEffectiveCardinality(5)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown if setProperty") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
-      .setProperty("n", "prop", "42").withCardinality(100)
-      .expand("(n)-->(m)").withCardinality(100)
-      .allNodeScan("n").withCardinality(10)
+      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .setProperty("n", "prop", "42").withEffectiveCardinality(100)
+      .expand("(n)-->(m)").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown if setNodeProperty") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
-      .setNodeProperty("n", "prop", "42").withCardinality(100)
-      .expand("(n)-->(m)").withCardinality(100)
-      .allNodeScan("n").withCardinality(10)
+      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .setNodeProperty("n", "prop", "42").withEffectiveCardinality(100)
+      .expand("(n)-->(m)").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown if setRelationshipProperty") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
-      .setRelationshipProperty("n", "prop", "42").withCardinality(100)
-      .expand("(n)-->(m)").withCardinality(100)
-      .allNodeScan("n").withCardinality(10)
+      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .setRelationshipProperty("n", "prop", "42").withEffectiveCardinality(100)
+      .expand("(n)-->(m)").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown if setNodePropertiesFromMap") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
-      .setNodePropertiesFromMap("n", "{prop: 42}", removeOtherProps = false).withCardinality(100)
-      .expand("(n)-->(m)").withCardinality(100)
-      .allNodeScan("n").withCardinality(10)
+      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .setNodePropertiesFromMap("n", "{prop: 42}", removeOtherProps = false).withEffectiveCardinality(100)
+      .expand("(n)-->(m)").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown if setRelationshipPropertiesFromMap") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("r.prop == 'NOT-IMPORTANT'").withCardinality(100)
-      .setRelationshipPropertiesFromMap("r", "{prop: 42}", removeOtherProps = false).withCardinality(100)
-      .expand("(m)-->(k)").withCardinality(100)
-      .expand("(n)-[r]->(m)").withCardinality(20)
-      .allNodeScan("n").withCardinality(10)
+      .filter("r.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .setRelationshipPropertiesFromMap("r", "{prop: 42}", removeOtherProps = false).withEffectiveCardinality(100)
+      .expand("(m)-->(k)").withEffectiveCardinality(100)
+      .expand("(n)-[r]->(m)").withEffectiveCardinality(20)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown if property removed by setNodePropertiesFromMap") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
-      .setNodePropertiesFromMap("n", "{otherProp: 42}", removeOtherProps = true).withCardinality(100)
-      .expand("(n)-->(m)").withCardinality(100)
-      .allNodeScan("n").withCardinality(10)
+      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .setNodePropertiesFromMap("n", "{otherProp: 42}", removeOtherProps = true).withEffectiveCardinality(100)
+      .expand("(n)-->(m)").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown if property removed by setRelationshipPropertiesFromMap") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .filter("r.prop == 'NOT-IMPORTANT'").withCardinality(100)
-      .setRelationshipPropertiesFromMap("r", "{otherProp: 42}", removeOtherProps = true).withCardinality(100)
-      .expand("(m)-->(k)").withCardinality(100)
-      .expand("(n)-[r]->(m)").withCardinality(20)
-      .allNodeScan("n").withCardinality(10)
+      .filter("r.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .setRelationshipPropertiesFromMap("r", "{otherProp: 42}", removeOtherProps = true).withEffectiveCardinality(100)
+      .expand("(m)-->(k)").withEffectiveCardinality(100)
+      .expand("(n)-[r]->(m)").withEffectiveCardinality(20)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown if property setNodePropertiesFromMap with dynamic map") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withCardinality(100)
-      .setNodePropertiesFromMap("n", "m", removeOtherProps = false).withCardinality(100)
-      .expand("(n)-->(m)").withCardinality(100)
-      .allNodeScan("n").withCardinality(10)
+      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .setNodePropertiesFromMap("n", "m", removeOtherProps = false).withEffectiveCardinality(100)
+      .expand("(n)-->(m)").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown if property setRelationshipPropertiesFromMap with dynamic map") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .filter("r.prop == 'NOT-IMPORTANT'").withCardinality(100)
-      .setRelationshipPropertiesFromMap("r", "r2", removeOtherProps = false).withCardinality(100)
-      .expand("(m)-[r2]->(k)").withCardinality(100)
-      .expand("(n)-[r]->(m)").withCardinality(20)
-      .allNodeScan("n").withCardinality(10)
+      .filter("r.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .setRelationshipPropertiesFromMap("r", "r2", removeOtherProps = false).withEffectiveCardinality(100)
+      .expand("(m)-[r2]->(k)").withEffectiveCardinality(100)
+      .expand("(n)-[r]->(m)").withEffectiveCardinality(20)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should ignore setProperty of non-variable when projecting") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("aProp", "bProp")
-      .projection("a.prop AS aProp", "b.prop AS bProp").withCardinality(10)
-      .setProperty("CASE WHEN n.age>m.age THEN n ELSE m END", "prop", "42").withCardinality(10)
-      .expand("(n)-->(m)").withCardinality(10)
-      .allNodeScan("n").withCardinality(10)
+      .projection("a.prop AS aProp", "b.prop AS bProp").withEffectiveCardinality(10)
+      .setProperty("CASE WHEN n.age>m.age THEN n ELSE m END", "prop", "42").withEffectiveCardinality(10)
+      .expand("(n)-->(m)").withEffectiveCardinality(10)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
@@ -852,14 +852,14 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should not pushdown read past eager") {
     val plan = new LogicalPlanBuilder()
       .produceResults("x")
-      .projection("n.prop AS x").withCardinality(100)
-      .expandAll("(n)-->(q)").withCardinality(100)
-      .eager().withCardinality(10)
-      .expandAll("(n)-->(m)").withCardinality(50)
-      .filter("id(n) <> 0").withCardinality(5)
-      .allNodeScan("n").withCardinality(10)
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .expandAll("(n)-->(q)").withEffectiveCardinality(100)
+      .eager().withEffectiveCardinality(10)
+      .expandAll("(n)-->(m)").withEffectiveCardinality(50)
+      .filter("id(n) <> 0").withEffectiveCardinality(5)
+      .allNodeScan("n").withEffectiveCardinality(10)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -876,13 +876,13 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown to the highest step if equal cardinality") {
     val plan = new LogicalPlanBuilder()
       .produceResults("x")
-      .projection("n.prop as x").withCardinality(100)
-      .expand("(n)-->(q)").withCardinality(100)
-      .limit(100).withCardinality(1)
-      .skip(0).withCardinality(1)
-      .nodeByLabelScan("n", "JustOne").withCardinality(1)
+      .projection("n.prop as x").withEffectiveCardinality(100)
+      .expand("(n)-->(q)").withEffectiveCardinality(100)
+      .limit(100).withEffectiveCardinality(1)
+      .skip(0).withEffectiveCardinality(1)
+      .nodeByLabelScan("n", "JustOne").withEffectiveCardinality(1)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -898,13 +898,13 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should pushdown ignoring negligible amount of cardinality differences") {
     val plan = new LogicalPlanBuilder()
       .produceResults("x")
-      .projection("a.prop as x").withCardinality(200)
-      .expand("(a)-->(c)").withCardinality(200)
-      .apply().withCardinality(1.00000001)
-      .|.nodeByLabelScan("b", "B").withCardinality(1)
-      .nodeByLabelScan("a", "A").withCardinality(1)
+      .projection("a.prop as x").withEffectiveCardinality(200)
+      .expand("(a)-->(c)").withEffectiveCardinality(200)
+      .apply().withEffectiveCardinality(1.00000001)
+      .|.nodeByLabelScan("b", "B").withEffectiveCardinality(1)
+      .nodeByLabelScan("a", "A").withEffectiveCardinality(1)
 
-    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.cardinalities, Attributes(plan.idGen, plan.cardinalities), plan.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")

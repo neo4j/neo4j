@@ -78,9 +78,9 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
 
     val logicalPlan =
       if (pushdownPropertyReads) {
-        val cardinalities = from.planningAttributes.cardinalities
+        val effectiveCardinalities = from.planningAttributes.effectiveCardinalities
         val attributes = from.planningAttributes.asAttributes(context.logicalPlanIdGen)
-        PushdownPropertyReads.pushdown(from.logicalPlan, cardinalities, attributes, from.semanticTable())
+        PushdownPropertyReads.pushdown(from.logicalPlan, effectiveCardinalities, attributes, from.semanticTable())
       } else {
         from.logicalPlan
       }
@@ -310,6 +310,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
       QueryGraphSolverInput.empty,
       from.semanticTable(),
       from.planningAttributes.solveds,
+      // These do not include effective cardinalities, which is important since this methods assumes "original" cardinalities.
       from.planningAttributes.cardinalities,
       context.metrics.cardinality
     )
@@ -327,8 +328,8 @@ object InsertCachedProperties extends StepSequencer.Step with PlanPipelineTransf
     CompilationContains[LogicalPlan],
     // AndedPropertyInequalities contain the same property twice, which would mess up our counts.
     SingleAndedPropertyInequalitiesRemoved,
-    // If effective output cardinality has already been calculated, the calculations of LogicalPlanProducer$sortPredicatesBySelectivity will be incorrect.
-    !LogicalPlanUsesEffectiveOutputCardinality
+    // PushdownPropertyReads needs effectiveCardinalities
+    LogicalPlanUsesEffectiveOutputCardinality
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(

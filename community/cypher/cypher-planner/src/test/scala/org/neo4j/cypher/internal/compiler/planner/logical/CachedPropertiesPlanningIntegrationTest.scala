@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -34,7 +36,7 @@ import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with LogicalPlanningTestSupport2 {
 
   test("should cache node property on multiple usages") {
     val plan = planFor("MATCH (n) WHERE n.prop1 > 42 RETURN n.prop1")
@@ -161,6 +163,64 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
         Map("m.prop1" -> cachedNodeProp("n", "prop1", "  m@61"), "x.prop1" -> cachedNodeProp("  m@12", "prop1", "x"))
       )
     )
+  }
+
+  test("should not push down property reads into RHS of apply unnecessarily") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1023)
+      .setLabelCardinality("N", 12)
+      .setLabelCardinality("M", 11)
+      .setRelationshipCardinality("(:N)-[]->()", 1000)
+      .setRelationshipCardinality("(:N)-[]->(:M)", 2)
+      .setRelationshipCardinality("()-[]->(:M)", 2)
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n:N)
+        |CALL {
+        |  WITH n
+        |  MATCH (n)-->(m:M)
+        |  CALL {
+        |    WITH n
+        |    MATCH (n)-->(o:M)
+        |    RETURN o
+        |  }
+        |  RETURN m, o
+        |}
+        |RETURN m.prop
+        |""".stripMargin)
+
+    val cachePropertyPlans = plan.treeCount {
+      case _: CacheProperties => true
+    }
+
+    withClue(plan) {
+      cachePropertyPlans should be(0)
+    }
+  }
+
+  test("should push down property reads past a LIMIT if work is reduced by the LIMIT") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(500)
+      .setLabelCardinality("N", 500)
+      .setRelationshipCardinality("()-[]->()", 1000)
+      .setRelationshipCardinality("(:N)-[]->()", 1000)
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n:N)-[rel]->(m)
+        |WITH * LIMIT 10
+        |RETURN n.prop AS foo
+        |""".stripMargin)
+
+    plan shouldEqual cfg.planBuilder()
+      .produceResults("foo")
+      .projection("cacheN[n.prop] AS foo") // 10 rows
+      .limit(10) // 10 rows
+      .expandAll("(n)-[rel]->(m)") // 1000 rows, effective 10
+      .cacheProperties("cacheNFromStore[n.prop]")
+      .nodeByLabelScan("n", "N") // 500 rows, effective 5
+      .build()
   }
 
   private def cachedAndedNodePropertyInequalities(varName: String, propName: String, expression: InequalityExpression*) = {

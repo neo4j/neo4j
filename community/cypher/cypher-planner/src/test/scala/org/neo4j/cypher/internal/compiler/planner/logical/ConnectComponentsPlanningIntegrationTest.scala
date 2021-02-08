@@ -236,7 +236,6 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     // (A x B) x C = 500 + 59 * 100 = 59500 // all of these are more expensive
     // ...
     // (C x B) x A = 300 + 20 * 300 = 6200
-    batchedPlan.printLogicalPlanBuilderString()
     batchedPlan.stripProduceResults should beLike {
       case CartesianProduct(_: NodeByLabelScan, CartesianProduct(_: NodeByLabelScan, _: NodeByLabelScan)) => ()
     }
@@ -275,7 +274,6 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     // Batched:
     // A x B = 30 + 1 * 20 => 50
     // B x A = 20 + 1 * 20 => 50
-    batchedPlan.printLogicalPlanBuilderString()
     batchedPlan.stripProduceResults should beLike {
       case CartesianProduct(_: NodeByLabelScan, _: NodeByLabelScan) => ()
     }
@@ -648,7 +646,6 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
                         .nodeByLabelScan("n", "N")
                         .build()
 
-    batchedPlan.printLogicalPlanBuilderString()
     batchedPlan should (
       equal(batched.planBuilder()
         .produceResults("n")
