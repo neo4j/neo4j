@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
+import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -136,6 +137,12 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
 
       def addIndexNodeProperty(prop: Property): Acc = {
         val previousUsages = properties.getOrElse(prop, NODE_NO_PROP_USAGE)
+        val newProperties = properties.updated(prop, previousUsages.registerIndexUsage)
+        copy(properties = newProperties)
+      }
+
+      def addIndexRelationshipProperty(prop: Property): Acc = {
+        val previousUsages = properties.getOrElse(prop, REL_NO_PROP_USAGE)
         val newProperties = properties.updated(prop, previousUsages.registerIndexUsage)
         copy(properties = newProperties)
       }
@@ -228,6 +235,10 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
               indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(accWithProps) { (innerAcc, indexedProp) =>
                 innerAcc.addIndexNodeProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
               }
+            case indexPlan: RelationshipIndexLeafPlan =>
+              indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(accWithProps) { (innerAcc, indexedProp) =>
+                innerAcc.addIndexRelationshipProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
+              }
 
             case _ => accWithProps
           }
@@ -277,6 +288,17 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
 
       // Rewrite index plans to either GetValue or DoNotGetValue
       case indexPlan: NodeIndexLeafPlan =>
+        indexPlan.withMappedProperties { indexedProp =>
+          acc.properties.get(property(indexPlan.idName, indexedProp.propertyKeyToken.name)) match {
+            // Get the value since we use it later
+            case Some(PropertyUsages(true, usages, _, _)) if usages >= 1 =>
+              indexedProp.copy(getValueFromIndex = GetValue)
+            // We could get the value but we don't need it later
+            case _ =>
+              indexedProp.copy(getValueFromIndex = DoNotGetValue)
+          }
+        }
+      case indexPlan: RelationshipIndexLeafPlan =>
         indexPlan.withMappedProperties { indexedProp =>
           acc.properties.get(property(indexPlan.idName, indexedProp.propertyKeyToken.name)) match {
             // Get the value since we use it later

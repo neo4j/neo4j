@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
@@ -69,6 +70,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with LogicalPlanConstructionTestSupport {
   // Have specific input positions to test semantic table (not DummyPosition)
   private val n = Variable("n")(InputPosition.NONE)
+  private val r = Variable("r")(InputPosition.NONE)
   private val x = Variable("x")(InputPosition.NONE)
   private val m = Variable("m")(InputPosition.NONE)
   private val prop = PropertyKeyName("prop")(InputPosition.NONE)
@@ -77,24 +79,33 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   private val nProp1 = Property(n, prop)(InputPosition.NONE)
   private val nProp2 = Property(n, prop)(InputPosition.NONE.newUniquePos())
   private val nProp3 = Property(n, prop)(InputPosition.NONE.newUniquePos())
+  private val rProp1 = Property(r, prop)(InputPosition.NONE)
+  private val rProp2 = Property(r, prop)(InputPosition.NONE.newUniquePos())
+  private val rProp3 = Property(r, prop)(InputPosition.NONE.newUniquePos())
   // Same property in different positions
   private val nFoo1 = Property(n, foo)(InputPosition.NONE)
-  private val cachedNProp1 = CachedProperty("n", n, prop, NODE_TYPE)(nProp1.position)
-  private val cachedNFoo1 = CachedProperty("n", n, foo, NODE_TYPE)(nFoo1.position)
-  private val cachedNProp2 = CachedProperty("n", n, prop, NODE_TYPE)(nProp2.position)
-  private val cachedNProp3 = CachedProperty("n", n, prop, NODE_TYPE)(nProp3.position)
-  private val cachedNRelProp1 = CachedProperty("n", n, prop, RELATIONSHIP_TYPE)(nProp1.position)
-  private val cachedNRelProp2 = CachedProperty("n", n, prop, RELATIONSHIP_TYPE)(nProp2.position)
+  private val cachedNProp1 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE)
+  private val cachedNFoo1 = CachedProperty("n", n, foo, NODE_TYPE)(InputPosition.NONE)
+  private val cachedNProp2 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE.newUniquePos())
+  private val cachedNProp3 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE.newUniquePos())
+  private val cachedRRelProp1 = CachedProperty("r", r, prop, RELATIONSHIP_TYPE)(InputPosition.NONE)
+  private val cachedRRelProp2 = CachedProperty("r", r, prop, RELATIONSHIP_TYPE)(InputPosition.NONE.newUniquePos())
 
   private val xProp = Property(x, prop)(InputPosition.NONE)
 
-  def indexScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property)", getValueFromIndex)
-  def indexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property = 42)", getValueFromIndex)
-  def uniqueIndexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property = 42)", getValueFromIndex, unique = true)
-  def indexContainsScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek("n:Awesome(prop CONTAINS 'foo')", getValueFromIndex)
-  def indexEndsWithScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek("n:Awesome(prop ENDS WITH 'foo')", getValueFromIndex)
+  def nodeIndexScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property)", getValueFromIndex)
+  def nodeIndexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property = 42)", getValueFromIndex)
+  def nodeUniqueIndexSeek(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek(s"$node:$label($property = 42)", getValueFromIndex, unique = true)
+  def nodeIndexContainsScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek("n:Awesome(prop CONTAINS 'foo')", getValueFromIndex)
+  def nodeIndexEndsWithScan(node: String, label: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): NodeIndexLeafPlan = IndexSeek.nodeIndexSeek("n:Awesome(prop ENDS WITH 'foo')", getValueFromIndex)
 
-  for((indexOperator, name) <- Seq((indexScan _, "indexScan"), (indexSeek _, "indexSeek"), (uniqueIndexSeek _, "uniqueIndexSeek"), (indexContainsScan _, "indexContainsScan"), (indexEndsWithScan _, "indexEndsWithScan"))) {
+  def relationshipIndexScan(rel: String, typ: String, property: String, getValueFromIndex: GetValueFromIndexBehavior): RelationshipIndexLeafPlan = IndexSeek.relationshipIndexSeek(s"(x)-[$rel:$typ($property)]->(y)", getValueFromIndex)
+
+  for((indexOperator, name) <- Seq((nodeIndexScan _, "indexScan"),
+                                  (nodeIndexSeek _, "indexSeek"),
+                                  (nodeUniqueIndexSeek _, "uniqueIndexSeek"),
+                                  (nodeIndexContainsScan _, "indexContainsScan"),
+                                  (nodeIndexEndsWithScan _, "indexEndsWithScan"))) {
     test(s"should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in selection after index operator: $name") {
       val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
       val plan = Selection(
@@ -155,11 +166,72 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     }
   }
 
+  for((indexOperator, name) <- Seq((relationshipIndexScan _, "indexScan"))) {
+    test(s"should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in selection after relationship index operator: $name") {
+      val initialTable = semanticTable(rProp1 -> CTInteger, r -> CTRelationship)
+      val plan = Selection(
+        Seq(equals(rProp1, literalInt(1))),
+        indexOperator("r", "L", "prop", CanGetValue)
+      )
+      val (newPlan, newTable) = replace(plan, initialTable)
+
+      newPlan should equal(
+        Selection(
+          Seq(equals(cachedRRelProp1, literalInt(1))),
+          indexOperator("r", "L", "prop", GetValue)
+        )
+      )
+      val initialType = initialTable.types(rProp1)
+      newTable.types(cachedRRelProp1) should be(initialType)
+    }
+
+    test(s"should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in projection after relationship index operator: $name") {
+      val initialTable = semanticTable(rProp1 -> CTInteger, r -> CTRelationship)
+      val plan = Projection(
+        indexOperator("r", "L", "prop", CanGetValue),
+        Map("x" -> rProp1),
+      )
+      val (newPlan, newTable) = replace(plan, initialTable)
+
+      newPlan should equal(
+        Projection(
+          indexOperator("r", "L", "prop", GetValue),
+          Map("x" -> cachedRRelProp1),
+        )
+      )
+      val initialType = initialTable.types(rProp1)
+      newTable.types(cachedRRelProp1) should be(initialType)
+    }
+
+    test(s"multiple usages after relationship index should not be knownToAccessStore: $name") {
+      val initialTable = semanticTable(rProp1 -> CTInteger, rProp2 -> CTInteger, r -> CTNode)
+      val plan = Projection(
+        Selection(Seq(equals(rProp1, literalInt(2))),
+          indexOperator("r", "L", "prop", CanGetValue)),
+        Map("x" -> rProp2)
+      )
+      val (newPlan, newTable) = replace(plan, initialTable)
+
+      newPlan should equal(
+        Projection(
+          Selection(
+            Seq(equals(cachedRRelProp1, literalInt(2))),
+            indexOperator("r", "L", "prop", GetValue)
+          ),
+          Map("x" -> cachedRRelProp2))
+      )
+
+      val initialType = initialTable.types(rProp1)
+      newTable.types(cachedRRelProp1) should be(initialType)
+      newTable.types(cachedRRelProp2) should be(initialType)
+    }
+  }
+
   test("should not rewrite prop(n, prop) if index cannot get value") {
     val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
     val plan = Selection(
       Seq(equals(nProp1, literalInt(1))),
-      indexScan("n", "L", "prop", DoNotGetValue)
+      nodeIndexScan("n", "L", "prop", DoNotGetValue)
     )
     val (newPlan, newTable) = replace(plan, initialTable)
     newPlan should be(plan)
@@ -171,13 +243,13 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val initialTable = semanticTable(nProp1 -> CTInteger, nFoo1 -> CTInteger, n -> CTNode)
     val plan = Selection(
       Seq(equals(nFoo1, literalInt(1))),
-      indexScan("n", "L", "prop", CanGetValue)
+      nodeIndexScan("n", "L", "prop", CanGetValue)
     )
     val (newPlan, newTable) = replace(plan, initialTable)
     newPlan should equal(
       Selection(
         Seq(equals(nFoo1, literalInt(1))),
-        indexScan("n", "L", "prop", DoNotGetValue)
+        nodeIndexScan("n", "L", "prop", DoNotGetValue)
       )
     )
     newTable should be(initialTable)
@@ -186,14 +258,14 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   test("should rewrite prop(n, prop) to CachedProperty(n.prop) with usage in projection after index scan") {
     val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
     val plan = Projection(
-      indexScan("n", "L", "prop", CanGetValue),
+      nodeIndexScan("n", "L", "prop", CanGetValue),
       Map("x" -> nProp1)
     )
     val (newPlan, newTable) = replace(plan, initialTable)
 
     newPlan should equal(
       Projection(
-        indexScan("n", "L", "prop", GetValue),
+        nodeIndexScan("n", "L", "prop", GetValue),
         Map("x" -> cachedNProp1)
       )
     )
@@ -206,7 +278,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan = Selection(
       Seq(greaterThan(prop("n", "otherProp"), literalInt(1)), equals(prop("n", "prop"), prop("n", "foo"))),
       Projection(
-        indexScan("n", "L", "prop", CanGetValue),
+        nodeIndexScan("n", "L", "prop", CanGetValue),
         Map("x" -> nFoo1)
       )
     )
@@ -216,7 +288,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       Selection(
         Seq(equals(cachedNProp1, cachedNFoo1), greaterThan(prop("n", "otherProp"), literalInt(1))),
         Projection(
-          indexScan("n", "L", "prop", GetValue),
+          nodeIndexScan("n", "L", "prop", GetValue),
           Map("x" -> cachedNFoo1.copy(knownToAccessStore = true)(cachedNFoo1.position))
         )
       )
@@ -227,14 +299,14 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
     val plan = Selection(
       Seq(equals(listOf(nProp1), listOfInt(1))),
-      indexScan("n", "L", "prop", CanGetValue)
+      nodeIndexScan("n", "L", "prop", CanGetValue)
     )
     val (newPlan, newTable) = replace(plan, initialTable)
 
     newPlan should equal(
       Selection(
         Seq(equals(listOf(cachedNProp1), listOfInt(1))),
-        indexScan("n", "L", "prop", GetValue)
+        nodeIndexScan("n", "L", "prop", GetValue)
       )
     )
     val initialType = initialTable.types(nProp1)
@@ -245,14 +317,14 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val initialTable = semanticTable(nProp1 -> CTInteger, n -> CTNode)
     val plan = Selection(
       Seq(equals(mapOf("foo" -> nProp1), mapOfInt(("foo", 1)))),
-      indexScan("n", "L", "prop", CanGetValue)
+      nodeIndexScan("n", "L", "prop", CanGetValue)
     )
     val (newPlan, newTable) = replace(plan, initialTable)
 
     newPlan should equal(
       Selection(
         Seq(equals(mapOf("foo" -> cachedNProp1), mapOfInt(("foo", 1)))),
-        indexScan("n", "L", "prop", GetValue)
+        nodeIndexScan("n", "L", "prop", GetValue)
       )
     )
     val initialType = initialTable.types(nProp1)
@@ -266,8 +338,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan = Selection(
       Seq(equals(nProp1, literalInt(1)), propWithoutSemanticType),
       NodeHashJoin(Set("n"),
-        indexScan("n", "L", "prop", CanGetValue),
-        indexScan("m", "L", "prop", CanGetValue)
+        nodeIndexScan("n", "L", "prop", CanGetValue),
+        nodeIndexScan("m", "L", "prop", CanGetValue)
       )
     )
     val (_, newTable) = replace(plan, initialTable)
@@ -342,34 +414,34 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   }
 
   test("should cache relationship property on multiple usages") {
-    val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTRelationship)
-    val cp1 = cachedNRelProp1.copy(knownToAccessStore = true)(cachedNRelProp1.position)
+    val initialTable = semanticTable(rProp1 -> CTInteger, rProp2 -> CTInteger, r -> CTRelationship)
+    val cp1 = cachedRRelProp1.copy(knownToAccessStore = true)(cachedRRelProp1.position)
 
     val plan = Projection(
-      Selection(Seq(equals(nProp1, literalInt(2))),
-        DirectedRelationshipByIdSeek("n", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty)
+      Selection(Seq(equals(rProp1, literalInt(2))),
+        DirectedRelationshipByIdSeek("r", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty)
       ),
-      Map("x" -> nProp2)
+      Map("x" -> rProp2)
     )
 
     val (newPlan, newTable) = replace(plan, initialTable)
     newPlan should be(
       Projection(
         Selection(Seq(equals(cp1, literalInt(2))),
-          DirectedRelationshipByIdSeek("n", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty)
+          DirectedRelationshipByIdSeek("r", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty)
         ),
-        Map("x" -> cachedNRelProp2)
+        Map("x" -> cachedRRelProp2)
       )
     )
-    val initialType = initialTable.types(nProp1)
+    val initialType = initialTable.types(rProp1)
     newTable.types(cp1) should be(initialType)
-    newTable.types(cachedNRelProp2) should be(initialType)
+    newTable.types(cachedRRelProp2) should be(initialType)
   }
 
   test("should not cache relationship property if there is only one usage") {
     val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTRelationship)
     val plan = Projection(
-      DirectedRelationshipByIdSeek("n", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty),
+      DirectedRelationshipByIdSeek("r", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty),
       Map("x" -> nProp2)
     )
 
