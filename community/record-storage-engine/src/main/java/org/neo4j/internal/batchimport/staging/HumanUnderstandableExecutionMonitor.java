@@ -64,10 +64,27 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
     enum ImportStage
     {
-        nodeImport,
-        relationshipImport,
-        linking,
-        postProcessing
+        nodeImport( "Node import" ),
+        relationshipImport( "Relationship import" ),
+        linking( "Relationship linking" ),
+        postProcessing( "Post processing" );
+
+        private final String description;
+
+        ImportStage( String description )
+        {
+            this.description = description;
+        }
+
+        String descriptionWithOrdinal()
+        {
+            return format( "(%d/%d) %s", ordinal() + 1, values().length, description );
+        }
+
+        String description()
+        {
+            return description;
+        }
     }
 
     private static final String ESTIMATED_REQUIRED_MEMORY_USAGE = "Estimated required memory usage";
@@ -91,6 +108,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private long progress;
     private ImportStage currentStage;
     private long lastReportTime;
+    private long stageStartTime;
 
     HumanUnderstandableExecutionMonitor( Monitor monitor )
     {
@@ -205,12 +223,13 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private void endPrevious()
     {
         updateProgress( goal );
+        System.out.println( format( "%s COMPLETED in %s%n", currentStage.description(), duration( currentTimeMillis() - stageStartTime ) ) );
     }
 
     private void initializeNodeImport( Input.Estimates estimates, IdMapper idMapper, BatchingNeoStores neoStores )
     {
         long numberOfNodes = estimates.numberOfNodes();
-        printStageHeader( "(1/4) Node import",
+        startStage( ImportStage.nodeImport,
                 ESTIMATED_NUMBER_OF_NODES, count( numberOfNodes ),
                 ESTIMATED_DISK_SPACE_USAGE, bytesToString(
                         // node store
@@ -232,7 +251,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private void initializeRelationshipImport( Input.Estimates estimates, IdMapper idMapper, BatchingNeoStores neoStores )
     {
         long numberOfRelationships = estimates.numberOfRelationships();
-        printStageHeader( "(2/4) Relationship import",
+        startStage( ImportStage.relationshipImport,
                 ESTIMATED_NUMBER_OF_RELATIONSHIPS, count( numberOfRelationships ),
                 ESTIMATED_DISK_SPACE_USAGE, bytesToString(
                         relationshipsDiskUsage( estimates, neoStores ) +
@@ -246,7 +265,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private void initializeLinking( BatchingNeoStores neoStores,
             NodeRelationshipCache nodeRelationshipCache, DataStatistics distribution )
     {
-        printStageHeader( "(3/4) Relationship linking",
+        startStage( ImportStage.linking,
                 ESTIMATED_REQUIRED_MEMORY_USAGE, bytesToString(
                         baselineMemoryRequirement( neoStores ) +
                         defensivelyPadMemoryEstimate( nodeRelationshipCache.memoryEstimation( distribution.getNodeCount() ) ) ) );
@@ -266,7 +285,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
     private void initializeMisc( BatchingNeoStores neoStores, DataStatistics distribution )
     {
-        printStageHeader( "(4/4) Post processing",
+        startStage( ImportStage.postProcessing,
                 ESTIMATED_REQUIRED_MEMORY_USAGE, bytesToString( baselineMemoryRequirement( neoStores ) ) );
         long actualNodeCount = distribution.getNodeCount();
         // The reason the highId of the relationship store is used, as opposed to actual number of imported relationships
@@ -379,7 +398,6 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         // calculated here just to reduce amount of state kept in this instance
         int dots = dotsPerLine() * lines();
         double dotSize = goal / (double) dots;
-
         return (int) (progress / dotSize);
     }
 
@@ -393,9 +411,16 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         return DOT_GROUPS_PER_LINE * DOT_GROUP_SIZE;
     }
 
-    private void printStageHeader( String name, Object... data )
+    private void startStage( ImportStage stage, Object... data )
     {
-        System.out.println( name + " " + localDate() );
+        printStageHeader( stage.descriptionWithOrdinal(), data );
+        stageStartTime = currentTimeMillis();
+        currentStage = stage;
+    }
+
+    private void printStageHeader( String description, Object... data )
+    {
+        System.out.println( description + " " + localDate() );
         if ( data.length > 0 )
         {
             for ( int i = 0; i < data.length; )
