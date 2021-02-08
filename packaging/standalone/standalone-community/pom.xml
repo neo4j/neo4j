@@ -87,6 +87,7 @@
                             <id>neo4j-admin</id>
                         </program>
                     </programs>
+                    <windowsScriptTemplate>${basedir}/src/main/appassembler/windows-template</windowsScriptTemplate>
                 </configuration>
             </plugin>
             <plugin>
