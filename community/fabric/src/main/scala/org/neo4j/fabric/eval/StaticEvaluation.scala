@@ -53,6 +53,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.schema.ConstraintDescriptor
@@ -209,15 +210,34 @@ object StaticEvaluation {
 
     override def indexReference(label: Int, properties: Int*): IndexDescriptor = notAvailable()
 
-    override def indexSeek[RESULT <: AnyRef](index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder, queries: Seq[PropertyIndexQuery]): NodeValueIndexCursor = notAvailable()
+    override def nodeIndexSeek(index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder, queries: Seq[PropertyIndexQuery]): NodeValueIndexCursor = notAvailable()
 
-    override def indexSeekByContains[RESULT <: AnyRef](index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder, value: TextValue): NodeValueIndexCursor = notAvailable()
+    override def nodeIndexSeekByContains(index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder, value: TextValue): NodeValueIndexCursor = notAvailable()
 
-    override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder, value: TextValue): NodeValueIndexCursor = notAvailable()
+    override def nodeIndexSeekByEndsWith(index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder, value: TextValue): NodeValueIndexCursor = notAvailable()
 
-    override def indexScan[RESULT <: AnyRef](index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder): NodeValueIndexCursor = notAvailable()
+    override def nodeIndexScan(index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder): NodeValueIndexCursor = notAvailable()
 
-    override def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor, queries: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor = notAvailable()
+    override def nodeLockingUniqueIndexSeek(index: IndexDescriptor, queries: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor = notAvailable()
+
+    override def relationshipIndexSeek(index: IndexReadSession,
+                                       needsValues: Boolean,
+                                       indexOrder: IndexOrder,
+                                       queries: Seq[PropertyIndexQuery]): RelationshipValueIndexCursor = notAvailable()
+
+    override def relationshipIndexSeekByContains(index: IndexReadSession,
+                                                 needsValues: Boolean,
+                                                 indexOrder: IndexOrder,
+                                                 value: TextValue): RelationshipValueIndexCursor = notAvailable()
+
+    override def relationshipIndexSeekByEndsWith(index: IndexReadSession,
+                                                 needsValues: Boolean,
+                                                 indexOrder: IndexOrder,
+                                                 value: TextValue): RelationshipValueIndexCursor = notAvailable()
+
+    override def relationshipIndexScan(index: IndexReadSession,
+                                       needsValues: Boolean,
+                                       indexOrder: IndexOrder): RelationshipValueIndexCursor = notAvailable()
 
     override def getNodesByLabel(id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue] = notAvailable()
 

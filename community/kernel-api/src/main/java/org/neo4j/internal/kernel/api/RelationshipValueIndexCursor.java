@@ -19,6 +19,13 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.values.storable.Value;
+
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+
 /**
  * Cursor for scanning the property values of relationships in a schema index.
  * <p>
@@ -47,4 +54,98 @@ package org.neo4j.internal.kernel.api;
  */
 public interface RelationshipValueIndexCursor extends RelationshipIndexCursor, ValueIndexCursor
 {
+    class Empty extends DoNothingCloseListenable implements RelationshipValueIndexCursor
+    {
+        @Override
+        public void relationship( RelationshipScanCursor cursor )
+        {
+        }
+
+        @Override
+        public void sourceNode( NodeCursor cursor )
+        {
+        }
+
+        @Override
+        public void targetNode( NodeCursor cursor )
+        {
+        }
+
+        @Override
+        public int type()
+        {
+            return NO_SUCH_RELATIONSHIP_TYPE;
+        }
+
+        @Override
+        public long sourceNodeReference()
+        {
+            return NO_SUCH_NODE;
+        }
+
+        @Override
+        public long targetNodeReference()
+        {
+            return NO_SUCH_NODE;
+        }
+
+        @Override
+        public long relationshipReference()
+        {
+            return NO_SUCH_RELATIONSHIP;
+        }
+
+        @Override
+        public boolean next()
+        {
+            return false;
+        }
+
+        @Override
+        public void setTracer( KernelReadTracer tracer )
+        {
+        }
+
+        @Override
+        public void removeTracer()
+        {
+        }
+
+        @Override
+        public void closeInternal()
+        {
+        }
+
+        @Override
+        public boolean isClosed()
+        {
+            return false;
+        }
+
+        @Override
+        public float score()
+        {
+            return Float.NaN;
+        }
+
+        @Override
+        public int numberOfProperties()
+        {
+            return 0;
+        }
+
+        @Override
+        public boolean hasValue()
+        {
+            return false;
+        }
+
+        @Override
+        public Value propertyValue( int offset )
+        {
+            return NO_VALUE;
+        }
+    }
+
+    RelationshipValueIndexCursor EMPTY = new Empty();
 }

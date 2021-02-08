@@ -52,14 +52,14 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
 
   protected def indexFor[T](values: (Seq[AnyRef], Iterable[NodeValueHit])*): QueryContext = {
     val query: QueryContext = mockedQueryContext
-    when(query.indexSeek(any(), any(), any(), any())).thenReturn(PredefinedCursor())
-    when(query.lockingUniqueIndexSeek(any(), any())).thenReturn(PredefinedCursor())
+    when(query.nodeIndexSeek(any(), any(), any(), any())).thenReturn(PredefinedCursor())
+    when(query.nodeLockingUniqueIndexSeek(any(), any())).thenReturn(PredefinedCursor())
 
     values.foreach {
       case (searchTerm, resultIterable) =>
         val indexQueries = propertyKeys.zip(searchTerm).map(t => PropertyIndexQuery.exact(t._1.nameId.id, t._2))
-        when(query.indexSeek(any(), any(), any(), ArgumentMatchers.eq(indexQueries))).thenReturn(PredefinedCursor(resultIterable))
-        when(query.lockingUniqueIndexSeek(any(), ArgumentMatchers.eq(indexQueries))).thenReturn(PredefinedCursor(resultIterable))
+        when(query.nodeIndexSeek(any(), any(), any(), ArgumentMatchers.eq(indexQueries))).thenReturn(PredefinedCursor(resultIterable))
+        when(query.nodeLockingUniqueIndexSeek(any(), ArgumentMatchers.eq(indexQueries))).thenReturn(PredefinedCursor(resultIterable))
     }
 
     query
@@ -67,12 +67,12 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
 
   protected def stringIndexFor(values: (String, Iterable[NodeValueHit])*): QueryContext = {
     val query = mockedQueryContext
-    when(query.indexSeek(any(), any(), any(), any())).thenReturn(PredefinedCursor())
-    when(query.lockingUniqueIndexSeek(any(), any())).thenReturn(PredefinedCursor())
+    when(query.nodeIndexSeek(any(), any(), any(), any())).thenReturn(PredefinedCursor())
+    when(query.nodeLockingUniqueIndexSeek(any(), any())).thenReturn(PredefinedCursor())
     values.foreach {
       case (searchTerm, resultIterable) =>
-        when(query.indexSeekByContains(any(), any(), any(), ArgumentMatchers.eq(stringValue(searchTerm)))).thenReturn(PredefinedCursor(resultIterable))
-        when(query.indexSeekByEndsWith(any(), any(), any(), ArgumentMatchers.eq(stringValue(searchTerm)))).thenReturn(PredefinedCursor(resultIterable))
+        when(query.nodeIndexSeekByContains(any(), any(), any(), ArgumentMatchers.eq(stringValue(searchTerm)))).thenReturn(PredefinedCursor(resultIterable))
+        when(query.nodeIndexSeekByEndsWith(any(), any(), any(), ArgumentMatchers.eq(stringValue(searchTerm)))).thenReturn(PredefinedCursor(resultIterable))
     }
 
     query
@@ -80,7 +80,7 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
 
   protected def scanFor(nodes: Iterable[NodeValueHit]): QueryContext = {
     val query = mockedQueryContext
-    when(query.indexScan(any(), any(), any())).thenReturn(PredefinedCursor(nodes))
+    when(query.nodeIndexScan(any(), any(), any())).thenReturn(PredefinedCursor(nodes))
     query
   }
 

@@ -50,6 +50,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.Write
@@ -82,6 +83,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   protected def manyDbHitsCliRi(value: ClosingLongIterator with RelationshipIterator): ClosingLongIterator with RelationshipIterator = value
   protected def manyDbHits(value: RelationshipTraversalCursor): RelationshipTraversalCursor = value
   protected def manyDbHits(value: NodeValueIndexCursor): NodeValueIndexCursor = value
+  protected def manyDbHits(value: RelationshipValueIndexCursor): RelationshipValueIndexCursor = value
   protected def manyDbHits(value: NodeCursor): NodeCursor = value
   protected def manyDbHits(value: RelationshipScanCursor): RelationshipScanCursor = value
   protected def manyDbHits(value: PropertyCursor): PropertyCursor = value
@@ -178,28 +180,51 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def indexReference(label: Int, properties: Int*): IndexDescriptor = singleDbHit(inner.indexReference(label, properties:_*))
 
-  override def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
-                                           needsValues: Boolean,
-                                           indexOrder: IndexOrder,
-                                           queries: Seq[PropertyIndexQuery]): NodeValueIndexCursor =
-    manyDbHits(inner.indexSeek(index, needsValues, indexOrder, queries))
+  override def nodeIndexSeek(index: IndexReadSession,
+                             needsValues: Boolean,
+                             indexOrder: IndexOrder,
+                             queries: Seq[PropertyIndexQuery]): NodeValueIndexCursor =
+    manyDbHits(inner.nodeIndexSeek(index, needsValues, indexOrder, queries))
 
-  override def indexScan[RESULT <: AnyRef](index: IndexReadSession,
-                                           needsValues: Boolean,
-                                           indexOrder: IndexOrder): NodeValueIndexCursor =
-    manyDbHits(inner.indexScan(index, needsValues, indexOrder))
+  override def nodeIndexScan(index: IndexReadSession,
+                             needsValues: Boolean,
+                             indexOrder: IndexOrder): NodeValueIndexCursor =
+    manyDbHits(inner.nodeIndexScan(index, needsValues, indexOrder))
 
-  override def indexSeekByContains[RESULT <: AnyRef](index: IndexReadSession,
-                                                     needsValues: Boolean,
-                                                     indexOrder: IndexOrder,
-                                                     value: TextValue): NodeValueIndexCursor =
-    manyDbHits(inner.indexSeekByContains(index, needsValues, indexOrder, value))
+  override def nodeIndexSeekByContains(index: IndexReadSession,
+                                       needsValues: Boolean,
+                                       indexOrder: IndexOrder,
+                                       value: TextValue): NodeValueIndexCursor =
+    manyDbHits(inner.nodeIndexSeekByContains(index, needsValues, indexOrder, value))
 
-  override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReadSession,
-                                                     needsValues: Boolean,
-                                                     indexOrder: IndexOrder,
-                                                     value: TextValue): NodeValueIndexCursor =
-    manyDbHits(inner.indexSeekByEndsWith(index, needsValues, indexOrder, value))
+  override def nodeIndexSeekByEndsWith(index: IndexReadSession,
+                                       needsValues: Boolean,
+                                       indexOrder: IndexOrder,
+                                       value: TextValue): NodeValueIndexCursor =
+    manyDbHits(inner.nodeIndexSeekByEndsWith(index, needsValues, indexOrder, value))
+
+  override def relationshipIndexSeek(index: IndexReadSession,
+                                     needsValues: Boolean,
+                                     indexOrder: IndexOrder,
+                                     queries: Seq[PropertyIndexQuery]): RelationshipValueIndexCursor =
+    manyDbHits(inner.relationshipIndexSeek(index, needsValues, indexOrder, queries))
+
+  override def relationshipIndexSeekByContains(index: IndexReadSession,
+                                               needsValues: Boolean,
+                                               indexOrder: IndexOrder,
+                                               value: TextValue): RelationshipValueIndexCursor =
+    manyDbHits(inner.relationshipIndexSeekByContains(index, needsValues, indexOrder, value))
+
+  override def relationshipIndexSeekByEndsWith(index: IndexReadSession,
+                                               needsValues: Boolean,
+                                               indexOrder: IndexOrder,
+                                               value: TextValue): RelationshipValueIndexCursor =
+    manyDbHits(inner.relationshipIndexSeekByEndsWith(index, needsValues, indexOrder, value))
+
+  override def relationshipIndexScan(index: IndexReadSession,
+                                     needsValues: Boolean,
+                                     indexOrder: IndexOrder): RelationshipValueIndexCursor =
+    manyDbHits(inner.relationshipIndexScan(index, needsValues, indexOrder))
 
   override def getNodesByLabel(id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue] =
     manyDbHits(inner.getNodesByLabel(id, indexOrder))
@@ -249,9 +274,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] = singleDbHit(inner.getAllConstraints())
 
-  override def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor,
-                                              queries: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor =
-    singleDbHit(inner.lockingUniqueIndexSeek(index, queries))
+  override def nodeLockingUniqueIndexSeek(index: IndexDescriptor,
+                                          queries: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor =
+    singleDbHit(inner.nodeLockingUniqueIndexSeek(index, queries))
 
   override def getRelTypeId(relType: String): Int = singleDbHit(inner.getRelTypeId(relType))
 

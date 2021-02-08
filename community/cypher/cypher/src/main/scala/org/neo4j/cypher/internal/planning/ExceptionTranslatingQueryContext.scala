@@ -50,6 +50,8 @@ import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
@@ -149,11 +151,34 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def indexReference(label: Int, properties: Int*): IndexDescriptor =
     translateException(tokenNameLookup, inner.indexReference(label, properties:_*))
 
-  override def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
-                                           needsValues: Boolean,
-                                           indexOrder: IndexOrder,
-                                           values: Seq[PropertyIndexQuery]): NodeValueIndexCursor =
-    translateException(tokenNameLookup, inner.indexSeek(index, needsValues, indexOrder, values))
+  override def nodeIndexSeek(index: IndexReadSession,
+                             needsValues: Boolean,
+                             indexOrder: IndexOrder,
+                             values: Seq[PropertyIndexQuery]): NodeValueIndexCursor =
+    translateException(tokenNameLookup, inner.nodeIndexSeek(index, needsValues, indexOrder, values))
+
+  override def relationshipIndexSeek(index: IndexReadSession,
+                                     needsValues: Boolean,
+                                     indexOrder: IndexOrder,
+                                     values: Seq[PropertyIndexQuery]): RelationshipValueIndexCursor =
+    translateException(tokenNameLookup, inner.relationshipIndexSeek(index, needsValues, indexOrder, values))
+
+  override def relationshipIndexSeekByContains(index: IndexReadSession,
+                                               needsValues: Boolean,
+                                               indexOrder: IndexOrder,
+                                               value: TextValue): RelationshipValueIndexCursor =
+    translateException(tokenNameLookup, inner.relationshipIndexSeekByContains(index, needsValues, indexOrder, value))
+
+  override def relationshipIndexSeekByEndsWith(index: IndexReadSession,
+                                               needsValues: Boolean,
+                                               indexOrder: IndexOrder,
+                                               value: TextValue): RelationshipValueIndexCursor =
+    translateException(tokenNameLookup, inner.relationshipIndexSeekByEndsWith(index, needsValues, indexOrder, value))
+
+  override def relationshipIndexScan(index: IndexReadSession,
+                                     needsValues: Boolean,
+                                     indexOrder: IndexOrder): RelationshipValueIndexCursor =
+    translateException(tokenNameLookup, inner.relationshipIndexScan(index, needsValues, indexOrder))
 
   override def getNodesByLabel(id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue] =
     translateException(tokenNameLookup, inner.getNodesByLabel(id, indexOrder))
@@ -267,9 +292,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getRelTypeName(id: Int): String =
     translateException(tokenNameLookup, inner.getRelTypeName(id))
 
-  override def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor,
-                                              values: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor =
-    translateException(tokenNameLookup, inner.lockingUniqueIndexSeek(index, values))
+  override def nodeLockingUniqueIndexSeek(index: IndexDescriptor,
+                                          values: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor =
+    translateException(tokenNameLookup, inner.nodeLockingUniqueIndexSeek(index, values))
 
   override def getImportURL(url: URL): Either[String, URL] =
     translateException(tokenNameLookup, inner.getImportURL(url))
@@ -300,22 +325,22 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def relationshipById(relationshipId: Long, startNodeId: Long, endNodeId: Long, typeId: Int): RelationshipValue =
     translateException(tokenNameLookup, inner.relationshipById(relationshipId, startNodeId, endNodeId, typeId))
 
-  override def indexSeekByContains[RESULT <: AnyRef](index: IndexReadSession,
-                                                     needsValues: Boolean,
-                                                     indexOrder: IndexOrder,
-                                                     value: TextValue): NodeValueIndexCursor =
-    translateException(tokenNameLookup, inner.indexSeekByContains(index, needsValues, indexOrder, value))
+  override def nodeIndexSeekByContains(index: IndexReadSession,
+                                       needsValues: Boolean,
+                                       indexOrder: IndexOrder,
+                                       value: TextValue): NodeValueIndexCursor =
+    translateException(tokenNameLookup, inner.nodeIndexSeekByContains(index, needsValues, indexOrder, value))
 
-  override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReadSession,
-                                                     needsValues: Boolean,
-                                                     indexOrder: IndexOrder,
-                                                     value: TextValue): NodeValueIndexCursor =
-    translateException(tokenNameLookup, inner.indexSeekByEndsWith(index, needsValues, indexOrder, value))
+  override def nodeIndexSeekByEndsWith(index: IndexReadSession,
+                                       needsValues: Boolean,
+                                       indexOrder: IndexOrder,
+                                       value: TextValue): NodeValueIndexCursor =
+    translateException(tokenNameLookup, inner.nodeIndexSeekByEndsWith(index, needsValues, indexOrder, value))
 
-  override def indexScan[RESULT <: AnyRef](index: IndexReadSession,
-                                           needsValues: Boolean,
-                                           indexOrder: IndexOrder): NodeValueIndexCursor =
-    translateException(tokenNameLookup, inner.indexScan(index, needsValues, indexOrder))
+  override def nodeIndexScan(index: IndexReadSession,
+                             needsValues: Boolean,
+                             indexOrder: IndexOrder): NodeValueIndexCursor =
+    translateException(tokenNameLookup, inner.nodeIndexScan(index, needsValues, indexOrder))
 
   override def nodeHasCheapDegrees(node: Long, nodeCursor: NodeCursor): Boolean =
     translateException(tokenNameLookup, inner.nodeHasCheapDegrees(node, nodeCursor))

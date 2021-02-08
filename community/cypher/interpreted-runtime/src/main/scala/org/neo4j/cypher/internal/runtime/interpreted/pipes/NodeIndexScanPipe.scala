@@ -42,7 +42,7 @@ case class NodeIndexScanPipe(ident: String,
 
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val baseContext = state.newRowWithArgument(rowFactory)
-    val cursor = state.query.indexScan(state.queryIndexes(queryIndexId), needsValues, indexOrder)
+    val cursor = state.query.nodeIndexScan(state.queryIndexes(queryIndexId), needsValues, indexOrder)
     new IndexIterator(state, state.query, baseContext, cursor)
   }
 }

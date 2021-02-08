@@ -107,7 +107,7 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    when(state.query.indexSeekByContains(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
+    when(state.query.nodeIndexSeekByContains(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
       //NOTE: this is what is done in TransactionBoundQueryContext
       resourceManager.trace(cursor)
       cursor
@@ -131,7 +131,7 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    when(state.query.indexSeekByContains(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
+    when(state.query.nodeIndexSeekByContains(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
       //NOTE: this is what is done in TransactionBoundQueryContext
       resourceManager.trace(cursor)
       cursor
@@ -154,7 +154,7 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    when(state.query.indexSeekByEndsWith(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
+    when(state.query.nodeIndexSeekByEndsWith(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
       //NOTE: this is what is done in TransactionBoundQueryContext
       resourceManager.trace(cursor)
       cursor
@@ -177,7 +177,7 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
 
     val cursor = new StubNodeValueIndexCursor().withNode(0)
-    when(state.query.indexSeekByEndsWith(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
+    when(state.query.nodeIndexSeekByEndsWith(any[IndexReadSession], any[Boolean], any[IndexOrder], any[TextValue])).thenAnswer((_: InvocationOnMock) => {
       //NOTE: this is what is done in TransactionBoundQueryContext
       resourceManager.trace(cursor)
       cursor

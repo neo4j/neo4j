@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.ValuedNodeIndexCursor
+import org.neo4j.cypher.internal.runtime.ValuedRelationshipIndexCursor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.CursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator
@@ -82,6 +83,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.SchemaReadCore
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.schema
@@ -296,10 +298,30 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $relationshipId", e)
     }
 
-  override def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
-                                           needsValues: Boolean,
-                                           indexOrder: IndexOrder,
-                                           predicates: Seq[PropertyIndexQuery]): NodeValueIndexCursor = {
+  override def nodeIndexSeek(index: IndexReadSession,
+                             needsValues: Boolean,
+                             indexOrder: IndexOrder,
+                             predicates: Seq[PropertyIndexQuery]): NodeValueIndexCursor = {
+    val impossiblePredicate =
+      predicates.exists {
+        case p: PropertyIndexQuery.ExactPredicate => (p.value() eq Values.NO_VALUE) || (p.value().isInstanceOf[FloatingPointValue] && p.value().asInstanceOf[FloatingPointValue].isNaN)
+        case _: PropertyIndexQuery.ExistsPredicate => predicates.length <= 1
+        case p: PropertyIndexQuery.RangePredicate[_] =>
+          !RANGE_SEEKABLE_VALUE_GROUPS.contains(p.valueGroup())
+        case _ => false
+      }
+
+    if (impossiblePredicate) {
+      NodeValueIndexCursor.EMPTY
+    } else {
+      innerNodeIndexSeek(index, needsValues, indexOrder, predicates: _*)
+    }
+  }
+
+  override def relationshipIndexSeek(index: IndexReadSession,
+                                     needsValues: Boolean,
+                                     indexOrder: IndexOrder,
+                                     predicates: Seq[PropertyIndexQuery]): RelationshipValueIndexCursor = {
 
     val impossiblePredicate =
       predicates.exists {
@@ -310,8 +332,33 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         case _ => false
       }
 
-    if (impossiblePredicate) NodeValueIndexCursor.EMPTY
-    else seek(index, needsValues, indexOrder, predicates: _*)
+    if (impossiblePredicate) {
+      RelationshipValueIndexCursor.EMPTY
+    } else {
+      innerRelationshipIndexSeek(index, needsValues, indexOrder, predicates: _*)
+    }
+  }
+
+  override def relationshipIndexSeekByContains(index: IndexReadSession,
+                                               needsValues: Boolean,
+                                               indexOrder: IndexOrder,
+                                               value: TextValue): RelationshipValueIndexCursor =
+    innerRelationshipIndexSeek(index, needsValues, indexOrder,
+      PropertyIndexQuery.stringContains(index.reference().schema().getPropertyIds()(0), value))
+
+  override def relationshipIndexSeekByEndsWith(index: IndexReadSession,
+                                               needsValues: Boolean,
+                                               indexOrder: IndexOrder,
+                                               value: TextValue): RelationshipValueIndexCursor =
+    innerRelationshipIndexSeek(index, needsValues, indexOrder,
+      PropertyIndexQuery.stringSuffix(index.reference().schema().getPropertyIds()(0), value))
+
+  override def relationshipIndexScan(index: IndexReadSession,
+                                     needsValues: Boolean,
+                                     indexOrder: IndexOrder): RelationshipValueIndexCursor = {
+    val relCursor = allocateAndTraceRelationshipValueIndexCursor()
+    reads().relationshipIndexScan(index, relCursor, IndexQueryConstraints.constrained(asKernelIndexOrder(indexOrder), needsValues))
+    relCursor
   }
 
   override def indexReference(label: Int,
@@ -319,57 +366,83 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     Iterators.single(
       transactionalContext.kernelTransaction.schemaRead().index(SchemaDescriptor.forLabel(label, properties: _*)))
 
-  private def seek[RESULT <: AnyRef](index: IndexReadSession,
-                                     needsValues: Boolean,
-                                     indexOrder: IndexOrder,
-                                     queries: PropertyIndexQuery*): NodeValueIndexCursor = {
+  private def innerNodeIndexSeek(index: IndexReadSession,
+                                 needsValues: Boolean,
+                                 indexOrder: IndexOrder,
+                                 queries: PropertyIndexQuery*): NodeValueIndexCursor = {
 
     val nodeCursor: NodeValueIndexCursor = allocateAndTraceNodeValueIndexCursor()
     val actualValues =
       if (needsValues && queries.forall(_.isInstanceOf[ExactPredicate]))
       // We don't need property values from the index for an exact seek
+      {
         queries.map(_.asInstanceOf[ExactPredicate].value()).toArray
-      else
+      } else {
         null
-
+      }
     val needsValuesFromIndexSeek = actualValues == null && needsValues
     reads().nodeIndexSeek(index, nodeCursor, IndexQueryConstraints.constrained(asKernelIndexOrder(indexOrder), needsValuesFromIndexSeek), queries: _*)
-    if (needsValues && actualValues != null)
+    if (needsValues && actualValues != null) {
       new ValuedNodeIndexCursor(nodeCursor, actualValues)
-    else
+    } else {
       nodeCursor
+    }
   }
 
-  override def indexScan[RESULT <: AnyRef](index: IndexReadSession,
-                                           needsValues: Boolean,
-                                           indexOrder: IndexOrder): NodeValueIndexCursor = {
+  private def innerRelationshipIndexSeek(index: IndexReadSession,
+                                         needsValues: Boolean,
+                                         indexOrder: IndexOrder,
+                                         queries: PropertyIndexQuery*): RelationshipValueIndexCursor = {
+
+    val relCursor = allocateAndTraceRelationshipValueIndexCursor()
+    val actualValues =
+      if (needsValues && queries.forall(_.isInstanceOf[ExactPredicate]))
+      // We don't need property values from the index for an exact seek
+      {
+        queries.map(_.asInstanceOf[ExactPredicate].value()).toArray
+      } else {
+        null
+      }
+    val needsValuesFromIndexSeek = actualValues == null && needsValues
+    reads().relationshipIndexSeek(index, relCursor, IndexQueryConstraints.constrained(asKernelIndexOrder(indexOrder), needsValuesFromIndexSeek), queries: _*)
+    if (needsValues && actualValues != null) {
+      new ValuedRelationshipIndexCursor(relCursor, actualValues)
+    } else {
+      relCursor
+    }
+  }
+
+  override def nodeIndexScan(index: IndexReadSession,
+                             needsValues: Boolean,
+                             indexOrder: IndexOrder): NodeValueIndexCursor = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
     reads().nodeIndexScan(index, nodeCursor, IndexQueryConstraints.constrained(asKernelIndexOrder(indexOrder), needsValues))
     nodeCursor
   }
 
-  override def indexSeekByContains[RESULT <: AnyRef](index: IndexReadSession,
-                                                     needsValues: Boolean,
-                                                     indexOrder: IndexOrder,
-                                                     value: TextValue): NodeValueIndexCursor =
-    seek(index, needsValues, indexOrder,
+
+  override def nodeIndexSeekByContains(index: IndexReadSession,
+                                       needsValues: Boolean,
+                                       indexOrder: IndexOrder,
+                                       value: TextValue): NodeValueIndexCursor =
+    innerNodeIndexSeek(index, needsValues, indexOrder,
       PropertyIndexQuery.stringContains(index.reference().schema().getPropertyIds()(0), value))
 
-  override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReadSession,
-                                                     needsValues: Boolean,
-                                                     indexOrder: IndexOrder,
-                                                     value: TextValue): NodeValueIndexCursor =
-    seek(index, needsValues, indexOrder, PropertyIndexQuery.stringSuffix(index.reference().schema().getPropertyIds()(0), value))
+  override def nodeIndexSeekByEndsWith(index: IndexReadSession,
+                                       needsValues: Boolean,
+                                       indexOrder: IndexOrder,
+                                       value: TextValue): NodeValueIndexCursor =
+    innerNodeIndexSeek(index, needsValues, indexOrder, PropertyIndexQuery.stringSuffix(index.reference().schema().getPropertyIds()(0), value))
 
-  override def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor,
-                                              queries: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor = {
+  override def nodeLockingUniqueIndexSeek(index: IndexDescriptor,
+                                          queries: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor = {
 
     val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer, transactionalContext.tc.kernelTransaction().memoryTracker())
     try {
       indexSearchMonitor.lockingUniqueIndexSeek(index, queries)
-      if (queries.exists(q => q.value() eq Values.NO_VALUE))
+      if (queries.exists(q => q.value() eq Values.NO_VALUE)) {
         NodeValueHit.EMPTY
-      else {
+      } else {
         val resultNodeId = reads().lockingNodeUniqueIndexSeek(index, cursor, queries: _*)
         if (StatementConstants.NO_SUCH_NODE == resultNodeId) {
           NodeValueHit.EMPTY
@@ -1071,6 +1144,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   private def allocateAndTraceNodeValueIndexCursor() = {
     val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer, transactionalContext.kernelTransaction.memoryTracker())
+    resources.trace(cursor)
+    cursor
+  }
+
+  private def allocateAndTraceRelationshipValueIndexCursor() = {
+    val cursor = transactionalContext.cursors.allocateRelationshipValueIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer, transactionalContext.kernelTransaction.memoryTracker())
     resources.trace(cursor)
     cursor
   }

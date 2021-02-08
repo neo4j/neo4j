@@ -74,7 +74,7 @@ case class NodeIndexContainsScanPipe(ident: String,
   override protected def queryContextCall(state: QueryState,
                                           index: IndexReadSession,
                                           value: TextValue): NodeValueIndexCursor =
-    state.query.indexSeekByContains(index, needsValues, indexOrder, value)
+    state.query.nodeIndexSeekByContains(index, needsValues, indexOrder, value)
 }
 
 case class NodeIndexEndsWithScanPipe(ident: String,
@@ -89,5 +89,5 @@ case class NodeIndexEndsWithScanPipe(ident: String,
   override protected def queryContextCall(state: QueryState,
                                           index: IndexReadSession,
                                           value: TextValue): NodeValueIndexCursor =
-    state.query.indexSeekByEndsWith(index, needsValues, indexOrder, value)
+    state.query.nodeIndexSeekByEndsWith(index, needsValues, indexOrder, value)
 }

@@ -85,17 +85,17 @@ trait NodeIndexSeeker {
            _: SeekByRange =>
         val indexQueries: Seq[Seq[PropertyIndexQuery]] = computeIndexQueries(state, baseContext)
         if (indexQueries.size == 1) {
-          state.query.indexSeek(index, needsValues, indexOrder, indexQueries.head)
+          state.query.nodeIndexSeek(index, needsValues, indexOrder, indexQueries.head)
         } else {
-          orderedCursor(indexOrder, indexQueries.map(query => state.query.indexSeek(index, needsValues = needsValues || indexOrder != IndexOrderNone, indexOrder, query)).toArray)
+          orderedCursor(indexOrder, indexQueries.map(query => state.query.nodeIndexSeek(index, needsValues = needsValues || indexOrder != IndexOrderNone, indexOrder, query)).toArray)
         }
 
       case LockingUniqueIndexSeek =>
         val indexQueries = computeExactQueries(state, baseContext)
         if (indexQueries.size == 1) {
-          state.query.lockingUniqueIndexSeek(index.reference(), indexQueries.head)
+          state.query.nodeLockingUniqueIndexSeek(index.reference(), indexQueries.head)
         } else {
-          orderedCursor(indexOrder, indexQueries.map(query => state.query.lockingUniqueIndexSeek(index.reference(), query)).toArray)
+          orderedCursor(indexOrder, indexQueries.map(query => state.query.nodeLockingUniqueIndexSeek(index.reference(), query)).toArray)
         }
     }
 

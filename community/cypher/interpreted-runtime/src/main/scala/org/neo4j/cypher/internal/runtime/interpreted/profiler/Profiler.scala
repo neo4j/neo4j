@@ -45,6 +45,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.storable.Value
@@ -233,6 +234,20 @@ final class ProfilingPipeQueryContext(inner: QueryContext)
 
     override def nodeReference(): Long = inner.nodeReference()
 
+    override def score(): Float = inner.score()
+  }
+
+  override protected def manyDbHits(inner: RelationshipValueIndexCursor): RelationshipValueIndexCursor =  new ProfilingCursor(inner) with RelationshipValueIndexCursor {
+     override def numberOfProperties(): Int = inner.numberOfProperties()
+     override def hasValue: Boolean = inner.hasValue
+    override def propertyValue(offset: Int): Value = inner.propertyValue(offset)
+    override def relationship(cursor: RelationshipScanCursor): Unit = inner.relationship(cursor)
+    override def sourceNode(cursor: NodeCursor): Unit = inner.sourceNode(cursor)
+    override def targetNode(cursor: NodeCursor): Unit = inner.targetNode(cursor)
+    override def `type`(): Int = inner.`type`()
+    override def sourceNodeReference(): Long = inner.sourceNodeReference()
+    override def targetNodeReference(): Long = inner.targetNodeReference()
+    override def relationshipReference(): Long = inner.relationshipReference()
     override def score(): Float = inner.score()
   }
 

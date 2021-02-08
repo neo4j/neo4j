@@ -40,6 +40,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.Write
@@ -134,26 +135,45 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean
 
-  def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
-                                  needsValues: Boolean,
-                                  indexOrder: IndexOrder,
-                                  queries: Seq[PropertyIndexQuery]): NodeValueIndexCursor
+  def nodeIndexSeek(index: IndexReadSession,
+                    needsValues: Boolean,
+                    indexOrder: IndexOrder,
+                    queries: Seq[PropertyIndexQuery]): NodeValueIndexCursor
 
-  def indexSeekByContains[RESULT <: AnyRef](index: IndexReadSession,
-                                            needsValues: Boolean,
-                                            indexOrder: IndexOrder,
-                                            value: TextValue): NodeValueIndexCursor
+  def nodeIndexSeekByContains(index: IndexReadSession,
+                              needsValues: Boolean,
+                              indexOrder: IndexOrder,
+                              value: TextValue): NodeValueIndexCursor
 
-  def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReadSession,
-                                            needsValues: Boolean,
-                                            indexOrder: IndexOrder,
-                                            value: TextValue): NodeValueIndexCursor
+  def nodeIndexSeekByEndsWith(index: IndexReadSession,
+                              needsValues: Boolean,
+                              indexOrder: IndexOrder,
+                              value: TextValue): NodeValueIndexCursor
 
-  def indexScan[RESULT <: AnyRef](index: IndexReadSession,
-                                  needsValues: Boolean,
-                                  indexOrder: IndexOrder): NodeValueIndexCursor
+  def nodeIndexScan(index: IndexReadSession,
+                    needsValues: Boolean,
+                    indexOrder: IndexOrder): NodeValueIndexCursor
 
-  def lockingUniqueIndexSeek[RESULT](index: IndexDescriptor, queries: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor
+  def nodeLockingUniqueIndexSeek(index: IndexDescriptor, queries: Seq[PropertyIndexQuery.ExactPredicate]): NodeValueIndexCursor
+
+  def relationshipIndexSeek(index: IndexReadSession,
+                            needsValues: Boolean,
+                            indexOrder: IndexOrder,
+                            queries: Seq[PropertyIndexQuery]): RelationshipValueIndexCursor
+
+  def relationshipIndexSeekByContains(index: IndexReadSession,
+                                      needsValues: Boolean,
+                                      indexOrder: IndexOrder,
+                                      value: TextValue): RelationshipValueIndexCursor
+
+  def relationshipIndexSeekByEndsWith(index: IndexReadSession,
+                                      needsValues: Boolean,
+                                      indexOrder: IndexOrder,
+                                      value: TextValue): RelationshipValueIndexCursor
+
+  def relationshipIndexScan(index: IndexReadSession,
+                            needsValues: Boolean,
+                            indexOrder: IndexOrder): RelationshipValueIndexCursor
 
   def getNodesByLabel(id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue]
 
