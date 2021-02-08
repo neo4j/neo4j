@@ -20,7 +20,10 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.ExecutionModel
+import org.neo4j.cypher.internal.compiler.ExecutionModel.SelectedBatchSize
+import org.neo4j.cypher.internal.compiler.ExecutionModel.VolcanoBatchSize
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
+import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -46,7 +49,7 @@ case class recordEffectiveOutputCardinality(executionModel: ExecutionModel, card
   override def apply(input: AnyRef): AnyRef = {
 
     val workReductions: mutable.Map[Id, WorkReduction] = mutable.Map().withDefaultValue(WorkReduction.NoReduction)
-    val cartesianRHSMultiplier: mutable.Map[Id, Cardinality] = mutable.Map().withDefaultValue(Cardinality.SINGLE)
+    val rhsMultipliers: mutable.Map[Id, Cardinality] = mutable.Map().withDefaultValue(Cardinality.SINGLE)
 
     val batchSize = executionModel.selectBatchSize(input.asInstanceOf[LogicalPlan], cardinalities)
 
@@ -54,7 +57,7 @@ case class recordEffectiveOutputCardinality(executionModel: ExecutionModel, card
       topDown(Rewriter.lift {
         case p: LogicalPlan =>
           val reduction = workReductions(p.id)
-          val multiplier = cartesianRHSMultiplier(p.id)
+          val multiplier = rhsMultipliers(p.id)
 
           val effectiveBatchSize = CardinalityCostModel.getEffectiveBatchSize(batchSize, p, providedOrders)
 
@@ -62,13 +65,20 @@ case class recordEffectiveOutputCardinality(executionModel: ExecutionModel, card
           p.lhs.foreach { lhs => workReductions += (lhs.id -> theseEffectiveCardinalities.lhsReduction) }
           p.rhs.foreach { rhs => workReductions += (rhs.id -> theseEffectiveCardinalities.rhsReduction) }
 
+          def findRHSMultipliers(left: LogicalPlan, right: LogicalPlan, batchSize: SelectedBatchSize): Unit = {
+            // The RHS is executed for each chunk of LHS rows
+            val lhsEffective = theseEffectiveCardinalities.lhsReduction.calculate(cardinalities.get(left.id))
+            val rhsInvocations = batchSize.numBatchesFor(lhsEffective)
+            // If nested, we want to multiply the new multiplier with any previous multiplier
+            val rhsMultiplier = rhsInvocations * rhsMultipliers(right.id)
+            right.flatten.foreach{c => rhsMultipliers(c.id) = rhsMultiplier}
+          }
+
           p match {
             case CartesianProduct(left, right) =>
-              // The RHS is executed for each chunk of LHS rows
-              val lhsEffective = theseEffectiveCardinalities.lhsReduction.calculate(cardinalities.get(left.id))
-              val rhsInvocations = effectiveBatchSize.numBatchesFor(lhsEffective)
-              val rhsMultiplier = rhsInvocations * cartesianRHSMultiplier(right.id)
-              right.flatten.foreach{c => cartesianRHSMultiplier(c.id) = rhsMultiplier}
+              findRHSMultipliers(left, right, effectiveBatchSize)
+            case a:ApplyPlan =>
+              findRHSMultipliers(a.left, a.right, VolcanoBatchSize)
             case _ =>
           }
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.scalactic.Equality
 import org.scalactic.Tolerance.convertNumericToPlusOrMinusWrapper
 import org.scalactic.TripleEquals.convertToEqualizer
@@ -27,9 +27,9 @@ import org.scalactic.TripleEquals.convertToEqualizer
 object CardinalitySupport {
 
 
-  implicit object Eq extends Equality[Cardinality] {
-    def areEqual(a: Cardinality, b: Any): Boolean = b match {
-      case b: Cardinality => a.amount === (b.amount +- tolerance(a))
+  implicit object Eq extends Equality[EffectiveCardinality] {
+    def areEqual(a: EffectiveCardinality, b: Any): Boolean = b match {
+      case b: EffectiveCardinality => a.amount === (b.amount +- tolerance(a))
       case _ => false
     }
 
@@ -37,6 +37,6 @@ object CardinalitySupport {
      * .00000001% off is acceptable
      * We have to be that strict because otherwise some of the var-expand tests would succeed without considering all path lengths.
      */
-    private def tolerance(a: Cardinality) = Math.max(1e-10, a.amount * 1e-10)
+    private def tolerance(a: EffectiveCardinality) = Math.max(1e-10, a.amount * 1e-10)
   }
 }

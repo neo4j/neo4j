@@ -272,6 +272,84 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
+  test("Should multiply RHS cardinality of SemiApply, but also apply WorkReduction") {
+    // GIVEN
+    val initial = new LogicalPlanBuilder(false)
+      .semiApply().withCardinality(15)
+      .|.expandAll("(n)-->(m)").withCardinality(2)
+      .|.allNodeScan("m").withCardinality(10)
+      .allNodeScan("n").withCardinality(10)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .semiApply().withEffectiveCardinality(15)
+      .|.expandAll("(n)-->(m)").withEffectiveCardinality(1 * 10)
+      .|.allNodeScan("m").withEffectiveCardinality(5 * 10)
+      .allNodeScan("n").withEffectiveCardinality(10)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+  test("Should multiply RHS cardinality of Apply") {
+    // GIVEN
+    val initial = new LogicalPlanBuilder(false)
+      .apply().withCardinality(20)
+      .|.expandAll("(n)-->(m)").withCardinality(2)
+      .|.allNodeScan("m").withCardinality(10)
+      .allNodeScan("n").withCardinality(10)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .apply().withEffectiveCardinality(20)
+      .|.expandAll("(n)-->(m)").withEffectiveCardinality(2 * 10)
+      .|.allNodeScan("m").withEffectiveCardinality(10 * 10)
+      .allNodeScan("n").withEffectiveCardinality(10)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+  test("Should multiply RHS cardinality of nested instances of Apply") {
+    // GIVEN
+    val initial = new LogicalPlanBuilder(false)
+      .apply().withCardinality(60)
+      .|.apply().withCardinality(6)
+      .|.|.expandAll("(n)-->(m)").withCardinality(3)
+      .|.|.allNodeScan("m").withCardinality(30)
+      .|.expandAll("(n)-->(m)").withCardinality(2)
+      .|.allNodeScan("m").withCardinality(20)
+      .allNodeScan("n").withCardinality(10)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .apply().withEffectiveCardinality(60)
+      .|.apply().withEffectiveCardinality(6 * 10)
+      .|.|.expandAll("(n)-->(m)").withEffectiveCardinality(3 * 2 * 10)
+      .|.|.allNodeScan("m").withEffectiveCardinality(30 * 2 * 10)
+      .|.expandAll("(n)-->(m)").withEffectiveCardinality(2 * 10)
+      .|.allNodeScan("m").withEffectiveCardinality(20 * 10)
+      .allNodeScan("n").withEffectiveCardinality(10)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
   def haveSameCardinalitiesAs(expected: (LogicalPlan, EffectiveCardinalities)): Matcher[(LogicalPlan, EffectiveCardinalities)] =
     (actual: (LogicalPlan, EffectiveCardinalities)) => {
       val (actPlan, actCards) = actual

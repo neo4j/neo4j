@@ -484,7 +484,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       val incoming = WorkReduction.NoReduction
       val (plan, reduction) = workReductionOf(buildPlan, incoming)
       withClue(LogicalPlanToPlanBuilderString(plan)) {
-        reduction shouldEqual ((incoming, WorkReduction(fraction = Selectivity(100.0/12345.0), minimum = Some(Cardinality(100)))))
+        reduction shouldEqual ((incoming, WorkReduction(fraction = Selectivity(1.0/12345.0), minimum = Some(Cardinality(1)))))
       }
     }
 
@@ -492,7 +492,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       val incoming = WorkReduction(Selectivity(0.3))
       val (plan, reduction) = workReductionOf(buildPlan, incoming)
       withClue(LogicalPlanToPlanBuilderString(plan)) {
-        reduction shouldEqual ((incoming, WorkReduction(fraction = Selectivity(30.0/12345.0), minimum = Some(Cardinality(30)))))
+        reduction shouldEqual ((incoming, WorkReduction(fraction = Selectivity(1.0/12345.0), minimum = Some(Cardinality(1)))))
       }
     }
   }

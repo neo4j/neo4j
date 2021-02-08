@@ -34,13 +34,13 @@ import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.util.attribution.SameId
 
 object triadicSelectionFinder extends SelectionCandidateGenerator {
 
@@ -117,7 +117,16 @@ object triadicSelectionFinder extends SelectionCandidateGenerator {
         patternRels = Set(exp1.relName),
         other = Set.empty,
         context = context)
-      val newExpand2 = Expand(argument, exp2.from, exp2.dir, exp2.types, exp2.to, exp2.relName, ExpandAll)(SameId(exp2.id))
+      val newExpand2 = {
+        val from = exp2.from
+        val to = exp2.to
+        val expand2PR = qg.patternRelationships.find {
+          case PatternRelationship(_, (`from`, `to`), _, _, _) => true
+          case PatternRelationship(_, (`to`, `from`), _, _, _) => true
+          case _ => false
+        }.get
+        context.logicalPlanProducer.planSimpleExpand(argument, exp2.from, exp2.dir, exp2.to, expand2PR, ExpandAll, context)
+      }
       val right = if (incomingPredicates.nonEmpty)
         context.logicalPlanProducer.planSelection(newExpand2, incomingPredicates, context)
       else

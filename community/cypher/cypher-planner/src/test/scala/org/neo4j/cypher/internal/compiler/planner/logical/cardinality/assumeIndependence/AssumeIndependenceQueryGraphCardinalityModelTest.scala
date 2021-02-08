@@ -318,21 +318,21 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectCardinality(A * B)
     expectPlanCardinality({
       case NodeByLabelScan("b", _, _, _) => true
-    }, B)
+    }, A * B)
   }
 
   test("MATCH (a:A) CALL { MATCH (b:B) RETURN b }") {
     expectCardinality(A * B)
     expectPlanCardinality({
       case NodeByLabelScan("b", _, _, _) => true
-    }, B)
+    }, A * B)
   }
 
   test("MATCH (a:A) CALL { MATCH (b:B) RETURN b } MATCH (c:C)") {
     expectCardinality(A * B * C)
     expectPlanCardinality({
       case NodeByLabelScan("c", _, _, _) => true
-    }, C)
+    }, A * B * C)
   }
 
   test("MATCH (a:A) CALL { WITH a MATCH (a)-[:T1]->(b:B) RETURN b }") {
@@ -351,40 +351,40 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectCardinality(A * (B + C))
     expectPlanCardinality({
       case NodeByLabelScan("b", _, _, _) => true
-    }, B)
+    }, A * B)
     expectPlanCardinality({
       case NodeByLabelScan("c", _, _, _) => true
-    }, C)
+    }, A * C)
   }
 
   test("MATCH (a:A) CALL { MATCH (b:B) RETURN b AS x UNION ALL MATCH (c:C) RETURN c AS x}") {
     expectCardinality(A * (B + C))
     expectPlanCardinality({
       case NodeByLabelScan("b", _, _, _) => true
-    }, B)
+    }, A * B)
     expectPlanCardinality({
       case NodeByLabelScan("c", _, _, _) => true
-    }, C)
+    }, A * C)
   }
 
   test("MATCH (a:A) CALL { WITH a UNWIND [1, 2] AS x WITH toFloat(x) AS f, x AS x RETURN x }") {
     expectCardinality(A * 2)
     expectPlanCardinality({
       case Projection(_, MapKeys("f")) => true
-    }, 2)
+    }, A * 2)
     expectPlanCardinality({
       case UnwindCollection(_, "x", _) => true
-    }, 2)
+    }, A * 2)
     expectPlanCardinality({
       case Argument(_) => true
-    }, 1)
+    }, A)
   }
 
   test("MATCH (a:A) CALL { WITH a MATCH (a)-[:T1]->(b:B) RETURN count(*) AS c }") {
     expectCardinality(A)
     expectPlanCardinality({
       case Aggregation(_, _, _) => true
-    }, 1)
+    }, A)
   }
 
   private val varLength0_0 = N * Asel * Bsel

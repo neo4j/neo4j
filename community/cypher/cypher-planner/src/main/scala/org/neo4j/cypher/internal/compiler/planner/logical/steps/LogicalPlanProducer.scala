@@ -1197,7 +1197,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                            right: LogicalPlan,
                            predicate: Expression,
                            context: LogicalPlanningContext): LogicalPlan = {
-    val solved = (solveds.get(left.id).asSinglePlannerQuery ++ solveds.get(right.id).asSinglePlannerQuery).updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
+    val solved = {
+      val leftSolved = solveds.get(left.id).asSinglePlannerQuery
+      val rightSolved = solveds.get(right.id).asSinglePlannerQuery.amendQueryGraph(_.withoutArguments())
+      (leftSolved ++ rightSolved).updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
+    }
     annotate(TriadicSelection(left, right, positivePredicate, sourceId, seenId, targetId), solved, providedOrders.get(left.id).fromLeft, context)
   }
 

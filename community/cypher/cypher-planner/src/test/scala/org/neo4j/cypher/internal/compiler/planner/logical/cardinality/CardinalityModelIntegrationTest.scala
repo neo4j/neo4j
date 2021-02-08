@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
-import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -63,18 +64,18 @@ trait CardinalityModelIntegrationTest extends StatisticsBackedLogicalPlanningSup
     val planId = planState.logicalPlan.flatten.collectFirst {
       case lp if findPlanId.applyOrElse(lp, (_: LogicalPlan) => false) => lp.id
     }.get
-    val actualCardinality = planState.planningAttributes.cardinalities.get(planId)
+    val actualCardinality = planState.planningAttributes.effectiveCardinalities.get(planId)
 
     // used to handle double rounding errors in assertion
     import org.neo4j.cypher.internal.compiler.planner.logical.CardinalitySupport.Eq
-    actualCardinality should equal(Cardinality(expectedCardinality))
+    actualCardinality should equal(EffectiveCardinality(expectedCardinality))(Eq)
   }
 
   def queryShouldHaveCardinality(query: String, expectedCardinality: Double): Unit = {
-    queryShouldHaveCardinality(plannerBuilder().build(), query, expectedCardinality)
+    queryShouldHaveCardinality(plannerBuilder().setExecutionModel(ExecutionModel.Volcano).build(), query, expectedCardinality)
   }
 
   def planShouldHaveCardinality(query: String, findPlanId: PartialFunction[LogicalPlan, Boolean], expectedCardinality: Double): Unit = {
-    planShouldHaveCardinality(plannerBuilder().build(), query, findPlanId, expectedCardinality)
+    planShouldHaveCardinality(plannerBuilder().setExecutionModel(ExecutionModel.Volcano).build(), query, findPlanId, expectedCardinality)
   }
 }
