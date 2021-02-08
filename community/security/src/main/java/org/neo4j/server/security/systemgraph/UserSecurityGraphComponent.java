@@ -21,6 +21,7 @@ package org.neo4j.server.security.systemgraph;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.AbstractSystemGraphComponent;
+import org.neo4j.dbms.database.ComponentVersion;
 import org.neo4j.dbms.database.KnownSystemComponentVersions;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -143,8 +144,8 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
         } );
     }
 
-    public KnownCommunitySecurityComponentVersion findSecurityGraphComponentVersion( String substring )
+    public KnownCommunitySecurityComponentVersion findSecurityGraphComponentVersion( ComponentVersion version )
     {
-        return knownUserSecurityComponentVersions.findComponentVersion( substring );
+        return knownUserSecurityComponentVersions.findComponentVersion( version );
     }
 }

@@ -196,7 +196,7 @@ class UserSecurityGraphComponentTest
 
     private void initUserSecurityComponent( UserSecurityGraphComponentVersion version ) throws Exception
     {
-        KnownCommunitySecurityComponentVersion builder = userSecurityGraphComponent.findSecurityGraphComponentVersion( version.getDescription() );
+        KnownCommunitySecurityComponentVersion builder = userSecurityGraphComponent.findSecurityGraphComponentVersion( version );
         inTx( tx -> userSecurityGraphComponent.initializeSystemGraphConstraints( tx ) );
 
         switch ( version )
