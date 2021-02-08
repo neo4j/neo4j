@@ -162,6 +162,7 @@ import org.neo4j.cypher.internal.logical.plans.GrantGraphAction
 import org.neo4j.cypher.internal.logical.plans.GrantRoleToUser
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.IndexSeek.relationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexSeekLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
@@ -388,7 +389,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "NodeByIdSeek", NoChildren, Seq(details(s"${anonVar("11")} WHERE id(${anonVar("11")}) IN [1,32]")), Set(anonVar("11"))))
   }
 
-  test("IndexSeek") {
+  test("NodeIndexSeek") {
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop)"), 23.0),
       planDescription(id, "NodeIndexScan", NoChildren, Seq(details("x:Label(Prop) WHERE Prop IS NOT NULL")), Set("x")))
@@ -484,6 +485,36 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Set.empty, IndexOrderNone),
         95.0),
       planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("x:Label(Prop) WHERE distance(Prop, point(1, 2, \"cartesian\")) <= 10")), Set("x")))
+  }
+
+  test("RelationshipIndexSeek") {
+    assertGood(
+      attach(relationshipIndexSeek("(x)-[r:R(Prop)]->(y)"), 23.0),
+      planDescription(id, "DirectedRelationshipIndexScan", NoChildren, Seq(details("r:R(Prop) WHERE Prop IS NOT NULL")), Set("r", "x", "y")))
+    assertGood(
+      attach(relationshipIndexSeek("(x)-[r:R(Prop)]-(y)"), 23.0),
+      planDescription(id, "UndirectedRelationshipIndexScan", NoChildren, Seq(details("r:R(Prop) WHERE Prop IS NOT NULL")), Set("r", "x", "y")))
+
+    assertGood(
+      attach(relationshipIndexSeek("(x)-[r:R(Prop = 42)]->(y)", getValue = GetValue), 23.0),
+      planDescription(id, "DirectedRelationshipIndexSeek", NoChildren, Seq(details("r:R(Prop) WHERE Prop = 42, cache[r.Prop]")), Set("r", "x", "y")))
+    assertGood(
+      attach(relationshipIndexSeek("(x)-[r:R(Prop = 42)]-(y)", getValue = GetValue), 23.0),
+      planDescription(id, "UndirectedRelationshipIndexSeek", NoChildren, Seq(details("r:R(Prop) WHERE Prop = 42, cache[r.Prop]")), Set("r", "x", "y")))
+
+    assertGood(
+      attach(relationshipIndexSeek("(x)-[r:R(Prop CONTAINS 'Foo')]->(y)"), 23.0),
+      planDescription(id, "DirectedRelationshipIndexContainsScan", NoChildren, Seq(details("r:R(Prop) WHERE Prop CONTAINS \"Foo\"")), Set("r", "x", "y")))
+    assertGood(
+      attach(relationshipIndexSeek("(x)-[r:R(Prop CONTAINS 'Foo')]-(y)"), 23.0),
+      planDescription(id, "UndirectedRelationshipIndexContainsScan", NoChildren, Seq(details("r:R(Prop) WHERE Prop CONTAINS \"Foo\"")), Set("r", "x", "y")))
+
+    assertGood(
+      attach(relationshipIndexSeek("(x)-[r:R(Prop ENDS WITH 'Foo')]->(y)"), 23.0),
+      planDescription(id, "DirectedRelationshipIndexEndsWithScan", NoChildren, Seq(details("r:R(Prop) WHERE Prop ENDS WITH \"Foo\"")), Set("r", "x", "y")))
+    assertGood(
+      attach(relationshipIndexSeek("(x)-[r:R(Prop ENDS WITH 'Foo')]-(y)"), 23.0),
+      planDescription(id, "UndirectedRelationshipIndexEndsWithScan", NoChildren, Seq(details("r:R(Prop) WHERE Prop ENDS WITH \"Foo\"")), Set("r", "x", "y")))
   }
 
   test("MultiNodeIndexSeek") {
