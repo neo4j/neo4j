@@ -31,9 +31,13 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 
 public class DefaultRelationshipTypeIndexCursor extends DefaultEntityTokenIndexCursor<DefaultRelationshipTypeIndexCursor> implements RelationshipTypeIndexCursor
 {
-    DefaultRelationshipTypeIndexCursor( CursorPool<DefaultRelationshipTypeIndexCursor> pool )
+
+    private final DefaultRelationshipScanCursor relationshipSecurityCursor;
+
+    DefaultRelationshipTypeIndexCursor( CursorPool<DefaultRelationshipTypeIndexCursor> pool, DefaultRelationshipScanCursor relationshipSecurityCursor )
     {
         super( pool );
+        this.relationshipSecurityCursor = relationshipSecurityCursor;
     }
 
     @Override
@@ -63,13 +67,14 @@ public class DefaultRelationshipTypeIndexCursor extends DefaultEntityTokenIndexC
     @Override
     boolean allowedToSeeAllEntitiesWithToken( AccessMode accessMode, int token )
     {
-        return true;
+        return accessMode.allowsTraverseRelType( token ) && accessMode.allowsTraverseAllLabels();
     }
 
     @Override
     boolean allowedToSeeEntity( AccessMode accessMode, long entityReference, TokenSet tokens )
     {
-        return true;
+        readEntity( read -> read.singleRelationship( entityReference, relationshipSecurityCursor ) );
+        return relationshipSecurityCursor.next();
     }
 
     @Override
@@ -122,7 +127,11 @@ public class DefaultRelationshipTypeIndexCursor extends DefaultEntityTokenIndexC
 
     public void release()
     {
-        // nothing to do
+        if ( relationshipSecurityCursor != null )
+        {
+            relationshipSecurityCursor.close();
+            relationshipSecurityCursor.release();
+        }
     }
 
     @Override

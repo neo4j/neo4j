@@ -33,6 +33,7 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
 
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertRelationshipCount;
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertRelationships;
 import static org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEventKind.Relationship;
@@ -77,7 +78,7 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
         {
             org.neo4j.internal.kernel.api.Read read = tx.dataRead();
 
-            try ( RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor() )
+            try ( RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor( NULL ) )
             {
                 MutableLongSet uniqueIds = new LongHashSet();
 
@@ -132,7 +133,7 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
 
             Read read = tx.dataRead();
 
-            try ( RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor() )
+            try ( RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor( NULL ) )
             {
                 MutableLongSet uniqueIds = new LongHashSet();
 
@@ -163,7 +164,7 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
         {
             org.neo4j.internal.kernel.api.Read read = tx.dataRead();
 
-            try ( RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor() )
+            try ( RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor( NULL ) )
             {
                 TestKernelReadTracer tracer = new TestKernelReadTracer();
                 cursor.setTracer( tracer );

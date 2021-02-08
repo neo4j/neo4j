@@ -30,7 +30,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
@@ -44,7 +43,6 @@ import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Token;
@@ -1261,16 +1259,20 @@ public class Operations implements Write, SchemaWrite
         //enforce constraints
         if ( config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
         {
-            try ( RelationshipTypeIndexCursor relationshipsWithType = cursors.allocateRelationshipTypeIndexCursor() )
+            try ( var fullAccessIndexCursor = cursors.allocateFullAccessRelationshipTypeIndexCursor();
+                  var fullAccessCursor = cursors.allocateFullAccessRelationshipScanCursor( cursorTracer ) )
             {
-                allStoreHolder.relationshipTypeScan( schema.getRelTypeId(), relationshipsWithType, IndexOrder.NONE );
-                constraintSemantics.validateRelationshipPropertyExistenceConstraint( relationshipsWithType, relationshipCursor, propertyCursor, schema, token );
+                allStoreHolder.relationshipTypeScan( schema.getRelTypeId(), fullAccessIndexCursor, IndexOrder.NONE );
+                constraintSemantics.validateRelationshipPropertyExistenceConstraint( fullAccessIndexCursor, fullAccessCursor, propertyCursor, schema, token );
             }
         }
         else
         {
-            allStoreHolder.relationshipTypeScan( schema.getRelTypeId(), relationshipCursor );
-            constraintSemantics.validateRelationshipPropertyExistenceConstraint( relationshipCursor, propertyCursor, schema, token );
+            try ( var fullAccessCursor = cursors.allocateFullAccessRelationshipScanCursor( cursorTracer ) )
+            {
+                allStoreHolder.relationshipTypeScan( schema.getRelTypeId(), fullAccessCursor );
+                constraintSemantics.validateRelationshipPropertyExistenceConstraint( fullAccessCursor, propertyCursor, schema, token );
+            }
         }
 
         //Create

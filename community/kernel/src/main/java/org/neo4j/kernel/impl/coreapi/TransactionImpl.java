@@ -888,7 +888,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     {
         KernelTransaction transaction = kernelTransaction();
 
-        RelationshipTypeIndexCursor relationshipTypeIndexCursor = transaction.cursors().allocateRelationshipTypeIndexCursor( );
+        RelationshipTypeIndexCursor relationshipTypeIndexCursor = transaction.cursors().allocateRelationshipTypeIndexCursor( transaction.pageCursorTracer() );
         RelationshipScanCursor relationshipScanCursor = transaction.cursors().allocateRelationshipScanCursor( transaction.pageCursorTracer() );
         PropertyCursor propertyCursor = transaction.cursors().allocatePropertyCursor( transaction.pageCursorTracer(), transaction.memoryTracker() );
 
@@ -976,7 +976,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return Iterators.emptyResourceIterator();
         }
 
-        RelationshipTypeIndexCursor cursor = ktx.cursors().allocateRelationshipTypeIndexCursor();
+        RelationshipTypeIndexCursor cursor = ktx.cursors().allocateRelationshipTypeIndexCursor( transaction.pageCursorTracer() );
         ktx.dataRead().relationshipTypeScan( typeId, cursor, IndexOrder.NONE );
         return new RelationshipCursorResourceIterator<>( cursor, this::newRelationshipEntity );
     }

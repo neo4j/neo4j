@@ -62,6 +62,8 @@ public interface CursorFactory
 
     RelationshipValueIndexCursor allocateRelationshipValueIndexCursor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
 
-    RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor();
+    RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor( PageCursorTracer cursorTracer );
+
+    RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor();
 
 }

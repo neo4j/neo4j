@@ -53,6 +53,7 @@ public class StubCursorFactory implements CursorFactory
     private final Queue<NodeLabelIndexCursor> fullNodeLabelIndexCursors = new ArrayDeque<>();
     private final Queue<RelationshipValueIndexCursor> relationshipValueIndexCursors = new LinkedList<>();
     private final Queue<RelationshipTypeIndexCursor> relationshipTypeIndexCursors = new ArrayDeque<>();
+    private final Queue<RelationshipTypeIndexCursor> fullRelationshipTypeIndexCursors = new ArrayDeque<>();
 
     public StubCursorFactory()
     {
@@ -143,9 +144,15 @@ public class StubCursorFactory implements CursorFactory
     }
 
     @Override
-    public RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor()
+    public RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor( PageCursorTracer cursorTracer )
     {
         return poll( relationshipTypeIndexCursors );
+    }
+
+    @Override
+    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor()
+    {
+        return poll( fullRelationshipTypeIndexCursors );
     }
 
     public StubCursorFactory withRelationshipTraversalCursors( RelationshipTraversalCursor... cursors )

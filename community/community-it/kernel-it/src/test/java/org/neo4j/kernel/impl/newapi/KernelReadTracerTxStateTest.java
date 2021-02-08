@@ -312,7 +312,7 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
         TestKernelReadTracer tracer = new TestKernelReadTracer();
 
         try ( KernelTransaction tx = beginTransaction();
-              RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor() )
+              RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor( NULL ) )
         {
             int rType = tx.token().relationshipTypeGetOrCreateForName( "R" );
 

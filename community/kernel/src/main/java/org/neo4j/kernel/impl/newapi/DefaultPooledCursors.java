@@ -25,6 +25,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
@@ -50,6 +51,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     private DefaultNodeLabelIndexCursor fullAccessNodeLabelIndexCursor;
     private DefaultRelationshipValueIndexCursor relationshipValueIndexCursor;
     private DefaultRelationshipTypeIndexCursor relationshipTypeIndexCursor;
+    private DefaultRelationshipTypeIndexCursor fullAccessRelationshipTypeIndexCursor;
 
     public DefaultPooledCursors( StorageReader storageReader, Config config )
     {
@@ -444,11 +446,15 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     @Override
-    public DefaultRelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor()
+    public DefaultRelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor( PageCursorTracer cursorTracer )
     {
         if ( relationshipTypeIndexCursor == null )
         {
-            return trace( new DefaultRelationshipTypeIndexCursor( this::accept ) );
+            var nodeCursor = new DefaultNodeCursor( this::accept, storageReader.allocateNodeCursor( cursorTracer ),
+                                                    storageReader.allocateNodeCursor( cursorTracer ) );
+            var relationshipScanCursor = new DefaultRelationshipScanCursor( this::accept, storageReader.allocateRelationshipScanCursor( cursorTracer ),
+                                                                            nodeCursor );
+            return trace( new DefaultRelationshipTypeIndexCursor( this::accept, relationshipScanCursor ) );
         }
 
         try
@@ -469,6 +475,33 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         }
         cursor.removeTracer();
         relationshipTypeIndexCursor = cursor;
+    }
+
+    @Override
+    public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor()
+    {
+        if ( fullAccessRelationshipTypeIndexCursor == null )
+        {
+            return trace( new FullAccessRelationshipTypeIndexCursor( this::acceptFullAccess ) );
+        }
+
+        try
+        {
+            return acquire( fullAccessRelationshipTypeIndexCursor );
+        }
+        finally
+        {
+            fullAccessRelationshipTypeIndexCursor = null;
+        }
+    }
+
+    private void acceptFullAccess( DefaultRelationshipTypeIndexCursor cursor )
+    {
+        if ( fullAccessRelationshipTypeIndexCursor != null )
+        {
+            fullAccessRelationshipTypeIndexCursor.release();
+        }
+        fullAccessRelationshipTypeIndexCursor = cursor;
     }
 
     public void release()
@@ -542,6 +575,11 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             relationshipTypeIndexCursor.release();
             relationshipTypeIndexCursor = null;
+        }
+        if ( fullAccessRelationshipTypeIndexCursor != null )
+        {
+            fullAccessRelationshipTypeIndexCursor.release();
+            fullAccessRelationshipTypeIndexCursor = null;
         }
     }
 }

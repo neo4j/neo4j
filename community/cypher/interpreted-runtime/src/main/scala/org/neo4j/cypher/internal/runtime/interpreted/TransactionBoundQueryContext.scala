@@ -265,7 +265,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def getRelationshipsByType(id: Int): ClosingLongIterator = {
-    val cursor = transactionalContext.cursors.allocateRelationshipTypeIndexCursor()
+    val cursor = transactionalContext.cursors.allocateRelationshipTypeIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer)
     resources.trace(cursor)
     reads().relationshipTypeScan(id, cursor, schema.IndexOrder.NONE)
     new PrimitiveCursorIterator {

@@ -420,7 +420,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         List<TraceEvent> expectedEvents = new ArrayList<>();
         expectedEvents.add( OnRelationshipTypeScan( hasId ) );
 
-        try ( RelationshipTypeIndexCursor cursor = cursors.allocateRelationshipTypeIndexCursor() )
+        try ( RelationshipTypeIndexCursor cursor = cursors.allocateRelationshipTypeIndexCursor( NULL ) )
         {
             // when
             cursor.setTracer( tracer );

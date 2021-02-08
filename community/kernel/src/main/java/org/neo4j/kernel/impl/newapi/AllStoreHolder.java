@@ -277,10 +277,11 @@ public class AllStoreHolder extends Read
             // so the count will be 0.
             return 0;
         }
-        else if ( relationshipTypeScanStoreEnabled() )
+        // token index scan can only scan for single relationship type
+        else if ( relationshipTypeScanStoreEnabled() && typeId != TokenRead.ANY_RELATIONSHIP_TYPE )
         {
             long count = 0;
-            try ( DefaultRelationshipTypeIndexCursor relationshipsWithType = cursors.allocateRelationshipTypeIndexCursor();
+            try ( DefaultRelationshipTypeIndexCursor relationshipsWithType = cursors.allocateRelationshipTypeIndexCursor( cursorTracer );
                   DefaultRelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor( cursorTracer );
                   DefaultNodeCursor sourceNode = cursors.allocateNodeCursor( cursorTracer );
                   DefaultNodeCursor targetNode = cursors.allocateNodeCursor( cursorTracer ) )
@@ -301,6 +302,7 @@ public class AllStoreHolder extends Read
                     DefaultNodeCursor sourceNode = cursors.allocateFullAccessNodeCursor( cursorTracer );
                     DefaultNodeCursor targetNode = cursors.allocateFullAccessNodeCursor( cursorTracer ) )
             {
+                // this is actually all relationship scan with filtering by type
                 this.relationshipTypeScan( typeId, rels );
                 count = countRelationshipsWithEndLabels( rels, sourceNode, targetNode, startLabelId, endLabelId );
             }
