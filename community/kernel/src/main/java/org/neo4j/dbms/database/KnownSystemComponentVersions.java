@@ -59,11 +59,11 @@ public class KnownSystemComponentVersions<T extends KnownSystemComponentVersion>
     public T latestComponentVersion()
     {
         T latest = noComponentVersion;
-        for ( T version : knownComponentVersions )
+        for ( T knownComponentVersion : knownComponentVersions )
         {
-            if ( version.version > latest.version )
+            if ( knownComponentVersion.version > latest.version )
             {
-                latest = version;
+                latest = knownComponentVersion;
             }
         }
         return latest;
@@ -71,7 +71,13 @@ public class KnownSystemComponentVersions<T extends KnownSystemComponentVersion>
 
     public T findComponentVersion( ComponentVersion componentVersion )
     {
-        knownComponentVersions.sort( Comparator.comparingInt( v -> v.version ) );
-        return knownComponentVersions.get( componentVersion.getVersion() );
+        for ( T knownComponentVersion : knownComponentVersions )
+        {
+            if ( knownComponentVersion.version == componentVersion.getVersion() )
+            {
+                return knownComponentVersion;
+            }
+        }
+        return noComponentVersion;
     }
 }
