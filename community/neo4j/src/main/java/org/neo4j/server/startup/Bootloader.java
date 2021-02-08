@@ -151,6 +151,7 @@ class Bootloader
         int timeout = ctx.getEnv( ENV_NEO4J_SHUTDOWN_TIMEOUT, DEFAULT_NEO4J_SHUTDOWN_TIMEOUT, INT );
         Stopwatch stopwatch = Stopwatch.start();
         os.stop( pid );
+        int printCount = 0;
         do
         {
             if ( os.getPidIfRunning() == null )
@@ -159,10 +160,14 @@ class Bootloader
                 return EXIT_CODE_OK;
             }
 
-            ctx.out.print( "." );
+            if ( stopwatch.hasTimedOut( printCount, SECONDS ) )
+            {
+                printCount++;
+                ctx.out.print( "." );
+            }
             try
             {
-                Thread.sleep( 1000 );
+                Thread.sleep( 50 );
             }
             catch ( InterruptedException e )
             {

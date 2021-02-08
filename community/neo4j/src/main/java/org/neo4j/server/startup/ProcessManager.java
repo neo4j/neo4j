@@ -156,7 +156,7 @@ class ProcessManager
             }
             else
             {
-                process.waitFor( ctx.getEnv( ENV_NEO4J_START_WAIT, 3, INT ), SECONDS );
+                process.waitFor( ctx.getEnv( ENV_NEO4J_START_WAIT, 0, INT ), SECONDS );
             }
 
             if ( !process.isAlive() )
