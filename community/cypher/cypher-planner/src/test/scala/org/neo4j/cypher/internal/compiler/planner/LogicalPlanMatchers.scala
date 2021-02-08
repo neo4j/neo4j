@@ -19,7 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-trait LogicalPlanningIntegrationTestSupport
-  extends StatisticsBackedLogicalPlanningSupport
-    with LogicalPlanTestOps
-    with LogicalPlanMatchers
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
+
+trait LogicalPlanMatchers {
+
+  /**
+   * Matches if any sub-plan matches the partial function
+   */
+  def containPlanMatching(pf: PartialFunction[LogicalPlan, Unit]): Matcher[LogicalPlan] =
+    (plan: LogicalPlan) => MatchResult(
+      matches = plan.treeExists({
+        case p: LogicalPlan => pf.isDefinedAt(p)
+        case _              => false
+      }),
+      rawFailureMessage = "The plan:\n{0}\n did not contain the expected pattern",
+      rawNegatedFailureMessage = "The plan:\n{0}\n contained the pattern when expected not to",
+      failureMessageArgs = IndexedSeq(plan),
+      negatedFailureMessageArgs = IndexedSeq(plan),
+    )
+
+}
