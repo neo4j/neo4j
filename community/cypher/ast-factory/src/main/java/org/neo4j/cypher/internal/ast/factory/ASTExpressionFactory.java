@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos;
  */
 public interface ASTExpressionFactory<
         EXPRESSION,
+        PARAMETER,
         PATTERN,
         VARIABLE extends EXPRESSION,
         PROPERTY extends EXPRESSION,
@@ -43,9 +44,13 @@ public interface ASTExpressionFactory<
 {
     VARIABLE newVariable( POS p, String name );
 
-    EXPRESSION newParameter( POS p, VARIABLE v );
+    PARAMETER newParameter( POS p, VARIABLE v );
 
-    EXPRESSION newParameter( POS p, String offset );
+    PARAMETER newParameter( POS p, String offset );
+
+    PARAMETER newStringParameter( POS p, VARIABLE v );
+
+    PARAMETER newStringParameter( POS p, String offset );
 
     EXPRESSION oldParameter( POS p, VARIABLE v );
 

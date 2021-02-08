@@ -239,4 +239,24 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
   test("MATCH (n) WHERE n.name IS NOT NULL") {
     assertSameASTWithExtraSpaces(testName)
   }
+
+  test("USING PERIODIC COMMIT USE db LOAD CSV FROM 'url' AS line RETURN line") {
+    assertSameAST(testName)
+  }
+
+  test("USE GRAPH db USING PERIODIC COMMIT LOAD CSV FROM 'url' AS line RETURN line") {
+    assertSyntaxException(testName)
+  }
+
+  test("MATCH (n:NODE) WITH true as n.prop RETURN true OR FALSE") {
+    assertSameAST(testName)
+  }
+
+  test("CALL { USE neo4j RETURN 1 AS y } RETURN y") {
+    assertSameAST(testName)
+  }
+
+  test("WITH 1 AS x CALL { WITH x USE neo4j RETURN x AS y } RETURN x, y") {
+    assertSameAST(testName)
+  }
 }
