@@ -24,16 +24,22 @@ import org.neo4j.internal.kernel.api.Cursor
 
 import scala.collection.Iterator
 
-abstract class IndexIteratorBase[T](state: QueryState, val cursor: Cursor) extends ClosingIterator[T] {
-  private var _next: T = fetchNext()
+abstract class IndexIteratorBase[T](val cursor: Cursor) extends ClosingIterator[T] {
+  private var _next: T = _
+  private var first: Boolean = true
 
   protected def fetchNext(): T
 
   protected def closeMore(): Unit = cursor.close()
 
-  override final def innerHasNext: Boolean = _next != null
+  override final def innerHasNext: Boolean = {
+    ensureInitialized()
+    _next != null
+  }
 
   override final def next(): T = {
+    ensureInitialized()
+
     if (!hasNext) {
       Iterator.empty.next()
     }
@@ -41,5 +47,12 @@ abstract class IndexIteratorBase[T](state: QueryState, val cursor: Cursor) exten
     val current = _next
     _next = fetchNext()
     current
+  }
+
+  private def ensureInitialized(): Unit = {
+    if (first) {
+      _next = fetchNext()
+      first = false
+    }
   }
 }

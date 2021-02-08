@@ -43,7 +43,7 @@ trait IndexPipeWithValues extends Pipe {
                           queryContext: QueryContext,
                           baseContext: CypherRow,
                           cursor: NodeValueIndexCursor
-                         ) extends IndexIteratorBase[CypherRow](state, cursor) {
+                         ) extends IndexIteratorBase[CypherRow](cursor) {
 
     override protected def fetchNext(): CypherRow = {
       if (cursor.next()) {
@@ -61,10 +61,9 @@ trait IndexPipeWithValues extends Pipe {
   class RelIndexIterator(state: QueryState,
                          startNode: String,
                          endNode: String,
-                         queryContext: QueryContext,
                          baseContext: CypherRow,
                          cursor: RelationshipValueIndexCursor
-                        ) extends IndexIteratorBase[CypherRow](state, cursor) {
+                        ) extends IndexIteratorBase[CypherRow](cursor) {
 
     override protected def fetchNext(): CypherRow = {
       if (cursor.next()) {
@@ -83,15 +82,13 @@ trait IndexPipeWithValues extends Pipe {
     }
   }
 
-  class UndirectedRelIndexIterator(state: QueryState,
-                                   startNode: String,
+  class UndirectedRelIndexIterator(startNode: String,
                                    endNode: String,
                                    queryContext: QueryContext,
                                    baseContext: CypherRow,
-                                   cursor: RelationshipValueIndexCursor) extends IndexIteratorBase[CypherRow](state, cursor) {
+                                   cursor: RelationshipValueIndexCursor) extends IndexIteratorBase[CypherRow](cursor) {
 
-    //base class is falling fetchNext, meaning that `fetchNext` is called before this constructor runs
-    private var emitSibling: Boolean = if (emitSibling) true else false
+    private var emitSibling: Boolean = false
     private var lastRelationship: RelationshipValue = _
     private var lastStart: NodeValue = _
     private var lastEnd: NodeValue = _

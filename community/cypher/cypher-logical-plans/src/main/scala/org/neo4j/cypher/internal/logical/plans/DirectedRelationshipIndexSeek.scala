@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * For every relationship with the given type and property values, produces rows with that relationship.
  */
 case class DirectedRelationshipIndexSeek(idName: String,
-                                         startNode: String,
-                                         endNode: String,
+                                         leftNode: String,
+                                         rightNode: String,
                                          typeToken: RelationshipTypeToken,
                                          properties: Seq[IndexedProperty],
                                          valueExpr: QueryExpression[Expression],
@@ -37,15 +37,15 @@ case class DirectedRelationshipIndexSeek(idName: String,
                                          indexOrder: IndexOrder)
                                         (implicit idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, startNode, endNode)
+  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 
   override def usedVariables: Set[String] = valueExpr.expressions.flatMap(_.dependencies).map(_.name).toSet
 
   override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipIndexSeek = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: DirectedRelationshipIndexSeek =
-     DirectedRelationshipIndexSeek(idName, startNode, endNode, typeToken, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, valueExpr, argumentIds, indexOrder)(SameId(this.id))
+     DirectedRelationshipIndexSeek(idName, leftNode, rightNode, typeToken, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, valueExpr, argumentIds, indexOrder)(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty):  DirectedRelationshipIndexSeek =
-     DirectedRelationshipIndexSeek(idName, startNode, endNode, typeToken, properties.map(f), valueExpr, argumentIds, indexOrder)(SameId(this.id))
+     DirectedRelationshipIndexSeek(idName, leftNode, rightNode, typeToken, properties.map(f), valueExpr, argumentIds, indexOrder)(SameId(this.id))
 }

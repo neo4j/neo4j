@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 
-case class UndirectedRelationshipTypeScan(idName: String, startNode: String, relType: RelTypeName, endNode: String, argumentIds: Set[String])(implicit idGen: IdGen)
+case class UndirectedRelationshipTypeScan(idName: String, leftNode: String, relType: RelTypeName, rightNode: String, argumentIds: Set[String])(implicit idGen: IdGen)
   extends RelationshipLogicalLeafPlan(idGen) {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, startNode, endNode)
+  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 
   override def usedVariables: Set[String] = Set.empty
 

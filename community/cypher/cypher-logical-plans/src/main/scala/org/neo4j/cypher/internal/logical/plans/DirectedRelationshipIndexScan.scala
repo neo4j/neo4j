@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * This operator does a full scan of an index, producing one row per entry.
  */
 case class DirectedRelationshipIndexScan(idName: String,
-                                         startNode: String,
-                                         endNode: String,
+                                         leftNode: String,
+                                         rightNode: String,
                                          typeToken: RelationshipTypeToken,
                                          properties: Seq[IndexedProperty],
                                          argumentIds: Set[String],
@@ -36,15 +36,15 @@ case class DirectedRelationshipIndexScan(idName: String,
                                         (implicit idGen: IdGen)
   extends RelationshipIndexLeafPlan(idGen) {
 
-  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, startNode, endNode)
+  override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 
   override def usedVariables: Set[String] = Set.empty
 
   override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipIndexScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: DirectedRelationshipIndexScan =
-    DirectedRelationshipIndexScan(idName, startNode, endNode, typeToken, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, argumentIds, indexOrder)(SameId(this.id))
+    DirectedRelationshipIndexScan(idName, leftNode, rightNode, typeToken, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, argumentIds, indexOrder)(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): DirectedRelationshipIndexScan =
-    DirectedRelationshipIndexScan(idName, startNode, endNode, typeToken, properties.map(f), argumentIds, indexOrder)(SameId(this.id))
+    DirectedRelationshipIndexScan(idName, leftNode, rightNode, typeToken, properties.map(f), argumentIds, indexOrder)(SameId(this.id))
 }

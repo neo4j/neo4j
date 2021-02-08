@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * This operator does a full scan of an index, producing rows for all entries that contain a string value
  */
 case class DirectedRelationshipIndexContainsScan(idName: String,
-                                                 startNode: String,
-                                                 endNode: String,
+                                                 leftNode: String,
+                                                 rightNode: String,
                                                  typeToken: RelationshipTypeToken,
                                                  property: IndexedProperty,
                                                  valueExpr: Expression,
@@ -40,15 +40,15 @@ case class DirectedRelationshipIndexContainsScan(idName: String,
 
   override def properties: Seq[IndexedProperty] = Seq(property)
 
-  val availableSymbols: Set[String] = argumentIds ++ Set(idName, startNode, endNode)
+  val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 
   override def usedVariables: Set[String] = valueExpr.dependencies.map(_.name)
 
   override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipIndexContainsScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def copyWithoutGettingValues: DirectedRelationshipIndexContainsScan =
-    DirectedRelationshipIndexContainsScan(idName, startNode, endNode, typeToken, IndexedProperty(property.propertyKeyToken, DoNotGetValue), valueExpr, argumentIds, indexOrder)(SameId(this.id))
+    DirectedRelationshipIndexContainsScan(idName, leftNode, rightNode, typeToken, IndexedProperty(property.propertyKeyToken, DoNotGetValue), valueExpr, argumentIds, indexOrder)(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): RelationshipIndexLeafPlan =
-    DirectedRelationshipIndexContainsScan(idName, startNode, endNode, typeToken, f(property), valueExpr, argumentIds, indexOrder)(SameId(this.id))
+    DirectedRelationshipIndexContainsScan(idName, leftNode, rightNode, typeToken, f(property), valueExpr, argumentIds, indexOrder)(SameId(this.id))
 }

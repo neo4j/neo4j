@@ -27,17 +27,17 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * produce one row containing:
  *   - argument
  *   - the relationship as 'idName'
- *   - the start node as 'startNode'
- *   - the end node as 'endNode'
+ *   - the start node as 'leftNode'
+ *   - the end node as 'rightNode'
  */
 case class DirectedRelationshipByIdSeek(idName: String,
                                         relIds: SeekableArgs,
-                                        startNode: String,
-                                        endNode: String,
+                                        leftNode: String,
+                                        rightNode: String,
                                         argumentIds: Set[String])(implicit idGen: IdGen)
   extends RelationshipLogicalLeafPlan(idGen) {
 
-  val availableSymbols: Set[String] = argumentIds ++ Set(idName, startNode, endNode)
+  val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
 
   override def usedVariables: Set[String] = relIds.expr.dependencies.map(_.name)
 

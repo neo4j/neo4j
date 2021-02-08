@@ -50,6 +50,6 @@ case class DirectedRelationshipIndexSeekPipe(ident: String,
   protected def internalCreateResults(state: QueryState): ClosingIterator[CypherRow] = {
     val index = state.queryIndexes(queryIndexId)
     val baseContext = state.newRowWithArgument(rowFactory)
-    new RelIndexIterator(state, startNode, endNode, state.query, baseContext, relationshipIndexSeek(state, index, needsValues, indexOrder, baseContext))
+    new RelIndexIterator(state, startNode, endNode, baseContext, relationshipIndexSeek(state, index, needsValues, indexOrder, baseContext))
   }
 }

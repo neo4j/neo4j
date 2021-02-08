@@ -256,6 +256,8 @@ abstract class NodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) 
 
 abstract class RelationshipLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {
   def idName: String
+  def leftNode: String
+  def rightNode: String
 }
 
 abstract class MultiNodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {
