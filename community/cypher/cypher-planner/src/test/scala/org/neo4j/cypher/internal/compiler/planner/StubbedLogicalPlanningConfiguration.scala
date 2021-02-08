@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
@@ -112,12 +113,14 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
     indexedThenKnown.zipWithIndex.map(_.swap).toMap
   }
 
-  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders), Cost] = {
-    case (lp, input, semanticTable, cardinalities, providedOrders) =>
+  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor), Cost] = {
+    case (lp, input, semanticTable, cardinalities, providedOrders, monitor) =>
+      // Calling this in any case has the benefit of having the monitor passed down to the real cost model
+      val realCost = parent.costModel()((lp, input, semanticTable, cardinalities, providedOrders, monitor))
       if (cost.isDefinedAt((lp, input, cardinalities, providedOrders))) {
         cost((lp, input, cardinalities, providedOrders))
       } else {
-        parent.costModel()((lp, input, semanticTable, cardinalities, providedOrders))
+        realCost
       }
   }
 

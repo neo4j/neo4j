@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
@@ -47,7 +48,7 @@ import scala.collection.mutable
 trait LogicalPlanningConfiguration {
   def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable
   def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
-  def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders), Cost]
+  def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor), Cost]
   def graphStatistics: GraphStatistics
   def indexes: Map[IndexDef, IndexType]
   def constraints: Set[(String, Set[String])]

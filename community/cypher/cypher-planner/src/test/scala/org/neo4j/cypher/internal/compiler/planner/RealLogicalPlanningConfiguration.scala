@@ -46,9 +46,9 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
   }
 
   //noinspection ScalaUnnecessaryParentheses
-  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders), Cost] = {
-    case (plan: LogicalPlan, input: QueryGraphSolverInput, semanticTable: SemanticTable, cardinalities: Cardinalities, providedOrders: ProvidedOrders) =>
-      CardinalityCostModel(ExecutionModel.default).costFor(plan, input, semanticTable, cardinalities, providedOrders, CostModelMonitor.DEFAULT)
+  override def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput, SemanticTable, Cardinalities, ProvidedOrders, CostModelMonitor), Cost] = {
+    case (plan, input, semanticTable, cardinalities, providedOrders, monitor) =>
+      CardinalityCostModel(ExecutionModel.default).costFor(plan, input, semanticTable, cardinalities, providedOrders, monitor)
   }
 
   override def graphStatistics: GraphStatistics = HardcodedGraphStatistics
