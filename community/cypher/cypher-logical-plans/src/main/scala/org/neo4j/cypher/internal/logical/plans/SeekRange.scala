@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import MinMaxOrdering.NullOrdering
+import org.neo4j.cypher.internal.logical.plans.MinMaxOrdering.NullOrdering
 
 /*
   Seek ranges describe intervals. In practice they are used to summarize all inequalities over the

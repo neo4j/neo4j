@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.Eager
-import org.neo4j.cypher.internal.logical.plans.Either
+import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
@@ -45,7 +45,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val allNodesScan = AllNodesScan("a", Set.empty)
     val onCreate = MergeCreateNode(Argument(), "a", Seq.empty, None)
 
-    val mergeNode = Either(allNodesScan, onCreate)
+    val mergeNode = EitherPlan(allNodesScan, onCreate)
     val emptyResult = EmptyResult(mergeNode)
 
     planFor("MERGE (a)")._2 should equal(emptyResult)
@@ -56,7 +56,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val labelScan = NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone)
     val onCreate = MergeCreateNode(Argument(), "a", Seq(labelName("X")), None)
 
-    val mergeNode = Either(labelScan, onCreate)
+    val mergeNode = EitherPlan(labelScan, onCreate)
     val emptyResult = EmptyResult(mergeNode)
 
     (new given {
@@ -73,7 +73,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val selection = Selection(Seq(equals(prop("a", "prop"), literalInt(42))), allNodesScan)
     val onCreate = MergeCreateNode(Argument(), "a", Seq.empty, Some(mapOfInt(("prop", 42))))
 
-    val mergeNode = Either(selection, onCreate)
+    val mergeNode = EitherPlan(selection, onCreate)
     val emptyResult = EmptyResult(mergeNode)
 
     planFor("MERGE (a {prop: 42})")._2 should equal(emptyResult)
@@ -83,7 +83,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val createNode = Create(Argument(), nodes = List(CreateNode("a", Seq.empty, None)), Nil)
     val allNodesScan = AllNodesScan("b", Set.empty)
     val onCreate = MergeCreateNode(Argument(), "b", Seq.empty, None)
-    val mergeNode = Either(allNodesScan, onCreate)
+    val mergeNode = EitherPlan(allNodesScan, onCreate)
     val apply = Apply(createNode, mergeNode)
     val emptyResult = EmptyResult(apply)
 
@@ -93,7 +93,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
   test("should plan merge followed by create") {
     val allNodesScan = AllNodesScan("a", Set.empty)
     val onCreate = MergeCreateNode(Argument(), "a", Seq.empty, None)
-    val mergeNode = Either(allNodesScan, onCreate)
+    val mergeNode = EitherPlan(allNodesScan, onCreate)
     val eager = Eager(mergeNode)
     val createNode = Create(eager, nodes = List(CreateNode("b", Seq.empty, None)), Nil)
     val emptyResult = EmptyResult(createNode)
@@ -142,7 +142,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val argument2 = Argument()
     val mergeCreateNode = MergeCreateNode(argument2, "a", Seq.empty, None)
     val createAndOnCreate = SetNodeProperty(mergeCreateNode, "a", PropertyKeyName("prop")(pos), literalInt(1))
-    val mergeNode = Either(onMatch, createAndOnCreate)
+    val mergeNode = EitherPlan(onMatch, createAndOnCreate)
     val emptyResult = EmptyResult(mergeNode)
 
     planFor("MERGE (a) ON CREATE SET a.prop = 1 ON MATCH SET a:L")._2 should equal(emptyResult)

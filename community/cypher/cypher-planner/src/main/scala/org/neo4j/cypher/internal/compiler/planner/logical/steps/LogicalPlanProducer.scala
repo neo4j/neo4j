@@ -108,7 +108,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
-import org.neo4j.cypher.internal.logical.plans.Either
+import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
@@ -1211,10 +1211,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(OnMatchApply(read, onMatch), solved, providedOrder, context)
   }
 
-  def planEither(read: LogicalPlan, writePlan: LogicalPlan, context: LogicalPlanningContext): Either = {
+  def planEither(read: LogicalPlan, writePlan: LogicalPlan, context: LogicalPlanningContext): EitherPlan = {
     val solved = solveds.get(read.id).asSinglePlannerQuery ++ solveds.get(writePlan.id).asSinglePlannerQuery
     val providedOrder = providedOrders.get(read.id).fromLeft
-    annotate(Either(read, writePlan), solved, providedOrder, context)
+    annotate(EitherPlan(read, writePlan), solved, providedOrder, context)
   }
 
   def planMergeCreateNode(inner: LogicalPlan, pattern: CreateNode, context: LogicalPlanningContext): LogicalPlan = {

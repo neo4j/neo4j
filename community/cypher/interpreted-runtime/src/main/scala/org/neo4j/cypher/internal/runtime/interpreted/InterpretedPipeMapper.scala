@@ -48,7 +48,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Eager
-import org.neo4j.cypher.internal.logical.plans.Either
+import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
@@ -746,7 +746,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case OnMatchApply(_, _) =>
         OnMatchApplyPipe(lhs, rhs)(id = id)
 
-      case Either(_, _) =>
+      case EitherPlan(_, _) =>
         EitherPipe(lhs, rhs)(id = id)
 
       case x =>

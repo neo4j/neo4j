@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
-import org.neo4j.cypher.internal.logical.plans.Either
+import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.GetValue
@@ -591,7 +591,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        Either(
+        EitherPlan(
           NodeUniqueIndexSeek(
             "n",
             LabelToken("Awesome", LabelId(0)),
@@ -615,7 +615,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        Either(
+        EitherPlan(
           NodeUniqueIndexSeek(
             "n",
             LabelToken("Awesome", LabelId(0)),
@@ -640,7 +640,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        Either(
+        EitherPlan(
           NodeUniqueIndexSeek(
             "n",
             LabelToken("Awesome", LabelId(0)),

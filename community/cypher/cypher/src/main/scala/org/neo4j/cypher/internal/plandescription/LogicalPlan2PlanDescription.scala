@@ -766,7 +766,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
       case _: OnMatchApply =>
         PlanDescriptionImpl(id = plan.id, "OnMatchApply", children, Seq.empty, variables)
 
-      case _: plans.Either =>
+      case _: plans.EitherPlan =>
         PlanDescriptionImpl(id = plan.id, "Either", children, Seq.empty, variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")

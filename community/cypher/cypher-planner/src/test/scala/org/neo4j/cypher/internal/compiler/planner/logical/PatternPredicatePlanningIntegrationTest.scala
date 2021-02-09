@@ -52,7 +52,7 @@ import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
-import org.neo4j.cypher.internal.logical.plans.Either
+import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
@@ -883,7 +883,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       """.stripMargin
 
     planFor(q)._2 should beLike {
-      case Either(
+      case EitherPlan(
             Selection(_,
               RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _) // Match part
             ),
@@ -904,7 +904,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     new given {
       addTypeToSemanticTable(varFor("r"), CTRelationship)
     }.getLogicalPlanFor(q)._2 should beLike {
-      case Either(
+      case EitherPlan(
                Selection(_,
                        RollUpApply(
                           Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _) // Match part

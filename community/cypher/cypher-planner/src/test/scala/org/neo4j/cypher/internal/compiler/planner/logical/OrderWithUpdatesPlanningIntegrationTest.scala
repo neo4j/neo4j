@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
-import org.neo4j.cypher.internal.logical.plans.Either
+import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -219,7 +219,7 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
   test("Either with update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "MERGE (x) ON CREATE SET x.prop = 1",
-      {case _:Either  => true}
+      {case _:EitherPlan  => true}
     )
   }
 

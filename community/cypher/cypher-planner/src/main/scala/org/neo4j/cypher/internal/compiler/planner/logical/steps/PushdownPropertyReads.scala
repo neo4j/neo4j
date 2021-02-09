@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.Eager
-import org.neo4j.cypher.internal.logical.plans.Either
+import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.IndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
@@ -232,7 +232,7 @@ case object PushdownPropertyReads {
            | _: AbstractLetSelectOrSemiApply
            | _: ForeachApply
            | _: RollUpApply
-           | _: Either
+           | _: EitherPlan
            | _: OnMatchApply =>
           lhsAcc
 
