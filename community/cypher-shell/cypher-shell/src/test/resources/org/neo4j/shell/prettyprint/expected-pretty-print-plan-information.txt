@@ -11,5 +11,4 @@
 | +MyOp    |             10 |    3 |       2 |              5 |                   22/2 |     0.000 | a, b        | a          | INTERPRETED; 3.1; COST |
 +----------+----------------+------+---------+----------------+------------------------+-----------+-------------+------------+------------------------+
 
-0 rows
-ready to start consuming query after 5 ms, results consumed after another 7 ms
+0 rows available after 5 ms, consumed after another 7 ms

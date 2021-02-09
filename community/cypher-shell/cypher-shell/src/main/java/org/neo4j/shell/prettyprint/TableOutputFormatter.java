@@ -250,9 +250,8 @@ public class TableOutputFormatter implements OutputFormatter
     public String formatFooter( @Nonnull BoltResult result, int numberOfRows )
     {
         ResultSummary summary = result.getSummary();
-        return String.format( "%d row%s" + OutputFormatter.NEWLINE +
-                              "ready to start consuming query after %d ms, " +
-                              "results consumed after another %d ms", numberOfRows, numberOfRows != 1 ? "s" : "",
+        return String.format( "%d row%s available after %d ms, " +
+                              "consumed after another %d ms", numberOfRows, numberOfRows != 1 ? "s" : "",
                               summary.resultAvailableAfter( MILLISECONDS ),
                               summary.resultConsumedAfter( MILLISECONDS ) );
     }
