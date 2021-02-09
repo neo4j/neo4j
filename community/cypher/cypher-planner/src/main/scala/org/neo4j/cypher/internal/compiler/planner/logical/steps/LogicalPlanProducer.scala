@@ -64,6 +64,8 @@ import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.ForeachPattern
 import org.neo4j.cypher.internal.ir.LoadCSVProjection
+import org.neo4j.cypher.internal.ir.MergeNodePattern
+import org.neo4j.cypher.internal.ir.MergeRelationshipPattern
 import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
@@ -73,6 +75,7 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
@@ -318,7 +321,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   //As of now this plans a normal apply, however that will be subject to change
-  def planMergeApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext, solved: SinglePlannerQuery): LogicalPlan = {
+  def planMergeApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
+    val rhsSolved = solveds.get(right.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.withArgumentIds(Set.empty)))
+    val solved = solveds.get(left.id).asSinglePlannerQuery ++ rhsSolved
     val plan = Apply(left, right)
     val providedOrder = providedOrderOfApply(left, right)
     annotate(plan, solved, providedOrder, context)
@@ -983,8 +988,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val skippedRows = innerCardinality - skipCardinality
 
     val effectiveLimitExpr = Add(limitExpr, skipExpr)(limitExpr.position)
-    val limitPlan = if (useExhaustiveLimit) planExhaustiveLimit(inner, effectiveLimitExpr, limitExpr, interestingOrder, context)
-                    else planLimit(inner, effectiveLimitExpr, limitExpr, interestingOrder, context)
+    val limitPlan = if (useExhaustiveLimit) {
+      planExhaustiveLimit(inner, effectiveLimitExpr, limitExpr, interestingOrder, context)
+    } else {
+      planLimit(inner, effectiveLimitExpr, limitExpr, interestingOrder, context)
+    }
     cardinalities.set(limitPlan.id, skippedRows + limitCardinality)
 
     planSkip(limitPlan, skipExpr, interestingOrder, context)
@@ -1206,13 +1214,45 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def planOnMatchApply(read: LogicalPlan, onMatch: LogicalPlan, context: LogicalPlanningContext): OnMatchApply = {
-    val solved = solveds.get(read.id).asSinglePlannerQuery ++ solveds.get(onMatch.id).asSinglePlannerQuery
+    //Remove arguments on the rhs since they are only for the RHS.
+    val rhsSolved = solveds.get(onMatch.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.withArgumentIds(Set.empty)))
+    val solved = solveds.get(read.id).asSinglePlannerQuery ++ rhsSolved
     val providedOrder = providedOrders.get(read.id).fromLeft
     annotate(OnMatchApply(read, onMatch), solved, providedOrder, context)
   }
 
   def planEither(read: LogicalPlan, writePlan: LogicalPlan, context: LogicalPlanningContext): EitherPlan = {
     val solved = solveds.get(read.id).asSinglePlannerQuery ++ solveds.get(writePlan.id).asSinglePlannerQuery
+    val providedOrder = providedOrders.get(read.id).fromLeft
+    annotate(EitherPlan(read, writePlan), solved, providedOrder, context)
+  }
+
+  def planMergeEither(read: LogicalPlan, writePlan: LogicalPlan, context: LogicalPlanningContext): EitherPlan = {
+    val lhsGraph = solveds.get(read.id).asSinglePlannerQuery.queryGraph
+    val rhsGraph = solveds.get(writePlan.id).asSinglePlannerQuery.queryGraph
+    //Find if there are any ON MATCH SET ... on the read side
+    val onMatches = lhsGraph.mutatingPatterns.collect {
+      case s: SetMutatingPattern => s
+    }
+
+    //Find what merge pattern we are solving, the rhs is solving the
+    //create part of MERGE X ON CREATE SET Y where X is either a single
+    //node pattern or a longer chain of nodes and relationships
+    val createNodes = rhsGraph.mutatingPatterns.collect {
+      case CreatePattern(Seq(nodePatter), Seq()) => nodePatter
+    }
+    val createRelationships = rhsGraph.mutatingPatterns.collect {
+      case CreatePattern(Seq(), Seq(cr)) => cr
+    }
+    val onCreate = rhsGraph.mutatingPatterns.collect {
+      case s: SetMutatingPattern => s
+    }
+    val solvedRight = if (createRelationships.isEmpty) {
+      MergeNodePattern(createNodes.head, lhsGraph.copy(mutatingPatterns = IndexedSeq.empty), onCreate, onMatches)
+    } else {
+      MergeRelationshipPattern(createNodes, createRelationships, lhsGraph.copy(mutatingPatterns = IndexedSeq.empty), onCreate, onMatches)
+    }
+    val solved = RegularSinglePlannerQuery().amendQueryGraph(_.addMutatingPatterns(solvedRight))
     val providedOrder = providedOrders.get(read.id).fromLeft
     annotate(EitherPlan(read, writePlan), solved, providedOrder, context)
   }
@@ -1394,21 +1434,24 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
    * If this is the case, this method returns an empty provided order, otherwise it forwards the provided order from the left.
    */
   private def providedOrderOfUpdate(updatePlan: UpdatingPlan, sourcePlan: LogicalPlan): ProvidedOrder =
-    if (invalidatesProvidedOrder(updatePlan))
+    if (invalidatesProvidedOrder(updatePlan)) {
       ProvidedOrder.empty
-    else
+    } else {
       providedOrders.get(sourcePlan.id).fromLeft
+    }
 
   /**
    * Plans with a rhs may invalidate the provided order coming from the lhs.
    * If this is the case, this method returns an empty provided order, otherwise it forwards the provided order from the left.
    */
   private def providedOrderOfApply(left: LogicalPlan, right: LogicalPlan): ProvidedOrder = {
-    if (invalidatesProvidedOrderRecursive(right))
+    if (invalidatesProvidedOrderRecursive(right)) {
       ProvidedOrder.empty
-    else
-      // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
+    } else
+    // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
+    {
       providedOrders.get(left.id).fromLeft
+    }
   }
 
   private def assertRhsDoesNotInvalidateLhsOrder(plan: LogicalPlan, providedOrder: ProvidedOrder): Unit = {

@@ -259,9 +259,8 @@ case object PlanUpdates extends UpdatesPlanner {
     val onCreate = onCreatePatterns.foldLeft(mergeCreatePart) {
       case (src, current) => planUpdate(src, current, first, interestingOrderConfig, context)
     }
-    val readOrCreate = producer.planEither(mergeRead, onCreate, context)
-    val solved = context.planningAttributes.solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(u => u.addMutatingPatterns(solvedMutatingPattern))
-    producer.planMergeApply(source, readOrCreate, innerContext, solved)
+    val readOrCreate = producer.planMergeEither(mergeRead, onCreate, context)
+    producer.planMergeApply(source, readOrCreate, innerContext)
   }
 
   private def mergeMatchPart(matchGraph: QueryGraph,
