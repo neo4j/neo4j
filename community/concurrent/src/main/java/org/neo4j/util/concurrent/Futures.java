@@ -28,6 +28,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.helpers.Exceptions;
+
 /**
  * Constructors for basic {@link Future} types
  */
@@ -48,6 +50,26 @@ public class Futures
     public static <V> Future<List<V>> combine( final Future<? extends V>... futures )
     {
         return combine( Arrays.asList( futures ) );
+    }
+
+    public static void getAll( Iterable<? extends Future<?>> futures ) throws ExecutionException
+    {
+        Throwable finalError = null;
+        for ( Future<?> future : futures )
+        {
+            try
+            {
+                future.get();
+            }
+            catch ( Throwable e )
+            {
+                finalError = Exceptions.chain( finalError, e );
+            }
+        }
+        if ( finalError != null )
+        {
+            throw new ExecutionException( finalError );
+        }
     }
 
     /**
