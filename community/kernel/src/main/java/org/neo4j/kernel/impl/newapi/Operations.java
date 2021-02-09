@@ -37,12 +37,12 @@ import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.function.ThrowingIntFunction;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Procedures;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
@@ -251,7 +251,7 @@ public class Operations implements Write, SchemaWrite
     public int nodeDetachDelete( long nodeId )
     {
         ktx.assertOpen();
-        commandCreationContext.acquireNodeDeletionLock( ktx.txState(), ktx.statementLocks().pessimistic(), ktx.lockTracer(), nodeId );
+        commandCreationContext.acquireNodeDeletionLock( ktx.txState(), ktx.lockClient(), ktx.lockTracer(), nodeId );
         NodeCursor nodeCursor = ktx.ambientNodeCursor();
         ktx.dataRead().singleNode( nodeId, nodeCursor );
         int deletedRelationships = 0;
@@ -283,7 +283,7 @@ public class Operations implements Write, SchemaWrite
         ktx.assertOpen();
 
         sharedSchemaLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipType );
-        commandCreationContext.acquireRelationshipCreationLock( ktx.txState(), ktx.statementLocks().pessimistic(), ktx.lockTracer(), sourceNode, targetNode );
+        commandCreationContext.acquireRelationshipCreationLock( ktx.txState(), ktx.lockClient(), ktx.lockTracer(), sourceNode, targetNode );
 
         assertNodeExists( sourceNode );
         assertNodeExists( targetNode );
@@ -311,7 +311,7 @@ public class Operations implements Write, SchemaWrite
         {
             return false;
         }
-        commandCreationContext.acquireRelationshipDeletionLock( txState, ktx.statementLocks().pessimistic(), ktx.lockTracer(),
+        commandCreationContext.acquireRelationshipDeletionLock( txState, ktx.lockClient(), ktx.lockTracer(),
                 relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference(), relationship );
 
         if ( !allStoreHolder.relationshipExists( relationship ) )
@@ -628,7 +628,7 @@ public class Operations implements Write, SchemaWrite
         // T2: Go into commit and fully complete commit, i.e. before T1. N now has 6 relationships
         // T1: Complete the commit
         // --> N has 6 relationships, but counts store says that it has 5
-        ktx.statementLocks().pessimistic().acquireExclusive( ktx.lockTracer(), DEGREES, node );
+        ktx.lockClient().acquireExclusive( ktx.lockTracer(), DEGREES, node );
     }
 
     @Override

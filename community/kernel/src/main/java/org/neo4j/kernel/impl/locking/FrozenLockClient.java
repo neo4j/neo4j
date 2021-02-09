@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.lock.AcquireLockTimeoutException;
+import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 
