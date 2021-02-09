@@ -48,6 +48,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.kernel.api.KernelTransaction
+import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.factory.DbmsInfo
@@ -426,7 +427,7 @@ trait CloseableResource extends AutoCloseable {
 }
 
 object NodeValueHit {
-  val EMPTY = new NodeValueHit(-1L, null, null)
+  val EMPTY = new NodeValueHit(NO_SUCH_NODE, null, null)
 }
 
 class NodeValueHit(val nodeId: Long, val values: Array[Value], read: Read) extends DefaultCloseListenable with NodeValueIndexCursor {
