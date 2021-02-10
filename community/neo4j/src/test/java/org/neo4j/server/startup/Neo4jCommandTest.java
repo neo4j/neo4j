@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.platform.commons.util.ExceptionUtils;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -53,11 +54,13 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.extension.DisabledForRoot;
 import org.neo4j.time.Stopwatch;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
+import static org.neo4j.test.assertion.Assert.assertEventually;
 
 class Neo4jCommandTest
 {
@@ -406,6 +409,29 @@ class Neo4jCommandTest
         }
 
         @Test
+        @DisabledOnOs( OS.WINDOWS )
+        void shouldWaitForNeo4jToDieBeforeExitInConsole() throws Exception
+        {
+            if ( fork.run( () -> assertThat( execute( "console" ) ).isEqualTo( 0 ), Map.of( TestEntryPoint.ENV_TIMEOUT, "1000" ), p -> {
+                try
+                {
+                    StringBuilder sb = new StringBuilder();
+                    assertEventually( () -> sb.append( new String( p.getInputStream().readNBytes( 1 ) ) ).toString(),
+                            s -> s.contains( TestEntryPoint.STARTUP_MSG ), 5, MINUTES );
+                    Runtime.getRuntime().exec("kill -SIGINT " + p.pid() );
+                }
+                catch ( Exception e )
+                {
+                    ExceptionUtils.throwAsUncheckedException( e );
+                }
+                return 130;
+            } ) )
+            {
+                assertThat( out.toString() ).contains( TestEntryPoint.END_MSG );
+            }
+        }
+
+        @Test
         void shouldSeeErrorMessageOnTooSmallHeap() throws Exception
         {
             if ( fork.run( () ->
@@ -472,9 +498,11 @@ class Neo4jCommandTest
     {
         static final String ENV_TIMEOUT = "TestEntryPointTimeout";
         static final String STARTUP_MSG = "TestEntryPoint started";
+        static final String END_MSG = "TestEntryPoint ended";
 
         public static void main( String[] args ) throws InterruptedException
         {
+            Runtime.getRuntime().addShutdownHook( new Thread( () -> System.out.println( END_MSG ) ) );
             System.out.println( STARTUP_MSG );
             Lists.mutable
                     .with( args )

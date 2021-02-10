@@ -229,6 +229,11 @@ abstract class BootloaderCommandTestBase
             void run() throws Exception;
         }
 
+        protected interface Monitor
+        {
+            int afterStart( Process process );
+        }
+
         private static final int SUCCESS_CODE = 66;
         private static boolean inFork;
         private final ByteArrayOutputStream out;
@@ -246,6 +251,11 @@ abstract class BootloaderCommandTestBase
         }
 
         boolean run( TestCode test, Map<String, String> env ) throws Exception
+        {
+            return run( test, env, p -> SUCCESS_CODE );
+        }
+
+        boolean run( TestCode test, Map<String, String> env, Monitor monitor ) throws Exception
         {
             if ( inFork )
             {
@@ -285,12 +295,13 @@ abstract class BootloaderCommandTestBase
                 ProcessBuilder pb = new ProcessBuilder( args );
                 pb.environment().putAll( env );
                 Process process = pb.start();
+                int expectedExit = monitor.afterStart( process );
                 int exitCode = process.waitFor();
                 byte[] outputBytes = process.getInputStream().readAllBytes();
                 byte[] errorBytes = process.getErrorStream().readAllBytes();
                 out.write( outputBytes );
                 err.write( errorBytes );
-                assertThat( exitCode ).as( "Out: %s %nErr: %s", new String( outputBytes ), new String( errorBytes ) ).isEqualTo( SUCCESS_CODE );
+                assertThat( exitCode ).as( "Out: %s %nErr: %s", new String( outputBytes ), new String( errorBytes ) ).isEqualTo( expectedExit );
             }
             return true;
         }

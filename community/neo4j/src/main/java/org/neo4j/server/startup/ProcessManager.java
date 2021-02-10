@@ -51,6 +51,7 @@ class ProcessManager
         protected boolean redirectToUserLog;
         protected boolean storePid;
         protected boolean homeAndConfAsEnv;
+        protected boolean shutdownHook;
         protected PrintStream outputConsumer;
         protected PrintStream errorConsumer;
 
@@ -63,6 +64,12 @@ class ProcessManager
         Behaviour blocking()
         {
             this.blocking = true;
+            return this;
+        }
+
+        Behaviour withShutdownHook()
+        {
+            this.shutdownHook = true;
             return this;
         }
 
@@ -146,6 +153,11 @@ class ProcessManager
                 ctx.out.println( "Executing command line: " + String.join( " ", command ) );
             }
             process = processBuilder.start();
+
+            if ( behaviour.shutdownHook )
+            {
+                installShutdownHook( process );
+            }
             if ( behaviour.storePid )
             {
                 storePid( process.pid() );
@@ -187,6 +199,28 @@ class ProcessManager
             }
             throw new BootFailureException( "Unexpected error while starting. Aborting. " + e.getClass().getSimpleName() + " : " + e.getMessage(), e );
         }
+    }
+
+    private void installShutdownHook( Process finalProcess )
+    {
+        Runtime.getRuntime().addShutdownHook( new Thread( () -> {
+            if ( finalProcess.isAlive() )
+            {
+                finalProcess.destroy();
+                while ( finalProcess.isAlive() )
+                {
+                    try
+                    {
+                        Thread.sleep( 10 );
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            }
+        } ) );
     }
 
     Long getPidFromFile()
