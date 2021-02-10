@@ -25,10 +25,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -282,14 +284,15 @@ class CountsChangesTest
     {
         // given
         CountsChanges changes = new CountsChanges();
-        List<CountsKey> expectedChanges = new ArrayList<>();
+        Set<CountsKey> expectedChangesSet = new HashSet<>();
         for ( int i = 0; i < 100; i++ )
         {
             CountsKey key = randomKey( random.random() );
             changes.add( key, 1, k -> new AtomicLong() );
-            expectedChanges.add( key );
+            expectedChangesSet.add( key );
         }
         CountsLayout comparator = new CountsLayout();
+        List<CountsKey> expectedChanges = new ArrayList<>( expectedChangesSet );
         expectedChanges.sort( comparator );
 
         // when

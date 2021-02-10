@@ -208,7 +208,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest
         openCountsStore();
     }
 
-    private void deleteCountsStore()
+    private void deleteCountsStore() throws IOException
     {
         directory.getFileSystem().deleteFile( countsStoreFile() );
     }

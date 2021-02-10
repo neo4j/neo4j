@@ -2207,8 +2207,13 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.RELATIONSHIP, 2 )
+        on( stats ).verify( RecordType.RELATIONSHIP, expectedNumberOfErrorsForNegativeRelationshipPointerInconsistency() )
                 .andThatsAllFolks();
+    }
+
+    protected int expectedNumberOfErrorsForNegativeRelationshipPointerInconsistency()
+    {
+        return 2;
     }
 
     @Test

@@ -20,10 +20,14 @@
 package org.neo4j.test;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import org.neo4j.util.Preconditions;
 
 import static org.apache.commons.lang3.reflect.FieldUtils.readField;
 
@@ -40,14 +44,13 @@ public final class ReflectionUtil
 
     public static void verifyMethodExists( Class<?> owner, String methodName )
     {
-        for ( Method method : owner.getDeclaredMethods() )
-        {
-            if ( methodName.equals( method.getName() ) )
-            {
-                return;
-            }
-        }
-        throw new IllegalArgumentException( "Method '" + methodName + "' does not exist in class " + owner );
+        Set<String> methods = new HashSet<>();
+        // Includes methods declared/implemented specifically in the owner class, even private/protected and such
+        Arrays.stream( owner.getDeclaredMethods() ).forEach( method -> methods.add( method.getName() ) );
+        // Includes public methods specified by interfaces and subclasses too
+        Arrays.stream( owner.getMethods() ).forEach( method -> methods.add( method.getName() ) );
+        Preconditions.checkState( methods.stream().anyMatch( existingMethodName -> existingMethodName.equals( methodName ) ),
+                "Method '%s' does not exist in class %s", methodName, owner );
     }
 
     public static List<Field> getAllFields( Class<?> baseClazz )
