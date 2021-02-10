@@ -41,17 +41,16 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
 {
     private final RecordStore<RECORD> store;
     private final int batchSize;
-    private final boolean prefetch;
     private final RecordDataAssembler<RECORD> assembler;
 
     public ReadRecordsStep( StageControl control, Configuration config, boolean inRecordWritingStage, RecordStore<RECORD> store,
             PageCacheTracer pageCacheTracer )
     {
-        this( control, config, inRecordWritingStage, store, new RecordDataAssembler<>( store::newRecord, true ), false, pageCacheTracer );
+        this( control, config, inRecordWritingStage, store, new RecordDataAssembler<>( store::newRecord, true ), pageCacheTracer );
     }
 
     public ReadRecordsStep( StageControl control, Configuration config, boolean inRecordWritingStage,
-            RecordStore<RECORD> store, RecordDataAssembler<RECORD> converter, boolean prefetch, PageCacheTracer pageCacheTracer )
+            RecordStore<RECORD> store, RecordDataAssembler<RECORD> converter, PageCacheTracer pageCacheTracer )
     {
         super( control, ">", config, parallelReading( config, inRecordWritingStage )
                                      // Limit reader (I/O) threads to 12, it's a high degree of concurrency and assigning more
@@ -62,7 +61,6 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
         this.store = store;
         this.assembler = converter;
         this.batchSize = config.batchSize();
-        this.prefetch = prefetch;
     }
 
     private static boolean parallelReading( Configuration config, boolean inRecordWritingStage )
@@ -90,8 +88,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
         int i = 0;
         // Just use the first record in the batch here to satisfy the record cursor.
         // The truth is that we'll be using the read method which accepts an external record anyway so it doesn't matter.
-        try ( PageCursor cursor = prefetch ? store.openPageCursorForReadingWithPrefetching( id, cursorTracer )
-                                           : store.openPageCursorForReading( id, cursorTracer ) )
+        try ( PageCursor cursor = store.openPageCursorForReading( id, cursorTracer ) )
         {
             boolean hasNext = true;
             while ( hasNext )
