@@ -232,7 +232,7 @@ class ProcessManager
             {
                 try
                 {
-                    return Long.parseLong( Files.readString( pidFilePath ) );
+                    return Long.parseLong( Files.readString( pidFilePath ).trim() );
                 }
                 catch ( NumberFormatException e )
                 {
