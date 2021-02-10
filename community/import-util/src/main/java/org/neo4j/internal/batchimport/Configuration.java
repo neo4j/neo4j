@@ -78,6 +78,15 @@ public interface Configuration
         return allAvailableProcessors();
     }
 
+    /**
+     * The maximum number of batches that will be queued in processor steps. The total number of "alive" batches
+     * will roughly be this value + number of processors assigned to the step that has the most processors assigned.
+     */
+    default int maxQueueSize()
+    {
+        return maxNumberOfProcessors();
+    }
+
     static int allAvailableProcessors()
     {
         return Runtime.getRuntime().availableProcessors();

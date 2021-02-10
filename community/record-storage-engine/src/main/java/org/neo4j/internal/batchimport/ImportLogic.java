@@ -584,7 +584,24 @@ public class ImportLogic implements Closeable
 
     private static Configuration configWithRecordsPerPageBasedBatchSize( Configuration source, RecordStore<?> store )
     {
-        return Configuration.withBatchSize( source, store.getRecordsPerPage() * 10 );
+        return new Configuration.Overridden( source )
+        {
+            @Override
+            public int batchSize()
+            {
+                // 500 pages, i.e. 4 MiB worth of data per batch. This makes reading performance more consistent and sequential,
+                // and helps _a lot_ for backwards scanning where reading each batch now will jump back much further and sequentially
+                // read forwards.
+                return store.getRecordsPerPage() * 500;
+            }
+
+            @Override
+            public int maxQueueSize()
+            {
+                // Limit the queue size now that each batch is quite large, otherwise heap will fill up
+                return 10;
+            }
+        };
     }
 
     private void executeStage( Stage stage )

@@ -73,7 +73,11 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
 
         stripingLock.unlock( applyProcessorCount( stripingLock.readLock() ) );
         downstreamSender = new CompletedBatchesSender( name + " [CompletedBatchSender]" );
-        maxQueueLength = 200 + maxProcessors;
+        // The max queue length includes the batches that are being worked on, so account for that.
+        // It has also been shown that having a slightly larger queue helps avoid getting into a scenario
+        // of processing and queueing operations going lock-step with one another where both alternate
+        // between sleep/wait which heavily affects performance.
+        maxQueueLength = maxProcessors + config.maxQueueSize() * 2;
     }
 
     private long applyProcessorCount( long lock )
