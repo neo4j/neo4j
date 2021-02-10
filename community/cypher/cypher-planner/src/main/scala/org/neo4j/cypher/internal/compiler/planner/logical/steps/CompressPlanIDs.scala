@@ -23,6 +23,9 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -41,9 +44,13 @@ case object PlanIDsAreCompressed extends StepSequencer.Condition
  * This is helpful for physical planning attributes that do not have to create so large arrays.
  * It also reduces the size of what we need to put into the query cache.
  */
-case object CompressPlanIDs extends Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] with StepSequencer.Step with PlanPipelineTransformerFactory {
+case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] with StepSequencer.Step with PlanPipelineTransformerFactory {
 
-  override def transform(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
+  override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
+
+  override def description: String = "compress plan ids"
+
+  override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val oldAttributes = from.planningAttributes
     val newAttributes = PlanningAttributes.newAttributes
 

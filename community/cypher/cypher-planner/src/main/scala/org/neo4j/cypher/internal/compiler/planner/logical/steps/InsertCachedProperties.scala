@@ -36,6 +36,9 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
@@ -65,9 +68,15 @@ case object PropertiesAreCached extends StepSequencer.Condition
  *
  * It traverses the plan and swaps property lookups for cached properties where possible.
  */
-case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transformer[PlannerContext, LogicalPlanState, LogicalPlanState] {
+case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
 
-  override def transform(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
+  override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
+
+  override def description: String = "insert cached properties"
+
+  override def postConditions: Set[StepSequencer.Condition] = InsertCachedProperties.postConditions
+
+  override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
 
     val logicalPlan =
       if (pushdownPropertyReads) {

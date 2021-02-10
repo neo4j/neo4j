@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.compiler.phases.AttributeFullyAssigned
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
@@ -52,7 +53,8 @@ case object CardinalityRewriter extends LogicalPlanRewriter with StepSequencer.S
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
-    LogicalPlanUsesEffectiveOutputCardinality
+    LogicalPlanUsesEffectiveOutputCardinality,
+    AttributeFullyAssigned[EffectiveCardinalities]
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty

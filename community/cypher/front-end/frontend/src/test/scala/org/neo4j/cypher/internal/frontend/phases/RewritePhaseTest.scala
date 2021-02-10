@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.rewriters.SameNameNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -42,6 +43,8 @@ trait RewritePhaseTest {
     new Transformer[BaseContext, BaseState, BaseState] {
       override def transform(from: BaseState,
                              context: BaseContext): BaseState = from
+
+      override def postConditions: Set[StepSequencer.Condition] = Set.empty
 
       override def name: String = "do nothing"
     }

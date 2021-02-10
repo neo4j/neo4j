@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ChainerTest extends CypherFunSuite {
@@ -31,14 +32,17 @@ class ChainerTest extends CypherFunSuite {
   private val BB = new Transformer[BaseContext, BaseState, BaseState] {
     override def transform(from: BaseState, context: BaseContext): BaseState = from
     override def name: String = "BB"
+    override def postConditions: Set[StepSequencer.Condition] = Set.empty
   }
   private val BL = new Transformer[BaseContext, BaseState, LogicalPlanState] {
     override def transform(from: BaseState, context: BaseContext): LogicalPlanState = LogicalPlanState(from)
     override def name: String = "BL"
+    override def postConditions: Set[StepSequencer.Condition] = Set.empty
   }
   private val LL = new Transformer[BaseContext, LogicalPlanState, LogicalPlanState] {
     override def transform(from: LogicalPlanState, context: BaseContext): LogicalPlanState = from
     override def name: String = "LL"
+    override def postConditions: Set[StepSequencer.Condition] = Set.empty
   }
 
   test("legal chain") {

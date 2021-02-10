@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
+import org.neo4j.cypher.internal.util.StepSequencer
 
 object TransformerDebugging {
   /**
@@ -40,6 +41,8 @@ object TransformerDebugging {
       }
       from
     }
+
+    override def postConditions: Set[StepSequencer.Condition] = Set.empty
 
     override def name: String = "print plan"
   }

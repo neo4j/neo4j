@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -780,6 +781,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     val plannerContext = mock[PlannerContext]
     when(plannerContext.logicalPlanIdGen).thenReturn(idGen)
+    when(plannerContext.tracer).thenReturn(NO_TRACING)
 
     val resultState =  icp.transform(state, plannerContext)
     (resultState.logicalPlan, resultState.semanticTable())

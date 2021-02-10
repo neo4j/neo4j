@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.phases.ExpandStarRewriter
 import org.neo4j.cypher.internal.frontend.phases.If
-import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.phases.LiteralExtraction
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
@@ -53,6 +52,7 @@ import org.neo4j.cypher.internal.frontend.phases.StatementCondition
 import org.neo4j.cypher.internal.frontend.phases.SyntaxAdditionsErrors
 import org.neo4j.cypher.internal.frontend.phases.SyntaxDeprecationWarnings
 import org.neo4j.cypher.internal.frontend.phases.Transformer
+import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.isolateAggregation
 import org.neo4j.cypher.internal.frontend.phases.rewriteEqualityToInPredicate

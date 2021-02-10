@@ -31,6 +31,19 @@ trait Transformer[-C <: BaseContext, -FROM, +TO] {
   def adds(condition: StepSequencer.Condition): Transformer[C, FROM, TO] = this andThen AddCondition[C, TO](condition)
 
   def name: String
+
+  def postConditions: Set[StepSequencer.Condition]
+
+  final protected[Transformer] def checkConditions(state: Any, conditions: Set[StepSequencer.Condition]): Boolean = {
+    val messages: Seq[String] = conditions.toSeq.collect {
+      case v:ValidatingCondition => v(state)
+    }.flatten
+    if (messages.nonEmpty) {
+      val prefix = s"Conditions started failing after running these phases: $name\n"
+      throw new IllegalStateException(prefix + messages.mkString(", "))
+    }
+    true
+  }
 }
 
 object Transformer {
@@ -38,6 +51,8 @@ object Transformer {
     override def transform(from: Unit, context: BaseContext): Unit = ()
 
     override def name: String = "identity"
+
+    override def postConditions: Set[StepSequencer.Condition] = Set.empty
   }
 
   /**
@@ -51,36 +66,24 @@ object Transformer {
       from
     }
 
+    override def postConditions: Set[StepSequencer.Condition] = Set.empty
+
     override def name: String = "print ast"
   }
 }
 
 class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID], after: Transformer[C, MID, TO]) extends Transformer[C, FROM, TO] {
 
+  override def postConditions: Set[StepSequencer.Condition] = first.postConditions ++ after.postConditions
+
   override def transform(from: FROM, context: C): TO = {
     val step1 = first.transform(from, context)
+    val step2 = after.transform(step1, context)
 
     // Checking conditions inside assert so they are not run in production
-    checkOnlyWhenAssertionsAreEnabled(accumulateAndCheckConditions(step1, first))
-    val step2 = after.transform(step1, context)
-    checkOnlyWhenAssertionsAreEnabled(accumulateAndCheckConditions(step2, after))
+    checkOnlyWhenAssertionsAreEnabled(checkConditions(step2, first.postConditions))
 
     step2
-  }
-
-  private def accumulateAndCheckConditions[D <: C, STATE](from: STATE, transformer: Transformer[D, _, _]): Boolean = {
-    (from, transformer) match {
-      case (f: BaseState, phase: Phase[_, _, _]) =>
-        val conditions = f.accumulatedConditions ++ phase.postConditions
-        val messages: Seq[String] = conditions.toSeq.collect {
-          case v:ValidatingCondition => v(f)
-        }.flatten
-        if (messages.nonEmpty) {
-          throw new IllegalStateException(messages.mkString(", "))
-        }
-      case _ =>
-    }
-    true
   }
 
   override def name: String = first.name + ", " + after.name
@@ -96,4 +99,6 @@ case class If[-C <: BaseContext, FROM, STATE <: FROM](f: STATE => Boolean)(thenT
   }
 
   override def name: String = s"if(<f>) ${thenT.name}"
+
+  override def postConditions: Set[StepSequencer.Condition] = thenT.postConditions
 }

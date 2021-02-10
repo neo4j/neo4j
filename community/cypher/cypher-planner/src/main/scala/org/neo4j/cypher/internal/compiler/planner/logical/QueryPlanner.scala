@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.phases.AttributeFullyAssigned
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
@@ -41,6 +42,7 @@ import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.StepSequencer
 
 case object QueryPlanner
@@ -119,7 +121,12 @@ case object QueryPlanner
     TokensResolved
   )
 
-  override def postConditions = Set(CompilationContains[LogicalPlan])
+  override def postConditions = Set(
+    CompilationContains[LogicalPlan],
+    AttributeFullyAssigned[Solveds],
+    AttributeFullyAssigned[Cardinalities],
+    AttributeFullyAssigned[ProvidedOrders]
+  )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

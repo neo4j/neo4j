@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDsTest.GapIdGen
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -73,7 +75,9 @@ class CompressPlanIDsTest extends CypherFunSuite with AstConstructionTestSupport
   }
 
   private def compress(state: LogicalPlanState): LogicalPlanState = {
-    CompressPlanIDs.transform(state, mock[PlannerContext])
+    val plannerContext = mock[PlannerContext]
+    when(plannerContext.tracer).thenReturn(NO_TRACING)
+    CompressPlanIDs.transform(state, plannerContext)
   }
 
   private def logicalPlanStateWithAttrributes(plan: LogicalPlan): LogicalPlanState = {
