@@ -172,6 +172,7 @@ public class MuninnPageCache implements PageCache
     private final VersionContextSupplier versionContextSupplier;
     private final IOBufferFactory bufferFactory;
     private final int faultLockStriping;
+    private final boolean enableEvictionThread;
     final PageList pages;
     // All PageCursors are initialised with their pointers pointing to the victim page. This way, we don't have to throw
     // exceptions on bounds checking failures; we can instead return the victim page pointer, and permit the page
@@ -230,9 +231,11 @@ public class MuninnPageCache implements PageCache
         private final int pageSize;
         private final IOBufferFactory bufferFactory;
         private final int faultLockStriping;
+        private final boolean enableEvictionThread;
 
         private Configuration( MemoryAllocator memoryAllocator, SystemNanoClock clock, MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer,
-                VersionContextSupplier versionContextSupplier, int pageSize, IOBufferFactory bufferFactory, int faultLockStriping )
+                VersionContextSupplier versionContextSupplier, int pageSize, IOBufferFactory bufferFactory, int faultLockStriping,
+                boolean enableEvictionThread )
         {
             this.memoryAllocator = memoryAllocator;
             this.clock = clock;
@@ -242,6 +245,7 @@ public class MuninnPageCache implements PageCache
             this.pageSize = pageSize;
             this.bufferFactory = bufferFactory;
             this.faultLockStriping = faultLockStriping;
+            this.enableEvictionThread = enableEvictionThread;
         }
 
         /**
@@ -250,7 +254,7 @@ public class MuninnPageCache implements PageCache
         public Configuration memoryAllocator( MemoryAllocator memoryAllocator )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping );
+                    faultLockStriping, enableEvictionThread );
         }
 
         /**
@@ -259,7 +263,7 @@ public class MuninnPageCache implements PageCache
         public Configuration clock( SystemNanoClock clock )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping );
+                    faultLockStriping, enableEvictionThread );
         }
 
         /**
@@ -268,7 +272,7 @@ public class MuninnPageCache implements PageCache
         public Configuration memoryTracker( MemoryTracker memoryTracker )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping );
+                    faultLockStriping, enableEvictionThread );
         }
 
         /**
@@ -277,7 +281,7 @@ public class MuninnPageCache implements PageCache
         public Configuration pageCacheTracer( PageCacheTracer pageCacheTracer )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping );
+                    faultLockStriping, enableEvictionThread );
         }
 
         /**
@@ -286,7 +290,7 @@ public class MuninnPageCache implements PageCache
         public Configuration versionContextSupplier( VersionContextSupplier versionContextSupplier )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping );
+                    faultLockStriping, enableEvictionThread );
         }
 
         /**
@@ -295,7 +299,7 @@ public class MuninnPageCache implements PageCache
         public Configuration pageSize( int pageSize )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping );
+                    faultLockStriping, enableEvictionThread );
         }
 
         /**
@@ -304,7 +308,7 @@ public class MuninnPageCache implements PageCache
         public Configuration bufferFactory( IOBufferFactory bufferFactory )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping );
+                    faultLockStriping, enableEvictionThread );
         }
 
         /**
@@ -313,7 +317,16 @@ public class MuninnPageCache implements PageCache
         public Configuration faultLockStriping( int faultLockStriping )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping );
+                    faultLockStriping, enableEvictionThread );
+        }
+
+        /**
+         * Disables the background eviction thread.
+         */
+        public Configuration disableEvictionThread()
+        {
+            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
+                    faultLockStriping, false );
         }
     }
 
@@ -333,7 +346,7 @@ public class MuninnPageCache implements PageCache
     public static Configuration config( MemoryAllocator memoryAllocator )
     {
         return new Configuration( memoryAllocator, Clocks.nanoClock(), EmptyMemoryTracker.INSTANCE, PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY,
-                PAGE_SIZE, DISABLED_BUFFER_FACTORY, LatchMap.faultLockStriping );
+                PAGE_SIZE, DISABLED_BUFFER_FACTORY, LatchMap.faultLockStriping, true );
     }
 
     /**
@@ -365,6 +378,7 @@ public class MuninnPageCache implements PageCache
         this.scheduler = jobScheduler;
         this.clock = configuration.clock;
         this.faultLockStriping = configuration.faultLockStriping;
+        this.enableEvictionThread = configuration.enableEvictionThread;
 
         setFreelistHead( new AtomicInteger() );
     }
@@ -567,8 +581,11 @@ public class MuninnPageCache implements PageCache
 
         try
         {
-            var monitoringParams = systemJob( "Eviction of pages from the page cache" );
-            scheduler.schedule( Group.PAGE_CACHE_EVICTION, monitoringParams, new EvictionTask( this ) );
+            if ( enableEvictionThread )
+            {
+                var monitoringParams = systemJob( "Eviction of pages from the page cache" );
+                scheduler.schedule( Group.PAGE_CACHE_EVICTION, monitoringParams, new EvictionTask( this ) );
+            }
         }
         catch ( Exception e )
         {
