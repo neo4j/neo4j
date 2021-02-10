@@ -92,7 +92,7 @@ class CheckpointLogFileTest
     }
 
     @Test
-    void provideMatchedCheckpointFiles()
+    void provideMatchedCheckpointFiles() throws IOException
     {
         Path[] matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat( matchedFiles ).hasSize( 1 );

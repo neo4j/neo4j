@@ -119,7 +119,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         {
             @Override
             public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
-                    Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+                    Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException
             {
                 Path redirectedFilename = migrationLayout.databaseDirectory().resolve( filename.getFileName().toString() );
                 return super.open( pageCache, redirectedFilename, idType, highIdScanner, maxId, readOnly, config, cursorTracer, openOptions );

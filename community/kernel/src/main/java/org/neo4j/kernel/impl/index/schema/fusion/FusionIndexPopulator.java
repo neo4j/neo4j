@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -52,7 +53,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     }
 
     @Override
-    public void create()
+    public void create() throws IOException
     {
         if ( archiveFailedIndex )
         {

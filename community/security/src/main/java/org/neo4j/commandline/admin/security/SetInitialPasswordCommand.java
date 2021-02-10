@@ -64,7 +64,7 @@ public class SetInitialPasswordCommand extends AbstractCommand implements Passwo
     }
 
     @Override
-    public void execute()
+    public void execute() throws IOException
     {
         Config config = loadNeo4jConfig();
         FileSystemAbstraction fileSystem = ctx.fs();

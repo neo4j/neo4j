@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
@@ -127,12 +128,25 @@ public abstract class SimpleEntryStorage<ENTRY, CURSOR> implements Closeable
         {
             runAll( "Failed while trying to close " + getClass().getSimpleName(),
                     () -> closeAllUnchecked( pageCursor, storeChannel, scopedBuffer ),
-                    () -> fs.deleteFile( file )
+                    () ->
+                    {
+                        try
+                        {
+                            fs.deleteFile( file );
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new UncheckedIOException( e );
+                        }
+                    }
             );
         }
         else
         {
-            fs.deleteFile( file );
+            if ( fs.fileExists( file ) )
+            {
+                fs.deleteFile( file );
+            }
         }
     }
 

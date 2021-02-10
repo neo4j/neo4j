@@ -21,6 +21,9 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -68,8 +71,15 @@ class TokenScanStoreRebuildIT
         AssertableLogProvider logProvider = new AssertableLogProvider();
         controller.restartDbms( builder ->
         {
-            fs.deleteFile( layout.labelScanStore() );
-            fs.deleteFile( layout.relationshipTypeScanStore() );
+            try
+            {
+                fs.deleteFile( layout.labelScanStore() );
+                fs.deleteFile( layout.relationshipTypeScanStore() );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
             builder.setInternalLogProvider( logProvider );
             return builder;
         } );

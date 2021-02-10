@@ -79,7 +79,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     abstract NativeIndexReader<KEY,VALUE> newReader();
 
     @Override
-    public synchronized void create()
+    public synchronized void create() throws IOException
     {
         assertNotDropped();
         assertNotClosed();

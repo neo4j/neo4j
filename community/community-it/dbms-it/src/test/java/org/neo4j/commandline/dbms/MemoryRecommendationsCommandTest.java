@@ -241,7 +241,7 @@ class MemoryRecommendationsCommandTest
         Path homeDir = testDirectory.homePath();
         Path configDir = homeDir.resolve( "conf" );
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
-        configDir.toFile().mkdirs();
+        Files.createDirectories( configDir );
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile );
 
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand(

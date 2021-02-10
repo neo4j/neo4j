@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -40,7 +41,7 @@ class FileSizeThresholdTest
     private final long version = 1;
 
     @Test
-    void shouldReturnFalseWhenFileSizeIsLowerThanMaxSize()
+    void shouldReturnFalseWhenFileSizeIsLowerThanMaxSize() throws IOException
     {
         // given
         final long maxSize = 10;
@@ -57,7 +58,7 @@ class FileSizeThresholdTest
     }
 
     @Test
-    void shouldReturnTrueWhenASingleFileSizeIsGreaterOrEqualThanMaxSize()
+    void shouldReturnTrueWhenASingleFileSizeIsGreaterOrEqualThanMaxSize() throws IOException
     {
         // given
         long sixteenGigabytes = 16L * 1024 * 1024 * 1024;
@@ -75,7 +76,7 @@ class FileSizeThresholdTest
     }
 
     @Test
-    void shouldSumSizeWhenCalledMultipleTimes()
+    void shouldSumSizeWhenCalledMultipleTimes() throws IOException
     {
         // given
         final long maxSize = 10;
@@ -93,7 +94,7 @@ class FileSizeThresholdTest
     }
 
     @Test
-    void shouldForgetPreviousValuesAfterAInitCall()
+    void shouldForgetPreviousValuesAfterAInitCall() throws IOException
     {
         // given
         final long maxSize = 10;

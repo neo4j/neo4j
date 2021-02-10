@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -53,7 +54,7 @@ public class MinimalIndexAccessorCompatibility extends IndexProviderCompatibilit
     }
 
     @Before
-    public void before()
+    public void before() throws IOException
     {
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
         IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_NAME_LOOKUP );
@@ -63,7 +64,7 @@ public class MinimalIndexAccessorCompatibility extends IndexProviderCompatibilit
     }
 
     @Test
-    public void indexDropperMustDropIndex()
+    public void indexDropperMustDropIndex() throws IOException
     {
         // given
         Path rootDirectory = indexProvider.directoryStructure().rootDirectory();

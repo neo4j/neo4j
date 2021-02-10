@@ -86,7 +86,7 @@ class LuceneSchemaIndexPopulatorTest
     private NodePropertyAccessor propertyAccessor;
 
     @BeforeEach
-    void before()
+    void before() throws IOException
     {
         directory = new ByteBuffersDirectory();
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(

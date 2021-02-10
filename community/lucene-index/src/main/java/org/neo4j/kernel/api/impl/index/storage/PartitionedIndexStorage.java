@@ -152,6 +152,10 @@ public class PartitionedIndexStorage
      */
     public void cleanupFolder( Path folder ) throws IOException
     {
+        if ( !fileSystem.fileExists( folder ) )
+        {
+            return;
+        }
         List<Path> partitionFolders = listFolders( folder );
         if ( !partitionFolders.isEmpty() )
         {
@@ -200,16 +204,18 @@ public class PartitionedIndexStorage
      * @return the list of index partition folders or {@link Collections#emptyList() empty list} if index folder is
      * empty.
      */
-    public List<Path> listFolders()
+    public List<Path> listFolders() throws IOException
     {
         return listFolders( getIndexFolder() );
     }
 
-    private List<Path> listFolders( Path rootFolder )
+    private List<Path> listFolders( Path rootFolder ) throws IOException
     {
-        Path[] files = fileSystem.listFiles( rootFolder );
-        return files == null ? Collections.emptyList()
-                             : Stream.of( files )
+        if ( !fileSystem.fileExists( rootFolder ) )
+        {
+            return Collections.emptyList();
+        }
+        return Stream.of( fileSystem.listFiles( rootFolder ) )
                                .filter( f -> fileSystem.isDirectory( f ) && StringUtils.isNumeric( f.getFileName().toString() ) )
                                .sorted( FILE_COMPARATOR )
                                .collect( toList() );

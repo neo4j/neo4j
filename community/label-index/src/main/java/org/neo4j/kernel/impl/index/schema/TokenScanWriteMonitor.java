@@ -244,16 +244,23 @@ public class TokenScanWriteMonitor implements NativeTokenScanWriter.WriteMonitor
             }
 
             // Prune
-            long time = clock.millis();
-            long threshold = time - pruneThreshold;
-            for ( Path file : fs.listFiles( storeDir, name -> name.getFileName().toString().startsWith( file.getFileName() + "-" ) ) )
+            try
             {
-                long timestamp = millisOf( file );
-                if ( timestamp < threshold )
+                long time = clock.millis();
+                long threshold = time - pruneThreshold;
+                for ( Path file : fs.listFiles( storeDir, name -> name.getFileName().toString().startsWith( file.getFileName() + "-" ) ) )
                 {
-                    fs.deleteFile( file );
-                    monitor.pruned( file, timestamp );
+                    long timestamp = millisOf( file );
+                    if ( timestamp < threshold )
+                    {
+                        fs.deleteFile( file );
+                        monitor.pruned( file, timestamp );
+                    }
                 }
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
             }
         }
     }

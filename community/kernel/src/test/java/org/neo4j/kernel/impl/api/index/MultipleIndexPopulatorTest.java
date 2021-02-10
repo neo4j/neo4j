@@ -113,7 +113,7 @@ class MultipleIndexPopulatorTest
     }
 
     @Test
-    void disconnectedPopulationNotAbleToCreateNewIndex() throws FlipFailedKernelException
+    void disconnectedPopulationNotAbleToCreateNewIndex() throws FlipFailedKernelException, IOException
     {
         IndexPopulator populator = createIndexPopulator();
         IndexPopulation indexPopulation = addPopulator( populator, 1 );
@@ -164,7 +164,7 @@ class MultipleIndexPopulatorTest
     }
 
     @Test
-    void testMultiplePopulatorsCreation() throws FlipFailedKernelException
+    void testMultiplePopulatorsCreation() throws FlipFailedKernelException, IOException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -178,7 +178,7 @@ class MultipleIndexPopulatorTest
     }
 
     @Test
-    void testMultiplePopulatorCreationFailure() throws FlipFailedKernelException
+    void testMultiplePopulatorCreationFailure() throws FlipFailedKernelException, IOException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();

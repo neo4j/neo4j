@@ -22,6 +22,8 @@ package org.neo4j.internal.id;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -65,7 +67,7 @@ class BufferedIdControllerTest
     }
 
     @Test
-    void reportPageCacheMetricsOnMaintenance()
+    void reportPageCacheMetricsOnMaintenance() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
 

@@ -34,6 +34,8 @@ import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvents;
 import org.neo4j.monitoring.Health;
 import org.neo4j.util.VisibleForTesting;
 
+import static org.neo4j.io.IOUtils.uncheckedLongSupplier;
+
 /**
  * Default implementation of the LogRotation interface.
  */
@@ -51,7 +53,7 @@ public class FileLogRotation implements LogRotation
             LogRotationMonitor monitor )
     {
         return new FileLogRotation( checkpointLogFile, clock, databaseHealth, monitor,
-                () -> logFile.getLogFileInformation().committingEntryId(), checkpointLogFile::getCurrentDetachedLogVersion );
+                () -> logFile.getLogFileInformation().committingEntryId(), uncheckedLongSupplier( checkpointLogFile::getCurrentDetachedLogVersion ) );
     }
 
     public static LogRotation transactionLogRotation( LogFiles logFiles, Clock clock, Health databaseHealth, LogRotationMonitor monitor )

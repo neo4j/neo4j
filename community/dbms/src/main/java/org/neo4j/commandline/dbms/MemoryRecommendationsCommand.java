@@ -213,7 +213,7 @@ public class MemoryRecommendationsCommand extends AbstractCommand
     }
 
     @Override
-    protected void execute()
+    protected void execute() throws IOException
     {
         if ( memory == null )
         {
@@ -294,24 +294,34 @@ public class MemoryRecommendationsCommand extends AbstractCommand
         }
     }
 
-    private long pageCacheSize( Collection<DatabaseLayout> layouts )
+    private long pageCacheSize( Collection<DatabaseLayout> layouts ) throws IOException
     {
-        return layouts.stream().mapToLong( this::getDatabasePageCacheSize ).sum();
+        long sum = 0L;
+        for ( DatabaseLayout layout : layouts )
+        {
+            sum += getDatabasePageCacheSize( layout );
+        }
+        return sum;
     }
 
-    private long getDatabasePageCacheSize( DatabaseLayout layout )
+    private long getDatabasePageCacheSize( DatabaseLayout layout ) throws IOException
     {
         return sumStoreFiles( layout ) +
                 sumIndexFiles( baseSchemaIndexFolder( layout.databaseDirectory() ), getNativeIndexFileFilter(
                         layout.databaseDirectory(), false ) );
     }
 
-    private long luceneSize( Collection<DatabaseLayout> layouts )
+    private long luceneSize( Collection<DatabaseLayout> layouts ) throws IOException
     {
-        return layouts.stream().mapToLong( this::getDatabaseLuceneSize ).sum();
+        long sum = 0L;
+        for ( DatabaseLayout layout : layouts )
+        {
+            sum += getDatabaseLuceneSize( layout );
+        }
+        return sum;
     }
 
-    private long getDatabaseLuceneSize( DatabaseLayout databaseLayout )
+    private long getDatabaseLuceneSize( DatabaseLayout databaseLayout ) throws IOException
     {
         Path databaseDirectory = databaseLayout.databaseDirectory();
         return sumIndexFiles( baseSchemaIndexFolder( databaseDirectory ), getNativeIndexFileFilter( databaseDirectory, true ) );
@@ -343,9 +353,11 @@ public class MemoryRecommendationsCommand extends AbstractCommand
         FileSystemAbstraction fileSystem = ctx.fs();
         try
         {
-            long total =
-                    storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ).stream().mapToLong(
-                            fileSystem::getFileSize ).sum();
+            long total = 0L;
+            for ( Path path : storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ) )
+            {
+                total += fileSystem.getFileSize( path );
+            }
 
             // Include label index
             total += sizeOfFileIfExists( databaseLayout.labelScanStore() );
@@ -357,13 +369,13 @@ public class MemoryRecommendationsCommand extends AbstractCommand
         }
     }
 
-    private long sizeOfFileIfExists( Path file )
+    private long sizeOfFileIfExists( Path file ) throws IOException
     {
         FileSystemAbstraction fileSystem = ctx.fs();
         return fileSystem.fileExists( file ) ? fileSystem.getFileSize( file ) : 0;
     }
 
-    private long sumIndexFiles( Path file, DirectoryStream.Filter<Path> filter )
+    private long sumIndexFiles( Path file, DirectoryStream.Filter<Path> filter ) throws IOException
     {
         long total = 0;
         if ( ctx.fs().isDirectory( file ) )
@@ -377,7 +389,7 @@ public class MemoryRecommendationsCommand extends AbstractCommand
                 }
             }
         }
-        else
+        else if ( ctx.fs().fileExists( file ) )
         {
             total += ctx.fs().getFileSize( file );
         }

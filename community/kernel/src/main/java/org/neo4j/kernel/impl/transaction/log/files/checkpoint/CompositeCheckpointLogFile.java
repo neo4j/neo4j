@@ -111,7 +111,7 @@ public class CompositeCheckpointLogFile extends LifecycleAdapter implements Chec
     }
 
     @Override
-    public Path getCurrentFile()
+    public Path getCurrentFile() throws IOException
     {
         return checkpointLogFile.getCurrentFile();
     }
@@ -123,13 +123,13 @@ public class CompositeCheckpointLogFile extends LifecycleAdapter implements Chec
     }
 
     @Override
-    public Path[] getDetachedCheckpointFiles()
+    public Path[] getDetachedCheckpointFiles() throws IOException
     {
         return checkpointLogFile.getDetachedCheckpointFiles();
     }
 
     @Override
-    public long getCurrentDetachedLogVersion()
+    public long getCurrentDetachedLogVersion() throws IOException
     {
         return checkpointLogFile.getCurrentDetachedLogVersion();
     }

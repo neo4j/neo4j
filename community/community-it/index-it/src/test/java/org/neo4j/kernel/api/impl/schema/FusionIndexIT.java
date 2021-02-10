@@ -21,6 +21,8 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
@@ -118,7 +120,14 @@ public class FusionIndexIT
         {
             for ( IndexProviderDescriptor descriptor : descriptors )
             {
-                deleteIndexFilesFor( descriptor );
+                try
+                {
+                    deleteIndexFilesFor( descriptor );
+                }
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
+                }
             }
             return builder;
         } );
@@ -137,14 +146,14 @@ public class FusionIndexIT
         }
     }
 
-    private void deleteIndexFilesFor( IndexProviderDescriptor descriptor )
+    private void deleteIndexFilesFor( IndexProviderDescriptor descriptor ) throws IOException
     {
         Path databaseDirectory = db.databaseLayout().databaseDirectory();
         Path rootDirectory = subProviderDirectoryStructure( databaseDirectory ).forProvider( descriptor ).rootDirectory();
         Path[] files = fs.listFiles( rootDirectory );
         for ( Path indexFile : files )
         {
-            fs.deleteFile( indexFile );
+            fs.deleteRecursively( indexFile );
         }
     }
 

@@ -54,13 +54,11 @@ public class SabotageNativeIndex extends NativeIndexRestartAction
         {
             int count = 0;
             Path[] children = fs.listFiles( fileOrDir );
-            if ( children != null )
+            for ( Path child : children )
             {
-                for ( Path child : children )
-                {
-                    count += scrambleIndexFiles( fs, child );
-                }
+                count += scrambleIndexFiles( fs, child );
             }
+
             return count;
         }
         else

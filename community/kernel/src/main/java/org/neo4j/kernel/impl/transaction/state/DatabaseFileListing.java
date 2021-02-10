@@ -105,7 +105,7 @@ public class DatabaseFileListing
         }
     }
 
-    private void gatherLogFiles( Collection<StoreFileMetadata> files )
+    private void gatherLogFiles( Collection<StoreFileMetadata> files ) throws IOException
     {
         Path[] list = this.logFiles.logFiles();
         for ( Path logFile : list )

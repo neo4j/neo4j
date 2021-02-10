@@ -79,7 +79,7 @@ public class FailureStorage
      * Delete failure file for the given index id
      *
      */
-    public synchronized void clearForIndex()
+    public synchronized void clearForIndex() throws IOException
     {
         fs.deleteFile( failureFile() );
     }

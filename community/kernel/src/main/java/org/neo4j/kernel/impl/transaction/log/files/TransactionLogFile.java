@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -303,9 +304,16 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     @Override
     public void accept( LogVersionVisitor visitor )
     {
-        for ( Path file : fileHelper.getMatchedFiles() )
+        try
         {
-            visitor.visit( file, getLogVersion( file ) );
+            for ( Path file : fileHelper.getMatchedFiles() )
+            {
+                visitor.visit( file, getLogVersion( file ) );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 
@@ -333,7 +341,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public Path[] getMatchedFiles()
+    public Path[] getMatchedFiles() throws IOException
     {
         return fileHelper.getMatchedFiles();
     }

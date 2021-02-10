@@ -125,16 +125,17 @@ class InstanceSelector<T>
      *
      * @param consumer {@link Consumer} which performs some action on an instance.
      */
-    void forAll( Consumer<T> consumer )
+    <E extends Exception> void forAll( ThrowingConsumer<T,E> consumer )
     {
-        RuntimeException exception = null;
+        Exception exception = null;
         for ( IndexSlot slot : IndexSlot.values() )
         {
             exception = consumeAndChainException( select( slot ), consumer, exception );
         }
         if ( exception != null )
         {
-            throw exception;
+            Exceptions.throwIfUnchecked( exception );
+            throw new RuntimeException( exception );
         }
     }
 
@@ -157,7 +158,7 @@ class InstanceSelector<T>
      *
      * @param consumer {@link Consumer} which performs some action on an instance.
      */
-    void close( Consumer<T> consumer )
+    <E extends Exception> void close( ThrowingConsumer<T,E> consumer )
     {
         if ( !closed )
         {
@@ -183,9 +184,9 @@ class InstanceSelector<T>
      *
      * @param consumer {@link ThrowingConsumer} which performs some action on an instance.
      */
-    private void forInstantiated( Consumer<T> consumer )
+    private <E extends Exception> void forInstantiated( ThrowingConsumer<T,E> consumer )
     {
-        RuntimeException exception = null;
+        Exception exception = null;
         for ( T instance : instances.values() )
         {
             if ( instance != null )
@@ -195,17 +196,18 @@ class InstanceSelector<T>
         }
         if ( exception != null )
         {
-            throw exception;
+            Exceptions.throwIfUnchecked( exception );
+            throw new RuntimeException( exception );
         }
     }
 
-    private RuntimeException consumeAndChainException( T instance, Consumer<T> consumer, RuntimeException exception )
+    private <E extends Exception> Exception consumeAndChainException( T instance, ThrowingConsumer<T,E> consumer, Exception exception )
     {
         try
         {
             consumer.accept( instance );
         }
-        catch ( RuntimeException e )
+        catch ( Exception e )
         {
             exception = Exceptions.chain( exception, e );
         }

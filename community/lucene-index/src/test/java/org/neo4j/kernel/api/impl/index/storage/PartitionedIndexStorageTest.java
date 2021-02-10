@@ -176,7 +176,7 @@ class PartitionedIndexStorageTest
         try ( FileSystemAbstraction scramblingFs = new DefaultFileSystemAbstraction()
                 {
                     @Override
-                    public Path[] listFiles( Path directory )
+                    public Path[] listFiles( Path directory ) throws IOException
                     {
                         List<Path> files = asList( super.listFiles( directory ) );
                         Collections.shuffle( files );

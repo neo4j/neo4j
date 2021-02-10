@@ -98,7 +98,7 @@ public interface LogFile extends RotatableFile
 
     void accept( LogHeaderVisitor visitor ) throws IOException;
 
-    Path[] getMatchedFiles();
+    Path[] getMatchedFiles() throws IOException;
 
     boolean forceAfterAppend( LogForceEvents logForceEvents ) throws IOException;
 

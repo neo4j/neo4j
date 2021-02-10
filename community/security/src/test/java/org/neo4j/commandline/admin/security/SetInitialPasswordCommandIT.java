@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import picocli.CommandLine;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 
@@ -217,7 +218,7 @@ class SetInitialPasswordCommandIT
         return homeDir.resolve( "data" ).resolve( "dbms" ).resolve( name );
     }
 
-    private void executeCommand( String... args )
+    private void executeCommand( String... args ) throws IOException
     {
         final var ctx = new ExecutionContext( homeDir, confDir, out, err, fileSystem );
         final var command = new SetInitialPasswordCommand( ctx );

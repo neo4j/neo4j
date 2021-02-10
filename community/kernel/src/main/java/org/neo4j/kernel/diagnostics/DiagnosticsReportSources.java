@@ -22,6 +22,7 @@ package org.neo4j.kernel.diagnostics;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -64,15 +65,23 @@ public final class DiagnosticsReportSources
     {
         List<DiagnosticsReportSource> files = new ArrayList<>();
 
-        Path[] paths = fs.listFiles( file.getParent(), path -> path.getFileName().toString().startsWith( file.getFileName().toString() ) );
-
-        if ( paths != null )
+        try
         {
-            for ( Path path : paths )
+            Path[] paths = fs.listFiles( file.getParent(), path -> path.getFileName().toString().startsWith( file.getFileName().toString() ) );
+
+            if ( paths != null )
             {
-                files.add( newDiagnosticsFile( destinationFolder + path.getFileName().toString(), fs, path ) );
+                for ( Path path : paths )
+                {
+                    files.add( newDiagnosticsFile( destinationFolder + path.getFileName().toString(), fs, path ) );
+                }
             }
         }
+        catch ( IOException e )
+        {
+            files.add( newDiagnosticsString( destinationFolder, () -> "Error reading files in directory: " + e.getMessage() ) );
+        }
+
         return files;
     }
 
@@ -118,7 +127,14 @@ public final class DiagnosticsReportSources
         @Override
         public long estimatedSize()
         {
-            return fs.getFileSize( source );
+            try
+            {
+                return fs.getFileSize( source );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
     }
 

@@ -27,6 +27,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -34,6 +35,7 @@ import org.neo4j.shell.Historian;
 import org.neo4j.shell.log.Logger;
 
 import static java.lang.System.getProperty;
+import static java.nio.file.Files.isDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -70,10 +72,10 @@ public class FileHistorianTest
     @Test
     public void noHistoryFileGivesMemoryHistory() throws Exception
     {
-        File historyFile = Paths.get( temp.newFolder().getAbsolutePath(), "asfasd", "zxvses", "fanjtaacf" ).toFile();
-        assertFalse( historyFile.getParentFile().isDirectory() );
-        assertFalse( historyFile.getParentFile().getParentFile().isDirectory() );
-        Historian historian = FileHistorian.setupHistory( reader, logger, historyFile );
+        Path historyFile = Paths.get( temp.newFolder().getAbsolutePath(), "asfasd", "zxvses", "fanjtaacf" );
+        assertFalse( isDirectory( historyFile.getParent() ) );
+        assertFalse( isDirectory( historyFile.getParent().getParent() ) );
+        Historian historian = FileHistorian.setupHistory( reader, logger, historyFile.toFile() );
 
         assertNotNull( historian );
 

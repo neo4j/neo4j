@@ -84,7 +84,7 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, V
     }
 
     @Test
-    void addShouldThrowOnDuplicateValues()
+    void addShouldThrowOnDuplicateValues() throws IOException
     {
         // given
         populator.create();

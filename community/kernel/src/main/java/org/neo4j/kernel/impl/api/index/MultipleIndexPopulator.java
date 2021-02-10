@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -572,7 +573,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
             flipper.flipTo( new FailedIndexProxy( indexDescriptor, indexUserDescription, populator, failure, indexStatisticsStore, logProvider ) );
         }
 
-        void create()
+        void create() throws IOException
         {
             populatorLock.lock();
             try

@@ -79,7 +79,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
     abstract byte onlineByte();
 
     @Test
-    void createShouldCreateFile()
+    void createShouldCreateFile() throws IOException
     {
         // given
         assertFileNotPresent();
@@ -113,7 +113,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
     }
 
     @Test
-    void dropShouldDeleteExistingFile()
+    void dropShouldDeleteExistingFile() throws IOException
     {
         // given
         populator.create();
@@ -190,7 +190,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
     }
 
     @Test
-    void unsuccessfulCloseMustSucceedWithoutMarkAsFailed()
+    void unsuccessfulCloseMustSucceedWithoutMarkAsFailed() throws IOException
     {
         // given
         populator.create();
@@ -266,7 +266,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
     }
 
     @Test
-    void successfulCloseMustThrowIfMarkedAsFailed()
+    void successfulCloseMustThrowIfMarkedAsFailed() throws IOException
     {
         // given
         populator.create();
@@ -281,7 +281,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
     }
 
     @Test
-    void dropMustSucceedAfterSuccessfulClose()
+    void dropMustSucceedAfterSuccessfulClose() throws IOException
     {
         // given
         populator.create();
@@ -295,7 +295,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
     }
 
     @Test
-    void dropMustSucceedAfterUnsuccessfulClose()
+    void dropMustSucceedAfterUnsuccessfulClose() throws IOException
     {
         // given
         populator.create();
@@ -355,7 +355,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
     }
 
     @Test
-    void successfulCloseMustThrowAfterDrop()
+    void successfulCloseMustThrowAfterDrop() throws IOException
     {
         // given
         populator.create();
@@ -369,7 +369,7 @@ abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> e
     }
 
     @Test
-    void unsuccessfulCloseMustThrowAfterDrop()
+    void unsuccessfulCloseMustThrowAfterDrop() throws IOException
     {
         // given
         populator.create();

@@ -40,7 +40,7 @@ public abstract class IndexFiles
 
     public abstract void clear();
 
-    public abstract void archiveIndex();
+    public abstract void archiveIndex() throws IOException;
 
     public abstract void ensureDirectoryExist();
 
@@ -80,7 +80,10 @@ public abstract class IndexFiles
         {
             try
             {
+                if ( fs.fileExists( directory ) )
+            {
                 fs.deleteRecursively( directory );
+            }
             }
             catch ( IOException e )
             {
@@ -89,22 +92,13 @@ public abstract class IndexFiles
         }
 
         @Override
-        public void archiveIndex()
+    public void archiveIndex() throws IOException
+    {
+        if ( fs.isDirectory( directory ) && fs.fileExists( directory ) && fs.listFiles( directory ).length > 0 )
         {
-            if ( fs.isDirectory( directory ) &&
-                 fs.fileExists( directory ) && fs.listFiles( directory ).length > 0 )
-            {
-                try
-                {
-                    ZipUtils.zip( fs, directory,
-                            directory.getParent().resolve( "archive-" + directory.getFileName() + "-" + System.currentTimeMillis() + ".zip" ) );
-                }
-                catch ( IOException e )
-                {
-                    throw new UncheckedIOException( e );
-                }
-            }
+            ZipUtils.zip( fs, directory, directory.getParent().resolve( "archive-" + directory.getFileName() + "-" + System.currentTimeMillis() + ".zip" ) );
         }
+    }
 
         @Override
         public void ensureDirectoryExist()

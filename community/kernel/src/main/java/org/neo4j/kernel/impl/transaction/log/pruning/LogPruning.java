@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
+import java.io.IOException;
+
 public interface LogPruning
 {
     /**
@@ -27,7 +29,7 @@ public interface LogPruning
      *
      * @param currentVersion The lowest version expected to remain after pruning completes.
      */
-    void pruneLogs( long currentVersion );
+    void pruneLogs( long currentVersion ) throws IOException;
 
     /**
      * Check if there might be a desire to prune logs. This could be used as a hint to schedule some log pruning soon,

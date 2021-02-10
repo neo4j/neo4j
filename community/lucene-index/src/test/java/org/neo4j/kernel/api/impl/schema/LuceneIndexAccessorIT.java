@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -188,7 +189,7 @@ public class LuceneIndexAccessorIT
     }
 
     private void populateWithInitialNodes( IndexDescriptor indexDescriptor, int nodes, MutableLongSet expectedNodes )
-            throws IndexEntryConflictException
+            throws IndexEntryConflictException, IOException
     {
         IndexPopulator populator =
                 indexProvider.getPopulator( indexDescriptor, samplingConfig, ByteBufferFactory.heapBufferFactory( (int) kibiBytes( 100 ) ), INSTANCE,

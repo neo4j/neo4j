@@ -52,7 +52,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.fs.FileHandle.HANDLE_DELETE;
@@ -255,7 +254,7 @@ public abstract class FileSystemAbstractionTest
         assertFalse( fsa.fileExists( b ) );
         assertFalse( fsa.fileExists( c ) );
         assertFalse( fsa.fileExists( path ) );
-        assertNull( fsa.listFiles( path ) );
+        assertThrows( NoSuchFileException.class, () -> fsa.listFiles( path ) );
     }
 
     @Test
@@ -744,12 +743,6 @@ public abstract class FileSystemAbstractionTest
         // Then verify that the old random data we put in 'b' has been replaced with the contents of 'a'
         verifyRecordsInFile( b, recordCount );
 
-    }
-
-    @Test
-    void lastModifiedOfNonExistingFileIsZero()
-    {
-        assertThat( fsa.lastModifiedTime( nonExistingFile( "blabla" ) ) ).isEqualTo( 0L );
     }
 
     @Test

@@ -110,9 +110,9 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean mkdir( Path fileName )
+    public void mkdir( Path fileName ) throws IOException
     {
-        return chooseFileSystem( fileName ).mkdir( fileName );
+        chooseFileSystem( fileName ).mkdir( fileName );
     }
 
     @Override
@@ -122,7 +122,7 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public long getFileSize( Path fileName )
+    public long getFileSize( Path fileName ) throws IOException
     {
         return chooseFileSystem( fileName ).getFileSize( fileName );
     }
@@ -134,9 +134,9 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean deleteFile( Path fileName )
+    public void deleteFile( Path fileName ) throws IOException
     {
-        return chooseFileSystem( fileName ).deleteFile( fileName );
+        chooseFileSystem( fileName ).deleteFile( fileName );
     }
 
     @Override
@@ -152,13 +152,13 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public Path[] listFiles( Path directory )
+    public Path[] listFiles( Path directory ) throws IOException
     {
         return chooseFileSystem( directory ).listFiles( directory );
     }
 
     @Override
-    public Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter )
+    public Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter ) throws IOException
     {
         return chooseFileSystem( directory ).listFiles( directory, filter );
     }
@@ -206,7 +206,7 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public long lastModifiedTime( Path file )
+    public long lastModifiedTime( Path file ) throws IOException
     {
         return chooseFileSystem( file ).lastModifiedTime( file );
     }

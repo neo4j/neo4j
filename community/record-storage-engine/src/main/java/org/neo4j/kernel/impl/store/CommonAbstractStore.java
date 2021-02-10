@@ -615,7 +615,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * map their own temporary PagedFile for the store file, and do their file IO through that,
      * if they need to access the data in the store file.
      */
-    private void openIdGenerator( PageCursorTracer cursorTracer )
+    private void openIdGenerator( PageCursorTracer cursorTracer ) throws IOException
     {
         boolean readOnly = configuration.get( GraphDatabaseSettings.read_only );
         idGenerator =

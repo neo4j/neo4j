@@ -294,7 +294,7 @@ abstract class IndexPopulationStressTest
     }
 
     private void buildReferencePopulatorSingleThreaded( Generator[] generators, Collection<ValueIndexEntryUpdate<?>> updates )
-        throws IndexEntryConflictException
+            throws IndexEntryConflictException, IOException
     {
         IndexPopulator referencePopulator = indexProvider.getPopulator( descriptor2, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ),
                 INSTANCE, tokenNameLookup );

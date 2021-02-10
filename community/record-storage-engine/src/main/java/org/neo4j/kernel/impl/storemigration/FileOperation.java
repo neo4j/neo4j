@@ -91,7 +91,7 @@ enum FileOperation
         @Override
         public void perform( FileSystemAbstraction fs, String fileName,
                 Path directory, boolean skipNonExistentFromFile,
-                Path unusedFile, ExistingTargetStrategy unused )
+                Path unusedFile, ExistingTargetStrategy unused ) throws IOException
         {
             Path file = fromFile( fs, directory, fileName, skipNonExistentFromFile );
             if ( file != null )
@@ -118,7 +118,7 @@ enum FileOperation
     }
 
     private static Path toFile( FileSystemAbstraction fs, Path directory, String name,
-            ExistingTargetStrategy existingTargetStrategy ) throws FileAlreadyExistsException
+            ExistingTargetStrategy existingTargetStrategy ) throws IOException
     {
         Path file = directory.resolve( name );
         if ( fs.fileExists( file ) )

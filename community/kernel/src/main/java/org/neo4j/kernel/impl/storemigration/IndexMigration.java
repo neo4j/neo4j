@@ -248,12 +248,12 @@ enum IndexMigration
         return baseProviderDir.resolve( String.valueOf( indexId ) ).resolve( SPATIAL_DIRECTORY_NAME );
     }
 
-    public static List<SpatialFile> getSpatialFiles( FileSystemAbstraction fs, Path spatialDirectory )
+    public static List<SpatialFile> getSpatialFiles( FileSystemAbstraction fs, Path spatialDirectory ) throws IOException
     {
         List<SpatialFile> spatialFiles = new ArrayList<>();
-        Path[] files = fs.listFiles( spatialDirectory );
-        if ( files != null )
+        if ( fs.fileExists( spatialDirectory ) )
         {
+            Path[] files = fs.listFiles( spatialDirectory );
             for ( Path file : files )
             {
                 String name = file.getFileName().toString();

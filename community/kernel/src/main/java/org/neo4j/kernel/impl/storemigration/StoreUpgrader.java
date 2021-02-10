@@ -336,7 +336,14 @@ public class StoreUpgrader
         {
             throw new UnableToUpgradeException( "Failure deleting upgrade directory " + migrationDirectory, e );
         }
-        fileSystem.mkdir( migrationDirectory );
+        try
+        {
+            fileSystem.mkdir( migrationDirectory );
+        }
+        catch ( IOException e )
+        {
+            throw new UnableToUpgradeException( "Failure to create directory " + migrationDirectory, e );
+        }
     }
 
     private void deleteSilently( Path dir )

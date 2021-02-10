@@ -51,6 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.IndexProviderDescriptor.UNDECIDED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
@@ -108,6 +109,7 @@ abstract class FusionIndexPopulatorTest
         InstanceSelector<IndexPopulator> instanceSelector = new InstanceSelector<>( populators );
         fs = mock( FileSystemAbstraction.class );
         directoryStructure = directoriesByProvider( Path.of( "storeDir" ) ).forProvider( UNDECIDED );
+        when( fs.fileExists( directoryStructure.directoryForIndex( indexId ) ) ).thenReturn( true );
         IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure, indexId );
         fusionIndexPopulator = new FusionIndexPopulator( slotSelector, instanceSelector, indexFiles, false );
     }
@@ -115,7 +117,7 @@ abstract class FusionIndexPopulatorTest
     /* create */
 
     @Test
-    void createMustCreateAll()
+    void createMustCreateAll() throws IOException
     {
         // when
         fusionIndexPopulator.create();
@@ -136,7 +138,7 @@ abstract class FusionIndexPopulatorTest
     }
 
     @Test
-    void createMustThrowIfAnyThrow()
+    void createMustThrowIfAnyThrow() throws IOException
     {
         for ( IndexPopulator alivePopulator : alivePopulators )
         {

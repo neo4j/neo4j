@@ -49,7 +49,6 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.graphdb.Label.label;
@@ -78,7 +77,7 @@ class RebuildCountsTest
     private DatabaseManagementService managementService;
 
     @BeforeEach
-    void before() throws IOException
+    void before()
     {
         restart( fileSystem );
     }
@@ -178,9 +177,9 @@ class RebuildCountsTest
         }
     }
 
-    private void deleteCounts( FileSystemAbstraction snapshot )
+    private void deleteCounts( FileSystemAbstraction snapshot ) throws IOException
     {
-        assertTrue( snapshot.deleteFile( databaseLayout.countStore() ) );
+        snapshot.deleteFile( databaseLayout.countStore() );
     }
 
     private FileSystemAbstraction shutdown()

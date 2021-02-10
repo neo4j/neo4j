@@ -115,17 +115,9 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean mkdir( Path fileName )
+    public void mkdir( Path fileName ) throws IOException
     {
-        try
-        {
-            Files.createDirectories( fileName );
-        }
-        catch ( IOException e )
-        {
-            return false;
-        }
-        return true;
+        Files.createDirectories( fileName );
     }
 
     @Override
@@ -152,20 +144,10 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
         return Files.exists( file );
     }
 
-    /**
-     * @return 0 on IO exception to preserve behaviour of {@link File#length()}
-     */
     @Override
-    public long getFileSize( Path file )
+    public long getFileSize( Path file ) throws IOException
     {
-        try
-        {
-            return Files.size( file );
-        }
-        catch ( IOException e )
-        {
-            return 0;
-        }
+        return Files.size( file );
     }
 
     @Override
@@ -175,17 +157,9 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean deleteFile( Path fileName )
+    public void deleteFile( Path fileName ) throws IOException
     {
-        try
-        {
-            FileUtils.deleteFile( fileName );
-            return true;
-        }
-        catch ( IOException e )
-        {
-            return false;
-        }
+        FileUtils.deleteFile( fileName );
     }
 
     @Override
@@ -201,34 +175,20 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public Path[] listFiles( Path directory )
+    public Path[] listFiles( Path directory ) throws IOException
     {
-        try
+        try ( Stream<Path> list = Files.list( directory ) )
         {
-            try ( Stream<Path> list = Files.list( directory ) )
-            {
-                return list.toArray( Path[]::new );
-            }
-        }
-        catch ( IOException ignored )
-        {
-            return null; // Preserve behaviour of File.listFiles()
+            return list.toArray( Path[]::new );
         }
     }
 
     @Override
-    public Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter )
+    public Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter ) throws IOException
     {
-        try
+        try ( DirectoryStream<Path> paths = Files.newDirectoryStream( directory, filter ) )
         {
-            try ( DirectoryStream<Path> paths = Files.newDirectoryStream( directory, filter ) )
-            {
-                return StreamSupport.stream( paths.spliterator(), false ).toArray( Path[]::new );
-            }
-        }
-        catch ( IOException ignored )
-        {
-            return null; // Preserve behaviour of File.listFiles()
+            return StreamSupport.stream( paths.spliterator(), false ).toArray( Path[]::new );
         }
     }
 
@@ -274,20 +234,10 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
         FileUtils.truncateFile( path, size );
     }
 
-    /**
-     * @return 0 on IO exception to preserve behaviour of {@link File#lastModified()}
-     */
     @Override
-    public long lastModifiedTime( Path file )
+    public long lastModifiedTime( Path file ) throws IOException
     {
-        try
-        {
-            return Files.getLastModifiedTime( file ).toMillis();
-        }
-        catch ( IOException e )
-        {
-            return 0;
-        }
+        return Files.getLastModifiedTime( file ).toMillis();
     }
 
     @Override

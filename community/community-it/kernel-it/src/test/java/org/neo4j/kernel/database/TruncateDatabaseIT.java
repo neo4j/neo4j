@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.io.IOException;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -56,7 +58,7 @@ class TruncateDatabaseIT
 
     @ParameterizedTest
     @EnumSource( TruncationTypes.class )
-    void executeTransactionsOnTrucatedDatabase( DatabaseTruncator truncator )
+    void executeTransactionsOnTrucatedDatabase( DatabaseTruncator truncator ) throws IOException
     {
         createTenNodes();
 
@@ -68,7 +70,7 @@ class TruncateDatabaseIT
 
     @ParameterizedTest
     @EnumSource( TruncationTypes.class )
-    void truncateDeleteAllNodes( DatabaseTruncator truncator )
+    void truncateDeleteAllNodes( DatabaseTruncator truncator ) throws IOException
     {
         createTenNodes();
         assertEquals( 10, countNodes() );
@@ -83,7 +85,7 @@ class TruncateDatabaseIT
 
     @ParameterizedTest
     @EnumSource( TruncationTypes.class )
-    void truncateDeleteAllRelationships( DatabaseTruncator truncator )
+    void truncateDeleteAllRelationships( DatabaseTruncator truncator ) throws IOException
     {
         try ( Transaction transaction = databaseAPI.beginTx() )
         {
@@ -109,7 +111,7 @@ class TruncateDatabaseIT
 
     @ParameterizedTest
     @EnumSource( TruncationTypes.class )
-    void truncateKeepsRelationshipTypes( DatabaseTruncator truncator )
+    void truncateKeepsRelationshipTypes( DatabaseTruncator truncator ) throws IOException
     {
         try ( Transaction transaction = databaseAPI.beginTx() )
         {
@@ -129,7 +131,7 @@ class TruncateDatabaseIT
 
     @ParameterizedTest
     @EnumSource( TruncationTypes.class )
-    void truncateKeepsLabels( DatabaseTruncator truncator )
+    void truncateKeepsLabels( DatabaseTruncator truncator ) throws IOException
     {
         try ( Transaction transaction = databaseAPI.beginTx() )
         {
@@ -148,7 +150,7 @@ class TruncateDatabaseIT
 
     @ParameterizedTest
     @EnumSource( TruncationTypes.class )
-    void truncateKeepsPropertyKeys( DatabaseTruncator truncator )
+    void truncateKeepsPropertyKeys( DatabaseTruncator truncator ) throws IOException
     {
         try ( Transaction transaction = databaseAPI.beginTx() )
         {
@@ -169,7 +171,7 @@ class TruncateDatabaseIT
     @ParameterizedTest
     @EnumSource( TruncationTypes.class )
     @Disabled
-    void truncateKeepsIndexDefinitions( DatabaseTruncator truncator )
+    void truncateKeepsIndexDefinitions( DatabaseTruncator truncator ) throws IOException
     {
         Label indexLabel = label( "indexLabel" );
         String indexedProperty = "indexedProperty";
@@ -206,7 +208,7 @@ class TruncateDatabaseIT
 
     @ParameterizedTest
     @EnumSource( TruncationTypes.class )
-    void truncateDeleteAllTransactionLogs( DatabaseTruncator truncator )
+    void truncateDeleteAllTransactionLogs( DatabaseTruncator truncator ) throws IOException
     {
         try ( Transaction transaction = databaseAPI.beginTx() )
         {
@@ -231,7 +233,7 @@ class TruncateDatabaseIT
 
     @ParameterizedTest
     @EnumSource( TruncationTypes.class )
-    void truncateDeleteCountsStoreData( DatabaseTruncator truncator )
+    void truncateDeleteCountsStoreData( DatabaseTruncator truncator ) throws IOException
     {
         Label human = label( "human" );
         RelationshipType relationshipType = withName( "relationship" );
@@ -338,7 +340,7 @@ class TruncateDatabaseIT
 
     private interface DatabaseTruncator
     {
-        void truncate( Database database );
+        void truncate( Database database ) throws IOException;
     }
 
     private enum TruncationTypes implements DatabaseTruncator
@@ -346,7 +348,7 @@ class TruncateDatabaseIT
         RUNNING_DATABASE_TRUNCATION
                 {
                     @Override
-                    public void truncate( Database database )
+                    public void truncate( Database database ) throws IOException
                     {
                         database.truncate();
                     }
@@ -354,7 +356,7 @@ class TruncateDatabaseIT
         STOPPED_DATABASE_TRUNCATION
                 {
                     @Override
-                    public void truncate( Database database )
+                    public void truncate( Database database ) throws IOException
                     {
                         database.stop();
                         database.truncate();

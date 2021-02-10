@@ -22,6 +22,7 @@ package org.neo4j.io.fs;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 import org.neo4j.test.extension.Inject;
@@ -31,6 +32,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 abstract class FileSystemUtilsTest
@@ -41,7 +43,7 @@ abstract class FileSystemUtilsTest
     private TestDirectory testDirectory;
 
     @Test
-    void shouldCheckNonExistingDirectory()
+    void shouldCheckNonExistingDirectory() throws IOException
     {
         Path nonExistingDir = Path.of( "nonExistingDir" );
 
@@ -49,7 +51,7 @@ abstract class FileSystemUtilsTest
     }
 
     @Test
-    void shouldCheckExistingEmptyDirectory()
+    void shouldCheckExistingEmptyDirectory() throws IOException
     {
         Path existingEmptyDir = testDirectory.directory( "existingEmptyDir" );
 
@@ -66,7 +68,7 @@ abstract class FileSystemUtilsTest
 
         FileSystemUtils.deleteFile( fs, directory );
 
-        assertThat( fs.listFiles( directory ) ).isNullOrEmpty();
+        assertThrows( NoSuchFileException.class, () -> fs.listFiles( directory ) );
     }
 
     @Test
@@ -79,7 +81,7 @@ abstract class FileSystemUtilsTest
     }
 
     @Test
-    void shouldCheckExistingFile()
+    void shouldCheckExistingFile() throws IOException
     {
         Path existingFile = testDirectory.createFile( "existingFile" );
 

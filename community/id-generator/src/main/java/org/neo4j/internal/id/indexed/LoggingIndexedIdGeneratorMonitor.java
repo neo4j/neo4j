@@ -238,29 +238,29 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     {
         if ( position.longValue() >= rotationThreshold )
         {
-            // Rotate
             try
             {
+                // Rotate
                 flushBuffer();
                 channel.close();
                 moveAwayFile();
                 position.set( 0 );
                 channel = instantiateChannel();
+
+                // Prune
+                long time = clock.millis();
+                long threshold = time - pruneThreshold;
+                for ( Path file : fs.listFiles( path.getParent(), file -> file.getFileName().toString().startsWith( path.getFileName() + "-" ) ) )
+                {
+                    if ( millisOf( file ) < threshold )
+                    {
+                        fs.deleteFile( file );
+                    }
+                }
             }
             catch ( IOException e )
             {
                 throw new UncheckedIOException( e );
-            }
-
-            // Prune
-            long time = clock.millis();
-            long threshold = time - pruneThreshold;
-            for ( Path file : fs.listFiles( path.getParent(), file -> file.getFileName().toString().startsWith( path.getFileName() + "-" ) ) )
-            {
-                if ( millisOf( file ) < threshold )
-                {
-                    fs.deleteFile( file );
-                }
             }
         }
     }

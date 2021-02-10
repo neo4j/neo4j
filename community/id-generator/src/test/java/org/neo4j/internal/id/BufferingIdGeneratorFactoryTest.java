@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -64,7 +65,7 @@ class BufferingIdGeneratorFactoryTest
     private IdGenerator idGenerator;
 
     @BeforeEach
-    void setup()
+    void setup() throws IOException
     {
         actual = new MockedIdGeneratorFactory();
         boundaries = new ControllableSnapshotSupplier();

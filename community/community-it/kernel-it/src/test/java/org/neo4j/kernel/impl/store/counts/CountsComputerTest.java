@@ -118,7 +118,7 @@ class CountsComputerTest
     }
 
     @Test
-    void skipPopulationWhenNodeAndRelationshipStoresAreEmpty()
+    void skipPopulationWhenNodeAndRelationshipStoresAreEmpty() throws IOException
     {
         DatabaseManagementService managementService = dbBuilder.build();
         GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -134,7 +134,7 @@ class CountsComputerTest
     }
 
     @Test
-    void shouldCreateAnEmptyCountsStoreFromAnEmptyDatabase()
+    void shouldCreateAnEmptyCountsStoreFromAnEmptyDatabase() throws IOException
     {
         DatabaseManagementService managementService = dbBuilder.build();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -351,7 +351,7 @@ class CountsComputerTest
         }
     }
 
-    private void cleanupCountsForRebuilding()
+    private void cleanupCountsForRebuilding() throws IOException
     {
         fileSystem.deleteFile( countsStoreFile() );
     }
@@ -367,12 +367,12 @@ class CountsComputerTest
                 GBPTreeCountsStore.NO_MONITOR );
     }
 
-    private void rebuildCounts( long lastCommittedTransactionId )
+    private void rebuildCounts( long lastCommittedTransactionId ) throws IOException
     {
         rebuildCounts( lastCommittedTransactionId, ProgressReporter.SILENT );
     }
 
-    private void rebuildCounts( long lastCommittedTransactionId, ProgressReporter progressReporter )
+    private void rebuildCounts( long lastCommittedTransactionId, ProgressReporter progressReporter ) throws IOException
     {
         cleanupCountsForRebuilding();
 

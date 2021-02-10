@@ -32,19 +32,24 @@ import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Resource;
@@ -257,15 +262,9 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean mkdir( Path directory )
+    public void mkdir( Path directory )
     {
-        if ( fileExists( directory ) )
-        {
-            return false;
-        }
-
         directories.add( canonicalFile( directory ) );
-        return true;
     }
 
     @Override
@@ -288,24 +287,30 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean deleteFile( Path fileName )
+    public void deleteFile( Path fileName ) throws IOException
     {
         fileName = canonicalFile( fileName );
         EphemeralFileData removed = files.remove( fileName );
         if ( removed != null )
         {
             removed.free();
-            return true;
         }
         else
         {
             Path[] fileList = listFiles( fileName );
-            return fileList != null && fileList.length == 0 && directories.remove( fileName );
+            if ( fileList.length > 0 )
+            {
+                throw new DirectoryNotEmptyException( fileName.toString() );
+            }
+            if ( !directories.remove( fileName ) )
+            {
+                throw new NoSuchFileException( fileName.toString() );
+            }
         }
     }
 
     @Override
-    public void deleteRecursively( Path directory )
+    public void deleteRecursively( Path directory ) throws IOException
     {
         if ( isDirectory( directory ) )
         {
@@ -321,12 +326,14 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             }
 
             // Delete all sub-directories
-            for ( Path subDirectory : directories )
+            Path finalDirectory = directory;
+            List<Path> subDirectories = directories.stream()
+                                                   .filter( p -> p.startsWith( finalDirectory ) && !p.equals( finalDirectory ) )
+                                                   .sorted( Comparator.reverseOrder() )
+                                                   .collect( Collectors.toList() );
+            for ( Path subDirectory : subDirectories )
             {
-                if ( subDirectory.startsWith( directory ) && !subDirectory.equals( directory ) )
-                {
-                    deleteFile( subDirectory );
-                }
+                deleteFile( subDirectory );
             }
         }
         deleteFile( directory );
@@ -360,13 +367,16 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public Path[] listFiles( Path directory )
+    public Path[] listFiles( Path directory ) throws IOException
     {
         directory = canonicalFile( directory );
-        if ( files.containsKey( directory ) || !directories.contains( directory ) )
+        if ( files.containsKey( directory ) )
         {
-            // This means that you're trying to list files on a file, not a directory.
-            return null;
+            throw new NotDirectoryException( directory.toString() );
+        }
+        if ( !directories.contains( directory ) )
+        {
+            throw new NoSuchFileException( directory.toString() );
         }
 
         Set<Path> found = new HashSet<>();
@@ -564,10 +574,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         {
             throw new NoSuchFileException( file.toAbsolutePath().toString() );
         }
-        if ( !deleteFile( file ) )
-        {
-            throw new IOException( "Could not delete file: " + file );
-        }
+        deleteFile( file );
     }
 
     @Override

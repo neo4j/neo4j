@@ -103,13 +103,20 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         {
             StringBuilder sb = new StringBuilder();
             sb.append( "List of plugin directory:" ).append( System.lineSeparator() );
-            listContentOfDirectory( pluginDirectory, "  ", sb );
+            try
+            {
+                listContentOfDirectory( pluginDirectory, "  ", sb );
+            }
+            catch ( IOException e )
+            {
+                sb.append( e.getMessage() ).append( System.lineSeparator() );
+            }
 
             sources.add( DiagnosticsReportSources.newDiagnosticsString( "plugins.txt", sb::toString ) );
         }
     }
 
-    private void listContentOfDirectory( Path directory, String prefix, StringBuilder sb )
+    private void listContentOfDirectory( Path directory, String prefix, StringBuilder sb ) throws IOException
     {
         if ( !fs.isDirectory( directory ) )
         {

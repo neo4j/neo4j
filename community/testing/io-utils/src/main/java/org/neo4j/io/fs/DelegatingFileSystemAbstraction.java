@@ -68,9 +68,9 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean mkdir( Path fileName )
+    public void mkdir( Path fileName ) throws IOException
     {
-        return delegate.mkdir( fileName );
+        delegate.mkdir( fileName );
     }
 
     @Override
@@ -92,7 +92,7 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public long lastModifiedTime( Path file )
+    public long lastModifiedTime( Path file ) throws IOException
     {
         return delegate.lastModifiedTime( file );
     }
@@ -140,9 +140,9 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean deleteFile( Path fileName )
+    public void deleteFile( Path fileName ) throws IOException
     {
-        return delegate.deleteFile( fileName );
+        delegate.deleteFile( fileName );
     }
 
     @Override
@@ -158,7 +158,7 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter )
+    public Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter ) throws IOException
     {
         return delegate.listFiles( directory, filter );
     }
@@ -170,7 +170,7 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public long getFileSize( Path fileName )
+    public long getFileSize( Path fileName ) throws IOException
     {
         return delegate.getFileSize( fileName );
     }
@@ -188,7 +188,7 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public Path[] listFiles( Path directory )
+    public Path[] listFiles( Path directory ) throws IOException
     {
         return delegate.listFiles( directory );
     }

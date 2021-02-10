@@ -81,6 +81,7 @@ import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAll;
+import static org.neo4j.io.IOUtils.uncheckedConsumer;
 import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.kernel.impl.index.schema.FullStoreChangeStream.EMPTY;
@@ -197,7 +198,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         instantiateStores();
     }
 
-    private void deleteCountsStore()
+    private void deleteCountsStore() throws IOException
     {
         fileSystem.deleteFile( databaseLayout.countStore() );
     }
@@ -231,7 +232,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             if ( !storesToKeep.test( type ) )
             {
                 DatabaseFile databaseFile = type.getDatabaseFile();
-                databaseLayout.allFiles( databaseFile ).forEach( fileSystem::deleteFile );
+                databaseLayout.allFiles( databaseFile ).forEach( uncheckedConsumer( fileSystem::deleteFile ) );
             }
         }
     }
@@ -379,7 +380,14 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     public void buildCountsStore( CountsBuilder builder, PageCacheTracer cacheTracer, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
-        deleteCountsStore();
+        try
+        {
+            deleteCountsStore();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
                 RecoveryCleanupWorkCollector.immediate(), builder, false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )
         {

@@ -214,7 +214,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
     }
 
     @Test
-    void shouldRelayMonitorCallsToRegisteredGBPTreeMonitorWithoutTag()
+    void shouldRelayMonitorCallsToRegisteredGBPTreeMonitorWithoutTag() throws IOException
     {
         // Given
         AtomicBoolean checkpointCompletedCall = new AtomicBoolean();
@@ -231,7 +231,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
     }
 
     @Test
-    void shouldNotRelayMonitorCallsToRegisteredGBPTreeMonitorWithDifferentTag()
+    void shouldNotRelayMonitorCallsToRegisteredGBPTreeMonitorWithDifferentTag() throws IOException
     {
         // Given
         AtomicBoolean checkpointCompletedCall = new AtomicBoolean();
@@ -248,7 +248,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
     }
 
     @Test
-    void shouldRelayMonitorCallsToRegisteredGBPTreeMonitorWithTag()
+    void shouldRelayMonitorCallsToRegisteredGBPTreeMonitorWithTag() throws IOException
     {
         // Given
         AtomicBoolean checkpointCompletedCall = new AtomicBoolean();

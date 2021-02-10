@@ -441,7 +441,7 @@ public class StoreUpgraderTest
         DatabaseLayout migrationLayout = DatabaseLayout.of( config );
 
         Path databaseTransactionLogsHome = txRoot.resolve( migrationLayout.getDatabaseName() );
-        assertTrue( fileSystem.mkdir( databaseTransactionLogsHome ) );
+        fileSystem.mkdir( databaseTransactionLogsHome );
         createDummyTxLogFiles( databaseTransactionLogsHome );
 
         assertThrows( StoreUpgrader.TransactionLogsRelocationException.class, () ->

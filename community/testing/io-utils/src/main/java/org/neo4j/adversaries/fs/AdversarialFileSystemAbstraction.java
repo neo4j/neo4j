@@ -27,8 +27,11 @@ import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Set;
@@ -107,23 +110,23 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean mkdir( Path fileName )
+    public void mkdir( Path fileName ) throws IOException
     {
-        adversary.injectFailure( SecurityException.class );
-        return delegate.mkdir( fileName );
+        adversary.injectFailure( FileAlreadyExistsException.class, SecurityException.class );
+        delegate.mkdir( fileName );
     }
 
     @Override
-    public Path[] listFiles( Path directory )
+    public Path[] listFiles( Path directory ) throws IOException
     {
-        adversary.injectFailure( SecurityException.class );
+        adversary.injectFailure( NotDirectoryException.class, SecurityException.class );
         return delegate.listFiles( directory );
     }
 
     @Override
-    public Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter )
+    public Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter ) throws IOException
     {
-        adversary.injectFailure( SecurityException.class );
+        adversary.injectFailure( NotDirectoryException.class, SecurityException.class );
         return delegate.listFiles( directory, filter );
     }
 
@@ -144,9 +147,9 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public long getFileSize( Path fileName )
+    public long getFileSize( Path fileName ) throws IOException
     {
-        adversary.injectFailure( SecurityException.class );
+        adversary.injectFailure( IOException.class, SecurityException.class );
         return delegate.getFileSize( fileName );
     }
 
@@ -172,10 +175,10 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean deleteFile( Path fileName )
+    public void deleteFile( Path fileName ) throws IOException
     {
-        adversary.injectFailure( SecurityException.class );
-        return delegate.deleteFile( fileName );
+        adversary.injectFailure( NoSuchFileException.class, DirectoryNotEmptyException.class, SecurityException.class );
+        delegate.deleteFile( fileName );
     }
 
     @Override
@@ -240,9 +243,9 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public long lastModifiedTime( Path file )
+    public long lastModifiedTime( Path file ) throws IOException
     {
-        adversary.injectFailure( SecurityException.class, NullPointerException.class );
+        adversary.injectFailure( SecurityException.class, NullPointerException.class, IOException.class );
         return delegate.lastModifiedTime( file );
     }
 

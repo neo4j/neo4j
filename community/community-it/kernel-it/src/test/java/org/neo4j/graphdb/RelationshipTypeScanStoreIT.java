@@ -63,6 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.io.IOUtils.uncheckedConsumer;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @DbmsExtension( configurationCallback = "configuration" )
@@ -144,7 +145,7 @@ class RelationshipTypeScanStoreIT
         ResourceIterator<Path> files = getRelationshipTypeScanStoreFiles();
         dbmsController.restartDbms( builder ->
         {
-            files.forEachRemaining( file -> fs.deleteFile( file ) );
+            files.forEachRemaining( uncheckedConsumer( file -> fs.deleteFile( file ) ) );
             return builder;
         });
 

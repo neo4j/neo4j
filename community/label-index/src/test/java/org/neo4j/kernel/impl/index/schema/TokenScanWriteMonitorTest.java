@@ -260,7 +260,7 @@ class TokenScanWriteMonitorTest
     }
 
     @Test
-    void shouldUseTargetRelationshipTypeScanStoreIfEntityTypeRelationship()
+    void shouldUseTargetRelationshipTypeScanStoreIfEntityTypeRelationship() throws IOException
     {
         // given
         assertThat( fs.listFiles( databaseLayout.databaseDirectory() ).length ).isEqualTo( 0 );

@@ -539,7 +539,7 @@ public class Database extends LifecycleAdapter
         }
     }
 
-    private void validateLogsAndStoreAbsence( LogFiles logFiles )
+    private void validateLogsAndStoreAbsence( LogFiles logFiles ) throws IOException
     {
         if ( ArrayUtils.isNotEmpty( logFiles.logFiles() ) )
         {
@@ -882,7 +882,7 @@ public class Database extends LifecycleAdapter
         deleteDatabaseFiles( List.of( databaseLayout.databaseDirectory(), databaseLayout.getTransactionLogsDirectory() ) );
     }
 
-    public synchronized void truncate()
+    public synchronized void truncate() throws IOException
     {
         boolean truncateStartedDatabase = started;
         List<Path> filesToKeep = filesToKeepOnTruncation( databaseLayout );

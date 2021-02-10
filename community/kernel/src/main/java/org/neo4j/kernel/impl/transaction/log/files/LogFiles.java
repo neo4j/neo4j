@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -38,7 +39,7 @@ public interface LogFiles extends Lifecycle
 
     Path logFilesDirectory();
 
-    Path[] logFiles();
+    Path[] logFiles() throws IOException;
 
     boolean isLogFile( Path path );
 

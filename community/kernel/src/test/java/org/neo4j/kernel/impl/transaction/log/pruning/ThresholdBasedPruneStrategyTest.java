@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -38,6 +39,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.IOUtils.uncheckedLongConsumer;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
 class ThresholdBasedPruneStrategyTest
@@ -47,7 +49,7 @@ class ThresholdBasedPruneStrategyTest
     private final Threshold threshold = mock( Threshold.class );
 
     @Test
-    void shouldNotDeleteAnythingIfThresholdDoesNotAllow()
+    void shouldNotDeleteAnythingIfThresholdDoesNotAllow() throws IOException
     {
         // Given
         Path fileName0 = Path.of( "logical.log.v0" );
@@ -82,8 +84,8 @@ class ThresholdBasedPruneStrategyTest
         ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFile, threshold );
 
         // When
-        strategy.findLogVersionsToDelete( 7L ).forEachOrdered(
-                v -> fileSystem.deleteFile( logFile.getLogFileForVersion( v ) ) );
+        strategy.findLogVersionsToDelete( 7L ).forEachOrdered( uncheckedLongConsumer(
+                v -> fileSystem.deleteFile( logFile.getLogFileForVersion( v ) ) ) );
 
         // Then
         verify( threshold ).init();
@@ -91,7 +93,7 @@ class ThresholdBasedPruneStrategyTest
     }
 
     @Test
-    void shouldDeleteJustWhatTheThresholdSays()
+    void shouldDeleteJustWhatTheThresholdSays() throws IOException
     {
         // Given
         when( threshold.reached( any(), eq( 6L ), any() ) )
@@ -123,8 +125,8 @@ class ThresholdBasedPruneStrategyTest
         ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( logFile, threshold );
 
         // When
-        strategy.findLogVersionsToDelete( 7L ).forEachOrdered(
-                v -> fileSystem.deleteFile( logFile.getLogFileForVersion( v ) ) );
+        strategy.findLogVersionsToDelete( 7L ).forEachOrdered( uncheckedLongConsumer(
+                v -> fileSystem.deleteFile( logFile.getLogFileForVersion( v ) ) ) );
 
         // Then
         verify( threshold ).init();

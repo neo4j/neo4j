@@ -21,6 +21,7 @@ package org.neo4j.internal.id;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
+import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -73,7 +74,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly, Config config,
-            PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+            PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         IndexedIdGenerator generator =
                 instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, highIdScanner, maxId, idType, readOnly, config, cursorTracer, openOptions );
@@ -98,11 +99,14 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId, boolean readOnly,
-            Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+            Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         // For the potential scenario where there's no store (of course this is where this method will be called),
         // but there's a naked id generator, then delete the id generator so that it too starts from a clean state.
-        fs.deleteFile( fileName );
+        if ( fs.fileExists( fileName ) )
+        {
+            fs.deleteFile( fileName );
+        }
 
         IndexedIdGenerator generator =
                 new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, () -> highId, maxId, readOnly,

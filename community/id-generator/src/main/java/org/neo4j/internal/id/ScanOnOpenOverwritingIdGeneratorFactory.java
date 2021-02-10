@@ -21,6 +21,7 @@ package org.neo4j.internal.id;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
+import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.LongSupplier;
@@ -49,7 +50,7 @@ public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorF
 
     @Override
     public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly, Config config,
-            PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+            PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         long highId = highIdScanner.getAsLong();
         return create( pageCache, filename, idType, highId, true, maxId, readOnly, config, cursorTracer, openOptions );

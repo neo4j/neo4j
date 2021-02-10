@@ -114,7 +114,7 @@ class LogPruningIT
         }
     }
 
-    private static int countTransactionLogs( LogFiles logFiles )
+    private static int countTransactionLogs( LogFiles logFiles ) throws IOException
     {
         return logFiles.logFiles().length;
     }

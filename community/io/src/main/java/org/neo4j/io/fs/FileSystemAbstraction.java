@@ -83,11 +83,11 @@ public interface FileSystemAbstraction extends Closeable
 
     boolean fileExists( Path file );
 
-    boolean mkdir( Path fileName );
+    void mkdir( Path fileName ) throws IOException;
 
     void mkdirs( Path fileName ) throws IOException;
 
-    long getFileSize( Path fileName );
+    long getFileSize( Path fileName ) throws IOException;
 
     long getBlockSize( Path file ) throws IOException;
 
@@ -103,15 +103,15 @@ public interface FileSystemAbstraction extends Closeable
         }
     }
 
-    boolean deleteFile( Path fileName );
+    void deleteFile( Path fileName ) throws IOException;
 
     void deleteRecursively( Path directory ) throws IOException;
 
     void renameFile( Path from, Path to, CopyOption... copyOptions ) throws IOException;
 
-    Path[] listFiles( Path directory );
+    Path[] listFiles( Path directory ) throws IOException;
 
-    Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter );
+    Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter ) throws IOException;
 
     boolean isDirectory( Path file );
 
@@ -144,7 +144,7 @@ public interface FileSystemAbstraction extends Closeable
 
     void truncate( Path file, long size ) throws IOException;
 
-    long lastModifiedTime( Path file );
+    long lastModifiedTime( Path file ) throws IOException;
 
     void deleteFileOrThrow( Path file ) throws IOException;
 

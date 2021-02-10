@@ -24,6 +24,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 
@@ -122,7 +123,7 @@ class GenericBlockBasedIndexPopulatorTest
     }
 
     @Test
-    void shouldSeeExternalUpdateBothBeforeAndAfterScanCompleted() throws IndexEntryConflictException
+    void shouldSeeExternalUpdateBothBeforeAndAfterScanCompleted() throws IndexEntryConflictException, IOException
     {
         // given
         BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
@@ -148,7 +149,7 @@ class GenericBlockBasedIndexPopulatorTest
     }
 
     @Test
-    void shouldThrowOnDuplicatedValuesFromScan()
+    void shouldThrowOnDuplicatedValuesFromScan() throws IOException
     {
         // given
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
@@ -172,7 +173,7 @@ class GenericBlockBasedIndexPopulatorTest
     }
 
     @Test
-    void shouldThrowOnDuplicatedValuesFromExternalUpdates()
+    void shouldThrowOnDuplicatedValuesFromExternalUpdates() throws IOException
     {
         // given
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
@@ -199,7 +200,7 @@ class GenericBlockBasedIndexPopulatorTest
     }
 
     @Test
-    void shouldThrowOnDuplicatedValuesFromScanAndExternalUpdates()
+    void shouldThrowOnDuplicatedValuesFromScanAndExternalUpdates() throws IOException
     {
         // given
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
@@ -226,7 +227,7 @@ class GenericBlockBasedIndexPopulatorTest
     }
 
     @Test
-    void shouldNotThrowOnDuplicationsLaterFixedByExternalUpdates() throws IndexEntryConflictException
+    void shouldNotThrowOnDuplicationsLaterFixedByExternalUpdates() throws IndexEntryConflictException, IOException
     {
         // given
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
@@ -257,7 +258,7 @@ class GenericBlockBasedIndexPopulatorTest
     }
 
     @Test
-    void shouldHandleEntriesOfMaxSize() throws IndexEntryConflictException
+    void shouldHandleEntriesOfMaxSize() throws IndexEntryConflictException, IOException
     {
         // given
         BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
@@ -282,7 +283,7 @@ class GenericBlockBasedIndexPopulatorTest
     }
 
     @Test
-    void shouldThrowForEntriesLargerThanMaxSize()
+    void shouldThrowForEntriesLargerThanMaxSize() throws IOException
     {
         // given
         BlockBasedIndexPopulator<GenericKey, NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
@@ -346,7 +347,7 @@ class GenericBlockBasedIndexPopulatorTest
         }
     }
 
-    private GenericBlockBasedIndexPopulator instantiatePopulator( IndexDescriptor indexDescriptor )
+    private GenericBlockBasedIndexPopulator instantiatePopulator( IndexDescriptor indexDescriptor ) throws IOException
     {
         Config config = Config.defaults();
         IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );

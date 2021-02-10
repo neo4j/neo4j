@@ -125,7 +125,7 @@ class DatabaseIT
     }
 
     @Test
-    void truncateNotStartedDatabase()
+    void truncateNotStartedDatabase() throws IOException
     {
         database.stop();
 
@@ -164,7 +164,7 @@ class DatabaseIT
     }
 
     @Test
-    void filesRecreatedAfterTruncate()
+    void filesRecreatedAfterTruncate() throws IOException
     {
         Path databaseDirectory = databaseLayout.databaseDirectory();
         Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 
@@ -139,7 +140,7 @@ class StoreFactoryTest
     }
 
     @Test
-    void shouldDelegateDeletionOptionToStores()
+    void shouldDelegateDeletionOptionToStores() throws IOException
     {
         // GIVEN
         StoreFactory storeFactory = storeFactory( defaults(), NULL, immutable.of( DELETE_ON_CLOSE ) );

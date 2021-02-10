@@ -482,7 +482,7 @@ public class NeoStoresTest
     }
 
     @Test
-    void shouldThrowUnderlyingStorageExceptionWhenFailingToLoadStorage()
+    void shouldThrowUnderlyingStorageExceptionWhenFailingToLoadStorage() throws IOException
     {
         FileSystemAbstraction fileSystem = fs;
         StoreFactory factory = getStoreFactory( Config.defaults(), databaseLayout, fileSystem, LOG_PROVIDER );

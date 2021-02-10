@@ -132,9 +132,9 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     }
 
     @Override
-    public boolean mkdir( Path fileName )
+    public void mkdir( Path fileName ) throws IOException
     {
-        return fs.mkdir( fileName );
+        fs.mkdir( fileName );
     }
 
     @Override
@@ -144,15 +144,15 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     }
 
     @Override
-    public long getFileSize( Path fileName )
+    public long getFileSize( Path fileName ) throws IOException
     {
         return fs.getFileSize( fileName );
     }
 
     @Override
-    public boolean deleteFile( Path fileName )
+    public void deleteFile( Path fileName ) throws IOException
     {
-        return fs.deleteFile( fileName );
+        fs.deleteFile( fileName );
     }
 
     @Override
@@ -168,13 +168,13 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     }
 
     @Override
-    public Path[] listFiles( Path directory )
+    public Path[] listFiles( Path directory ) throws IOException
     {
         return fs.listFiles( directory );
     }
 
     @Override
-    public Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter )
+    public Path[] listFiles( Path directory, DirectoryStream.Filter<Path> filter ) throws IOException
     {
         return fs.listFiles( directory, filter );
     }
@@ -222,7 +222,7 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     }
 
     @Override
-    public long lastModifiedTime( Path file )
+    public long lastModifiedTime( Path file ) throws IOException
     {
         return fs.lastModifiedTime( file );
     }

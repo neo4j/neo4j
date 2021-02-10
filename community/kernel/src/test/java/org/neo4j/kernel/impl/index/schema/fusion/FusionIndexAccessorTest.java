@@ -149,6 +149,7 @@ abstract class FusionIndexAccessorTest
     void dropMustDropAll() throws IOException
     {
         // when
+        when( fs.fileExists( directoryStructure.directoryForIndex( INDEX_ID ) ) ).thenReturn( true );
         // ... all drop successful
         fusionIndexAccessor.drop();
 

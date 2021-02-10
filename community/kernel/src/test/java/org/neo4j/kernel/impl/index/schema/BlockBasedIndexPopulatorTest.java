@@ -329,7 +329,7 @@ class BlockBasedIndexPopulatorTest
     }
 
     @Test
-    void shouldDeallocateAllAllocatedMemoryOnClose() throws IndexEntryConflictException
+    void shouldDeallocateAllAllocatedMemoryOnClose() throws IndexEntryConflictException, IOException
     {
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
@@ -367,7 +367,7 @@ class BlockBasedIndexPopulatorTest
     }
 
     @Test
-    void shouldDeallocateAllAllocatedMemoryOnDrop() throws IndexEntryConflictException
+    void shouldDeallocateAllAllocatedMemoryOnDrop() throws IndexEntryConflictException, IOException
     {
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
@@ -404,7 +404,7 @@ class BlockBasedIndexPopulatorTest
     }
 
     @Test
-    void shouldBuildNonUniqueSampleAsPartOfScanCompleted() throws IndexEntryConflictException
+    void shouldBuildNonUniqueSampleAsPartOfScanCompleted() throws IndexEntryConflictException, IOException
     {
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
@@ -435,7 +435,7 @@ class BlockBasedIndexPopulatorTest
     }
 
     @Test
-    void shouldFlushTreeOnScanCompleted() throws IndexEntryConflictException
+    void shouldFlushTreeOnScanCompleted() throws IndexEntryConflictException, IOException
     {
         // given
         ThreadSafePeakMemoryTracker memoryTracker = new ThreadSafePeakMemoryTracker();
@@ -471,7 +471,7 @@ class BlockBasedIndexPopulatorTest
     }
 
     @Test
-    void shouldScheduleMergeOnJobSchedulerWithCorrectGroup() throws IndexEntryConflictException
+    void shouldScheduleMergeOnJobSchedulerWithCorrectGroup() throws IndexEntryConflictException, IOException
     {
         // given
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( NO_MONITOR );
@@ -537,7 +537,7 @@ class BlockBasedIndexPopulatorTest
     }
 
     @Test
-    void shouldFailOnBatchAddedTooLargeValue()
+    void shouldFailOnBatchAddedTooLargeValue() throws IOException
     {
         /// given
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
@@ -602,7 +602,7 @@ class BlockBasedIndexPopulatorTest
 
     @ValueSource( booleans = {true, false} )
     @ParameterizedTest
-    void shouldFailOnUpdatedTooLargeValue( boolean updateBeforeScanCompleted ) throws IndexEntryConflictException
+    void shouldFailOnUpdatedTooLargeValue( boolean updateBeforeScanCompleted ) throws IndexEntryConflictException, IOException
     {
         /// given
         ByteBufferFactory bufferFactory = new ByteBufferFactory( UnsafeDirectByteBufferAllocator::new, SUFFICIENTLY_LARGE_BUFFER_SIZE );
@@ -651,13 +651,13 @@ class BlockBasedIndexPopulatorTest
         }
     }
 
-    private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor )
+    private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor ) throws IOException
     {
         return instantiatePopulator( monitor, heapBufferFactory( 100), INSTANCE );
     }
 
     private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulator( BlockStorage.Monitor monitor, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker )
+            MemoryTracker memoryTracker ) throws IOException
     {
         GenericLayout layout = layout();
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator =

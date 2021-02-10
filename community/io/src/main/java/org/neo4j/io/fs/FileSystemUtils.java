@@ -61,7 +61,7 @@ public final class FileSystemUtils
      * @param directory directory to check.
      * @return {@code true} when directory does not exist or exists and is empty, {@code false} otherwise.
      */
-    public static boolean isEmptyOrNonExistingDirectory( FileSystemAbstraction fs, Path directory )
+    public static boolean isEmptyOrNonExistingDirectory( FileSystemAbstraction fs, Path directory ) throws IOException
     {
         if ( fs.isDirectory( directory ) )
         {
@@ -79,15 +79,11 @@ public final class FileSystemUtils
      * @return the size, in bytes, of the file or the total size of the content in the directory, including
      * subdirectories.
      */
-    public static long size( FileSystemAbstraction fs, Path file )
+    public static long size( FileSystemAbstraction fs, Path file ) throws IOException
     {
         if ( fs.isDirectory( file ) )
         {
             Path[] files = fs.listFiles( file );
-            if ( files == null )
-            {
-                return 0L;
-            }
             long size = 0L;
             for ( Path child : files )
             {

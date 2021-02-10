@@ -517,12 +517,12 @@ public final class Recovery
         }
 
         @Override
-        public void init()
+        public void init() throws IOException
         {
             checkForMissingLogFiles();
         }
 
-        private void checkForMissingLogFiles()
+        private void checkForMissingLogFiles() throws IOException
         {
             if ( logFiles.getTailInformation().logsMissing() )
             {
@@ -552,7 +552,7 @@ public final class Recovery
             }
         }
 
-        private Path[] findLegacyLogFiles()
+        private Path[] findLegacyLogFiles() throws IOException
         {
             LegacyTransactionLogsLocator locator = new LegacyTransactionLogsLocator( Config.defaults(), databaseLayout );
             Path logsDirectory = locator.getTransactionLogsDirectory();

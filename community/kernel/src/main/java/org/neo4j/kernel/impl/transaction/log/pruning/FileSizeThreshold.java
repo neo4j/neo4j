@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,7 +48,14 @@ public final class FileSizeThreshold implements Threshold
     @Override
     public boolean reached( Path file, long version, LogFileInformation source )
     {
-        currentSize += fileSystem.getFileSize( file );
+        try
+        {
+            currentSize += fileSystem.getFileSize( file );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
         return currentSize >= maxSize;
     }
 

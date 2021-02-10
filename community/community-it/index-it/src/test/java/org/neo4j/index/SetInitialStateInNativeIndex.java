@@ -60,13 +60,11 @@ public class SetInitialStateInNativeIndex extends NativeIndexRestartAction
         {
             int count = 0;
             Path[] children = fs.listFiles( fileOrDir );
-            if ( children != null )
+            for ( Path child : children )
             {
-                for ( Path child : children )
-                {
-                    count += setInitialState( fs, child, pageCache );
-                }
+                count += setInitialState( fs, child, pageCache );
             }
+
             return count;
         }
         else

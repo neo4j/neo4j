@@ -24,6 +24,15 @@ import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.LongConsumer;
+import java.util.function.LongSupplier;
+import java.util.function.Predicate;
+
+import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.function.ThrowingFunction;
+import org.neo4j.function.ThrowingPredicate;
 
 /**
  * IO helper methods.
@@ -221,5 +230,90 @@ public final class IOUtils
         {
             throw closeThrowable;
         }
+    }
+
+    public static <T> Predicate<T> uncheckedPredicate( ThrowingPredicate<T, IOException> predicate )
+    {
+        return ( T t ) ->
+        {
+            try
+            {
+                return predicate.test( t );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        };
+    }
+
+    public static <T> Consumer<T> uncheckedConsumer( ThrowingConsumer<T, IOException> consumer )
+    {
+        return ( T t ) ->
+        {
+            try
+            {
+                consumer.accept( t );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        };
+    }
+
+    public interface ThrowingLongConsumer<E extends Throwable>
+    {
+        void accept( long l ) throws E;
+    }
+
+    public static LongConsumer uncheckedLongConsumer( ThrowingLongConsumer<IOException> consumer )
+    {
+        return ( long l ) ->
+        {
+            try
+            {
+                consumer.accept( l );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        };
+    }
+
+    public interface ThrowingLongSupplier<E extends Exception>
+    {
+        long get() throws E;
+    }
+
+    public static LongSupplier uncheckedLongSupplier( ThrowingLongSupplier<IOException> consumer )
+    {
+        return () ->
+        {
+            try
+            {
+                return consumer.get();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        };
+    }
+
+    public static <T,R> Function<T, R> uncheckedFunction( ThrowingFunction<T, R, IOException> consumer )
+    {
+        return ( T t ) ->
+        {
+            try
+            {
+                return consumer.apply( t );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        };
     }
 }

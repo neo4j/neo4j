@@ -22,6 +22,8 @@ package org.neo4j.graphdb;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Set;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -64,7 +66,14 @@ public class LabelScanStoreChaosIT
 
         controller.restartDbms( builder ->
         {
-            fs.deleteFile( storeFile( db.databaseLayout() ) );
+            try
+            {
+                fs.deleteFile( storeFile( db.databaseLayout() ) );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
             return builder;
         } );
 

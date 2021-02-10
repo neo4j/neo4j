@@ -32,6 +32,7 @@ import java.util.function.LongConsumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
@@ -45,6 +46,7 @@ import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
 import static org.neo4j.io.ByteUnit.MebiByte;
+import static org.neo4j.io.IOUtils.uncheckedLongConsumer;
 
 /**
  * Transaction log truncator used during recovery to truncate all the logs after some specified position, that
@@ -116,7 +118,8 @@ public class CorruptedLogsTruncator
     {
         Path lastRecoveredLog = getFileForVersion.apply( recoveredLogVersion );
         fs.truncate( lastRecoveredLog, recoveredOffset );
-        forEachSubsequentFile( recoveredLogVersion, highestLogVersion, fileIndex -> fs.deleteFile( getFileForVersion.apply( fileIndex ) ) );
+        forEachSubsequentFile( recoveredLogVersion, highestLogVersion,
+                uncheckedLongConsumer( fileIndex -> fs.deleteFile( getFileForVersion.apply( fileIndex ) ) ) );
     }
 
     private void forEachSubsequentFile( long recoveredLogVersion, long highestLogVersion, LongConsumer action )

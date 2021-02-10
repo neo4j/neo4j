@@ -21,6 +21,7 @@ package org.neo4j.graphdb.factory.module.id;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.function.Function;
@@ -75,7 +76,7 @@ class IdContextFactoryBuilderTest
     }
 
     @Test
-    void createContextWithCustomIdGeneratorFactoryWhenProvided()
+    void createContextWithCustomIdGeneratorFactoryWhenProvided() throws IOException
     {
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         Config config = defaults();
@@ -115,7 +116,7 @@ class IdContextFactoryBuilderTest
     }
 
     @Test
-    void useProvidedPageCacheCursorOnIdMaintenance()
+    void useProvidedPageCacheCursorOnIdMaintenance() throws IOException
     {
         PageCacheTracer cacheTracer = new DefaultPageCacheTracer();
         Config config = defaults();

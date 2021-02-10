@@ -21,6 +21,7 @@ package org.neo4j.graphdb.factory;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.common.DependencyResolver;
@@ -74,7 +75,7 @@ class DatabaseManagementServiceBuilderIT
     }
 
     @Test
-    void configuredDatabasesRootPath()
+    void configuredDatabasesRootPath() throws IOException
     {
         Path homeDir = testDirectory.homePath();
         Path storeDir = testDirectory.homePath();
@@ -98,7 +99,7 @@ class DatabaseManagementServiceBuilderIT
     }
 
     @Test
-    void notConfiguredDatabasesRootPath()
+    void notConfiguredDatabasesRootPath() throws IOException
     {
         Neo4jLayout layout = neo4jLayout;
 

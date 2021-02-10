@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Map;
@@ -51,7 +52,7 @@ public interface IndexPopulator extends MinimalIndexAccessor
      *
      * @throws UncheckedIOException on I/O error.
      */
-    void create();
+    void create() throws IOException;
 
     /**
      * Called when initially populating an index over existing data. Guaranteed to be
@@ -257,7 +258,7 @@ public interface IndexPopulator extends MinimalIndexAccessor
         }
 
         @Override
-        public void create()
+        public void create() throws IOException
         {
             delegate.create();
         }

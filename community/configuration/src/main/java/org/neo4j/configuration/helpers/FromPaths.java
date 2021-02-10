@@ -22,6 +22,8 @@ package org.neo4j.configuration.helpers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -29,8 +31,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+
+import static org.neo4j.io.IOUtils.uncheckedFunction;
 
 public class FromPaths
 {
@@ -53,7 +58,7 @@ public class FromPaths
         return paths;
     }
 
-    private Set<Path> getAllFolders( Path path )
+    private Set<Path> getAllFolders( Path path ) throws IOException
     {
         return Arrays.stream( fs.listFiles( path ) )
                      .filter( Files::isDirectory )
@@ -73,11 +78,11 @@ public class FromPaths
                                 validateParentPath( file ); //Path class can't contain regex in the subpath
                                 validateLastSubPath( file );
                             } )
-                     .flatMap( file -> getAndFilterPaths( file ).stream() )
+                     .flatMap( uncheckedFunction( file -> getAndFilterPaths( file ).stream() ) )
                      .collect( Collectors.toSet() );
     }
 
-    private Set<Path> getAndFilterPaths( File file )
+    private Set<Path> getAndFilterPaths( File file ) throws IOException
     {
         final var parent = file.getParent(); //not null, protect by validateParentPath
         final var pattern = new DatabaseNamePattern( file.getName() );

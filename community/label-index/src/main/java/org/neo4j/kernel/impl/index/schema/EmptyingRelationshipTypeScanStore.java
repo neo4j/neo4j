@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Iterator;
@@ -122,7 +123,7 @@ public final class EmptyingRelationshipTypeScanStore implements RelationshipType
     }
 
     @Override
-    public void init()
+    public void init() throws IOException
     {
         if ( readOnly && fileSystem.fileExists( directoryStructure.relationshipTypeScanStore() ) )
         {
@@ -134,7 +135,10 @@ public final class EmptyingRelationshipTypeScanStore implements RelationshipType
                             "Note that consistency check use read only mode. " +
                             "Use setting 'unsupported.dbms.enable_relationship_type_scan_store' to turn relationship type scan store ON or OFF." );
         }
-        fileSystem.deleteFile( directoryStructure.relationshipTypeScanStore() );
+        if ( fileSystem.fileExists( directoryStructure.relationshipTypeScanStore() ) )
+        {
+            fileSystem.deleteFile( directoryStructure.relationshipTypeScanStore() );
+        }
     }
 
     @Override

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -79,7 +80,7 @@ public class TransactionLogFilesHelper
         return filenameFilter;
     }
 
-    public Path[] getMatchedFiles()
+    public Path[] getMatchedFiles() throws IOException
     {
         Path[] files = fileSystem.listFiles( logBaseName.getParent(), getLogFilenameFilter() );
         if ( files.length == 0 )
@@ -89,7 +90,7 @@ public class TransactionLogFilesHelper
         return files;
     }
 
-    public void accept( LogVersionVisitor visitor )
+    public void accept( LogVersionVisitor visitor ) throws IOException
     {
         for ( Path file : getMatchedFiles() )
         {

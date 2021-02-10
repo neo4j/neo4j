@@ -200,7 +200,10 @@ class BlockStorage<KEY, VALUE> implements Closeable
         {
             if ( sourceFile == blockFile )
             {
-                fs.deleteFile( tempFile );
+                if ( fs.fileExists( tempFile ) )
+                {
+                    fs.deleteFile( tempFile );
+                }
             }
             else
             {
@@ -361,7 +364,10 @@ class BlockStorage<KEY, VALUE> implements Closeable
     public void close() throws IOException
     {
         IOUtils.closeAll( storeChannel );
-        fs.deleteFile( blockFile );
+        if ( fs.fileExists( blockFile ) )
+        {
+            fs.deleteFile( blockFile );
+        }
     }
 
     BlockReader<KEY,VALUE> reader( boolean produceNewKeyAndValueInstances ) throws IOException

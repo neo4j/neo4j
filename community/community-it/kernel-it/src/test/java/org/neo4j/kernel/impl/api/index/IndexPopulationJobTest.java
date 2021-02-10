@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -956,7 +957,7 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public void create()
+        public void create() throws IOException
         {
             created = true;
             super.create();

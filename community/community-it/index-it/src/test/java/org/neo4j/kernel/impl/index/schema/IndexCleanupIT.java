@@ -75,7 +75,7 @@ public class IndexCleanupIT
 
     @ParameterizedTest
     @EnumSource( SchemaIndex.class )
-    void mustClearIndexDirectoryOnDropWhileOnline( SchemaIndex schemaIndex )
+    void mustClearIndexDirectoryOnDropWhileOnline( SchemaIndex schemaIndex ) throws IOException
     {
         configureDb( schemaIndex );
         createIndex( db, true );
@@ -121,7 +121,7 @@ public class IndexCleanupIT
 
     @ParameterizedTest
     @EnumSource( SchemaIndex.class )
-    void mustClearIndexDirectoryOnDropWhilePopulating( SchemaIndex schemaIndex ) throws InterruptedException
+    void mustClearIndexDirectoryOnDropWhilePopulating( SchemaIndex schemaIndex ) throws InterruptedException, IOException
     {
         // given
         Barrier.Control midPopulation = new Barrier.Control();
@@ -153,7 +153,7 @@ public class IndexCleanupIT
         assertNoIndexFilesExisting( providerDirectories );
     }
 
-    private void assertNoIndexFilesExisting( Path[] providerDirectories )
+    private void assertNoIndexFilesExisting( Path[] providerDirectories ) throws IOException
     {
         for ( Path providerDirectory : providerDirectories )
         {
@@ -201,7 +201,7 @@ public class IndexCleanupIT
         }
     }
 
-    private Path[] providerDirectories( FileSystemAbstraction fs, GraphDatabaseAPI db )
+    private Path[] providerDirectories( FileSystemAbstraction fs, GraphDatabaseAPI db ) throws IOException
     {
         DatabaseLayout databaseLayout = db.databaseLayout();
         Path dbDir = databaseLayout.databaseDirectory();

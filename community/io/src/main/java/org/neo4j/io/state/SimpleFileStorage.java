@@ -77,7 +77,10 @@ public class SimpleFileStorage<T> implements SimpleStorage<T>
         {
             fileSystem.mkdirs( path.getParent() );
         }
-        fileSystem.deleteFile( path );
+        if ( fileSystem.fileExists( path ) )
+        {
+            fileSystem.deleteFile( path );
+        }
 
         try ( FlushableChannel channel = new PhysicalFlushableChannel( fileSystem.write( path ),
                 new NativeScopedBuffer( kibiBytes( 512 ), memoryTracker ) ) )
@@ -91,11 +94,7 @@ public class SimpleFileStorage<T> implements SimpleStorage<T>
     {
         if ( exists() )
         {
-            var deleted = fileSystem.deleteFile( path );
-            if ( !deleted )
-            {
-                throw new IOException( String.format( "File %s could not be deleted", path.getFileName() ) );
-            }
+            fileSystem.deleteFile( path );
         }
     }
 }

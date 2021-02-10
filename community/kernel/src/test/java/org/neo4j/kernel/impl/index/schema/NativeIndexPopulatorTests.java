@@ -91,7 +91,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE e
     abstract ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil();
 
     @Test
-    void dropShouldDeleteExistingDirectory()
+    void dropShouldDeleteExistingDirectory() throws IOException
     {
         // given
         populator.create();

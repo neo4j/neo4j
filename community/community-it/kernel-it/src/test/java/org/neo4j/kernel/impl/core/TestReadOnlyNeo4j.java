@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
@@ -94,7 +95,7 @@ class TestReadOnlyNeo4j
     }
 
     @Test
-    void databaseNotStartInReadOnlyModeWithMissingIndex()
+    void databaseNotStartInReadOnlyModeWithMissingIndex() throws IOException
     {
         createIndex();
         deleteIndexFolder();
@@ -165,7 +166,7 @@ class TestReadOnlyNeo4j
         managementService.shutdown();
     }
 
-    private void deleteIndexFolder()
+    private void deleteIndexFolder() throws IOException
     {
         Path databaseDir = Neo4jLayout.of( testDirectory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME ).databaseDirectory();
         fs.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( databaseDir ) );

@@ -186,7 +186,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     }
 
     @Override
-    public Path getCurrentFile()
+    public Path getCurrentFile() throws IOException
     {
         return fileHelper.getLogFileForVersion( getCurrentDetachedLogVersion() );
     }
@@ -198,13 +198,13 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     }
 
     @Override
-    public Path[] getDetachedCheckpointFiles()
+    public Path[] getDetachedCheckpointFiles() throws IOException
     {
         return fileHelper.getMatchedFiles();
     }
 
     @Override
-    public long getCurrentDetachedLogVersion()
+    public long getCurrentDetachedLogVersion() throws IOException
     {
         var versionVisitor = new RangeLogVersionVisitor();
         fileHelper.accept( versionVisitor );

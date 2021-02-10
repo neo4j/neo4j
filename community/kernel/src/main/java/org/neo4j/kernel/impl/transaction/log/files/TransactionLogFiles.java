@@ -79,7 +79,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     }
 
     @Override
-    public Path[] logFiles()
+    public Path[] logFiles() throws IOException
     {
         return ArrayUtil.concat( logFile.getMatchedFiles(), checkpointLogFile.getDetachedCheckpointFiles() );
     }

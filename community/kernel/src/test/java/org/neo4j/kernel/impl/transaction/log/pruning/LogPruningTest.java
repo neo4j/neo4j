@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.LongStream;
@@ -78,7 +79,7 @@ class LogPruningTest
     }
 
     @Test
-    void mustDeleteLogFilesThatCanBePruned()
+    void mustDeleteLogFilesThatCanBePruned() throws IOException
     {
         when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( logProvider ), eq( clock ), anyString() ) )
                 .thenReturn( upTo -> LongStream.range( 3, upTo ) );
@@ -122,7 +123,7 @@ class LogPruningTest
     }
 
     @Test
-    void mustLogLatestPreservedCheckpointVersion()
+    void mustLogLatestPreservedCheckpointVersion() throws IOException
     {
         // given
         when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( logProvider ), eq( clock ), anyString() ) )

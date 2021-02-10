@@ -58,7 +58,7 @@ class WrappingFileHandle implements FileHandle
         removeEmptyParent( parentFile );
     }
 
-    private void removeEmptyParent( Path parentFile )
+    private void removeEmptyParent( Path parentFile ) throws IOException
     {
         // delete up to and including the base directory, but not above.
         // Note that this may be 'null' if 'baseDirectory' is the top directory.
@@ -67,7 +67,7 @@ class WrappingFileHandle implements FileHandle
         while ( parentFile != null && !parentFile.equals( end ) )
         {
             Path[] files = fs.listFiles( parentFile );
-            if ( files == null || files.length > 0 )
+            if ( files.length > 0 )
             {
                 return;
             }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -78,7 +80,7 @@ public class LogPruningImpl implements LogPruning
     }
 
     @Override
-    public void pruneLogs( long upToVersion )
+    public void pruneLogs( long upToVersion ) throws IOException
     {
         // Only one is allowed to do pruning at any given time,
         // and it's OK to skip pruning if another one is doing so right now.
@@ -100,7 +102,7 @@ public class LogPruningImpl implements LogPruning
         }
     }
 
-    private void cleanupCheckpointLogFiles()
+    private void cleanupCheckpointLogFiles() throws IOException
     {
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointFiles = checkpointFile.getDetachedCheckpointFiles();
@@ -154,7 +156,14 @@ public class LogPruningImpl implements LogPruning
             fromVersion = fromVersion == NO_VERSION ? version : Math.min( fromVersion, version );
             toVersion = toVersion == NO_VERSION ? version : Math.max( toVersion, version );
             Path logFile = logFiles.getLogFile().getLogFileForVersion( version );
-            fs.deleteFile( logFile );
+            try
+            {
+                fs.deleteFile( logFile );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
 
         String describeResult( LogPruneStrategy strategy )
