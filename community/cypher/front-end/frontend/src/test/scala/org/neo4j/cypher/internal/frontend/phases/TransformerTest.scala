@@ -27,7 +27,6 @@ class TransformerTest extends CypherFunSuite{
   private case class TestPhase(override val postConditions: Set[StepSequencer.Condition],
                                transformation: Any => Any = identity) extends Phase[BaseContext, Any, Any] {
     override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
-    override def description: String = ""
     override def process(from: Any, context: BaseContext): Any = transformation(from)
   }
 

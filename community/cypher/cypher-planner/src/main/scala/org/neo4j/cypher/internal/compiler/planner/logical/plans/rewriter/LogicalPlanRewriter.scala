@@ -42,14 +42,14 @@ import org.neo4j.cypher.internal.util.inSequence
 case object LogicalPlanRewritten extends StepSequencer.Condition
 case object SingleAndedPropertyInequalitiesRemoved extends StepSequencer.Condition
 
-/*
+/**
+ * Optimize logical plans using heuristic rewriting.
+ *
  * Rewriters that live here are required to adhere to the contract of
  * receiving a valid plan and producing a valid plan. It should be possible
  * to disable any and all of these rewriters, and still produce correct behavior.
  */
 case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
-  override def description: String = "optimize logical plans using heuristic rewriting"
-
   override def instance(context: PlannerContext,
                         solveds: Solveds,
                         cardinalities: Cardinalities,

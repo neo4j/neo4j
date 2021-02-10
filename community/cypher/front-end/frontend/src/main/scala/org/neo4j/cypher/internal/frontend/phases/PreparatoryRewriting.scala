@@ -32,6 +32,9 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.inSequence
 
+/**
+ * Rewrite the AST into a shape that semantic analysis can be performed on.
+ */
 case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseContext, BaseState, BaseState] {
 
   val AccumulatedSteps(orderedSteps, _) = new StepSequencer(ListStepAccumulator[StepSequencer.Step with PreparatoryRewritingRewriterFactory]()).orderSteps(Set(
@@ -55,8 +58,6 @@ case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseCo
   }
 
   override val phase = AST_REWRITE
-
-  override val description = "rewrite the AST into a shape that semantic analysis can be performed on"
 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
 }

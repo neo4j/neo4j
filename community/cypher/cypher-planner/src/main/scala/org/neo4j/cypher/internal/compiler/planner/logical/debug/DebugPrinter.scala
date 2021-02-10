@@ -42,10 +42,11 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 
+/**
+ * Print IR or AST as query result.
+ */
 case object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
-
-  override def description: String = "Print IR or AST as query result"
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val string = if (context.debugOptions.queryGraphEnabled)

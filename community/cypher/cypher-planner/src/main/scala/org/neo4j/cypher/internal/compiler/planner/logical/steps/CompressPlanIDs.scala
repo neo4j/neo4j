@@ -48,8 +48,6 @@ case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, Logi
 
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
 
-  override def description: String = "compress plan ids"
-
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val oldAttributes = from.planningAttributes
     val newAttributes = PlanningAttributes.newAttributes

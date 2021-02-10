@@ -21,11 +21,12 @@ import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
 import org.neo4j.cypher.internal.util.StepSequencer
 
+/**
+ * Expands `WITH *` or `RETURN *` by enumerating all columns instead of the `*`.
+ */
 case object ExpandStarRewriter extends Phase[BaseContext, BaseState, BaseState] {
 
   def phase: CompilationPhaseTracer.CompilationPhase = AST_REWRITE
-
-  def description: String = "expand *"
 
   def process(from: BaseState, context: BaseContext): BaseState =
     from.withStatement(from.statement().endoRewrite(expandStar(from.semantics())))

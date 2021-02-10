@@ -29,6 +29,9 @@ import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.parser.JavaCCParser
 import org.neo4j.exceptions.SyntaxException
 
+/**
+ * Parse text into an AST object.
+ */
 case object JavaccParsing extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
@@ -42,8 +45,6 @@ case object JavaccParsing extends Phase[BaseContext, BaseState, BaseState] {
   }
 
   override val phase = PARSING
-
-  override val description = "parse text into an AST object"
 
   override def postConditions = Set(BaseContains[Statement])
 }

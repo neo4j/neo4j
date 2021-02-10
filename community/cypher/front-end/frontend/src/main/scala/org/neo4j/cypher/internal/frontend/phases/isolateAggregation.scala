@@ -63,8 +63,6 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
 
   override def instance(context: BaseContext): Rewriter = bottomUp(rewriter, _.isInstanceOf[Expression])
 
-  override def description: String = "Makes sure that aggregations are on their own in RETURN/WITH clauses"
-
   private val rewriter = Rewriter.lift {
     case q@SingleQuery(clauses) =>
 

@@ -118,12 +118,13 @@ trait RewriteProcedureCalls {
   }
 }
 
-// Given a way to lookup procedure signatures, this phase rewrites unresolved calls into resolved calls
+/**
+ * Given a way to lookup procedure signatures, this phase rewrites unresolved calls into resolved calls.
+ */
 case object RewriteProcedureCalls extends Phase[PlannerContext, BaseState, BaseState] with RewriteProcedureCalls {
 
   override def phase = AST_REWRITE
 
-  override def description = "resolve procedure calls"
 
   override def process(from: BaseState, context: PlannerContext): BaseState = process(from, context.planContext)
 
@@ -131,12 +132,12 @@ case object RewriteProcedureCalls extends Phase[PlannerContext, BaseState, BaseS
 
 }
 
-// Rewrites unresolved calls into resolved calls, or leaves them unresolved if not found
+/**
+ * Rewrites unresolved calls into resolved calls, or leaves them unresolved if not found.
+ */
 case class TryRewriteProcedureCalls(resolver: ProcedureSignatureResolver) extends Phase[BaseContext, BaseState, BaseState] with RewriteProcedureCalls {
 
   override def phase = AST_REWRITE
-
-  override def description = "try to resolve procedure calls"
 
   override def process(from: BaseState, context: BaseContext): BaseState = process(from, resolver)
 

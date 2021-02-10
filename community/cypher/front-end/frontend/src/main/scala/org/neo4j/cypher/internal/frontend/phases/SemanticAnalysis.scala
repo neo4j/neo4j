@@ -32,6 +32,9 @@ import org.neo4j.cypher.internal.util.StepSequencer
 
 case object TokensResolved extends StepSequencer.Condition
 
+/**
+ * Do variable binding, typing, type checking and other semantic checks.
+ */
 case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
   extends Phase[BaseContext, BaseState, BaseState] {
 
@@ -72,8 +75,6 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
   }
 
   override def phase: CompilationPhaseTracer.CompilationPhase = SEMANTIC_CHECK
-
-  override def description = "do variable binding, typing, type checking and other semantic checks"
 
   override def postConditions = Set(BaseContains[SemanticState], StatementCondition(containsNoNodesOfType[UnaliasedReturnItem]))
 }

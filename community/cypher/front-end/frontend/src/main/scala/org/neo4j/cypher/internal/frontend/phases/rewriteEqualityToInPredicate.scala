@@ -30,9 +30,10 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 
+/**
+ * Normalize equality predicates into IN comparisons.
+ */
 case object rewriteEqualityToInPredicate extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
-
-  override def description: String = "normalize equality predicates into IN comparisons"
 
   override def instance(ignored: BaseContext): Rewriter = bottomUp(Rewriter.lift {
     // id(a) = value => id(a) IN [value]

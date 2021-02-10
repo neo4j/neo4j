@@ -42,10 +42,11 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.InternalException
 
+/**
+ * From the normalized ast, create the corresponding PlannerQuery.
+ */
 case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState] with StepSequencer.Step with PlanPipelineTransformerFactory {
   override def phase = LOGICAL_PLANNING
-
-  override def description = "from the normalized ast, create the corresponding PlannerQuery"
 
   override def process(from: BaseState, context: BaseContext): LogicalPlanState = from.statement() match {
     case query: Query =>

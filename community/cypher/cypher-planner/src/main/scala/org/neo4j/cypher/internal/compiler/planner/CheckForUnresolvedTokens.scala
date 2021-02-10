@@ -46,6 +46,9 @@ import scala.collection.JavaConverters.asScalaSetConverter
 
 case object NotificationsForUnresolvedTokensGenerated extends StepSequencer.Condition
 
+/**
+ * Find labels, relationships types and property keys that do not exist in the db and issue warnings.
+ */
 case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanState] with StepSequencer.Step with PlanPipelineTransformerFactory {
 
   private val specialPropertyKey: Set[String] =
@@ -76,8 +79,6 @@ case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPl
   }
 
   override def phase = LOGICAL_PLANNING
-
-  override def description = "find labels, relationships types and property keys that do not exist in the db and issue warnings"
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     TokensResolved,

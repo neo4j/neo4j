@@ -31,8 +31,6 @@ trait Phase[-C <: BaseContext, FROM, +TO] extends Transformer[C, FROM, TO] {
 
   def phase: CompilationPhase
 
-  def description: String
-
   override def transform(from: FROM, context: C): TO =
     closing(context.tracer.beginPhase(phase)) {
       val result = process(from, context)
@@ -64,10 +62,11 @@ trait VisitorPhase[-C <: BaseContext, STATE] extends Phase[C, STATE, STATE] {
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
 }
 
+/**
+ * Adds a condition.
+ */
 case class AddCondition[-C <: BaseContext, STATE](postCondition: StepSequencer.Condition) extends Phase[C, STATE, STATE] {
   override def phase: CompilationPhase = PIPE_BUILDING
-
-  override def description: String = "adds a condition"
 
   override def process(from: STATE, context: C): STATE = from
 

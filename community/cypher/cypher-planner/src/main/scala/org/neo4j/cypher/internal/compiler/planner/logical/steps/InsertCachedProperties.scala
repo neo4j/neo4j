@@ -72,8 +72,6 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
 
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
 
-  override def description: String = "insert cached properties"
-
   override def postConditions: Set[StepSequencer.Condition] = InsertCachedProperties.postConditions
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {

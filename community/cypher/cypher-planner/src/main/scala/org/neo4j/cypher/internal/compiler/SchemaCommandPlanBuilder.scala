@@ -48,13 +48,13 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 
 /**
- * This planner takes on queries that requires no planning such as schema commands
+ * This planner takes on queries that requires no planning such as schema commands.
+ *
+ * Take on queries that require no planning such as schema commands.
  */
 case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, LogicalPlanState] {
 
   override def phase: CompilationPhase = PIPE_BUILDING
-
-  override def description = "take on queries that require no planning such as schema commands"
 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
 

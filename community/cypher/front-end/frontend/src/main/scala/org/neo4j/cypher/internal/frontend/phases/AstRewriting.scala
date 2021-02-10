@@ -28,6 +28,9 @@ import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
+/**
+ * Normalize the AST into a form easier for the planner to work with.
+ */
 case class AstRewriting(innerVariableNamer: InnerVariableNamer,
                         parameterTypeMapping : Map[String, CypherType] = Map.empty
 ) extends Phase[BaseContext, BaseState, BaseState] {
@@ -40,8 +43,6 @@ case class AstRewriting(innerVariableNamer: InnerVariableNamer,
   }
 
   override def phase = AST_REWRITE
-
-  override def description = "normalize the AST into a form easier for the planner to work with"
 
   override def postConditions: Set[StepSequencer.Condition] = {
     val rewriterConditions = Set(

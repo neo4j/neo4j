@@ -25,11 +25,12 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
 
+/**
+ * Collect sensitive literals and parameters.
+ */
 case object ObfuscationMetadataCollection extends Phase[BaseContext, BaseState, BaseState] {
 
   override def phase: CompilationPhaseTracer.CompilationPhase = METADATA_COLLECTION
-
-  override def description: String = "collect sensitive literals and parameters"
 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
 

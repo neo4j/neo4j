@@ -42,12 +42,13 @@ import org.neo4j.cypher.internal.util.inSequence
 
 case object AmbiguousNamesDisambiguated extends StepSequencer.Condition
 
+/**
+ * Rename variables so they are all unique.
+ */
 case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step with PlanPipelineTransformerFactory {
   type VariableRenamings = Map[Ref[Variable], Variable]
 
   override def phase: CompilationPhase = AST_REWRITE
-
-  override def description: String = "rename variables so they are all unique"
 
   override def process(from: BaseState, ignored: BaseContext): BaseState = {
     val withProjectedUnions = from.statement().endoRewrite(projectUnions)

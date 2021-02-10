@@ -21,6 +21,9 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.util.InternalNotification
 
+/**
+ * Find deprecated Cypher constructs and generate warnings for them.
+ */
 case class SyntaxDeprecationWarnings(deprecations: Deprecations) extends VisitorPhase[BaseContext, BaseState] {
   override def visit(state: BaseState, context: BaseContext): Unit = {
     val warnings = findDeprecations(state.statement())
@@ -40,6 +43,4 @@ case class SyntaxDeprecationWarnings(deprecations: Deprecations) extends Visitor
   }
 
   override def phase = DEPRECATION_WARNINGS
-
-  override def description = "find deprecated Cypher constructs and generate warnings for them"
 }

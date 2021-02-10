@@ -68,9 +68,10 @@ import scala.collection.mutable.ListBuffer
 
 case object UnnecessaryOptionalMatchesRemoved extends StepSequencer.Condition
 
+/**
+ * Remove optional match when possible.
+ */
 case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
-
-  override def description: String = "remove optional match when possible"
 
   override def instance(ignored: PlannerContext): Rewriter = topDown(Rewriter.lift {
     case RegularSinglePlannerQuery(graph, interestingOrder, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _, _), tail, queryInput)

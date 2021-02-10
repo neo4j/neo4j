@@ -35,9 +35,10 @@ import org.neo4j.cypher.internal.util.attribution.Attributes
 
 case object LogicalPlanUsesEffectiveOutputCardinality extends StepSequencer.Condition
 
+/**
+ * Change logical plans to reflect the effective output cardinality.
+ */
 case object CardinalityRewriter extends LogicalPlanRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
-  override def description: String = "change logical plans to reflect the effective output cardinality"
-
   override def instance(context: PlannerContext,
                         solveds: Solveds,
                         cardinalities: Cardinalities,

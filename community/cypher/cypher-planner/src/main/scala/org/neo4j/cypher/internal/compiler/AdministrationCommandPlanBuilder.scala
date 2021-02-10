@@ -103,7 +103,9 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 
 /**
- * This planner takes on queries that run at the DBMS level for multi-database administration
+ * This planner takes on queries that run at the DBMS level for multi-database administration.
+ *
+ * Take on administrative queries that require no planning such as multi-database administration commands
  */
 //noinspection DuplicatedCode
 case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseState, LogicalPlanState] {
@@ -111,8 +113,6 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
   val prettifier: Prettifier = Prettifier(ExpressionStringifier())
 
   override def phase: CompilationPhase = PIPE_BUILDING
-
-  override def description = "take on administrative queries that require no planning such as multi-database administration commands"
 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
 
@@ -418,8 +418,6 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
 case object UnsupportedSystemCommand extends Phase[PlannerContext, BaseState, LogicalPlanState] {
   override def phase: CompilationPhase = PIPE_BUILDING
-
-  override def description: String = "Unsupported system command"
 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
 

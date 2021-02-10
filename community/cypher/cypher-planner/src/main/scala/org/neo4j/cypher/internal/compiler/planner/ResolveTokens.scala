@@ -38,6 +38,9 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.StepSequencer
 
+/**
+ * Resolve token ids for labels, property keys and relationship types.
+ */
 case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with StepSequencer.Step with PlanPipelineTransformerFactory {
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
     ast.fold(()) {
@@ -75,8 +78,6 @@ case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with S
   }
 
   override def phase = AST_REWRITE
-
-  override def description = "resolve token ids for labels, property keys and relationship types"
 
   override def visit(value: BaseState, context: PlannerContext): Unit = value.statement() match {
     case q: Query => resolve(q)(value.semanticTable(), context.planContext)

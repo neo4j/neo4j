@@ -45,12 +45,13 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.StepSequencer
 
+/**
+ * Using cost estimates, plan the query to a logical plan.
+ */
 case object QueryPlanner
   extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] with StepSequencer.Step with PlanPipelineTransformerFactory {
 
   override def phase = LOGICAL_PLANNING
-
-  override def description = "using cost estimates, plan the query to a logical plan"
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val printCostComparisons = context.debugOptions.printCostComparisonsEnabled || java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
