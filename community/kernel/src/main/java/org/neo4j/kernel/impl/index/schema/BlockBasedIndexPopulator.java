@@ -415,9 +415,13 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             {
                 var readScopedBuffer = allocator.allocate( bufferSize, memoryTracker );
                 readBuffers.addBuffer( readScopedBuffer );
-                var reader = part.blockStorage.reader( true );
-                parts.add( reader.nextBlock( readScopedBuffer ) );
-                Preconditions.checkState( reader.nextBlock( singleBlockScopedBuffer ) == null, "Final BlockStorage had multiple blocks" );
+                try ( var reader = part.blockStorage.reader( true ) )
+                {
+                    // reader has a channel open, but only for the purpose of traversing the blocks.
+                    // nextBlock will open its own channel so it's OK to close the reader after getting that block
+                    parts.add( reader.nextBlock( readScopedBuffer ) );
+                    Preconditions.checkState( reader.nextBlock( singleBlockScopedBuffer ) == null, "Final BlockStorage had multiple blocks" );
+                }
             }
 
             try ( var merger = new PartMerger<>( populationWorkScheduler, parts, layout, cancellation, PartMerger.DEFAULT_BATCH_SIZE );
