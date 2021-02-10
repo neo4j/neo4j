@@ -625,6 +625,8 @@ object IntermediateRepresentation {
 
   def typeRefOf[TYPE](implicit typ: Manifest[TYPE]): codegen.TypeReference = typeRef(typ)
 
+  def nonGenericTypeRefOf[TYPE](implicit typ: Manifest[TYPE]): codegen.TypeReference = codegen.TypeReference.typeReference(manifest.runtimeClass)
+
   def field[TYPE](name: String)(implicit typ: Manifest[TYPE]): InstanceField = InstanceField(typeRef(typ), name)
 
   def field[TYPE](name: String, initializer: IntermediateRepresentation)(implicit typ: Manifest[TYPE]): InstanceField =
