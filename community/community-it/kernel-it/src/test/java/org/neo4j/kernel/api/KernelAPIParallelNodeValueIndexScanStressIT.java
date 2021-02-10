@@ -47,7 +47,7 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
 @DbmsExtension
 @ExtendWith( RandomExtension.class )
-class KernelAPIParallelIndexScanStressIT
+class KernelAPIParallelNodeValueIndexScanStressIT
 {
     private static final int N_THREADS = 10;
     private static final int N_NODES = 10_000;

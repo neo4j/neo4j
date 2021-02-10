@@ -44,13 +44,13 @@ class KernelAPIParallelStress
         long endTime = currentTimeMillis() + SECONDS.toMillis( 30 );
         race.withEndCondition( () -> currentTimeMillis() > endTime );
 
-        List<RESOURCE> nodeCursors = new ArrayList<RESOURCE>();
+        List<RESOURCE> cursors = new ArrayList<RESOURCE>();
         try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED ) )
         {
             // assert our test works single-threaded before racing
-            try ( RESOURCE nodeCursor = resourceSupplier.apply( tx ) )
+            try ( RESOURCE cursor = resourceSupplier.apply( tx ) )
             {
-                runnable.apply( tx.dataRead(), nodeCursor ).run();
+                runnable.apply( tx.dataRead(), cursor ).run();
             }
 
             for ( int i = 0; i < nThreads; i++ )
@@ -59,13 +59,13 @@ class KernelAPIParallelStress
 
                 race.addContestant( runnable.apply( tx.dataRead(), resource ) );
 
-                nodeCursors.add( resource );
+                cursors.add( resource );
             }
 
             race.go();
 
             // clean-up
-            for ( RESOURCE cursor : nodeCursors )
+            for ( RESOURCE cursor : cursors )
             {
                 cursor.close();
             }
