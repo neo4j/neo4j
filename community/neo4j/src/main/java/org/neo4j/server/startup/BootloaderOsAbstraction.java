@@ -73,7 +73,15 @@ abstract class BootloaderOsAbstraction
 
     long admin() throws BootFailureException
     {
-        return ctx.processManager().run( buildBaseArguments().withAll( ctx.additionalArgs ), behaviour().blocking().inheritIO().homeAndConfAsEnv() );
+        MutableList<String> arguments = buildBaseArguments();
+        if ( ctx.getEnv( ENV_HEAP_SIZE ).isBlank() )
+        {
+            // Server config is used as one source of heap settings for admin commands.
+            // That leads to ridiculous memory demands especially by simple admin commands
+            // like getting store info.
+            arguments = arguments.reject( argument -> argument.startsWith( "-Xms" ) );
+        }
+        return ctx.processManager().run( arguments.withAll( ctx.additionalArgs ), behaviour().blocking().inheritIO().homeAndConfAsEnv() );
     }
 
     abstract void installService() throws BootFailureException;

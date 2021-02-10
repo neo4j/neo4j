@@ -104,11 +104,13 @@ class Neo4jAdminCommandTest
         void shouldSpecifyHeapSizeWhenGiven()
         {
             assertThat( execute( List.of(), Map.of( Bootloader.ENV_HEAP_SIZE, "666m") ) ).isEqualTo( 0 );
-            assertThat( out.toString() ).contains( "-Xmx666m" );
+            assertThat( out.toString() )
+                    .contains( "-Xmx666m" )
+                    .contains( "-Xms666m" );
         }
 
         @Test
-        void shouldReadHeapSizeFromConfig()
+        void shouldReadMaxHeapSizeFromConfig()
         {
             addConf( BootloaderSettings.max_heap_size, "222m" );
             assertThat( execute( null ) ).isEqualTo( 0 );
@@ -120,7 +122,17 @@ class Neo4jAdminCommandTest
         {
             addConf( BootloaderSettings.max_heap_size, "222m" );
             assertThat( execute( List.of(), Map.of( Bootloader.ENV_HEAP_SIZE, "666m") ) ).isEqualTo( 0 );
-            assertThat( out.toString() ).contains( "-Xmx666m" );
+            assertThat( out.toString() )
+                    .contains( "-Xmx666m" )
+                    .contains( "-Xms666m" );
+        }
+
+        @Test
+        void shouldIgnoreMinHeapSizeInConfig()
+        {
+            addConf( BootloaderSettings.initial_heap_size, "222m" );
+            assertThat( execute( null ) ).isEqualTo( 0 );
+            assertThat( out.toString() ).doesNotContain( "-Xms" );
         }
 
         @Override

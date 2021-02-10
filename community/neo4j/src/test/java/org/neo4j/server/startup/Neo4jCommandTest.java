@@ -165,8 +165,11 @@ class Neo4jCommandTest
         void shouldBeAbleToProvideHeapSettings()
         {
             addConf( BootloaderSettings.max_heap_size, "100m" );
+            addConf( BootloaderSettings.initial_heap_size, "10m" );
             assertThat( execute( "start" ) ).isEqualTo( 0 );
-            assertThat( out.toString() ).contains( "-Xmx102400k" );
+            assertThat( out.toString() )
+                    .contains( "-Xmx102400k" )
+                    .contains( "-Xms10240k" );
         }
 
         @Test
