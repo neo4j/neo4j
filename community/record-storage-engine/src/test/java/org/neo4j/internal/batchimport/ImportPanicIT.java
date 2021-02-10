@@ -84,7 +84,7 @@ class ImportPanicIT
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             BatchImporter importer = new ParallelBatchImporter(
-                    databaseLayout, testDirectory.getFileSystem(), null, PageCacheTracer.NULL,
+                    databaseLayout, testDirectory.getFileSystem(), PageCacheTracer.NULL,
                     Configuration.DEFAULT, NullLogService.getInstance(), ExecutionMonitor.INVISIBLE, AdditionalInitialIds.EMPTY,
                     Config.defaults(), StandardV3_4.RECORD_FORMATS, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY,
                     LogFilesInitializer.NULL, EmptyMemoryTracker.INSTANCE );

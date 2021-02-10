@@ -19,14 +19,15 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import java.util.EnumMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
+
+import java.util.EnumMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.ImportLogic;
@@ -38,16 +39,16 @@ import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.staging.HumanUnderstandableExecutionMonitor.ImportStage;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.LogFilesInitializer;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.SuppressOutputExtension;
-import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
@@ -57,12 +58,12 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneNodeHeader;
 import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneRelationshipHeader;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 
-@PageCacheExtension
 @Neo4jLayoutExtension
-@ExtendWith( {RandomExtension.class, SuppressOutputExtension.class} )
+@ExtendWith( {RandomExtension.class, SuppressOutputExtension.class,DefaultFileSystemExtension.class, TestDirectorySupportExtension.class} )
 @ResourceLock( Resources.SYSTEM_OUT )
 class HumanUnderstandableExecutionMonitorIT
 {
@@ -75,8 +76,6 @@ class HumanUnderstandableExecutionMonitorIT
     private DatabaseLayout databaseLayout;
     @Inject
     private FileSystemAbstraction fileSystem;
-    @Inject
-    private PageCache pageCache;
 
     @Test
     void shouldReportProgressOfNodeImport() throws Exception
@@ -88,11 +87,19 @@ class HumanUnderstandableExecutionMonitorIT
         Input input = new DataGeneratorInput( NODE_COUNT, RELATIONSHIP_COUNT, idType, random.seed(),
                 0, bareboneNodeHeader( idType, new Extractors( ';' ) ), bareboneRelationshipHeader( idType, new Extractors( ';' ) ),
                 1, 1, 0, 0 );
+        Configuration configuration = new Configuration.Overridden( Configuration.DEFAULT )
+        {
+            @Override
+            public long pageCacheMemory()
+            {
+                return mebiBytes( 8 );
+            }
+        };
 
         // when
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            new ParallelBatchImporter( databaseLayout, fileSystem, pageCache, NULL, Configuration.DEFAULT, NullLogService.getInstance(), monitor,
+            new ParallelBatchImporter( databaseLayout, fileSystem, NULL, configuration, NullLogService.getInstance(), monitor,
                     EMPTY, defaults(), LATEST_RECORD_FORMATS, ImportLogic.NO_MONITOR, jobScheduler, Collector.EMPTY, LogFilesInitializer.NULL,
                     EmptyMemoryTracker.INSTANCE ).doImport( input );
 

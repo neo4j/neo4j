@@ -173,7 +173,6 @@ class CsvImporter implements Importer
             BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate(
                     databaseLayout,
                     fileSystem,
-                    null, // no external page cache
                     pageCacheTracer,
                     importConfig,
                     new SimpleLogService( NullLogProvider.getInstance(), logProvider ),

@@ -53,7 +53,6 @@ import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -563,17 +562,11 @@ public class ImportLogic implements Closeable
     }
 
     public static BatchingNeoStores instantiateNeoStores( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
-            PageCache externalPageCache, PageCacheTracer cacheTracer, RecordFormats recordFormats, Configuration config,
+            PageCacheTracer cacheTracer, RecordFormats recordFormats, Configuration config,
             LogService logService, AdditionalInitialIds additionalInitialIds, Config dbConfig, JobScheduler scheduler, MemoryTracker memoryTracker )
     {
-        if ( externalPageCache == null )
-        {
-            return BatchingNeoStores.batchingNeoStores( fileSystem, databaseLayout, recordFormats, config, logService,
-                    additionalInitialIds, dbConfig, scheduler, cacheTracer, memoryTracker );
-        }
-
-        return BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, externalPageCache,
-                cacheTracer, databaseLayout, recordFormats, config, logService, additionalInitialIds, dbConfig, memoryTracker );
+        return BatchingNeoStores.batchingNeoStores( fileSystem, databaseLayout, recordFormats, config, logService,
+                additionalInitialIds, dbConfig, scheduler, cacheTracer, memoryTracker );
     }
 
     private static long totalMemoryUsageOf( MemoryStatsVisitor.Visitable... users )

@@ -144,7 +144,7 @@ class CsvInputBatchImportIT
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler() )
         {
             BatchImporter importer = new ParallelBatchImporter(
-                    databaseLayout, fileSystem, null, PageCacheTracer.NULL, smallBatchSizeConfig(), NullLogService.getInstance(), ExecutionMonitor.INVISIBLE,
+                    databaseLayout, fileSystem, PageCacheTracer.NULL, smallBatchSizeConfig(), NullLogService.getInstance(), ExecutionMonitor.INVISIBLE,
                     EMPTY, dbConfig, defaultFormat(), ImportLogic.NO_MONITOR, scheduler, Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(),
                     INSTANCE );
             List<InputEntity> nodeData = randomNodeData();

@@ -303,7 +303,7 @@ class MultipleIndexPopulationStressIT
         {
             DatabaseLayout layout = Neo4jLayout.of( directory.homePath() ).databaseLayout( DEFAULT_DATABASE_NAME );
             BatchImporter importer = new ParallelBatchImporter(
-                    layout, fileSystemAbstraction, null, PageCacheTracer.NULL, DEFAULT, NullLogService.getInstance(),
+                    layout, fileSystemAbstraction, PageCacheTracer.NULL, DEFAULT, NullLogService.getInstance(),
                     ExecutionMonitor.INVISIBLE, EMPTY, config, recordFormats, NO_MONITOR, jobScheduler, Collector.EMPTY,
                     TransactionLogInitializer.getLogFilesInitializer(), INSTANCE );
             importer.doImport( input );

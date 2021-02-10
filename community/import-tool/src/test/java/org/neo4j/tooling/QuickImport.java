@@ -170,7 +170,7 @@ public class QuickImport
                 boolean verbose = args.getBoolean( "v" );
                 ExecutionMonitor monitor = verbose ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, System.out, 100 ) : defaultVisible();
                 consumer = BatchImporterFactory.withHighestPriority().instantiate(
-                        DatabaseLayout.ofFlat( dir ), fileSystem, null, PageCacheTracer.NULL, importConfig, new SimpleLogService( logging, logging ),
+                        DatabaseLayout.ofFlat( dir ), fileSystem, PageCacheTracer.NULL, importConfig, new SimpleLogService( logging, logging ),
                         monitor, EMPTY, dbConfig, RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR, jobScheduler,
                         Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(), INSTANCE );
             }

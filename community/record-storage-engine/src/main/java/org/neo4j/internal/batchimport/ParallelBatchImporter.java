@@ -28,7 +28,6 @@ import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.internal.LogService;
@@ -49,7 +48,6 @@ import org.neo4j.storageengine.api.LogFilesInitializer;
 public class ParallelBatchImporter implements BatchImporter
 {
     private static final String BATCH_IMPORTER_CHECKPOINT = "Batch importer checkpoint.";
-    private final PageCache externalPageCache;
     private final DatabaseLayout databaseLayout;
     private final FileSystemAbstraction fileSystem;
     private final PageCacheTracer pageCacheTracer;
@@ -65,12 +63,11 @@ public class ParallelBatchImporter implements BatchImporter
     private final LogFilesInitializer logFilesInitializer;
     private final MemoryTracker memoryTracker;
 
-    public ParallelBatchImporter( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCache externalPageCache,
+    public ParallelBatchImporter( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem,
             PageCacheTracer pageCacheTracer, Configuration config, LogService logService, ExecutionMonitor executionMonitor,
             AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats, ImportLogic.Monitor monitor,
             JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer, MemoryTracker memoryTracker )
     {
-        this.externalPageCache = externalPageCache;
         this.databaseLayout = databaseLayout;
         this.fileSystem = fileSystem;
         this.pageCacheTracer = pageCacheTracer;
@@ -90,7 +87,7 @@ public class ParallelBatchImporter implements BatchImporter
     @Override
     public void doImport( Input input ) throws IOException
     {
-        try ( BatchingNeoStores store = ImportLogic.instantiateNeoStores( fileSystem, databaseLayout, externalPageCache, pageCacheTracer, recordFormats,
+        try ( BatchingNeoStores store = ImportLogic.instantiateNeoStores( fileSystem, databaseLayout, pageCacheTracer, recordFormats,
                       config, logService, additionalInitialIds, dbConfig, jobScheduler, memoryTracker );
               ImportLogic logic = new ImportLogic( databaseLayout, store, config, dbConfig, logService,
                       executionMonitor, recordFormats, badCollector, monitor, pageCacheTracer, memoryTracker ) )
