@@ -74,21 +74,6 @@ check_limits() {
 
 setup_memory_opts() {
   # In some cases the heap size may have already been set before we get here, from e.g. HEAP_SIZE env.variable, if so then skip
-  if [[ -n "${dbms_memory_heap_initial_size:-}" && -z "${JAVA_MEMORY_OPTS_XMS-}" ]]; then
-    if ! [[ "${dbms_memory_heap_initial_size}" =~ .*[gGmMkK] ]]; then
-      cat >&2 <<EOF
-ERROR: dbms.memory.heap.initial_size require a unit suffix. Use
-       'k' for kilobytes, 'm' for megabytes and 'g' for gigabytes.
-       Example:
-
-       dbms.memory.heap.initial_size=512m
-                                        ^
-EOF
-      exit 1
-    fi
-    JAVA_MEMORY_OPTS_XMS="-Xms${dbms_memory_heap_initial_size}"
-  fi
-  # In some cases the heap size may have already been set before we get here, from e.g. HEAP_SIZE env.variable, if so then skip
   if [[ -n "${dbms_memory_heap_max_size:-}" && -z "${JAVA_MEMORY_OPTS_XMX-}" ]]; then
     if ! [[ "${dbms_memory_heap_max_size}" =~ .*[gGmMkK] ]]; then
       cat >&2 <<EOF

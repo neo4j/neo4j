@@ -5,12 +5,10 @@ test_description="Test Java arguments"
 . ./lib/sharness.sh
 fake_install
 
-test_expect_success "should set heap size constraints when checking version" "
+test_expect_success "should set max heap size when checking version" "
   clear_config &&
-  set_config 'dbms.memory.heap.initial_size' '512m' neo4j.conf &&
   set_config 'dbms.memory.heap.max_size' '1024m' neo4j.conf &&
   neo4j-home/bin/neo4j version || true &&
-  test_expect_java_arg '-Xms512m' &&
   test_expect_java_arg '-Xmx1024m'
 "
 
