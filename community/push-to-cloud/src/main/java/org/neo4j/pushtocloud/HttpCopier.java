@@ -303,6 +303,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
         {
         case "running":
             return 0;
+        case "updating":
         case "loading":
             int loadProgressEstimation = (int) Math.min( 98, (elapsed * 98) / importTimeEstimateMillis );
             return 1 + loadProgressEstimation;
