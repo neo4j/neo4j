@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.frontend.helpers.closing
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.util.StepSequencer
 
@@ -60,15 +59,4 @@ trait VisitorPhase[-C <: BaseContext, STATE] extends Phase[C, STATE, STATE] {
   def visit(value: STATE, context: C): Unit
 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
-}
-
-/**
- * Adds a condition.
- */
-case class AddCondition[-C <: BaseContext, STATE](postCondition: StepSequencer.Condition) extends Phase[C, STATE, STATE] {
-  override def phase: CompilationPhase = PIPE_BUILDING
-
-  override def process(from: STATE, context: C): STATE = from
-
-  override def postConditions = Set(postCondition)
 }

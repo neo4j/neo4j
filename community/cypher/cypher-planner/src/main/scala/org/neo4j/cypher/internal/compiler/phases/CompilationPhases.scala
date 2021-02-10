@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
-import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.CorrelatedSubQueries
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.AdministrationCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.SchemaCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.UnsupportedSystemCommand
@@ -36,7 +34,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRew
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDs
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProperties
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
-import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CNFNormalizer
@@ -106,7 +103,7 @@ object CompilationPhases {
   )
 
   private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
-    val parse = (if (config.useJavaCCParser) JavaccParsing else Parsing).adds(BaseContains[Statement])
+    val parse = (if (config.useJavaCCParser) JavaccParsing else Parsing)
     val parseAndCompatibilityCheck: Transformer[BaseContext, BaseState, BaseState] =
       config.compatibilityMode match {
         case Compatibility3_5 =>
@@ -129,7 +126,7 @@ object CompilationPhases {
     parseAndCompatibilityCheck andThen
       SyntaxDeprecationWarnings(Deprecations.V2) andThen
       PreparatoryRewriting(Deprecations.V2) andThen
-      SemanticAnalysis(warn = true, config.semanticFeatures: _*).adds(BaseContains[SemanticState])
+      SemanticAnalysis(warn = true, config.semanticFeatures: _*)
   }
 
   // Phase 1
@@ -146,15 +143,15 @@ object CompilationPhases {
       ExpandStarRewriter andThen
       TryRewriteProcedureCalls(resolver) andThen
       ObfuscationMetadataCollection andThen
-      SemanticAnalysis(warn = true, config.semanticFeatures: _*).adds(BaseContains[SemanticState])
+      SemanticAnalysis(warn = true, config.semanticFeatures: _*)
   }
 
   // Phase 1.1 (Fabric)
   def fabricFinalize(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
-    SemanticAnalysis(warn = true, config.semanticFeatures: _*).adds(BaseContains[SemanticState]) andThen
+    SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
       AstRewriting(innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping) andThen
       LiteralExtraction(config.literalExtractionStrategy) andThen
-      SemanticAnalysis(warn = true, config.semanticFeatures: _*).adds(BaseContains[SemanticState])
+      SemanticAnalysis(warn = true, config.semanticFeatures: _*)
   }
 
   // Phase 2

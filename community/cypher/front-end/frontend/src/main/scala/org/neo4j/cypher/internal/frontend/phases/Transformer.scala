@@ -28,8 +28,6 @@ trait Transformer[-C <: BaseContext, -FROM, +TO] {
   def andThen[D <: C, TO2](other: Transformer[D, TO, TO2]): Transformer[D, FROM, TO2] =
     new PipeLine(this, other)
 
-  def adds(condition: StepSequencer.Condition): Transformer[C, FROM, TO] = this andThen AddCondition[C, TO](condition)
-
   def name: String
 
   def postConditions: Set[StepSequencer.Condition]

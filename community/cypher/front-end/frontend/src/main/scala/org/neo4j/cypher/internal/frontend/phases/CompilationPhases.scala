@@ -16,8 +16,6 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
-import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
@@ -28,10 +26,10 @@ object CompilationPhases {
   def parsing(literalExtractionStrategy: LiteralExtractionStrategy = IfNoParameter,
               deprecations: Deprecations = Deprecations.V1
              ): Transformer[BaseContext, BaseState, BaseState] =
-    Parsing.adds(BaseContains[Statement]) andThen
+    Parsing andThen
       SyntaxDeprecationWarnings(deprecations) andThen
       PreparatoryRewriting(deprecations) andThen
-      SemanticAnalysis(warn = true).adds(BaseContains[SemanticState]) andThen
+      SemanticAnalysis(warn = true) andThen
       AstRewriting(innerVariableNamer = SameNameNamer) andThen
       LiteralExtraction(literalExtractionStrategy)
 
