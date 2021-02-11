@@ -136,6 +136,11 @@ public final class Assert
         awaitCondition( "should throw", timeout, timeUnit ).untilAsserted( () -> assertThrows( expectedType, actual, messageGenerator ) );
     }
 
+    public static void assertEventuallyDoesNotThrow( String message, Executable action, long timeout, TimeUnit timeUnit, long pollDelay, TimeUnit pollUnit )
+    {
+        awaitCondition( "should not throw", timeout, timeUnit, pollDelay, pollUnit ).untilAsserted( () -> assertDoesNotThrow( action, message ) );
+    }
+
     public static void assertEventuallyDoesNotThrow( String message, Executable action, long timeout, TimeUnit timeUnit )
     {
         awaitCondition( "should not throw", timeout, timeUnit ).untilAsserted( () -> assertDoesNotThrow( action, message ) );
@@ -143,8 +148,13 @@ public final class Assert
 
     private static ConditionFactory awaitCondition( String alias, long timeout, TimeUnit timeUnit )
     {
+        return awaitCondition( alias, timeout, timeUnit, 10, MILLISECONDS ).pollInSameThread();
+    }
+
+    private static ConditionFactory awaitCondition( String alias, long timeout, TimeUnit timeUnit, long pollDelay, TimeUnit pollUnit )
+    {
         return await( alias ).atMost( timeout, timeUnit )
-                .pollDelay( 10, MILLISECONDS ).pollInSameThread();
+                             .pollDelay( pollDelay, pollUnit ).pollInSameThread();
     }
 
     private static AssertionError newAssertionError( String message, Object expected, Object actual )
