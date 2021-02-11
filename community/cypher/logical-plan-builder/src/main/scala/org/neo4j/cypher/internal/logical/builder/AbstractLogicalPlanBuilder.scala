@@ -65,6 +65,7 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
@@ -462,6 +463,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def emptyResult(): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => EmptyResult(lp)(_)))
+    self
+  }
+
+  def deleteNode(node: String): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => DeleteNode(lp, Parser.parseExpression(node))(_)))
     self
   }
 
