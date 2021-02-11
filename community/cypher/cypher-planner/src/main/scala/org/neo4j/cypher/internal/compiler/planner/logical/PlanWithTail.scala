@@ -45,7 +45,8 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
   private def doPlan(lhs: LogicalPlan, in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
     in.tail match {
       case Some(plannerQuery) =>
-        val partPlan = planPart(plannerQuery, context, rhsPart = true).result // always expecting a single plan currently
+        val rhsContext = context.withOuterPlan(lhs)
+        val partPlan = planPart(plannerQuery, rhsContext, rhsPart = true).result // always expecting a single plan currently
 
         val planWithUpdates = planUpdates(plannerQuery, partPlan, firstPlannerQuery = false, context)
 

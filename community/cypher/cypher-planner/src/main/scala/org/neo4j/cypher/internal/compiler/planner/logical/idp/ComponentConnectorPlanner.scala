@@ -26,10 +26,12 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolve
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPTable.SORTED_BIT
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.planLotsOfCartesianProducts
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestApply
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.time.Stopwatch
 
 import scala.collection.immutable.BitSet
@@ -97,9 +99,37 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
       // Filter out goals that are not solvable before even asking the connectors
       .filterGoals(goalBitAllocation.goalIsSolvable)
 
+    /*
+     * Most rewrites are such that they either keep cost through the rewrite or that the rewrite reduces cost in the same fashion for different plans.
+     * The `unnestApply` rules
+     * L Ax (Arg LOJ R) => L LOJ R and
+     * L Ax (L2 ROJ Arg) => L2 ROJ L
+     * behave differently.
+     *
+     * Unnesting a RightOuterHashJoin will put the outer plan (L) into its RHS, making its LHS cheaper.
+     * Unnesting a LeftOuterHashJoin will put the outer plan (L) into its LHS, making its RHS cheaper.
+     * That in turn means that RightOuterHashJoins gain more by being unnested.
+     *
+     * To make a fair comparison between such candidates, we need to perform the unnesting (if possible) before the cost comparison, because otherwise a
+     * LeftOuterHashJoin might win over a RightOuterHashJoin, when after unnesting the RightOuterHashJoin would have been cheaper.
+     */
+    val connectWithOuterPlan: LogicalPlan => LogicalPlan =
+      context.outerPlan match {
+        case Some(outerPlan) =>
+          // We pass in an empty Attributes, since we throw away these plans after cost-comparison.
+          // There is no need to have all attributes correctly assigned.
+          val unnest = unnestApply(context.planningAttributes.solveds, context.planningAttributes.cardinalities, Attributes(context.idGen))
+          lp => {
+            val connectedPlan = context.logicalPlanProducer.planTailApply(outerPlan, lp, context)
+            connectedPlan.endoRewrite(unnest)
+          }
+        case None => identity
+      }
+
     val solver = new IDPSolver[QueryGraph, LogicalPlan, LogicalPlanningContext](
       generator = generator,
       projectingSelector = kit.pickBest,
+      candidateProjector = connectWithOuterPlan,
       maxTableSize = config.maxTableSize,
       iterationDurationLimit = config.iterationDurationLimit,
       extraRequirement = orderRequirement,

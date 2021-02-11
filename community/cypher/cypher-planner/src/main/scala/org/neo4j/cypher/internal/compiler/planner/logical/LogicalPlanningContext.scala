@@ -43,6 +43,9 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   semanticTable: SemanticTable,
                                   strategy: QueryGraphSolver,
                                   input: QueryGraphSolverInput = QueryGraphSolverInput.empty,
+                                  // When planning tails, this gives contextual information about the plan of the so-far solved
+                                  // query graphs, which will be connected with an Apply with the tail-query graph plan.
+                                  outerPlan: Option[LogicalPlan] = None,
                                   notificationLogger: InternalNotificationLogger,
                                   useErrorsOverWarnings: Boolean = false,
                                   errorIfShortestPathFallbackUsedAtRuntime: Boolean = false,
@@ -81,6 +84,14 @@ case class LogicalPlanningContext(planContext: PlanContext,
 
   def withConfig(newConfig: QueryPlannerConfiguration): LogicalPlanningContext = {
     copy(config = newConfig)
+  }
+
+  /**
+   * When planning tails, the outer plan gives contextual information about the plan of the so-far solved
+   * query graphs, which will be connected with an Apply with the tail-query graph plan.
+   */
+  def withOuterPlan(outerPlan: LogicalPlan): LogicalPlanningContext = {
+    copy(outerPlan= Some(outerPlan))
   }
 
   def statistics: GraphStatistics = planContext.statistics

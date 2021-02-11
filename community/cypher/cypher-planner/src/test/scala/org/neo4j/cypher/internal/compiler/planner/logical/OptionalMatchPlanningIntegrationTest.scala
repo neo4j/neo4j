@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverSetup
@@ -63,7 +62,6 @@ class OptionalMatchGreedyPlanningIntegrationTest extends OptionalMatchPlanningIn
 abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSolverSetup)
   extends CypherFunSuite
   with LogicalPlanningTestSupport2
-  with LogicalPlanTestOps
   with LogicalPlanningIntegrationTestSupport with Inside {
 
   locally {
@@ -435,4 +433,42 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
     plan.stripProduceResults shouldBe an[OptionalExpand]
   }
 
+  test("should pick a right outer hash join with hint if it is cheaper than left outer hash join, also in a tail query") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(52)
+      .setLabelCardinality("A", 50)
+      .setLabelCardinality("B", 2)
+      .setRelationshipCardinality("()-[]-()", 30)
+      .setRelationshipCardinality("(:A)-[]-()", 30)
+      .setRelationshipCardinality("()-[]-(:B)", 30)
+      .setRelationshipCardinality("(:A)-[]-(:B)", 30)
+      .build()
+
+    val noTailQuery =
+      """MATCH (a:A)
+        |OPTIONAL MATCH (a)-[r]->(b:B)
+        |USING JOIN ON a
+        |RETURN a.name, b.name""".stripMargin
+    val tailQuery =
+      s"""MATCH (a:A)
+         |WITH a, 1 AS foo
+         |MATCH (a)
+         |OPTIONAL MATCH (a)-[r]->(b:B)
+         |USING JOIN ON a
+         |RETURN a.name, b.name""".stripMargin
+
+    val noTailPlan = cfg.plan(noTailQuery)
+    val tailPlan = cfg.plan(tailQuery)
+
+    withClue(noTailPlan) {
+      noTailPlan.treeExists {
+        case _: RightOuterHashJoin => true
+      } should be(true)
+    }
+    withClue(tailPlan) {
+      tailPlan.treeExists {
+        case _: RightOuterHashJoin => true
+      } should be(true)
+    }
+  }
 }

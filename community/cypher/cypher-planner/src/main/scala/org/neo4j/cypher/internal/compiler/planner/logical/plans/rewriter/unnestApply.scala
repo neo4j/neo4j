@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
+import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.topDown
 
 case class unnestApply(solveds: Solveds, cardinalities: Cardinalities, attributes: Attributes[LogicalPlan]) extends Rewriter {
@@ -172,5 +173,5 @@ case class unnestApply(solveds: Solveds, cardinalities: Cardinalities, attribute
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(cardinalities(arg.id) == Cardinality.SINGLE, s"Argument plans should always have Cardinality 1. Had: ${cardinalities(arg.id)}")
   }
 
-  override def apply(input: AnyRef): AnyRef = instance.apply(input)
+  override def apply(input: AnyRef): AnyRef = fixedPoint(instance).apply(input)
 }

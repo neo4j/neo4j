@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
-import java.util.concurrent.TimeUnit
-
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.compiler.helpers.IteratorSupport.RichIterator
 import org.neo4j.cypher.internal.compiler.helpers.LazyIterable
@@ -29,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Selector
 import org.neo4j.exceptions.InternalException
 import org.neo4j.time.Stopwatch
 
+import java.util.concurrent.TimeUnit
 import scala.collection.immutable.BitSet
 
 trait IDPSolverMonitor {
@@ -75,6 +74,7 @@ case class BestResults[+Result](bestResult: Result,
  */
 class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Result, Context], // generates candidates at each step
                                            projectingSelector: ProjectingSelector[Result], // pick best from a set of candidates
+                                           candidateProjector: Result => Result = (r:Result) => r, // map candidates before giving them to the ProjectingSelector, but keep the unmapped candidates.
                                            registryFactory: () => IdRegistry[Solvable] = () => IdRegistry[Solvable], // maps from Set[S] to BitSet
                                            tableFactory: (IdRegistry[Solvable], Seed[Solvable, Result]) => IDPTable[Result] = (registry: IdRegistry[Solvable], seed: Seed[Solvable, Result]) => IDPTable(registry, seed),
                                            maxTableSize: Int, // limits computation effort, reducing result quality
@@ -94,7 +94,10 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     val table = tableFactory(registry, seed)
 
     // utility functions
-    def goalSelector(resolved: => String): Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)](_._2, _, resolved)
+    def candidateSelector(resolved: => String): Selector[Result] = projectingSelector.apply[Result](candidateProjector, _, resolved)
+    def goalSelector(resolved: => String): Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)]({
+      case (_, result) => candidateProjector(result)
+    }, _, resolved)
 
     def generateBestCandidates(maxBlockSize: Int): Int = {
       var largestFinishedIteration = 0
@@ -111,13 +114,13 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
           if (!table.contains(goal, sorted = false)) {
             val candidates = LazyIterable(generator(registry, goal, table, context))
             val (extraCandidates, baseCandidates) = candidates.partition(extraRequirement.fulfils)
-            val bestExtraCandidate = projectingSelector(extraCandidates, s"best sorted plan for ${goal.bitSet}@${registry.explode(goal.bitSet)}")
+            val bestExtraCandidate = candidateSelector(s"best sorted plan for ${goal.bitSet}@${registry.explode(goal.bitSet)}")(extraCandidates)
 
             // We don't want to compare just the ones that do not fulfil the requirement
             // in isolation, because it could be that the best overall candidate fulfils the requirement.
             // bestExtraCandidate has already been determined to be cheaper than any other extraCandidate,
             // therefore it is enough to cost estimate the bestExtraCandidate against all baseCandidates.
-            projectingSelector(baseCandidates ++ bestExtraCandidate.toIterable, s"best overall plan for ${goal.bitSet}@${registry.explode(goal.bitSet)}").foreach { candidate =>
+            candidateSelector(s"best overall plan for ${goal.bitSet}@${registry.explode(goal.bitSet)}")(baseCandidates ++ bestExtraCandidate.toIterable).foreach { candidate =>
               foundNoCandidate = false
               table.put(goal, sorted = false, candidate)
             }

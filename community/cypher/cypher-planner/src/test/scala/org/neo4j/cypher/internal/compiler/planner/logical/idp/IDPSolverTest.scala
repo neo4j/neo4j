@@ -60,6 +60,35 @@ class IDPSolverTest extends CypherFunSuite {
     verify(monitor).foundPlanAfter(1)
   }
 
+  test("Projects candidates before cost comparison") {
+    val monitor = mock[IDPSolverMonitor]
+    val solver = new IDPSolver[Char, String, Unit](
+      monitor = monitor,
+      generator = stringAppendingSolverStepWithCapitalization(Capitalization(true)),
+      candidateProjector = {
+        case str if str.startsWith("a") => "use a long string here to make 'aBCD' win"
+        case x => x
+      },
+      projectingSelector = firstLongest,
+      maxTableSize = 128,
+      extraRequirement = ExtraRequirement.empty,
+      iterationDurationLimit = Int.MaxValue,
+      stopWatchFactory = neverTimesOut
+    )
+
+    val seed = Seq(
+      (Set('a'), false) -> "a",
+      (Set('b'), false) -> "b",
+      (Set('c'), false) -> "c",
+      (Set('d'), false) -> "d"
+    )
+
+    val solution = solver(seed, Seq('a', 'b', 'c', 'd'), context)
+
+    solution should equal(BestResults("aBCD", None))
+    verify(monitor).foundPlanAfter(1)
+  }
+
   test("Solves a small toy problem with an extra requirement. Best overall plan fulfils requirement.") {
     val monitor = mock[IDPSolverMonitor]
     val capitalization = Capitalization(true)
@@ -265,7 +294,10 @@ class IDPSolverTest extends CypherFunSuite {
     }
 
     def isSorted(chars: String): Boolean =
-      (chars.length <= 1) || 0.to(chars.length - 2).forall(i => chars.charAt(i).toInt + 1 == chars.charAt(i + 1).toInt)
+      (chars.length <= 1) || 0.to(chars.length - 2).forall(i =>
+        chars.charAt(i).toInt + 1 == chars.charAt(i + 1).toInt
+        || chars.toLowerCase.charAt(i).toInt + 1 == chars.toLowerCase.charAt(i + 1).toInt
+      )
   }
 
   private case class CapitalizationRequirement(capitalization: Capitalization) extends ExtraRequirement[String] {

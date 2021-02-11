@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
 
@@ -504,11 +503,12 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private def rewrite(p: LogicalPlan, cardinalities: Cardinalities, idGen: IdGen): (LogicalPlan, Cardinalities) = {
     val atts = attributes(cardinalities)
 
-    val unnestedPlan = fixedPoint((p: LogicalPlan) => p.endoRewrite(unnestApply(
+    val unnest = unnestApply(
       atts.solveds,
       atts.cardinalities,
       Attributes(idGen)
-    )))(p)
+    )
+    val unnestedPlan = p.endoRewrite(unnest)
 
     compressIds(unnestedPlan, atts)
   }
