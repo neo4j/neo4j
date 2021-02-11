@@ -21,6 +21,7 @@ package org.neo4j.dbms.identity;
 
 import java.util.UUID;
 
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.logging.LogProvider;
@@ -30,7 +31,15 @@ public class StandaloneIdentityModule extends AbstractIdentityModule
 {
     private final ServerId serverId;
 
-    public StandaloneIdentityModule( LogProvider logProvider, FileSystemAbstraction fs, Neo4jLayout layout, MemoryTracker memoryTracker )
+    public static StandaloneIdentityModule fromGlobalModule( GlobalModule globalModule )
+    {
+        return new StandaloneIdentityModule( globalModule.getLogService().getInternalLogProvider(),
+                globalModule.getFileSystem(),
+                globalModule.getNeo4jLayout(),
+                globalModule.getOtherMemoryPool().getPoolMemoryTracker() );
+    }
+
+    StandaloneIdentityModule( LogProvider logProvider, FileSystemAbstraction fs, Neo4jLayout layout, MemoryTracker memoryTracker )
     {
         var log = logProvider.getLog( StandaloneIdentityModule.class );
         var storage = createServerIdStorage( fs, layout.serverIdFile(), memoryTracker );
