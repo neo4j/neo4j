@@ -26,6 +26,8 @@ object RelNameGenerator extends PrefixNameGenerator("REL")
 
 object PathNameGenerator extends PrefixNameGenerator("PATH")
 
+object RollupCollectionNameGenerator extends PrefixNameGenerator("ROLLUP")
+
 object UnNamedNameGenerator extends PrefixNameGenerator("UNNAMED") {
   implicit class NameString(name: String) {
     def isNamed: Boolean = UnNamedNameGenerator.isNamed(name)
@@ -34,8 +36,19 @@ object UnNamedNameGenerator extends PrefixNameGenerator("UNNAMED") {
 }
 
 object AllNameGenerators {
-  def isNamed(x: String): Boolean =
-    Seq(FreshIdNameGenerator, AggregationNameGenerator, NodeNameGenerator, RelNameGenerator, UnNamedNameGenerator).forall(_.isNamed(x))
+  val generators = Seq(
+    FreshIdNameGenerator,
+    AggregationNameGenerator,
+    NodeNameGenerator,
+    RelNameGenerator,
+    PathNameGenerator,
+    RollupCollectionNameGenerator,
+    UnNamedNameGenerator,
+  )
+
+  def isNamed(x: String): Boolean = {
+    generators.forall(_.isNamed(x))
+  }
 }
 
 object PrefixNameGenerator {

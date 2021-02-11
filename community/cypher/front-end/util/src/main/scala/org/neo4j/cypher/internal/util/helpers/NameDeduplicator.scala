@@ -16,13 +16,17 @@
  */
 package org.neo4j.cypher.internal.util.helpers
 
+import org.neo4j.cypher.internal.util.AllNameGenerators.generators
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.util.matching.Regex
 
 object NameDeduplicator {
-  val UNNAMED_PATTERN: Regex = """ {2}(REL|NODE|UNNAMED|FRESHID|AGGREGATION)(\d+)(?:\(.*?\))?""".r
+  val UNNAMED_PATTERN: Regex = {
+    val gens = generators.map(_.generatorName).mkString("|")
+    s""" {2}($gens)(\\d+)(?:\\(.*?\\))?""".r
+  }
 
   private val UNNAMED_PARAMS_PATTERN = """ {2}(AUTOINT|AUTODOUBLE|AUTOSTRING|AUTOLIST)(\d+)(?:\(.*?\))?""".r
   private val DEDUP_PATTERN = """ {2}([^\s]+)@\d+(?:\(.*?\))?""".r

@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.FreshIdNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.RollupCollectionNameGenerator
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable
@@ -231,7 +232,9 @@ object PatternExpressionSolver {
 
     def solveUsingRollUpApply(source: LogicalPlan, expr: T, maybeKey: Option[String], context: LogicalPlanningContext): (LogicalPlan, Variable) = {
 
-      val key = maybeKey.getOrElse(FreshIdNameGenerator.name(expr.position))
+      // Using a different name generator here and in planSubquery makes sure we get different names
+      // for the collectionName and variableToCollect.
+      val key = maybeKey.getOrElse(RollupCollectionNameGenerator.name(expr.position))
       val subQueryPlan = planSubQuery(source, expr, context)
       val producedPlan = context.logicalPlanProducer.ForPatternExpressionSolver.planRollup(source,
         subQueryPlan.innerPlan,
