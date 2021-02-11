@@ -1637,6 +1637,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
 
         // Then
         assertThrows( IllegalStateException.class, () -> waitForIndexes( db ) );
+        waitForIndex( db, indexB );
         try ( Transaction tx = db.beginTx() )
         {
             assertThat( count( tx.schema().getIndexes() ) ).isEqualTo( 2 );
