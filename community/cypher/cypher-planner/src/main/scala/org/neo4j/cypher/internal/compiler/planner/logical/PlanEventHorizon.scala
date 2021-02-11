@@ -53,7 +53,10 @@ case object PlanEventHorizon extends EventHorizonPlanner {
     // This config will only plan Sort if there is a required order in this plannerQuery
     val sortIfSelfRequiredConfig = InterestingOrderConfig(plannerQuery.interestingOrder)
     // This config will even plan Sort if there is a required order in a tail plannerQuery
-    val sortIfTailOrSelfRequiredConfig = InterestingOrderConfig.interestingOrderForPart(plannerQuery, isRhs = false, isHorizon = true)
+    val sortIfTailOrSelfRequiredConfig = InterestingOrderConfig.interestingOrderForPart(
+      query = plannerQuery, isRhs = false, isHorizon = true,
+      disallowSplittingTop = context.debugOptions.disallowSplittingTopEnabled
+    )
 
     def planSortIfSelfRequired = planHorizonForPlan(plannerQuery, incomingPlans.bestResult, prevInterestingOrder, context, sortIfSelfRequiredConfig)
     def planSortIfTailOrSelfRequired = planHorizonForPlan(plannerQuery, incomingPlans.bestResult, prevInterestingOrder, context, sortIfTailOrSelfRequiredConfig)

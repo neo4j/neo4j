@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.pickBestPlanUsin
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Cost
@@ -102,7 +103,8 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       planningAttributes = planningAttributes,
       innerVariableNamer = innerVariableNamer,
       idGen = idGen,
-      executionModel = ExecutionModel.default)
+      executionModel = ExecutionModel.default,
+      debugOptions = CypherDebugOptions.default)
     pickBestPlanUsingHintsAndCost(context)(candidates, "").get shouldBe theSameInstanceAs(winner)
     pickBestPlanUsingHintsAndCost(context)(candidates.reverse, "").get shouldBe theSameInstanceAs(winner)
   }

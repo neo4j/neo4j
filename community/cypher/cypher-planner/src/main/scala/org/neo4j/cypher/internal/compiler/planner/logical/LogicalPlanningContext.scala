@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonLi
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
@@ -64,7 +65,9 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                    */
                                   aggregatingProperties: Set[(String, String)] = Set.empty,
                                   idGen: IdGen,
-                                  executionModel: ExecutionModel) {
+                                  executionModel: ExecutionModel,
+                                  debugOptions: CypherDebugOptions) {
+
   def withLimitSelectivity(s: Selectivity): LogicalPlanningContext =
     copy(input = input.withLimitSelectivity(s))
 

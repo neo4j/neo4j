@@ -74,6 +74,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
@@ -328,7 +329,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         planningAttributes = planningAttributes,
         innerVariableNamer = innerVariableNamer,
         idGen = idGen,
-        executionModel = ExecutionModel.default)
+        executionModel = ExecutionModel.default,
+        debugOptions = CypherDebugOptions.default)
       f(config, ctx)
     }
 
@@ -349,7 +351,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         planningAttributes = planningAttributes,
         innerVariableNamer = innerVariableNamer,
         idGen = idGen,
-        executionModel = ExecutionModel.default)
+        executionModel = ExecutionModel.default,
+        debugOptions = CypherDebugOptions.default)
       f(config, ctx)
     }
   }

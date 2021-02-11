@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
@@ -53,6 +54,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -2012,5 +2014,157 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .build()
 
     plan shouldEqual expectedPlan
+  }
+
+  test("option debug=disallowSplittingTop should disable sorting in leaves under limit") {
+    val q =
+      """MATCH (a)-[r1]->(b)-[r2]->(c)
+        |RETURN b ORDER BY b LIMIT 10
+        |""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(2000)
+
+    val defaultPlan = cfg.build().plan(q)
+    val forceTopPlan = cfg.enableDebugOption(CypherDebugOption.disallowSplittingTop).build().plan(q)
+
+    defaultPlan.should(containPlanMatching({ case _: Sort => }) and containPlanMatching({ case _: Limit => }))
+    forceTopPlan.should(containPlanMatching({ case _: Top => }) and not(containPlanMatching({ case _: Sort => })))
+  }
+
+  test("option debug=disallowSplittingTop should not affect plans without limit") {
+    val q =
+      """MATCH (a)-[r1]->(b)-[r2]->(c)
+        |RETURN b ORDER BY b
+        |""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(2000)
+
+    val defaultPlan = cfg.build().plan(q)
+    val forceTopPlan = cfg.enableDebugOption(CypherDebugOption.disallowSplittingTop).build().plan(q)
+
+    defaultPlan.should(containPlanMatching({ case _: Sort => }))
+    forceTopPlan.shouldEqual(defaultPlan)
+  }
+
+  test("option debug=disallowSplittingTop should not affect index-backed-order-by") {
+    val q =
+      """MATCH (a)-[r1]->(b:B {prop: 1})-[r2]->(c)
+        |RETURN b ORDER BY b.prop
+        |""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("B", 500)
+      .setAllRelationshipsCardinality(2000)
+      .setRelationshipCardinality("()-[]-(:B)", 1000)
+      .addIndex("B", Seq("prop"), 1.0, 0.1, providesOrder = IndexOrderCapability.BOTH)
+
+    val defaultPlan = cfg.build().plan(q)
+    val forceTopPlan = cfg.enableDebugOption(CypherDebugOption.disallowSplittingTop).build().plan(q)
+
+    defaultPlan.should(not(containPlanMatching({ case _: Sort => })))
+    forceTopPlan.shouldEqual(defaultPlan)
+  }
+
+  test("option debug=disallowSplittingTop should not affect index-backed-order-by under limit") {
+    val q =
+      """MATCH (a)-[r1]->(b:B {prop: 1})-[r2]->(c)
+        |RETURN b ORDER BY b.prop LIMIT 10
+        |""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("B", 500)
+      .setAllRelationshipsCardinality(2000)
+      .setRelationshipCardinality("()-[]-(:B)", 1000)
+      .addIndex("B", Seq("prop"), 1.0, 0.1, providesOrder = IndexOrderCapability.BOTH)
+
+    val defaultPlan = cfg.build().plan(q)
+    val forceTopPlan = cfg.enableDebugOption(CypherDebugOption.disallowSplittingTop).build().plan(q)
+
+    defaultPlan.should(containPlanMatching({ case _: Limit => }) and not(containPlanMatching({ case _: Sort => })))
+    forceTopPlan.shouldEqual(defaultPlan)
+  }
+
+  test("option debug=disallowSplittingTop should disable sorting in leaves of previous parts under limit") {
+    val q =
+      """MATCH (a)-[r1]->(b)-[r2]->(c)
+        |WITH *, 1 AS x
+        |MATCH (d)
+        |RETURN b ORDER BY b LIMIT 10
+        |""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(2000)
+
+    val defaultPlan = cfg.build().plan(q)
+    val forceTopPlan = cfg.enableDebugOption(CypherDebugOption.disallowSplittingTop).build().plan(q)
+
+    defaultPlan.should(containPlanMatching({ case _: Sort => }) and containPlanMatching({ case _: Limit => }))
+    forceTopPlan.should(containPlanMatching({ case _: Top => }) and not(containPlanMatching({ case _: Sort => })))
+  }
+
+  test("option debug=disallowSplittingTop should not affect explicit ordering in previous parts") {
+    val q =
+      """MATCH (a)-[r1]->(b)-[r2]->(c)
+        |WITH *, 1 AS x ORDER BY b
+        |MATCH (d)
+        |WITH *, 1 AS y
+        |RETURN b ORDER BY b LIMIT 10
+        |""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(2000)
+
+    val defaultPlan = cfg.build().plan(q)
+    val forceTopPlan = cfg.enableDebugOption(CypherDebugOption.disallowSplittingTop).build().plan(q)
+
+    defaultPlan.should(containPlanMatching({ case _: Sort => }) and containPlanMatching({ case _: Limit => }))
+    forceTopPlan.shouldEqual(defaultPlan)
+  }
+
+  test("option debug=disallowSplittingTop should not affect explicit ordering from another part") {
+    val q =
+      """MATCH (a)-[r1]->(b)-[r2]->(c)
+        |WITH *, 1 AS x
+        |MATCH (d)
+        |WITH *, 1 AS y ORDER BY b
+        |RETURN b ORDER BY b LIMIT 10
+        |""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(2000)
+
+    val defaultPlan = cfg.build().plan(q)
+    val forceTopPlan = cfg.enableDebugOption(CypherDebugOption.disallowSplittingTop).build().plan(q)
+
+    defaultPlan.should(containPlanMatching({ case _: Sort => }) and containPlanMatching({ case _: Limit => }))
+    forceTopPlan.shouldEqual(defaultPlan)
+  }
+
+  test("option debug=disallowSplittingTop should disable sorting in horizon of previous parts under limit") {
+    val q =
+      """MATCH (a)
+        |WITH *, 1 AS x
+        |MATCH (a)-[r1]->(b)-[r2]->(c)
+        |RETURN a ORDER BY a.prop LIMIT 10
+        |""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(2000)
+
+    val defaultPlan = cfg.build().plan(q)
+    val forceTopPlan = cfg.enableDebugOption(CypherDebugOption.disallowSplittingTop).build().plan(q)
+
+    defaultPlan.should(containPlanMatching({ case _: Sort => }) and containPlanMatching({ case _: Limit => }))
+    forceTopPlan.should(containPlanMatching({ case _: Top => }) and not(containPlanMatching({ case _: Sort => })))
   }
 }

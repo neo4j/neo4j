@@ -83,6 +83,7 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -207,7 +208,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       planningAttributes = planningAttributes,
       innerVariableNamer = innerVariableNamer,
       idGen = idGen,
-      executionModel = ExecutionModel.default)
+      executionModel = ExecutionModel.default,
+      debugOptions = CypherDebugOptions.default)
   }
 
   def newMockedLogicalPlanningContextWithFakeAttributes(planContext: PlanContext,
@@ -225,7 +227,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       planningAttributes = planningAttributes,
       innerVariableNamer = innerVariableNamer,
       idGen = idGen,
-      executionModel = ExecutionModel.default)
+      executionModel = ExecutionModel.default,
+      debugOptions = CypherDebugOptions.default)
   }
 
   def newMockedStatistics: InstrumentedGraphStatistics = mock[InstrumentedGraphStatistics]

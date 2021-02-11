@@ -26,9 +26,13 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 case object planMatch extends MatchPlanner {
 
   def apply(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): BestPlans = {
+    val interestingOrderConfig = InterestingOrderConfig.interestingOrderForPart(
+      query = query, isRhs = rhsPart, isHorizon = false,
+      disallowSplittingTop = context.debugOptions.disallowSplittingTopEnabled
+    )
     context.strategy.plan(
       query.queryGraph,
-      InterestingOrderConfig.interestingOrderForPart(query, rhsPart, isHorizon = false),
+      interestingOrderConfig,
       context)
   }
 }

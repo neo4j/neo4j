@@ -353,6 +353,7 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
   case object fabricLogRecords extends CypherDebugOption("fabriclogrecords")
   case object logicalPlanBuilder extends CypherDebugOption("logicalplanbuilder")
   case object rawCardinalities extends CypherDebugOption("rawcardinalities")
+  case object disallowSplittingTop extends CypherDebugOption("disallowsplittingtop")
 
   def values: Set[CypherDebugOption] = Set(
     tostring,
@@ -414,4 +415,5 @@ case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
   val fabricLogRecordsEnabled: Boolean = isEnabled(CypherDebugOption.fabricLogRecords)
   val logicalPlanBuilderEnabled: Boolean = isEnabled(CypherDebugOption.logicalPlanBuilder)
   val rawCardinalitiesEnabled: Boolean = isEnabled(CypherDebugOption.rawCardinalities)
+  val disallowSplittingTopEnabled: Boolean = isEnabled(CypherDebugOption.disallowSplittingTop)
 }
