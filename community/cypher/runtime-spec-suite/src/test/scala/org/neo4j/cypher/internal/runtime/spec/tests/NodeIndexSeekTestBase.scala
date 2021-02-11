@@ -1062,6 +1062,29 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("x").withNoRows().withLocks((EXCLUSIVE, INDEX_ENTRY), (SHARED, LABEL))
   }
 
+  test("should not grab any lock when readOnly = true") {
+    val nodes = given {
+      uniqueIndex("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "Honey")
+    }
+    val propToFind = Random.nextInt(sizeHint)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:Honey(prop = $propToFind)", unique = true)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(propToFind)
+    runtimeResult should beColumns("x").withSingleRow(expected).withLocks()
+  }
+
   test("should exact seek nodes of a locking unique index with a property") {
     val nodes = given {
       uniqueIndex("Honey", "prop")
