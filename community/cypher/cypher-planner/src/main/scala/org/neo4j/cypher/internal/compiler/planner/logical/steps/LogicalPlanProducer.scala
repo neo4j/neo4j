@@ -1223,8 +1223,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planEither(read: LogicalPlan, writePlan: LogicalPlan, context: LogicalPlanningContext): EitherPlan = {
     val solved = solveds.get(read.id).asSinglePlannerQuery ++ solveds.get(writePlan.id).asSinglePlannerQuery
-    val providedOrder = providedOrders.get(read.id).fromLeft
-    annotate(EitherPlan(read, writePlan), solved, providedOrder, context)
+    annotate(EitherPlan(read, writePlan), solved, ProvidedOrder.empty, context)
   }
 
   def planMergeEither(read: LogicalPlan, writePlan: LogicalPlan, context: LogicalPlanningContext): EitherPlan = {
@@ -1253,8 +1252,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       MergeRelationshipPattern(createNodes, createRelationships, lhsGraph.copy(mutatingPatterns = IndexedSeq.empty), onCreate, onMatches)
     }
     val solved = RegularSinglePlannerQuery().amendQueryGraph(_.addMutatingPatterns(solvedRight))
-    val providedOrder = providedOrders.get(read.id).fromLeft
-    annotate(EitherPlan(read, writePlan), solved, providedOrder, context)
+
+    annotate(EitherPlan(read, writePlan), solved, ProvidedOrder.empty, context)
   }
 
   def planMergeCreateNode(inner: LogicalPlan, pattern: CreateNode, context: LogicalPlanningContext): LogicalPlan = {
