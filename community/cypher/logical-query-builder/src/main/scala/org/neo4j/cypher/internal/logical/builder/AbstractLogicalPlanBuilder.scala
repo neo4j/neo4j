@@ -274,6 +274,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
+  def deleteNode(node: String): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => DeleteNode(lp, varFor(node))(_)))
+    self
+  }
+
   def detachDeleteNode(node: String): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => DetachDeleteNode(lp, varFor(node))(_)))
     self

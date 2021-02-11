@@ -274,6 +274,8 @@ object LogicalPlanToPlanBuilderString {
       case RollUpApply(_, _, collectionName, variableToCollect, nullableVariables) =>
         s"""${wrapInQuotations(collectionName)}, ${wrapInQuotations(variableToCollect)}, Set(${wrapInQuotationsAndMkString(nullableVariables)})"""
       case ConditionalApply(_, _, items) => wrapInQuotationsAndMkString(items)
+      case DeleteNode(_, expression) =>
+        wrapInQuotations(expressionStringifier(expression))
     }
     plansWithContent.applyOrElse(logicalPlan, (_: LogicalPlan) => "")
   }
