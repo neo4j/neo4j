@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.CostPerRow
+import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.WorkReduction
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -217,12 +218,10 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       .argument("a").withCardinality(cardinalityLeaves)
       .build()
 
-    // since we only need to produce 500 rows we need only a single batch from both sides
-    val chunks = 1
-    val argCostBatched = Cardinality(BIG_CHUNK_SIZE) * DEFAULT_COST_PER_ROW
+    val argCost = Cardinality(cardinalityLeaves) * DEFAULT_COST_PER_ROW
 
     costFor(plan, QueryGraphSolverInput.empty, builder.getSemanticTable, builder.cardinalities, builder.providedOrders, Batched(SMALL_CHUNK_SIZE, BIG_CHUNK_SIZE)) should
-      equal(argCostBatched + argCostBatched * chunks)
+      equal(argCost + argCost * Math.ceil(cardinalityLeaves / BIG_CHUNK_SIZE))
   }
 
   test("should pick big chunk size if a plan above the cartesian product has a higher cardinality than big chunk size") {
@@ -341,10 +340,32 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val chunks = Math.ceil(executions)
     val lhsEff = chunks * chunkSize
     // And produce approx. this many rows from rhs per execution
-    val rhsEff = (chunks * rhsCard) / chunks
+    val rhsEff = rhsCard
 
     effective.lhs shouldEqual Cardinality(lhsEff)
     effective.rhs shouldEqual Cardinality(rhsEff)
+  }
+
+  test("computing effective cardinality of cartesian should be safe when LHS and RHS cardinality is zero") {
+    val limit = 10
+    val lhsCard = 0.0
+    val rhsCard = 0.0
+    val chunkSize = 4
+    val effective = effectiveCardinalitiesOfCartesian(lhsCard, rhsCard, chunkSize, Some(limit))
+
+    effective.lhs shouldEqual Cardinality(lhsCard)
+    effective.rhs shouldEqual Cardinality(rhsCard)
+  }
+
+  test("computing effective cardinality of cartesian should be safe when limit is zero") {
+    val limit = 0
+    val lhsCard = 10.0
+    val rhsCard = 10.0
+    val chunkSize = 4
+    val effective = effectiveCardinalitiesOfCartesian(lhsCard, rhsCard, chunkSize, Some(limit))
+
+    effective.lhs shouldEqual Cardinality(limit)
+    effective.rhs shouldEqual Cardinality(limit)
   }
 
   test("effective cardinality of nested cartesian products") {
@@ -360,7 +381,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
         .|.allNodeScan("B").withCardinality(cardB)
       .allNodeScan("A").withCardinality(cardA)
 
-    val effective = CardinalityCostModel(Volcano).effectiveCardinalities(plan.build(), WorkReduction.NoReduction, ExecutionModel.VolcanoBatchSize, plan.cardinalities)
+    val effective = CardinalityCostModel.effectiveCardinalities(plan.build(), WorkReduction.NoReduction, ExecutionModel.VolcanoBatchSize, plan.cardinalities)
 
     effective.lhs shouldEqual Cardinality(10)
     effective.rhs shouldEqual Cardinality(100)
@@ -375,9 +396,9 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       .build()
     val executionModel = if (chunkSize == 1) ExecutionModel.Volcano else ExecutionModel.Batched(chunkSize, chunkSize)
     val batchSize = executionModel.selectBatchSize(plan, builder.cardinalities)
-    val workReduction = limit.map(l => WorkReduction(Selectivity(l.toDouble / (lhsCard * rhsCard))))
+    val workReduction = limit.map(l => WorkReduction(Selectivity(Multiplier.of(l.toDouble / (lhsCard * rhsCard)).getOrElse(Multiplier.ZERO).coefficient)))
                              .getOrElse(WorkReduction.NoReduction)
-    CardinalityCostModel(executionModel).effectiveCardinalities(plan, workReduction, batchSize, builder.cardinalities)
+    CardinalityCostModel.effectiveCardinalities(plan, workReduction, batchSize, builder.cardinalities)
   }
 
   test("should count cost for different label checks") {
@@ -455,7 +476,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       val builder = new LogicalPlanBuilder(wholePlan = false)
       val plan = buildPlan(builder)
       val batchSize = executionModel.selectBatchSize(plan, builder.cardinalities)
-      val reduction = CardinalityCostModel(executionModel).childrenWorkReduction(plan, incomingWorkReduction, batchSize, builder.cardinalities)
+      val reduction = CardinalityCostModel.childrenWorkReduction(plan, incomingWorkReduction, batchSize, builder.cardinalities)
       (plan, reduction)
     }
 

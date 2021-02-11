@@ -208,28 +208,32 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
 
   test("Should multiple RHSs of nested cartesian product for batched execution") {
     val batchSize = 4
+    val leafCardinality = 10
+    val numBatchesLHSs = Math.ceil(leafCardinality / batchSize.toDouble)
+
     // GIVEN
     val initialPlan = new LogicalPlanBuilder()
       .produceResults("m")
-      .cartesianProduct().withCardinality(1000)
-      .|.cartesianProduct().withCardinality(100)
-      .|.|.projection("m AS `m`").withCardinality(10)
-      .|.|.allNodeScan("m").withCardinality(10)
-      .|.allNodeScan("n").withCardinality(10)
-      .allNodeScan("o").withCardinality(10)
+      .cartesianProduct().withCardinality(leafCardinality * leafCardinality * leafCardinality)
+      .|.cartesianProduct().withCardinality(leafCardinality * leafCardinality)
+      .|.|.projection("m AS `m`").withCardinality(leafCardinality)
+      .|.|.allNodeScan("m").withCardinality(leafCardinality)
+      .|.allNodeScan("n").withCardinality(leafCardinality)
+      .allNodeScan("o").withCardinality(leafCardinality)
 
     // WHEN
     val (plan, cardinalities) = rewrite(initialPlan, Batched(batchSize, batchSize))
 
     // THEN
+
     val expected = new LogicalPlanBuilder()
       .produceResults("m")
-      .cartesianProduct().withEffectiveCardinality(1000)
-      .|.cartesianProduct().withEffectiveCardinality(300)
-      .|.|.projection("m AS `m`").withEffectiveCardinality(90)
-      .|.|.allNodeScan("m").withEffectiveCardinality(90)
-      .|.allNodeScan("n").withEffectiveCardinality(30)
-      .allNodeScan("o").withEffectiveCardinality(10)
+      .cartesianProduct().withEffectiveCardinality(leafCardinality * leafCardinality * leafCardinality)
+      .|.cartesianProduct().withEffectiveCardinality(leafCardinality * leafCardinality * numBatchesLHSs)
+      .|.|.projection("m AS `m`").withEffectiveCardinality(leafCardinality * numBatchesLHSs * numBatchesLHSs)
+      .|.|.allNodeScan("m").withEffectiveCardinality(leafCardinality * numBatchesLHSs * numBatchesLHSs)
+      .|.allNodeScan("n").withEffectiveCardinality(leafCardinality * numBatchesLHSs)
+      .allNodeScan("o").withEffectiveCardinality(leafCardinality)
 
     val expectedPlan = expected.build()
     val expectedCards = expected.effectiveCardinalities
@@ -237,7 +241,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
-  test("Should multiple RHSs of nested cartesian product under limit for batched execution") {
+  test("Should multiple RHSs of nested cartesian product for volcano execution") {
     // GIVEN
     val initialPlan = new LogicalPlanBuilder()
       .produceResults("m").withCardinality(1000)
@@ -305,7 +309,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     }
 
   private def rewrite(pb: LogicalPlanBuilder, executionModel: ExecutionModel = ExecutionModel.default): (LogicalPlan, EffectiveCardinalities) = {
-    val plan = pb.build().endoRewrite(recordEffectiveOutputCardinality(executionModel, pb.cardinalities, pb.effectiveCardinalities, noAttributes(pb.idGen)))
+    val plan = pb.build().endoRewrite(recordEffectiveOutputCardinality(executionModel, pb.cardinalities, pb.effectiveCardinalities, pb.providedOrders))
     (plan, pb.effectiveCardinalities)
   }
 }
