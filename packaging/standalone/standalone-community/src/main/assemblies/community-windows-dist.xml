@@ -49,12 +49,18 @@
     </fileSet>
     <!-- filter text files -->
     <fileSet>
-      <directory>${project.build.directory}/generated</directory>
+      <directory>${project.parent.basedir}/src/main/distribution/shell-scripts</directory>
       <outputDirectory/>
       <lineEnding>dos</lineEnding>
       <includes>
         <include>**/*.bat</include>
+        <include>**/*.psd1</include>
+        <include>**/*.psm1</include>
+        <include>**/*.ps1</include>
       </includes>
+      <excludes>
+        <exclude>**/*.m4</exclude>
+      </excludes>
       <filtered>true</filtered>
     </fileSet>
     <!-- cypher-shell -->

@@ -75,7 +75,6 @@
                     <extraJvmArguments>-Xmx128m</extraJvmArguments>
                     <platforms>
                         <platform>unix</platform>
-                        <platform>windows</platform>
                     </platforms>
                     <programs>
                         <program>
@@ -87,7 +86,6 @@
                             <id>neo4j-admin</id>
                         </program>
                     </programs>
-                    <windowsScriptTemplate>${basedir}/src/main/appassembler/windows-template</windowsScriptTemplate>
                 </configuration>
             </plugin>
             <plugin>
