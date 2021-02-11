@@ -49,7 +49,6 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SelectionMatcher
 import org.neo4j.cypher.internal.logical.plans.VarExpand
-import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -250,9 +249,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                       MATCH (n1)
                       WITH DISTINCT n1, p LIMIT 10 WHERE rand() < p
                       RETURN n1"""))._2
-    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(plan)
-
-    dedupedPlan should beLike {
+    plan should beLike {
       case
         SelectionMatcher(Seq(
         LessThan(FunctionInvocation(Namespace(List()), FunctionName("rand"), false, Vector()),
@@ -272,9 +269,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                       MATCH (n1)
                       WITH count(n1) AS n, p WHERE rand() < p
                       RETURN n"""))._2
-    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(plan)
-
-    dedupedPlan should beLike {
+    plan should beLike {
       case
         SelectionMatcher(Seq(LessThan(FunctionInvocation(Namespace(List()),FunctionName("rand"),false,Vector()),Variable("p"))),
         Aggregation(

@@ -58,7 +58,10 @@ import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.frontend.phases.ASTRewriter
 import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.ir.PeriodicCommit
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -88,8 +91,10 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.Attribute
 import org.neo4j.cypher.internal.util.devNullLogger
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 import org.neo4j.internal.helpers.collection.Visitable
@@ -152,13 +157,25 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     }
   }
 
+
+  final case object NameDeduplication extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
+    override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
+    override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
+      from
+        .withMaybeQuery(from.maybeQuery.map(removeGeneratedNamesAndParamsOnTree))
+        .withMaybeLogicalPlan(from.maybeLogicalPlan.map(removeGeneratedNamesAndParamsOnTree))
+    }
+    override def postConditions: Set[StepSequencer.Condition] = Set.empty
+  }
+
   def pipeLine(pushdownPropertyReads: Boolean = pushdownPropertyReads,
                innerVariableNamer: InnerVariableNamer = innerVariableNamer,
   ): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     // if you ever want to have parameters in here, fix the map
     parsing(ParsingConfig(innerVariableNamer, literalExtractionStrategy = Never, parameterTypeMapping = Map.empty, useJavaCCParser = cypherCompilerConfig.useJavaCCParser)) andThen
       prepareForCaching andThen
-      planPipeLine(pushdownPropertyReads = pushdownPropertyReads)
+      planPipeLine(pushdownPropertyReads = pushdownPropertyReads) andThen
+      NameDeduplication
   }
 }
 
@@ -373,13 +390,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         rawFailureMessage = s"Plan should use ${tag.runtimeClass.getSimpleName}",
         rawNegatedFailureMessage = s"Plan should not use ${tag.runtimeClass.getSimpleName}")
     }
-  }
-
-  /**
-   * Useful for disambiguiating variables with the same name.
-   */
-  def namespaced(varName: String, positions: Int*): Seq[String] = {
-    positions.map(p => s"`  $varName@$p`")
   }
 
 }

@@ -71,6 +71,7 @@ case class LogicalPlanState(queryText: String,
   override def withObfuscationMetadata(o: ObfuscationMetadata): LogicalPlanState = copy(maybeObfuscationMetadata = Some(o))
 
   def withMaybeLogicalPlan(p: Option[LogicalPlan]): LogicalPlanState = copy(maybeLogicalPlan = p)
+  def withMaybeQuery(q: Option[PlannerQuery]): LogicalPlanState = copy(maybeQuery = q)
   def withNewPlanningAttributes(attributes: PlanningAttributes): LogicalPlanState = copy(planningAttributes = attributes)
 }
 

@@ -104,19 +104,18 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
 
   test("CALL around union query") {
     val query = "CALL { RETURN 1 as x UNION RETURN 2 as x } RETURN 3 as y"
-    val Seq(x1, x2, x3) = namespaced("x", 19, 21, 39)
 
     planFor(query, stripProduceResults = false)._2 should equal(
       new LogicalPlanBuilder()
         .produceResults("y")
         .projection("3 AS y")
-        .distinct(s"$x2 AS $x2")
+        .distinct("x AS x")
         .union()
-        .|.projection(s"$x3 AS $x2")
-        .|.projection(s"2 AS $x3")
+        .|.projection("x AS x")
+        .|.projection("2 AS x")
         .|.argument()
-        .projection(s"$x1 AS $x2")
-        .projection(s"1 AS $x1")
+        .projection("x AS x")
+        .projection("1 AS x")
         .argument()
         .build()
     )
@@ -124,18 +123,17 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
 
   test("CALL around union query - using returned var in outer query") {
     val query = "CALL { RETURN 1 as x UNION RETURN 2 as x } RETURN x"
-    val Seq(x1, x2, x3) = namespaced("x", 19, 21, 39)
 
     planFor(query, stripProduceResults = false)._2 should equal(
       new LogicalPlanBuilder()
-        .produceResults(x2)
-        .distinct(s"$x2 AS $x2")
+        .produceResults("x")
+        .distinct("x AS x")
         .union()
-        .|.projection(s"$x3 AS $x2")
-        .|.projection(s"2 AS $x3")
+        .|.projection("x AS x")
+        .|.projection("2 AS x")
         .|.argument()
-        .projection(s"$x1 AS $x2")
-        .projection(s"1 AS $x1")
+        .projection("x AS x")
+        .projection("1 AS x")
         .argument()
         .build()
     )
@@ -143,21 +141,20 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
 
   test("CALL around union query - using returned var in outer query with MATCH afterwards") {
     val query = "CALL { RETURN 1 as x UNION RETURN 2 as x } MATCH (y) WHERE y.prop = x RETURN y"
-    val Seq(x1, x2, x3) = namespaced("x", 19, 21, 39)
 
     planFor(query, stripProduceResults = false)._2 should equal(
       new LogicalPlanBuilder()
         .produceResults("y")
-        .filter(s"y.prop = $x2")
+        .filter("y.prop = x")
         .apply()
-        .|.allNodeScan("y", x2)
-        .distinct(s"$x2 AS $x2")
+        .|.allNodeScan("y", "x")
+        .distinct("x AS x")
         .union()
-        .|.projection(s"$x3 AS $x2")
-        .|.projection(s"2 AS $x3")
+        .|.projection("x AS x")
+        .|.projection("2 AS x")
         .|.argument()
-        .projection(s"$x1 AS $x2")
-        .projection(s"1 AS $x1")
+        .projection("x AS x")
+        .projection("1 AS x")
         .argument()
         .build()
     )
@@ -165,22 +162,21 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
 
   test("CALL around union query - using returned var in outer query with STUFF afterwards") {
     val query = "CALL { RETURN 1 as x UNION RETURN 2 as x } MATCH (y) WHERE y.prop = x RETURN sum(y.number) AS sum"
-    val Seq(x1, x2, x3) = namespaced("x", 19, 21, 39)
 
     planFor(query, stripProduceResults = false)._2 should equal(
       new LogicalPlanBuilder()
         .produceResults("sum")
         .aggregation(Seq.empty, Seq("sum(y.number) AS sum"))
-        .filter(s"y.prop = $x2")
+        .filter("y.prop = x")
         .apply()
-        .|.allNodeScan("y", x2)
-        .distinct(s"$x2 AS $x2")
+        .|.allNodeScan("y", "x")
+        .distinct("x AS x")
         .union()
-        .|.projection(s"$x3 AS $x2")
-        .|.projection(s"2 AS $x3")
+        .|.projection("x AS x")
+        .|.projection("2 AS x")
         .|.argument()
-        .projection(s"$x1 AS $x2")
-        .projection(s"1 AS $x1")
+        .projection("x AS x")
+        .projection("1 AS x")
         .argument()
         .build()
     )
@@ -226,29 +222,26 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         |}
         |RETURN count(n) AS c, sum""".stripMargin)
 
-    val Seq(x1, x2) = namespaced("x", 7, 130)
-    val Seq(sum1, sum2, sum3) = namespaced("sum", 83, 176, 90)
-
     planFor(query, stripProduceResults = false)._2 should equal(
       new LogicalPlanBuilder()
-        .produceResults("c", sum3)
-        .aggregation(Seq(s"$sum3 AS $sum3"), Seq("count(n) AS c"))
+        .produceResults("c", "sum")
+        .aggregation(Seq("sum AS sum"), Seq("count(n) AS c"))
         .cartesianProduct()
-        .|.distinct(s"$sum3 AS $sum3")
+        .|.distinct("sum AS sum")
         .|.union()
-        .|.|.projection(s"$sum2 AS $sum3")
-        .|.|.aggregation(Seq.empty, Seq(s"sum($x2.number) AS $sum2"))
-        .|.|.filter(s"$x2.prop = i")
+        .|.|.projection("sum AS sum")
+        .|.|.aggregation(Seq.empty, Seq("sum(x.number) AS sum"))
+        .|.|.filter("x.prop = i")
         .|.|.apply()
-        .|.|.|.nodeByLabelScan(x2, "X", IndexOrderNone, "i")
+        .|.|.|.nodeByLabelScan("x", "X", IndexOrderNone, "i")
         .|.|.unwind("range(0, 10) AS i")
         .|.|.argument()
-        .|.projection(s"$sum1 AS $sum3")
-        .|.aggregation(Seq.empty, Seq(s"sum(y.number) AS $sum1"))
+        .|.projection("sum AS sum")
+        .|.aggregation(Seq.empty, Seq("sum(y.number) AS sum"))
         .|.nodeByLabelScan("y", "Y", IndexOrderNone)
-        .expand(s"($x1)-[r]->(n)")
-        .filter(s"$x1.prop = 5")
-        .nodeByLabelScan(x1, "X", IndexOrderNone)
+        .expand("(x)-[r]->(n)")
+        .filter("x.prop = 5")
+        .nodeByLabelScan("x", "X", IndexOrderNone)
         .build()
     )
   }
@@ -256,16 +249,15 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   test("Should treat variables with the same name but different scopes correctly") {
     // Here x and x are two different things
     val query = "MATCH (x) CALL { MATCH (y)-[r]->(x:X) RETURN y } RETURN 5 AS five"
-    val Seq(x1, x2) = namespaced("x", 7, 33)
 
     planFor(query, stripProduceResults = false)._2 should equal(
       new LogicalPlanBuilder()
         .produceResults("five")
         .projection("5 AS five")
         .cartesianProduct()
-        .|.expand(s"($x2)<-[r]-(y)")
-        .|.nodeByLabelScan(x2, "X")
-        .allNodeScan(x1)
+        .|.expand("(x)<-[r]-(y)")
+        .|.nodeByLabelScan("x", "X")
+        .allNodeScan("x")
         .build()
     )
   }
@@ -327,19 +319,17 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         |  WITH y RETURN y AS z
         |} RETURN z""".stripMargin)
 
-    val Seq(z49, z53, z80) = namespaced("z", 49, 53, 80)
-
     planFor(query, stripProduceResults = false)._2 should equal(
       new LogicalPlanBuilder()
-        .produceResults(z53)
+        .produceResults("z")
         .apply()
-        .|.distinct(s"$z53 AS $z53")
+        .|.distinct(s"z AS z")
         .|.union()
-        .|.|.projection(s"$z80 AS $z53")
-        .|.|.projection(s"y AS $z80")
+        .|.|.projection(s"z AS z")
+        .|.|.projection(s"y AS z")
         .|.|.argument("y")
-        .|.projection(s"$z49 AS $z53")
-        .|.projection(s"x AS $z49")
+        .|.projection(s"z AS z")
+        .|.projection(s"x AS z")
         .|.argument("x")
         .projection("2 AS y", "1 AS x")
         .argument()
@@ -365,16 +355,14 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
   test("correlated CALL in a sequence with ambiguous variable names") {
     val query = "WITH 1 AS x CALL { WITH x RETURN x as y } CALL { MATCH (x) RETURN 1 AS z } RETURN y"
 
-    val Seq(x10, x56) = namespaced("x", 10, 56)
-
     planFor(query, stripProduceResults = false)._2 should equal(
       new LogicalPlanBuilder()
         .produceResults("y")
         .cartesianProduct()
         .|.projection("1 AS z")
-        .|.allNodeScan(x56)
-        .projection(s"$x10 AS y")
-        .projection(s"1 AS $x10")
+        .|.allNodeScan("x")
+        .projection(s"x AS y")
+        .projection(s"1 AS x")
         .argument()
         .build()
     )
@@ -447,24 +435,20 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         |RETURN a AS q, b AS a, q AS b
         |""".stripMargin)
 
-    val Seq(a28, a59, a83, a134) = namespaced("a", 28, 59, 83, 134)
-    val Seq(b55, b59, b102, b142) = namespaced("b", 55, 59, 102, 142)
-    val Seq(q10, q126) = namespaced("q", 10, 126)
-
     planFor(query, stripProduceResults = false)._2 should equal {
       new LogicalPlanBuilder()
-        .produceResults(q126, a134, b142)
-        .projection(s"$a59 AS $q126", s"$b59 AS $a134", s"$q10 AS $b142")
+        .produceResults("q", "a", "b")
+        .projection(s"a AS q", s"b AS a", s"q AS b")
         .apply()
-        .|.distinct(s"$a59 AS $a59", s"$b59 AS $b59")
+        .|.distinct(s"a AS a", s"b AS b")
         .|.union()
-        .|.|.projection(s"$a83 AS $a59", s"$b102 AS $b59")
-        .|.|.projection(s"$q10 AS $b102")
-        .|.|.nodeByLabelScan(a83, "B", IndexOrderNone, q10)
-        .|.projection(s"$a28 AS $a59", s"$b55 AS $b59")
-        .|.projection(s"1 AS $b55")
-        .|.nodeByLabelScan(a28, "A", IndexOrderNone)
-        .projection(s"1 AS $q10")
+        .|.|.projection(s"a AS a", s"b AS b")
+        .|.|.projection(s"q AS b")
+        .|.|.nodeByLabelScan("a", "B", IndexOrderNone, "q")
+        .|.projection(s"a AS a", s"b AS b")
+        .|.projection(s"1 AS b")
+        .|.nodeByLabelScan("a", "A", IndexOrderNone)
+        .projection(s"1 AS q")
         .argument()
         .build()
     }

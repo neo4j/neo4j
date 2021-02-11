@@ -46,7 +46,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
           AllNodesScan("b", Set.empty)
         ),
         ShortestPathPattern(
-          Some("  PATH16"),
+          Some("anon_16"),
           PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
           single = true
         )(null)
@@ -80,7 +80,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
           AllNodesScan("b", Set.empty)
         ),
         ShortestPathPattern(
-          Some("  PATH16"),
+          Some("anon_16"),
           PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
           single = false
         )(null)

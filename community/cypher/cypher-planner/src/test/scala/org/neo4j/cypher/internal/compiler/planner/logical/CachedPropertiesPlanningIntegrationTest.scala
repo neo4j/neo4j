@@ -142,10 +142,10 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
           CartesianProduct(
             Selection(Seq(greaterThan(cachedNodePropFromStore("n", "prop1"), literalInt(42))),
               AllNodesScan("n", Set.empty)),
-            Selection(Seq(greaterThan(cachedNodePropFromStore("  m@12", "prop1"), literalInt(42))),
-              AllNodesScan("  m@12", Set.empty))),
-          Map("  m@61" -> varFor("n"), "x" -> varFor("  m@12"))),
-        Map("m.prop1" -> cachedNodeProp("n", "prop1", "  m@61"), "x.prop1" -> cachedNodeProp("  m@12", "prop1", "x"))
+            Selection(Seq(greaterThan(cachedNodePropFromStore("m", "prop1"), literalInt(42))),
+              AllNodesScan("m", Set.empty))),
+          Map("m" -> varFor("n"), "x" -> varFor("m"))),
+        Map("m.prop1" -> cachedNodeProp("n", "prop1", "m"), "x.prop1" -> cachedNodeProp("m", "prop1", "x"))
       )
     )
   }

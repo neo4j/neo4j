@@ -326,15 +326,15 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         Expand(
           Projection(
             NodeIndexSeek(
-              "  n@7",
+              "n",
               LabelToken("Awesome", LabelId(0)),
               Seq(indexedProperty("prop", 0, DoNotGetValue)),
               SingleQueryExpression(literalInt(42)),
               Set.empty,
               IndexOrderNone),
-            Map("m" -> varFor("  n@7"))),
-          "m", SemanticDirection.BOTH, Seq.empty, "  n@63", "r"),
-        Map("n.prop" -> prop("  n@63", "prop"))
+            Map("m" -> varFor("n"))),
+          "m", SemanticDirection.BOTH, Seq.empty, "n", "r"),
+        Map("n.prop" -> prop("n", "prop"))
       )
     )
   }

@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
 import org.neo4j.cypher.internal.compiler.phases.CreatePlannerQuery
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.NameDeduplication
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
@@ -319,7 +320,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       rewriteEqualityToInPredicate andThen
       CNFNormalizer andThen
       collapseMultipleInPredicates andThen
-      CreatePlannerQuery
+      CreatePlannerQuery andThen
+      NameDeduplication
 
   def buildPlannerQuery(query: String,
                         procLookup: Option[QualifiedName => ProcedureSignature] = None,

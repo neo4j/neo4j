@@ -49,7 +49,6 @@ import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
-import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class OrderIDPPlanningIntegrationTest extends OrderPlanningIntegrationTest(QueryGraphSolverWithIDPConnectComponents)
@@ -274,7 +273,6 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
   test("ORDER BY column that isn't referenced in WITH DISTINCT") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH DISTINCT a.name AS name, a ORDER BY a.age RETURN name")._2
-    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(plan)
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderAscending)
     val ageProperty = prop("a", "age")
@@ -284,7 +282,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val projection = Projection(distinct, Map("a.age" -> ageProperty))
     val sort = Sort(projection, Seq(Ascending("a.age")))
 
-    dedupedPlan should equal(sort)
+    plan should equal(sort)
   }
 
   test("ORDER BY previously unprojected AGGREGATING column in WITH and project and return it") {
@@ -317,7 +315,6 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
   test("ORDER BY column that isn't referenced in WITH GROUP BY") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, a, sum(a.age) AS age ORDER BY a.foo RETURN name, age")._2
-    val dedupedPlan = removeGeneratedNamesAndParamsOnTree(plan)
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderAscending)
     val ageProperty = prop("a", "age")
@@ -329,7 +326,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val projection = Projection(aggregation, Map("a.foo" -> fooProperty))
     val sort = Sort(projection, Seq(Ascending("a.foo")))
 
-    dedupedPlan should equal(sort)
+    plan should equal(sort)
   }
 
   test("should use ordered aggregation if there is one grouping column, ordered") {
