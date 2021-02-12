@@ -114,7 +114,7 @@ object IndexSeek {
     val predicates = predicateStr.split(',').map(_.trim)
 
     def createSeek(properties: Seq[IndexedProperty],
-                   valueExpr: QueryExpression[Expression]): IndexSeekLeafPlan =
+                   valueExpr: QueryExpression[Expression]): NodeIndexSeekLeafPlan =
       if (unique) {
         NodeUniqueIndexSeek(node, label, properties, valueExpr, argumentIds, indexOrder)
       } else {

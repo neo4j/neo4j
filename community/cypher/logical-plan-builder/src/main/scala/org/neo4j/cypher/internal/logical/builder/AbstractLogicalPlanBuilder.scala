@@ -93,7 +93,6 @@ import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
-import org.neo4j.cypher.internal.logical.plans.IndexSeekLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
@@ -114,6 +113,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeekLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NonFuseable
 import org.neo4j.cypher.internal.logical.plans.OnMatchApply
 import org.neo4j.cypher.internal.logical.plans.Optional
@@ -759,7 +759,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def multiNodeIndexSeekOperator(seeks: (IMPL => IdGen => NodeIndexLeafPlan)*): IMPL = {
     val planBuilder = (idGen: IdGen) => {
-      MultiNodeIndexSeek(seeks.map(_(this)(idGen).asInstanceOf[IndexSeekLeafPlan]))(idGen)
+      MultiNodeIndexSeek(seeks.map(_(this)(idGen).asInstanceOf[NodeIndexSeekLeafPlan]))(idGen)
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }

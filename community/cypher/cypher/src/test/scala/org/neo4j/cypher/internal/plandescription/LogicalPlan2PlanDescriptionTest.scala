@@ -163,7 +163,6 @@ import org.neo4j.cypher.internal.logical.plans.GrantRoleToUser
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.relationshipIndexSeek
-import org.neo4j.cypher.internal.logical.plans.IndexSeekLeafPlan
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
@@ -186,6 +185,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeekLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NodeKey
 import org.neo4j.cypher.internal.logical.plans.NodePropertyExistence
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
@@ -519,7 +519,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("MultiNodeIndexSeek") {
     assertGood(
-      attach(MultiNodeIndexSeek(Seq(nodeIndexSeek("x:Label(Prop = 10,Foo = 12)", unique = true).asInstanceOf[IndexSeekLeafPlan], nodeIndexSeek("y:Label(Prop = 12)", unique = false).asInstanceOf[IndexSeekLeafPlan])), 230.0),
+      attach(MultiNodeIndexSeek(Seq(nodeIndexSeek("x:Label(Prop = 10,Foo = 12)", unique = true).asInstanceOf[NodeIndexSeekLeafPlan], nodeIndexSeek("y:Label(Prop = 12)", unique = false).asInstanceOf[NodeIndexSeekLeafPlan])), 230.0),
       planDescription(id, "MultiNodeIndexSeek", NoChildren, Seq(details(Seq("UNIQUE x:Label(Prop, Foo) WHERE Prop = 10 AND Foo = 12", "y:Label(Prop) WHERE Prop = 12"))), Set("x", "y"))
     )
   }

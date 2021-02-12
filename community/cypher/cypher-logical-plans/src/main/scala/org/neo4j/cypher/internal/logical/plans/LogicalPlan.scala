@@ -306,7 +306,7 @@ abstract class MultiNodeIndexLeafPlan(idGen: IdGen) extends MultiNodeLogicalLeaf
 
 }
 
-abstract class IndexSeekLeafPlan(idGen: IdGen) extends NodeIndexLeafPlan(idGen) {
+abstract class NodeIndexSeekLeafPlan(idGen: IdGen) extends NodeIndexLeafPlan(idGen) {
 
   def valueExpr: QueryExpression[Expression]
 
@@ -316,7 +316,7 @@ abstract class IndexSeekLeafPlan(idGen: IdGen) extends NodeIndexLeafPlan(idGen) 
 
   def indexOrder: IndexOrder
 
-  override def withMappedProperties(f: IndexedProperty => IndexedProperty): IndexSeekLeafPlan
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeIndexSeekLeafPlan
 }
 
 case object Flattener extends LogicalPlans.Mapper[Seq[LogicalPlan]] {

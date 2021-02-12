@@ -49,7 +49,7 @@ class IndexSeekTest extends CypherFunSuite {
                           properties: Seq[IndexedProperty],
                           valueExpr: QueryExpression[Expression],
                           argumentIds: Set[String],
-                          indexOrder: IndexOrder): Boolean => IndexSeekLeafPlan = { unique =>
+                          indexOrder: IndexOrder): Boolean => NodeIndexSeekLeafPlan = { unique =>
     if (unique) {
       NodeUniqueIndexSeek(idName, label, properties, valueExpr, argumentIds, indexOrder)
     } else {
