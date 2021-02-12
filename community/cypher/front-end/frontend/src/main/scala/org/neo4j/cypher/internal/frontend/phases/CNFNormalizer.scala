@@ -37,7 +37,7 @@ case object CNFNormalizer extends StatementRewriter with StepSequencer.Step with
   override def description: String = "normalize boolean predicates into conjunctive normal form"
 
   override def instance(context: BaseContext): Rewriter = {
-    implicit val monitor = context.monitors.newMonitor[AstRewritingMonitor]()
+    implicit val monitor: AstRewritingMonitor = context.monitors.newMonitor[AstRewritingMonitor]()
     inSequence(
       deMorganRewriter(),
       distributeLawsRewriter(),
