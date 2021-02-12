@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverSetup
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
@@ -71,12 +73,17 @@ class IndexWithProvidedOrderGreedyPlanningIntegrationTest extends IndexWithProvi
 
 abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSolverSetup)
   extends CypherFunSuite
+  with LogicalPlanningIntegrationTestSupport
   with LogicalPlanningTestSupport2
   with PlanMatchHelp {
 
   locally {
     queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
   }
+
+  override def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
+    super.plannerBuilder()
+      .enableConnectComponentsPlanner(queryGraphSolverSetup.useIdpConnectComponents)
 
   case class TestOrder(indexOrder: IndexOrder, cypherToken: String, indexOrderCapability: IndexOrderCapability, sortOrder: String => ColumnOrder)
   private val ASCENDING = TestOrder(IndexOrderAscending, "ASC", ASC, Ascending)
@@ -195,6 +202,60 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           .nodeByLabelScan("n", "Awesome", plannedOrder)
           .build()
       )
+    }
+
+    test(s"$cypherToken-$orderCapability: Should not need to sort after ordered union for Label disjunction") {
+      val query = s"MATCH (m) WHERE m:A OR m:B RETURN m ORDER BY m $cypherToken"
+
+      val plan = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setLabelCardinality("A", 60)
+        .setLabelCardinality("B", 60)
+        .build()
+        .plan(query)
+        .stripProduceResults
+
+      plan should (equal(new LogicalPlanBuilder(wholePlan = false)
+        .orderedDistinct(Seq("m"), "m AS m")
+        .orderedUnion(Seq(sortOrder("m")))
+        .|.nodeByLabelScan("m", "A", plannedOrder)
+        .nodeByLabelScan("m", "B", plannedOrder)
+        .build())
+        or equal(new LogicalPlanBuilder(wholePlan = false)
+        .orderedDistinct(Seq("m"), "m AS m")
+        .orderedUnion(Seq(sortOrder("m")))
+        .|.nodeByLabelScan("m", "B", plannedOrder)
+        .nodeByLabelScan("m", "A", plannedOrder)
+        .build()))
+    }
+
+    test(s"$cypherToken-$orderCapability: Should do a PartialSort after ordered union for Label disjunction") {
+      val query = s"MATCH (m) WHERE m:A OR m:B RETURN m ORDER BY m $cypherToken, m.prop"
+
+      val plan = plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setLabelCardinality("A", 60)
+        .setLabelCardinality("B", 60)
+        .build()
+        .plan(query)
+        .stripProduceResults
+
+      plan should (equal(new LogicalPlanBuilder(wholePlan = false)
+        .partialSort(Seq(sortOrder("m")), Seq(Ascending("m.prop")))
+        .projection("m.prop AS `m.prop`")
+        .orderedDistinct(Seq("m"), "m AS m")
+        .orderedUnion(Seq(sortOrder("m")))
+        .|.nodeByLabelScan("m", "A", plannedOrder)
+        .nodeByLabelScan("m", "B", plannedOrder)
+        .build())
+        or equal(new LogicalPlanBuilder(wholePlan = false)
+        .partialSort(Seq(sortOrder("m")), Seq(Ascending("m.prop")))
+        .projection("m.prop AS `m.prop`")
+        .orderedDistinct(Seq("m"), "m AS m")
+        .orderedUnion(Seq(sortOrder("m")))
+        .|.nodeByLabelScan("m", "B", plannedOrder)
+        .nodeByLabelScan("m", "A", plannedOrder)
+        .build()))
     }
 
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan sort if index does not provide order") {

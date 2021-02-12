@@ -834,6 +834,31 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     }
   }
 
+  test("should traverse tree towards multiple order origins when marking leveraged order") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
+
+      val initialOrder = ProvidedOrder.asc(varFor("x"))
+
+      val leaf1 = fakeLogicalPlanFor(context.planningAttributes, "x", "y")
+      val leaf2 = fakeLogicalPlanFor(context.planningAttributes, "x", "y")
+      val sort1 = lpp.planSort(leaf1, Seq(Ascending("x")), initialOrder.columns, InterestingOrder.empty, context)
+      val sort2 = lpp.planSort(leaf2, Seq(Ascending("x")), initialOrder.columns, InterestingOrder.empty, context)
+      val u = lpp.planOrderedUnionForOrLeaves(sort1, sort2, Seq(Ascending("x")), context)
+
+      // when
+      val result = lpp.planProduceResult(u, Seq("x"), Some(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))))
+
+      // then
+      context.planningAttributes.leveragedOrders.get(result.id) should be(true)
+      context.planningAttributes.leveragedOrders.get(u.id) should be(true)
+      context.planningAttributes.leveragedOrders.get(sort1.id) should be(true)
+      context.planningAttributes.leveragedOrders.get(sort2.id) should be(true)
+      context.planningAttributes.leveragedOrders.get(leaf1.id) should be(false)
+      context.planningAttributes.leveragedOrders.get(leaf2.id) should be(false)
+    }
+  }
+
   test("should retain solved hints and cardinality when planning union for leaf plans") {
     new given().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)

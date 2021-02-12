@@ -64,6 +64,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Null
+import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -85,6 +86,7 @@ import org.neo4j.cypher.internal.ir.MergeRelationshipPattern
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.QueryPagination
@@ -106,10 +108,10 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternDestructor
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
@@ -193,9 +195,10 @@ object ClauseConverters {
       val projection = asQueryProjection(distinct, items).withPagination(queryPagination)
       val requiredOrder = findRequiredOrder(projection, optOrderBy)
 
-      acc.
-        withHorizon(projection).
-        withInterestingOrder(requiredOrder)
+      acc
+        .withHorizon(projection)
+        .withInterestingOrder(requiredOrder)
+        .withPropagatedTailInterestingOrder()
     case _ =>
       throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
   }
@@ -286,6 +289,31 @@ object ClauseConverters {
         Desc(expression, orderProjections)
     }
     RequiredOrderCandidate(columns)
+  }
+
+  /**
+   * Selections can induce an interesting order if there are label disjunctions.
+   */
+  private def interestingOrderCandidatesForSelections(selections: Selections): Seq[InterestingOrderCandidate] = {
+    def variableIfAllEqualHasLabels(expressions: Seq[Expression]): Option[Expression] = {
+      expressions.headOption
+        .collect {
+          case HasLabels(variable, _) => variable
+        }
+        .filter(variable => expressions.tail.forall {
+          case HasLabels(`variable`, _) => true
+          case _ => false
+        })
+    }
+
+    selections.predicates.toSeq.collect {
+      case Predicate(_, Ors(expressions)) =>
+        for {
+          v <- variableIfAllEqualHasLabels(expressions).toSeq
+          // ASC before DESC because it is slightly cheaper
+          indexOrder <- Seq(Asc(_, Map.empty), Desc(_, Map.empty))
+        } yield InterestingOrderCandidate(Seq(indexOrder(v)))
+    }.flatten
   }
 
   private def addSetClauseToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SetClause): PlannerQueryBuilder =
@@ -408,9 +436,10 @@ object ClauseConverters {
 
     val selections = asSelections(clause.where)
 
-    if (clause.optional) {
-      acc.
-        amendQueryGraph { qg => qg.withAddedOptionalMatch(
+    val interestingOrderCandidates = interestingOrderCandidatesForSelections(selections)
+
+    val withMatch = if (clause.optional) {
+      acc.amendQueryGraph { qg => qg.withAddedOptionalMatch(
           // When adding QueryGraphs for optional matches, we always start with a new one.
           // It's either all or nothing per match clause.
           QueryGraph(
@@ -423,14 +452,15 @@ object ClauseConverters {
         }
     } else {
       acc.amendQueryGraph {
-        qg => qg.
-          addSelections(selections).
-          addPatternNodes(patternContent.nodeIds: _*).
-          addPatternRelationships(patternContent.rels).
-          addHints(clause.hints).
-          addShortestPaths(patternContent.shortestPaths: _*)
+        qg => qg
+          .addSelections(selections)
+          .addPatternNodes(patternContent.nodeIds: _*)
+          .addPatternRelationships(patternContent.rels)
+          .addHints(clause.hints)
+          .addShortestPaths(patternContent.shortestPaths: _*)
       }
     }
+    withMatch.withInterestingOrderCandidates(interestingOrderCandidates)
   }
 
   private def addCallSubqueryToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SubQuery): PlannerQueryBuilder = {
@@ -618,8 +648,12 @@ object ClauseConverters {
           && returnItemsOK(ri)
           && noShortestPaths =>
         val selections = asSelections(where)
-        builder.
-          amendQueryGraph(_.addSelections(selections))
+
+        val interestingOrderCandidates = interestingOrderCandidatesForSelections(selections)
+
+        builder
+          .amendQueryGraph(_.addSelections(selections))
+          .withInterestingOrderCandidates(interestingOrderCandidates)
 
       /*
       When encountering a WITH that is an event horizon, we introduce the horizon and start a new empty QueryGraph.
@@ -639,10 +673,11 @@ object ClauseConverters {
 
         val requiredOrder = findRequiredOrder(queryProjection, orderBy)
 
-        builder.
-          withHorizon(queryProjection).
-          withInterestingOrder(requiredOrder).
-          withTail(RegularSinglePlannerQuery(QueryGraph()))
+        builder
+          .withHorizon(queryProjection)
+          .withInterestingOrder(requiredOrder)
+          .withPropagatedTailInterestingOrder()
+          .withTail(RegularSinglePlannerQuery(QueryGraph()))
 
       case _ =>
         throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)

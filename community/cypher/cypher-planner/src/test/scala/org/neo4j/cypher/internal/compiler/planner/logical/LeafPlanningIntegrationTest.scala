@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfigur
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
@@ -703,25 +702,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val alt2 = Distinct(Union(seek1, seek2), Map("n" -> varFor("n")))
 
     plan should (equal(alt1) or equal(alt2))
-  }
-
-  test("should be able to OR together two label scans") {
-    val x = (new given {
-      knownLabels = Set("X", "Y")
-    } getLogicalPlanFor "MATCH (n) WHERE n:X OR n:Y RETURN n")._2
-
-    x should beLike {
-      case Distinct(
-        Union(
-          NodeByLabelScan(
-            "n",
-            LabelName("X"), _, _),
-          NodeByLabelScan(
-            "n",
-            LabelName("Y"), _, _)),
-      _)
-      => ()
-    }
   }
 
   test("should be able to OR together two index range seeks") {

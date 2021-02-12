@@ -62,4 +62,31 @@ class ProvidedOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
     ProvidedOrder.empty.upToExcluding(Set("c")).columns should be(Seq.empty)
   }
+
+  test("should find common prefixes") {
+    val mt = ProvidedOrder.empty
+    val a = ProvidedOrder.asc(varFor("a"))
+    val b = ProvidedOrder.asc(varFor("b"))
+    val ab = a.asc(varFor("b"))
+    val ac = a.asc(varFor("c"))
+    val abc = ab.asc(varFor("c"))
+    val abd = ab.asc(varFor("d"))
+
+    mt.commonPrefixWith(mt) should be(mt)
+    a.commonPrefixWith(mt) should be(mt)
+    mt.commonPrefixWith(a) should be(mt)
+
+    a.commonPrefixWith(a) should be(a)
+    a.commonPrefixWith(b) should be(mt)
+    a.commonPrefixWith(ab) should be(a)
+
+    ab.commonPrefixWith(a) should be(a)
+    ab.commonPrefixWith(ab) should be(ab)
+    ab.commonPrefixWith(abc) should be(ab)
+    ab.commonPrefixWith(ac) should be(a)
+
+    abc.commonPrefixWith(abd) should be(ab)
+    abc.commonPrefixWith(ab) should be(ab)
+    abc.commonPrefixWith(ac) should be(a)
+  }
 }

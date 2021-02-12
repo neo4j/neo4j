@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.util.NonEmptyList.IterableConverter
 import org.neo4j.cypher.internal.util.UnNamedNameGenerator
 
@@ -58,8 +59,21 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
     copy(q = q.withInput(inputVariables))
   }
 
-  def withInterestingOrder(interestingOrder: InterestingOrder): PlannerQueryBuilder =
-    copy(q = q.withTailInterestingOrder(interestingOrder))
+  def withInterestingOrderCandidates(candidates: Seq[InterestingOrderCandidate]): PlannerQueryBuilder = {
+    val existingIO = q.last.interestingOrder
+    val newIO = InterestingOrder(existingIO.requiredOrderCandidate, existingIO.interestingOrderCandidates ++ candidates)
+    copy(q = q.updateTailOrSelf(_.withInterestingOrder(newIO)))
+  }
+
+  def withInterestingOrder(interestingOrder: InterestingOrder): PlannerQueryBuilder = {
+    val existingIO = q.last.interestingOrder
+    val newIO = InterestingOrder(interestingOrder.requiredOrderCandidate, existingIO.interestingOrderCandidates ++ interestingOrder.interestingOrderCandidates)
+    copy(q = q.updateTailOrSelf(_.withInterestingOrder(newIO)))
+  }
+
+  def withPropagatedTailInterestingOrder(): PlannerQueryBuilder = {
+    copy(q = q.withTailInterestingOrder(q.last.interestingOrder))
+  }
 
   private def currentlyExposedSymbols: Set[String] = {
     q.lastQueryHorizon.exposedSymbols(q.lastQueryGraph.allCoveredIds)

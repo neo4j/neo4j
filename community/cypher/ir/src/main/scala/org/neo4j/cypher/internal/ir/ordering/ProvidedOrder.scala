@@ -36,6 +36,7 @@ object ProvidedOrder {
   final case object Self extends OrderOrigin
   final case object Left extends OrderOrigin
   final case object Right extends OrderOrigin
+  final case object Both extends OrderOrigin
 
   def apply(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder = {
     if (columns.isEmpty) NoProvidedOrder
@@ -90,6 +91,11 @@ sealed trait ProvidedOrder {
   def upToExcluding(args: Set[String]): ProvidedOrder
 
   /**
+   * Returns the common prefix between this and another provided order.
+   */
+  def commonPrefixWith(otherOrder: ProvidedOrder): ProvidedOrder
+
+  /**
    * Map the columns with some mapping function
    */
   def mapColumns(f: ColumnOrder => ColumnOrder): ProvidedOrder
@@ -103,6 +109,11 @@ sealed trait ProvidedOrder {
    * The same order columns, but with OrderOrigin = [[Right]]
    */
   def fromRight: ProvidedOrder
+
+  /**
+   * The same order columns, but with OrderOrigin = [[Both]]
+   */
+  def fromBoth: ProvidedOrder
 }
 
 case object NoProvidedOrder extends ProvidedOrder {
@@ -111,9 +122,11 @@ case object NoProvidedOrder extends ProvidedOrder {
   override def orderOrigin: Option[OrderOrigin] = None
   override def followedBy(nextOrder: ProvidedOrder): ProvidedOrder = this
   override def upToExcluding(args: Set[String]): ProvidedOrder = this
+  override def commonPrefixWith(otherOrder: ProvidedOrder): ProvidedOrder = this
   override def mapColumns(f: ColumnOrder => ColumnOrder): ProvidedOrder = this
   override def fromLeft: ProvidedOrder = this
   override def fromRight: ProvidedOrder = this
+  override def fromBoth: ProvidedOrder = this
 }
 
 case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrderOrigin: OrderOrigin) extends ProvidedOrder {
@@ -129,6 +142,7 @@ case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrder
 
   override def fromLeft: NonEmptyProvidedOrder = copy(theOrderOrigin = ProvidedOrder.Left)
   override def fromRight: NonEmptyProvidedOrder = copy(theOrderOrigin = ProvidedOrder.Right)
+  override def fromBoth: ProvidedOrder = copy(theOrderOrigin = ProvidedOrder.Both)
 
   override def mapColumns(f: ColumnOrder => ColumnOrder): NonEmptyProvidedOrder = copy(allColumns = allColumns.map(f))
 
@@ -147,5 +161,12 @@ case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrder
     } else {
       NonEmptyProvidedOrder(NonEmptyList.from(trimmed), theOrderOrigin)
     }
+  }
+
+  override def commonPrefixWith(otherOrder: ProvidedOrder): ProvidedOrder = otherOrder match {
+    case NoProvidedOrder => NoProvidedOrder
+    case other:NonEmptyProvidedOrder =>
+      val newColumns = columns.zip(other.columns).takeWhile { case (a, b) => a == b }.map(_._1)
+      if (newColumns.isEmpty) NoProvidedOrder else copy(allColumns = NonEmptyList.from(newColumns))
   }
 }

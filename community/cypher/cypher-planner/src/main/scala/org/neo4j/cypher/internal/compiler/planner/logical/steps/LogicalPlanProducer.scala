@@ -149,6 +149,7 @@ import org.neo4j.cypher.internal.logical.plans.OnMatchApply
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
+import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -1103,9 +1104,30 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     plan
   }
 
+  def planOrderedUnionForOrLeaves(left: LogicalPlan, right: LogicalPlan, sortedColumns: Seq[ColumnOrder], context: LogicalPlanningContext): LogicalPlan = {
+    val plan = OrderedUnion(left, right, sortedColumns)
+
+    val providedOrder = providedOrders.get(left.id).commonPrefixWith(providedOrders.get(right.id)).fromBoth
+
+    val solved = solveds.get(left.id)
+    solveds.set(plan.id, solved)
+
+    // Even if solveds is broken, it's nice to get the cardinality correct
+    val lhsCardinality = cardinalities(left.id)
+    val rhsCardinality = cardinalities(right.id)
+    cardinalities.set(plan.id, lhsCardinality + rhsCardinality)
+    providedOrders.set(plan.id, providedOrder)
+    plan
+  }
+
   def planDistinctForOrLeaves(left: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val returnAll = left.availableSymbols.map { s => s -> Variable(s)(InputPosition.NONE) }
     annotate(Distinct(left, returnAll.toMap), solveds.get(left.id), providedOrders.get(left.id).fromLeft, context)
+  }
+
+  def planOrderedDistinctForOrLeaves(left: LogicalPlan, orderToLeverage: Seq[Expression], context: LogicalPlanningContext): LogicalPlan = {
+    val returnAll = left.availableSymbols.map { s => s -> Variable(s)(InputPosition.NONE) }
+    annotate(OrderedDistinct(left, returnAll.toMap, orderToLeverage), solveds.get(left.id), providedOrders.get(left.id).fromLeft, context)
   }
 
   def planProjectionForUnionMapping(inner: LogicalPlan, expressions: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
@@ -1572,7 +1594,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   /**
-   * Starting from `lp`, traverse the logical plan backwards until finding the origin of the current provided order.
+   * Starting from `lp`, traverse the logical plan backwards until finding the origin(s) of the current provided order.
    * For each plan on the way, set `leveragedOrder` to `true`.
    *
    * @param lp the plan that leverages a provided order. Must be an already annotated plan.
@@ -1580,13 +1602,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   private def markOrderAsLeveragedBackwardsUntilOrigin(lp: LogicalPlan): Unit = {
     leveragedOrders.set(lp.id, true)
 
-    @tailrec
     def loop(current: LogicalPlan): Unit = {
       leveragedOrders.set(current.id, true)
       val origin = providedOrders.get(current.id).orderOrigin
       origin match {
         case Some(ProvidedOrder.Left) => loop(current.lhs.get)
         case Some(ProvidedOrder.Right) => loop(current.rhs.get)
+        case Some(ProvidedOrder.Both) => loop(current.lhs.get); loop(current.rhs.get)
         case Some(ProvidedOrder.Self) => // done
         case None =>
           AssertMacros.checkOnlyWhenAssertionsAreEnabled(false,
@@ -1597,6 +1619,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     providedOrders.get(lp.id).orderOrigin match {
       case Some(ProvidedOrder.Left) => lp.lhs.foreach(loop)
       case Some(ProvidedOrder.Right) => lp.rhs.foreach(loop)
+      case Some(ProvidedOrder.Both) => lp.lhs.foreach(loop); lp.rhs.foreach(loop)
       case Some(ProvidedOrder.Self) => // If the plan both introduces and leverages the order, we do not want to traverse into the children
       case None =>
         // The plan itself leverages the order, but does not maintain it.

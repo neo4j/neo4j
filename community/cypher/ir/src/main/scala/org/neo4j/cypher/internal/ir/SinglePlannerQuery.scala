@@ -96,6 +96,9 @@ trait SinglePlannerQuery extends PlannerQueryPart {
   def withInterestingOrder(interestingOrder: InterestingOrder): SinglePlannerQuery =
     copy(interestingOrder = interestingOrder)
 
+  /**
+   * Sets an interestingOrder on the last part of this query and also propagates it to previous query parts.
+   */
   def withTailInterestingOrder(interestingOrder: InterestingOrder): SinglePlannerQuery = {
     def f(plannerQuery: SinglePlannerQuery): (SinglePlannerQuery, InterestingOrder) = {
       plannerQuery.tail match {

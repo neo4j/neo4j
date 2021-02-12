@@ -27,9 +27,12 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PartialPredicate.PartialPredicateWrapper
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.ordering
+import org.neo4j.cypher.internal.logical
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
@@ -65,12 +68,32 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
               val predicates = collection.mutable.HashSet[Expression]()
               predicates ++= coveringPredicates(plans.head, context.planningAttributes.solveds)
 
+              // Determines if we can plan OrderedUnion
+              val maybeSortColumn = Option(context.planningAttributes.providedOrders(plans.head.id))
+                // We only support a sorted union if the plans are sorted by a single column.
+                .filter(_.columns.size == 1)
+                // All plans must be ordered by the same thing.
+                .filter(head => plans.tail.map(p => context.planningAttributes.providedOrders(p.id)).forall(_ == head))
+                .flatMap(_.columns.headOption)
+                // The only sort column must be by a variable. Convert to a logical plan ColumnOrder.
+                .collect {
+                  case ordering.ColumnOrder.Asc(v@Variable(varName), _) => (v, logical.plans.Ascending(varName))
+                  case ordering.ColumnOrder.Desc(v@Variable(varName), _) => (v, logical.plans.Descending(varName))
+                }
+
               val singlePlan = plans.reduce[LogicalPlan] {
                 case (p1, p2) =>
                   predicates --= (predicates diff coveringPredicates(p2, context.planningAttributes.solveds).toSet)
-                  producer.planUnionForOrLeaves(p1, p2, context)
+                  maybeSortColumn match {
+                    case Some((_, sortColumn)) => producer.planOrderedUnionForOrLeaves(p1, p2, Seq(sortColumn), context)
+                    case None => producer.planUnionForOrLeaves(p1, p2, context)
+                  }
               }
-              val orPlan = context.logicalPlanProducer.planDistinctForOrLeaves(singlePlan, context)
+
+              val orPlan = maybeSortColumn match {
+                case Some((sortVariable, _)) => context.logicalPlanProducer.planOrderedDistinctForOrLeaves(singlePlan, Seq(sortVariable), context)
+                case None => context.logicalPlanProducer.planDistinctForOrLeaves(singlePlan, context)
+              }
 
               Some(context.logicalPlanProducer.updateSolvedForOr(orPlan, orPredicate, predicates.toSet, context))
           }
