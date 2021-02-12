@@ -26,15 +26,19 @@ import org.opencypher.tools.tck.api.Scenario
 abstract class BaseTCKTests extends BaseFeatureTest {
 
   // these two should be empty on commit!
+  val categoryToRun = ""
   val featureToRun = ""
   val scenarioToRun = ""
 
-  lazy val scenarios: Seq[Scenario] = filterScenarios(BaseFeatureTestHolder.allTckScenarios, featureToRun, scenarioToRun)
+  lazy val scenarios: Seq[Scenario] = filterScenarios(BaseFeatureTestHolder.allTckScenarios, categoryToRun, featureToRun, scenarioToRun)
 
   @Test
   def debugTokensNeedToBeEmpty(): Unit = {
     // besides the obvious reason this test is also here (and not using assert)
     // to ensure that any import optimizer doesn't remove the correct import for fail (used by the commented out methods further down)
+    if (!categoryToRun.equals(""))
+      fail("categoryToRun is only for debugging and should not be committed")
+
     if (!scenarioToRun.equals(""))
       fail("scenarioToRun is only for debugging and should not be committed")
 

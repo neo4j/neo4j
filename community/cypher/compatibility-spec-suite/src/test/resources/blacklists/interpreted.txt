@@ -1,14 +1,33 @@
-Feature "MiscellaneousErrorAcceptance": Scenario "Failing on merging relationship with null property"
-Feature "MiscellaneousErrorAcceptance": Scenario "Failing on merging node with null property"
-Feature "MiscellaneousErrorAcceptance": Scenario "Failing when setting a list of maps as a property"
-Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure that takes no arguments and yields no results"
-Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with explicit arguments that drops all result fields"
-Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT"
-Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT"
-
-// TCK expects error but query is valid
-Feature "SemanticErrorAcceptance": Scenario "Failing when using MATCH after OPTIONAL MATCH"
-
 // TCK needs to be updated, expects wrong error type or message
-Feature "ExpressionAcceptance": Scenario "Fail at runtime when trying to index something which is not a map or list"
-Feature "ListOperations": Scenario "Fail at runtime when trying to index into a list with a list"
+Feature "List1 - Dynamic Element Access": Scenario "Fail at runtime when trying to index into a list with a list"
+Feature "List1 - Dynamic Element Access": Scenario "Fail at compile time when attempting to index with a non-integer into a list"
+
+//Semantics change not yet visible on 4.3 branch
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "8"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "9"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "10"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "11"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "12"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "13"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "14"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "15"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "16"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "17"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "18"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "19"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "20"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "21"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "22"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "23"
+Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a non-boolean literal": Example "24"
+
+//Semantics change not yet visible on 4.3 branch
+Feature "List11 - Create a list from a range": Scenario "Create an empty list if range direction and step direction are inconsistent"
+Feature "List11 - Create a list from a range": Scenario "Create list from `range()` with explicitly given step": Example "10"
+
+//Semantics change not yet visible on 4.3 branch
+Feature "Map4 - Field existence check": Scenario "`exists()` with literal maps": Example "2"
+Feature "Map4 - Field existence check": Scenario "`exists()` with literal maps": Example "3"
+Feature "Map4 - Field existence check": Scenario "`exists()` with literal maps": Example "4"
+Feature "Map4 - Field existence check": Scenario "`exists()` with literal maps": Example "5"
+Feature "Map4 - Field existence check": Scenario "`exists()` with literal maps": Example "6"

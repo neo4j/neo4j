@@ -20,8 +20,13 @@
 package cypher.features
 
 import java.net.URI
+import java.net.URL
 import java.nio.charset.StandardCharsets
+import java.nio.file.FileSystems
+import java.nio.file.Files
 import java.nio.file.NoSuchFileException
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util
 
 import cypher.features.Neo4jAdapter.defaultTestConfig
@@ -33,8 +38,9 @@ import org.opencypher.tools.tck.api.ExpectError
 import org.opencypher.tools.tck.api.Scenario
 
 import scala.collection.JavaConverters.asJavaCollectionConverter
+import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.mutable
-import scala.io.Source
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -63,7 +69,7 @@ object ScenarioTestHelper {
       val executable = new Executable {
         override def execute(): Unit = {
           Try {
-            scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfig, useBolt)).execute()
+            scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfig, useBolt)).run()
           } match {
             case Success(_) =>
               if (!config.experimental) {
@@ -98,8 +104,8 @@ object ScenarioTestHelper {
 
     val expectPassTests: Seq[DynamicTest] = expectPass.map { scenario =>
       val name = scenario.toString()
-      val executable = scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfig, useBolt))
-      DynamicTest.dynamicTest(name, executable)
+      val runnable = scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), dbConfig, useBolt))
+      DynamicTest.dynamicTest(name, () => runnable.run())
     }
     (expectPassTests ++ expectFailTests).asJavaCollection
   }
@@ -132,13 +138,38 @@ object ScenarioTestHelper {
       }
     }
 
-    val uri = new URI("/blacklists/" + blacklistFile)
-    val url = getClass.getResource(uri.getPath)
-    if (url == null) throw new NoSuchFileException(s"Blacklist file not found at: $blacklistFile")
-    val lines = Source.fromFile(url.toURI, StandardCharsets.UTF_8.name()).getLines()
-    val scenarios = lines.filterNot(line => line.startsWith("//") || line.isEmpty).toList // comments in blacklist are being ignored
-    scenarios.foreach(validate)
-    scenarios.map(BlacklistEntry(_))
+    /*
+     * Find blacklist no matter if thy are in the filesystem or in the a jar.
+     * The code get executed from a jar, when the TCK on a public artifact of Neo4j.
+     */
+    val resourcePath = "/blacklists/" + blacklistFile
+    val resourceUrl: URL = getClass.getResource(resourcePath)
+    if (resourceUrl == null) throw new NoSuchFileException(s"Blacklist file not found at: $resourcePath")
+    val resourceUri: URI = resourceUrl.toURI
+    val fs =
+      if ("jar".equalsIgnoreCase(resourceUri.getScheme)) {
+        Some(FileSystems.newFileSystem(resourceUri, new util.HashMap[String, String]))
+      } else None
+
+    try {
+      val blacklistPath: Path = Paths.get(resourceUri)
+      val blacklistPaths = Files.walk(blacklistPath).filter {
+        t: Path => Files.isRegularFile(t)
+      }
+      val blacklistPathsList: List[Path] = blacklistPaths.iterator().asScala.toList
+      if (blacklistPathsList.isEmpty) throw new NoSuchFileException(s"Blacklist file not found at: $resourcePath")
+      val lines = blacklistPathsList.flatMap(f => Files.readAllLines(f, StandardCharsets.UTF_8).asScala.toList)
+
+      val scenarios = lines.filterNot(line => line.startsWith("//") || line.isEmpty) // comments in blacklist are being ignored
+      scenarios.foreach(validate)
+      scenarios.map(BlacklistEntry(_))
+    } finally {
+      try {
+        fs.foreach(_.close())
+      } catch {
+        case _: UnsupportedOperationException => Unit
+      }
+    }
   }
 
   /*
@@ -152,13 +183,18 @@ object ScenarioTestHelper {
     //TODO: Investigate this!
     println("Evaluating scenarios")
     val numberOfScenarios = scenarios.size
-    val blacklist = scenarios.zipWithIndex.flatMap { case (scenario, index) =>
-      val isFailure = Try(scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), defaultTestConfig, useBolt)).execute()).isFailure
+    val denylist = scenarios.zipWithIndex.flatMap { case (scenario, index) =>
+      val isFailure = Try(scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory(), defaultTestConfig, useBolt)).run()).isFailure
       print(s"Processing scenario ${index + 1}/$numberOfScenarios\n")
       Console.out.flush() // to make sure we see progress
-      if (isFailure) Some(scenario.toString) else None
+      if (isFailure) Some(scenarioToString(scenario)) else None
     }
     // Sort the list alphabetically to normalize diffs
-    println(blacklist.distinct.sorted.mkString("\n","\n","\n"))
+    println(denylist.distinct.sorted.mkString("\n","\n","\n"))
   }
+
+  // This is the OpenCypher 1.0.0-M15 + a few months version of Scenario.toString way of formatting, which is used in the denylist
+  def scenarioToString(scenario: Scenario): String =
+    s"""Feature "${scenario.featureName}": Scenario "${scenario.name}"""" + scenario.exampleIndex.map(ix => s""": Example "$ix"""").getOrElse("")
+
 }

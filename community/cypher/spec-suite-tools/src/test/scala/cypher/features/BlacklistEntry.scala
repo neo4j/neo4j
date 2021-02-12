@@ -23,9 +23,11 @@ import org.opencypher.tools.tck.api.Scenario
 
 import scala.util.matching.Regex
 
-case class BlacklistEntry(featureName: Option[String], scenarioName: String, isFlaky: Boolean) {
+case class BlacklistEntry(featureName: Option[String], scenarioName: String, exampleNumberOrName: Option[String], isFlaky: Boolean) {
   def isBlacklisted(scenario: Scenario): Boolean = {
-    scenarioName == scenario.name && (featureName.isEmpty || featureName.get == scenario.featureName)
+    scenarioName == scenario.name &&
+      (featureName.isEmpty || featureName.get == scenario.featureName) &&
+      (exampleNumberOrName.isEmpty || exampleNumberOrName.get == scenario.exampleIndex.map(_.toString).getOrElse(""))
   }
 
   def isFlaky(scenario: Scenario): Boolean  = {
@@ -34,7 +36,8 @@ case class BlacklistEntry(featureName: Option[String], scenarioName: String, isF
 
   override def toString: String = {
     if (featureName.isDefined) {
-      s"""Feature "${featureName.get}": Scenario "$scenarioName""""
+      s"""Feature "${featureName.get}": Scenario "$scenarioName"""" +
+        (if(exampleNumberOrName.isEmpty) "" else s""": Example "${exampleNumberOrName.get}"""")
     } else {
       s"""$scenarioName"""  // legacy version
     }
@@ -42,16 +45,18 @@ case class BlacklistEntry(featureName: Option[String], scenarioName: String, isF
 }
 
 object BlacklistEntry {
-  val entryPattern: Regex = """(\??)Feature "(.*)": Scenario "(.*)"""".r
+  val entryPattern: Regex = """(\??)Feature "(.*)": Scenario "([^"]*)"(: Example "(.*)")?""".r
 
   def apply(line: String): BlacklistEntry = {
     if (line.startsWith("?") || line.startsWith("Feature")) {
       line match {
-        case entryPattern(questionMark, featureName, scenarioName) =>
-          new BlacklistEntry(Some(featureName), scenarioName, isFlaky = questionMark.nonEmpty)
+        case entryPattern(questionMark, featureName, scenarioName, null, null) =>
+          new BlacklistEntry(Some(featureName), scenarioName, None, isFlaky = questionMark.nonEmpty)
+        case entryPattern(questionMark, featureName, scenarioName, _, exampleNumberOrName) =>
+          new BlacklistEntry(Some(featureName), scenarioName, Some(exampleNumberOrName), isFlaky = questionMark.nonEmpty)
         case other => throw new UnsupportedOperationException(s"Could not parse blacklist entry $other")
       }
 
-    } else new BlacklistEntry(None, line, isFlaky = false)
+    } else new BlacklistEntry(None, line, None, isFlaky = false)
   }
 }

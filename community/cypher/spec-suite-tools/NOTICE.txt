@@ -34,7 +34,6 @@ Apache Software License, Version 2.0
   Apache Log4j API
   Apache Log4j Core
   Caffeine cache
-  Gherkin Repackaged Dependencies
   Java Agent for Memory Measurements
   Java Concurrency Tools Core Library
   Jettison
@@ -65,12 +64,16 @@ GNU Lesser General Public License, Version 2.1
   Java Native Access
 
 MIT License
+  Cucumber Expressions
+  Cucumber Tag Expressions
+  Cucumber-JVM: Core
+  Cucumber-JVM: Docstring
+  Cucumber-JVM: Gherkin
+  Cucumber-JVM: Gherkin Vintage
+  Cucumber-JVM: Plugin
+  DataTable
   fastparse_2.12
-  Gherkin
   sourcecode
-
-Unlicense
-  Gherkin Repackaged Dependencies
 
 Dependencies with multiple licenses
 -----------------------------------
@@ -82,8 +85,4 @@ Eclipse Collections API
 Eclipse Collections Main Library
   Eclipse Distribution License - v 1.0
   Eclipse Public License - v 1.0
-
-Gherkin Repackaged Dependencies
-  Apache Software License, Version 2.0
-  Unlicense
 

@@ -27,6 +27,7 @@ import org.opencypher.tools.tck.constants.TCKErrorDetails.DELETED_ENTITY_ACCESS
 import org.opencypher.tools.tck.constants.TCKErrorDetails.DELETE_CONNECTED_NODE
 import org.opencypher.tools.tck.constants.TCKErrorDetails.DIFFERENT_COLUMNS_IN_UNION
 import org.opencypher.tools.tck.constants.TCKErrorDetails.FLOATING_POINT_OVERFLOW
+import org.opencypher.tools.tck.constants.TCKErrorDetails.INTEGER_OVERFLOW
 import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_AGGREGATION
 import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_ARGUMENT_EXPRESSION
 import org.opencypher.tools.tck.constants.TCKErrorDetails.INVALID_ARGUMENT_PASSING_MODE
@@ -58,6 +59,7 @@ import org.opencypher.tools.tck.constants.TCKErrorDetails.PROPERTY_ACCESS_ON_NON
 import org.opencypher.tools.tck.constants.TCKErrorDetails.RELATIONSHIP_UNIQUENESS_VIOLATION
 import org.opencypher.tools.tck.constants.TCKErrorDetails.REQUIRES_DIRECTED_RELATIONSHIP
 import org.opencypher.tools.tck.constants.TCKErrorDetails.UNDEFINED_VARIABLE
+import org.opencypher.tools.tck.constants.TCKErrorDetails.UNEXPECTED_SYNTAX
 import org.opencypher.tools.tck.constants.TCKErrorDetails.UNKNOWN_FUNCTION
 import org.opencypher.tools.tck.constants.TCKErrorDetails.VARIABLE_ALREADY_BOUND
 import org.opencypher.tools.tck.constants.TCKErrorDetails.VARIABLE_TYPE_CONFLICT
@@ -126,6 +128,10 @@ object Neo4jExceptionToExecutionFailed {
       DELETED_ENTITY_ACCESS
     else if (msg.matches("Expected parameter\\(s\\): .+"))
       MISSING_PARAMETER
+    else if (msg.matches("Cannot merge the following ((relationship)|(node)) because of null property value for .+"))
+      MERGE_READ_OWN_WRITES
+    else if (msg.startsWith("Property values can only be of primitive types or arrays thereof"))
+      INVALID_PROPERTY_TYPE
     else
       msg
   }
@@ -177,6 +183,8 @@ object Neo4jExceptionToExecutionFailed {
       INVALID_CLAUSE_COMPOSITION
     else if (msg.matches(semanticError("floating point number is too large")))
       FLOATING_POINT_OVERFLOW
+    else if (msg.matches(semanticError("integer is too large")))
+      INTEGER_OVERFLOW
     else if (msg.matches(semanticError("Argument to exists\\(\\.\\.\\.\\) is not a property or pattern")))
       INVALID_ARGUMENT_EXPRESSION
     else if (msg.startsWith("Invalid input '—':"))
@@ -203,8 +211,6 @@ object Neo4jExceptionToExecutionFailed {
       UNKNOWN_FUNCTION
     else if (msg.matches(semanticError("Invalid input '.+': expected four hexadecimal digits specifying a unicode character")))
       INVALID_UNICODE_LITERAL
-    else if (msg.matches("Cannot merge ((relationship)|(node)) using null property value for .+"))
-      MERGE_READ_OWN_WRITES
     else if (msg.matches(semanticError("Invalid use of aggregating function count\\(\\.\\.\\.\\) in this context")))
       INVALID_AGGREGATION
     else if (msg.matches(semanticError("Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding ((RETURN)|(WITH))")))
@@ -215,8 +221,6 @@ object Neo4jExceptionToExecutionFailed {
       DIFFERENT_COLUMNS_IN_UNION
     else if (msg.matches(semanticError("DELETE doesn't support removing labels from a node. Try REMOVE.")))
       INVALID_DELETE
-    else if (msg.startsWith("Property values can only be of primitive types or arrays thereof"))
-      INVALID_PROPERTY_TYPE
     else if (msg.matches(semanticError("Multiple result columns with the same name are not supported")))
       COLUMN_NAME_CONFLICT
     else if (msg.matches(semanticError("RETURN \\* is not allowed when there are no variables in scope")))
@@ -237,6 +241,8 @@ object Neo4jExceptionToExecutionFailed {
       PROCEDURE_NOT_FOUND
     else if (msg.startsWith("Type mismatch for parameter"))
       INVALID_ARGUMENT_TYPE
+    else if (msg.startsWith("Invalid input"))
+      UNEXPECTED_SYNTAX
     else
       msg
   }
