@@ -48,7 +48,6 @@ trait RewindableExecutionResult {
   protected def planDescription: InternalPlanDescription
   protected def statistics: QueryStatistics
   def notifications: Iterable[Notification]
-  def internalNotifications: Seq[InternalNotification]
 
   def columnAs[T](column: String): Iterator[T] = result.iterator.map(row => row(column).asInstanceOf[T])
   def toList: List[Map[String, AnyRef]] = result.toList
@@ -79,8 +78,7 @@ class RewindableExecutionResultImplementation(val columns: Array[String],
                                               val executionMode: ExecutionMode,
                                               protected val planDescription: InternalPlanDescription,
                                               protected val statistics: QueryStatistics,
-                                              val notifications: Iterable[Notification],
-                                              override val internalNotifications: Seq[InternalNotification]) extends RewindableExecutionResult
+                                              val notifications: Iterable[Notification]) extends RewindableExecutionResult
 
 object RewindableExecutionResult {
 
@@ -95,7 +93,6 @@ object RewindableExecutionResult {
         NormalMode,
         in.getExecutionPlanDescription.asInstanceOf[InternalPlanDescription],
         QueryStatistics(in.getQueryStatistics),
-        Seq.empty,
         Seq.empty)
     } finally in.close()
   }
@@ -163,8 +160,7 @@ object RewindableExecutionResult {
         executionMode,
         planDescription(),
         QueryStatistics(subscriber.queryStatistics()),
-        notifications,
-        internalNotifications)
+        notifications ++ internalNotifications.map(NotificationWrapping.asKernelNotification(None)))
     } finally subscription.cancel()
   }
 
