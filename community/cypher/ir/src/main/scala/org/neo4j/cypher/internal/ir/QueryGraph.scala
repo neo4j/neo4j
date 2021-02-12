@@ -178,6 +178,8 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
 
   def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
 
+  def withHints(hints: Set[Hint]): QueryGraph = copy(hints = hints)
+
   def withPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
     copy(patternRelationships = patterns)
 

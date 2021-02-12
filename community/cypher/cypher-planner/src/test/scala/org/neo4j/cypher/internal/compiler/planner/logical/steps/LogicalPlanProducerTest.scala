@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -55,7 +56,6 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
-import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -844,7 +844,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val leaf2 = fakeLogicalPlanFor(context.planningAttributes, "x", "y")
       val sort1 = lpp.planSort(leaf1, Seq(Ascending("x")), initialOrder.columns, InterestingOrder.empty, context)
       val sort2 = lpp.planSort(leaf2, Seq(Ascending("x")), initialOrder.columns, InterestingOrder.empty, context)
-      val u = lpp.planOrderedUnionForOrLeaves(sort1, sort2, Seq(Ascending("x")), context)
+      val u = lpp.planOrderedUnion(sort1, sort2, List(), Seq(Ascending("x")), context)
 
       // when
       val result = lpp.planProduceResult(u, Seq("x"), Some(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))))
@@ -859,7 +859,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     }
   }
 
-  test("should retain solved hints and cardinality when planning union for leaf plans") {
+  test("should retain solved hints when planning union for leaf plans") {
     new given().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
 
@@ -872,19 +872,20 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val spqLhs = SinglePlannerQuery.empty.amendQueryGraph(qg => qg.copy(hints = qg.hints + hint1 ))
       val spqRhs = SinglePlannerQuery.empty.amendQueryGraph(qg => qg.copy(hints = qg.hints + hint2 ))
 
+      val ors = Ors(Seq(varFor("a"), varFor("b")))(InputPosition.NONE)
+
       solveds.set(lhs.id, spqLhs)
-      context.planningAttributes.cardinalities.set(lhs.id, 10.0)
       context.planningAttributes.providedOrders.set(lhs.id, ProvidedOrder.empty)
 
       solveds.set(rhs.id, spqRhs)
-      context.planningAttributes.cardinalities.set(rhs.id, 20.0)
       context.planningAttributes.providedOrders.set(rhs.id, ProvidedOrder.empty)
 
-      val p1 = lpp.planUnionForOrLeaves(lhs, rhs, context)
+      val p1 = lpp.planUnion(lhs, rhs, List(), context)
+      val p2 = lpp.planDistinctForUnion(p1, context)
+      val p3 = lpp.updateSolvedForOr(p2, ors, Set.empty, context)
 
-      solveds.get(p1.id).allHints shouldBe(Set(hint1, hint2))
-      context.planningAttributes.cardinalities.get(p1.id) shouldBe(Cardinality(30.0))
-      context.planningAttributes.providedOrders.get(p1.id) shouldBe(ProvidedOrder.empty)
+      solveds.get(p3.id).allHints shouldBe(Set(hint1, hint2))
+      context.planningAttributes.providedOrders.get(p3.id) shouldBe(ProvidedOrder.empty)
     }
   }
 }

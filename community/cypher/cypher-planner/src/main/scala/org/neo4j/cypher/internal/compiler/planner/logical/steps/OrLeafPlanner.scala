@@ -85,14 +85,14 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
                 case (p1, p2) =>
                   predicates --= (predicates diff coveringPredicates(p2, context.planningAttributes.solveds).toSet)
                   maybeSortColumn match {
-                    case Some((_, sortColumn)) => producer.planOrderedUnionForOrLeaves(p1, p2, Seq(sortColumn), context)
-                    case None => producer.planUnionForOrLeaves(p1, p2, context)
+                    case Some((_, sortColumn)) => producer.planOrderedUnion(p1, p2, List(), Seq(sortColumn), context)
+                    case None => producer.planUnion(p1, p2, List(), context)
                   }
               }
 
               val orPlan = maybeSortColumn match {
-                case Some((sortVariable, _)) => context.logicalPlanProducer.planOrderedDistinctForOrLeaves(singlePlan, Seq(sortVariable), context)
-                case None => context.logicalPlanProducer.planDistinctForOrLeaves(singlePlan, context)
+                case Some((sortVariable, _)) => context.logicalPlanProducer.planOrderedDistinctForUnion(singlePlan, Seq(sortVariable), context)
+                case None => context.logicalPlanProducer.planDistinctForUnion(singlePlan, context)
               }
 
               Some(context.logicalPlanProducer.updateSolvedForOr(orPlan, orPredicate, predicates.toSet, context))

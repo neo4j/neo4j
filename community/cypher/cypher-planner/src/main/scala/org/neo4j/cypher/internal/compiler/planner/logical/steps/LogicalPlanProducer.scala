@@ -202,8 +202,6 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
 import org.neo4j.exceptions.InternalException
 
-import scala.annotation.tailrec
-
 /*
  * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.
  * No other functionality or logic should live here - this is supposed to be a very simple class that does not need
@@ -1085,51 +1083,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       relTypes, directed, patternRel.length), solved, providedOrders.get(inner.id).fromLeft, context)
   }
 
-  def planUnionForOrLeaves(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    val plan = Union(left, right)
-
-    /* TODO: This is not correct in any way: solveds.get(left.id)
-     LogicalPlan.solved contains a PlannerQuery, but to represent a Union, we'd need a UnionQuery instead
-     Not very important at the moment, but dirty.
-     */
-    val solved = solveds.get(left.id)
-    val solvedWithAllHints = solved.asSinglePlannerQuery.amendQueryGraph(qg => qg.copy(hints = qg.hints ++ solveds.get(right.id).allHints))
-    solveds.set(plan.id, solvedWithAllHints)
-
-    // Even if solveds is broken, it's nice to get the cardinality correct
-    val lhsCardinality = cardinalities(left.id)
-    val rhsCardinality = cardinalities(right.id)
-    cardinalities.set(plan.id, lhsCardinality + rhsCardinality)
-    providedOrders.set(plan.id, ProvidedOrder.empty)
-    plan
-  }
-
-  def planOrderedUnionForOrLeaves(left: LogicalPlan, right: LogicalPlan, sortedColumns: Seq[ColumnOrder], context: LogicalPlanningContext): LogicalPlan = {
-    val plan = OrderedUnion(left, right, sortedColumns)
-
-    val providedOrder = providedOrders.get(left.id).commonPrefixWith(providedOrders.get(right.id)).fromBoth
-
-    val solved = solveds.get(left.id)
-    solveds.set(plan.id, solved)
-
-    // Even if solveds is broken, it's nice to get the cardinality correct
-    val lhsCardinality = cardinalities(left.id)
-    val rhsCardinality = cardinalities(right.id)
-    cardinalities.set(plan.id, lhsCardinality + rhsCardinality)
-    providedOrders.set(plan.id, providedOrder)
-    plan
-  }
-
-  def planDistinctForOrLeaves(left: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    val returnAll = left.availableSymbols.map { s => s -> Variable(s)(InputPosition.NONE) }
-    annotate(Distinct(left, returnAll.toMap), solveds.get(left.id), providedOrders.get(left.id).fromLeft, context)
-  }
-
-  def planOrderedDistinctForOrLeaves(left: LogicalPlan, orderToLeverage: Seq[Expression], context: LogicalPlanningContext): LogicalPlan = {
-    val returnAll = left.availableSymbols.map { s => s -> Variable(s)(InputPosition.NONE) }
-    annotate(OrderedDistinct(left, returnAll.toMap, orderToLeverage), solveds.get(left.id), providedOrders.get(left.id).fromLeft, context)
-  }
-
   def planProjectionForUnionMapping(inner: LogicalPlan, expressions: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
     annotate(Projection(inner, expressions), solveds.get(inner.id), providedOrders.get(inner.id).fromLeft, context)
   }
@@ -1139,7 +1092,19 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solvedRight = solveds.get(right.id).asSinglePlannerQuery
     val solved = UnionQuery(solvedLeft, solvedRight, distinct = false, unionMappings)
 
-    annotate(Union(left, right), solved, ProvidedOrder.empty, context)
+    val plan = Union(left, right)
+    annotate(plan, solved, ProvidedOrder.empty, context)
+  }
+
+  def planOrderedUnion(left: LogicalPlan, right: LogicalPlan, unionMappings: List[UnionMapping], sortedColumns: Seq[ColumnOrder], context: LogicalPlanningContext): LogicalPlan = {
+    val solvedLeft = solveds.get(left.id)
+    val solvedRight = solveds.get(right.id).asSinglePlannerQuery
+    val solved = UnionQuery(solvedLeft, solvedRight, distinct = false, unionMappings)
+
+    val providedOrder = providedOrders.get(left.id).commonPrefixWith(providedOrders.get(right.id)).fromBoth
+
+    val plan = OrderedUnion(left, right, sortedColumns)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planDistinctForUnion(left: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
@@ -1153,6 +1118,20 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       annotate(left.copyPlanWithIdGen(idGen), solved, providedOrders.get(left.id).fromLeft, context)
     } else {
       annotate(Distinct(left, returnAll.toMap), solved, providedOrders.get(left.id).fromLeft, context)
+    }
+  }
+
+  def planOrderedDistinctForUnion(left: LogicalPlan, orderToLeverage: Seq[Expression], context: LogicalPlanningContext): LogicalPlan = {
+    val returnAll = left.availableSymbols.map { s => s -> Variable(s)(InputPosition.NONE) }
+
+    val solved = solveds.get(left.id) match {
+      case u: UnionQuery => markDistinctInUnion(u)
+      case _ => throw new IllegalStateException("Planning a distinct for or union, but no union was planned before.")
+    }
+    if (returnAll.isEmpty) {
+      annotate(left.copyPlanWithIdGen(idGen), solved, providedOrders.get(left.id).fromLeft, context)
+    } else {
+      annotate(OrderedDistinct(left, returnAll.toMap, orderToLeverage), solved, providedOrders.get(left.id).fromLeft, context)
     }
   }
 
@@ -1192,15 +1171,21 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def updateSolvedForOr(orPlan: LogicalPlan, orPredicate: Ors, predicates: Set[Expression], context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(orPlan.id).asSinglePlannerQuery.updateTailOrSelf { that =>
+    val solved = solveds.get(orPlan.id) match {
+      case UnionQuery(part, query, _, _) => query.updateTailOrSelf { that =>
+        /*
+          * We want to report all solved predicates, so we have kept track of what each subplan reports to solve.
+          * There is no need to report the predicates that are inside the OR (exprs),
+          * since we will add the OR itself instead.
+          */
+        val newSelections = Selections.from((predicates -- orPredicate.exprs + orPredicate).toSeq)
+        val newHints = part.allHints ++ query.allHints
 
-      /*
-        * We want to report all solved predicates, so we have kept track of what each subplan reports to solve.
-        * There is no need to report the predicates that are inside the OR (exprs),
-        * since we will add the OR itself instead.
-        */
-      val newSelections = Selections.from((predicates -- orPredicate.exprs + orPredicate).toSeq)
-      that.amendQueryGraph(qg => qg.withSelections(newSelections))
+        that.amendQueryGraph(qg =>
+          qg.withSelections(newSelections)
+            .withHints(newHints)
+        )
+      }
     }
     val cardinality = context.cardinality.apply(solved, context.input, context.semanticTable)
     // Change solved and cardinality
