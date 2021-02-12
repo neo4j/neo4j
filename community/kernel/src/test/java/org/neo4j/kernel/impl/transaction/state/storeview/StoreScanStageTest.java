@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -39,17 +39,16 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan.ExternalUpdatesCheck;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.PropertyAwareEntityStoreScan.CursorEntityIdIterator;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.JobSchedulerExtension;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StubStorageCursors;
-import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -61,21 +60,20 @@ import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@ExtendWith( JobSchedulerExtension.class )
 class StoreScanStageTest
 {
-    private static final int WORKERS = 4;
+    private static final int PARALLELISM = 4;
     private static final int LABEL = 1;
     private static final String KEY = "key";
     private static final int NUMBER_OF_BATCHES = 4;
 
-    private final Config dbConfig = Config.defaults( GraphDatabaseInternalSettings.index_population_workers, WORKERS );
+    private final Config dbConfig = Config.defaults( GraphDatabaseInternalSettings.index_population_workers, PARALLELISM );
     private final Configuration config = new Configuration()
     {
         @Override
         public int maxNumberOfProcessors()
         {
-            return WORKERS + 2; // one for the entity id fetcher and one (in parallelWrite=false case) for the writer
+            return PARALLELISM * 2;
         }
 
         @Override
@@ -84,9 +82,13 @@ class StoreScanStageTest
             return 10;
         }
     };
+    private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
 
-    @Inject
-    private JobScheduler jobScheduler;
+    @AfterEach
+    void tearDown() throws Exception
+    {
+        jobScheduler.close();
+    }
 
     @ValueSource( booleans = {true, false} )
     @ParameterizedTest( name = "parallelWrite={0}" )

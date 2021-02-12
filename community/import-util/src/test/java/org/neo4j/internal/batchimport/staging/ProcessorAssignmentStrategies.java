@@ -60,7 +60,7 @@ public class ProcessorAssignmentStrategies
             {
                 Random random = ThreadLocalRandom.current();
                 int processors = availableProcessor;
-                while ( processors > 0 && anyStepHasMoreCapacity( execution ) )
+                for ( int rounds = 0; rounds < availableProcessor && processors > 0; rounds++ )
                 {
                     for ( Step<?> step : execution.steps() )
                     {
@@ -71,18 +71,6 @@ public class ProcessorAssignmentStrategies
                         }
                     }
                 }
-            }
-
-            private boolean anyStepHasMoreCapacity( StageExecution execution )
-            {
-                for ( Step<?> step : execution.steps() )
-                {
-                    if ( step.processors( 0 ) < step.maxProcessors() )
-                    {
-                        return true;
-                    }
-                }
-                return false;
             }
 
             @Override
