@@ -26,6 +26,10 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 
 /**
  * This operator does a full scan of an index, producing rows for all entries that end with a string value
+ *
+ * Given each found `relationship`, the rows will have the following structure:
+ *
+ *  - `{idName: relationship, leftNode: relationship.startNode, relationship.endNode}`
  */
 case class DirectedRelationshipIndexEndsWithScan(idName: String,
                                                  leftNode: String,

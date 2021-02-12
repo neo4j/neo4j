@@ -26,6 +26,10 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 
 /**
  * For every relationship with the given type and property values, produces rows with that relationship.
+ *
+ * Given each found `relationship`, the rows will have the following structure:
+ *
+ *  - `{idName: relationship, leftNode: relationship.startNode, relationship.endNode}`
  */
 case class DirectedRelationshipIndexSeek(idName: String,
                                          leftNode: String,

@@ -24,7 +24,12 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 
 /**
- * This operator does a full scan of an index, producing one row per entry.
+ * This operator does a full scan of an index, producing two rows per entry.
+ *
+ * Given each found `relationship`, the rows will have the following structure:
+ *
+ *  - `{idName: relationship, leftNode: relationship.startNode, relationship.endNode}`
+ *  - `{idName: relationship, leftNode: relationship.endNode, relationship.startJ0de}`
  */
 case class UndirectedRelationshipIndexScan(idName: String,
                                            leftNode: String,

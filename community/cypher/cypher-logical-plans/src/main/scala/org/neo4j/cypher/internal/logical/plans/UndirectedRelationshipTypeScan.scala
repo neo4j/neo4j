@@ -23,6 +23,14 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 
+/**
+ * Scans the relationship by type and produces two rows for each relationship it finds.
+ *
+ * Given each found `relationship`, the rows will have the following structure:
+ *
+ *  - `{idName: relationship, leftNode: relationship.startNode, relationship.endNode}`
+ *  - `{idName: relationship, leftNode: relationship.endNode, relationship.startJ0de}`
+ */
 case class UndirectedRelationshipTypeScan(idName: String, leftNode: String, relType: RelTypeName, rightNode: String, argumentIds: Set[String])(implicit idGen: IdGen)
   extends RelationshipLogicalLeafPlan(idGen) {
 
