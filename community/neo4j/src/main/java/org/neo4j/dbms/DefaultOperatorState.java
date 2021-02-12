@@ -37,4 +37,10 @@ public enum DefaultOperatorState implements OperatorState
     {
         return description;
     }
+
+    @Override
+    public boolean terminal()
+    {
+        return false;
+    }
 }
