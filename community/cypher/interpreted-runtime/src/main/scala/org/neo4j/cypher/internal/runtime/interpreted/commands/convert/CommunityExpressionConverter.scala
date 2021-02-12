@@ -346,13 +346,13 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
         .RelationshipEndPoints(self.toCommandExpression(id, invocation.arguments.head), start = false)
       case Exists =>
         invocation.arguments.head match {
-          case property: internal.expressions.Property =>
-            val propertyKey = getPropertyKey(property.propertyKey)
-            commands.predicates.PropertyExists(self.toCommandExpression(id, property.map), propertyKey)
           case property: ASTCachedProperty if property.entityType == NODE_TYPE =>
             commands.predicates.CachedNodePropertyExists(self.toCommandExpression(id, property))
           case property: ASTCachedProperty if property.entityType == RELATIONSHIP_TYPE =>
             commands.predicates.CachedRelationshipPropertyExists(self.toCommandExpression(id, property))
+          case property: LogicalProperty =>
+            val propertyKey = getPropertyKey(property.propertyKey)
+            commands.predicates.PropertyExists(self.toCommandExpression(id, property.map), propertyKey)
           case expression: internal.expressions.PatternExpression =>
             self.toCommandPredicate(id, expression)
           case expression: pipes.NestedPipeCollectExpression =>
