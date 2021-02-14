@@ -21,6 +21,7 @@ package org.neo4j.configuration;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.config.Setting;
@@ -44,6 +45,7 @@ import static org.neo4j.configuration.SettingValueParsers.INT;
 import static org.neo4j.configuration.SettingValueParsers.LONG;
 import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
+import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
@@ -656,4 +658,21 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     @Description( "Whether or not to do additional checks for locks when making changes as part of commit. This may be expensive to enable." )
     public static final Setting<Boolean> additional_lock_verification = newBuilder( "unsupported.dbms.extra_lock_verification", BOOL, false ).build();
+
+    // should neo byte buffer pool be used for network stack buffers?
+    @Internal
+    public static Setting<Boolean> neo_network_buffer_pool =
+            newBuilder( "unsupported.dbms.memory.neo_network_buffer_pool", BOOL, false ).build();
+
+    @Internal
+    public static Setting<Duration> neo_byte_buffer_pool_collection_interval_override =
+            newBuilder( "unsupported.dbms.memory.neo_byte_buffer_pool.collection_interval_override", DURATION, null ).build();
+
+    @Internal
+    public static Setting<List<String>> neo_byte_buffer_pool_buckets_override =
+            newBuilder( "unsupported.dbms.memory.neo_byte_buffer_pool.buckets_override", listOf( STRING ), List.of() ).build();
+
+    @Internal
+    public static Setting<Integer> neo_byte_buffer_pool_unpooled_buffer_size_override =
+            newBuilder( "unsupported.dbms.memory.neo_byte_buffer_pool.unpooled_buffer_size_override", INT, null ).build();
 }

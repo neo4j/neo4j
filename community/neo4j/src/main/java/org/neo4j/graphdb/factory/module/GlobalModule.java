@@ -22,6 +22,8 @@ package org.neo4j.graphdb.factory.module;
 import java.util.function.Supplier;
 
 import org.neo4j.annotations.api.IgnoreApiCheck;
+import org.neo4j.buffer.CentralBufferMangerHolder;
+import org.neo4j.buffer.NettyMemoryManagerWrapper;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -34,6 +36,8 @@ import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.internal.collector.RecentQueryBuffer;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
+import org.neo4j.io.bufferpool.impl.NeoByteBufferPool;
+import org.neo4j.io.bufferpool.impl.NeoBufferPoolConfigOverride;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
@@ -79,6 +83,7 @@ import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.LogConfig;
 import org.neo4j.logging.log4j.Neo4jLoggerContext;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
@@ -143,6 +148,7 @@ public class GlobalModule
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final SystemGraphComponents systemGraphComponents;
+    private final CentralBufferMangerHolder centralBufferMangerHolder;
 
     /**
      * @param globalConfig configuration affecting global aspects of the system.
@@ -180,6 +186,8 @@ public class GlobalModule
 
         JobScheduler createdOrResolvedScheduler = tryResolveOrCreate( JobScheduler.class, this::createJobScheduler );
         jobScheduler = globalLife.add( globalDependencies.satisfyDependency( createdOrResolvedScheduler ) );
+
+        centralBufferMangerHolder = crateCentralBufferManger();
 
         fileLockerService = createFileLockerService();
         Locker storeLocker = fileLockerService.createStoreLocker( fileSystem, neo4jLayout );
@@ -406,6 +414,25 @@ public class GlobalModule
         }
     }
 
+    private CentralBufferMangerHolder crateCentralBufferManger()
+    {
+        // since network buffers are currently the only use of the central byte buffer manager ...
+        if ( !globalConfig.get( GraphDatabaseInternalSettings.neo_network_buffer_pool ) )
+        {
+            return CentralBufferMangerHolder.EMPTY;
+        }
+        var configOverride = new NeoBufferPoolConfigOverride(
+                globalConfig.get( GraphDatabaseInternalSettings.neo_byte_buffer_pool_collection_interval_override ),
+                globalConfig.get( GraphDatabaseInternalSettings.neo_byte_buffer_pool_unpooled_buffer_size_override ),
+                globalConfig.get( GraphDatabaseInternalSettings.neo_byte_buffer_pool_buckets_override )
+        );
+
+        var bufferPool = new NeoByteBufferPool( configOverride, EmptyMemoryTracker.INSTANCE, jobScheduler );
+        globalLife.add( bufferPool );
+        var nettyAllocator = new NettyMemoryManagerWrapper( bufferPool );
+        return new CentralBufferMangerHolder( nettyAllocator, bufferPool );
+    }
+
     public FileWatcher getFileWatcher()
     {
         return fileSystemWatcher.getFileWatcher();
@@ -539,5 +566,10 @@ public class GlobalModule
     public SystemGraphComponents getSystemGraphComponents()
     {
         return systemGraphComponents;
+    }
+
+    public CentralBufferMangerHolder getCentralBufferMangerHolder()
+    {
+        return centralBufferMangerHolder;
     }
 }

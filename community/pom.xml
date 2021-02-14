@@ -78,6 +78,7 @@
     <module>layout</module>
     <module>push-to-cloud</module>
     <module>fabric</module>
+    <module>buffers</module>
   </modules>
 
   <licenses>

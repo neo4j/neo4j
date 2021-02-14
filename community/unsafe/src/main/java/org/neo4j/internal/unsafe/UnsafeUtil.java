@@ -64,7 +64,14 @@ public final class UnsafeUtil
      * and verify that our code does not assume that memory is clean when allocated.
      */
     private static final boolean DIRTY_MEMORY = flag( UnsafeUtil.class, "DIRTY_MEMORY", false );
-    private static final boolean CHECK_NATIVE_ACCESS = flag( UnsafeUtil.class, "CHECK_NATIVE_ACCESS", false );
+    private static final boolean CHECK_NATIVE_ACCESS = false;
+    /**
+     * Invoking unsafe entails some overhead, so using {@link #setMemory} for very small buffers
+     * is actually significantly slower than looping over the buffer bytes and setting them to the initial value.
+     * Probably thanks to the automatic vectorization support in Open JDK 9+, benchmarks show that the looping
+     * variant is doing better for buffers up to around 100 bytes long, so the value 64 is actually quite conservative.
+     */
+    private static final int ZERO_BUFFER_WITH_UNSAFE_THRESHOLD = 64;
     // this allows us to temporarily disable the checking, for performance:
     private static boolean nativeAccessCheckEnabled = true;
 
@@ -83,6 +90,7 @@ public final class UnsafeUtil
     private static final long directByteBufferLimitOffset;
     private static final long directByteBufferCapacityOffset;
     private static final long directByteBufferAddressOffset;
+    private static final long directByteBufferAttachmentOffset;
 
     private static final int pageSize;
 
@@ -102,6 +110,7 @@ public final class UnsafeUtil
         long dbbLimitOffset = 0;
         long dbbCapacityOffset = 0;
         long dbbAddressOffset = 0;
+        long dbbAttachmentOffset = 0;
         int ps = 4096;
         try
         {
@@ -112,6 +121,7 @@ public final class UnsafeUtil
             dbbLimitOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "limit" ) );
             dbbCapacityOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "capacity" ) );
             dbbAddressOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "address" ) );
+            dbbAttachmentOffset = unsafe.objectFieldOffset( dbbClass.getDeclaredField( "att" ) );
             ps = unsafe.pageSize();
         }
         catch ( Throwable e )
@@ -137,6 +147,7 @@ public final class UnsafeUtil
         directByteBufferLimitOffset = dbbLimitOffset;
         directByteBufferCapacityOffset = dbbCapacityOffset;
         directByteBufferAddressOffset = dbbAddressOffset;
+        directByteBufferAttachmentOffset = dbbAttachmentOffset;
         pageSize = ps;
 
         // See java.nio.Bits.unaligned() and its uses.
@@ -386,8 +397,22 @@ public final class UnsafeUtil
         try
         {
             long addr = allocateMemory( size, memoryTracker );
-            setMemory( addr, size, (byte) 0 );
-            return newDirectByteBuffer( addr, size );
+
+            ByteBuffer buffer = newDirectByteBuffer( addr, size );
+            if ( size > ZERO_BUFFER_WITH_UNSAFE_THRESHOLD )
+            {
+                setMemory( addr, size, (byte) 0 );
+            }
+            else
+            {
+                for ( int i = 0; i < size; i++ )
+                {
+                    buffer.put( (byte) 0 );
+                }
+
+                buffer.clear();
+            }
+            return buffer;
         }
         catch ( Exception e )
         {
@@ -417,6 +442,23 @@ public final class UnsafeUtil
 
         // Free the buffer.
         free( addr, bytes, memoryTracker );
+    }
+
+    /**
+     * Unwraps an original buffer from a suspected buffer slice.
+     * If the submitted buffer is not a slice, {@code null} will be returned.
+     * <p>
+     * This method works only with direct buffers and an exception
+     * will be thrown if a heap buffer is submitted.
+     */
+    public static ByteBuffer getOriginalBufferFromSlice( ByteBuffer byteBuffer )
+    {
+        if ( !byteBuffer.isDirect() )
+        {
+            throw new IllegalArgumentException( "The submitted buffer is not a direct one:" + byteBuffer );
+        }
+        Object att = unsafe.getObject( byteBuffer, directByteBufferAttachmentOffset );
+        return (ByteBuffer) att;
     }
 
     /**

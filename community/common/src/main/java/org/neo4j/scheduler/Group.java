@@ -76,6 +76,8 @@ public enum Group
     /** Ensures DatabaseId lookup is not run from an outer transaction that will be tied to a database */
     DATABASE_ID_REPOSITORY( "DatabaseIdRepository" ),
 
+    BUFFER_POOL_MAINTENANCE( "BufferPoolMaintenance" ),
+
     // CYPHER.
     /** Thread pool for parallel Cypher query execution. */
     CYPHER_WORKER( "CypherWorker", ExecutorServiceFactory.workStealing() ),
