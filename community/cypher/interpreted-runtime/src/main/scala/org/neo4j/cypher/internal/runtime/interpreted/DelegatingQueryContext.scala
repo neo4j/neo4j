@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.net.URL
-
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
@@ -40,7 +38,6 @@ import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Path
-import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
@@ -54,6 +51,7 @@ import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.Write
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
@@ -70,6 +68,7 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
+import java.net.URL
 import scala.collection.Iterator
 
 abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
@@ -357,7 +356,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                  allowed: Array[String]): UserDefinedAggregator =
     singleDbHit(inner.aggregateFunction(id, allowed))
 
-  override def detachDeleteNode(node: Long): Int = manyDbHits(inner.detachDeleteNode(node))
+  override def detachDeleteNode(node: Long): Int = manyDbHits(1 + inner.detachDeleteNode(node))
 
   override def assertSchemaWritesAllowed(): Unit = inner.assertSchemaWritesAllowed()
 

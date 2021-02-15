@@ -257,6 +257,11 @@ final class ProfilingPipeQueryContext(inner: QueryContext)
     inner
   }
 
+  override protected def manyDbHits(count: Int): Int = {
+    increment(count)
+    count
+  }
+
   abstract class ProfilingCursor(inner: Cursor) extends DefaultCloseListenable with Cursor {
     override def next(): Boolean = {
       increment()
