@@ -35,28 +35,42 @@ import org.neo4j.values.AnyValue
 case class SchemaReadRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber, columnNames: Array[String], result: List[Map[String, AnyValue]])
   extends EmptyQuerySubscription(subscriber) with RuntimeResult {
 
+  private var streamPosition = 0;
+
   override def fieldNames(): Array[String] = columnNames
 
   override def request(numberOfRecords: Long): Unit = {
     subscriber.onResult(columnNames.length)
 
-    for (record <- result) {
+    val records = result.slice(streamPosition, Math.min(streamPosition + numberOfRecords, result.size).toInt)
+    streamPosition += records.size
+    for (record <- records) {
       subscriber.onRecord()
       for (i <- columnNames.indices) {
         subscriber.onField(i, record(columnNames(i)))
       }
       subscriber.onRecordCompleted()
     }
-    subscriber.onResultCompleted(queryStatistics())
+    if (streamPosition == result.size) subscriber.onResultCompleted(queryStatistics())
   }
 
   override def queryStatistics(): QueryStatistics = ctx.getOptStatistics.getOrElse(QueryStatistics())
 
   override def totalAllocatedMemory(): Long = OptionalMemoryTracker.ALLOCATIONS_NOT_TRACKED
 
-  override def consumptionState: RuntimeResult.ConsumptionState = ConsumptionState.EXHAUSTED
+  override def consumptionState: RuntimeResult.ConsumptionState = {
+    if (streamPosition == 0) {
+      ConsumptionState.NOT_STARTED
+    } else if (streamPosition < result.size) {
+      ConsumptionState.HAS_MORE
+    } else {
+      ConsumptionState.EXHAUSTED
+    }
+  }
 
   override def close(): Unit = {}
 
   override def queryProfile(): QueryProfile = QueryProfile.NONE
+
+  override def await(): Boolean = consumptionState == ConsumptionState.HAS_MORE
 }
