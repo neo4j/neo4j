@@ -1102,6 +1102,32 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite {
     ))
   }
 
+  test("UNION with incomplete first part") {
+    val query = "MATCH (a) WITH a UNION MATCH (a) RETURN a"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(
+      "Query cannot conclude with WITH (must be RETURN or an update clause)"
+    ))
+  }
+
+  test("UNION with incomplete second part") {
+    val query = "MATCH (a) RETURN a UNION MATCH (a) WITH a"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors.map(_.msg) should equal(List(
+      "Query cannot conclude with WITH (must be RETURN or an update clause)"
+    ))
+  }
+
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
     InitialState(query, None, NoPlannerName, initialFields)
 }
