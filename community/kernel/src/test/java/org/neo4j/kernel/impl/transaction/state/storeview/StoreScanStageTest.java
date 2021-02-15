@@ -54,7 +54,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.collections.impl.block.factory.primitive.IntPredicates.alwaysTrue;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
-import static org.neo4j.internal.batchimport.staging.ProcessorAssignmentStrategies.eagerRandomSaturation;
+import static org.neo4j.internal.batchimport.staging.ProcessorAssignmentStrategies.saturateSpecificStep;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
@@ -62,18 +62,18 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 class StoreScanStageTest
 {
-    private static final int PARALLELISM = 4;
+    private static final int WORKERS = 8;
     private static final int LABEL = 1;
     private static final String KEY = "key";
     private static final int NUMBER_OF_BATCHES = 4;
 
-    private final Config dbConfig = Config.defaults( GraphDatabaseInternalSettings.index_population_workers, PARALLELISM );
+    private final Config dbConfig = Config.defaults( GraphDatabaseInternalSettings.index_population_workers, WORKERS );
     private final Configuration config = new Configuration()
     {
         @Override
         public int maxNumberOfProcessors()
         {
-            return PARALLELISM * 2;
+            return WORKERS;
         }
 
         @Override
@@ -224,7 +224,7 @@ class StoreScanStageTest
 
     private void runScan( StoreScanStage<RuntimeException,StorageNodeCursor> scan )
     {
-        superviseDynamicExecution( eagerRandomSaturation( config.maxNumberOfProcessors() ), scan );
+        superviseDynamicExecution( saturateSpecificStep( 1 ), scan );
     }
 
     private StubStorageCursors someData()

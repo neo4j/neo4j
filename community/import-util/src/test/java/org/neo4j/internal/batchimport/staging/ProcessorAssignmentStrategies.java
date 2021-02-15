@@ -121,6 +121,33 @@ public class ProcessorAssignmentStrategies
         };
     }
 
+    public static ExecutionMonitor saturateSpecificStep( int stepIndex )
+    {
+        return new AbstractAssigner( Clocks.systemClock(), 100, MILLISECONDS )
+        {
+            @Override
+            public void start( StageExecution execution )
+            {
+                int index = 0;
+                for ( Step<?> step : execution.steps() )
+                {
+                    if ( stepIndex == index )
+                    {
+                        step.processors( step.maxProcessors() );
+                        break;
+                    }
+                    index++;
+                }
+                registerProcessorCount( execution );
+            }
+
+            @Override
+            public void check( StageExecution execution )
+            {
+            }
+        };
+    }
+
     private abstract static class AbstractAssigner extends ExecutionMonitor.Adapter
     {
         private final Map<String,Map<String,Integer>> processors = new HashMap<>();
