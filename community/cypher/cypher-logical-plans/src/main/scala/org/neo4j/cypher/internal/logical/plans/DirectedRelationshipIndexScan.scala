@@ -26,13 +26,12 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 /**
  * This operator does a full scan of an index, producing one row per entry.
  *
- * Given each found `relationship`, the rows will have the following structure:
  *
- *  - `{idName: relationship, leftNode: relationship.startNode, relationship.endNode}`
+ *  - `{idName: relationship, startNode: relationship.startNode, endNode: relationship.endNode}`
  */
 case class DirectedRelationshipIndexScan(idName: String,
-                                         leftNode: String,
-                                         rightNode: String,
+                                         startNode: String,
+                                         endNode: String,
                                          typeToken: RelationshipTypeToken,
                                          properties: Seq[IndexedProperty],
                                          argumentIds: Set[String],
@@ -51,4 +50,8 @@ case class DirectedRelationshipIndexScan(idName: String,
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): DirectedRelationshipIndexScan =
     DirectedRelationshipIndexScan(idName, leftNode, rightNode, typeToken, properties.map(f), argumentIds, indexOrder)(SameId(this.id))
+
+  override def leftNode: String = startNode
+
+  override def rightNode: String = endNode
 }

@@ -29,11 +29,11 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  *
  * Given each found `relationship`, the rows will have the following structure:
  *
- *  - `{idName: relationship, leftNode: relationship.startNode, relationship.endNode}`
+ *  - `{idName: relationship, startNode: relationship.startNode, endNode: relationship.endNode}`
  */
 case class DirectedRelationshipIndexSeek(idName: String,
-                                         leftNode: String,
-                                         rightNode: String,
+                                         startNode: String,
+                                         endNode: String,
                                          typeToken: RelationshipTypeToken,
                                          properties: Seq[IndexedProperty],
                                          valueExpr: QueryExpression[Expression],
@@ -52,4 +52,8 @@ case class DirectedRelationshipIndexSeek(idName: String,
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty):  DirectedRelationshipIndexSeek =
      DirectedRelationshipIndexSeek(idName, leftNode, rightNode, typeToken, properties.map(f), valueExpr, argumentIds, indexOrder)(SameId(this.id))
+
+  override def leftNode: String = startNode
+
+  override def rightNode: String = endNode
 }

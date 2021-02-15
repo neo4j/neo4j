@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  *
  * Given each found `relationship`, the rows will have the following structure:
  *
- *  - `{idName: relationship, leftNode: relationship.startNode, relationship.endNode}`
+ *  - `{idName: relationship, startNode: relationship.startNode, endNode: relationship.endNode}`
  */
-case class DirectedRelationshipTypeScan(idName: String, leftNode: String, relType: RelTypeName, rightNode: String, argumentIds: Set[String])(implicit idGen: IdGen)
+case class DirectedRelationshipTypeScan(idName: String, startNode: String, relType: RelTypeName, endNode: String, argumentIds: Set[String])(implicit idGen: IdGen)
   extends RelationshipLogicalLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds ++ Set(idName, leftNode, rightNode)
@@ -38,4 +38,8 @@ case class DirectedRelationshipTypeScan(idName: String, leftNode: String, relTyp
   override def usedVariables: Set[String] = Set.empty
 
   override def withoutArgumentIds(argsToExclude: Set[String]): DirectedRelationshipTypeScan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def leftNode: String = startNode
+
+  override def rightNode: String = endNode
 }
