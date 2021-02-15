@@ -58,6 +58,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     private StorageNodeCursor securityStoreCursor;
     private long currentAddedInTx;
     private long single;
+    private boolean isSingle;
     private AccessMode accessMode;
 
     DefaultNodeCursor( CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor, StorageNodeCursor securityStoreCursor )
@@ -71,7 +72,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     {
         storeCursor.scan();
         this.read = read;
-        this.single = NO_ID;
+        this.isSingle = false;
         this.currentAddedInTx = NO_ID;
         this.checkHasChanges = true;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
@@ -84,7 +85,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     boolean scanBatch( Read read, AllNodeScan scan, int sizeHint, LongIterator addedNodes, boolean hasChanges )
     {
         this.read = read;
-        this.single = NO_ID;
+        this.isSingle = false;
         this.currentAddedInTx = NO_ID;
         this.checkHasChanges = false;
         this.hasChanges = hasChanges;
@@ -98,6 +99,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
         storeCursor.single( reference );
         this.read = read;
         this.single = reference;
+        this.isSingle = true;
         this.currentAddedInTx = NO_ID;
         this.checkHasChanges = true;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
@@ -388,7 +390,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
         checkHasChanges = false;
         if ( hasChanges = read.hasTxStateWithChanges() )
         {
-            if ( single != NO_ID )
+            if ( this.isSingle )
             {
                 addedNodes = read.txState().nodeIsAddedInThisTx( single ) ?
                              PrimitiveLongCollections.single( single ) : ImmutableEmptyLongIterator.INSTANCE;
