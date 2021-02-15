@@ -83,7 +83,15 @@ abstract class BootloaderCommand
         @Override
         public int handleExecutionException( Exception exception, CommandLine commandLine, CommandLine.ParseResult parseResult )
         {
-            exception.printStackTrace( ctx.err ); // Is there a case where we do not want do print the stack-trace? It will be hard to debug failures if not..
+            if ( commandLine.getCommand() instanceof BaseCommand && !((BaseCommand) commandLine.getCommand()).verbose )
+            {
+                ctx.err.println( exception.getMessage() );
+                ctx.err.println( "Run with '--verbose' for a more detailed error message.");
+            }
+            else
+            {
+                exception.printStackTrace( ctx.err );
+            }
             if ( exception instanceof BootFailureException )
             {
                 BootFailureException failure = (BootFailureException) exception;

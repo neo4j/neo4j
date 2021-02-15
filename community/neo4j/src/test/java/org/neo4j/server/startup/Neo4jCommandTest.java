@@ -181,6 +181,20 @@ class Neo4jCommandTest
         }
 
         @Test
+        void shouldOnlyPrintStacktraceOnVerbose()
+        {
+            addConf( GraphDatabaseSettings.read_only, "foo" );
+            assertThat( execute( "start" ) ).isEqualTo( 1 );
+            assertThat( err.toString() ).contains( "Run with '--verbose' for a more detailed error message." );
+            assertThat( err.toString() ).doesNotContain( "Exception" );
+
+            clearOutAndErr();
+            assertThat( execute( List.of( "start", "--verbose" ), Map.of() ) ).isEqualTo( 1 );
+            assertThat( err.toString() ).doesNotContain( "Run with '--verbose' for a more detailed error message." );
+            assertThat( err.toString() ).contains( "BootFailureException" );
+        }
+
+        @Test
         void shouldBeAbleToPassCommandExpansion()
         {
             if ( IS_OS_WINDOWS )
@@ -468,7 +482,7 @@ class Neo4jCommandTest
             {
                 Files.setPosixFilePermissions( pidFile, Sets.mutable.withAll( origPermissions ).without( PosixFilePermission.OWNER_READ ) );
                 assertThat( execute( "status" ) ).isEqualTo( 1 );
-                assertThat( err.toString() ).contains( "AccessDeniedException" );
+                assertThat( err.toString() ).contains( "Access denied" );
             }
             finally
             {

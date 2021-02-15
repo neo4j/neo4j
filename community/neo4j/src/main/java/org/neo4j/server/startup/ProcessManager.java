@@ -22,6 +22,7 @@ package org.neo4j.server.startup;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -239,6 +240,10 @@ class ProcessManager
                     deletePid();
                     return null;
                 }
+            }
+            catch ( AccessDeniedException e )
+            {
+                throw new BootFailureException( "Access denied reading pid file " + pidFilePath, 1 );
             }
             catch ( IOException e )
             {
