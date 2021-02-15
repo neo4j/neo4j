@@ -21,11 +21,17 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
+import org.neo4j.cypher.internal.expressions.NilPathStep
+import org.neo4j.cypher.internal.expressions.NodePathStep
+import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.interpreted.LegacyDbHitsTestBase
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
 
@@ -808,6 +814,186 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     setPropertyProfile.dbHits() shouldBe 3 * costOfPropertyToken /*LazyPropertyKey: look up - create property token - look up*/ + sizeHint * costOfProperty
     produceResultProfile.rows() shouldBe sizeHint
     produceResultProfile.dbHits() shouldBe sizeHint * (costOfProperty + costOfProperty)
+  }
+
+  test("should profile db hits of delete node") {
+    // given
+    val nodeCount = sizeHint
+    nodeGraph(nodeCount, "Label", "OtherLabel")
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .deleteNode("n")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    val produceResultsProfile = queryProfile.operatorProfile(0)
+    produceResultsProfile.dbHits() shouldBe 0
+
+    val deleteNodeResultsProfile = queryProfile.operatorProfile(1)
+    deleteNodeResultsProfile.dbHits() shouldBe nodeCount
+  }
+
+  test("should profile db hits of detach delete node") {
+    // given
+    val chainCount = 3
+    val chainLength = sizeHint / chainCount
+    val types = Range(0, chainLength).map(_ => "LIKES")
+    chainGraphs(chainCount, types:_*)
+
+    val nodeCount = (chainLength + 1) * chainCount
+    val relationshipCount = chainCount * chainLength
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .detachDeleteNode("n")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    val produceResultsProfile = queryProfile.operatorProfile(0)
+    produceResultsProfile.dbHits() shouldBe 0
+
+    val deleteNodeResultsProfile = queryProfile.operatorProfile(1)
+    deleteNodeResultsProfile.dbHits() shouldBe (nodeCount + relationshipCount)
+  }
+
+  test("should profile db hits of delete relationship") {
+    // given
+    val chainCount = 3
+    val chainLength = sizeHint / chainCount
+    val types = Range(0, chainLength).map(_ => "LIKES")
+    chainGraphs(chainCount, types:_*)
+    val relationshipCount = chainCount * chainLength
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .deleteRelationship("r")
+      .expand("(n)-[r]->()")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    val produceResultsProfile = queryProfile.operatorProfile(0)
+    produceResultsProfile.dbHits() shouldBe 0
+
+    val deleteNodeResultsProfile = queryProfile.operatorProfile(1)
+    deleteNodeResultsProfile.dbHits() shouldBe relationshipCount
+  }
+
+  test("should profile db hits of detach delete path") {
+    // given
+    val chainCount = 3
+    val chainLength = sizeHint / chainCount
+    val types = Range(0, chainLength - 1).map(_ => "LIKES") :+ "LAST_LIKE"
+    chainGraphs(chainCount, types:_*)
+
+    val nodeCount = (chainLength + 1) * chainCount
+    val relationshipCount = chainCount * chainLength
+
+    // when
+    val path = PathExpression(
+      NodePathStep(
+        node = varFor("n"),
+        MultiRelationshipPathStep(
+          rel = varFor("r"),
+          direction = OUTGOING,
+          toNode = Some(varFor("m")),
+          next = NilPathStep
+        )
+      )
+    )(InputPosition.NONE)
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .detachDeletePath("p")
+      .projection(Map("p" -> path))
+      .expand(s"(n)-[r:*$chainLength]-(m)")
+      .nodeByLabelScan("n", "START")
+      .build(readOnly = false)
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    val produceResultsProfile = queryProfile.operatorProfile(0)
+    produceResultsProfile.dbHits() shouldBe 0
+
+    val deleteNodeResultsProfile = queryProfile.operatorProfile(1)
+    deleteNodeResultsProfile.dbHits() shouldBe (nodeCount + relationshipCount)
+  }
+
+  test("should profile db hits of delete path") {
+    // given
+    val nodeCount = sizeHint
+    nodeGraph(nodeCount)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .deletePath("p")
+      .projection(Map("p" -> PathExpression(NodePathStep(varFor("n"), NilPathStep))(InputPosition.NONE)))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    val produceResultsProfile = queryProfile.operatorProfile(0)
+    produceResultsProfile.dbHits() shouldBe 0
+
+    val deleteNodeResultsProfile = queryProfile.operatorProfile(1)
+    deleteNodeResultsProfile.dbHits() shouldBe nodeCount
+  }
+
+  test("should profile db hits of delete expression") {
+    // given
+    val nodeCount = sizeHint
+    nodeGraph(nodeCount)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("map")
+      .deleteExpression("map.node")
+      .projection("{node: n} AS map")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    val produceResultsProfile = queryProfile.operatorProfile(0)
+    produceResultsProfile.dbHits() shouldBe 0
+
+    val deleteNodeResultsProfile = queryProfile.operatorProfile(1)
+    deleteNodeResultsProfile.dbHits() shouldBe nodeCount
   }
 
   test("should profile db hits on remove labels") {
