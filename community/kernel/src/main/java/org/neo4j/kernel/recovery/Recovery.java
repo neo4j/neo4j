@@ -285,7 +285,7 @@ public final class Recovery
         }
         checkAllFilesPresence( databaseLayout, fs, pageCache, storageEngineFactory );
         LifeSupport recoveryLife = new LifeSupport();
-        Monitors monitors = new Monitors( globalMonitors );
+        Monitors monitors = new Monitors( globalMonitors, logProvider );
         DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, EmptyVersionContextSupplier.EMPTY, databaseLayout.getDatabaseName() );
         SimpleLogService logService = new SimpleLogService( logProvider );
         VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
@@ -453,7 +453,7 @@ public final class Recovery
                 .collect( toList() );
 
         Dependencies deps = new Dependencies();
-        NonListenableMonitors nonListenableMonitors = new NonListenableMonitors( monitors );
+        NonListenableMonitors nonListenableMonitors = new NonListenableMonitors( monitors, logService.getInternalLogProvider() );
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, nonListenableMonitors, jobScheduler,
                 tokenHolders, recoveryCleanupCollector, pageCacheTracer );
         DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, dbmsInfo, deps );
@@ -490,9 +490,9 @@ public final class Recovery
     // for example duplicated logging records in user facing logs
     private static class NonListenableMonitors extends Monitors
     {
-        NonListenableMonitors( Monitors monitors )
+        NonListenableMonitors( Monitors monitors, LogProvider logProvider )
         {
-            super( monitors );
+            super( monitors, logProvider );
         }
 
         @Override

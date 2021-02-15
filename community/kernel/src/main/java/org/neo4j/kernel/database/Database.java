@@ -320,7 +320,7 @@ public class Database extends LifecycleAdapter
         {
             databaseDependencies = new Dependencies( globalDependencies );
             databasePageCache = new DatabasePageCache( globalPageCache, versionContextSupplier, namedDatabaseId.name() );
-            databaseMonitors = new Monitors( parentMonitors );
+            databaseMonitors = new Monitors( parentMonitors, internalLogProvider );
 
             life = new LifeSupport();
             life.add( new LockerLifecycleAdapter( fileLockerService.createDatabaseLocker( fs, databaseLayout ) ) );

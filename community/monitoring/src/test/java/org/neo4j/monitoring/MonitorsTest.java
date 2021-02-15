@@ -22,6 +22,8 @@ package org.neo4j.monitoring;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import org.neo4j.logging.NullLogProvider;
+
 import static org.mockito.Mockito.mock;
 
 class MonitorsTest
@@ -115,7 +117,7 @@ class MonitorsTest
         MyMonitor parentListener = mock( MyMonitor.class );
         parent.addMonitorListener( parentListener );
 
-        Monitors child = new Monitors( parent );
+        Monitors child = new Monitors( parent, NullLogProvider.getInstance() );
         MyMonitor childListener = mock( MyMonitor.class );
         child.addMonitorListener( childListener );
 

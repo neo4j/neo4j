@@ -60,6 +60,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexValueValidator;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ThreadSafePeakMemoryTracker;
 import org.neo4j.monitoring.Monitors;
@@ -449,7 +450,7 @@ class BlockBasedIndexPopulatorTest
                 checkpoints.incrementAndGet();
             }
         };
-        Monitors monitors = new Monitors( databaseIndexContext.monitors );
+        Monitors monitors = new Monitors( databaseIndexContext.monitors, NullLogProvider.getInstance() );
         monitors.addMonitorListener( treeMonitor );
         databaseIndexContext = DatabaseIndexContext.builder( databaseIndexContext )
                 .withMonitors( monitors )
