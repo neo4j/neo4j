@@ -387,7 +387,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   class ExceptionTranslatingOperations[T, CURSOR](inner: Operations[T, CURSOR])
     extends Operations[T, CURSOR] {
-    override def delete(id: Long): Unit =
+    override def delete(id: Long): Boolean =
       translateException(tokenNameLookup, inner.delete(id))
 
     override def setProperty(id: Long, propertyKey: Int, value: Value): Unit =

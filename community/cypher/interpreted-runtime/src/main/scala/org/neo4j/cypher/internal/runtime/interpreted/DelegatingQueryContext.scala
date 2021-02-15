@@ -383,7 +383,7 @@ class DelegatingOperations[T, CURSOR](protected val inner: Operations[T, CURSOR]
 
   protected def manyDbHits[A](value: ClosingLongIterator): ClosingLongIterator = value
 
-  override def delete(id: Long): Unit = singleDbHit(inner.delete(id))
+  override def delete(id: Long): Boolean = singleDbHit(inner.delete(id))
 
   override def setProperty(obj: Long, propertyKey: Int, value: Value): Unit =
     singleDbHit(inner.setProperty(obj, propertyKey, value))

@@ -327,7 +327,12 @@ trait QueryContext extends TokenContext with DbAccess {
 }
 
 trait Operations[T, CURSOR] {
-  def delete(id: Long)
+  /**
+   * Delete entity
+   *
+   * @return true if something was deleted, false if no entity was found for this id
+   */
+  def delete(id: Long): Boolean
 
   def setProperty(obj: Long, propertyKeyId: Int, value: Value)
 

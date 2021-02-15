@@ -634,7 +634,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   class NodeOperations
     extends org.neo4j.cypher.internal.runtime.NodeOperations {
 
-    override def delete(id: Long) {
+    override def delete(id: Long): Boolean = {
       writes().nodeDelete(id)
     }
 
@@ -740,7 +740,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   class RelationshipOperations extends org.neo4j.cypher.internal.runtime.RelationshipOperations {
 
-    override def delete(id: Long) {
+    override def delete(id: Long): Boolean = {
       writes().relationshipDelete(id)
     }
 

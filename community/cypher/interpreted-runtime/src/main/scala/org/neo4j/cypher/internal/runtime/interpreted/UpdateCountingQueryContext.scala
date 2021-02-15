@@ -214,9 +214,13 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   private class CountingOps[T, CURSOR](inner: Operations[T, CURSOR], deletes: Counter)
     extends DelegatingOperations[T, CURSOR](inner) {
 
-    override def delete(id: Long) {
-      deletes.increase()
-      inner.delete(id)
+    override def delete(id: Long): Boolean = {
+      if (inner.delete(id)) {
+        deletes.increase()
+        true
+      } else {
+        false
+      }
     }
 
     override def removeProperty(id: Long, propertyKeyId: Int): Boolean = {

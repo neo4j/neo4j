@@ -82,9 +82,17 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("delete_node") {
+    when(nodeOps.delete(any())).thenReturn(true)
     context.nodeOps.delete(nodeA.getId)
 
     context.getStatistics should equal(QueryStatistics(nodesDeleted = 1))
+  }
+
+  test("delete_node without delete") {
+    when(nodeOps.delete(any())).thenReturn(false)
+    context.nodeOps.delete(nodeA.getId)
+
+    context.getStatistics should equal(QueryStatistics())
   }
 
   test("create_relationship") {
@@ -94,10 +102,19 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("delete_relationship") {
+    when(relOps.delete(any())).thenReturn(true)
     context.relationshipOps.delete(rel.getId)
 
     context.getStatistics should equal(QueryStatistics(relationshipsDeleted = 1))
   }
+
+  test("delete_relationship without delete") {
+    when(relOps.delete(any())).thenReturn(false)
+    context.relationshipOps.delete(rel.getId)
+
+    context.getStatistics should equal(QueryStatistics())
+  }
+
 
   test("set_property") {
     context.nodeOps.setProperty(nodeAId, 1, Values.stringValue("value"))
