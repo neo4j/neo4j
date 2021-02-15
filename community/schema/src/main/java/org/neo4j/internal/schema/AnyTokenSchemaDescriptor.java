@@ -19,18 +19,13 @@
  */
 package org.neo4j.internal.schema;
 
+import org.neo4j.util.MarkerInterface;
+
 /**
- * A SchemaProcessor performs from side-effect processing on a SchemaDescriptor. To get the concrete type of the
- * target schema descriptor, a visitor pattern is used to bounce the code path into the correct overloaded
- * processSpecific variant. See {@link SchemaDescriptor#processWith(SchemaProcessor)}.
+ * It matches all entities (nodes or relationships) that has any entity tokens (labels or relationship types),
+ * and match index updates with {@link PropertySchemaType#ENTITY_TOKENS any entity tokens}.
  */
-public interface SchemaProcessor
+@MarkerInterface
+public interface AnyTokenSchemaDescriptor extends SchemaDescriptor
 {
-    /*
-    The following section contains the overloaded process signatures for all concrete SchemaDescriptor implementers.
-    Add new overloaded methods here when adding more concrete SchemaDescriptors.
-     */
-    void processSpecific( LabelSchemaDescriptor schema );
-    void processSpecific( RelationTypeSchemaDescriptor schema );
-    void processSpecific( SchemaDescriptor schema );
 }

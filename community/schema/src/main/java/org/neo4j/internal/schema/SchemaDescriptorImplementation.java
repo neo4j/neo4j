@@ -34,9 +34,11 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.internal.schema.PropertySchemaType.ENTITY_TOKENS;
 import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
 
-public final class SchemaDescriptorImplementation implements SchemaDescriptor, LabelSchemaDescriptor, RelationTypeSchemaDescriptor, FulltextSchemaDescriptor
+public final class SchemaDescriptorImplementation implements SchemaDescriptor, LabelSchemaDescriptor, RelationTypeSchemaDescriptor, FulltextSchemaDescriptor,
+        AnyTokenSchemaDescriptor
 {
     private final EntityType entityType;
     private final PropertySchemaType propertySchemaType;
@@ -54,6 +56,10 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
      * {@code true} if this schema matches the {@link FulltextSchemaDescriptor} structure.
      */
     private final boolean archetypalFulltextSchema;
+    /**
+     * {@code true} if this schema matches the {@link AnyTokenSchemaDescriptor} structure.
+     */
+    private final boolean archetypalAnyTokenSchema;
 
     /**
      * This constructor is only public so that it can be called directly from the SchemaStore.
@@ -65,6 +71,26 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
         this.propertySchemaType = requireNonNull( propertySchemaType, "PropertySchemaType cannot be null." );
         this.entityTokens = requireNonNull( entityTokens, "Entity tokens array cannot be null." );
         this.propertyKeyIds = requireNonNull( propertyKeyIds, "Property key ids array cannot be null." );
+
+        if ( propertySchemaType != ENTITY_TOKENS )
+        {
+            validatePropertySchema( entityType, entityTokens, propertyKeyIds );
+        }
+        else
+        {
+            validateEntityTokenSchema( entityType, entityTokens, propertyKeyIds );
+        }
+
+        boolean generalSingleEntity = entityTokens.length == 1 && propertySchemaType == COMPLETE_ALL_TOKENS;
+
+        this.archetypalLabelSchema = entityType == NODE && generalSingleEntity;
+        this.archetypalRelationshipTypeSchema = entityType == RELATIONSHIP && generalSingleEntity;
+        this.archetypalFulltextSchema = propertySchemaType == PARTIAL_ANY_TOKEN;
+        this.archetypalAnyTokenSchema = propertySchemaType == ENTITY_TOKENS;
+    }
+
+    private void validatePropertySchema( EntityType entityType, int[] entityTokens, int[] propertyKeyIds )
+    {
         if ( entityTokens.length == 0 )
         {
             throw new IllegalArgumentException( "Schema descriptor must have at least one " + (entityType == NODE ? "label." : "relationship type.") );
@@ -86,12 +112,20 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
             throw new IllegalArgumentException( "Unknown entity type: " + entityType + "." );
         }
         validatePropertyIds( propertyKeyIds );
+    }
 
-        boolean generalSingleEntity = entityTokens.length == 1 && propertySchemaType == COMPLETE_ALL_TOKENS;
-
-        this.archetypalLabelSchema = entityType == NODE && generalSingleEntity;
-        this.archetypalRelationshipTypeSchema = entityType == RELATIONSHIP && generalSingleEntity;
-        this.archetypalFulltextSchema = propertySchemaType == PARTIAL_ANY_TOKEN;
+    private void validateEntityTokenSchema( EntityType entityType, int[] entityTokens, int[] propertyKeyIds )
+    {
+        if ( entityTokens.length != 0 )
+        {
+            throw new IllegalArgumentException( "Schema descriptor with propertySchemaType " + ENTITY_TOKENS + " should not have any specified "
+                                                + (entityType == NODE ? "labels." : "relationship types.") );
+        }
+        if ( propertyKeyIds.length != 0 )
+        {
+            throw new IllegalArgumentException( "Schema descriptor with propertySchemaType " + ENTITY_TOKENS +
+                                                " should not have any specified property key ids." );
+        }
     }
 
     private static void validatePropertyIds( int... propertyIds )
@@ -172,6 +206,22 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
         if ( !archetypalFulltextSchema )
         {
             throw cannotCastException( "FulltextSchemaDescriptor" );
+        }
+        return this;
+    }
+
+    @Override
+    public boolean isAnyTokenSchemaDescriptor()
+    {
+        return archetypalAnyTokenSchema;
+    }
+
+    @Override
+    public AnyTokenSchemaDescriptor asAnyTokenSchemaDescriptor()
+    {
+        if ( !archetypalAnyTokenSchema )
+        {
+            throw cannotCastException( "AnyTokenSchemaDescriptor" );
         }
         return this;
     }

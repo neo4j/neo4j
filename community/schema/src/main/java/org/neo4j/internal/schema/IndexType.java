@@ -33,7 +33,11 @@ public enum IndexType
     /**
      * @see org.neo4j.graphdb.schema.IndexType#FULLTEXT
      */
-    FULLTEXT;
+    FULLTEXT,
+    /**
+     * todo: This type does not have corresponding public version because name is not fixed yet.
+     */
+    TOKEN;
 
     public static IndexType fromPublicApi( org.neo4j.graphdb.schema.IndexType type )
     {

@@ -20,8 +20,11 @@
 package org.neo4j.kernel.api.schema;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
@@ -86,5 +89,20 @@ class SchemaDescriptorTest
     {
         assertThat( SchemaDescriptor.forLabel( 1, 2 ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ) ).isEqualTo( "(:Label1 {property2})" );
         assertThat( SchemaDescriptor.forRelType( 1, 3 ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ) ).isEqualTo( "-[:RelType1 {property3}]-" );
+        assertThat( SchemaDescriptor.forAllEntityTokens( EntityType.NODE ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ) )
+                .isEqualTo( "(:<any-labels>)" );
+        assertThat( SchemaDescriptor.forAllEntityTokens( EntityType.RELATIONSHIP ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ) )
+                .isEqualTo( "-[:<any-types>]-" );
+    }
+
+    @ParameterizedTest
+    @EnumSource( EntityType.class )
+    void shouldCreateAllTokenDescriptors( EntityType entityType )
+    {
+        AnyTokenSchemaDescriptor allLabelsDesc = SchemaDescriptor.forAllEntityTokens( entityType );
+        assertThat( allLabelsDesc.entityType() ).isEqualTo( entityType );
+        assertThat( allLabelsDesc.propertySchemaType() ).isEqualTo( PropertySchemaType.ENTITY_TOKENS );
+        assertThat( allLabelsDesc.getEntityTokenIds() ).isEmpty();
+        assertThat( allLabelsDesc.getPropertyIds() ).isEmpty();
     }
 }

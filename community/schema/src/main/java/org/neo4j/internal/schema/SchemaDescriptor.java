@@ -28,17 +28,17 @@ import org.neo4j.token.api.TokenConstants;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.internal.schema.PropertySchemaType.ENTITY_TOKENS;
 import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
 
 /**
  * Internal representation of one schema unit, for example a label-property pair.
  *
  * Even when only supporting a small set of different schemas, the number of common methods is very small. This
- * interface therefore supports a visitor type access pattern, results can be computed using the {#compute} method, and
- * side-effect type logic performed using the processWith method. This means that when implementing this interface
- * with a new concrete type, the compute and processWith method implementations need to be added similarly to
- * how this is done in eg. LabelSchemaDescriptor, and the SchemaProcessor and SchemaComputer interfaces need to be
- * extended with methods taking the new concrete type as argument.
+ * interface therefore supports a visitor type access pattern with side-effect type logic performed using the
+ * {@link #processWith(SchemaProcessor) process} method. This means that when implementing this interface
+ * with a new concrete type, the process method implementations need to be added to {@link SchemaDescriptorImplementation}
+ * and the {@link SchemaProcessor} interfaces need to be extended with methods taking the new concrete type as argument.
  */
 public interface SchemaDescriptor extends SchemaDescriptorSupplier
 {
@@ -64,6 +64,11 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         validateRelationshipTypeIds( relTypeId );
         validatePropertyIds( propertyIds );
         return new SchemaDescriptorImplementation( RELATIONSHIP, COMPLETE_ALL_TOKENS, new int[]{relTypeId}, propertyIds );
+    }
+
+    static AnyTokenSchemaDescriptor forAllEntityTokens( EntityType entityType )
+    {
+        return new SchemaDescriptorImplementation( entityType, ENTITY_TOKENS, new int[0], new int[0] );
     }
 
     /**
@@ -159,6 +164,18 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      * Otherwise, throw an {@link IllegalStateException}.
      */
     FulltextSchemaDescriptor asFulltextSchemaDescriptor();
+
+    /**
+     * Test if this schema descriptor is a {@link AnyTokenSchemaDescriptor}.
+     * @return {@code true} if calling {@link #asAnyTokenSchemaDescriptor()} will not throw an exception.
+     */
+    boolean isAnyTokenSchemaDescriptor();
+
+    /**
+     * If this schema descriptor matches the structure required by {@link AnyTokenSchemaDescriptor}, then return this descriptor as that type.
+     * Otherwise, throw an {@link IllegalStateException}.
+     */
+    AnyTokenSchemaDescriptor asAnyTokenSchemaDescriptor();
 
     /**
      * Returns true if any of the given entity token ids are part of this schema unit.

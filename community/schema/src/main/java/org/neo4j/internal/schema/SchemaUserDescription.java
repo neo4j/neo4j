@@ -39,6 +39,14 @@ public final class SchemaUserDescription
     {
         String prefix = entityType == RELATIONSHIP ? "-[" : "(";
         String suffix = entityType == RELATIONSHIP ? "]-" : ")";
+
+        // Token indexes, that works on all entity tokens, have no specified entityTokens or propertyKeyIds.
+        if ( entityTokens.length == 0 && propertyKeyIds.length == 0 )
+        {
+            String entityTokenType = entityType == RELATIONSHIP ? ":<any-types>" : ":<any-labels>";
+            return prefix + entityTokenType + suffix;
+        }
+
         IntFunction<String> lookup = entityType == NODE ? tokenNameLookup::labelGetName : tokenNameLookup::relationshipTypeGetName;
         return prefix + TokenIdPrettyPrinter.niceEntityLabels( lookup, entityTokens ) + " " +
                 TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyKeyIds, '{', '}' ) + suffix;

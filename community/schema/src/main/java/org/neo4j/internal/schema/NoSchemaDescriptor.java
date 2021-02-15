@@ -73,6 +73,18 @@ class NoSchemaDescriptor implements SchemaDescriptor
     }
 
     @Override
+    public boolean isAnyTokenSchemaDescriptor()
+    {
+        return false;
+    }
+
+    @Override
+    public AnyTokenSchemaDescriptor asAnyTokenSchemaDescriptor()
+    {
+        throw new IllegalStateException( "NO_SCHEMA cannot be cast to a AnyTokenSchemaDescriptor." );
+    }
+
+    @Override
     public boolean isAffected( long[] entityIds )
     {
         return false;

@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
+import static org.neo4j.internal.schema.IndexType.TOKEN;
 
 class SchemaRuleTest
 {
@@ -45,6 +46,8 @@ class SchemaRuleTest
     private FulltextSchemaDescriptor fulltextRelSchema = SchemaDescriptor.fulltext( RELATIONSHIP, new int[]{1, 2}, new int[]{1, 2} );
     private LabelSchemaDescriptor labelSchema2 = SchemaDescriptor.forLabel( 0, 0, 1 );
     private FulltextSchemaDescriptor fulltextNodeSchema2 = SchemaDescriptor.fulltext( NODE, new int[]{0, 1}, new int[]{0, 1} );
+    private AnyTokenSchemaDescriptor allLabelsSchema = SchemaDescriptor.forAllEntityTokens( NODE );
+    private AnyTokenSchemaDescriptor allRelTypesSchema = SchemaDescriptor.forAllEntityTokens( RELATIONSHIP );
     private IndexPrototype labelPrototype = IndexPrototype.forSchema( labelSchema );
     private IndexPrototype labelUniquePrototype = IndexPrototype.uniqueForSchema( labelSchema );
     private IndexPrototype relTypePrototype = IndexPrototype.forSchema( relTypeSchema );
@@ -53,6 +56,8 @@ class SchemaRuleTest
     private IndexPrototype relFtsPrototype = IndexPrototype.forSchema( fulltextRelSchema ).withIndexType( FULLTEXT );
     private IndexPrototype labelFtsPrototype2 = IndexPrototype.forSchema( labelSchema2 ).withIndexType( FULLTEXT );
     private IndexPrototype nodeFtsPrototype2 = IndexPrototype.forSchema( fulltextNodeSchema2 ).withIndexType( FULLTEXT );
+    private IndexPrototype allLabelsPrototype = IndexPrototype.forSchema( allLabelsSchema ).withIndexType( TOKEN );
+    private IndexPrototype allRelTypesPrototype = IndexPrototype.forSchema( allRelTypesSchema ).withIndexType( TOKEN );
     private IndexPrototype labelPrototypeNamed = IndexPrototype.forSchema( labelSchema ).withName( "labelPrototypeNamed" );
     private IndexPrototype labelUniquePrototypeNamed = IndexPrototype.uniqueForSchema( labelSchema ).withName( "labelUniquePrototypeNamed" );
     private IndexPrototype relTypePrototypeNamed = IndexPrototype.forSchema( relTypeSchema ).withName( "relTypePrototypeNamed" );
@@ -62,6 +67,9 @@ class SchemaRuleTest
     private IndexPrototype labelFtsPrototype2Named = IndexPrototype.forSchema( labelSchema2 ).withIndexType( FULLTEXT ).withName( "labelFtsPrototype2Named" );
     private IndexPrototype nodeFtsPrototype2Named =
             IndexPrototype.forSchema( fulltextNodeSchema2 ).withIndexType( FULLTEXT ).withName( "nodeFtsPrototype2Named" );
+    private IndexPrototype allLabelsPrototypeNamed = IndexPrototype.forSchema( allLabelsSchema ).withIndexType( TOKEN ).withName( "allLabelsPrototypeNamed" );
+    private IndexPrototype allRelTypesPrototypeNamed =
+            IndexPrototype.forSchema( allRelTypesSchema ).withIndexType( TOKEN ).withName( "allRelTypesPrototypeNamed" );
     private IndexDescriptor labelIndexNamed = labelPrototypeNamed.withName( "labelIndexNamed" ).materialise( 1 );
     private IndexDescriptor labelUniqueIndexNamed = labelUniquePrototypeNamed.withName( "labelUniqueIndexNamed" ).materialise( 2 );
     private IndexDescriptor relTypeIndexNamed = relTypePrototypeNamed.withName( "relTypeIndexNamed" ).materialise( 3 );
@@ -70,6 +78,8 @@ class SchemaRuleTest
     private IndexDescriptor relFtsIndexNamed = relFtsPrototypeNamed.withName( "relFtsIndexNamed" ).materialise( 6 );
     private IndexDescriptor labelFtsIndex2Named = labelFtsPrototype2Named.withName( "labelFtsIndex2Named" ).materialise( 7 );
     private IndexDescriptor nodeFtsIndex2Named = nodeFtsPrototype2Named.withName( "nodeFtsIndex2Named" ).materialise( 8 );
+    private IndexDescriptor allLabelsIndexNamed = allLabelsPrototypeNamed.withName( "allLabelsIndexNamed" ).materialise( 9 );
+    private IndexDescriptor allRelTypesIndexNamed = allRelTypesPrototypeNamed.withName( "allRelTypesIndexNamed" ).materialise( 10 );
     private ConstraintDescriptor uniqueLabelConstraint = ConstraintDescriptorFactory.uniqueForSchema( labelSchema );
     private ConstraintDescriptor existsLabelConstraint = ConstraintDescriptorFactory.existsForSchema( labelSchema );
     private ConstraintDescriptor nodeKeyConstraint = ConstraintDescriptorFactory.nodeKeyForSchema( labelSchema );
@@ -104,6 +114,8 @@ class SchemaRuleTest
         assertName( existsLabelConstraint, "constraint_b23c1483" );
         assertName( nodeKeyConstraint, "constraint_7b8dd387" );
         assertName( existsRelTypeConstraint, "constraint_ef4bbcac" );
+        assertName( allLabelsPrototype, "index_f56fb29d" );
+        assertName( allRelTypesPrototype, "index_9625776f" );
     }
 
     @Test
@@ -115,6 +127,8 @@ class SchemaRuleTest
         assertUserDescription( "Index( type='UNIQUE BTREE', schema=-[:Type1 {prop2, prop3}]-, indexProvider='Undecided-0' )", relTypeUniquePrototype );
         assertUserDescription( "Index( type='GENERAL FULLTEXT', schema=(:Label1:Label2 {prop1, prop2}), indexProvider='Undecided-0' )", nodeFtsPrototype );
         assertUserDescription( "Index( type='GENERAL FULLTEXT', schema=-[:Type1:Type2 {prop1, prop2}]-, indexProvider='Undecided-0' )", relFtsPrototype );
+        assertUserDescription( "Index( type='GENERAL TOKEN', schema=(:<any-labels>), indexProvider='Undecided-0' )", allLabelsPrototype );
+        assertUserDescription( "Index( type='GENERAL TOKEN', schema=-[:<any-types>]-, indexProvider='Undecided-0' )", allRelTypesPrototype );
         assertUserDescription( "Constraint( type='UNIQUENESS', schema=(:Label1 {prop2, prop3}) )", uniqueLabelConstraint );
         assertUserDescription( "Constraint( type='NODE PROPERTY EXISTENCE', schema=(:Label1 {prop2, prop3}) )", existsLabelConstraint );
         assertUserDescription( "Constraint( type='NODE KEY', schema=(:Label1 {prop2, prop3}) )", nodeKeyConstraint );
@@ -145,6 +159,10 @@ class SchemaRuleTest
         assertUserDescription(
                 "Index( name='nodeFtsPrototype2Named', type='GENERAL FULLTEXT', schema=(:`La:bel`:Label1 {`prop:erty`, prop1}), indexProvider='Undecided-0' )",
                 nodeFtsPrototype2Named );
+        assertUserDescription( "Index( name='allLabelsPrototypeNamed', type='GENERAL TOKEN', schema=(:<any-labels>), indexProvider='Undecided-0' )",
+                allLabelsPrototypeNamed );
+        assertUserDescription( "Index( name='allRelTypesPrototypeNamed', type='GENERAL TOKEN', schema=-[:<any-types>]-, indexProvider='Undecided-0' )",
+                allRelTypesPrototypeNamed );
 
         assertUserDescription( "Index( id=1, name='labelIndexNamed', type='GENERAL BTREE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
                 labelIndexNamed );
@@ -167,6 +185,10 @@ class SchemaRuleTest
         assertUserDescription(
                 "Index( id=8, name='nodeFtsIndex2Named', type='GENERAL FULLTEXT', schema=(:`La:bel`:Label1 {`prop:erty`, prop1}), " +
                         "indexProvider='Undecided-0' )", nodeFtsIndex2Named );
+        assertUserDescription( "Index( id=9, name='allLabelsIndexNamed', type='GENERAL TOKEN', schema=(:<any-labels>), indexProvider='Undecided-0' )",
+                allLabelsIndexNamed );
+        assertUserDescription( "Index( id=10, name='allRelTypesIndexNamed', type='GENERAL TOKEN', schema=-[:<any-types>]-, indexProvider='Undecided-0' )",
+                allRelTypesIndexNamed );
 
         assertUserDescription( "Constraint( id=1, name='uniqueLabelConstraintNamed', type='UNIQUENESS', schema=(:Label1 {prop2, prop3}), ownedIndex=1 )",
                 uniqueLabelConstraintNamed );
