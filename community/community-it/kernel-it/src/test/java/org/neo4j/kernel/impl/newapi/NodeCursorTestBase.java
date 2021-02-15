@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -226,5 +227,23 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             assertFalse( nodes.hasLabel( bazLabel ) );
             assertFalse( nodes.next(), "should only access a single node" );
         }
+    }
+
+    @Test
+    void notFindNoIdNode() throws InvalidTransactionTypeKernelException
+    {
+        // given a non-commited node created in transaction
+        long nodeId = tx.dataWrite().nodeCreate();
+
+        try ( NodeCursor nodes = cursors.allocateNodeCursor( NULL ) )
+        {
+            // when
+            read.singleNode( -1, nodes );
+            // then
+            assertFalse( nodes.next(), "should not access any node" );
+        }
+
+        // remove temporarily created node.
+        tx.dataWrite().nodeDelete( nodeId );
     }
 }
