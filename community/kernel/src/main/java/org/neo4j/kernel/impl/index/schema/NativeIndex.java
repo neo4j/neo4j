@@ -33,13 +33,13 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.monitoring.Monitors;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> implements ConsistencyCheckable
 {
@@ -51,6 +51,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     private final Monitors monitors;
     private final String monitorTag;
     private final boolean readOnly;
+    private final PageCacheTracer pageCacheTracer;
 
     protected GBPTree<KEY,VALUE> tree;
 
@@ -61,6 +62,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         this.monitors = databaseIndexContext.monitors;
         this.monitorTag = databaseIndexContext.monitorTag;
         this.readOnly = databaseIndexContext.readOnly;
+        this.pageCacheTracer = databaseIndexContext.pageCacheTracer;
         this.indexFiles = indexFiles;
         this.layout = layout;
         this.descriptor = descriptor;
@@ -72,7 +74,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         GBPTree.Monitor monitor = treeMonitor();
         Path storeFile = indexFiles.getStoreFile();
         tree = new GBPTree<>( pageCache, storeFile, layout, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector,
-                readOnly, NULL, immutable.empty(), descriptor.getName() );
+                readOnly, pageCacheTracer, immutable.empty(), descriptor.getName() );
         afterTreeInstantiation( tree );
     }
 

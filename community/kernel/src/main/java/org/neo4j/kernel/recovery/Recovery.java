@@ -303,7 +303,7 @@ public final class Recovery
                 new GroupingRecoveryCleanupWorkCollector( scheduler, INDEX_CLEANUP, INDEX_CLEANUP_WORK, databaseLayout.getDatabaseName() );
         DatabaseExtensions extensions = instantiateRecoveryExtensions( databaseLayout, fs, config, logService, databasePageCache, scheduler,
                                                                        recoveryCleanupCollector, DbmsInfo.TOOL, monitors, tokenHolders,
-                                                                       recoveryCleanupCollector, extensionFactories );
+                                                                       recoveryCleanupCollector, extensionFactories, tracers.getPageCacheTracer() );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );
 
         StorageEngine storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, schemaState,
@@ -441,9 +441,12 @@ public final class Recovery
     }
 
     private static DatabaseExtensions instantiateRecoveryExtensions( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, Config config,
-            LogService logService, PageCache pageCache, JobScheduler jobScheduler, RecoveryCleanupWorkCollector recoveryCollector, DbmsInfo dbmsInfo,
-            Monitors monitors, TokenHolders tokenHolders, RecoveryCleanupWorkCollector recoveryCleanupCollector,
-            Iterable<ExtensionFactory<?>> extensionFactories )
+                                                                     LogService logService, PageCache pageCache, JobScheduler jobScheduler,
+                                                                     RecoveryCleanupWorkCollector recoveryCollector, DbmsInfo dbmsInfo,
+                                                                     Monitors monitors, TokenHolders tokenHolders,
+                                                                     RecoveryCleanupWorkCollector recoveryCleanupCollector,
+                                                                     Iterable<ExtensionFactory<?>> extensionFactories,
+                                                                     PageCacheTracer pageCacheTracer )
     {
         List<ExtensionFactory<?>> recoveryExtensions = stream( extensionFactories )
                 .filter( extension -> extension.getClass().isAnnotationPresent( RecoveryExtension.class ) )
@@ -452,7 +455,7 @@ public final class Recovery
         Dependencies deps = new Dependencies();
         NonListenableMonitors nonListenableMonitors = new NonListenableMonitors( monitors );
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, nonListenableMonitors, jobScheduler,
-                tokenHolders, recoveryCleanupCollector );
+                tokenHolders, recoveryCleanupCollector, pageCacheTracer );
         DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, dbmsInfo, deps );
         return new DatabaseExtensions( extensionContext, recoveryExtensions, deps, ExtensionFailureStrategies.fail() );
     }

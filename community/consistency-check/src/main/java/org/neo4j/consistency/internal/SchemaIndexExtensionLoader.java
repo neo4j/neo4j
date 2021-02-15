@@ -25,6 +25,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -45,11 +46,13 @@ public class SchemaIndexExtensionLoader
 
     @SuppressWarnings( "unchecked" )
     public static DatabaseExtensions instantiateExtensions( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, Config config,
-            LogService logService, PageCache pageCache, JobScheduler jobScheduler, RecoveryCleanupWorkCollector recoveryCollector, DbmsInfo dbmsInfo,
-            Monitors monitors, TokenHolders tokenHolders )
+                                                            LogService logService, PageCache pageCache, JobScheduler jobScheduler,
+                                                            RecoveryCleanupWorkCollector recoveryCollector, DbmsInfo dbmsInfo,
+                                                            Monitors monitors, TokenHolders tokenHolders,
+                                                            PageCacheTracer pageCacheTracer )
     {
         Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors, jobScheduler, tokenHolders );
+        deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors, jobScheduler, tokenHolders, pageCacheTracer );
         @SuppressWarnings( "rawtypes" )
         Iterable extensions = Services.loadAll( ExtensionFactory.class );
         DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, dbmsInfo, deps );

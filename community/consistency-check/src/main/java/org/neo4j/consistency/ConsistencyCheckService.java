@@ -228,7 +228,7 @@ public class ConsistencyCheckService
                 fileSystem, config, new SimpleLogService( logProvider ), pageCache, jobScheduler,
                 workCollector,
                 TOOL, // We use TOOL context because it's true, and also because it uses the 'single' operational mode, which is important.
-                monitors, tokenHolders ) );
+                monitors, tokenHolders, pageCacheTracer ) );
         DefaultIndexProviderMap indexes = life.add( new DefaultIndexProviderMap( extensions, config ) );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )

@@ -351,6 +351,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( lockService );
             databaseDependencies.satisfyDependency( versionContextSupplier );
             databaseDependencies.satisfyDependency( tracers.getDatabaseTracer() );
+            databaseDependencies.satisfyDependencies( tracers.getPageCacheTracer() );
 
             recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
             databaseDependencies.satisfyDependency( recoveryCleanupWorkCollector );

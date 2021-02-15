@@ -52,6 +52,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -322,7 +323,7 @@ public class DatabaseCompositeIndexAccessorTest
 
         Dependencies deps = new Dependencies();
         deps.satisfyDependencies( pageCache, jobScheduler, fileSystem, new SimpleLogService( logProvider ), new Monitors(), CONFIG,
-                RecoveryCleanupWorkCollector.ignore() );
+                                  RecoveryCleanupWorkCollector.ignore(), PageCacheTracer.NULL );
         testDirectory.prepareDirectory( DatabaseCompositeIndexAccessorTest.class, "null" );
         Config config = Config.defaults( neo4j_home, testDirectory.homePath() );
         DatabaseExtensionContext context = new DatabaseExtensionContext( DatabaseLayout.of( config ), DbmsInfo.UNKNOWN, deps );

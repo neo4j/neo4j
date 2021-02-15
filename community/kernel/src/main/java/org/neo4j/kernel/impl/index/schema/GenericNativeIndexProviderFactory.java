@@ -28,6 +28,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.monitoring.Monitors;
@@ -56,18 +57,21 @@ public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFact
 
     @Override
     protected GenericNativeIndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,
-            String monitorTag, Config config, OperationalMode operationalMode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+                                                         String monitorTag, Config config, OperationalMode operationalMode,
+                                                         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer )
     {
-        return create( pageCache, storeDir, fs, monitors, monitorTag, config, operationalMode, recoveryCleanupWorkCollector );
+        return create( pageCache, storeDir, fs, monitors, monitorTag, config, operationalMode, recoveryCleanupWorkCollector, pageCacheTracer );
     }
 
     public static GenericNativeIndexProvider create( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,
-            String monitorTag, Config config, OperationalMode mode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+                                                     String monitorTag, Config config, OperationalMode mode,
+                                                     RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer )
     {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
         boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.SINGLE == mode);
-        DatabaseIndexContext databaseIndexContext =
-                DatabaseIndexContext.builder( pageCache, fs ).withMonitors( monitors ).withTag( monitorTag ).withReadOnly( readOnly ).build();
+        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).withMonitors( monitors ).withTag( monitorTag )
+                                                                        .withReadOnly( readOnly ).withPageCacheTracer( pageCacheTracer )
+                                                                        .build();
         return new GenericNativeIndexProvider( databaseIndexContext, directoryStructure, recoveryCleanupWorkCollector, config );
     }
 }

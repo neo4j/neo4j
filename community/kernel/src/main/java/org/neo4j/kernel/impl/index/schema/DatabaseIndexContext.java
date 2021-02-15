@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.monitoring.Monitors;
 
 public class DatabaseIndexContext
@@ -30,14 +31,17 @@ public class DatabaseIndexContext
     final Monitors monitors;
     final String monitorTag;
     final boolean readOnly;
+    final PageCacheTracer pageCacheTracer;
 
-    private DatabaseIndexContext( PageCache pageCache, FileSystemAbstraction fileSystem, Monitors monitors, String monitorTag, boolean readOnly )
+    private DatabaseIndexContext( PageCache pageCache, FileSystemAbstraction fileSystem, Monitors monitors, String monitorTag, boolean readOnly,
+                                  PageCacheTracer pageCacheTracer )
     {
         this.pageCache = pageCache;
         this.fileSystem = fileSystem;
         this.monitors = monitors;
         this.monitorTag = monitorTag;
         this.readOnly = readOnly;
+        this.pageCacheTracer = pageCacheTracer;
     }
 
     /**
@@ -61,7 +65,8 @@ public class DatabaseIndexContext
         return new Builder( copy.pageCache, copy.fileSystem )
                 .withReadOnly( copy.readOnly )
                 .withMonitors( copy.monitors )
-                .withTag( copy.monitorTag );
+                .withTag( copy.monitorTag )
+                .withPageCacheTracer( copy.pageCacheTracer );
     }
 
     public static class Builder
@@ -71,6 +76,7 @@ public class DatabaseIndexContext
         private Monitors monitors;
         private String monitorTag;
         private boolean readOnly;
+        private PageCacheTracer pageCacheTracer;
 
         private Builder( PageCache pageCache, FileSystemAbstraction fileSystem )
         {
@@ -79,6 +85,7 @@ public class DatabaseIndexContext
             this.monitors = new Monitors();
             this.monitorTag = "";
             this.readOnly = false;
+            this.pageCacheTracer = PageCacheTracer.NULL;
         }
 
         /**
@@ -117,9 +124,21 @@ public class DatabaseIndexContext
             return this;
         }
 
+        /**
+         * Default is NULL tracer.
+         *
+         * @param tracer {@link PageCacheTracer to use}
+         * @return {@link Builder this builder}
+         */
+        public Builder withPageCacheTracer( PageCacheTracer tracer )
+        {
+            this.pageCacheTracer = tracer;
+            return this;
+        }
+
         public DatabaseIndexContext build()
         {
-            return new DatabaseIndexContext( pageCache, fileSystem, monitors, monitorTag, readOnly );
+            return new DatabaseIndexContext( pageCache, fileSystem, monitors, monitorTag, readOnly, pageCacheTracer );
         }
     }
 }
