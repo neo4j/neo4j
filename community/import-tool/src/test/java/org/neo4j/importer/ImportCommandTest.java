@@ -90,6 +90,10 @@ class ImportCommandTest
                         "      --verbose              Enable verbose output." + lineSeparator() +
                         "      --expand-commands      Allow command expansion in config value evaluation." + lineSeparator() +
                         "      --database=<database>  Name of the database to import." + lineSeparator() +
+                        "                               If the database used to import into doesn't" + lineSeparator() +
+                        "                               exist prior to importing," + lineSeparator() +
+                        "                               then it must be created subsequently using" + lineSeparator() +
+                        "                               CREATE DATABASE." + lineSeparator() +
                         "                               Default: neo4j" + lineSeparator() +
                         "      --additional-config=<path>" + lineSeparator() +
                         "                             Configuration file to supply additional" + lineSeparator() +

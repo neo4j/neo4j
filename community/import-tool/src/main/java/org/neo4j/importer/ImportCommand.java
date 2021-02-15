@@ -83,8 +83,10 @@ public class ImportCommand extends AbstractCommand
     private static final org.neo4j.csv.reader.Configuration DEFAULT_CSV_CONFIG = COMMAS;
     private static final Configuration DEFAULT_IMPORTER_CONFIG = DEFAULT;
 
-    @Option( names = "--database", description = "Name of the database to import.", defaultValue = DEFAULT_DATABASE_NAME,
-            converter = DatabaseNameConverter.class )
+    @Option( names = "--database", defaultValue = DEFAULT_DATABASE_NAME, converter = DatabaseNameConverter.class,
+            description = "Name of the database to import.%n" +
+                          "  If the database used to import into doesn't exist prior to importing,%n" +
+                          "  then it must be created subsequently using CREATE DATABASE." )
     private NormalizedDatabaseName database;
 
     @Option( names = "--additional-config", paramLabel = "<path>", description = "Configuration file to supply additional configuration in." )
