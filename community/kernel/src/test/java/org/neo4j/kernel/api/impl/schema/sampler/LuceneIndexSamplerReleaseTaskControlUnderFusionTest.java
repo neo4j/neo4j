@@ -26,6 +26,10 @@ import java.io.IOException;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -38,10 +42,12 @@ import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProxyAdapter;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -54,6 +60,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -155,9 +162,9 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
             }
 
             @Override
-            public IndexReader newReader()
+            public ValueIndexReader newValueReader()
             {
-                return fusionAccessor.newReader();
+                return fusionAccessor.newValueReader();
             }
         };
         OnlineIndexSamplingJobFactory onlineIndexSamplingJobFactory = new OnlineIndexSamplingJobFactory( null, SIMPLE_NAME_LOOKUP, getInstance(),
@@ -191,10 +198,21 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
         return new IndexAccessor.Adapter()
         {
             @Override
-            public IndexReader newReader()
+            public ValueIndexReader newValueReader()
             {
-                return new IndexReader.Adaptor()
+                return new ValueIndexReader()
                 {
+                    @Override
+                    public void close()
+                    {
+                    }
+
+                    @Override
+                    public long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
+                    {
+                        return 0;
+                    }
+
                     @Override
                     public IndexSampler createSampler()
                     {
@@ -202,6 +220,12 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
                         {
                             throw sampleException;
                         };
+                    }
+
+                    @Override
+                    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexQueryConstraints constraints,
+                                       PropertyIndexQuery... query ) throws IndexNotApplicableKernelException
+                    {
                     }
                 };
             }

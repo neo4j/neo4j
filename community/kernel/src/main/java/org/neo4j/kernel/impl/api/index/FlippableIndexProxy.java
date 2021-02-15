@@ -41,8 +41,9 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.TokenIndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
@@ -263,12 +264,26 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public IndexReader newReader() throws IndexNotFoundKernelException
+    public ValueIndexReader newValueReader() throws IndexNotFoundKernelException
     {
         lock.readLock().lock();
         try
         {
-            return delegate.newReader();
+            return delegate.newValueReader();
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public TokenIndexReader newTokenReader() throws IndexNotFoundKernelException
+    {
+        lock.readLock().lock();
+        try
+        {
+            return delegate.newTokenReader();
         }
         finally
         {

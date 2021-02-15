@@ -32,8 +32,8 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.DoubleLatch;
 
@@ -58,7 +58,7 @@ public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor
     {
         super( PROVIDER_DESCRIPTOR, IndexDirectoryStructure.NONE );
         setInitialIndexState( initialIndexState );
-        when( mockedWriter.newReader() ).thenReturn( IndexReader.EMPTY );
+        when( mockedWriter.newValueReader() ).thenReturn( ValueIndexReader.EMPTY );
     }
 
     public DoubleLatch installPopulationJobCompletionLatch()

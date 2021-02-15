@@ -22,13 +22,11 @@ package org.neo4j.internal.kernel.api;
 import java.util.Iterator;
 import java.util.function.Function;
 
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexSample;
-import org.neo4j.values.storable.Value;
 
 /**
  * Surface for getting schema information, such as fetching specific indexes or constraints.
@@ -60,17 +58,6 @@ public interface SchemaRead extends SchemaReadCore
      * @throws IndexNotFoundKernelException if the index is not there
      */
     long indexSize( IndexDescriptor index ) throws IndexNotFoundKernelException;
-
-    /**
-     * Count the number of index entries for the given nodeId and value.
-     *
-     * @param index The index of interest
-     * @param nodeId node id to match.
-     * @param propertyKeyId the indexed property to look at (composite indexes apply to more than one property, so we need to specify this)
-     * @param value the property value
-     * @return number of index entries for the given {@code nodeId} and {@code value}.
-     */
-    long nodesCountIndexed( IndexDescriptor index, long nodeId, int propertyKeyId, Value value ) throws KernelException;
 
     /**
      * Returns the index sample info.

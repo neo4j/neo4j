@@ -27,11 +27,11 @@ import java.util.List;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -59,7 +59,7 @@ class DeferredConflictCheckingIndexUpdaterTest
     {
         // given
         IndexUpdater actual = mock( IndexUpdater.class );
-        IndexReader reader = mock( IndexReader.class );
+        ValueIndexReader reader = mock( ValueIndexReader.class );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 0 ) ).when( reader ).query( any(), any(), any(), any(), any() );
         long nodeId = 0;
         List<ValueIndexEntryUpdate<IndexDescriptor>> updates = new ArrayList<>();
@@ -101,7 +101,7 @@ class DeferredConflictCheckingIndexUpdaterTest
     {
         // given
         IndexUpdater actual = mock( IndexUpdater.class );
-        IndexReader reader = mock( IndexReader.class );
+        ValueIndexReader reader = mock( ValueIndexReader.class );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 101, 202 ) ).when( reader ).query( any(), any(), any(), any() );
         DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor, NULL );
 

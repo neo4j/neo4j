@@ -17,13 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
 
-import org.neo4j.graphdb.Resource;
+package org.neo4j.internal.kernel.api;
 
-/**
- * Reader for an index.
- */
-public interface IndexReader extends Resource
+public class TokenPredicate
 {
+    private final int tokenId;
+
+    public TokenPredicate( int tokenId )
+    {
+        this.tokenId = tokenId;
+    }
+
+    public int tokenId()
+    {
+        return tokenId;
+    }
 }

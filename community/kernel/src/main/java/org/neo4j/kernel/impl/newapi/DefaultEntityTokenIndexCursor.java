@@ -41,6 +41,7 @@ import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
  * Base for index cursors that can handle scans with IndexOrder.
  */
 abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenIndexCursor<SELF>> extends IndexCursor<IndexProgressor,SELF>
+        implements EntityTokenClient
 {
     private Read read;
     private long entity;
@@ -70,7 +71,8 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     abstract boolean allowedToSeeAllEntitiesWithToken( AccessMode accessMode, int token );
     abstract boolean allowedToSeeEntity( AccessMode accessMode, long entityReference, TokenSet tokens );
 
-    public void scan( IndexProgressor progressor, int token, IndexOrder order )
+    @Override
+    public void initialize( IndexProgressor progressor, int token, IndexOrder order )
     {
         initialize( progressor );
         if ( read.hasTxStateWithChanges() )
@@ -106,7 +108,8 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         initSecurity( token );
     }
 
-    public void scan( IndexProgressor progressor, LongIterator added, LongSet removed, int token )
+    @Override
+    public void initialize( IndexProgressor progressor, int token, LongIterator added, LongSet removed )
     {
         initialize( progressor );
         useMergeSort = false;
@@ -115,22 +118,17 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         initSecurity( token );
     }
 
-    EntityTokenClient entityTokenClient()
+    @Override
+    public boolean acceptEntity( long reference, TokenSet tokens )
     {
-        return ( reference, tokens ) ->
+        if ( isRemoved( reference ) || !allowed( reference, tokens ) )
         {
-            if ( isRemoved( reference ) || !allowed( reference, tokens ) )
-            {
-                return false;
-            }
-            else
-            {
-                DefaultEntityTokenIndexCursor.this.entity = reference;
-                DefaultEntityTokenIndexCursor.this.tokens = tokens;
+            return false;
+        }
+        this.entity = reference;
+        this.tokens = tokens;
 
-                return true;
-            }
-        };
+        return true;
     }
 
     private void initSecurity( int token )

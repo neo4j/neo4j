@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -99,6 +101,16 @@ public class TokenScanValueIndexProgressorTest
         MyClient( PrimitiveIterator.OfLong expectedNodeIds )
         {
             this.expectedNodeIds = expectedNodeIds;
+        }
+
+        @Override
+        public void initialize( IndexProgressor progressor, int token, IndexOrder order )
+        {
+        }
+
+        @Override
+        public void initialize( IndexProgressor progressor, int token, LongIterator added, LongSet removed )
+        {
         }
 
         @Override

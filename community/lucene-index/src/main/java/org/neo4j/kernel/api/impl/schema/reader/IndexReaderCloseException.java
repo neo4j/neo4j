@@ -27,7 +27,7 @@ import java.io.UncheckedIOException;
  *
  * @see org.apache.lucene.search.IndexSearcher
  * @see org.neo4j.kernel.api.impl.index.partition.PartitionSearcher
- * @see SimpleIndexReader
+ * @see SimpleValueIndexReader
  */
 public class IndexReaderCloseException extends UncheckedIOException
 {

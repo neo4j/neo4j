@@ -22,11 +22,11 @@ package org.neo4j.kernel.api.impl.index;
 import java.util.Map;
 
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.values.storable.Value;
 
-public class LuceneMinimalIndexAccessor<READER extends IndexReader> implements MinimalIndexAccessor
+public class LuceneMinimalIndexAccessor<READER extends ValueIndexReader> implements MinimalIndexAccessor
 {
     private final IndexDescriptor indexDescriptor;
     private final DatabaseIndex<READER> index;

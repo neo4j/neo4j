@@ -24,14 +24,14 @@ import java.nio.file.Path;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
-import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 
 /**
  * Read only lucene index representation that wraps provided index implementation and
  * allow read only operations only on top of it.
  * @param <INDEX> - particular index implementation
  */
-public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends IndexReader>
+public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends ValueIndexReader>
         extends AbstractDatabaseIndex<INDEX, READER>
 {
     public ReadOnlyAbstractDatabaseIndex( INDEX luceneIndex )

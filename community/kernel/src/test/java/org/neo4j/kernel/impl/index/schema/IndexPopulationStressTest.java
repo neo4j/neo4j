@@ -49,11 +49,10 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
-import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleEntityValueClient;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
@@ -183,8 +182,8 @@ abstract class IndexPopulationStressTest
         buildReferencePopulatorSingleThreaded( generators, updates );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup );
               IndexAccessor referenceAccessor = indexProvider.getOnlineAccessor( descriptor2, samplingConfig, tokenNameLookup );
-              IndexReader reader = accessor.newReader();
-              IndexReader referenceReader = referenceAccessor.newReader() )
+              var reader = accessor.newValueReader();
+              var referenceReader = referenceAccessor.newValueReader() )
         {
             SimpleEntityValueClient entries = new SimpleEntityValueClient();
             SimpleEntityValueClient referenceEntries = new SimpleEntityValueClient();

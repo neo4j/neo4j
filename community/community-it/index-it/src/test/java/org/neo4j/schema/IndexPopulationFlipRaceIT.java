@@ -31,6 +31,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -42,6 +43,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 
 @DbmsExtension
@@ -153,12 +155,17 @@ class IndexPopulationFlipRaceIT
             IndexDescriptor indexA = single( tx.schemaRead().index( SchemaDescriptor.forLabel( labelAId, keyAId ) ) );
             IndexDescriptor indexB = single( tx.schemaRead().index( SchemaDescriptor.forLabel( labelBId, keyBId ) ) );
 
-            for ( int j = 0; j < NODES_PER_INDEX; j++ )
+            var indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
+            try ( var valueIndexReaderA = indexingService.getIndexProxy( indexA ).newValueReader();
+                  var valueIndexReaderB = indexingService.getIndexProxy( indexB ).newValueReader() )
             {
-                long nodeAId = data.first()[j];
-                assertEquals( 1, tx.schemaRead().nodesCountIndexed( indexA, nodeAId, keyAId, Values.of( nodeAId ) ) );
-                long nodeBId = data.other()[j];
-                assertEquals( 1, tx.schemaRead().nodesCountIndexed( indexB, nodeBId, keyBId, Values.of( nodeBId ) ) );
+                for ( int j = 0; j < NODES_PER_INDEX; j++ )
+                {
+                    long nodeAId = data.first()[j];
+                    assertEquals( 1, valueIndexReaderA.countIndexedEntities( nodeAId, NULL, new int[]{keyAId}, Values.of( nodeAId ) ) );
+                    long nodeBId = data.other()[j];
+                    assertEquals( 1, valueIndexReaderB.countIndexedEntities( nodeBId, NULL, new int[]{keyBId}, Values.of( nodeBId ) ) );
+                }
             }
         }
     }

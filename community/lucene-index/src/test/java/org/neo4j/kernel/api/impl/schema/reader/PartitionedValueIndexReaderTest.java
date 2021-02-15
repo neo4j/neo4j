@@ -56,7 +56,7 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.values.storable.Values.stringValue;
 
-class PartitionedIndexReaderTest
+class PartitionedValueIndexReaderTest
 {
     private static final int PROP_KEY = 1;
     private static final int LABEL_ID = 0;
@@ -67,14 +67,14 @@ class PartitionedIndexReaderTest
     private final PartitionSearcher partitionSearcher1 = mock( PartitionSearcher.class );
     private final PartitionSearcher partitionSearcher2 = mock( PartitionSearcher.class );
     private final PartitionSearcher partitionSearcher3 = mock( PartitionSearcher.class );
-    private final SimpleIndexReader indexReader1 = mock( SimpleIndexReader.class );
-    private final SimpleIndexReader indexReader2 = mock( SimpleIndexReader.class );
-    private final SimpleIndexReader indexReader3 = mock( SimpleIndexReader.class );
+    private final SimpleValueIndexReader indexReader1 = mock( SimpleValueIndexReader.class );
+    private final SimpleValueIndexReader indexReader2 = mock( SimpleValueIndexReader.class );
+    private final SimpleValueIndexReader indexReader3 = mock( SimpleValueIndexReader.class );
 
     @Test
     void partitionedReaderCloseAllSearchers() throws IOException
     {
-        PartitionedIndexReader partitionedIndexReader = createPartitionedReader();
+        PartitionedValueIndexReader partitionedIndexReader = createPartitionedReader();
 
         partitionedIndexReader.close();
 
@@ -86,7 +86,7 @@ class PartitionedIndexReaderTest
     @Test
     void seekOverAllPartitions() throws Exception
     {
-        PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
+        PartitionedValueIndexReader indexReader = createPartitionedReaderFromReaders();
 
         PropertyIndexQuery.ExactPredicate query = PropertyIndexQuery.exact( 1, "Test" );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), any() );
@@ -100,7 +100,7 @@ class PartitionedIndexReaderTest
     @Test
     void rangeSeekByNumberOverPartitions() throws Exception
     {
-        PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
+        PartitionedValueIndexReader indexReader = createPartitionedReaderFromReaders();
 
         PropertyIndexQuery.RangePredicate<?> query = PropertyIndexQuery.range( 1, 1, true, 2, true );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), any() );
@@ -114,7 +114,7 @@ class PartitionedIndexReaderTest
     @Test
     void rangeSeekByStringOverPartitions() throws Exception
     {
-        PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
+        PartitionedValueIndexReader indexReader = createPartitionedReaderFromReaders();
 
         PropertyIndexQuery.RangePredicate<?> query = PropertyIndexQuery.range( 1, "a", false, "b", true );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), any() );
@@ -128,7 +128,7 @@ class PartitionedIndexReaderTest
     @Test
     void rangeSeekByPrefixOverPartitions() throws Exception
     {
-        PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
+        PartitionedValueIndexReader indexReader = createPartitionedReaderFromReaders();
         PropertyIndexQuery.StringPrefixPredicate query = PropertyIndexQuery.stringPrefix( 1,  stringValue( "prefix" ) );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), any() );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 2 ) ).when( indexReader2 ).query( any(), any(), any(), any() );
@@ -141,7 +141,7 @@ class PartitionedIndexReaderTest
     @Test
     void scanOverPartitions() throws Exception
     {
-        PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
+        PartitionedValueIndexReader indexReader = createPartitionedReaderFromReaders();
         PropertyIndexQuery.ExistsPredicate query = PropertyIndexQuery.exists( 1 );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), any() );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 2 ) ).when( indexReader2 ).query( any(), any(), any(), any() );
@@ -154,7 +154,7 @@ class PartitionedIndexReaderTest
     @Test
     void countNodesOverPartitions()
     {
-        PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
+        PartitionedValueIndexReader indexReader = createPartitionedReaderFromReaders();
         when( indexReader1.countIndexedEntities( 1, NULL, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 1L );
         when( indexReader2.countIndexedEntities( 1, NULL, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 2L );
         when( indexReader3.countIndexedEntities( 1, NULL, new int[] {PROP_KEY}, Values.of( "a" ) ) ).thenReturn( 3L );
@@ -165,7 +165,7 @@ class PartitionedIndexReaderTest
     @Test
     void samplingOverPartitions() throws IndexNotFoundKernelException
     {
-        PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
+        PartitionedValueIndexReader indexReader = createPartitionedReaderFromReaders();
         when( indexReader1.createSampler() ).thenReturn( new SimpleSampler( 1 ) );
         when( indexReader2.createSampler() ).thenReturn( new SimpleSampler( 2 ) );
         when( indexReader3.createSampler() ).thenReturn( new SimpleSampler( 3 ) );
@@ -174,7 +174,7 @@ class PartitionedIndexReaderTest
         assertEquals( new IndexSample( 6, 6, 6 ), sampler.sampleIndex( NULL ) );
     }
 
-    private LongSet queryResultAsSet( PartitionedIndexReader indexReader, PropertyIndexQuery query ) throws IndexNotApplicableKernelException
+    private LongSet queryResultAsSet( PartitionedValueIndexReader indexReader, PropertyIndexQuery query ) throws IndexNotApplicableKernelException
     {
         try ( NodeValueIterator iterator = new NodeValueIterator() )
         {
@@ -191,19 +191,19 @@ class PartitionedIndexReaderTest
         assertTrue( results.contains( 3 ) );
     }
 
-    private PartitionedIndexReader createPartitionedReaderFromReaders()
+    private PartitionedValueIndexReader createPartitionedReaderFromReaders()
     {
-        return new PartitionedIndexReader( schemaIndexDescriptor, getPartitionReaders() );
+        return new PartitionedValueIndexReader( schemaIndexDescriptor, getPartitionReaders() );
     }
 
-    private List<SimpleIndexReader> getPartitionReaders()
+    private List<SimpleValueIndexReader> getPartitionReaders()
     {
         return Arrays.asList( indexReader1, indexReader2, indexReader3 );
     }
 
-    private PartitionedIndexReader createPartitionedReader()
+    private PartitionedValueIndexReader createPartitionedReader()
     {
-        return new PartitionedIndexReader( getPartitionSearchers(), schemaIndexDescriptor, samplingConfig, taskCoordinator );
+        return new PartitionedValueIndexReader( getPartitionSearchers(), schemaIndexDescriptor, samplingConfig, taskCoordinator );
     }
 
     private List<SearcherReference> getPartitionSearchers()

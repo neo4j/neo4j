@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 
 /**
  * A droppable index is the same as a read-only index, <em>except</em> it can also be dropped.
  */
-public class DroppableIndex<READER extends IndexReader>
+public class DroppableIndex<READER extends ValueIndexReader>
         extends ReadOnlyAbstractDatabaseIndex<DroppableLuceneIndex<READER>,READER>
         implements DatabaseIndex<READER>
 {

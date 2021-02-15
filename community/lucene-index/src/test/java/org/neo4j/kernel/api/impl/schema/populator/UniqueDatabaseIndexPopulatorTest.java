@@ -458,7 +458,7 @@ class UniqueDatabaseIndexPopulatorTest
         populator.add( updates, NULL );
 
         index.maybeRefreshBlocking();
-        try ( IndexReader reader = index.getIndexReader();
+        try ( var reader = index.getIndexReader();
               NodeValueIterator allEntities = new NodeValueIterator() )
         {
             reader.query( NULL_CONTEXT, allEntities, unconstrained(), PropertyIndexQuery.exists( 1 ) );

@@ -71,10 +71,10 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -192,11 +192,11 @@ class IndexingServiceTest
         when( populator.sample( any( PageCursorTracer.class ) ) ).thenReturn( new IndexSample() );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample() );
         when( storeView.newPropertyAccessor( any( PageCursorTracer.class ), any() ) ).thenReturn( propertyAccessor );
-        IndexReader indexReader = mock( IndexReader.class );
+        ValueIndexReader indexReader = mock( ValueIndexReader.class );
         IndexSampler indexSampler = mock( IndexSampler.class );
         when( indexSampler.sampleIndex( any() ) ).thenReturn( new IndexSample() );
         when( indexReader.createSampler() ).thenReturn( indexSampler );
-        when( accessor.newReader() ).thenReturn( indexReader );
+        when( accessor.newValueReader() ).thenReturn( indexReader );
     }
 
     @AfterEach
@@ -346,8 +346,8 @@ class IndexingServiceTest
     {
         // given
         when( accessor.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater );
-        IndexReader indexReader = mock( IndexReader.class );
-        when( accessor.newReader() ).thenReturn( indexReader );
+        ValueIndexReader indexReader = mock( ValueIndexReader.class );
+        when( accessor.newValueReader() ).thenReturn( indexReader );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( index ) ).when( indexReader ).query( any(), any(), any(), any() );
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
@@ -665,7 +665,7 @@ class IndexingServiceTest
         IndexSamplingMode mode = backgroundRebuildAll();
         IndexPrototype prototype = forSchema( forLabel( 0, 1 ) ).withIndexProvider( PROVIDER_DESCRIPTOR ).withName( "index" );
         IndexDescriptor index = prototype.materialise( indexId );
-        when( accessor.newReader() ).thenReturn( IndexReader.EMPTY );
+        when( accessor.newValueReader() ).thenReturn( ValueIndexReader.EMPTY );
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), index );
         life.init();
         life.start();
@@ -1266,7 +1266,7 @@ class IndexingServiceTest
 
         IndexAccessor accessor = mock( IndexAccessor.class );
         IndexUpdater updater = mock( IndexUpdater.class );
-        when( accessor.newReader() ).thenReturn( IndexReader.EMPTY );
+        when( accessor.newValueReader() ).thenReturn( ValueIndexReader.EMPTY );
         when( accessor.newUpdater( any( IndexUpdateMode.class ), any( PageCursorTracer.class ) ) ).thenReturn( updater );
         when( indexProvider.getOnlineAccessor( any( IndexDescriptor.class ),
                 any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) ).thenReturn( accessor );
@@ -1578,7 +1578,7 @@ class IndexingServiceTest
         }
 
         @Override
-        public IndexReader newReader()
+        public ValueIndexReader newValueReader()
         {
             throw new UnsupportedOperationException( "Not required" );
         }

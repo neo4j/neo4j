@@ -147,7 +147,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         // THEN
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
         {
-            try ( IndexReader reader = accessor.newReader();
+            try ( ValueIndexReader reader = accessor.newValueReader();
                   NodeValueIterator nodes = new NodeValueIterator() )
             {
                 int propertyKeyId = descriptor.schema().getPropertyId();
@@ -207,7 +207,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             }
 
             // THEN
-            try ( IndexReader reader = accessor.newReader() )
+            try ( ValueIndexReader reader = accessor.newValueReader() )
             {
                 int propertyKeyId = descriptor.schema().getPropertyId();
                 for ( NodeAndValue entry : Iterables.concat( valueSet1, valueSet2 ) )
@@ -290,7 +290,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             }
 
             // THEN
-            try ( IndexReader reader = accessor.newReader() )
+            try ( ValueIndexReader reader = accessor.newValueReader() )
             {
                 int propertyKeyId = descriptor.schema().getPropertyId();
                 for ( NodeAndValue nodeAndValue : toRemove )
@@ -327,7 +327,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
         {
-            try ( IndexReader reader = accessor.newReader() )
+            try ( ValueIndexReader reader = accessor.newValueReader() )
             {
                 int propertyKeyId = descriptor.schema().getPropertyId();
                 for ( NodeAndValue entry : values )
@@ -365,7 +365,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             // then
             try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
             {
-                try ( IndexReader reader = accessor.newReader() )
+                try ( ValueIndexReader reader = (ValueIndexReader) accessor.newValueReader() )
                 {
                     int propertyKeyId = descriptor.schema().getPropertyId();
                     for ( NodeAndValue entry : valueSet1 )

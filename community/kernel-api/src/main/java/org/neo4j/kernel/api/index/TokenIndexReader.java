@@ -17,13 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.graphdb.Resource;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.TokenPredicate;
 
-/**
- * Reader for an index.
- */
-public interface IndexReader extends Resource
+public interface TokenIndexReader extends IndexReader
 {
+    void query( QueryContext context, IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query );
+
+    TokenIndexReader EMPTY = new TokenIndexReader()
+    {
+        @Override
+        public void query( QueryContext context, IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query )
+        {
+        }
+
+        @Override
+        public void close()
+        {
+        }
+    };
 }

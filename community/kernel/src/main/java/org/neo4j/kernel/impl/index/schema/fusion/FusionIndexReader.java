@@ -22,9 +22,8 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExistsPredicate;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -34,15 +33,16 @@ import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 
-class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexReader
+class FusionIndexReader extends FusionIndexBase<ValueIndexReader> implements ValueIndexReader
 {
     private final IndexDescriptor descriptor;
 
-    FusionIndexReader( SlotSelector slotSelector, LazyInstanceSelector<IndexReader> instanceSelector, IndexDescriptor descriptor )
+    FusionIndexReader( SlotSelector slotSelector, LazyInstanceSelector<ValueIndexReader> instanceSelector, IndexDescriptor descriptor )
     {
         super( slotSelector, instanceSelector );
         this.descriptor = descriptor;
@@ -57,14 +57,14 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     @Override
     public long countIndexedEntities( long entityId, PageCursorTracer cursorTracer, int[] propertyKeyIds, Value... propertyValues )
     {
-        final IndexReader indexReader = instanceSelector.select( slotSelector.selectSlot( propertyValues, CATEGORY_OF ) );
+        final var indexReader = instanceSelector.select( slotSelector.selectSlot( propertyValues, CATEGORY_OF ) );
         return indexReader.countIndexedEntities( entityId, cursorTracer, propertyKeyIds, propertyValues );
     }
 
     @Override
     public IndexSampler createSampler()
     {
-        return new FusionIndexSampler( instanceSelector.transform( IndexReader::createSampler ) );
+        return new FusionIndexSampler( instanceSelector.transform( ValueIndexReader::createSampler ) );
     }
 
     @Override

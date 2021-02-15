@@ -1243,7 +1243,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         );
 
         SimpleEntityValueClient client = new SimpleEntityValueClient();
-        try ( IndexReader reader = accessor.newReader() )
+        try ( ValueIndexReader reader = accessor.newValueReader() )
         {
             for ( Pair<PropertyIndexQuery[],Boolean> pair : queries )
             {

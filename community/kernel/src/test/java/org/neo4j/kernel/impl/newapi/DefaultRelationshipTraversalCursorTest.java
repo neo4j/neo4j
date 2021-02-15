@@ -34,6 +34,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -45,8 +46,8 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.index.schema.TokenScanReader;
@@ -412,7 +413,7 @@ class DefaultRelationshipTraversalCursorTest
         }
 
         @Override
-        public IndexReader indexReader( IndexDescriptor index, boolean fresh )
+        public ValueIndexReader newValueIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException
         {
             return null;
         }
@@ -605,12 +606,6 @@ class DefaultRelationshipTraversalCursorTest
 
         @Override
         public long indexSize( IndexDescriptor index )
-        {
-            return 0;
-        }
-
-        @Override
-        public long nodesCountIndexed( IndexDescriptor index, long nodeId, int propertyKeyId, Value value )
         {
             return 0;
         }

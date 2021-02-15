@@ -80,7 +80,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
             // then
             try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
             {
-                try ( IndexReader reader = accessor.newReader();
+                try ( ValueIndexReader reader = accessor.newValueReader();
                       NodeValueIterator nodes = new NodeValueIterator() )
                 {
                     reader.query( NULL_CONTEXT, nodes, unconstrained(),

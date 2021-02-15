@@ -51,7 +51,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
 
     /**
      * Return an updater for applying a set of changes to this index.
-     * Updates must be visible in {@link #newReader() readers} created after this update.
+     * Updates must be visible in {@link #newValueReader() value} and {@link #newTokenReader()} token} readers created after this update.
      * <p>
      * This is called with IndexUpdateMode.RECOVERY when starting up after
      * a crash or similar. Updates given then may have already been applied to this index, so
@@ -71,7 +71,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
     void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer );
 
     /**
-     * Refreshes this index, so that {@link #newReader() readers} created after completion of this call
+     * Refreshes this index, so that {@link #newValueReader() readers} created after completion of this call
      * will see the latest updates. This happens automatically on closing {@link #newUpdater(IndexUpdateMode, PageCursorTracer)}
      * w/ {@link IndexUpdateMode#ONLINE}, but not guaranteed for {@link IndexUpdateMode#RECOVERY}.
      * Therefore this call is complementary for updates that has taken place with {@link IndexUpdateMode#RECOVERY}.
@@ -90,10 +90,20 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
     void close();
 
     /**
-     * @return a new {@link IndexReader} responsible for looking up results in the index. The returned
-     * reader must honor repeatable reads.
+     * @return a new {@link ValueIndexReader} responsible for looking up results in the index. The returned reader must honor repeatable reads.
+     * @throws UnsupportedOperationException if underline index is not Value Index
      */
-    IndexReader newReader();
+    ValueIndexReader newValueReader();
+
+    /**
+     * @return a new {@link TokenIndexReader} responsible for looking up token to entity mappings from the index.
+     * The returned reader must honor repeatable reads.
+     * @throws UnsupportedOperationException if underline index is not Token Index
+     */
+    default TokenIndexReader newTokenReader()
+    {
+        throw new UnsupportedOperationException( "Not supported for " + getClass().getSimpleName() );
+    }
 
     /**
      * @param cursorTracer underlying page cursor tracer
@@ -215,9 +225,9 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public IndexReader newReader()
+        public ValueIndexReader newValueReader()
         {
-            return IndexReader.EMPTY;
+            return ValueIndexReader.EMPTY;
         }
 
         @Override
@@ -308,9 +318,9 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public IndexReader newReader()
+        public ValueIndexReader newValueReader()
         {
-            return delegate.newReader();
+            return delegate.newValueReader();
         }
 
         @Override

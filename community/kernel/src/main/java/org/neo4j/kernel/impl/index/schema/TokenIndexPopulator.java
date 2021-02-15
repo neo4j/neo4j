@@ -19,33 +19,22 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.eclipse.collections.api.set.ImmutableSet;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.Collection;
-import java.util.function.Consumer;
 
-import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.monitoring.Monitors;
@@ -53,109 +42,20 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.util.Preconditions;
 
-import static org.eclipse.collections.impl.factory.Sets.immutable;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
-public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
+public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
 {
-    /**
-     * Written in header to indicate native token index is clean
-     *
-     * NOTE that this is not the same byte as the other indexes use,
-     * to be able to handle the switch from old scan stores without rebuilding.
-     */
-    private static final byte CLEAN = (byte) 0x00;
-    static final byte ONLINE = CLEAN;
-
-    /**
-     * Written in header to indicate native token index is/needs rebuilding
-     *
-     * NOTE that this is not the same byte as the other indexes use,
-     * to be able to handle the switch from old scan stores without rebuilding.
-     */
-    private static final byte NEEDS_REBUILDING = (byte) 0x01;
-    static final byte POPULATING = NEEDS_REBUILDING;
-
-    /**
-     * Written in header to indicate native token index failed to population.
-     *
-     * NOTE that this is not the same byte as the other indexes use,
-     * to be able to handle the switch from old scan stores without rebuilding.
-     */
-    static final byte FAILED = (byte) 0x02;
-
     /**
      * The type of entity this token index is backing.
      */
     private final EntityType entityType;
 
     /**
-     * Whether or not this token index is read-only.
-     */
-    private final boolean readOnly;
-
-    /**
-     * Monitors used to pass down monitor to underlying {@link GBPTree}
-     */
-    private final Monitors monitors;
-
-    /**
-     * Tag to use when creating new monitors.
-     * We need this because there could be multiple
-     * {@link IndexProvider.Monitor listeners} registered
-     * of the same type.
-     */
-    private final String monitorTag;
-
-    /**
-     * {@link PageCache} to {@link PageCache#map(Path, int, ImmutableSet)}
-     * store file backing this token scan store. Passed to {@link GBPTree}.
-     */
-    private final PageCache pageCache;
-
-    /**
-     * IndexFiles wrapping the store file {@link PageCache#map(Path, int, ImmutableSet)}.
-     */
-    private final IndexFiles indexFiles;
-
-    /**
-     * {@link FileSystemAbstraction} the backing file lives on.
-     */
-    private final FileSystemAbstraction fs;
-
-    /**
      * Layout of the database.
      */
     private final DatabaseLayout directoryStructure;
     private final Config config;
-    private final PageCacheTracer cacheTracer;
-
-    /**
-     * The actual index which backs this token index.
-     */
-    private GBPTree<TokenScanKey,TokenScanValue> index;
-
-    /**
-     * The single instance of {@link TokenIndexUpdater} used for updates.
-     */
-    private TokenIndexUpdater singleUpdater;
-
-    /**
-     * Monitor for all writes going into this token index.
-     */
-    private NativeTokenScanWriter.WriteMonitor writeMonitor;
-
-    /**
-     * Name of the store that will be used when describing work related to this store.
-     */
-    private final String tokenStoreName;
-
-    /**
-     * Write rebuilding bit to header.
-     */
-    private static final Consumer<PageCursor> needsRebuildingWriter =
-            pageCursor -> pageCursor.putByte( POPULATING );
 
     private byte[] failureBytes;
     private boolean dropped;
@@ -165,31 +65,10 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
             boolean readOnly, Config config, Monitors monitors, String monitorTag, EntityType entityType, PageCacheTracer cacheTracer,
             String tokenStoreName )
     {
-        this.pageCache = pageCache;
-        this.indexFiles = indexFiles;
-        this.fs = fs;
+        super( readOnly, monitors, monitorTag, pageCache, indexFiles, fs, cacheTracer, tokenStoreName );
         this.directoryStructure = directoryStructure;
         this.config = config;
-        this.monitorTag = monitorTag;
-        this.cacheTracer = cacheTracer;
-        this.readOnly = readOnly;
-        this.monitors = monitors;
         this.entityType = entityType;
-        this.tokenStoreName = tokenStoreName;
-    }
-
-    private void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
-    {
-        GBPTree.Monitor monitor = treeMonitor();
-        index = new GBPTree<>( pageCache, indexFiles.getStoreFile(), new TokenScanLayout(), monitor, NO_HEADER_READER,
-                headerWriter, recoveryCleanupWorkCollector, readOnly, cacheTracer, immutable.empty(), tokenStoreName );
-    }
-
-    private GBPTree.Monitor treeMonitor()
-    {
-        GBPTree.Monitor treeMonitor = monitors.newMonitor( GBPTree.Monitor.class, monitorTag );
-        IndexProvider.Monitor indexMonitor = monitors.newMonitor( IndexProvider.Monitor.class, monitorTag );
-        return new IndexMonitorAdaptor( treeMonitor, indexMonitor, indexFiles, null );
     }
 
     @Override
@@ -199,12 +78,8 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
         assertNotClosed();
 
         indexFiles.clear();
-        instantiateTree( RecoveryCleanupWorkCollector.immediate(), needsRebuildingWriter );
-
-        writeMonitor = config.get( GraphDatabaseInternalSettings.token_scan_write_log_enabled )
-                       ? new TokenScanWriteMonitor( fs, directoryStructure, entityType, config )
-                       : NativeTokenScanWriter.EMPTY;
-        singleUpdater = new TokenIndexUpdater( 1_000, writeMonitor );
+        instantiateTree( RecoveryCleanupWorkCollector.immediate(), new NativeIndexHeaderWriter( POPULATING ) );
+        instantiateUpdater( config, directoryStructure, entityType );
     }
 
     @Override
@@ -216,23 +91,13 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
             {
                 index.setDeleteOnClose( true );
             }
-            closeTree();
+            closeResources();
             indexFiles.clear();
         }
         finally
         {
             dropped = true;
             closed = true;
-        }
-    }
-
-    private void closeTree()
-    {
-        IOUtils.closeAllUnchecked( index );
-        index = null;
-        if ( writeMonitor != null )
-        {
-            writeMonitor.close();
         }
     }
 
@@ -283,7 +148,7 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
             if ( populationCompletedSuccessfully )
             {
                 // Successful and completed population
-                assertPopulatorOpen();
+                assertTreeOpen();
                 flushTreeAndMarkAs( ONLINE, cursorTracer );
             }
             else if ( failureBytes != null )
@@ -296,7 +161,7 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
         }
         finally
         {
-            closeTree();
+            closeResources();
             closed = true;
         }
     }
@@ -330,25 +195,6 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
         throw new UnsupportedOperationException( "Token indexes does not support index sampling" );
     }
 
-    @Override
-    public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
-    {
-        //noinspection unchecked
-        return consistencyCheck( reporterFactory.getClass( GBPTreeConsistencyCheckVisitor.class ), cursorTracer );
-    }
-
-    private boolean consistencyCheck( GBPTreeConsistencyCheckVisitor<TokenScanKey> visitor, PageCursorTracer cursorTracer )
-    {
-        try
-        {
-            return index.consistencyCheck( visitor, cursorTracer );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-    }
-
     private void assertNotDropped()
     {
         Preconditions.checkState( !dropped, "Populator has already been dropped." );
@@ -365,10 +211,5 @@ public class TokenIndexPopulator implements IndexPopulator, ConsistencyCheckable
         {
             instantiateTree( RecoveryCleanupWorkCollector.ignore(), NO_HEADER_WRITER );
         }
-    }
-
-    private void assertPopulatorOpen()
-    {
-        Preconditions.checkState( index != null, "Populator has already been closed." );
     }
 }

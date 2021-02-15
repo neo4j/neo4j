@@ -35,8 +35,8 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexConfigProvider;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -93,9 +93,9 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public IndexReader newReader()
+    public ValueIndexReader newValueReader()
     {
-        LazyInstanceSelector<IndexReader> readerSelector = new LazyInstanceSelector<>( slot -> instanceSelector.select( slot ).newReader() );
+        var readerSelector = new LazyInstanceSelector<>( slot -> instanceSelector.select( slot ).newValueReader() );
         return new FusionIndexReader( slotSelector, readerSelector, descriptor );
     }
 

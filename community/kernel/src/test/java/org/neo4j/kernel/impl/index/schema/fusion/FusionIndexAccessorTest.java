@@ -445,7 +445,7 @@ abstract class FusionIndexAccessorTest
     void shouldInstantiateReadersLazily()
     {
         // when getting a new reader, no part-reader should be instantiated
-        IndexReader fusionReader = fusionIndexAccessor.newReader();
+        IndexReader fusionReader = fusionIndexAccessor.newValueReader();
         for ( IndexAccessor aliveAccessor : aliveAccessors )
         {
             // then

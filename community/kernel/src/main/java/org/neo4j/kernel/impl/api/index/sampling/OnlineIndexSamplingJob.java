@@ -75,7 +75,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
         {
             try
             {
-                try ( IndexReader reader = indexProxy.newReader();
+                try ( var reader = indexProxy.newValueReader();
                       var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_SAMPLER_TAG );
                       IndexSampler sampler = reader.createSampler() )
                 {

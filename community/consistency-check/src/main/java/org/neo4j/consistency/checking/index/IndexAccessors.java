@@ -40,7 +40,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -199,15 +199,15 @@ public class IndexAccessors implements Closeable
 
     public class IndexReaders implements AutoCloseable
     {
-        private final MutableLongObjectMap<IndexReader> readers = new LongObjectHashMap<>();
+        private final MutableLongObjectMap<ValueIndexReader> readers = new LongObjectHashMap<>();
 
-        public IndexReader reader( IndexDescriptor index )
+        public ValueIndexReader reader( IndexDescriptor index )
         {
             long indexId = index.getId();
-            IndexReader reader = readers.get( indexId );
+            var reader = readers.get( indexId );
             if ( reader == null )
             {
-                reader = accessors.get( indexId ).newReader();
+                reader = accessors.get( indexId ).newValueReader();
                 readers.put( indexId, reader );
             }
             return reader;

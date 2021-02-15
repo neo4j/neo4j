@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 
@@ -82,7 +83,7 @@ public class LockingNodeUniqueIndexSeek
     interface UniqueNodeIndexSeeker<CURSOR extends NodeValueIndexCursor>
     {
         void nodeIndexSeekWithFreshIndexReader( CURSOR cursor,
-                                                IndexReader indexReader,
+                                                ValueIndexReader indexReader,
                                                 PropertyIndexQuery.ExactPredicate... predicates ) throws IndexNotApplicableKernelException;
     }
 }

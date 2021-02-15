@@ -54,6 +54,7 @@ import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -164,7 +165,7 @@ public class DatabaseIndexAccessorTest
     {
         // GIVEN
         updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
-        IndexReader reader = accessor.newReader();
+        var reader = accessor.newValueReader();
 
         // WHEN
         Set<Long> results = resultSet( reader, PropertyIndexQuery.exists( PROP_ID ) );
@@ -181,7 +182,7 @@ public class DatabaseIndexAccessorTest
     {
         updateAndCommit( asList( add( PROP_ID, "A" ), add( 2, "B" ), add( 3, "C" ), add( 4, "" ) ) );
 
-        IndexReader reader = accessor.newReader();
+        var reader = accessor.newValueReader();
 
         long[] rangeFromBInclusive = resultsArray( reader, range( PROP_ID, "B", true, null, false ) );
         assertThat( rangeFromBInclusive ).contains( 2, 3 );
@@ -213,7 +214,7 @@ public class DatabaseIndexAccessorTest
     {
         updateAndCommit( asList( add( 1, "1" ), add( 2, "2" ), add( 3, "3" ), add( 4, "4" ), add( 5, "Double.NaN" ) ) );
 
-        IndexReader reader = accessor.newReader();
+        var reader = accessor.newValueReader();
 
         try
         {
@@ -231,7 +232,7 @@ public class DatabaseIndexAccessorTest
     {
         // GIVEN
         updateAndCommit( singletonList( add( nodeId, value ) ) );
-        IndexReader reader = accessor.newReader();
+        var reader = accessor.newValueReader();
 
         // WHEN
         updateAndCommit( singletonList( remove( nodeId, value ) ) );
@@ -246,9 +247,9 @@ public class DatabaseIndexAccessorTest
     {
         // WHEN
         updateAndCommit( singletonList( add( nodeId, value ) ) );
-        IndexReader firstReader = accessor.newReader();
+        var firstReader = accessor.newValueReader();
         updateAndCommit( singletonList( add( nodeId2, value2 ) ) );
-        IndexReader secondReader = accessor.newReader();
+        var secondReader = accessor.newValueReader();
 
         // THEN
         assertEquals( asSet( nodeId ), resultSet( firstReader, exact( PROP_ID, value ) ) );
@@ -264,7 +265,7 @@ public class DatabaseIndexAccessorTest
     {
         // WHEN
         updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
-        IndexReader reader = accessor.newReader();
+        var reader = accessor.newValueReader();
 
         // THEN
         assertEquals( asSet( nodeId ), resultSet( reader, exact( PROP_ID, value ) ) );
@@ -279,7 +280,7 @@ public class DatabaseIndexAccessorTest
 
         // WHEN
         updateAndCommit( singletonList( change( nodeId, value, value2 ) ) );
-        IndexReader reader = accessor.newReader();
+        var reader = accessor.newValueReader();
 
         // THEN
         assertEquals( asSet( nodeId ), resultSet( reader, exact( PROP_ID, value2 ) ) );
@@ -295,7 +296,7 @@ public class DatabaseIndexAccessorTest
 
         // WHEN
         updateAndCommit( singletonList( remove( nodeId, value ) ) );
-        IndexReader reader = accessor.newReader();
+        var reader = accessor.newValueReader();
 
         // THEN
         assertEquals( asSet( nodeId2 ), resultSet( reader, exact( PROP_ID, value2 ) ) );
@@ -310,7 +311,7 @@ public class DatabaseIndexAccessorTest
         updateAndCommit( asList( add( nodeId, value ), add( nodeId2, value2 ) ) );
 
         // when
-        IndexReader indexReader = accessor.newReader();
+        var indexReader = accessor.newValueReader();
         BinaryLatch dropLatch = new BinaryLatch();
         BinaryLatch sampleLatch = new BinaryLatch();
 
@@ -324,7 +325,7 @@ public class DatabaseIndexAccessorTest
         } ).when( indexSampler ).newTask();
 
         List<Future<?>> futures = new ArrayList<>();
-        try ( IndexReader reader = indexReader /* do not inline! */;
+        try ( var reader = indexReader /* do not inline! */;
               IndexSampler sampler = indexSampler /* do not inline! */ )
         {
            futures.add( threading.execute( (IOFunction<Void,Void>) nothing ->
@@ -363,19 +364,19 @@ public class DatabaseIndexAccessorTest
         }
     }
 
-    private Set<Long> resultSet( IndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
+    private Set<Long> resultSet( ValueIndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         return toSet( results( reader, queries ) );
     }
 
-    private NodeValueIterator results( IndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
+    private NodeValueIterator results( ValueIndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator results = new NodeValueIterator();
         reader.query( NULL_CONTEXT, results, unconstrained(), queries );
         return results;
     }
 
-    private long[] resultsArray( IndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
+    private long[] resultsArray( ValueIndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         try ( NodeValueIterator iterator = results( reader, queries ) )
         {

@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
-import org.neo4j.kernel.api.index.AbstractIndexReader;
+import org.neo4j.kernel.api.index.AbstractValueIndexReader;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -56,19 +56,19 @@ import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_K
 /**
  * Schema index reader that is able to read/sample a single partition of a partitioned Lucene index.
  *
- * @see PartitionedIndexReader
+ * @see PartitionedValueIndexReader
  */
-public class SimpleIndexReader extends AbstractIndexReader
+public class SimpleValueIndexReader extends AbstractValueIndexReader
 {
     private final SearcherReference searcherReference;
     private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
     private final TaskCoordinator taskCoordinator;
 
-    public SimpleIndexReader( SearcherReference searcherReference,
-            IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig,
-            TaskCoordinator taskCoordinator )
+    public SimpleValueIndexReader( SearcherReference searcherReference,
+                                   IndexDescriptor descriptor,
+                                   IndexSamplingConfig samplingConfig,
+                                   TaskCoordinator taskCoordinator )
     {
         super( descriptor );
         this.searcherReference = searcherReference;

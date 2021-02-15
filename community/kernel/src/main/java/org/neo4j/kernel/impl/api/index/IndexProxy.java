@@ -36,9 +36,10 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
+import org.neo4j.kernel.api.index.TokenIndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
@@ -88,8 +89,15 @@ public interface IndexProxy extends MinimalIndexAccessor
 
     /**
      * @throws IndexNotFoundKernelException if the index isn't online yet.
+     * @throws UnsupportedOperationException if underlying index is not Value Index
      */
-    IndexReader newReader() throws IndexNotFoundKernelException;
+    ValueIndexReader newValueReader() throws IndexNotFoundKernelException;
+
+    /**
+     * @throws IndexNotFoundKernelException if the index isn't online yet.
+     * @throws UnsupportedOperationException if underlying index is not Token Index
+     */
+    TokenIndexReader newTokenReader() throws IndexNotFoundKernelException;
 
     /**
      * @param time time to wait maximum. A value of 0 means indefinite wait.

@@ -30,8 +30,9 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.TokenIndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 
@@ -119,7 +120,13 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexReader newReader() throws IndexNotFoundKernelException
+    public ValueIndexReader newValueReader() throws IndexNotFoundKernelException
+    {
+        throw new IndexNotFoundKernelException( "Index is still populating: " + job );
+    }
+
+    @Override
+    public TokenIndexReader newTokenReader() throws IndexNotFoundKernelException
     {
         throw new IndexNotFoundKernelException( "Index is still populating: " + job );
     }

@@ -28,14 +28,14 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.ValueTuple;
 
-import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.storageengine.api.UpdateMode.REMOVED;
 
@@ -63,12 +63,12 @@ import static org.neo4j.storageengine.api.UpdateMode.REMOVED;
 public class DeferredConflictCheckingIndexUpdater implements IndexUpdater
 {
     private final IndexUpdater actual;
-    private final Supplier<IndexReader> readerSupplier;
+    private final Supplier<ValueIndexReader> readerSupplier;
     private final IndexDescriptor indexDescriptor;
     private final PageCursorTracer cursorTracer;
     private final Set<ValueTuple> touchedTuples = new HashSet<>();
 
-    public DeferredConflictCheckingIndexUpdater( IndexUpdater actual, Supplier<IndexReader> readerSupplier, IndexDescriptor indexDescriptor,
+    public DeferredConflictCheckingIndexUpdater( IndexUpdater actual, Supplier<ValueIndexReader> readerSupplier, IndexDescriptor indexDescriptor,
             PageCursorTracer cursorTracer )
     {
         this.actual = actual;
@@ -92,7 +92,7 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater
     public void close() throws IndexEntryConflictException
     {
         actual.close();
-        try ( IndexReader reader = readerSupplier.get() )
+        try ( ValueIndexReader reader = readerSupplier.get() )
         {
             for ( ValueTuple tuple : touchedTuples )
             {

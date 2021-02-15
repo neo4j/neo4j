@@ -59,9 +59,9 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFailureStrategies;
@@ -95,8 +95,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
-import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
@@ -171,7 +171,7 @@ public class DatabaseCompositeIndexAccessorTest
             try ( accessor )
             {
                 updateAndCommit( accessor, asList( add( nodeId, values ), add( nodeId2, values2 ) ) );
-                try ( IndexReader reader = accessor.newReader() )
+                try ( var reader = accessor.newValueReader() )
                 {
 
                     // WHEN
@@ -193,9 +193,9 @@ public class DatabaseCompositeIndexAccessorTest
             try ( accessor )
             {
                 updateAndCommit( accessor, singletonList( add( nodeId, values ) ) );
-                IndexReader firstReader = accessor.newReader();
+                var firstReader = accessor.newValueReader();
                 updateAndCommit( accessor, singletonList( add( nodeId2, values2 ) ) );
-                IndexReader secondReader = accessor.newReader();
+                var secondReader = accessor.newValueReader();
 
                 // THEN
                 assertEquals( asSet( nodeId ), resultSet( firstReader, exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) );
@@ -217,7 +217,7 @@ public class DatabaseCompositeIndexAccessorTest
             try ( accessor )
             {
                 updateAndCommit( accessor, asList( add( nodeId, values ), add( nodeId2, values2 ) ) );
-                try ( IndexReader reader = accessor.newReader() )
+                try ( var reader = accessor.newValueReader() )
                 {
                     assertEquals( asSet( nodeId ), resultSet( reader, exact( PROP_ID1, values[0] ), exact( PROP_ID2, values[1] ) ) );
                 }
@@ -235,7 +235,7 @@ public class DatabaseCompositeIndexAccessorTest
 
                 // WHEN
                 updateAndCommit( accessor, singletonList( change( nodeId, values, values2 ) ) );
-                try ( IndexReader reader = accessor.newReader() )
+                try ( var reader = accessor.newValueReader() )
                 {
                     // THEN
                     assertEquals( asSet( nodeId ), resultSet( reader, exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ) );
@@ -255,7 +255,7 @@ public class DatabaseCompositeIndexAccessorTest
 
                 // WHEN
                 updateAndCommit( accessor, singletonList( remove( nodeId, values ) ) );
-                try ( IndexReader reader = accessor.newReader() )
+                try ( var reader = accessor.newValueReader() )
                 {
                     // THEN
                     assertEquals( asSet( nodeId2 ), resultSet( reader, exact( PROP_ID1, values2[0] ), exact( PROP_ID2, values2[1] ) ) );
@@ -274,7 +274,7 @@ public class DatabaseCompositeIndexAccessorTest
                 updateAndCommit( accessor, asList( add( nodeId, values ), add( nodeId2, values2 ) ) );
 
                 // when
-                IndexReader indexReader = accessor.newReader(); // needs to be acquired before drop() is called
+                var indexReader = accessor.newValueReader(); // needs to be acquired before drop() is called
                 IndexSampler indexSampler = indexReader.createSampler();
 
                 AtomicBoolean droppedLatch = new AtomicBoolean();
@@ -342,7 +342,7 @@ public class DatabaseCompositeIndexAccessorTest
         return provider.getOnlineAccessor( descriptor, SAMPLING_CONFIG, SIMPLE_NAME_LOOKUP );
     }
 
-    private Set<Long> resultSet( IndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
+    private Set<Long> resultSet( ValueIndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException
     {
         try ( NodeValueIterator results = new NodeValueIterator() )
         {

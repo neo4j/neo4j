@@ -34,8 +34,9 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.TokenIndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.kernel.impl.index.schema.DeferredConflictCheckingIndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -81,7 +82,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
         {
             case ONLINE:
                 return new DelegatingIndexUpdater( new DeferredConflictCheckingIndexUpdater(
-                        target.accessor.newUpdater( mode, cursorTracer ), target::newReader, target.getDescriptor(), cursorTracer ) )
+                        target.accessor.newUpdater( mode, cursorTracer ), target::newValueReader, target.getDescriptor(), cursorTracer ) )
                 {
                     @Override
                     public void process( IndexEntryUpdate<?> update )
@@ -132,9 +133,15 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
-    public IndexReader newReader() throws IndexNotFoundKernelException
+    public ValueIndexReader newValueReader() throws IndexNotFoundKernelException
     {
         throw new IndexNotFoundKernelException( getDescriptor() + " is still populating" );
+    }
+
+    @Override
+    public TokenIndexReader newTokenReader()
+    {
+        throw new UnsupportedOperationException( "Not supported for value indexes" );
     }
 
     @Override

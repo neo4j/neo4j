@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -103,7 +102,7 @@ class LuceneSchemaIndexPopulationIT
                 // now index is online and should contain updates data
                 assertTrue( uniqueIndex.isOnline() );
 
-                try ( IndexReader indexReader = indexAccessor.newReader();
+                try ( var indexReader = indexAccessor.newValueReader();
                       NodeValueIterator results = new NodeValueIterator();
                       IndexSampler indexSampler = indexReader.createSampler() )
                 {

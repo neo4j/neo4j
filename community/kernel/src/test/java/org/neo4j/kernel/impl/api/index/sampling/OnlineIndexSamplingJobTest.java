@@ -27,9 +27,9 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.LogProvider;
@@ -53,7 +53,7 @@ class OnlineIndexSamplingJobTest
     private final IndexProxy indexProxy = mock( IndexProxy.class );
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
     private final IndexDescriptor indexDescriptor = forSchema( forLabel( 1, 2 ), IndexProviderDescriptor.UNDECIDED ).withName( "index" ).materialise( indexId );
-    private final IndexReader indexReader = mock( IndexReader.class );
+    private final ValueIndexReader indexReader = mock( ValueIndexReader.class );
     private final IndexSampler indexSampler = mock( IndexSampler.class );
 
     private final long indexUniqueValues = 21L;
@@ -64,7 +64,7 @@ class OnlineIndexSamplingJobTest
     void setup() throws IndexNotFoundKernelException
     {
         when( indexProxy.getDescriptor() ).thenReturn( indexDescriptor );
-        when( indexProxy.newReader() ).thenReturn( indexReader );
+        when( indexProxy.newValueReader() ).thenReturn( indexReader );
         when( indexReader.createSampler() ).thenReturn( indexSampler );
         when( indexSampler.sampleIndex( any() ) ).thenReturn( sample );
     }

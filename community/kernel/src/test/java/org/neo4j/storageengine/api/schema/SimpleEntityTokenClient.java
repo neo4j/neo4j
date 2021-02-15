@@ -19,34 +19,31 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-import org.neo4j.internal.kernel.api.IndexQueryConstraints;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
+
+import org.neo4j.internal.kernel.api.TokenSet;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
-import org.neo4j.values.storable.Value;
 
-public class SimpleEntityValueClient extends SimpleEntityClient implements IndexProgressor.EntityValueClient
+public class SimpleEntityTokenClient extends SimpleEntityClient implements IndexProgressor.EntityTokenClient
 {
-    public Value[] values;
-
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, PropertyIndexQuery[] query, IndexQueryConstraints constraints,
-            boolean indexIncludesTransactionState )
+    public void initialize( IndexProgressor progressor, int token, IndexOrder order )
     {
-        initialize( progressor );
+        super.initialize( progressor );
     }
 
     @Override
-    public boolean acceptEntity( long reference, float score, Value... values )
+    public void initialize( IndexProgressor progressor, int token, LongIterator added, LongSet removed )
+    {
+        super.initialize( progressor );
+    }
+
+    @Override
+    public boolean acceptEntity( long reference, TokenSet tokens )
     {
         acceptEntity( reference );
-        this.values = values;
-        return true;
-    }
-
-    @Override
-    public boolean needsValues()
-    {
         return true;
     }
 }

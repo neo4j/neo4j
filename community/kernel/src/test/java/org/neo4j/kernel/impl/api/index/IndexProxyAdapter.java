@@ -30,8 +30,9 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.TokenIndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceIterator;
@@ -82,9 +83,15 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public IndexReader newReader()
+    public ValueIndexReader newValueReader()
     {
-        return IndexReader.EMPTY;
+        return ValueIndexReader.EMPTY;
+    }
+
+    @Override
+    public TokenIndexReader newTokenReader()
+    {
+        return TokenIndexReader.EMPTY;
     }
 
     @Override

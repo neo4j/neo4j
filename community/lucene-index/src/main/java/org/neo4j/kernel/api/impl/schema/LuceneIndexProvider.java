@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
@@ -97,7 +98,7 @@ public class LuceneIndexProvider extends IndexProvider
     public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
     {
         PartitionedIndexStorage indexStorage = indexStorageFactory.indexStorageOf( descriptor.getId() );
-        DroppableIndex<IndexReader> index =
+        DroppableIndex<ValueIndexReader> index =
                 new DroppableIndex<>( new DroppableLuceneIndex<>( indexStorage, new ReadOnlyIndexPartitionFactory(), descriptor ) );
         return new LuceneMinimalIndexAccessor<>( descriptor, index, true );
     }

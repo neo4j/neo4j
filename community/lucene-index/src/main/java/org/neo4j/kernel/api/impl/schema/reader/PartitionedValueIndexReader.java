@@ -33,7 +33,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
-import org.neo4j.kernel.api.index.AbstractIndexReader;
+import org.neo4j.kernel.api.index.AbstractValueIndexReader;
 import org.neo4j.kernel.api.index.BridgingIndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -42,26 +42,26 @@ import org.neo4j.values.storable.Value;
 
 /**
  * Index reader that is able to read/sample multiple partitions of a partitioned Lucene index.
- * Internally uses multiple {@link SimpleIndexReader}s for individual partitions.
+ * Internally uses multiple {@link SimpleValueIndexReader}s for individual partitions.
  *
- * @see SimpleIndexReader
+ * @see SimpleValueIndexReader
  */
-public class PartitionedIndexReader extends AbstractIndexReader
+public class PartitionedValueIndexReader extends AbstractValueIndexReader
 {
-    private final List<SimpleIndexReader> indexReaders;
+    private final List<SimpleValueIndexReader> indexReaders;
 
-    public PartitionedIndexReader( List<SearcherReference> partitionSearchers,
-            IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig,
-            TaskCoordinator taskCoordinator )
+    public PartitionedValueIndexReader( List<SearcherReference> partitionSearchers,
+                                        IndexDescriptor descriptor,
+                                        IndexSamplingConfig samplingConfig,
+                                        TaskCoordinator taskCoordinator )
     {
         this( descriptor, partitionSearchers.stream()
-                .map( partitionSearcher -> new SimpleIndexReader( partitionSearcher, descriptor,
-                        samplingConfig, taskCoordinator ) )
+                .map( partitionSearcher -> new SimpleValueIndexReader( partitionSearcher, descriptor,
+                                                                       samplingConfig, taskCoordinator ) )
                 .collect( Collectors.toList() ) );
     }
 
-    PartitionedIndexReader( IndexDescriptor descriptor, List<SimpleIndexReader> readers )
+    PartitionedValueIndexReader( IndexDescriptor descriptor, List<SimpleValueIndexReader> readers )
     {
         super( descriptor );
         this.indexReaders = readers;
@@ -119,7 +119,7 @@ public class PartitionedIndexReader extends AbstractIndexReader
     public IndexSampler createSampler()
     {
         List<IndexSampler> indexSamplers = indexReaders.parallelStream()
-                .map( SimpleIndexReader::createSampler )
+                .map( SimpleValueIndexReader::createSampler )
                 .collect( Collectors.toList() );
         return new AggregatingIndexSampler( indexSamplers );
     }

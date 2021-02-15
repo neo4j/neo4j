@@ -57,7 +57,7 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Token
     {
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( read );
-        IndexProgressor indexProgressor = storageScan.initializeBatch( indexCursor.entityTokenClient(), sizeHint, cursorTracer );
+        IndexProgressor indexProgressor = storageScan.initializeBatch( indexCursor, sizeHint, cursorTracer );
 
         if ( indexProgressor == IndexProgressor.EMPTY && !addedItems.hasNext() )
         {
@@ -65,7 +65,7 @@ class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,Token
         }
         else
         {
-            indexCursor.scan( indexProgressor, addedItems, removed, label );
+            indexCursor.initialize( indexProgressor, label, addedItems, removed );
             return true;
         }
     }

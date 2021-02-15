@@ -41,6 +41,8 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 public class TokenIndexUtility
 {
+    static final long[] TOKENS = {1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L};
+
     /**
      * Compares the state of the tree with the expected values.
      * @param expected Mapping from entity id to expected entity tokens.
@@ -129,7 +131,7 @@ public class TokenIndexUtility
      */
     static long[] generateRandomTokens( RandomRule random )
     {
-        long[] allTokens = new long[]{1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L};
+        long[] allTokens = TokenIndexUtility.TOKENS;
         double[] allTokensRatio = new double[]{0.9, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.01, 0.001};
         double emptyRatio = 0.1;
 

@@ -133,30 +133,12 @@ abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> ex
     }
 
     @Test
-    void readingAfterDropShouldThrow()
-    {
-        // given
-        accessor.drop();
-
-        assertThrows( IllegalStateException.class, () -> accessor.newReader() );
-    }
-
-    @Test
     void writingAfterDropShouldThrow()
     {
         // given
         accessor.drop();
 
         assertThrows( IllegalStateException.class, () -> accessor.newUpdater( ONLINE, NULL ) );
-    }
-
-    @Test
-    void readingAfterCloseShouldThrow()
-    {
-        // given
-        accessor.close();
-
-        assertThrows( IllegalStateException.class, () -> accessor.newReader() );
     }
 
     @Test

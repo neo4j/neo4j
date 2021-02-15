@@ -57,7 +57,7 @@ import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.index.AbstractIndexReader;
+import org.neo4j.kernel.api.index.AbstractValueIndexReader;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -233,7 +233,7 @@ class DatabaseIndexIntegrationTest
         return partition.getIndexWriter();
     }
 
-    private static class WritableTestDatabaseIndex extends WritableAbstractDatabaseIndex<TestLuceneIndex,AbstractIndexReader>
+    private static class WritableTestDatabaseIndex extends WritableAbstractDatabaseIndex<TestLuceneIndex,AbstractValueIndexReader>
     {
         WritableTestDatabaseIndex( PartitionedIndexStorage indexStorage )
         {
@@ -242,7 +242,7 @@ class DatabaseIndexIntegrationTest
         }
     }
 
-    private static class TestLuceneIndex extends AbstractLuceneIndex<AbstractIndexReader>
+    private static class TestLuceneIndex extends AbstractLuceneIndex<AbstractValueIndexReader>
     {
 
         TestLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory )
@@ -251,13 +251,13 @@ class DatabaseIndexIntegrationTest
         }
 
         @Override
-        protected AbstractIndexReader createSimpleReader( List<AbstractIndexPartition> partitions )
+        protected AbstractValueIndexReader createSimpleReader( List<AbstractIndexPartition> partitions )
         {
             return null;
         }
 
         @Override
-        protected AbstractIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions )
+        protected AbstractValueIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions )
         {
             return null;
         }

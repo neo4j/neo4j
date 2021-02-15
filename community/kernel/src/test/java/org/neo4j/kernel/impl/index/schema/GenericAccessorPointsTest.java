@@ -257,7 +257,7 @@ class GenericAccessorPointsTest
 
         processAll( updates );
 
-        try ( IndexReader indexReader = accessor.newReader() )
+        try ( var indexReader = accessor.newValueReader() )
         {
             SimpleEntityValueClient client = new SimpleEntityValueClient();
 
@@ -311,7 +311,7 @@ class GenericAccessorPointsTest
 
     private void exactMatchOnAllValues( List<Value> values ) throws IndexNotApplicableKernelException
     {
-        try ( IndexReader indexReader = accessor.newReader() )
+        try ( var indexReader = accessor.newValueReader() )
         {
             SimpleEntityValueClient client = new SimpleEntityValueClient();
             for ( Value value : values )

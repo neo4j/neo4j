@@ -56,8 +56,8 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -393,11 +393,10 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public IndexReader indexReader( IndexDescriptor index, boolean fresh ) throws IndexNotFoundKernelException
+    public ValueIndexReader newValueIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        return fresh ? indexReaderCache.newUnCachedReader( index )
-                     : indexReaderCache.getOrCreate( index );
+        return indexingService.getIndexProxy( index ).newValueReader();
     }
 
     @Override
@@ -732,15 +731,6 @@ public class AllStoreHolder extends Read
         acquireSharedSchemaLock( index );
         ktx.assertOpen();
         return indexStatisticsStore.indexSample( index.getId() ).indexSize();
-    }
-
-    @Override
-    public long nodesCountIndexed( IndexDescriptor index, long nodeId, int propertyKeyId, Value value ) throws KernelException
-    {
-        ktx.assertOpen();
-        assertValidIndex( index );
-        IndexReader reader = indexReaderCache.getOrCreate( index );
-        return reader.countIndexedEntities( nodeId, cursorTracer, new int[] {propertyKeyId}, value );
     }
 
     @Override

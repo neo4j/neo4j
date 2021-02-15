@@ -38,7 +38,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.transaction.state.storeview.DefaultNodePropertyAccessor;
@@ -93,7 +93,7 @@ class SchemaComplianceChecker implements AutoCloseable
             {
                 continue;
             }
-            IndexReader reader = indexReaders.reader( indexRule );
+            var reader = indexReaders.reader( indexRule );
             if ( indexRule.isUnique() )
             {
                 verifyIndexedUniquely( entity, valueArray, indexRule, reader, reportSupplier );
@@ -113,7 +113,8 @@ class SchemaComplianceChecker implements AutoCloseable
     }
 
     private <ENTITY extends PrimitiveRecord> void verifyIndexedUniquely( ENTITY entity, Value[] propertyValues, IndexDescriptor indexRule,
-            IndexReader reader, Function<ENTITY,ConsistencyReport.PrimitiveConsistencyReport> reportSupplier )
+                                                                         ValueIndexReader reader,
+                                                                         Function<ENTITY,ConsistencyReport.PrimitiveConsistencyReport> reportSupplier )
     {
         long nodeId = entity.getId();
         PropertyIndexQuery[] query = seek( indexRule.schema(), propertyValues );
@@ -147,7 +148,7 @@ class SchemaComplianceChecker implements AutoCloseable
         return query;
     }
 
-    private LongIterator queryIndexOrEmpty( IndexReader reader, PropertyIndexQuery[] query )
+    private LongIterator queryIndexOrEmpty( ValueIndexReader reader, PropertyIndexQuery[] query )
     {
         try
         {

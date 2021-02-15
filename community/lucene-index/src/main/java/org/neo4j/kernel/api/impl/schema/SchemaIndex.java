@@ -26,13 +26,14 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 /**
  * Partitioned lucene schema index.
  */
-public interface SchemaIndex extends DatabaseIndex<IndexReader>
+public interface SchemaIndex extends DatabaseIndex<ValueIndexReader>
 {
 
     /**

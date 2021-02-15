@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.graphdb.Resource;
+import org.neo4j.internal.schema.IndexDescriptor;
 
-/**
- * Reader for an index.
- */
-public interface IndexReader extends Resource
+public abstract class AbstractValueIndexReader implements ValueIndexReader
 {
+    protected final IndexDescriptor descriptor;
+
+    protected AbstractValueIndexReader( IndexDescriptor descriptor )
+    {
+        this.descriptor = descriptor;
+    }
 }

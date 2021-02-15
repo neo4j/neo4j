@@ -24,7 +24,6 @@ import java.io.UncheckedIOException;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.index.internal.gbptree.Seeker;
-import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
@@ -107,16 +106,6 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
 
             //noinspection AssertWithSideEffects
             assert keysInOrder( key, indexOrder );
-        }
-    }
-
-    @Override
-    public void close()
-    {
-        super.close();
-        if ( client instanceof AutoCloseablePlus )
-        {
-            ((AutoCloseablePlus) client).close();
         }
     }
 }

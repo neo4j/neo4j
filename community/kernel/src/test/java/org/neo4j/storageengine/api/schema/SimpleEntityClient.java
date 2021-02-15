@@ -17,16 +17,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.storageengine.api.schema;
 
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProgressor;
 
-public abstract class AbstractIndexReader implements IndexReader
+public class SimpleEntityClient
 {
-    protected final IndexDescriptor descriptor;
+    public long reference;
+    private IndexProgressor progressor;
 
-    protected AbstractIndexReader( IndexDescriptor descriptor )
+    public boolean next()
     {
-        this.descriptor = descriptor;
+        if ( progressor.next() )
+        {
+            return true;
+        }
+        closeProgressor();
+        return false;
+    }
+
+    protected void initialize( IndexProgressor progressor )
+    {
+        this.progressor = progressor;
+    }
+
+    protected void acceptEntity( long reference )
+    {
+        this.reference = reference;
+    }
+
+    private void closeProgressor()
+    {
+        if ( progressor != null )
+        {
+            progressor.close();
+            progressor = null;
+        }
     }
 }

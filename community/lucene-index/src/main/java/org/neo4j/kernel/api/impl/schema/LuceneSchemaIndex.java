@@ -29,12 +29,12 @@ import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.impl.schema.reader.PartitionedIndexReader;
-import org.neo4j.kernel.api.impl.schema.reader.SimpleIndexReader;
+import org.neo4j.kernel.api.impl.schema.reader.PartitionedValueIndexReader;
+import org.neo4j.kernel.api.impl.schema.reader.SimpleValueIndexReader;
 import org.neo4j.kernel.api.impl.schema.verification.PartitionedUniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.verification.SimpleUniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
-import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
@@ -42,7 +42,7 @@ import org.neo4j.values.storable.Value;
 /**
  * Implementation of Lucene schema index that support multiple partitions.
  */
-class LuceneSchemaIndex extends AbstractLuceneIndex<IndexReader>
+class LuceneSchemaIndex extends AbstractLuceneIndex<ValueIndexReader>
 {
 
     private final IndexSamplingConfig samplingConfig;
@@ -132,17 +132,17 @@ class LuceneSchemaIndex extends AbstractLuceneIndex<IndexReader>
     }
 
     @Override
-    protected SimpleIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
+    protected SimpleValueIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         AbstractIndexPartition searcher = getFirstPartition( partitions );
-        return new SimpleIndexReader( searcher.acquireSearcher(), descriptor, samplingConfig, taskCoordinator );
+        return new SimpleValueIndexReader( searcher.acquireSearcher(), descriptor, samplingConfig, taskCoordinator );
     }
 
     @Override
-    protected PartitionedIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
+    protected PartitionedValueIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<SearcherReference> searchers = acquireSearchers( partitions );
-        return new PartitionedIndexReader( searchers, descriptor, samplingConfig, taskCoordinator );
+        return new PartitionedValueIndexReader( searchers, descriptor, samplingConfig, taskCoordinator );
     }
 
 }

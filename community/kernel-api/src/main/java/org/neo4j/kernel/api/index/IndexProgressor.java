@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
+
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -104,6 +108,27 @@ public interface IndexProgressor extends AutoCloseable
      */
     interface EntityTokenClient
     {
+        /**
+         * Setup the client for progressing using the supplied progressor. The values fed in to acceptEntity map to the
+         * tokenId provided here. Called by index implementation.
+         * @param progressor The progressor
+         * @param token The token id to query
+         * @param order Required order the index should return entity ids in.
+         */
+        void initialize( IndexProgressor progressor, int token, IndexOrder order );
+
+        /**
+         * Setup the client for progressing using the supplied progressor. The values fed in to acceptEntity map to the
+         * tokenId provided here. Called by index implementation.
+         * This version of initialize should be used when transaction state shouldn't be used to find added/remove entities,
+         * but instead the sent in sets. Useful for example when doing work in batches.
+         * @param progressor The progressor
+         * @param token The token id to query
+         * @param added Added entities that should be included in the results.
+         * @param removed Removed entities that should be excluded from the results.
+         */
+        void initialize( IndexProgressor progressor, int token, LongIterator added, LongSet removed );
+
         /**
          * Accept the entity id and (some) tokens of a candidate index entry. Return true if the entry
          * is accepted, false otherwise.

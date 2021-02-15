@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -120,7 +121,7 @@ class NativeTokenScanWriter implements TokenScanWriter
      */
     private long lowestTokenId;
 
-    interface WriteMonitor
+    interface WriteMonitor extends Closeable
     {
         default void range( long range, int tokenId )
         {
@@ -154,6 +155,7 @@ class NativeTokenScanWriter implements TokenScanWriter
         {
         }
 
+        @Override
         default void close()
         {
         }

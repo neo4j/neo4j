@@ -23,7 +23,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -31,6 +30,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -104,7 +105,7 @@ abstract class Read implements TxStateHolder,
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead( this );
-        indexSession.reader.query( this, client, constraints, query );
+        ((ValueIndexReader)indexSession.reader).query( this, client, constraints, query );
     }
 
     @Override
@@ -120,7 +121,7 @@ abstract class Read implements TxStateHolder,
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead( this );
-        indexSession.reader.query( this, client, constraints, query );
+        ((ValueIndexReader)indexSession.reader).query( this, client, constraints, query );
     }
 
     @Override
@@ -159,7 +160,7 @@ abstract class Read implements TxStateHolder,
     @Override // UniqueNodeIndexSeeker
     public void nodeIndexSeekWithFreshIndexReader(
             DefaultNodeValueIndexCursor cursor,
-            IndexReader indexReader,
+            ValueIndexReader indexReader,
             PropertyIndexQuery.ExactPredicate... query ) throws IndexNotApplicableKernelException
     {
         cursor.setRead( this );
@@ -206,7 +207,7 @@ abstract class Read implements TxStateHolder,
         int firstProperty = indexSession.reference.schema().getPropertyIds()[0];
 
         indexSeekClient.setRead( this );
-        indexSession.reader.query( this, indexSeekClient, constraints, PropertyIndexQuery.exists( firstProperty ) );
+        ((ValueIndexReader)indexSession.reader).query( this, indexSeekClient, constraints, PropertyIndexQuery.exists( firstProperty ) );
     }
 
     @Override
@@ -217,7 +218,8 @@ abstract class Read implements TxStateHolder,
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
         TokenScan labelScan = labelScanReader().entityTokenScan( label, cursorTracer );
-        indexCursor.scan( labelScan.initialize( indexCursor.entityTokenClient(), order, cursorTracer ), label, order );
+        IndexProgressor progressor = labelScan.initialize( indexCursor, order, cursorTracer );
+        indexCursor.initialize( progressor, label, order );
     }
 
     @Override
@@ -287,9 +289,9 @@ abstract class Read implements TxStateHolder,
 
             TokenScanReader relationshipTypeScanReader = relationshipTypeScanReader();
             TokenScan relationshipTypeScan = relationshipTypeScanReader.entityTokenScan( type, cursorTracer );
-            IndexProgressor progressor = relationshipTypeScan.initialize( cursor.entityTokenClient(), order, cursorTracer );
+            IndexProgressor progressor = relationshipTypeScan.initialize( cursor, order, cursorTracer );
 
-            cursor.scan( progressor, type, order );
+            cursor.initialize( progressor, type, order );
         }
         else
         {
@@ -315,7 +317,7 @@ abstract class Read implements TxStateHolder,
         ((DefaultPropertyCursor) cursor).initRelationship( relationshipReference, reference, this, ktx );
     }
 
-    public abstract IndexReader indexReader( IndexDescriptor index, boolean fresh ) throws IndexNotFoundKernelException;
+    public abstract ValueIndexReader newValueIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     abstract TokenScanReader labelScanReader();
 

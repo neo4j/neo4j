@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
@@ -63,8 +64,8 @@ abstract class FusionIndexReaderTest
     private static final IndexDescriptor DESCRIPTOR = forSchema( forLabel( LABEL_KEY, PROP_KEY ) ).withName( "index" ).materialise( 12 );
 
     private final FusionVersion fusionVersion;
-    private IndexReader[] aliveReaders;
-    private EnumMap<IndexSlot,IndexReader> readers;
+    private ValueIndexReader[] aliveReaders;
+    private EnumMap<IndexSlot,ValueIndexReader> readers;
     private FusionIndexReader fusionIndexReader;
 
     FusionIndexReaderTest( FusionVersion fusionVersion )
@@ -82,11 +83,11 @@ abstract class FusionIndexReaderTest
     {
         IndexSlot[] activeSlots = fusionVersion.aliveSlots();
         readers = new EnumMap<>( IndexSlot.class );
-        fill( readers, IndexReader.EMPTY );
-        aliveReaders = new IndexReader[activeSlots.length];
+        fill( readers, ValueIndexReader.EMPTY );
+        aliveReaders = new ValueIndexReader[activeSlots.length];
         for ( int i = 0; i < activeSlots.length; i++ )
         {
-            IndexReader mock = mock( IndexReader.class );
+            var mock = mock( ValueIndexReader.class );
             doAnswer( new NodeIdsIndexReaderQueryAnswer( DESCRIPTOR ) ).when( mock ).query( any(), any(), any(), any() );
             aliveReaders[i] = mock;
             switch ( activeSlots[i] )
@@ -105,7 +106,7 @@ abstract class FusionIndexReaderTest
                 TestIndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
     }
 
-    private Function<IndexSlot,IndexReader> throwingFactory()
+    private Function<IndexSlot,ValueIndexReader> throwingFactory()
     {
         return i ->
         {
@@ -188,11 +189,11 @@ abstract class FusionIndexReaderTest
         }
     }
 
-    private void verifyCountIndexedNodesWithCorrectReader( IndexReader correct, Value... nativeValue )
+    private void verifyCountIndexedNodesWithCorrectReader( ValueIndexReader correct, Value... nativeValue )
     {
         fusionIndexReader.countIndexedEntities( 0, NULL, new int[] {PROP_KEY}, nativeValue );
         verify( correct ).countIndexedEntities( 0, NULL, new int[] {PROP_KEY}, nativeValue );
-        for ( IndexReader reader : aliveReaders )
+        for ( var reader : aliveReaders )
         {
             if ( reader != correct )
             {
@@ -252,7 +253,7 @@ abstract class FusionIndexReaderTest
         // given
         PropertyIndexQuery.ExistsPredicate exists = PropertyIndexQuery.exists( PROP_KEY );
         long lastId = 0;
-        for ( IndexReader aliveReader : aliveReaders )
+        for ( var aliveReader : aliveReaders )
         {
             doAnswer( new NodeIdsIndexReaderQueryAnswer( DESCRIPTOR, lastId++, lastId++ ) ).when( aliveReader ).query(
                     any(), any(), any(), any() );
@@ -280,7 +281,7 @@ abstract class FusionIndexReaderTest
         EnumMap<IndexSlot,Value[]> values = FusionIndexTestHelp.valuesByGroup();
         for ( IndexSlot i : IndexSlot.values() )
         {
-            if ( readers.get( i ) != IndexReader.EMPTY )
+            if ( readers.get( i ) != ValueIndexReader.EMPTY )
             {
                 // when
                 Value value = values.get( i )[0];
@@ -291,7 +292,7 @@ abstract class FusionIndexReaderTest
                 for ( IndexSlot j : IndexSlot.values() )
                 {
                     // then
-                    if ( readers.get( j ) != IndexReader.EMPTY )
+                    if ( readers.get( j ) != ValueIndexReader.EMPTY )
                     {
                         if ( i == j )
                         {
@@ -309,7 +310,7 @@ abstract class FusionIndexReaderTest
         }
     }
 
-    private void verifyQueryWithCorrectReader( IndexReader expectedReader, PropertyIndexQuery... indexQuery )
+    private void verifyQueryWithCorrectReader( ValueIndexReader expectedReader, PropertyIndexQuery... indexQuery )
             throws IndexNotApplicableKernelException
     {
         // when

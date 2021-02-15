@@ -117,7 +117,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
 
     protected List<Long> query( PropertyIndexQuery... predicates ) throws Exception
     {
-        try ( IndexReader reader = accessor.newReader() )
+        try ( ValueIndexReader reader = accessor.newValueReader() )
         {
             SimpleEntityValueClient nodeValueClient = new SimpleEntityValueClient();
             reader.query( NULL_CONTEXT, nodeValueClient, unconstrained(), predicates );
@@ -137,7 +137,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
 
     protected AutoCloseable query( SimpleEntityValueClient client, IndexOrder order, PropertyIndexQuery... predicates ) throws Exception
     {
-        IndexReader reader = accessor.newReader();
+        ValueIndexReader reader = accessor.newValueReader();
         reader.query( NULL_CONTEXT, client, constrained( order, false ), predicates );
         return reader;
     }

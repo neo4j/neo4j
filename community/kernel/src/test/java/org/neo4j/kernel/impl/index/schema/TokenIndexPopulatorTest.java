@@ -78,19 +78,19 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
     @Override
     byte failureByte()
     {
-        return TokenIndexPopulator.FAILED;
+        return TokenIndex.FAILED;
     }
 
     @Override
     byte populatingByte()
     {
-        return TokenIndexPopulator.POPULATING;
+        return TokenIndex.POPULATING;
     }
 
     @Override
     byte onlineByte()
     {
-        return TokenIndexPopulator.ONLINE;
+        return TokenIndex.ONLINE;
     }
 
     @Override

@@ -63,7 +63,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -182,13 +182,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             Integer countryLabelId = labelsNameIdMap.get( COUNTRY_LABEL );
             Integer colorLabelId = labelsNameIdMap.get( COLOR_LABEL );
-            try ( IndexReader indexReader = getIndexReader( propertyId, countryLabelId ) )
+            try ( var indexReader = getIndexReader( propertyId, countryLabelId ) )
             {
                 assertThat( indexReader.countIndexedEntities( 0, NULL, new int[]{propertyId}, Values.of( "Sweden" ) ) )
                         .as( "Should be removed by concurrent remove." ).isEqualTo( 0 );
             }
 
-            try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
+            try ( var indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
                 assertThat( indexReader.countIndexedEntities( 3, NULL, new int[]{propertyId}, Values.of( "green" ) ) )
                         .as( "Should be removed by concurrent remove." ).isEqualTo( 0 );
@@ -213,13 +213,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             Integer countryLabelId = labelsNameIdMap.get( COUNTRY_LABEL );
             Integer carLabelId = labelsNameIdMap.get( CAR_LABEL );
-            try ( IndexReader indexReader = getIndexReader( propertyId, countryLabelId ) )
+            try ( var indexReader = getIndexReader( propertyId, countryLabelId ) )
             {
                 assertThat( indexReader.countIndexedEntities( otherNodes[0].getId(), NULL, new int[]{propertyId}, Values.of( "Denmark" ) ) )
                         .as( "Should be added by concurrent add." ).isEqualTo( 1 );
             }
 
-            try ( IndexReader indexReader = getIndexReader( propertyId, carLabelId ) )
+            try ( var indexReader = getIndexReader( propertyId, carLabelId ) )
             {
                 assertThat( indexReader.countIndexedEntities( otherNodes[1].getId(), NULL, new int[]{propertyId}, Values.of( "BMW" ) ) )
                         .as( "Should be added by concurrent add." ).isEqualTo( 1 );
@@ -244,18 +244,18 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             Integer colorLabelId = labelsNameIdMap.get( COLOR_LABEL );
             Integer carLabelId = labelsNameIdMap.get( CAR_LABEL );
-            try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
+            try ( var indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
                 assertThat( indexReader.countIndexedEntities( color2.getId(), NULL, new int[]{propertyId}, Values.of( "green" ) ) )
                         .as( format( "Should be deleted by concurrent change. Reader is: %s, ", indexReader ) ).isEqualTo( 0 );
             }
-            try ( IndexReader indexReader = getIndexReader( propertyId, colorLabelId ) )
+            try ( var indexReader = getIndexReader( propertyId, colorLabelId ) )
             {
                 assertThat( indexReader.countIndexedEntities( color2.getId(), NULL, new int[]{propertyId}, Values.of( "pink" ) ) )
                         .as( "Should be updated by concurrent change." ).isEqualTo( 1 );
             }
 
-            try ( IndexReader indexReader = getIndexReader( propertyId, carLabelId ) )
+            try ( var indexReader = getIndexReader( propertyId, carLabelId ) )
             {
                 assertThat( indexReader.countIndexedEntities( car2.getId(), NULL, new int[]{propertyId}, Values.of( "SAAB" ) ) )
                         .as( "Should be added by concurrent change." ).isEqualTo( 1 );
@@ -309,11 +309,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return new long[]{labelsNameIdMap.get( label )};
     }
 
-    private IndexReader getIndexReader( int propertyId, Integer countryLabelId ) throws IndexNotFoundKernelException
+    private ValueIndexReader getIndexReader( int propertyId, Integer countryLabelId ) throws IndexNotFoundKernelException
     {
         LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( countryLabelId, propertyId );
         IndexDescriptor index = single( schemaCache.indexesForSchema( schema ) );
-        return indexService.getIndexProxy( index ).newReader();
+        return indexService.getIndexProxy( index ).newValueReader();
     }
 
     private void launchCustomIndexPopulation( GraphDatabaseSettings.SchemaIndex schemaIndex, Map<String,Integer> labelNameIdMap, int propertyId,
