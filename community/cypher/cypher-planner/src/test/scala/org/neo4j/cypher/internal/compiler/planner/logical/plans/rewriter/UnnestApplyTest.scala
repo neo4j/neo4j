@@ -19,17 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
-import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
-import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
-import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDs
-import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.attribution.Attributes
@@ -37,7 +31,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.Assertion
 
-class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class UnnestApplyTest extends CypherFunSuite with LogicalPlanRewritingTestSupport with LogicalPlanConstructionTestSupport with AstConstructionTestSupport {
+
   test("should unnest apply with a single Argument on the lhs") {
     val inputBuilder = new LogicalPlanBuilder()
       .produceResults("x", "n").withCardinality(20)
@@ -469,48 +464,19 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
   implicit private class AssertableInputBuilder(inputBuilder: LogicalPlanBuilder) {
     def shouldRewriteToPlanWithCardinalities(expectedBuilder: LogicalPlanBuilder): Assertion = {
       val (resultPlan, newCardinalities) = rewrite(inputBuilder.build(), inputBuilder.cardinalities, inputBuilder.idGen)
-      val (expectedPlan, expectedCardinalities) = compressIds(expectedBuilder.build(), expectedBuilder.cardinalities)
-
-      resultPlan should equal(expectedPlan)
-      newCardinalities.toSeq should equal(expectedCardinalities.toSeq)
+      (resultPlan, newCardinalities) should haveSameCardinalitiesAs((expectedBuilder.build(), expectedBuilder.cardinalities))
     }
   }
 
-  private def attributes(cardinalities: Cardinalities): PlanningAttributes = PlanningAttributes(
-    new StubSolveds,
-    cardinalities,
-    new StubEffectiveCardinalities,
-    new StubProvidedOrders,
-    new StubLeveragedOrders
-  )
-
-  private def compressIds(p: LogicalPlan, cardinalities: Cardinalities): (LogicalPlan, Cardinalities) = compressIds(p, attributes(cardinalities))
-
-  private def compressIds(p: LogicalPlan, attributes: PlanningAttributes): (LogicalPlan, Cardinalities) = {
-    val logicalPlanState = LogicalPlanState(
-      "<query text>",
-      None,
-      IDPPlannerName,
-      attributes,
-      maybeLogicalPlan = Some(p)
-    )
-    val plannerContext = mock[PlannerContext]
-    when(plannerContext.tracer).thenReturn(NO_TRACING)
-    val compactedState = CompressPlanIDs.transform(logicalPlanState, plannerContext)
-    (compactedState.logicalPlan, compactedState.planningAttributes.cardinalities)
-  }
-
   private def rewrite(p: LogicalPlan, cardinalities: Cardinalities, idGen: IdGen): (LogicalPlan, Cardinalities) = {
-    val atts = attributes(cardinalities)
-
     val unnest = unnestApply(
-      atts.solveds,
-      atts.cardinalities,
+      new StubSolveds,
+      cardinalities,
       Attributes(idGen)
     )
     val unnestedPlan = p.endoRewrite(unnest)
 
-    compressIds(unnestedPlan, atts)
+    (unnestedPlan, cardinalities)
   }
 
   private def stubCardinalities(): StubCardinalities = new StubCardinalities {

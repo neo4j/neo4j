@@ -19,26 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
-import org.neo4j.cypher.internal.util.attribution.Attributes
-import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.scalatest.matchers.MatchResult
-import org.scalatest.matchers.Matcher
 
-class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPlanRewritingTestSupport with AstConstructionTestSupport {
   private val precision = 0.00001
   private val leafCardinality = 10
-
-  private def noAttributes(idGen: IdGen) = Attributes[LogicalPlan](idGen)
 
   test("Should update effective cardinality through cartesian product") {
     // GIVEN
@@ -65,7 +58,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val expectedPlan = expected.build()
     val expectedCards = expected.effectiveCardinalities
 
-    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
   test("Should favour lower limit") {
@@ -96,7 +89,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val expectedPlan = expected.build()
     val expectedCards = expected.effectiveCardinalities
 
-    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
   test("Should update HashJoin correctly") {
@@ -123,7 +116,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val expectedPlan = expected.build()
     val expectedCards = expected.effectiveCardinalities
 
-    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
   test("Updates under ExhaustiveLimit should have full cardinality") {
@@ -147,7 +140,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val expectedPlan = expected.build()
     val expectedCards = expected.effectiveCardinalities
 
-    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
   test("Should multiply RHS of cartesian product") {
@@ -173,7 +166,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val expectedPlan = expected.build()
     val expectedCards = expected.effectiveCardinalities
 
-    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
   test("Should multiple RHSs of nested cartesian product in slotted") {
@@ -203,7 +196,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val expectedPlan = expected.build()
     val expectedCards = expected.effectiveCardinalities
 
-    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
   test("Should multiple RHSs of nested cartesian product for batched execution") {
@@ -238,7 +231,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val expectedPlan = expected.build()
     val expectedCards = expected.effectiveCardinalities
 
-    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
   test("Should multiple RHSs of nested cartesian product for volcano execution") {
@@ -269,7 +262,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val expectedPlan = expected.build()
     val expectedCards = expected.effectiveCardinalities
 
-    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
   test("Should multiply RHS cardinality of SemiApply, but also apply WorkReduction") {
@@ -293,7 +286,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val expectedPlan = expected.build()
     val expectedCards = expected.effectiveCardinalities
 
-    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
   test("Should multiply RHS cardinality of Apply") {
@@ -317,7 +310,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val expectedPlan = expected.build()
     val expectedCards = expected.effectiveCardinalities
 
-    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
   test("Should multiply RHS cardinality of nested instances of Apply") {
@@ -347,44 +340,8 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     val expectedPlan = expected.build()
     val expectedCards = expected.effectiveCardinalities
 
-    (plan, cardinalities).should(haveSameCardinalitiesAs((expectedPlan, expectedCards)))
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
-
-  def haveSameCardinalitiesAs(expected: (LogicalPlan, EffectiveCardinalities)): Matcher[(LogicalPlan, EffectiveCardinalities)] =
-    (actual: (LogicalPlan, EffectiveCardinalities)) => {
-      val (actPlan, actCards) = actual
-      val (expPlan, expCards) = expected
-      val planPairs = actPlan.flatten.zip(expPlan.flatten)
-
-      val planMismatch = planPairs.collectFirst {
-        case (act, exp) if act != exp =>
-          val actPlanString = LogicalPlanToPlanBuilderString(act)
-          val expPlanString = LogicalPlanToPlanBuilderString(exp)
-          MatchResult(
-            matches = false,
-            rawFailureMessage = s"Expected same plan structure but actual contained:\n$actPlanString\nand expected contained:\n$expPlanString",
-            rawNegatedFailureMessage = "")
-      }
-
-      val results = planPairs.map {
-        case (act, exp) =>
-          val actCard = actCards(act.id)
-          val expCard = expCards(exp.id)
-          val actPlanString = LogicalPlanToPlanBuilderString(act)
-          MatchResult(
-            matches = (actCard.amount - expCard.amount).abs < precision,
-            rawFailureMessage = s"Expected cardinality $expCard but was $actCard for plan:\n$actPlanString",
-            rawNegatedFailureMessage = "")
-      }
-
-      val cardinalityMismatch = results.find(!_.matches)
-      val ok = MatchResult(
-        matches = true,
-        rawFailureMessage = "",
-        rawNegatedFailureMessage = "")
-
-      (planMismatch orElse cardinalityMismatch) getOrElse ok
-    }
 
   private def rewrite(pb: LogicalPlanBuilder, executionModel: ExecutionModel = ExecutionModel.default): (LogicalPlan, EffectiveCardinalities) = {
     val plan = pb.build().endoRewrite(recordEffectiveOutputCardinality(executionModel, pb.cardinalities, pb.effectiveCardinalities, pb.providedOrders))
