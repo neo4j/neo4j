@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.spi
 
-import java.lang.Math.min
-
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
@@ -36,6 +34,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.Log
+
+import java.lang.Math.min
 
 object TransactionBoundGraphStatistics {
   def apply(transactionalContext: TransactionalContext, log: Log): MinimumGraphStatistics =
@@ -81,19 +81,20 @@ object TransactionBoundGraphStatistics {
 
     override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
-        val labeledNodes = read.countsForNodeWithoutTxState( index.label ).toDouble
+        val labeledNodes = read.countsForNodeWithoutTxState(index.label).toDouble
         if (labeledNodes == 0)
           Some(Selectivity.ZERO)
         else {
           // Probability of any node with the given label, to have a given property
-          val indexDescriptor = Iterators.single(schemaRead.index(SchemaDescriptor.forLabel(index.label, index.properties.map(_.id): _*)),
-            org.neo4j.internal.schema.IndexDescriptor.NO_INDEX)
-          val indexSize = schemaRead.indexSize(indexDescriptor)
-          val indexSelectivity = indexSize / labeledNodes
+          val maybeIndexDescriptor = Option(Iterators.singleOrNull(schemaRead.index(SchemaDescriptor.forLabel(index.label, index.properties.map(_.id): _*))))
+          maybeIndexDescriptor.flatMap { indexDescriptor =>
+            val indexSize = schemaRead.indexSize(indexDescriptor)
+            val indexSelectivity = indexSize / labeledNodes
 
-          //Even though semantically impossible the index can get into a state where
-          //the indexSize > labeledNodes
-          Selectivity.of(min(indexSelectivity, 1.0))
+            //Even though semantically impossible the index can get into a state where
+            //the indexSize > labeledNodes
+            Selectivity.of(min(indexSelectivity, 1.0))
+          }
         }
       }
       catch {

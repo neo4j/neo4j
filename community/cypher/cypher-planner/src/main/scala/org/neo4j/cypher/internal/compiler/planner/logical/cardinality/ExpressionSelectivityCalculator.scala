@@ -198,7 +198,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
           case (Some(labelId), Some(propertyKeyId)) =>
             val descriptor = IndexDescriptor(labelId, Seq(propertyKeyId))
             for {
-              propExists <-stats.indexPropertyExistsSelectivity(descriptor)
+              propExists <- stats.indexPropertyExistsSelectivity(descriptor)
               propEqualsValue <- stats.uniqueValueSelectivity(descriptor)
               combinedSelectivity <- combiner.andTogetherSelectivities(Seq(propExists, propEqualsValue))
             } yield combinedSelectivity
