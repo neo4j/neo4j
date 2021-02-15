@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.spi
 
-import java.util.Collections.singletonList
-
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.util.LabelId
@@ -36,6 +35,9 @@ import org.neo4j.internal.schema
 import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.logging.Log
+
+import java.util.Collections
+import java.util.Collections.singletonList
 
 class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
 
@@ -84,11 +86,11 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     statistics.indexPropertyExistsSelectivity(index) should equal(Some(Selectivity.ZERO))
   }
 
-  test("indexPropertyExistsSelectivity should log if index wasn't found") {
+  test("indexPropertyExistsSelectivity should log if index returned from schema read but size cannot get computed") {
     //given
     when(read.countsForNodeWithoutTxState(labelId)).thenReturn(20L)
     val exception = new IndexNotFoundKernelException("wut")
-    when(schemaRead.indexSize(descriptor)).thenThrow(exception)
+    when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
     val theLog = mock[Log]
 
     //when
@@ -97,6 +99,21 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     //then
     statistics.indexPropertyExistsSelectivity(index) should equal(None)
     verify(theLog).debug("Index not found for indexPropertyExistsSelectivity", exception)
+  }
+
+  test("indexPropertyExistsSelectivity should not log if index was not found") {
+    when(schemaRead.index(any[SchemaDescriptor])).thenReturn(Collections.emptyIterator[org.neo4j.internal.schema.IndexDescriptor]())
+    when(read.countsForNodeWithoutTxState(labelId)).thenReturn(20L)
+    val exception = new IndexNotFoundKernelException("wut")
+    when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
+    val theLog = mock[Log]
+
+    //when
+    val statistics = TransactionBoundGraphStatistics(read, schemaRead, theLog)
+
+    //then
+    statistics.indexPropertyExistsSelectivity(index) should equal(None)
+    verifyNoInteractions(theLog)
   }
 
   test("uniqueValueSelectivity should compute selectivity") {
@@ -147,12 +164,11 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     statistics.uniqueValueSelectivity(index) should equal(Some(Selectivity.ZERO))
   }
 
-
-  test("uniqueValueSelectivity should log if index wasn't found") {
+  test("uniqueValueSelectivity should log if index returned from schema read but size cannot get computed") {
     //given
     when(schemaRead.indexUniqueValuesSelectivity(descriptor)).thenReturn(0.0)
     val exception = new IndexNotFoundKernelException("wut")
-    when(schemaRead.indexSize(descriptor)).thenThrow(exception)
+    when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
     val theLog = mock[Log]
 
     //when
@@ -161,6 +177,22 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
     //then
     statistics.uniqueValueSelectivity(index) should equal(None)
     verify(theLog).debug("Index not found for uniqueValueSelectivity", exception)
+  }
+
+  test("uniqueValueSelectivity should not log if index was not found") {
+    //given
+    when(schemaRead.index(any[SchemaDescriptor])).thenReturn(Collections.emptyIterator[org.neo4j.internal.schema.IndexDescriptor]())
+    when(schemaRead.indexUniqueValuesSelectivity(descriptor)).thenReturn(0.0)
+    val exception = new IndexNotFoundKernelException("wut")
+    when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
+    val theLog = mock[Log]
+
+    //when
+    val statistics = TransactionBoundGraphStatistics(read, schemaRead, theLog)
+
+    //then
+    statistics.uniqueValueSelectivity(index) should equal(None)
+    verifyNoInteractions(theLog)
   }
 
   override protected def beforeEach(): Unit = {
