@@ -43,8 +43,9 @@ abstract class CypherKeyValueOption(inputName: String) extends CypherOption(inpu
 
 abstract class CypherOptionCompanion[Opt <: CypherOption](
   val name: String,
-  setting: Option[Setting[_]],
-  cypherConfigField: Option[CypherConfiguration => Opt],
+  setting: Option[Setting[_]] = None,
+  cypherConfigField: Option[CypherConfiguration => Opt] = None,
+  cypherConfigBooleans: Map[Opt, CypherConfiguration => Boolean] = Map.empty[Opt, CypherConfiguration => Boolean],
 ) {
   self: Product =>
 
@@ -82,10 +83,18 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
     (input: OptionReader.Input) =>
       input.extract(key)
            .map(values => values.map(fromValue))
+           .map(opts => opts ++ fromCypherConfigurationBooleans(input.config))
 
   private def fromCypherConfiguration(configuration: CypherConfiguration): Opt =
     cypherConfigField.map(f => f(configuration))
                      .getOrElse(default)
+
+  private def fromCypherConfigurationBooleans(configuration: CypherConfiguration): Set[Opt] =
+    cypherConfigBooleans.toSet.collect(fromCypherConfigurationBoolean(configuration))
+
+  private def fromCypherConfigurationBoolean(configuration: CypherConfiguration): PartialFunction[(Opt, CypherConfiguration => Boolean), Opt] = {
+    case (opt, cond) if cond(configuration) => opt
+  }
 
   private def fromValues(input: Set[String]): Set[Opt] = input.size match {
     case 0 => Set.empty

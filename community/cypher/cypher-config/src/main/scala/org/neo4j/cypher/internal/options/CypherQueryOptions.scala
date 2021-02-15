@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.options
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.config.CypherConfiguration
+import org.neo4j.cypher.internal.options.CypherDebugOption.disallowSplittingTop
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS
@@ -103,8 +104,6 @@ sealed abstract class CypherExecutionMode(val modeName: String) extends CypherOp
 
 case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMode](
   name = "execution mode",
-  setting = None,
-  cypherConfigField = None
 ) {
 
   case object default extends CypherExecutionMode("normal")
@@ -200,8 +199,6 @@ sealed abstract class CypherUpdateStrategy(strategy: String) extends CypherKeyVa
 
 case object CypherUpdateStrategy extends CypherOptionCompanion[CypherUpdateStrategy](
   name = "updateStrategy",
-  setting = None,
-  cypherConfigField = None,
 ) {
 
   case object default extends CypherUpdateStrategy(CypherOption.DEFAULT)
@@ -289,8 +286,6 @@ sealed abstract class CypherReplanOption(strategy: String) extends CypherKeyValu
 
 case object CypherReplanOption extends CypherOptionCompanion[CypherReplanOption](
   name = "replan",
-  setting = None,
-  cypherConfigField = None,
 ) {
 
   case object default extends CypherReplanOption(CypherOption.DEFAULT)
@@ -311,8 +306,6 @@ sealed abstract class CypherConnectComponentsPlannerOption(planner: String) exte
 
 case object CypherConnectComponentsPlannerOption extends CypherOptionCompanion[CypherConnectComponentsPlannerOption](
   name = "connectComponentsPlanner",
-  setting = None,
-  cypherConfigField = None,
 ) {
 
   case object default extends CypherConnectComponentsPlannerOption(CypherOption.DEFAULT)
@@ -333,8 +326,7 @@ sealed abstract class CypherDebugOption(flag: String) extends CypherKeyValueOpti
 
 case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
   name = "debug",
-  setting = None,
-  cypherConfigField = None,
+  cypherConfigBooleans = Map(disallowSplittingTop -> (_.disallowSplittingTop))
 ) {
   // Unused. We need to have a default
   case object default extends CypherDebugOption("none")
@@ -370,7 +362,8 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
     fabricLogPlan,
     fabricLogRecords,
     logicalPlanBuilder,
-    rawCardinalities
+    rawCardinalities,
+    disallowSplittingTop,
   )
 
   implicit val hasDefault: OptionDefault[CypherDebugOption] = OptionDefault.create(default)

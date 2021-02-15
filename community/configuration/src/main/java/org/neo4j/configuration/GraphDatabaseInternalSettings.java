@@ -249,6 +249,15 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<CypherParser> cypher_parser =
             newBuilder( "unsupported.cypher.parser", ofEnum( CypherParser.class ), CypherParser.DEFAULT ).build();
 
+    public enum SplittingTopBehavior
+    {
+        DEFAULT, DISALLOW
+    }
+    @Internal
+    @Description( "Determines whether the planner is allowed to push down the sort portion of an ORDER BY + LIMIT combination" )
+    public static final Setting<SplittingTopBehavior> cypher_splitting_top_behavior =
+            newBuilder( "unsupported.cypher.splitting_top_behavior", ofEnum( SplittingTopBehavior.class ), SplittingTopBehavior.DEFAULT ).build();
+
     @Internal
     @Description( "Max number of recent queries to collect in the data collector module. Will round down to the" +
             " nearest power of two. The default number (8192 query invocations) " +

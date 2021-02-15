@@ -61,7 +61,8 @@ object CypherConfiguration {
       config.get(GraphDatabaseInternalSettings.cypher_pipelined_operator_fusion_over_pipeline_limit).intValue(),
       new ConfigMemoryTrackingController(config),
       config.get(GraphDatabaseInternalSettings.cypher_enable_runtime_monitors),
-      config.get(GraphDatabaseInternalSettings.cypher_parser) != GraphDatabaseInternalSettings.CypherParser.PARBOILED
+      config.get(GraphDatabaseInternalSettings.cypher_parser) != GraphDatabaseInternalSettings.CypherParser.PARBOILED,
+      config.get(GraphDatabaseInternalSettings.cypher_splitting_top_behavior) == GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW
     )
   }
 
@@ -105,5 +106,6 @@ case class CypherConfiguration(
   operatorFusionOverPipelineLimit: Int,
   memoryTrackingController: MemoryTrackingController,
   enableMonitors: Boolean,
-  useJavaCCParser: Boolean
+  useJavaCCParser: Boolean,
+  disallowSplittingTop: Boolean,
 )

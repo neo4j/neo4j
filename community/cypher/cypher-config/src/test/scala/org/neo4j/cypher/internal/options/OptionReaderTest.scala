@@ -57,6 +57,38 @@ class OptionReaderTest extends CypherFunSuite {
       ))
   }
 
+  test("Can read debug options from config") {
+
+    val options = CypherQueryOptions.fromValues(
+      config = CypherConfiguration.fromConfig(
+        Config.newBuilder()
+              .set(GraphDatabaseInternalSettings.cypher_splitting_top_behavior, GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW)
+              .build()),
+      keyValues = Set(),
+    )
+
+    options
+      .shouldEqual(CypherQueryOptions.default.copy(
+        debugOptions = CypherDebugOptions(Set(CypherDebugOption.disallowSplittingTop))
+      ))
+  }
+
+  test("Can read debug options from config and key-values") {
+
+    val options = CypherQueryOptions.fromValues(
+      config = CypherConfiguration.fromConfig(
+        Config.newBuilder()
+              .set(GraphDatabaseInternalSettings.cypher_splitting_top_behavior, GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW)
+              .build()),
+      keyValues = Set("debug" -> "toString"),
+    )
+
+    options
+      .shouldEqual(CypherQueryOptions.default.copy(
+        debugOptions = CypherDebugOptions(Set(CypherDebugOption.disallowSplittingTop, CypherDebugOption.tostring))
+      ))
+  }
+
   test("Can read options from key-values") {
 
     val options = CypherQueryOptions.fromValues(
