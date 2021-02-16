@@ -19,22 +19,31 @@
  */
 package org.neo4j.kernel.database;
 
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeVersion;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.internal.helpers.collection.Iterators;
@@ -62,12 +71,14 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.lang.Integer.max;
+import static java.lang.System.currentTimeMillis;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_single_automatic_upgrade;
 import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.kernel.KernelVersion.V4_2;
+import static org.neo4j.test.Race.throwing;
 
 @EphemeralTestDirectoryExtension
 class DatabaseUpgradeTransactionIT
@@ -151,6 +162,60 @@ class DatabaseUpgradeTransactionIT
         assertThat( getKernelVersion() ).isEqualTo( LATEST );
         assertThat( getDbmsRuntime() ).isEqualTo( DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION );
         assertUpgradeTransactionInOrder( V4_2, LATEST, startTransaction );
+    }
+
+    @Test
+    void shouldUpgradeDatabaseToLatestVersionOnDenseNodeTransactionStressTest() throws Throwable
+    {
+        //Given
+        setKernelVersion( V4_2 );
+        setDbmsRuntime( DbmsRuntimeVersion.V4_2 );
+        restartDbms();
+        long startTransaction = db.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastCommittedTransactionId();
+
+        //Then
+        assertThat( getKernelVersion() ).isEqualTo( V4_2 );
+        assertThat( getDbmsRuntime() ).isEqualTo( DbmsRuntimeVersion.V4_2 );
+        long nodeId = createDenseNode();
+
+        //When
+        Race race = new Race().withRandomStartDelays().withEndCondition( new BooleanSupplier()
+        {
+            private final AtomicLong timeOfUpgrade = new AtomicLong();
+
+            @Override
+            public boolean getAsBoolean()
+            {
+                if ( LATEST.equals( getKernelVersion() ) )
+                {
+                    // Notice the time of upgrade...
+                    timeOfUpgrade.compareAndSet( 0, currentTimeMillis() );
+                }
+                // ... and continue a little while after it happened so that we get transactions both before and after
+                return timeOfUpgrade.get() != 0 && (currentTimeMillis() - timeOfUpgrade.get()) > 1_000;
+            }
+        } );
+        race.addContestant( throwing( () ->
+        {
+            Thread.sleep( ThreadLocalRandom.current().nextInt( 0, 1_000 ) );
+            dbms.database( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ).executeTransactionally( "CALL dbms.upgrade()" );
+        } ), 1 );
+        race.addContestants( max( Runtime.getRuntime().availableProcessors() - 1, 2 ), throwing( () -> {
+            try ( Transaction tx = db.beginTx() )
+            {
+                tx.getNodeById( nodeId ).createRelationshipTo( tx.createNode(),
+                        RelationshipType.withName( "TYPE_" + ThreadLocalRandom.current().nextInt( 3 ) ) );
+                tx.commit();
+            }
+            Thread.sleep( ThreadLocalRandom.current().nextInt( 0, 2 ) );
+        } ) );
+        race.go( 1, TimeUnit.MINUTES );
+
+        //Then
+        assertThat( getKernelVersion() ).isEqualTo( LATEST );
+        assertThat( getDbmsRuntime() ).isEqualTo( DbmsRuntimeVersion.LATEST_DBMS_RUNTIME_COMPONENT_VERSION );
+        assertUpgradeTransactionInOrder( KernelVersion.V4_2, KernelVersion.LATEST, startTransaction );
+        assertDegrees( nodeId );
     }
 
     @Test
@@ -332,5 +397,54 @@ class DatabaseUpgradeTransactionIT
             assertThat( element ).isInstanceOf( Command.MetaDataCommand.class );
             return true;
         } );
+    }
+
+    private long createDenseNode()
+    {
+        MutableLong nodeId = new MutableLong();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = tx.createNode();
+            for ( int i = 0; i < 100; i++ )
+            {
+                node.createRelationshipTo( tx.createNode(), RelationshipType.withName( "TYPE_" + (i % 3) ) );
+            }
+            nodeId.setValue( node.getId() );
+            tx.commit();
+        }
+        return nodeId.longValue();
+    }
+
+    private void assertDegrees( long nodeId )
+    {
+        // Why assert degrees specifically? This particular upgrade: V4_2 -> V4_3_D3 changes how dense node degrees are stored
+        // so it's a really good indicator that everything there works
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = tx.getNodeById( nodeId );
+            Map<String,Map<Direction,MutableLong>> actualDegrees = new HashMap<>();
+            node.getRelationships().forEach(
+                    r -> actualDegrees.computeIfAbsent( r.getType().name(), t -> new HashMap<>() ).computeIfAbsent( directionOf( node, r ),
+                            d -> new MutableLong() ).increment() );
+            MutableLong actualTotalDegree = new MutableLong();
+            actualDegrees.forEach( ( typeName, directions ) ->
+            {
+                long actualTotalDirectionDegree = 0;
+                for ( Map.Entry<Direction,MutableLong> actualDirectionDegree : directions.entrySet() )
+                {
+                    assertThat( node.getDegree( RelationshipType.withName( typeName ), actualDirectionDegree.getKey() ) ).isEqualTo(
+                            actualDirectionDegree.getValue().longValue() );
+                    actualTotalDirectionDegree += actualDirectionDegree.getValue().longValue();
+                }
+                assertThat( node.getDegree( RelationshipType.withName( typeName ) ) ).isEqualTo( actualTotalDirectionDegree );
+                actualTotalDegree.add( actualTotalDirectionDegree );
+            } );
+            assertThat( node.getDegree() ).isEqualTo( actualTotalDegree.longValue() );
+        }
+    }
+
+    private Direction directionOf( Node node, Relationship relationship )
+    {
+        return relationship.getStartNode().equals( node ) ? relationship.getEndNode().equals( node ) ? Direction.BOTH : Direction.OUTGOING : Direction.INCOMING;
     }
 }
