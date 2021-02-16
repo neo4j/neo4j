@@ -99,7 +99,8 @@ object CompilationPhases {
                             literalExtractionStrategy: LiteralExtractionStrategy = IfNoParameter,
                             parameterTypeMapping: Map[String, CypherType] = Map.empty,
                             semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
-                            useJavaCCParser: Boolean = false
+                            useJavaCCParser: Boolean = false,
+                            obfuscateLiterals: Boolean = false
   )
 
   private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
@@ -134,7 +135,7 @@ object CompilationPhases {
     parsingBase(config) andThen
       AstRewriting(innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping) andThen
       SyntaxDeprecationWarnings(Deprecations.deprecatedFeaturesIn4_3AfterRewrite) andThen
-      LiteralExtraction(config.literalExtractionStrategy)
+      LiteralExtraction(config.literalExtractionStrategy, config.obfuscateLiterals)
   }
 
   // Phase 1 (Fabric)
@@ -150,7 +151,7 @@ object CompilationPhases {
   def fabricFinalize(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
       AstRewriting(innerVariableNamer = config.innerVariableNamer, parameterTypeMapping = config.parameterTypeMapping) andThen
-      LiteralExtraction(config.literalExtractionStrategy) andThen
+      LiteralExtraction(config.literalExtractionStrategy, config.obfuscateLiterals) andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*)
   }
 

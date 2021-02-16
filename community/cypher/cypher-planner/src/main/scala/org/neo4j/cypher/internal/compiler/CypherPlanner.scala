@@ -101,7 +101,8 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
       context.innerVariableNamer,
       compatibilityMode,
       parameterTypeMapping = context.getParameterValueTypeMapping,
-      useJavaCCParser = config.useJavaCCParser
+      useJavaCCParser = config.useJavaCCParser,
+      obfuscateLiterals = config.obfuscateLiterals
     )).transform(startState, context)
   }
 
@@ -122,6 +123,7 @@ object CypherPlannerConfiguration {
       nonIndexedLabelWarningThreshold = cfg.get(GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold).longValue(),
       planSystemCommands = planSystemCommands,
       useJavaCCParser = config.useJavaCCParser,
+      obfuscateLiterals = config.obfuscateLiterals,
       pipelinedBatchSizeSmall = config.pipelinedBatchSizeSmall,
       pipelinedBatchSizeBig = config.pipelinedBatchSizeBig,
     )
@@ -139,5 +141,6 @@ case class CypherPlannerConfiguration(queryCacheSize: Int,
                                       nonIndexedLabelWarningThreshold: Long,
                                       planSystemCommands: Boolean,
                                       useJavaCCParser: Boolean,
+                                      obfuscateLiterals: Boolean,
                                       pipelinedBatchSizeSmall: Int,
                                       pipelinedBatchSizeBig: Int)

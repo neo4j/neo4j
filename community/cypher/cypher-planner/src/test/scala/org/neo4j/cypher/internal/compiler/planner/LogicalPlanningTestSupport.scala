@@ -302,6 +302,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     nonIndexedLabelWarningThreshold = 10000,
     planSystemCommands = false,
     useJavaCCParser = true,
+    obfuscateLiterals = false,
     pipelinedBatchSizeSmall = 128,
     pipelinedBatchSizeBig = 1024,
   )

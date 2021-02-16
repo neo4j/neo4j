@@ -126,6 +126,7 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     nonIndexedLabelWarningThreshold = 10000,
     planSystemCommands = false,
     useJavaCCParser = true,
+    obfuscateLiterals = false,
     pipelinedBatchSizeSmall = 128,
     pipelinedBatchSizeBig = 1024,
   )

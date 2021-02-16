@@ -84,6 +84,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       nonIndexedLabelWarningThreshold = 10000L,
       planSystemCommands = false,
       useJavaCCParser = true,
+      obfuscateLiterals = false,
       pipelinedBatchSizeSmall = 128,
       pipelinedBatchSizeBig = 1024,
     )

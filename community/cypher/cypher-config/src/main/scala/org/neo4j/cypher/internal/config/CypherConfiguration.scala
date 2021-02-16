@@ -62,7 +62,8 @@ object CypherConfiguration {
       new ConfigMemoryTrackingController(config),
       config.get(GraphDatabaseInternalSettings.cypher_enable_runtime_monitors),
       config.get(GraphDatabaseInternalSettings.cypher_parser) != GraphDatabaseInternalSettings.CypherParser.PARBOILED,
-      config.get(GraphDatabaseInternalSettings.cypher_splitting_top_behavior) == GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW
+      config.get(GraphDatabaseInternalSettings.cypher_splitting_top_behavior) == GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW,
+      config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)
     )
   }
 
@@ -108,4 +109,4 @@ case class CypherConfiguration(
   enableMonitors: Boolean,
   useJavaCCParser: Boolean,
   disallowSplittingTop: Boolean,
-)
+  obfuscateLiterals: Boolean)
