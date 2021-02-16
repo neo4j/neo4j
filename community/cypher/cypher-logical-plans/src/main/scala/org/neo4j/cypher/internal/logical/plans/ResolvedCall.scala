@@ -40,8 +40,8 @@ import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
+import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
-import org.neo4j.cypher.internal.expressions.SensitiveString
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
@@ -59,7 +59,9 @@ object ResolvedCall {
     val callArgumentsWithSensitivityMarkers = callArguments.zipAll(sensitiveArguments, null, false).map {
       case (p: ExplicitParameter, true) => new ExplicitParameter(p.name, p.parameterType)(p.position) with SensitiveParameter
       case (p: AutoExtractedParameter, true) => new AutoExtractedParameter(p.name, p.parameterType, p.writer)(p.position) with SensitiveAutoParameter
-      case (p: StringLiteral, true) => new StringLiteral(p.value)(p.position) with SensitiveString
+      case (p: StringLiteral, true) => new StringLiteral(p.value)(p.position) with SensitiveLiteral {
+        override def literalLength: Option[Int] = None
+      }
       case (p, _) => p
     }
     val callResults = declaredResult.map(_.items).getOrElse(signatureResults(signature, position))

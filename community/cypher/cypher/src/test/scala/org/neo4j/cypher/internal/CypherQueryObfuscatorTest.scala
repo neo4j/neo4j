@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.util.LiteralOffset
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -41,11 +42,11 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
 
   test("should obfuscate simple password") {
     val originalText = "password is 'here' // comment"
-    val expectedText = "password is '******' // comment"
+    val expectedText = "password is ****** // comment"
     val ob =
       CypherQueryObfuscator(
         ObfuscationMetadata(
-          Vector(originalText.indexOf("'here")),
+          Vector(offsetOf(originalText, "'here'")),
           Set.empty))
 
     ob.obfuscateText(originalText) should equal(expectedText)
@@ -53,11 +54,11 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
 
   test("should obfuscate multiline password") {
     val originalText = "password is 'here is a\nmultiline\npassword' // comment"
-    val expectedText = "password is '******' // comment"
+    val expectedText = "password is ****** // comment"
     val ob =
       CypherQueryObfuscator(
         ObfuscationMetadata(
-          Vector(originalText.indexOf("'here")),
+          Vector(offsetOf(originalText, "'here is a\nmultiline\npassword'")),
           Set.empty))
 
     ob.obfuscateText(originalText) should equal(expectedText)
@@ -65,11 +66,11 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
 
   test("should obfuscate password with nested quotes") {
     val originalText = "password is 'here is a \"password\"' // comment"
-    val expectedText = "password is '******' // comment"
+    val expectedText = "password is ****** // comment"
     val ob =
       CypherQueryObfuscator(
         ObfuscationMetadata(
-          Vector(originalText.indexOf("'here")),
+          Vector(offsetOf(originalText, "'here is a \"password\"'")),
           Set.empty))
 
     ob.obfuscateText(originalText) should equal(expectedText)
@@ -77,11 +78,11 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
 
   test("should obfuscate password with escaped quotes") {
     val originalText = "password is 'here is a \\'password\\'' // comment"
-    val expectedText = "password is '******' // comment"
+    val expectedText = "password is ****** // comment"
     val ob =
       CypherQueryObfuscator(
         ObfuscationMetadata(
-          Vector(originalText.indexOf("'here")),
+          Vector(offsetOf(originalText, "'here is a \\'password\\''")),
           Set.empty))
 
     ob.obfuscateText(originalText) should equal(expectedText)
@@ -89,11 +90,11 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
 
   test("should obfuscate multiple passwords") {
     val originalText = "password is 'here' and 'also here' // comment"
-    val expectedText = "password is '******' and '******' // comment"
+    val expectedText = "password is ****** and ****** // comment"
     val ob =
       CypherQueryObfuscator(
         ObfuscationMetadata(
-          Vector(originalText.indexOf("'here'"), originalText.indexOf("'also here'")),
+          Vector(offsetOf(originalText, "'here'"), offsetOf(originalText, "'also here'")),
           Set.empty))
 
     ob.obfuscateText(originalText) should equal(expectedText)
@@ -101,11 +102,11 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
 
   test("should obfuscate multiple passwords next to each other") {
     val originalText = "password is 'here''and also here' // comment"
-    val expectedText = "password is '******''******' // comment"
+    val expectedText = "password is ************ // comment"
     val ob =
       CypherQueryObfuscator(
         ObfuscationMetadata(
-          Vector(originalText.indexOf("'here'"), originalText.indexOf("'and also here'")),
+          Vector(offsetOf(originalText, "'here'"), offsetOf(originalText, "'and also here'")),
           Set.empty))
 
     ob.obfuscateText(originalText) should equal(expectedText)
@@ -141,7 +142,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
     val ob =
       CypherQueryObfuscator(
         ObfuscationMetadata(
-          Vector(originalText.indexOf("here")),
+          Vector(offsetOf(originalText, "here")),
           Set.empty))
 
     an[IllegalStateException] should be thrownBy ob.obfuscateText(originalText)
@@ -152,7 +153,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
     val ob =
       CypherQueryObfuscator(
         ObfuscationMetadata(
-          Vector(originalText.indexOf("'here")),
+          Vector(offsetOf(originalText, "'here")),
           Set.empty))
 
     an[IllegalStateException] should be thrownBy ob.obfuscateText(originalText)
@@ -163,7 +164,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
     val ob =
       CypherQueryObfuscator(
         ObfuscationMetadata(
-          Vector(originalText.indexOf("'here"), 999),
+          Vector(offsetOf(originalText, "'here'"), LiteralOffset(999, Some(10))),
           Set.empty))
 
     an[IllegalStateException] should be thrownBy ob.obfuscateText(originalText)
@@ -171,6 +172,10 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
 
   private def makeParams(params: (String, String)*): MapValue = {
     ValueUtils.asMapValue(Map(params: _*).asJava)
+  }
+
+  private def offsetOf(originalText: String, word: String) : LiteralOffset = {
+    LiteralOffset(originalText.indexOf(word), None)
   }
 
 }

@@ -36,8 +36,8 @@ import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
-import org.neo4j.cypher.internal.expressions.SensitiveString
 import org.neo4j.cypher.internal.rewriting.rewriters.sensitiveLiteralReplacement
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -169,7 +169,7 @@ case class FabricStitcher(
 
     val sensitive = updatedStatement.treeExists {
       case _: SensitiveParameter => true
-      case _: SensitiveString => true
+      case _: SensitiveLiteral => true
     }
 
     val local = pipeline.checkAndFinalize.process(updatedStatement)

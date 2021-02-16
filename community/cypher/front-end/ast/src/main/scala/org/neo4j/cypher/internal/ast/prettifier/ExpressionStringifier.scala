@@ -77,7 +77,7 @@ import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.RegexMatch
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
-import org.neo4j.cypher.internal.expressions.SensitiveString
+import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
 import org.neo4j.cypher.internal.expressions.StartsWith
@@ -410,8 +410,8 @@ case class ExpressionStringifier(
   }
 
   def escapePassword(password: Expression): String = password match {
-    case _: SensitiveString => "'******'"
     case _: SensitiveAutoParameter if !sensitiveParamsAsParams => "'******'"
+    case _: SensitiveLiteral => "'******'"
     case param: Parameter => s"$$${ExpressionStringifier.backtick(param.name)}"
   }
 }

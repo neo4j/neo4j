@@ -18,29 +18,52 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.SchemaCommand
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralsAreAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement
 import org.neo4j.cypher.internal.rewriting.rewriters.sensitiveLiteralReplacement
+import org.neo4j.cypher.internal.util.Foldable
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.IdentityMap
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Step
+import org.neo4j.cypher.internal.util.bottomUp
 
 /**
  * Replace literals with parameters.
  */
-case class LiteralExtraction(literalExtraction: LiteralExtractionStrategy) extends Phase[BaseContext, BaseState, BaseState] with Step {
+case class LiteralExtraction(literalExtraction: LiteralExtractionStrategy,
+                             obfuscateLiterals: Boolean = false) extends Phase[BaseContext, BaseState, BaseState] with Step {
+
+  type LiteralReplacements = IdentityMap[Expression, Expression]
+
+  private val literalMatcher: PartialFunction[Any, LiteralReplacements => Foldable.FoldingBehavior[LiteralReplacements]] = {
+    case l: Literal => acc => SkipChildren(acc + (l -> l.asSensitiveLiteral))
+    case _ => acc => TraverseChildren(acc)
+  }
+
+  def rewriter(replacements: LiteralReplacements): Rewriter = bottomUp(Rewriter.lift {
+    case e: Expression if replacements.contains(e) =>
+      replacements(e)
+  })
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
-    val statement = in.statement()
+    val statement =  if (obfuscateLiterals) {
+      val original = in.statement()
+      val replaceableLiterals = original.treeFold(IdentityMap.empty: LiteralReplacements)(literalMatcher)
+     original.endoRewrite(rewriter(replaceableLiterals))
+    } else in.statement()
     val (extractParameters, extractedParameters) = statement match {
       case _ : AdministrationCommand => sensitiveLiteralReplacement(statement)
       case _ : SchemaCommand => Rewriter.noop -> Map.empty[String, Any]
       case _ => literalReplacement(statement, literalExtraction)
     }
     val rewrittenStatement = statement.endoRewrite(extractParameters)
-
     in.withStatement(rewrittenStatement).withParams(extractedParameters)
   }
 

@@ -48,28 +48,28 @@ class CypherQueryObfuscatorIT extends CypherFunSuite {
   for (password <- passwords) {
     val literalTests: Seq[(String, String)] = Seq(
       s"CREATE USER test SET PASSWORD '$password'" ->
-        "CREATE USER test SET PASSWORD '******'",
+        "CREATE USER test SET PASSWORD ******",
       s"CREATE USER test IF NOT EXISTS SET PASSWORD '$password'" ->
-        "CREATE USER test IF NOT EXISTS SET PASSWORD '******'",
+        "CREATE USER test IF NOT EXISTS SET PASSWORD ******",
       s"CREATE OR REPLACE USER test SET PASSWORD '$password'" ->
-        "CREATE OR REPLACE USER test SET PASSWORD '******'",
+        "CREATE OR REPLACE USER test SET PASSWORD ******",
       s"CREATE USER test SET PASSWORD '$password' CHANGE REQUIRED" ->
-        "CREATE USER test SET PASSWORD '******' CHANGE REQUIRED",
+        "CREATE USER test SET PASSWORD ****** CHANGE REQUIRED",
 
       s"ALTER USER test SET PASSWORD '$password'" ->
-        "ALTER USER test SET PASSWORD '******'",
+        "ALTER USER test SET PASSWORD ******",
       s"ALTER USER test SET PASSWORD '$password' CHANGE REQUIRED" ->
-        "ALTER USER test SET PASSWORD '******' CHANGE REQUIRED",
+        "ALTER USER test SET PASSWORD ****** CHANGE REQUIRED",
 
       s"ALTER CURRENT USER SET PASSWORD FROM '$password' TO '$password'" ->
-        "ALTER CURRENT USER SET PASSWORD FROM '******' TO '******'",
+        "ALTER CURRENT USER SET PASSWORD FROM ****** TO ******",
 
       s"CALL dbms.security.createUser('user', '$password')" ->
-        s"CALL dbms.security.createUser('user', '******')",
+        s"CALL dbms.security.createUser('user', ******)",
       s"CALL dbms.security.createUser('user', '$password', true)" ->
-        s"CALL dbms.security.createUser('user', '******', true)",
+        s"CALL dbms.security.createUser('user', ******, true)",
       s"CALL dbms.security.changePassword('$password')" ->
-        s"CALL dbms.security.changePassword('******')",
+        s"CALL dbms.security.changePassword(******)",
     )
 
     for ((rawText, obfuscatedText) <- literalTests) {
@@ -85,7 +85,7 @@ class CypherQueryObfuscatorIT extends CypherFunSuite {
   private val parameterTests: Seq[ParameterTest] = Seq(
     ParameterTest(
       "CREATE USER test SET PASSWORD 'password'",
-      "CREATE USER test SET PASSWORD '******'",
+      "CREATE USER test SET PASSWORD ******",
       Map.empty,
       Map.empty,
     ),
@@ -97,7 +97,7 @@ class CypherQueryObfuscatorIT extends CypherFunSuite {
     ),
     ParameterTest(
       "ALTER CURRENT USER SET PASSWORD FROM 'test' TO $param",
-      "ALTER CURRENT USER SET PASSWORD FROM '******' TO $param",
+      "ALTER CURRENT USER SET PASSWORD FROM ****** TO $param",
       Map("param" -> "test"),
       Map("param" -> "******"),
     ),
@@ -109,13 +109,13 @@ class CypherQueryObfuscatorIT extends CypherFunSuite {
     ),
     ParameterTest(
       "ALTER CURRENT USER SET PASSWORD FROM $old TO 'password'",
-      "ALTER CURRENT USER SET PASSWORD FROM $old TO '******'",
+      "ALTER CURRENT USER SET PASSWORD FROM $old TO ******",
       Map("old" -> "a", "new" -> "b"),
       Map("old" -> "******", "new" -> "b"),
     ),
     ParameterTest(
       "CALL dbms.security.createUser($user, 'password')",
-      "CALL dbms.security.createUser($user, '******')",
+      "CALL dbms.security.createUser($user, ******)",
       Map("user" -> "a", "unused" -> "test"),
       Map("user" -> "a", "unused" -> "test"),
     ),

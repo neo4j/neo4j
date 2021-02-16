@@ -30,16 +30,17 @@ class CypherQueryObfuscator(state: ObfuscationMetadata) extends QueryObfuscator 
     if (state.sensitiveLiteralOffsets.isEmpty)
       rawQueryText
     else {
-      val adjacentCharacters = rawQueryText.sliding(2).toVector
       val sb = new StringBuilder()
       var i = 0
+      val adjacentCharacters = rawQueryText.sliding(2).toVector
       for (literalOffset <- state.sensitiveLiteralOffsets) {
-        if (literalOffset >= rawQueryText.length || literalOffset < i)
+        val start = literalOffset.start
+        if (start >= rawQueryText.length || start < i)
           throw new IllegalStateException(s"Literal offset out of bounds: $literalOffset.")
 
-        sb.append(rawQueryText.substring(i, literalOffset))
+        sb.append(rawQueryText.substring(i, start))
         sb.append(CypherQueryObfuscator.OBFUSCATED_LITERAL)
-        i = literalOffset + literalLength(adjacentCharacters, rawQueryText, literalOffset)
+        i = start + literalOffset.length.getOrElse(literalStringLength(adjacentCharacters, rawQueryText, start))
       }
       if (i < rawQueryText.length)
         sb.append(rawQueryText.substring(i))
@@ -57,7 +58,9 @@ class CypherQueryObfuscator(state: ObfuscationMetadata) extends QueryObfuscator 
       params
     }
 
-  private def literalLength(adjacentCharacters: Seq[String], rawQueryText: String, fromIndex: Int): Int = {
+  //We don't know the length of strings ahead of time since the amount of characters they use in the raw query text
+  //depends on if we use single quotes or double quotes.
+  private def literalStringLength(adjacentCharacters: Seq[String], rawQueryText: String, fromIndex: Int): Int = {
     val openingQuote = rawQueryText(fromIndex)
     if (openingQuote != '"' && openingQuote != '\'')
       throw new IllegalStateException(s"Expected opening quote at offset $fromIndex.")
@@ -71,8 +74,8 @@ class CypherQueryObfuscator(state: ObfuscationMetadata) extends QueryObfuscator 
 }
 
 object CypherQueryObfuscator {
-  private val OBFUSCATED = utf8Value("******")
-  private val OBFUSCATED_LITERAL = "'******'"
+  private val OBFUSCATED_LITERAL = "******"
+  private val OBFUSCATED = utf8Value(OBFUSCATED_LITERAL)
 
   def apply(obfuscationMetadata: ObfuscationMetadata): QueryObfuscator =
     if (obfuscationMetadata.isEmpty) QueryObfuscator.PASSTHROUGH else new CypherQueryObfuscator(obfuscationMetadata)

@@ -449,7 +449,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 object ContainsSensitiveFields {
   def unapply(plan: LogicalPlan): Boolean = {
     plan.treeExists {
-      case _: SensitiveString => true
+      case _: SensitiveLiteral => true
       case _: SensitiveParameter => true
     }
   }
