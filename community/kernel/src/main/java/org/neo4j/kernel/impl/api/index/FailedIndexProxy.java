@@ -27,8 +27,9 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
+import org.neo4j.kernel.api.index.TokenIndexReader;
+import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -120,7 +121,13 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     }
 
     @Override
-    public IndexReader newReader()
+    public ValueIndexReader newValueReader()
+    {
+        throw new UnsupportedOperationException( "Can not get a reader for an index in FAILED state" );
+    }
+
+    @Override
+    public TokenIndexReader newTokenReader()
     {
         throw new UnsupportedOperationException( "Can not get a reader for an index in FAILED state" );
     }
