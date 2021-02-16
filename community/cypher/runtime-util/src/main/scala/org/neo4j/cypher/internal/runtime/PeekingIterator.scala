@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.cypher.internal.macros.AssertMacros
+
 /**
  * Iterator that adds a `peek` method to inspect the next element without removing it from the Iterator.
  *
@@ -52,6 +54,7 @@ class PeekingIterator[T](inner: ClosingIterator[T]) extends ClosingIterator[T] {
     }
     if (buffer == null) {
       val t = inner.next()
+      AssertMacros.checkOnlyWhenAssertionsAreEnabled(t != null, "Inner of PeekingIterator returned `null` on `next()` call.")
       buffer = t
       t
     } else {

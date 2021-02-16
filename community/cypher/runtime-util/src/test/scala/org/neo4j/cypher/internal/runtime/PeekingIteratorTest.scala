@@ -26,7 +26,6 @@ class PeekingIteratorTest extends CypherFunSuite {
 
   test("peek on empty iterator throws") {
     a[NoSuchElementException] should be thrownBy new PeekingIterator(ClosingIterator.empty).peek()
-
   }
 
   test("one element iterator, no peek") {
