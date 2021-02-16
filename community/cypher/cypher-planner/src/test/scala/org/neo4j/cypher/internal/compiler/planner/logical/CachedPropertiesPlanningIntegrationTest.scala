@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
-import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -33,7 +31,6 @@ import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
-import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with LogicalPlanningTestSupport2 {
@@ -80,18 +77,6 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
 
     plan._2 should equal(
       Selection(Seq(greaterThan(prop("n", "prop1"), literalInt(42))),
-        AllNodesScan("n", Set.empty))    )
-  }
-
-  // Note: This is only the right behavior since AndedPropertyComparablePredicates re-reads the property stupidly
-  test("should rewrite node property if there are two usages in AndedPropertyInequalities") {
-    val plan = planFor("MATCH (n) WHERE n.prop1 > 42 AND n.prop1 < 100 RETURN n")
-
-    plan._2 should equal(
-      Selection(Seq(cachedAndedNodePropertyInequalities("n", "prop1",
-        greaterThan(cachedNodePropFromStore("n", "prop1"), literalInt(42)),
-        lessThan(cachedNodePropFromStore("n", "prop1"), literalInt(100)))
-      ),
         AllNodesScan("n", Set.empty))    )
   }
 
@@ -221,9 +206,5 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
       .cacheProperties("cacheNFromStore[n.prop]")
       .nodeByLabelScan("n", "N") // 500 rows, effective 5
       .build()
-  }
-
-  private def cachedAndedNodePropertyInequalities(varName: String, propName: String, expression: InequalityExpression*) = {
-    AndedPropertyInequalities(varFor(varName), cachedNodePropFromStore(varName, propName), NonEmptyList(expression.head, expression.tail: _*))
   }
 }

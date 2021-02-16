@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.inSequence
 
 case object LogicalPlanRewritten extends StepSequencer.Condition
-case object SingleAndedPropertyInequalitiesRemoved extends StepSequencer.Condition
+case object AndedPropertyInequalitiesRemoved extends StepSequencer.Condition
 
 /**
  * Optimize logical plans using heuristic rewriting.
@@ -78,8 +78,8 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
     LogicalPlanRewritten,
-    // The belongs to simplifyPredicates
-    SingleAndedPropertyInequalitiesRemoved
+    // This belongs to simplifyPredicates
+    AndedPropertyInequalitiesRemoved,
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(

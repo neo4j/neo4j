@@ -23,11 +23,13 @@ import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 
 case object simplifyPredicates extends Rewriter {
-  override def apply(input: AnyRef) = instance.apply(input)
+  override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case in@In(exp, ListLiteral(values@Seq(idValueExpr))) if values.size == 1 =>
@@ -36,5 +38,15 @@ case object simplifyPredicates extends Rewriter {
     // This form is used to make composite index seeks and scans
     case AndedPropertyInequalities(_, _, predicates) if predicates.size == 1 =>
       predicates.head
+
+    case selection@Selection(ands, _) =>
+      val flatExprs = ands.exprs.flatMap {
+        case AndedPropertyInequalities(_, _, predicates) => predicates.toIndexedSeq
+        case x => Seq(x)
+      }
+
+      selection.copy(
+        predicate = ands.copy(exprs = flatExprs)(ands.position)
+      )(SameId(selection.id))
   })
 }

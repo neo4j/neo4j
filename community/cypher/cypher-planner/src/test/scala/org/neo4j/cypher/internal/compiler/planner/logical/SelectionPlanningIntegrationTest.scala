@@ -33,8 +33,9 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.PredicateOrdering
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.Inside
 
-class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with LogicalPlanningIntegrationTestSupport {
+class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with LogicalPlanningIntegrationTestSupport with Inside {
 
   /**
    * The assumptions on the ordering for these selectivities is based on that [[PredicateOrdering]] is used.
@@ -184,6 +185,27 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
         ), _) => ()
       }
     }
+  }
 
+  test("should treat inequality predicates on the same property separately") {
+    val q =
+      """MATCH (n)
+        |WHERE n.prop > 123 AND n.prop < 321 AND n.prop >= 111 AND n.prop <= 333 AND
+        |      n.otherProp < n.yetAnotherProp
+        |RETURN n""".stripMargin
+
+    val plan = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .build()
+      .plan(q)
+      .stripProduceResults
+
+    inside(plan) {
+      case Selection(Ands(predicates), _) =>
+        predicates.length shouldBe 5
+        predicates.last shouldBe lessThan(
+          prop("n", "otherProp"),
+          prop("n", "yetAnotherProp"))
+    }
   }
 }

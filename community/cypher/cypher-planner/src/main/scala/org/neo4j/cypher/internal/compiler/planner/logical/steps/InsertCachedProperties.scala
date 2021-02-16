@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.AndedPropertyInequalitiesRemoved
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.LogicalPlanUsesEffectiveOutputCardinality
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.SingleAndedPropertyInequalitiesRemoved
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.EntityType
@@ -327,7 +327,7 @@ object InsertCachedProperties extends StepSequencer.Step with PlanPipelineTransf
     // This rewriter operates on the LogicalPlan
     CompilationContains[LogicalPlan],
     // AndedPropertyInequalities contain the same property twice, which would mess up our counts.
-    SingleAndedPropertyInequalitiesRemoved,
+    AndedPropertyInequalitiesRemoved,
     // PushdownPropertyReads needs effectiveCardinalities
     LogicalPlanUsesEffectiveOutputCardinality
   )

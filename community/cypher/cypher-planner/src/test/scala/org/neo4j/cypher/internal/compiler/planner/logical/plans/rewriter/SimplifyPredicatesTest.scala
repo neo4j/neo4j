@@ -55,4 +55,15 @@ class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     selection.endoRewrite(simplifyPredicates) should equal(expectedSelection)
   }
+
+  test("should rewrite WHERE AndedPropertyInequality into multiple predicates") {
+    val argument: LogicalPlan = Argument(Set("x"))
+    val predicateGT = propGreaterThan("x", "prop", 42)
+    val predicateLT = propLessThan("x", "prop", 321)
+    val complexForm = AndedPropertyInequalities(varFor("x"), prop("x", "prop"), NonEmptyList(predicateGT, predicateLT))
+    val selection = Selection(Seq(complexForm), argument)
+    val expectedSelection = Selection(Seq(predicateGT, predicateLT), argument)
+
+    selection.endoRewrite(simplifyPredicates) should equal(expectedSelection)
+  }
 }
