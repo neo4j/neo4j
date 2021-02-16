@@ -148,7 +148,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
     {
         SlotSelector slotSelector = SlotSelector.nullInstance;
         return new FusionIndexProvider( failingProvider, luceneProvider,
-            slotSelector, providerDescriptor, directoryFactory, fs, false );
+            slotSelector, providerDescriptor, directoryFactory, fs, false, false );
     }
 
     private IndexSamplingJob createIndexSamplingJob( IndexAccessor fusionAccessor )

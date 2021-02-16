@@ -28,12 +28,15 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
@@ -46,46 +49,78 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class MinimalIndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
-    private MinimalIndexAccessor minimalIndexAccessor;
-
-    public MinimalIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite )
+    public MinimalIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype indexPrototype )
     {
-        super( testSuite, IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ) );
+        super( testSuite, indexPrototype );
     }
 
-    @Before
-    public void before() throws IOException
+    @Ignore( "Not a test. This is a compatibility suite" )
+    public static class General extends MinimalIndexAccessorCompatibility
     {
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_NAME_LOOKUP );
-        populator.create();
-        populator.close( true, NULL );
-        minimalIndexAccessor = indexProvider.getMinimalIndexAccessor( descriptor );
+        private MinimalIndexAccessor minimalIndexAccessor;
+
+        public General( IndexProviderCompatibilityTestSuite testSuite )
+        {
+            super( testSuite, IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ) );
+        }
+
+        @Before
+        public void before() throws IOException
+        {
+            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
+            IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_NAME_LOOKUP );
+            populator.create();
+            populator.close( true, NULL );
+            minimalIndexAccessor = indexProvider.getMinimalIndexAccessor( descriptor );
+        }
+
+        @Test
+        public void indexDropperMustDropIndex() throws IOException
+        {
+            // given
+            Path rootDirectory = indexProvider.directoryStructure().rootDirectory();
+            Path[] files = fs.listFiles( rootDirectory );
+            assertEquals( 1, files.length );
+
+            // when
+            minimalIndexAccessor.drop();
+
+            // then
+            files = fs.listFiles( rootDirectory );
+            assertEquals( 0, files.length );
+        }
+
+        @Test
+        public void indexDropperMustProvideIndexConfiguration()
+        {
+            // when
+            Map<String,Value> dropperConfiguration = minimalIndexAccessor.indexConfig();
+
+            // then
+            assertEquals( descriptor.getIndexConfig().asMap(), dropperConfiguration );
+        }
     }
 
-    @Test
-    public void indexDropperMustDropIndex() throws IOException
+    @Ignore( "Not a test. This is a compatibility suite" )
+    public static class ReadOnly extends MinimalIndexAccessorCompatibility
     {
-        // given
-        Path rootDirectory = indexProvider.directoryStructure().rootDirectory();
-        Path[] files = fs.listFiles( rootDirectory );
-        assertEquals( 1, files.length );
+        public ReadOnly( IndexProviderCompatibilityTestSuite testSuite )
+        {
+            super( testSuite, IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 1, 2 ) ) );
+        }
 
-        // when
-        minimalIndexAccessor.drop();
+        @Override
+        public void additionalConfig( Config.Builder configBuilder )
+        {
+            configBuilder.set( GraphDatabaseSettings.read_only, true );
+        }
 
-        // then
-        files = fs.listFiles( rootDirectory );
-        assertEquals( 0, files.length );
-    }
-
-    @Test
-    public void indexDropperMustProvideIndexConfiguration()
-    {
-        // when
-        Map<String,Value> dropperConfiguration = minimalIndexAccessor.indexConfig();
-
-        // then
-        assertEquals( descriptor.getIndexConfig().asMap(), dropperConfiguration );
+        @Test
+        public void dropShouldBeBlockedIfReadOnly()
+        {
+            MinimalIndexAccessor minimalIndexAccessor = indexProvider.getMinimalIndexAccessor( descriptor );
+            IllegalStateException e = assertThrows( IllegalStateException.class, minimalIndexAccessor::drop );
+            assertThat( e ).hasMessageContaining( "read-only" );
+        }
     }
 }

@@ -29,16 +29,22 @@ public class NativeMinimalIndexAccessor implements MinimalIndexAccessor
 {
     private final IndexDescriptor descriptor;
     private final IndexFiles indexFiles;
+    private final boolean readOnly;
 
-    public NativeMinimalIndexAccessor( IndexDescriptor descriptor, IndexFiles indexFiles )
+    public NativeMinimalIndexAccessor( IndexDescriptor descriptor, IndexFiles indexFiles, boolean readOnly )
     {
         this.descriptor = descriptor;
         this.indexFiles = indexFiles;
+        this.readOnly = readOnly;
     }
 
     @Override
     public void drop()
     {
+        if ( readOnly )
+        {
+            throw new IllegalStateException( "Cannot drop read-only index." );
+        }
         indexFiles.clear();
     }
 

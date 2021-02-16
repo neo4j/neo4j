@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -86,11 +87,13 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
         CompositeRandomizedIndexAccessorCompatibility.Exact.class,
         CompositeRandomizedIndexAccessorCompatibility.Range.class,
         IndexConfigurationCompletionCompatibility.class,
-        MinimalIndexAccessorCompatibility.class
+        MinimalIndexAccessorCompatibility.General.class,
+        MinimalIndexAccessorCompatibility.ReadOnly.class
 } )
 public abstract class IndexProviderCompatibilityTestSuite
 {
-    protected abstract IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir );
+    protected abstract IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir,
+            Config config );
 
     public abstract boolean supportsSpatial();
 
@@ -137,6 +140,11 @@ public abstract class IndexProviderCompatibilityTestSuite
         // no-op by default
     }
 
+    public void additionalConfig( Config.Builder configBuilder )
+    {
+        //can be overridden in sub-classes that wants to add additional Config settings.
+    }
+
     public abstract static class Compatibility
     {
         private final PageCacheAndDependenciesRule pageCacheAndDependenciesRule;
@@ -156,6 +164,7 @@ public abstract class IndexProviderCompatibilityTestSuite
         final List<NodeAndValue> valueSet2;
         final JobScheduler jobScheduler;
         final IndexPopulator.PopulationWorkScheduler populationWorkScheduler;
+        private final Config config;
 
         @Before
         public void setup() throws Exception
@@ -163,7 +172,7 @@ public abstract class IndexProviderCompatibilityTestSuite
             fs = pageCacheAndDependenciesRule.fileSystem();
             graphDbDir = pageCacheAndDependenciesRule.directory().homePath();
             PageCache pageCache = pageCacheAndDependenciesRule.pageCache();
-            indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir );
+            indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir, config );
             descriptor = indexProvider.completeConfiguration( incompleteIndexPrototype.withName( "index_17" ).materialise( 17 ) );
             jobScheduler.start();
         }
@@ -177,9 +186,20 @@ public abstract class IndexProviderCompatibilityTestSuite
             }
         }
 
+        public void additionalConfig( Config.Builder configBuilder )
+        {
+            //can be overridden in sub-classes that wants to add additional Config settings.
+        }
+
         Compatibility( IndexProviderCompatibilityTestSuite testSuite, IndexPrototype prototype )
         {
             this.testSuite = testSuite;
+
+            Config.Builder configBuilder = Config.newBuilder();
+            testSuite.additionalConfig( configBuilder );
+            additionalConfig( configBuilder );
+            this.config = configBuilder.build();
+
             this.incompleteIndexPrototype = prototype;
             this.valueSet1 = allValues(
                     testSuite.supportsSpatial(),

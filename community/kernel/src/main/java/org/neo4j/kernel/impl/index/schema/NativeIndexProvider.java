@@ -84,7 +84,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     @Override
     public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
     {
-        return new NativeMinimalIndexAccessor( descriptor, indexFiles( descriptor ) );
+        return new NativeMinimalIndexAccessor( descriptor, indexFiles( descriptor ), databaseIndexContext.readOnly );
     }
 
     @Override

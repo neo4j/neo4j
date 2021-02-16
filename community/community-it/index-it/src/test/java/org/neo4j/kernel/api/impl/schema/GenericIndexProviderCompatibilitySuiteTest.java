@@ -42,11 +42,10 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
 {
     @Override
-    protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir )
+    protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config )
     {
         Monitors monitors = new Monitors();
         String monitorTag = "";
-        Config config = Config.defaults( default_schema_provider, NATIVE_BTREE10.providerName() );
         OperationalMode mode = OperationalMode.SINGLE;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
         return GenericNativeIndexProviderFactory.
@@ -75,5 +74,11 @@ public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCom
     public void consistencyCheck( IndexPopulator populator )
     {
         ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory(), NULL );
+    }
+
+    @Override
+    public void additionalConfig( Config.Builder configBuilder )
+    {
+        configBuilder.set( default_schema_provider, NATIVE_BTREE10.providerName() );
     }
 }

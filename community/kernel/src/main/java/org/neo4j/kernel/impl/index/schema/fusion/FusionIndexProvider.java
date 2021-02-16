@@ -66,6 +66,7 @@ public class FusionIndexProvider extends IndexProvider
     private final boolean archiveFailedIndex;
     private final InstanceSelector<IndexProvider> providers;
     private final SlotSelector slotSelector;
+    private final boolean readOnly;
     private final FileSystemAbstraction fs;
 
     public FusionIndexProvider(
@@ -76,11 +77,12 @@ public class FusionIndexProvider extends IndexProvider
             IndexProviderDescriptor descriptor,
             IndexDirectoryStructure.Factory directoryStructure,
             FileSystemAbstraction fs,
-            boolean archiveFailedIndex )
+            boolean archiveFailedIndex, boolean readOnly )
     {
         super( descriptor, directoryStructure );
         this.archiveFailedIndex = archiveFailedIndex;
         this.slotSelector = slotSelector;
+        this.readOnly = readOnly;
         this.providers = new InstanceSelector<>();
         this.fs = fs;
         fillProvidersSelector( providers, genericProvider, luceneProvider );
@@ -124,7 +126,7 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
     {
-        return new NativeMinimalIndexAccessor( descriptor, indexFiles( descriptor ) );
+        return new NativeMinimalIndexAccessor( descriptor, indexFiles( descriptor ), readOnly );
     }
 
     @Override

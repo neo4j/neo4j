@@ -38,11 +38,10 @@ import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provi
 public class FusionIndexProvider30CompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
 {
     @Override
-    protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir )
+    protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, Path graphDbDir, Config config )
     {
         Monitors monitors = new Monitors();
         String monitorTag = "";
-        Config config = Config.defaults( default_schema_provider, NATIVE30.providerName() );
         OperationalMode mode = OperationalMode.SINGLE;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
         return NativeLuceneFusionIndexProviderFactory30.create( pageCache, graphDbDir, fs, monitors, monitorTag, config, mode, recoveryCleanupWorkCollector,
@@ -53,5 +52,11 @@ public class FusionIndexProvider30CompatibilitySuiteTest extends IndexProviderCo
     public boolean supportsSpatial()
     {
         return true;
+    }
+
+    @Override
+    public void additionalConfig( Config.Builder configBuilder )
+    {
+        configBuilder.set( default_schema_provider, NATIVE30.providerName() );
     }
 }

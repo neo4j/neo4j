@@ -117,7 +117,7 @@ abstract class FusionIndexProviderTest
         fusionIndexProvider = new FusionIndexProvider(
                 providers.get( GENERIC ),
                 providers.get( LUCENE ),
-                fusionVersion.slotSelector(), DESCRIPTOR, NONE, mock( FileSystemAbstraction.class ), false );
+                fusionVersion.slotSelector(), DESCRIPTOR, NONE, mock( FileSystemAbstraction.class ), false, false );
         instanceSelector = new InstanceSelector<>( providers );
     }
 
