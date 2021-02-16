@@ -27,6 +27,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.Log;
@@ -116,5 +117,11 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     public Map<String,Value> indexConfig()
     {
         return minimalIndexAccessor.indexConfig();
+    }
+
+    @Override
+    public IndexReader newReader()
+    {
+        throw new UnsupportedOperationException( "Can not get a reader for an index in FAILED state" );
     }
 }

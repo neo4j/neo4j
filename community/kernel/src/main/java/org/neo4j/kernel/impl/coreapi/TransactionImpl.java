@@ -54,6 +54,7 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -62,6 +63,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
@@ -69,6 +71,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -795,7 +798,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return emptyResourceIterator();
         }
 
-        var index = findMatchingIndex( transaction, SchemaDescriptor.forLabel( labelId, query.propertyKeyId() ) );
+        var index = findUsableMatchingIndex( transaction, SchemaDescriptor.forLabel( labelId, query.propertyKeyId() ) );
         if ( index != IndexDescriptor.NO_INDEX )
         {
             // Ha! We found an index - let's use it to find matching nodes
@@ -825,7 +828,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return emptyResourceIterator();
         }
 
-        var index = findMatchingIndex( transaction, SchemaDescriptor.forRelType( typeId, query.propertyKeyId() ) );
+        var index = findUsableMatchingIndex( transaction, SchemaDescriptor.forRelType( typeId, query.propertyKeyId() ) );
         if ( index != IndexDescriptor.NO_INDEX )
         {
             // Ha! We found an index - let's use it to find matching relationships
@@ -913,7 +916,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         }
 
         int[] propertyIds = getPropertyIds( queries );
-        IndexDescriptor index = findMatchingCompositeIndex( transaction, SchemaDescriptor.forLabel( labelId, propertyIds ), propertyIds,
+        IndexDescriptor index = findUsableMatchingCompositeIndex( transaction, SchemaDescriptor.forLabel( labelId, propertyIds ), propertyIds,
                                                             () -> transaction.schemaRead().indexesGetForLabel( labelId ) );
 
         if ( index != IndexDescriptor.NO_INDEX )
@@ -991,7 +994,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         }
 
         int[] propertyIds = getPropertyIds( queries );
-        IndexDescriptor index = findMatchingCompositeIndex( tx, SchemaDescriptor.forRelType( typeId, propertyIds ), propertyIds,
+        IndexDescriptor index = findUsableMatchingCompositeIndex( tx, SchemaDescriptor.forRelType( typeId, propertyIds ), propertyIds,
                                                             () -> tx.schemaRead().indexesGetForRelationshipType( typeId ) );
 
         if ( index != IndexDescriptor.NO_INDEX )
@@ -1022,11 +1025,14 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return queries;
     }
 
-    private static IndexDescriptor findMatchingCompositeIndex( KernelTransaction transaction, SchemaDescriptor schemaDescriptor, int[] propertyIds,
+    /**
+     * Find an ONLINE index that matches the schema.
+     */
+    private static IndexDescriptor findUsableMatchingCompositeIndex( KernelTransaction transaction, SchemaDescriptor schemaDescriptor, int[] propertyIds,
                                                                Supplier<Iterator<IndexDescriptor>> indexesSupplier )
     {
         // Try a direct schema match first.
-        var directMatch = findMatchingIndex( transaction, schemaDescriptor );
+        var directMatch = findUsableMatchingIndex( transaction, schemaDescriptor );
         if ( directMatch != IndexDescriptor.NO_INDEX )
         {
             return directMatch;
@@ -1043,7 +1049,8 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         {
             IndexDescriptor index = indexes.next();
             int[] original = index.schema().getPropertyIds();
-            if ( index.getIndexType() == IndexType.BTREE && hasSamePropertyIds( original, workingCopy, propertyIds ) )
+            if ( index.getIndexType() == IndexType.BTREE && hasSamePropertyIds( original, workingCopy, propertyIds )
+                 && indexIsOnline( transaction.schemaRead(), index ) )
             {
                 // Ha! We found an index with the same properties in another order
                 return index;
@@ -1054,18 +1061,40 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         return IndexDescriptor.NO_INDEX;
     }
 
-    private static IndexDescriptor findMatchingIndex( KernelTransaction transaction, SchemaDescriptor schemaDescriptor )
+    /**
+     * Find an ONLINE index that matches the schema.
+     */
+    private static IndexDescriptor findUsableMatchingIndex( KernelTransaction transaction, SchemaDescriptor schemaDescriptor )
     {
-        Iterator<IndexDescriptor> iterator = transaction.schemaRead().index( schemaDescriptor );
+        SchemaRead schemaRead = transaction.schemaRead();
+        Iterator<IndexDescriptor> iterator = schemaRead.index( schemaDescriptor );
         while ( iterator.hasNext() )
         {
             IndexDescriptor index = iterator.next();
-            if ( index.getIndexType() == IndexType.BTREE )
+            if ( index.getIndexType() == IndexType.BTREE && indexIsOnline( schemaRead, index ) )
             {
                 return index;
             }
         }
         return IndexDescriptor.NO_INDEX;
+    }
+
+    /**
+     * @return True if the index is online. False if the index was not found or in other state.
+     */
+    private static boolean indexIsOnline( SchemaRead schemaRead, IndexDescriptor index )
+    {
+        InternalIndexState state = InternalIndexState.FAILED;
+        try
+        {
+            state = schemaRead.indexGetState( index );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            // Well the index should always exist here, but if we didn't find it while checking the state,
+            // then we obviously don't want to use it.
+        }
+        return state == InternalIndexState.ONLINE;
     }
 
     private static void assertNoDuplicates( int[] propertyIds, TokenRead tokenRead )

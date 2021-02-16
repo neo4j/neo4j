@@ -1648,6 +1648,49 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     }
 
     @Test
+    void shouldNotUseFailedIndexToFindEntities()
+    {
+        long expectedNode;
+        // Given
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = tx.createNode( label );
+            expectedNode = node.getId();
+            node.setProperty( propertyKey, "somevalue" );
+            //Property that can't be indexed
+            tx.createNode( label ).setProperty( propertyKey, tooLargeString() );
+            tx.commit();
+        }
+
+        // When
+        IndexDefinition indexA;
+        try ( Transaction tx = db.beginTx() )
+        {
+            indexA = tx.schema().indexFor( label ).on( propertyKey ).withName( nameA ).create();
+            tx.commit();
+        }
+
+        // Then the index ends up in failed state
+        assertThrows( IllegalStateException.class, () -> waitForIndexes( db ) );
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( count( tx.schema().getIndexes() ) ).isEqualTo( 1 );
+            assertThat( getIndexState( tx, indexA ) ).isEqualTo( FAILED );
+            tx.commit();
+        }
+
+        // but it should still be possible to find entities (without trying to use the index and getting exceptions)
+        try ( Transaction tx = db.beginTx() )
+        {
+            ResourceIterator<Node> nodes = tx.findNodes( label, propertyKey, "somevalue" );
+            assertThat( nodes.hasNext() ).isTrue();
+            assertThat( nodes.next().getId() ).isEqualTo( expectedNode );
+            assertThat( nodes.hasNext() ).isFalse();
+            nodes.close();
+        }
+    }
+
+    @Test
     void commitTwoConstraintsSameTx()
     {
         try ( Transaction tx = db.beginTx() )
