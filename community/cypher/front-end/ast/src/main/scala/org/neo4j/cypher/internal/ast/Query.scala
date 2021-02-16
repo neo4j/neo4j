@@ -118,18 +118,11 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       .headOption.collect { case w: With if hasImportFormat(w) => w }
   }
 
-  private def aliasingImportWith: Option[With] = {
-    def hasDependencies(w: With) = w match {
-      case With(false, ri, None, None, None, None) =>
-        ri.items.exists(_.expression.dependencies.nonEmpty)
-      case _ =>
-        false
-    }
+  private def leadingNonImportWith: Option[With] = {
     if (importWith.isDefined)
       None
     else
-      clausesExceptLeadingFrom
-        .headOption.collect { case w: With if hasDependencies(w) => w }
+      clausesExceptLeadingFrom.headOption.collect { case wth: With => wth}
   }
 
   private def leadingGraphSelection: Option[GraphSelection] =
@@ -167,7 +160,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       )
 
     checkCorrelatedSubQueriesFeature chain
-    checkAliasingImportWith chain
+    checkIllegalImportWith chain
     checkLeadingFrom(outer) chain
     checkConcludesWithReturn(clausesExceptLeadingFromAndImportWith) chain
     semanticCheckAbstract(
@@ -195,11 +188,31 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       case None       => success
     }
 
-  private def checkAliasingImportWith: SemanticCheck =
-    aliasingImportWith match {
-      case Some(wth) => error("Importing WITH should consist only of simple references to outside variables. Aliasing or expressions are not supported.", wth.position)
-      case None      => success
+  private def checkIllegalImportWith: SemanticCheck = leadingNonImportWith.foldSemanticCheck { wth =>
+    def err(msg: String): SemanticCheck =
+      error(s"Importing WITH should consist only of simple references to outside variables. $msg.", wth.position)
+
+    def checkReturnItems: SemanticCheck = {
+      val hasAliases = wth.returnItems.items.exists(!_.isPassThrough)
+      when (hasAliases) { err("Aliasing or expressions are not supported") }
     }
+
+    def checkDistinct: SemanticCheck = when (wth.distinct) { err("DISTINCT is not allowed") }
+    def checkOrderBy: SemanticCheck = wth.orderBy.foldSemanticCheck(_ => err("ORDER BY is not allowed"))
+    def checkWhere: SemanticCheck = wth.where.foldSemanticCheck(_ => err("WHERE is not allowed"))
+    def checkSkip: SemanticCheck = wth.skip.foldSemanticCheck(_ => err("SKIP is not allowed"))
+    def checkLimit: SemanticCheck = wth.limit.foldSemanticCheck(_ => err("LIMIT is not allowed"))
+
+    val hasImports = wth.returnItems.includeExisting || wth.returnItems.items.exists(_.expression.dependencies.nonEmpty)
+    when (hasImports) {
+      checkReturnItems chain
+        checkDistinct chain
+        checkWhere chain
+        checkOrderBy chain
+        checkSkip chain
+        checkLimit
+    }
+  }
 
   private def checkIndexHints(clauses: Seq[Clause]): SemanticCheck = s => {
     val hints = clauses.collect { case m: Match => m.hints }.flatten
