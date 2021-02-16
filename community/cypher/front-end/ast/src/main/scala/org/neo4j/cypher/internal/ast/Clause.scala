@@ -698,8 +698,10 @@ case class UnresolvedCall(procedureNamespace: Namespace,
                           procedureName: ProcedureName,
                           // None: No arguments given
                           declaredArguments: Option[Seq[Expression]] = None,
-                          // None: No results declared  (i.e. no "YIELD" part)
-                          declaredResult: Option[ProcedureResult] = None
+                          // None: No results declared  (i.e. no "YIELD" part or "YIELD *")
+                          declaredResult: Option[ProcedureResult] = None,
+                          // YIELD *
+                          yieldAll: Boolean = false
                          )(val position: InputPosition) extends CallClause {
 
   override def returnColumns: List[LogicalVariable] =

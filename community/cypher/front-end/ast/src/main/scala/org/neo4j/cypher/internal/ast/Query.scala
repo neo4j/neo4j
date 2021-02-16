@@ -213,8 +213,18 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
 
   private def checkStandaloneCall(clauses: Seq[Clause]): SemanticCheck = s => {
     clauses match {
-      case Seq(call: UnresolvedCall, where: With) =>
+      case Seq(_: UnresolvedCall, where: With) =>
         SemanticCheckResult.error(s, SemanticError("Cannot use standalone call with WHERE (instead use: `CALL ... WITH * WHERE ... RETURN *`)", where.position))
+      case Seq(_: GraphSelection, _: UnresolvedCall) =>
+        // USE clause and standalone procedure call
+        SemanticCheckResult.success(s)
+      case all if all.size > 1 && all.exists(c => c.isInstanceOf[UnresolvedCall]) =>
+        // Non-standalone procedure call should not allow YIELD *
+        clauses.find {
+          case uc: UnresolvedCall => uc.yieldAll
+          case _ => false
+        }.map(c => SemanticCheckResult.error(s, SemanticError("Cannot use `YIELD *` outside standalone call", c.position)))
+         .getOrElse(SemanticCheckResult.success(s))
       case _ =>
         SemanticCheckResult.success(s)
     }

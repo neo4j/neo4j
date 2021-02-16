@@ -50,7 +50,7 @@ import org.neo4j.exceptions.SyntaxException
 
 object ResolvedCall {
   def apply(signatureLookup: QualifiedName => ProcedureSignature)(unresolved: UnresolvedCall): ResolvedCall = {
-    val UnresolvedCall(_, _, declaredArguments, declaredResult) = unresolved
+    val UnresolvedCall(_, _, declaredArguments, declaredResult, yieldAll) = unresolved
     val position = unresolved.position
     val signature = signatureLookup(QualifiedName(unresolved))
     val implicitArguments = signature.inputSignature.map(s => s.default.map(d => ImplicitProcedureArgument(s.name, s.typ, d)).getOrElse(Parameter(s.name, s.typ)(position)))
@@ -67,11 +67,11 @@ object ResolvedCall {
     if (callFilter.nonEmpty)
       throw new IllegalArgumentException(s"Expected no unresolved call with WHERE but got: $unresolved")
     else
-      ResolvedCall(signature, callArgumentsWithSensitivityMarkers, callResults, declaredArguments.nonEmpty, declaredResult.nonEmpty)(position)
+      ResolvedCall(signature, callArgumentsWithSensitivityMarkers, callResults, declaredArguments.nonEmpty, declaredResult.nonEmpty, yieldAll)(position)
   }
 
   private def signatureResults(signature: ProcedureSignature, position: InputPosition): IndexedSeq[ProcedureResultItem] =
-    signature.outputSignature.getOrElse(Seq.empty).filter(!_.deprecated).map {
+    signature.outputSignature.getOrElse(Seq.empty).map {
       field => ProcedureResultItem(Variable(field.name)(position))(position)
     }.toIndexedSeq
 }
@@ -82,7 +82,9 @@ case class ResolvedCall(signature: ProcedureSignature,
                         // true if given by the user originally
                         declaredArguments: Boolean = true,
                         // true if given by the user originally
-                        declaredResults: Boolean = true)
+                        declaredResults: Boolean = true,
+                        // YIELD *
+                        yieldAll: Boolean = false)
                        (val position: InputPosition)
   extends CallClause {
 
@@ -91,7 +93,8 @@ case class ResolvedCall(signature: ProcedureSignature,
   def fullyDeclared: Boolean = declaredArguments && declaredResults
 
   def withFakedFullDeclarations: ResolvedCall =
-    copy(declaredArguments = true, declaredResults = true)(position)
+    // keep old YieldAll value for VOID procedure to be able to throw correct error if true
+    copy(declaredArguments = true, declaredResults = true, yieldAll = if (signature.outputSignature.isEmpty) yieldAll else false)(position)
 
   def coerceArguments: ResolvedCall = {
     val optInputFields = signature.inputSignature.map(Some(_)).toStream ++ Stream.continually(None)
@@ -114,7 +117,7 @@ case class ResolvedCall(signature: ProcedureSignature,
   }
 
   def callResultTypes: Seq[(String, CypherType)] = {
-    if (signature.outputSignature.isEmpty && callResults.nonEmpty) {
+    if (signature.outputSignature.isEmpty && (callResults.nonEmpty || yieldAll)) {
       throw new SyntaxException("Cannot yield value from void procedure.")
     }
     val outputTypes = callOutputTypes
@@ -190,7 +193,7 @@ case class ResolvedCall(signature: ProcedureSignature,
   private def resultCheck: SemanticCheck =
     // CALL of VOID procedure => No need to name arguments, even in query
     // CALL of empty procedure => No need to name arguments, even in query
-    if (signature.outputFields.isEmpty && callResults.nonEmpty) {
+    if (signature.outputFields.isEmpty && (callResults.nonEmpty || yieldAll)) {
       error(_: SemanticState, SemanticError("Cannot yield value from void procedure.", position))
     }
     else if (signature.outputFields.isEmpty) {
@@ -217,5 +220,6 @@ case class ResolvedCall(signature: ProcedureSignature,
     procedureName = ProcedureName(signature.name.name)(position),
     declaredArguments = if (declaredArguments) Some(callArguments) else None,
     declaredResult = if (declaredResults) Some(ProcedureResult(callResults)(position)) else None,
+    yieldAll
   )(position)
 }

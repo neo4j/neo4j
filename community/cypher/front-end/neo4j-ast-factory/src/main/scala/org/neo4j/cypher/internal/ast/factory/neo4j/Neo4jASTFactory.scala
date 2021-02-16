@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import java.util
-import java.util.stream.Collectors
-
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
@@ -179,6 +176,8 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTString
 
+import java.util
+import java.util.stream.Collectors
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.util.Either
 
@@ -369,13 +368,15 @@ class Neo4jASTFactory(query: String)
                           namespace: util.List[String],
                           name: String,
                           arguments: util.List[Expression],
+                          yieldAll: Boolean,
                           resultItems: util.List[ProcedureResultItem],
                           where: Expression): Clause =
     UnresolvedCall(
       Namespace(namespace.asScala.toList)(p),
       ProcedureName(name)(p),
       if (arguments == null) None else Some(arguments.asScala.toList),
-      Option(resultItems).map(items => ProcedureResult(items.asScala.toList.toIndexedSeq, Option(where).map(Where(_)(p)))(p))
+      Option(resultItems).map(items => ProcedureResult(items.asScala.toList.toIndexedSeq, Option(where).map(Where(_)(p)))(p)),
+      yieldAll
     )(p)
 
   override def callResultItem(p: InputPosition,

@@ -1026,6 +1026,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     procedureName <- _procedureName
     declaredArguments <- option(zeroOrMore(_expression))
     declaredResult <- option(_procedureResult)
+// TODO: add boolean when the PrettifierPropertyTest uses new parser, old parser can't handle YIELD *
+//    yieldAll <- if (declaredResult.isDefined) const(false) else boolean // can't have both YIELD * and declare results
   } yield UnresolvedCall(procedureNamespace, procedureName, declaredArguments, declaredResult)(pos)
 
   def _foreach: Gen[Foreach] = for {

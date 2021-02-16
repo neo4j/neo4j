@@ -1445,6 +1445,7 @@ CLAUSE CallClause() :
   String name;
   EXPRESSION e;
   List<EXPRESSION> arguments = null;
+  boolean yieldAll = false;
   CALL_RESULT_ITEM x;
   List<CALL_RESULT_ITEM> items = null;
   EXPRESSION where = null;
@@ -1455,16 +1456,18 @@ CLAUSE CallClause() :
     ( LOOKAHEAD(2) e=Expression() { arguments.add(e); })? ( "," e=Expression() { arguments.add(e); })*
     <RPAREN>
   )?
-  ( <YIELD> { items = new ArrayList<>(); }
-      x=ProcedureResultItem() { items.add(x); }
-      ( "," x=ProcedureResultItem() { items.add(x); })*
-      ( where=Where() )?
-  )?
+  (<YIELD> ( <TIMES> {yieldAll = true;} |
+    { items = new ArrayList<>(); }
+        x=ProcedureResultItem() { items.add(x); }
+        ( "," x=ProcedureResultItem() { items.add(x); })*
+        ( where=Where() )?
+  ))?
   {
     return astFactory.callClause(pos(t),
                                 namespace,
                                 name,
                                 arguments,
+                                yieldAll,
                                 items,
                                 where);
   }

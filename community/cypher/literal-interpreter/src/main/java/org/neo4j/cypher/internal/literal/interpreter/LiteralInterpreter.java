@@ -249,7 +249,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL callClause( NULL p, List<String> namespace, String name, List<Object> arguments, List<NULL> nulls, Object where )
+    public NULL callClause( NULL p, List<String> namespace, String name, List<Object> arguments, boolean yieldAll, List<NULL> nulls, Object where )
     {
         throw new UnsupportedOperationException( "callClause is not a literal" );
     }

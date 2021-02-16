@@ -156,6 +156,7 @@ public interface ASTFactory<STATEMENT,
                        List<String> namespace,
                        String name,
                        List<EXPRESSION> arguments,
+                       boolean yieldAll,
                        List<CALL_RESULT_ITEM> resultItems,
                        EXPRESSION where );
 

@@ -412,7 +412,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
           (FineToReuse, allowQueryCaching)
         } else {
           logicalPlanState.maybeLogicalPlan match {
-            case Some(ProcedureCall(_, ResolvedCall(signature, _, _, _, _))) if signature.systemProcedure => (FineToReuse, false)
+            case Some(ProcedureCall(_, ResolvedCall(signature, _, _, _, _, _))) if signature.systemProcedure => (FineToReuse, false)
             case Some(_: ProcedureCall) => throw new DatabaseAdministrationException("Attempting invalid procedure call in administration runtime")
             case Some(plan: AdministrationCommandLogicalPlan) => throw plan.invalid("Unsupported administration command: " + logicalPlanState.queryText)
             case _ => throw new DatabaseAdministrationException("Attempting invalid administration command in administration runtime")

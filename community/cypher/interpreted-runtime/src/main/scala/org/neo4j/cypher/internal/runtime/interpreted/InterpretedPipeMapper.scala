@@ -546,7 +546,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case UnwindCollection(_, variable, collection) =>
         UnwindPipe(source, buildExpression(collection), variable)(id = id)
 
-      case ProcedureCall(_, call@ResolvedCall(signature, callArguments, _, _, _)) =>
+      case ProcedureCall(_, call@ResolvedCall(signature, callArguments, _, _, _, _)) =>
         val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
         val callArgumentCommands = callArguments.map(Some(_)).zipAll(signature.inputSignature.map(_.default), None, None).map {
           case (given, default) => given.map(buildExpression).getOrElse(Literal(default.get))

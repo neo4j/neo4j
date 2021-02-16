@@ -55,7 +55,7 @@ case class TryResolveProcedures(signatures: ProcedureSignatureResolver) extends 
       }
       .rewritten
       .bottomUp {
-        // Expand implicit yields and add return
+        // Expand implicit yields and yield * and add return
         case q @ Query(None, part @ SingleQuery(Seq(resolved: ResolvedCall))) =>
           val expanded = resolved.withFakedFullDeclarations
           val aliases = expanded.callResults.map { item =>

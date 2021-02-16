@@ -48,7 +48,7 @@ case object expandCallWhere extends Rewriter with Step with PreparatoryRewriting
   private val instance = bottomUp(Rewriter.lift {
     case query@SingleQuery(clauses) =>
       val newClauses = clauses.flatMap {
-        case unresolved@UnresolvedCall(_, _, _, Some(result@ProcedureResult(_, optWhere@Some(where)))) =>
+        case unresolved@UnresolvedCall(_, _, _, Some(result@ProcedureResult(_, optWhere@Some(where))), _) =>
           val newResult = result.copy(where = None)(result.position)
           val newUnresolved = unresolved.copy(declaredResult = Some(newResult))(unresolved.position)
           val newItems = ReturnItems(includeExisting = true, Seq.empty)(where.position)

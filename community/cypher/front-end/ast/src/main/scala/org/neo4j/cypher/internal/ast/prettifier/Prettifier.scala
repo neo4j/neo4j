@@ -708,7 +708,8 @@ case class Prettifier(
       })
       val arguments = args.map(list => list.map(expr(_)).mkString("(", ", ", ")")).getOrElse("")
       val ind = indented()
-      val yields = u.declaredResult.filter(_.items.nonEmpty).map(ind.asString).map(asNewLine).getOrElse("")
+      val yields = if (u.yieldAll) asNewLine(s"${indented().INDENT}YIELD *")
+      else u.declaredResult.filter(_.items.nonEmpty).map(ind.asString).map(asNewLine).getOrElse("")
       s"${INDENT}CALL $prefix${expr(u.procedureName)}$arguments$yields"
     }
 

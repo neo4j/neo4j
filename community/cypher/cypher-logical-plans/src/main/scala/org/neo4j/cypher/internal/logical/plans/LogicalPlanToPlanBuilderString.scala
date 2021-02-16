@@ -203,8 +203,10 @@ object LogicalPlanToPlanBuilderString {
         val typeStr = relTypeStr(types)
         val predStr = predicate.fold("")(p => s""", Some("${expressionStringifier(p)}")""")
         s""" "($from)$dirStrA[$relName$typeStr]$dirStrB($to)"$predStr""".trim
-      case ProcedureCall(_, ResolvedCall(ProcedureSignature(QualifiedName(namespace, name), _, _, _, _, _, _, _, _, _, _), callArguments, callResults, _, _)) =>
-        val yielding = if(callResults.isEmpty) "" else callResults.map(i => expressionStringifier(i.variable)).mkString(" YIELD ", ",", "")
+      case ProcedureCall(_, ResolvedCall(ProcedureSignature(QualifiedName(namespace, name), _, _, _, _, _, _, _, _, _, _), callArguments, callResults, _, _, yieldAll)) =>
+        val yielding = if (yieldAll) " YIELD *"
+                       else if (callResults.isEmpty) ""
+                       else callResults.map(i => expressionStringifier(i.variable)).mkString(" YIELD ", ",", "")
         s""" "${namespace.mkString(".")}.$name(${callArguments.map(expressionStringifier(_)).mkString(", ")})$yielding" """.trim
       case ProduceResult(_, columns) =>
         wrapInQuotationsAndMkString(columns)
