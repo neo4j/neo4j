@@ -1153,7 +1153,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
   test("should support composite index and unique locking") {
     val nodes = given {
-      index("Honey", "prop", "prop2")
+      nodeIndex("Honey", "prop", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("prop" -> i, "prop2" -> i.toString)
