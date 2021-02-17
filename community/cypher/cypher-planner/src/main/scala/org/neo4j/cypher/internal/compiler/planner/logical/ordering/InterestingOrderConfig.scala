@@ -59,45 +59,15 @@ object InterestingOrderConfig {
         order.copy(interestingOrderCandidates = order.interestingOrderCandidates ++ extraCandidates)
       }
 
-      val orderToSolve = if (disallowSplittingTop) {
-        requiredOrderOrigin(query) match {
-          case Some(SelfOrderByLimit) if !isHorizon => orderToConsiderSolving.asInteresting // Don't plan Sort in QG if it splits a later Top candidate
-          case Some(TailOrderByLimit)               => orderToConsiderSolving.asInteresting // Don't plan Sort if it splits a later Top candidate
-          case _                                    => orderToConsiderSolving
+      val orderToSolve =
+        if (DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon, disallowSplittingTop)) {
+          orderToConsiderSolving.asInteresting
+        } else {
+          orderToConsiderSolving
         }
-      } else {
-        orderToConsiderSolving
-      }
 
       InterestingOrderConfig(orderToReport = orderToReport, orderToSolve = orderToSolve)
     }
   }
 
-  sealed trait OrderingOrigin
-  case object SelfOrderBy extends OrderingOrigin
-  case object SelfOrderByLimit extends OrderingOrigin
-  case object TailOrderBy extends OrderingOrigin
-  case object TailOrderByLimit extends OrderingOrigin
-
-  private def requiredOrderOrigin(query: SinglePlannerQuery): Option[OrderingOrigin] = {
-    @tailrec
-    def recurse(query: SinglePlannerQuery, inTail: Boolean): Option[OrderingOrigin] = {
-      val hasOrderBy = query.interestingOrder.requiredOrderCandidate.nonEmpty
-      val hasLimit = query.horizon match {
-        case qp: QueryProjection => qp.queryPagination.limit.nonEmpty
-        case _                   => false
-      }
-      (inTail, hasOrderBy, hasLimit) match {
-        case (false, true, true)  => Some(SelfOrderByLimit)
-        case (true, true, true)  => Some(TailOrderByLimit)
-        case (false, true, false) => Some(SelfOrderBy)
-        case (true, true, false) => Some(TailOrderBy)
-        case (_, false, _)    => query.tail match {
-          case Some(tail) => recurse(tail, inTail = true)
-          case None       => None
-        }
-      }
-    }
-    recurse(query, inTail = false)
-  }
 }
