@@ -74,6 +74,7 @@ object Eagerness {
           nodeOverlap(_, head.queryGraph, tail) ||
             tail.queryGraph.createRelationshipOverlap(head.queryGraph) ||
             tail.queryGraph.setLabelOverlap(head.queryGraph) || // TODO:H Verify. Pontus did this a bit differently
+            tail.queryGraph.removeLabelOverlap(head.queryGraph) ||
             tail.queryGraph.setPropertyOverlap(head.queryGraph) ||
             tail.queryGraph.deleteOverlap(head.queryGraph) ||
             tail.queryGraph.foreachOverlap(head.queryGraph))
