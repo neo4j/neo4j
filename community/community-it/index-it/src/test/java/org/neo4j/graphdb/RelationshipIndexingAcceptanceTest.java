@@ -26,10 +26,10 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
 
-@DbmsExtension( configurationCallback = "configureRelSearch" )
+@ImpermanentDbmsExtension( configurationCallback = "configureRelSearch" )
 public class RelationshipIndexingAcceptanceTest extends IndexingAcceptanceTestBase<RelationshipType,Relationship>
 {
     @ExtensionCallback

@@ -29,7 +29,7 @@ import java.util.Map;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.mockito.mock.SpatialMocks;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -40,7 +40,6 @@ import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.graphdb.SchemaAcceptanceTest.createIndex;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
@@ -49,7 +48,7 @@ import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian_3D;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84_3D;
 
-@DbmsExtension
+@ImpermanentDbmsExtension
 abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
 {
     protected static final String LONG_STRING = "a long string that has to be stored in dynamic records";

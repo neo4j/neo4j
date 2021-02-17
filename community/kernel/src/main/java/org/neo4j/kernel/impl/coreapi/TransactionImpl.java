@@ -562,6 +562,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     @Override
     public ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType )
     {
+        checkRelationshipType( relationshipType );
         return allRelationshipsWithType( relationshipType );
     }
 

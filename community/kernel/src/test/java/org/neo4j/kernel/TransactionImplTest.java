@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
@@ -189,7 +190,36 @@ class TransactionImplTest
         checkForIAE( tx -> tx.findNodes( Label.label( "test" ), "key", "value", "key", "value", "key", null ), "property value" );
 
         checkForIAE( tx -> tx.findNodes( null, emptyMap() ), "Label" );
-        checkForIAE( tx -> tx.findNodes( Label.label( "test" ), null), "Property values" );
+        checkForIAE( tx -> tx.findNodes( Label.label( "test" ), null ), "Property values" );
+    }
+
+    @Test
+    void testFindRelationshipsValidation()
+    {
+        checkForIAE( tx -> tx.findRelationships( null ), "Relationship type" );
+
+        checkForIAE( tx -> tx.findRelationships( null, "key", "value" ), "Relationship type" );
+        checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), null, null ), "Property key" );
+        checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), "key", null ), "property value" );
+
+        checkForIAE( tx -> tx.findRelationships( null, "key", "template", null ), "Relationship type" );
+        checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), null, "template", null ), "Property key" );
+        checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), "key", null, null ), "Template" );
+
+        checkForIAE( tx -> tx.findRelationships( null, "key", "value", "key", "value" ), "Relationship type" );
+        checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), null, "value", "key", "value" ), "Property key" );
+        checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), "key", null, "key", "value" ), "property value" );
+        checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), "key", "value", null, "value" ), "Property key" );
+        checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), "key", "value", "key", null ), "property value" );
+
+        checkForIAE( tx -> tx.findRelationships( null, "key", "value", "key", "value", "key", "value" ), "Relationship type" );
+        checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), null, "value", "key", "value", "key", "value" ), "Property key" );
+        checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), "key", null, "key", "value", "key", "value" ), "property value" );
+        checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), "key", "value", "key", "value", null, "value" ), "Property key" );
+        checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), "key", "value", "key", "value", "key", null ), "property value" );
+
+        checkForIAE( tx -> tx.findRelationships( null, emptyMap() ), "Relationship type" );
+        checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), null ), "Property values" );
     }
 
     private void checkForIAE( Consumer<Transaction> consumer, String message )

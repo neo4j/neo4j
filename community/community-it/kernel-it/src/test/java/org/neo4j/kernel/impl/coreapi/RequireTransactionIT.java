@@ -34,7 +34,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static java.util.Collections.emptyMap;
@@ -43,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@DbmsExtension
+@ImpermanentDbmsExtension
 class RequireTransactionIT
 {
     @Inject
@@ -214,6 +214,48 @@ class RequireTransactionIT
     void requireTransactionForNodeLookupByLabel()
     {
         Executable executable = () -> transaction.findNodes( Label.label( "label" ) );
+        checkTransactionRequirement( transaction, executable );
+    }
+
+    @Test
+    void requireTransactionForRelationshipsLookupByTypePropertyTemplate()
+    {
+        Executable executable = () -> transaction.findRelationships( RelationshipType.withName( "type" ), "a", "aa", StringSearchMode.CONTAINS );
+        checkTransactionRequirement( transaction, executable );
+    }
+
+    @Test
+    void requireTransactionForRelationshipsLookupByTypePropertyValues()
+    {
+        Executable executable = () -> transaction.findRelationships( RelationshipType.withName( "type" ), Map.of( "a", "b", "c", "d" ) );
+        checkTransactionRequirement( transaction, executable );
+    }
+
+    @Test
+    void requireTransactionForRelationshipsLookupByTypePropertyValuesPairs3()
+    {
+        Executable executable = () -> transaction.findRelationships( RelationshipType.withName( "type" ), "a", "b", "c", "d", "e", "f" );
+        checkTransactionRequirement( transaction, executable );
+    }
+
+    @Test
+    void requireTransactionForRelationshipsLookupByTypePropertyValuesPairs2()
+    {
+        Executable executable = () -> transaction.findRelationships( RelationshipType.withName( "type" ), "a", "b", "c", "d" );
+        checkTransactionRequirement( transaction, executable );
+    }
+
+    @Test
+    void requireTransactionForRelationshipLookupByTypePropertyValuesPair()
+    {
+        Executable executable = () -> transaction.findRelationship( RelationshipType.withName( "type" ), "a", "b" );
+        checkTransactionRequirement( transaction, executable );
+    }
+
+    @Test
+    void requireTransactionForRelationshipsLookupByTypePropertyValuesPair()
+    {
+        Executable executable = () -> transaction.findRelationships( RelationshipType.withName( "type" ), "a", "b" );
         checkTransactionRequirement( transaction, executable );
     }
 

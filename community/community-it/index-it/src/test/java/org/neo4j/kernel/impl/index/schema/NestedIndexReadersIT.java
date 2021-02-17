@@ -19,15 +19,22 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.api.Test;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.stream.Stream;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -40,14 +47,15 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 @ImpermanentDbmsExtension
 @ExtendWith( OtherThreadExtension.class )
 public class NestedIndexReadersIT
 {
-    private static final int NODE_PER_ID = 3;
+    private static final int ENTITIES_PER_ID = 3;
     private static final int IDS = 5;
-    private static final Label LABEL = Label.label( "Label" );
+    private static final String TOKEN = "Token";
     private static final String KEY = "key";
 
     @Inject
@@ -55,16 +63,17 @@ public class NestedIndexReadersIT
     @Inject
     private OtherThreadRule t2;
 
-    @Test
-    void shouldReadCorrectResultsFromMultipleNestedReaders()
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void shouldReadCorrectResultsFromMultipleNestedReaders( EntityControl<?> entityControl )
     {
         // given
-        createIndex();
+        createIndex( entityControl );
         try ( Transaction tx = db.beginTx() )
         {
-            for ( int i = 0; i < NODE_PER_ID; i++ )
+            for ( int i = 0; i < ENTITIES_PER_ID; i++ )
             {
-                createRoundOfNodes( tx );
+                createRoundOfEntities( tx, entityControl );
             }
             tx.commit();
         }
@@ -73,19 +82,19 @@ public class NestedIndexReadersIT
         try ( Transaction tx = db.beginTx() )
         {
             // opening all the index readers
-            List<ResourceIterator<Node>> iterators = new ArrayList<>();
+            List<ResourceIterator<?>> iterators = new ArrayList<>();
             for ( int id = 0; id < IDS; id++ )
             {
-                iterators.add( tx.findNodes( LABEL, KEY, id ) );
+                iterators.add( entityControl.findEntities( tx, TOKEN, KEY, id ) );
             }
 
             // then iterating over them interleaved should yield all the expected results each
-            for ( int i = 0; i < NODE_PER_ID; i++ )
+            for ( int i = 0; i < ENTITIES_PER_ID; i++ )
             {
-                assertRoundOfNodes( iterators );
+                assertRoundOfEntities( iterators, entityControl );
             }
 
-            for ( ResourceIterator<Node> reader : iterators )
+            for ( ResourceIterator<?> reader : iterators )
             {
                 assertFalse( reader.hasNext() );
                 reader.close();
@@ -95,18 +104,19 @@ public class NestedIndexReadersIT
         }
     }
 
-    @Test
-    void shouldReadCorrectResultsFromMultipleNestedReadersWhenConcurrentWriteHappens() throws Exception
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    void shouldReadCorrectResultsFromMultipleNestedReadersWhenConcurrentWriteHappens( EntityControl<?> entityControl ) throws Exception
     {
         // given
-        createIndex();
+        createIndex( entityControl );
         try ( Transaction tx = db.beginTx() )
         {
             for ( int id = 0; id < IDS; id++ )
             {
-                for ( int i = 0; i < NODE_PER_ID; i++ )
+                for ( int i = 0; i < ENTITIES_PER_ID; i++ )
                 {
-                    tx.createNode( LABEL ).setProperty( KEY, id );
+                    entityControl.createEntity( tx, TOKEN, KEY, id );
                 }
             }
             tx.commit();
@@ -116,27 +126,27 @@ public class NestedIndexReadersIT
         try ( Transaction tx = db.beginTx() )
         {
             // opening all the index readers
-            List<ResourceIterator<Node>> iterators = new ArrayList<>();
+            List<ResourceIterator<?>> iterators = new ArrayList<>();
             for ( int id = 0; id < IDS; id++ )
             {
-                iterators.add( tx.findNodes( LABEL, KEY, id ) );
+                iterators.add( entityControl.findEntities( tx, TOKEN, KEY, id ) );
             }
 
             // then iterating over them interleaved should yield all the expected results each
-            for ( int i = 0; i < NODE_PER_ID; i++ )
+            for ( int i = 0; i < ENTITIES_PER_ID; i++ )
             {
-                assertRoundOfNodes( iterators );
+                assertRoundOfEntities( iterators, entityControl );
 
                 if ( i % 2 == 1 )
                 {
                     // will be triggered on i == 1
-                    t2.execute( nodeCreator() ).get();
+                    t2.execute( entityCreator( entityControl ) ).get();
                 }
             }
 
-            assertRoundOfNodes( iterators );
+            assertRoundOfEntities( iterators, entityControl );
 
-            for ( ResourceIterator<Node> reader : iterators )
+            for ( ResourceIterator<?> reader : iterators )
             {
                 assertFalse( reader.hasNext() );
                 reader.close();
@@ -146,48 +156,40 @@ public class NestedIndexReadersIT
         }
     }
 
-    private void createRoundOfNodes( Transaction tx )
+    private void createRoundOfEntities( Transaction tx, EntityControl<?> entityControl )
     {
         for ( int id = 0; id < IDS; id++ )
         {
-            tx.createNode( LABEL ).setProperty( KEY, id );
+            entityControl.createEntity( tx, TOKEN, KEY, id );
         }
     }
 
-    private void assertRoundOfNodes( List<ResourceIterator<Node>> iterators )
+    private void assertRoundOfEntities( List<ResourceIterator<?>> iterators, EntityControl<?> entityControl )
     {
         for ( int id = 0; id < IDS; id++ )
         {
-            assertNode( iterators.get( id ), id );
+            entityControl.assertEntity( iterators.get( id ), TOKEN, KEY, id );
         }
     }
 
-    private Callable<Void> nodeCreator()
+    private Callable<Void> entityCreator( EntityControl<?> entityControl )
     {
         return () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
-                createRoundOfNodes( tx );
+                createRoundOfEntities( tx, entityControl );
                 tx.commit();
             }
             return null;
         };
     }
 
-    private void assertNode( ResourceIterator<Node> reader, int id )
-    {
-        assertTrue( reader.hasNext() );
-        Node node = reader.next();
-        assertTrue( node.hasLabel( LABEL ) );
-        assertEquals( id, node.getProperty( KEY ), "Expected node " + node + " (returned by index reader) to have 'id' property w/ value " + id );
-    }
-
-    private void createIndex()
+    private void createIndex( EntityControl<?> entityControl )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().indexFor( LABEL ).on( KEY ).create();
+            entityControl.createIndex( tx, TOKEN, KEY );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -195,5 +197,99 @@ public class NestedIndexReadersIT
             tx.schema().awaitIndexesOnline( 30, SECONDS );
             tx.commit();
         }
+    }
+
+    interface EntityControl<T extends Entity>
+    {
+        ResourceIterator<T> findEntities( Transaction tx, String token, String key, Object value );
+
+        void assertEntity( ResourceIterator<?> resourceIterator, String token, String key, Object value );
+
+        void createEntity( Transaction tx, String token, String key, Object value );
+
+        void createIndex( Transaction tx, String token, String key );
+    }
+
+    static Stream<Arguments> parameters()
+    {
+        return Stream.of(
+                arguments(
+                        new EntityControl<Node>()
+                        {
+                            @Override
+                            public ResourceIterator<Node> findEntities( Transaction tx, String token, String key, Object value )
+                            {
+                                return tx.findNodes( Label.label( token ), KEY, value );
+                            }
+
+                            @Override
+                            public void assertEntity( ResourceIterator<?> reader, String token, String key, Object value )
+                            {
+                                assertTrue( reader.hasNext() );
+                                Node node = (Node) reader.next();
+                                assertTrue( node.hasLabel( Label.label( token ) ) );
+                                assertEquals( value, node.getProperty( key ),
+                                              "Expected node " + node + " (returned by index reader) to have 'id' property w/ value " + value );
+                            }
+
+                            @Override
+                            public void createEntity( Transaction tx, String token, String key, Object value )
+                            {
+                                tx.createNode( Label.label( token ) ).setProperty( key, value );
+                            }
+
+                            @Override
+                            public void createIndex( Transaction tx, String token, String key )
+                            {
+                                tx.schema().indexFor( Label.label( token ) ).on( key ).create();
+                            }
+
+                            @Override
+                            public String toString()
+                            {
+                                return "NODE";
+                            }
+                        } ),
+                arguments(
+                        new EntityControl<Relationship>()
+                        {
+                            @Override
+                            public ResourceIterator<Relationship> findEntities( Transaction tx, String token, String key, Object value )
+                            {
+                                return tx.findRelationships( RelationshipType.withName( token ), KEY, value );
+                            }
+
+                            @Override
+                            public void assertEntity( ResourceIterator<?> reader, String token, String key, Object value )
+                            {
+                                assertTrue( reader.hasNext() );
+                                Relationship rel = (Relationship) reader.next();
+                                Assertions.assertThat( rel.getType() ).isEqualTo( RelationshipType.withName( token ) );
+                                assertEquals( value, rel.getProperty( key ),
+                                              "Expected rel " + rel + " (returned by index reader) to have 'id' property w/ value " + value );
+                            }
+
+                            @Override
+                            public void createEntity( Transaction tx, String token, String key, Object value )
+                            {
+                                var from = tx.createNode();
+                                var to = tx.createNode();
+                                from.createRelationshipTo( to, RelationshipType.withName( token ) ).setProperty( key, value );
+                            }
+
+                            @Override
+                            public void createIndex( Transaction tx, String token, String key )
+                            {
+                                tx.schema().indexFor( RelationshipType.withName( token ) ).on( key ).create();
+                            }
+
+                            @Override
+                            public String toString()
+                            {
+                                return "RELATIONSHIP";
+                            }
+                        }
+
+                ) );
     }
 }

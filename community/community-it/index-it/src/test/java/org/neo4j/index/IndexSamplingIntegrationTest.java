@@ -19,7 +19,8 @@
  */
 package org.neo4j.index;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -27,10 +28,8 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -55,14 +54,15 @@ class IndexSamplingIntegrationTest
     @Inject
     private DatabaseLayout databaseLayout;
 
-    private final Label label = Label.label( "Person" );
+    private static final String TOKEN = "Person";
     private final String property = "name";
     private final String schemaName = "schema_name";
-    private final long nodes = 1000;
+    private final long entities = 1000;
     private final String[] names = {"Neo4j", "Neo", "Graph", "Apa"};
 
-    @Test
-    void shouldSampleNotUniqueIndex() throws Throwable
+    @ParameterizedTest
+    @EnumSource( Entity.class )
+    void shouldSampleNotUniqueIndex( Entity entity ) throws Throwable
     {
         GraphDatabaseService db;
         DatabaseManagementService managementService = null;
@@ -72,36 +72,32 @@ class IndexSamplingIntegrationTest
             // Given
             managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
             db = managementService.database( DEFAULT_DATABASE_NAME );
-            IndexDefinition indexDefinition;
             try ( Transaction tx = db.beginTx() )
             {
-                indexDefinition = tx.schema().indexFor( label ).on( property ).withName( schemaName ).create();
+                entity.createIndex( tx, schemaName, TOKEN, property );
                 tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
             {
-                tx.schema().awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES );
+                tx.schema().awaitIndexOnline( schemaName, 1, TimeUnit.MINUTES );
                 tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
             {
-                for ( int i = 0; i < nodes; i++ )
+                for ( int i = 0; i < entities; i++ )
                 {
-                    tx.createNode( label ).setProperty( property, names[i % names.length] );
+                    entity.createEntity( tx, TOKEN, property, names[i % names.length] );
                 }
                 tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
             {
-                for ( int i = 0; i < (nodes / 10) ; i++ )
+                for ( int i = 0; i < (entities / 10); i++ )
                 {
-                    try ( ResourceIterator<Node> nodes = tx.findNodes( label, property, names[i % names.length] ) )
-                    {
-                        nodes.next().delete();
-                    }
+                    entity.deleteFirstFound( tx, TOKEN, property, names[i % names.length] );
                     deletedNodes++;
                 }
                 tx.commit();
@@ -123,14 +119,15 @@ class IndexSamplingIntegrationTest
         // lucene will consider also the delete nodes, native won't
         var indexSample = fetchIndexSamplingValues();
         assertThat( indexSample.uniqueValues() ).as( "Unique values" ).isEqualTo( names.length );
-        assertThat( indexSample.sampleSize() ).as( "Sample size" ).isGreaterThanOrEqualTo( nodes - deletedNodes ).isLessThanOrEqualTo( nodes );
+        assertThat( indexSample.sampleSize() ).as( "Sample size" ).isGreaterThanOrEqualTo( entities - deletedNodes ).isLessThanOrEqualTo( entities );
         // but regardless, the deleted nodes should not be considered in the index size value
         assertThat( indexSample.updates() ).as( "Updates" ).isEqualTo( 0 );
-        assertThat( indexSample.indexSize() ).as( "Index size" ).isEqualTo( nodes - deletedNodes );
+        assertThat( indexSample.indexSize() ).as( "Index size" ).isEqualTo( entities - deletedNodes );
     }
 
-    @Test
-    void shouldSampleUniqueIndex() throws Throwable
+    @ParameterizedTest
+    @EnumSource( value = Entity.class, names = {"NODE"} )
+    void shouldSampleUniqueIndex( Entity entity ) throws Throwable
     {
         GraphDatabaseService db = null;
         DatabaseManagementService managementService = null;
@@ -142,27 +139,27 @@ class IndexSamplingIntegrationTest
             db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {
-                tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).withName( schemaName ).create();
+                entity.createConstraint( tx, schemaName, TOKEN, property );
                 tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
             {
-                for ( int i = 0; i < nodes; i++ )
+                for ( int i = 0; i < entities; i++ )
                 {
-                    tx.createNode( label ).setProperty( property, "" + i );
+                    entity.createEntity( tx, TOKEN, property, "" + i );
                 }
                 tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
             {
-                for ( int i = 0; i < nodes; i++ )
+                for ( int i = 0; i < entities; i++ )
                 {
                     if ( i % 10 == 0 )
                     {
+                        entity.deleteFirstFound( tx, TOKEN, property, "" + i );
                         deletedNodes++;
-                        tx.findNode( label, property, "" + i ).delete();
                     }
                 }
                 tx.commit();
@@ -181,10 +178,10 @@ class IndexSamplingIntegrationTest
 
         // Then
         var indexSample = fetchIndexSamplingValues();
-        assertThat( indexSample.uniqueValues() ).as( "Unique values" ).isEqualTo( nodes - deletedNodes );
-        assertThat( indexSample.sampleSize() ).as( "Sample size" ).isEqualTo( nodes - deletedNodes );
+        assertThat( indexSample.uniqueValues() ).as( "Unique values" ).isEqualTo( entities - deletedNodes );
+        assertThat( indexSample.sampleSize() ).as( "Sample size" ).isEqualTo( entities - deletedNodes );
         assertThat( indexSample.updates() ).as( "Updates" ).isEqualTo( 0 );
-        assertThat( indexSample.indexSize() ).as( "Index size" ).isEqualTo( nodes - deletedNodes );
+        assertThat( indexSample.indexSize() ).as( "Index size" ).isEqualTo( entities - deletedNodes );
     }
 
     private IndexDescriptor indexId( KernelTransaction tx )
@@ -220,5 +217,77 @@ class IndexSamplingIntegrationTest
     {
         // Trigger index resampling on next at startup
         delete( databaseLayout.indexStatisticsStore() );
+    }
+
+    private enum Entity
+    {
+        NODE
+                {
+                    @Override
+                    void createIndex( Transaction tx, String schemaName, String token, String property )
+                    {
+                        tx.schema().indexFor( Label.label( token ) ).on( property ).withName( schemaName ).create();
+                    }
+
+                    @Override
+                    void createConstraint( Transaction tx, String schemaName, String token, String property )
+                    {
+                        tx.schema().constraintFor( Label.label( token ) ).assertPropertyIsUnique( property ).withName( schemaName ).create();
+                    }
+
+                    @Override
+                    void createEntity( Transaction tx, String token, String property, String value )
+                    {
+                        tx.createNode( Label.label( token ) ).setProperty( property, value );
+                    }
+
+                    @Override
+                    void deleteFirstFound( Transaction tx, String token, String property, String value )
+                    {
+                        try ( var nodes = tx.findNodes( Label.label( token ), property, value ) )
+                        {
+                            nodes.next().delete();
+                        }
+                    }
+                },
+        RELATIONSHIP
+                {
+                    @Override
+                    void createIndex( Transaction tx, String schemaName, String token, String property )
+                    {
+                        tx.schema().indexFor( RelationshipType.withName( token ) ).on( property ).withName( schemaName ).create();
+                    }
+
+                    @Override
+                    void createConstraint( Transaction tx, String schemaName, String token, String property )
+                    {
+                        throw new IllegalStateException( "Uniqueness constraint is not supported for relationships" );
+                    }
+
+                    @Override
+                    void createEntity( Transaction tx, String token, String property, String value )
+                    {
+                        var from = tx.createNode();
+                        var to = tx.createNode();
+                        from.createRelationshipTo( to, RelationshipType.withName( token ) ).setProperty( property, value );
+                    }
+
+                    @Override
+                    void deleteFirstFound( Transaction tx, String token, String property, String value )
+                    {
+                        try ( var rels = tx.findRelationships( RelationshipType.withName( token ), property, value ) )
+                        {
+                            rels.next().delete();
+                        }
+                    }
+                };
+
+        abstract void createIndex( Transaction tx, String schemaName, String token, String property );
+
+        abstract void createConstraint( Transaction tx, String schemaName, String token, String property );
+
+        abstract void createEntity( Transaction tx, String token, String property, String value );
+
+        abstract void deleteFirstFound( Transaction tx, String token, String property, String value );
     }
 }
