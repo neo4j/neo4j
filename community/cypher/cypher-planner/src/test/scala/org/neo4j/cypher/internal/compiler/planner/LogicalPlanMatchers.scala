@@ -26,13 +26,18 @@ import org.scalatest.matchers.Matcher
 trait LogicalPlanMatchers {
 
   /**
-   * Matches if any sub-plan matches the partial function
+   * Matches if any sub-plan matches the partial function.
+   * Also evaluates the partial function if it matches.
    */
   def containPlanMatching(pf: PartialFunction[LogicalPlan, Unit]): Matcher[LogicalPlan] =
     (plan: LogicalPlan) => MatchResult(
       matches = plan.treeExists({
-        case p: LogicalPlan => pf.isDefinedAt(p)
-        case _              => false
+        case p: LogicalPlan =>
+          val matches = pf.isDefinedAt(p)
+          if (matches) pf(p)
+          matches
+
+        case _ => false
       }),
       rawFailureMessage = "The plan:\n{0}\n did not contain the expected pattern",
       rawNegatedFailureMessage = "The plan:\n{0}\n contained the pattern when expected not to",
