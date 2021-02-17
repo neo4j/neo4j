@@ -619,26 +619,26 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
   test("should not pushdown read past orderedUnion into LHS") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("x")
-      .projection("n.prop AS x").withCardinality(100)
-      .orderedUnion(Seq(Ascending("n"))).withCardinality(100)
-      .|.nodeByLabelScan("n", "A", IndexOrderAscending).withCardinality(90)
-      .nodeByLabelScan("n", "B", IndexOrderAscending).withCardinality(10)
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .orderedUnion(Seq(Ascending("n"))).withEffectiveCardinality(100)
+      .|.nodeByLabelScan("n", "A", IndexOrderAscending).withEffectiveCardinality(90)
+      .nodeByLabelScan("n", "B", IndexOrderAscending).withEffectiveCardinality(10)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
   test("should not pushdown read past orderedUnion into RHS") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("x")
-      .projection("n.prop AS x").withCardinality(100)
-      .orderedUnion(Seq(Ascending("n"))).withCardinality(100)
-      .|.nodeByLabelScan("n", "A", IndexOrderAscending).withCardinality(10)
-      .nodeByLabelScan("n", "B", IndexOrderAscending).withCardinality(90)
+      .projection("n.prop AS x").withEffectiveCardinality(100)
+      .orderedUnion(Seq(Ascending("n"))).withEffectiveCardinality(100)
+      .|.nodeByLabelScan("n", "A", IndexOrderAscending).withEffectiveCardinality(10)
+      .nodeByLabelScan("n", "B", IndexOrderAscending).withEffectiveCardinality(90)
 
     val plan = planBuilder.build()
-    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.cardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.cardinalities), planBuilder.getSemanticTable)
     rewritten shouldBe plan
   }
 
