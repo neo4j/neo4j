@@ -50,6 +50,76 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(singleColumn(Seq(1, "hi")))
   }
 
+  test("limit on top of union on rhs of apply") {
+    val nodes = given { nodeGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.limit(1)
+      .|.union()
+      .|.|.argument("x")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(nodes))
+    runtimeResult.runtimeResult.queryProfile().operatorProfile(2).rows() shouldBe sizeHint // limit
+    runtimeResult.runtimeResult.queryProfile().operatorProfile(3).rows() shouldBe sizeHint // union
+  }
+
+  test("limit 2 on top of union on rhs of apply") {
+    val nodes = given { nodeGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.limit(2)
+      .|.union()
+      .|.|.argument("x")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(nodes ++ nodes))
+
+    // then
+    runtimeResult.runtimeResult.queryProfile().operatorProfile(2).rows() shouldBe sizeHint * 2 // limit
+    runtimeResult.runtimeResult.queryProfile().operatorProfile(3).rows() shouldBe sizeHint * 2 // union
+  }
+
+  test("limit 3 on top of union on rhs of apply") {
+    val nodes = given { nodeGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.limit(3)
+      .|.union()
+      .|.|.argument("x")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(nodes ++ nodes))
+
+    // then
+    runtimeResult.runtimeResult.queryProfile().operatorProfile(2).rows() shouldBe sizeHint * 2 // limit
+    runtimeResult.runtimeResult.queryProfile().operatorProfile(3).rows() shouldBe sizeHint * 2 // union
+  }
+
   test("should union single node variable") {
     // given
     val nodes = given { nodeGraph(Math.sqrt(sizeHint).toInt) }
