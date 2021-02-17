@@ -81,7 +81,7 @@ object ListComprehension {
 case class PatternComprehension(namedPath: Option[LogicalVariable], pattern: RelationshipsPattern,
                                 predicate: Option[Expression], projection: Expression)
                                (val position: InputPosition, override val outerScope: Set[Variable])
-  extends ScopeExpression with ExpressionWithOuterScope {
+  extends ScopeExpression with ExpressionWithOuterScope with RollupApplySolvable {
 
   self =>
 

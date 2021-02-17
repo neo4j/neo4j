@@ -52,21 +52,21 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     // given MATCH (a) RETURN (a)-->() as x
     val strategy = mock[QueryGraphSolver]
     val context = logicalPlanningContext(strategy)
-    val otherSide = newMockedLogicalPlan(context.planningAttributes, "  NODE1")
+    val otherSide = newMockedLogicalPlan(context.planningAttributes, "anon_1")
     mockStrategyWithMultiplePlans(strategy, otherSide)
 
     val source = newMockedLogicalPlan(context.planningAttributes, "a")
 
     // when
     val solver = PatternExpressionSolver.solverFor(source, context)
-    val expressions = Map("x" -> patExpr1).map{ case (k,v) => (k, solver.solve(v, Some(k))) }
-    val resultPlan = solver.rewrittenPlan()
+    val expressions = Map("x" -> patExpr1).map{ case (k,v) => (k, removeGeneratedNamesAndParamsOnTree(solver.solve(v, Some(k)))) }
+    val resultPlan = removeGeneratedNamesAndParamsOnTree(solver.rewrittenPlan())
 
     // then
     resultPlan should beLike {
       case RollUpApply(`source`,
-      Projection(`otherSide`, MapKeys("  FRESHID0")),
-      "x", "  FRESHID0") => ()
+      Projection(`otherSide`, MapKeys("anon_0")),
+      "x", "anon_0") => ()
     }
     expressions should equal(Map("x" -> varFor("x")))
   }
@@ -90,17 +90,17 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val source = newMockedLogicalPlan(context.planningAttributes, "a")
 
     val solver = PatternExpressionSolver.solverFor(source, context)
-    val expressions = Map("x" -> patExpr1, "y" -> patExpr2).map{ case (k,v) => (k, solver.solve(v, Some(k))) }
-    val resultPlan = solver.rewrittenPlan()
+    val expressions = Map("x" -> patExpr1, "y" -> patExpr2).map{ case (k,v) => (k, removeGeneratedNamesAndParamsOnTree(solver.solve(v, Some(k)))) }
+    val resultPlan = removeGeneratedNamesAndParamsOnTree(solver.rewrittenPlan())
 
     // then
     resultPlan should beLike {
       case RollUpApply(
       RollUpApply(`source`,
-      Projection(`b1`, MapKeys("  FRESHID0")),
-      "x", "  FRESHID0"),
-      Projection(`b2`, MapKeys("  FRESHID3")),
-      "y", "  FRESHID3") => ()
+      Projection(`b1`, MapKeys("anon_0")),
+      "x", "anon_0"),
+      Projection(`b2`, MapKeys("anon_3")),
+      "y", "anon_3") => ()
     }
     expressions should equal(Map("x" -> varFor("x"), "y" -> varFor("y")))
   }

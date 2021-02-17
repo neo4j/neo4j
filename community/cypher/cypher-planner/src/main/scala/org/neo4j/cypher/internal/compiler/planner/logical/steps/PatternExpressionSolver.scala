@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.RollupApplySolvable
 import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Coalesce
@@ -49,9 +50,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
-import org.neo4j.cypher.internal.util.FreshIdNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.RollupCollectionNameGenerator
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable
@@ -220,11 +219,11 @@ object PatternExpressionSolver {
 
   private case class RewriteResult(currentPlan: LogicalPlan, currentExpression: Expression, introducedVariables: Set[String])
 
-  private case class ListSubQueryExpressionSolver[T <: Expression](extractQG: (LogicalPlan, T) => QueryGraph,
-                                                                   projectionCreator: T => Expression,
-                                                                   patternExpressionRewriter: Rewriter,
-                                                                   pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)
-                                                                  (implicit m: ClassTag[T]) {
+  private case class ListSubQueryExpressionSolver[T <: RollupApplySolvable](extractQG: (LogicalPlan, T) => QueryGraph,
+                                                                            projectionCreator: T => Expression,
+                                                                            patternExpressionRewriter: Rewriter,
+                                                                            pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression)
+                                                                           (implicit m: ClassTag[T]) {
 
     case class PlannedSubQuery(columnName: String, innerPlan: LogicalPlan) {
       def variableToCollect: String = columnName
@@ -234,15 +233,15 @@ object PatternExpressionSolver {
 
       // Using a different name generator here and in planSubquery makes sure we get different names
       // for the collectionName and variableToCollect.
-      val key = maybeKey.getOrElse(RollupCollectionNameGenerator.name(expr.position))
+      val collectionName = maybeKey.getOrElse(expr.collectionName)
       val subQueryPlan = planSubQuery(source, expr, context)
       val producedPlan = context.logicalPlanProducer.ForPatternExpressionSolver.planRollup(source,
         subQueryPlan.innerPlan,
-        key,
+        collectionName,
         subQueryPlan.variableToCollect,
         context)
 
-      (producedPlan, Variable(key)(expr.position))
+      (producedPlan, Variable(collectionName)(expr.position))
     }
 
     def rewriteInnerExpressions(plan: LogicalPlan, expression: Expression, context: LogicalPlanningContext): RewriteResult = {
@@ -297,10 +296,10 @@ object PatternExpressionSolver {
       //  ii) It can lead to endless recursion in case the sort expression contains the subquery we are solving
       //      e.g. `n{.name, Thing_Has_Thing2:[ (n)-[:Has]->(thing2:Thing2)| n.name ]} ORDER BY n.name`
       val innerPlan = context.strategy.plan(qg, InterestingOrderConfig.empty, context).result
-      val collectionName = FreshIdNameGenerator.name(expr.position)
+      val variableToCollectName = expr.variableToCollectName
       val projectedPath = projectionCreator(expr)
-      val projectedInner = projection(innerPlan, Map(collectionName -> projectedPath), Map(collectionName -> projectedPath), context)
-      PlannedSubQuery(columnName = collectionName, innerPlan = projectedInner)
+      val projectedInner = projection(innerPlan, Map(variableToCollectName -> projectedPath), Map(variableToCollectName -> projectedPath), context)
+      PlannedSubQuery(columnName = variableToCollectName, innerPlan = projectedInner)
     }
   }
 

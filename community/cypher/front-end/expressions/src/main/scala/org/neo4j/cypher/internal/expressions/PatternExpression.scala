@@ -16,8 +16,12 @@
  */
 package org.neo4j.cypher.internal.expressions
 
-case class PatternExpression(pattern: RelationshipsPattern)(override val outerScope: Set[Variable]) extends ScopeExpression with ExpressionWithOuterScope {
-  override def position = pattern.position
+import org.neo4j.cypher.internal.util.InputPosition
+
+case class PatternExpression(pattern: RelationshipsPattern)(override val outerScope: Set[Variable])
+  extends ScopeExpression with ExpressionWithOuterScope with RollupApplySolvable {
+
+  override def position: InputPosition = pattern.position
 
   override def introducedVariables: Set[LogicalVariable] = pattern.element.allVariables -- outerScope
 
