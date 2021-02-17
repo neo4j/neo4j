@@ -23,9 +23,13 @@ import org.neo4j.cypher.internal.util.topDown
 import scala.util.matching.Regex
 
 object NameDeduplicator {
+
+  def nameGeneratorRegex(generatorName: String): Regex =
+    s""" {2}($generatorName)(\\d+)(?:\\(.*?\\))?""".r
+
   val UNNAMED_PATTERN: Regex = {
     val gens = generators.map(_.generatorName).mkString("|")
-    s""" {2}($gens)(\\d+)(?:\\(.*?\\))?""".r
+    nameGeneratorRegex(gens)
   }
 
   private val UNNAMED_PARAMS_PATTERN = """ {2}(AUTOINT|AUTODOUBLE|AUTOSTRING|AUTOLIST)(\d+)(?:\(.*?\))?""".r

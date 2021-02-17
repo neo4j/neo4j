@@ -94,8 +94,8 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
       Input(randomColumns))
   }
 
-  override def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
-    InputDataStreamTestParsing andThen super.pipeLine()
+  override def pipeLine(deduplicateNames: Boolean = deduplicateNames): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
+    InputDataStreamTestParsing andThen super.pipeLine(deduplicateNames)
   }
 
   // Both the test parser that understands INPUT DATA STREAM and the standard parser are part of the pipeline,

@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.util
 
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.nameGeneratorRegex
+
 object FreshIdNameGenerator extends PrefixNameGenerator("FRESHID")
 
 object AggregationNameGenerator extends PrefixNameGenerator("AGGREGATION")
@@ -62,4 +64,11 @@ case class PrefixNameGenerator(generatorName: String) {
 
   def isNamed(x: String): Boolean = !notNamed(x)
   def notNamed(x: String): Boolean = x.startsWith(prefix)
+
+  def unapply(v: Any): Option[String] = v match {
+    case str: String =>
+      val regex = nameGeneratorRegex(generatorName)
+      regex.findPrefixMatchOf(str).map(_ group 2)
+    case _ => None
+  }
 }

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExtractScope
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
@@ -88,6 +89,8 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
+import org.neo4j.cypher.internal.util.FreshIdNameGenerator
+import org.neo4j.cypher.internal.util.RollupCollectionNameGenerator
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
@@ -129,38 +132,39 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
     val patternComprehensionExpressionKeyString = "size(PatternComprehension(None,RelationshipsPattern(RelationshipChain(NodePattern(Some(Variable(u)),List(),None,None),RelationshipPattern(Some(Variable(r)),List(RelTypeName(FOLLOWS)),None,None,OUTGOING,false,None),NodePattern(Some(Variable(u2)),List(LabelName(User)),None,None))),None,Property(Variable(u2),PropertyKeyName(id))))"
 
-    val plan = planFor("MATCH (u:User) RETURN u.id ORDER BY size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])")._2
+    val plan = planFor("MATCH (u:User) RETURN u.id ORDER BY size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])", deduplicateNames = false)._2
 
-    plan should equal(
-      Projection(
+    plan should beLike {
+      case Projection(
         Sort(
           Projection(
             RollUpApply(
-              NodeByLabelScan("u", LabelName("User")(pos), Set.empty, IndexOrderNone),
+              NodeByLabelScan("u", LabelName("User"),  SetExtractor(), IndexOrderNone),
               Projection(
                 Selection(
-                  Seq(hasLabels("u2", "User")),
+                  Ands(Seq(HasLabels(Variable("u2"), Seq(LabelName("User"))))),
                   Expand(
-                    Argument(Set("u")),
+                    Argument(SetExtractor("u")),
                     "u",
                     OUTGOING,
-                    Seq(RelTypeName("FOLLOWS")(pos)),
+                    Seq(RelTypeName("FOLLOWS")),
                     "u2",
-                    "r"
+                    "r",
+                    _
                   )
                 ),
-                Map("anon_41" -> prop("u2", "id"))
+                MapKeys(FreshIdNameGenerator("41"))
               ),
-              "anon_41",
-              "anon_41"
+              RollupCollectionNameGenerator("41"),
+              FreshIdNameGenerator("41")
             ),
-            Map(patternComprehensionExpressionKeyString -> function("size", Variable("anon_41")(pos)))
+            MapKeys(`patternComprehensionExpressionKeyString`)
           ),
-          Seq(Ascending(patternComprehensionExpressionKeyString))
+          Seq(Ascending(`patternComprehensionExpressionKeyString`))
         ),
-        Map("u.id" -> prop("u", "id"))
-      )
-    )
+        MapKeys("u.id")
+      ) => ()
+    }
   }
 
   // Please look at the SemiApplyVsGetDegree benchmark.

@@ -108,6 +108,7 @@ import scala.reflect.ClassTag
 object LogicalPlanningTestSupport2 extends MockitoSugar {
 
   val pushdownPropertyReads: Boolean = true
+  val deduplicateNames: Boolean = true
   val innerVariableNamer: InnerVariableNamer = new GeneratingNamer
 
   val cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration(
@@ -170,12 +171,17 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
 
   def pipeLine(pushdownPropertyReads: Boolean = pushdownPropertyReads,
                innerVariableNamer: InnerVariableNamer = innerVariableNamer,
+               deduplicateNames: Boolean = deduplicateNames,
   ): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     // if you ever want to have parameters in here, fix the map
-    parsing(ParsingConfig(innerVariableNamer, literalExtractionStrategy = Never, parameterTypeMapping = Map.empty, useJavaCCParser = cypherCompilerConfig.useJavaCCParser)) andThen
+    val p1 = parsing(ParsingConfig(innerVariableNamer, literalExtractionStrategy = Never, parameterTypeMapping = Map.empty, useJavaCCParser = cypherCompilerConfig.useJavaCCParser)) andThen
       prepareForCaching andThen
-      planPipeLine(pushdownPropertyReads = pushdownPropertyReads) andThen
-      NameDeduplication
+      planPipeLine(pushdownPropertyReads = pushdownPropertyReads)
+    if (deduplicateNames) {
+      p1 andThen NameDeduplication
+    } else {
+      p1
+    }
   }
 }
 
@@ -184,6 +190,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   val parser = new CypherParser
   val pushdownPropertyReads: Boolean = LogicalPlanningTestSupport2.pushdownPropertyReads
+  val deduplicateNames: Boolean = LogicalPlanningTestSupport2.deduplicateNames
   val innerVariableNamer: InnerVariableNamer = LogicalPlanningTestSupport2.innerVariableNamer
   var astRewriter = new ASTRewriter(innerVariableNamer = innerVariableNamer)
   final var planner = QueryPlanner
@@ -193,8 +200,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   def createInitState(queryString: String): BaseState = InitialState(queryString, None, IDPPlannerName)
 
-  def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] = LogicalPlanningTestSupport2.pipeLine(
-    pushdownPropertyReads, innerVariableNamer
+  def pipeLine(deduplicateNames: Boolean = deduplicateNames
+              ): Transformer[PlannerContext, BaseState, LogicalPlanState] = LogicalPlanningTestSupport2.pipeLine(
+    pushdownPropertyReads, innerVariableNamer, deduplicateNames
   )
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
@@ -281,7 +289,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def getLogicalPlanFor(queryString: String,
                           config:CypherPlannerConfiguration = cypherCompilerConfig,
                           queryGraphSolver: QueryGraphSolver = queryGraphSolver,
-                          stripProduceResults: Boolean = true): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) = {
+                          stripProduceResults: Boolean = true,
+                          deduplicateNames: Boolean = deduplicateNames
+                         ): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) = {
       val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
       val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator], config, ExecutionModel.default)
       def context = ContextHelper.create(planContext = planContext,
@@ -293,7 +303,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       )
 
       val state = createInitState(queryString)
-      val output = pipeLine().transform(state, context)
+      val output = pipeLine(deduplicateNames).transform(state, context)
       val logicalPlan = output.logicalPlan match {
         case p:ProduceResult if stripProduceResults => p.source
         case p => p
@@ -366,8 +376,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   def planFor(queryString: String,
               config:CypherPlannerConfiguration = cypherCompilerConfig,
               queryGraphSolver: QueryGraphSolver = queryGraphSolver,
-              stripProduceResults: Boolean = true): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) =
-    new given().getLogicalPlanFor(queryString, config, queryGraphSolver, stripProduceResults)
+              stripProduceResults: Boolean = true,
+              deduplicateNames: Boolean = deduplicateNames
+             ): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) =
+    new given().getLogicalPlanFor(queryString, config, queryGraphSolver, stripProduceResults, deduplicateNames)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 
