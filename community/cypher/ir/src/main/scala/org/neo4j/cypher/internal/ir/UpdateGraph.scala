@@ -325,7 +325,7 @@ trait UpdateGraph {
    * and labels being updated with SET and MERGE here
    */
   def setLabelOverlap(qg: QueryGraph): Boolean =
-    qg.patternNodes.filterNot(qg.argumentIds)
+    qg.allPatternNodesRead.filterNot(qg.argumentIds)
       .exists(p => qg.allKnownLabelsOnNode(p).intersect(labelsToSet).nonEmpty)
 
   /*
@@ -346,13 +346,13 @@ trait UpdateGraph {
     (identifiersToRead intersect identifiersToDelete).nonEmpty
   }
 
-  private def removeLabelOverlap(qg: QueryGraph) = {
+  def removeLabelOverlap(qg: QueryGraph): Boolean = {
     removeLabelPatterns.exists {
       case RemoveLabelPattern(removeId, labelsToRemove) =>
         //does any other identifier match on the labels I am deleting?
         //MATCH (a:BAR)..(b) REMOVE b:BAR
         labelsToRemove.exists(l => {
-          val otherLabelsRead = qg.patternNodes.filterNot(_ == removeId).flatMap(qg.allKnownLabelsOnNode)
+          val otherLabelsRead = qg.allPatternNodesRead.flatMap(qg.allKnownLabelsOnNode)
           otherLabelsRead(l)
         })
     }
