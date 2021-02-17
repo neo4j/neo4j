@@ -160,8 +160,9 @@ public class BoltServer extends LifecycleAdapter
             jobScheduler.setThreadFactory( Group.BOLT_NETWORK_IO, NettyThreadFactory::new );
             NettyServer nettyServer;
 
+            var isNotReadReplica = config.get( GraphDatabaseSettings.mode ) != GraphDatabaseSettings.Mode.READ_REPLICA;
             var loopbackProtocolInitializer = createLoopbackProtocolInitializer( loopbackBoltProtocolFactory, throttleGroup );
-            if ( config.get( GraphDatabaseSettings.routing_enabled ) )
+            if ( config.get( GraphDatabaseSettings.routing_enabled ) && isNotReadReplica )
             {
                 nettyServer = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
                                                createExternalProtocolInitializer( externalBoltProtocolFactory, throttleGroup, log ),
