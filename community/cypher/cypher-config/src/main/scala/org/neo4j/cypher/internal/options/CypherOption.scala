@@ -27,20 +27,43 @@ object CypherOption {
   val DEFAULT: String = "default"
 }
 
+/**
+ * Represents values of cypher options, like `4.2` in `CYPHER 4.2`
+ *
+ * @param inputName Used to parse values and in error messages etc.
+ */
 abstract class CypherOption(inputName: String) {
+  /** The canonical name for this value */
   val name: String = OptionReader.canonical(inputName)
 
+  /** The companion object to this option type */
   def companion: CypherOptionCompanion[_ <: CypherOption]
 
+  /** Renders this option value to a string */
   def render: String = if (this == companion.default) "" else name
 
+  /** Renders this option value to a string for use in query cache keys */
   def cacheKey: String = render
 }
 
+/**
+ * Represents values of key-value cypher options, like `bar` in `CYPHER foo=bar`
+ *
+ * @param inputName Used to parse values and in error messages etc.
+ */
 abstract class CypherKeyValueOption(inputName: String) extends CypherOption(inputName) {
   override def render: String = if (this == companion.default) "" else s"${companion.name}=$name"
 }
 
+/**
+ * Used to define the range of values for a cypher option, and the sources that determine its value
+ *
+ * @param name                 Name of this option, like `foo` in `foo=bar`
+ * @param setting              A setting, if this option can also be set in config
+ * @param cypherConfigField    A function to fetch the value of this option from CypherConfiguration, if this option can also be set in config
+ * @param cypherConfigBooleans A map of values to booleans in CypherConfiguration that sets those values (used for debug options)
+ * @tparam Opt                 The corresponding option value type
+ */
 abstract class CypherOptionCompanion[Opt <: CypherOption](
   val name: String,
   setting: Option[Setting[_]] = None,
@@ -51,14 +74,22 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
 
   private val key = OptionReader.canonical(name)
 
+  /**
+   * The default value for this option
+   */
   def default: Opt
 
   /**
+   * The set of all values for this option
+   *
    * When overriding this, make sure it is not defined as val, to avoid hitting this:
    * https://stackoverflow.com/questions/28151338/case-object-gets-initialized-to-null-how-is-that-even-possible
    */
   def values: Set[Opt]
 
+  /**
+   * Read this option from config
+   */
   def fromConfig(configuration: Config): Opt = {
     setting.map(s => configuration.get(s))
            .map(_.toString)
