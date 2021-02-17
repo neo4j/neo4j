@@ -83,8 +83,8 @@ class IndexDescriptorTest
             SchemaDescriptor.forRelType( 2, 1, 2 ),
             SchemaDescriptor.forRelType( 2, 2, 2 ),
 
-            SchemaDescriptor.forAllEntityTokens( EntityType.NODE ),
-            SchemaDescriptor.forAllEntityTokens( EntityType.RELATIONSHIP ),
+            SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ),
+            SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ),
     };
 
     @Test

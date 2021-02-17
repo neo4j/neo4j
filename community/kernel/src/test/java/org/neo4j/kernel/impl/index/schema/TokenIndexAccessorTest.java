@@ -70,7 +70,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptor.forAllEntityTokens;
+import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.TokenIndexUtility.TOKENS;
@@ -97,7 +97,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
     @Override
     IndexDescriptor indexDescriptor()
     {
-        return forSchema( forAllEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withName( "index" ).materialise( 0 );
+        return forSchema( forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withName( "index" ).materialise( 0 );
     }
 
     @Override

@@ -376,7 +376,7 @@ public class AllStoreHolder extends Read
 
     IndexDescriptor findUsableTokenIndex( EntityType entityType ) throws IndexNotFoundKernelException
     {
-        var descriptor = SchemaDescriptor.forAllEntityTokens( entityType );
+        var descriptor = SchemaDescriptor.forAnyEntityTokens( entityType );
         var indexes = index( descriptor );
         if ( indexes.hasNext() )
         {

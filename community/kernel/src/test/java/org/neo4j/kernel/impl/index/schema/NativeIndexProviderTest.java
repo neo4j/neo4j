@@ -42,7 +42,7 @@ import org.neo4j.values.storable.Values;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
-import static org.neo4j.internal.schema.SchemaDescriptor.forAllEntityTokens;
+import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
@@ -108,7 +108,7 @@ class NativeIndexProviderTest extends IndexProviderTests
     List<IndexPrototype> invalidPrototypes()
     {
         return List.of(
-                forSchema( forAllEntityTokens( EntityType.NODE ) ).withName( "unsupported" ),
+                forSchema( forAnyEntityTokens( EntityType.NODE ) ).withName( "unsupported" ),
                 forSchema( forLabel( labelId, propId ) ).withIndexType( IndexType.FULLTEXT ).withName( "unsupported" ),
                 forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "unsupported" ) );
     }

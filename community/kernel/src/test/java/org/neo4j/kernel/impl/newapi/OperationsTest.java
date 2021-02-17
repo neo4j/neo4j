@@ -1220,7 +1220,7 @@ class OperationsTest
     void indexedBackedConstraintCreateMustThrowOnAnyTokenSchemas() throws Exception
     {
         // given
-        SchemaDescriptor schema = SchemaDescriptor.forAllEntityTokens( NODE );
+        SchemaDescriptor schema = SchemaDescriptor.forAnyEntityTokens( NODE );
         IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema )
                 .withName( "constraint name" )
                 .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR );

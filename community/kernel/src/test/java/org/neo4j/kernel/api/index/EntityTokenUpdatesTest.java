@@ -99,7 +99,7 @@ class EntityTokenUpdatesTest
                     @Override
                     SchemaDescriptor getTokenIndex()
                     {
-                        return SchemaDescriptor.forAllEntityTokens( EntityType.NODE );
+                        return SchemaDescriptor.forAnyEntityTokens( EntityType.NODE );
                     }
                 },
         RELATIONSHIP
@@ -107,7 +107,7 @@ class EntityTokenUpdatesTest
                     @Override
                     SchemaDescriptor getTokenIndex()
                     {
-                        return SchemaDescriptor.forAllEntityTokens( EntityType.RELATIONSHIP );
+                        return SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP );
                     }
                 };
 

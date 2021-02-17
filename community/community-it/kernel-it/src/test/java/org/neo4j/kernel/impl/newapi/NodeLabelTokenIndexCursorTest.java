@@ -129,7 +129,7 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
 
     private TokenReadSession getTokenReadSession( KernelTransaction tx ) throws IndexNotFoundKernelException
     {
-        var descriptor = SchemaDescriptor.forAllEntityTokens( EntityType.NODE );
+        var descriptor = SchemaDescriptor.forAnyEntityTokens( EntityType.NODE );
         var indexes = tx.schemaRead().index( descriptor );
         var session = tx.dataRead().tokenReadSession( indexes.next() );
         return session;

@@ -84,7 +84,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.map;
 import static org.neo4j.internal.schema.IndexType.fromPublicApi;
-import static org.neo4j.internal.schema.SchemaDescriptor.forAllEntityTokens;
+import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
@@ -527,7 +527,7 @@ public class SchemaImpl implements Schema
             }
             else if ( index.getIndexType() == IndexType.LOOKUP )
             {
-                schema = forAllEntityTokens( EntityType.NODE );
+                schema = forAnyEntityTokens( EntityType.NODE );
             }
             else
             {
@@ -545,7 +545,7 @@ public class SchemaImpl implements Schema
             }
             else if ( index.getIndexType() == IndexType.LOOKUP )
             {
-                schema = forAllEntityTokens( EntityType.RELATIONSHIP );
+                schema = forAnyEntityTokens( EntityType.RELATIONSHIP );
             }
             else
             {
@@ -748,7 +748,7 @@ public class SchemaImpl implements Schema
         {
             try
             {
-                var schema = SchemaDescriptor.forAllEntityTokens(
+                var schema = SchemaDescriptor.forAnyEntityTokens(
                         tokens == AnyTokens.ANY_LABELS ? EntityType.NODE : EntityType.RELATIONSHIP );
                 var indexDescriptor = createIndex( indexName, schema, IndexType.LOOKUP, indexConfig );
                 if ( tokens == AnyTokens.ANY_LABELS )

@@ -40,7 +40,7 @@ public abstract class TokenIndexProviderCompatibilityTestSuite extends IndexProv
     @Override
     protected IndexPrototype indexPrototype()
     {
-        return IndexPrototype.forSchema( SchemaDescriptor.forAllEntityTokens( EntityType.NODE ) );
+        return IndexPrototype.forSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
     }
 
     @Override

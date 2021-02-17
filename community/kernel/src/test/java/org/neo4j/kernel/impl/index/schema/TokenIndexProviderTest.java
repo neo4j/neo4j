@@ -31,7 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
-import static org.neo4j.internal.schema.SchemaDescriptor.forAllEntityTokens;
+import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 public class TokenIndexProviderTest extends IndexProviderTests
@@ -57,27 +57,27 @@ public class TokenIndexProviderTest extends IndexProviderTests
     @Override
     IndexDescriptor descriptor()
     {
-        return completeConfiguration( forSchema( forAllEntityTokens( EntityType.NODE ) ).withName( "labelIndex" ).materialise( indexId ) );
+        return completeConfiguration( forSchema( forAnyEntityTokens( EntityType.NODE ) ).withName( "labelIndex" ).materialise( indexId ) );
     }
 
     @Override
     IndexDescriptor otherDescriptor()
     {
-        return completeConfiguration( forSchema( forAllEntityTokens( EntityType.RELATIONSHIP ) ).withName( "relTypeIndex" ).materialise( indexId ) );
+        return completeConfiguration( forSchema( forAnyEntityTokens( EntityType.RELATIONSHIP ) ).withName( "relTypeIndex" ).materialise( indexId ) );
     }
 
     @Override
     IndexPrototype validPrototype()
     {
-        return forSchema( forAllEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "index" );
+        return forSchema( forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "index" );
     }
 
     @Override
     List<IndexPrototype> invalidPrototypes()
     {
-        return List.of( forSchema( forAllEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.BTREE )
+        return List.of( forSchema( forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.BTREE )
                         .withName( "unsupported" ),
-                forSchema( forAllEntityTokens( EntityType.NODE ), GenericNativeIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP )
+                forSchema( forAnyEntityTokens( EntityType.NODE ), GenericNativeIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP )
                         .withName( "unsupported" ),
                 forSchema( forLabel( labelId, propId ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "unsupported" ),
                 uniqueForSchema( forLabel( labelId, propId ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "unsupported" ) );

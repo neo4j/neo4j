@@ -46,8 +46,8 @@ class SchemaRuleTest
     private FulltextSchemaDescriptor fulltextRelSchema = SchemaDescriptor.fulltext( RELATIONSHIP, new int[]{1, 2}, new int[]{1, 2} );
     private LabelSchemaDescriptor labelSchema2 = SchemaDescriptor.forLabel( 0, 0, 1 );
     private FulltextSchemaDescriptor fulltextNodeSchema2 = SchemaDescriptor.fulltext( NODE, new int[]{0, 1}, new int[]{0, 1} );
-    private AnyTokenSchemaDescriptor allLabelsSchema = SchemaDescriptor.forAllEntityTokens( NODE );
-    private AnyTokenSchemaDescriptor allRelTypesSchema = SchemaDescriptor.forAllEntityTokens( RELATIONSHIP );
+    private AnyTokenSchemaDescriptor allLabelsSchema = SchemaDescriptor.forAnyEntityTokens( NODE );
+    private AnyTokenSchemaDescriptor allRelTypesSchema = SchemaDescriptor.forAnyEntityTokens( RELATIONSHIP );
     private IndexPrototype labelPrototype = IndexPrototype.forSchema( labelSchema );
     private IndexPrototype labelUniquePrototype = IndexPrototype.uniqueForSchema( labelSchema );
     private IndexPrototype relTypePrototype = IndexPrototype.forSchema( relTypeSchema );

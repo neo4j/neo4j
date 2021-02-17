@@ -53,7 +53,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptor.forAllEntityTokens;
+import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
@@ -68,7 +68,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
     @Override
     IndexDescriptor indexDescriptor()
     {
-        return forSchema( forAllEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withName( "index" ).materialise( 0 );
+        return forSchema( forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withName( "index" ).materialise( 0 );
     }
 
     @Override

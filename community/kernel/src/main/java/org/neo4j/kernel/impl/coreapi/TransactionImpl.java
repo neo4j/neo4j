@@ -841,7 +841,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     {
         if ( ktx.schemaRead().scanStoreAsTokenIndexEnabled() )
         {
-            var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAllEntityTokens( EntityType.NODE ) );
+            var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
 
             if ( index != IndexDescriptor.NO_INDEX )
             {
@@ -902,7 +902,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     {
         if ( ktx.schemaRead().scanStoreAsTokenIndexEnabled() )
         {
-            var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAllEntityTokens( EntityType.RELATIONSHIP ) );
+            var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ) );
 
             if ( index != IndexDescriptor.NO_INDEX )
             {
@@ -1018,7 +1018,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
         if ( ktx.schemaRead().scanStoreAsTokenIndexEnabled() )
         {
-            var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAllEntityTokens( EntityType.NODE ) );
+            var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ) );
 
             if ( index != IndexDescriptor.NO_INDEX )
             {
@@ -1063,7 +1063,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
 
         if ( ktx.schemaRead().scanStoreAsTokenIndexEnabled() )
         {
-            var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAllEntityTokens( EntityType.RELATIONSHIP ) );
+            var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAnyEntityTokens( EntityType.RELATIONSHIP ) );
 
             if ( index != IndexDescriptor.NO_INDEX )
             {

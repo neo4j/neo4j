@@ -66,7 +66,7 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         return new SchemaDescriptorImplementation( RELATIONSHIP, COMPLETE_ALL_TOKENS, new int[]{relTypeId}, propertyIds );
     }
 
-    static AnyTokenSchemaDescriptor forAllEntityTokens( EntityType entityType )
+    static AnyTokenSchemaDescriptor forAnyEntityTokens( EntityType entityType )
     {
         return new SchemaDescriptorImplementation( entityType, ENTITY_TOKENS, new int[0], new int[0] );
     }

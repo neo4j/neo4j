@@ -439,7 +439,7 @@ public class SchemaCache
 
         IndexDescriptor getTokenIndex( EntityType entityType )
         {
-            return indexesBySchema.get( SchemaDescriptor.forAllEntityTokens( entityType ) );
+            return indexesBySchema.get( SchemaDescriptor.forAnyEntityTokens( entityType ) );
         }
 
         private <T extends SchemaDescriptorSupplier> Set<T> getSchemaRelatedTo( SchemaDescriptorLookupSet<T> set, long[] changedEntityTokens,

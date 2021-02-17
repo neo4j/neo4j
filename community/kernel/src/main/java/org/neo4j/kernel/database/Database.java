@@ -561,7 +561,7 @@ public class Database extends LifecycleAdapter
 
     private void createLookupIndex( KernelTransaction tx, EntityType entityType ) throws KernelException
     {
-        var descriptor = SchemaDescriptor.forAllEntityTokens( entityType );
+        var descriptor = SchemaDescriptor.forAnyEntityTokens( entityType );
 
         IndexPrototype prototype = IndexPrototype.forSchema( descriptor ).withIndexType( LOOKUP )
                                                  .withIndexProvider( indexProviderMap.getTokenIndexProvider().getProviderDescriptor() );
