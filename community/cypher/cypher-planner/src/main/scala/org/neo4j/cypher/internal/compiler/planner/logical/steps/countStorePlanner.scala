@@ -152,7 +152,8 @@ case object countStorePlanner {
       case Predicate(nIds, h: HasLabels) if nIds.forall(nodeIds.contains) && h.labels.size == 1 => true
       case _ => false
     }
-    labelPredicates.size <= nodeIds.size && other.isEmpty
+    val groupedLabelPredicates = labelPredicates.groupBy(_.dependencies intersect nodeIds)
+    groupedLabelPredicates.values.forall(_.size == 1) && other.isEmpty
   }
 
   def findLabel(nodeId: String, selections: Selections): Option[LabelName] = selections.predicates.collectFirst {
