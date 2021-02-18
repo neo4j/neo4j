@@ -356,7 +356,11 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                  allowed: Array[String]): UserDefinedAggregator =
     singleDbHit(inner.aggregateFunction(id, allowed))
 
-  override def detachDeleteNode(node: Long): Int = manyDbHits(1 + inner.detachDeleteNode(node))
+  override def detachDeleteNode(node: Long): Int = {
+    val deletedRelationships = inner.detachDeleteNode(node)
+    manyDbHits(1 + deletedRelationships)
+    deletedRelationships
+  }
 
   override def assertSchemaWritesAllowed(): Unit = inner.assertSchemaWritesAllowed()
 
