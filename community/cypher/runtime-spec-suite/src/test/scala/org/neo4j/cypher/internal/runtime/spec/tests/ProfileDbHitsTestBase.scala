@@ -669,4 +669,32 @@ trait WriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] {
     produceResultProfile.rows() shouldBe sizeHint
     produceResultProfile.dbHits() shouldBe sizeHint * (costOfProperty + costOfProperty)
   }
+
+  test("should profile db hits on remove labels") {
+    // given
+    val nodeCount = sizeHint
+    given {
+      nodeGraph(nodeCount - 3, "Label", "OtherLabel", "ThirdLabel")
+      nodeGraph(1, "Label")
+      nodeGraph(1, "OtherLabel")
+      nodeGraph(1, "ThirdLabel")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .removeLabels("n", "Label", "OtherLabel")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    val removeLabelsProfile = queryProfile.operatorProfile(1)
+    val expectedLabelLookups = 2
+    removeLabelsProfile.dbHits() shouldBe (expectedLabelLookups + nodeCount)
+  }
 }

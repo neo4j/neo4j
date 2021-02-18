@@ -114,6 +114,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.PruningVarLengthExpandTestBa
 import org.neo4j.cypher.internal.runtime.spec.tests.ReactiveResultTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipCountFromCountStoreTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipTypeScanTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.RemoveLabelsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RightOuterHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RollupApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SelectOrAntiSemiApplyTestBase
@@ -263,3 +264,4 @@ class InterpretedDeletePathTest extends DeletePathTestBase(COMMUNITY.EDITION, In
 class InterpretedDeleteDetachPathTest extends DeleteDetachPathTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedDeleteExpressionTest extends DeleteExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedDeleteDetachExpressionTest extends DeleteDetachExpressionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedRemoveLabelsTest extends RemoveLabelsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

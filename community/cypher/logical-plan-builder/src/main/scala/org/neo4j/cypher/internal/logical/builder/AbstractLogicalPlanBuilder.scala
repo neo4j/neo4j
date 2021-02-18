@@ -136,6 +136,7 @@ import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
@@ -547,6 +548,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
+  def removeLabels(nodeVariable: String, labels: String*): IMPL = {
+    val labelNames = labels.map(l => LabelName(l)(InputPosition.NONE))
+    appendAtCurrentIndent(UnaryOperator(lp => RemoveLabels(lp, nodeVariable, labelNames)(_)))
+  }
 
   def unwind(projectionString: String): IMPL = {
     val (name, expression) = Parser.parseProjections(projectionString).head
