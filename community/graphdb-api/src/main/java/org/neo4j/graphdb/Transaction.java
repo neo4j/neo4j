@@ -240,7 +240,7 @@ public interface Transaction extends AutoCloseable
      * @param label      consider nodes with this label
      * @param key        required property key
      * @param template   required property value template
-     * @param searchMode required property value template
+     * @param searchMode search mode to use for finding matches
      * @return an iterator containing all matching nodes. See {@link ResourceIterator} for responsibilities.
      */
     ResourceIterator<Node> findNodes( Label label, String key, String template, StringSearchMode searchMode );
@@ -399,7 +399,7 @@ public interface Transaction extends AutoCloseable
      * @param relationshipType consider relationships with this type
      * @param key              required property key
      * @param template         required property value template
-     * @param searchMode       required property value template
+     * @param searchMode       search mode to use for finding matches
      * @return an iterator containing all matching relationships. See {@link ResourceIterator} for responsibilities.
      */
     ResourceIterator<Relationship> findRelationships( RelationshipType relationshipType, String key, String template, StringSearchMode searchMode );
@@ -431,7 +431,7 @@ public interface Transaction extends AutoCloseable
     /**
      * Returns all {@link Relationship relationships} having the {@link RelationshipType type}, and the wanted property values.
      * If an online index is found, it will be used to look up the requested
-     * nodes.
+     * relationships.
      * <p>
      * If no indexes exist for the type with all provided properties, the database will
      * scan all relationships of a specific type looking for matching values.
@@ -461,7 +461,7 @@ public interface Transaction extends AutoCloseable
     /**
      * Returns all {@link Relationship relationships} having the {@link RelationshipType type}, and the wanted property values.
      * If an online index is found, it will be used to look up the requested
-     * nodes.
+     * relationships.
      * <p>
      * If no indexes exist for the type with all provided properties, the database will
      * scan all relationships of a specific type looking for matching values.
