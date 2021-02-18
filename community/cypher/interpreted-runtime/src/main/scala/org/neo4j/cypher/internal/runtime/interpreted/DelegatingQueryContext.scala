@@ -358,7 +358,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def detachDeleteNode(node: Long): Int = {
     val deletedRelationships = inner.detachDeleteNode(node)
-    manyDbHits(1 + deletedRelationships)
+    manyDbHits(1 + deletedRelationships) // This relies on the assumption that the node was not already deleted
     deletedRelationships
   }
 

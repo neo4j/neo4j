@@ -19,16 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import java.net.URL
-import java.util.Optional
-
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Path
-import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.internal.kernel.api.IndexReadSession
@@ -44,6 +40,7 @@ import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.Write
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
@@ -60,6 +57,8 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
+import java.net.URL
+import java.util.Optional
 import scala.collection.Iterator
 
 /*
@@ -255,6 +254,13 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator
 
+  /**
+   * Delete the node with the specified id and all of its relationships and return the number of deleted relationships.
+   *
+   * Note, caller needs to make sure the node is not already deleted or else the count will be incorrect.
+   *
+   * @return number of deleted relationships
+   */
   def detachDeleteNode(id: Long): Int
 
   def assertSchemaWritesAllowed(): Unit

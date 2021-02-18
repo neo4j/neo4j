@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 
-import java.util.concurrent.atomic.AtomicInteger
-
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.IndexInfo
@@ -38,6 +36,8 @@ import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
+
+import java.util.concurrent.atomic.AtomicInteger
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) with CountingQueryContext {
 
@@ -195,7 +195,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   override def nodeGetDegree(node: Long, dir: SemanticDirection, nodeCursor: NodeCursor): Int = super.nodeGetDegree(node, dir, nodeCursor)
 
   override def detachDeleteNode(node: Long): Int = {
-    nodesDeleted.increase()
+    nodesDeleted.increase() // This relies on the assumption that the node was not already deleted
     val count = inner.detachDeleteNode(node)
     relationshipsDeleted.increase(count)
     count
