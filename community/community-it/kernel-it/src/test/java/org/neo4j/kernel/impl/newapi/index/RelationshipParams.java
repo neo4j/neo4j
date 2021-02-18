@@ -130,6 +130,12 @@ public class RelationshipParams implements EntityParams<RelationshipValueIndexCu
     }
 
     @Override
+    public void entitySetProperty( KernelTransaction tx, long entityId, int propId, Value value ) throws KernelException
+    {
+        tx.dataWrite().relationshipSetProperty( entityId, propId, value );
+    }
+
+    @Override
     public int entityTokenId( KernelTransaction tx, String tokenName )
     {
         return tx.token().relationshipType( tokenName );
@@ -171,5 +177,11 @@ public class RelationshipParams implements EntityParams<RelationshipValueIndexCu
     public void entityAddToken( KernelTransaction tx, long entityId, int tokenId )
     {
         throw new IllegalStateException( "Relationship must have type" );
+    }
+
+    @Override
+    public long entityCreateNew( KernelTransaction tx, int tokenId ) throws KernelException
+    {
+        return tx.dataWrite().relationshipCreate( tx.dataWrite().nodeCreate(), tokenId, tx.dataWrite().nodeCreate() );
     }
 }

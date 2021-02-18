@@ -66,6 +66,7 @@ import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
+import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR extends Cursor & ValueIndexCursor>
@@ -1496,6 +1497,52 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             // then
             assertTrue( cursor.next() );
             assertEquals( strOneNoLabel, entityParams.entityReference( cursor ) );
+        }
+    }
+
+    @Test
+    void shouldHandleOrderedExactSeekWithNeedsValuesTrue() throws Exception
+    {
+        // given
+        int prop = token.propertyKey( "prop" );
+        IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( PROP_INDEX_NAME ) );
+        try ( var cursor = entityParams.allocateEntityValueIndexCursor( tx, cursors ) )
+        {
+            // when
+            entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.ASCENDING, true ), PropertyIndexQuery.exact( prop, 5 ) );
+
+            // then
+            assertTrue( cursor.next() );
+            assertTrue( cursor.hasValue() );
+            assertEquals( cursor.propertyValue( 0 ), intValue( 5 ) );
+            assertFalse( cursor.next() );
+        }
+    }
+
+    @Test
+    void shouldHandleOrderedExactSeekWithNeedsValuesTrueWithTxChanges() throws Exception
+    {
+        // given
+        int prop = token.propertyKey( "prop" );
+        IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( PROP_INDEX_NAME ) );
+        int label = entityParams.entityTokenId( tx, DEFAULT_ENTITY_TOKEN );
+        try ( KernelTransaction tx = beginTransaction();
+              var cursor = entityParams.allocateEntityValueIndexCursor( tx, cursors ) )
+        {
+            // when
+            long newEntity = entityParams.entityCreateNew( tx, label );
+            entityParams.entitySetProperty( tx, newEntity, prop, intValue( 5 ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.ASCENDING, true ), PropertyIndexQuery.exact( prop, 5 ) );
+
+            // then
+            assertTrue( cursor.next() );
+            assertTrue( cursor.hasValue() );
+            assertEquals( cursor.propertyValue( 0 ), intValue( 5 ) );
+            assertTrue( cursor.next() );
+            assertTrue( cursor.hasValue() );
+            assertEquals( cursor.propertyValue( 0 ), intValue( 5 ) );
+
+            assertFalse( cursor.next() );
         }
     }
 

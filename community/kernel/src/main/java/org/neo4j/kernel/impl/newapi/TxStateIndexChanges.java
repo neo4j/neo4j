@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.LongIterable;
+import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.LongSet;
@@ -115,8 +116,29 @@ class TxStateIndexChanges
         return EMPTY_ADDED_AND_REMOVED;
     }
 
-    // RANGE SEEK
+    static AddedWithValuesAndRemoved indexUpdatesWithValuesForSeek( ReadableTransactionState txState,
+                                                                    IndexDescriptor descriptor,
+                                                                    ValueTuple values )
+    {
+        UnmodifiableMap<ValueTuple,? extends LongDiffSets> updates = txState.getIndexUpdates( descriptor.schema() );
+        if ( updates != null )
+        {
+            LongDiffSets indexUpdatesForSeek = updates.get( values );
+            if ( indexUpdatesForSeek == null )
+            {
+                return EMPTY_ADDED_AND_REMOVED_WITH_VALUES;
+            }
+            Value[] valueArray = values.getValues();
+            MutableList<EntityWithPropertyValues> added = Lists.mutable.empty();
+            indexUpdatesForSeek.getAdded().forEach( (LongProcedure) l ->
+                    added.add( new EntityWithPropertyValues( l, valueArray ) ) );
 
+            return new AddedWithValuesAndRemoved( added, indexUpdatesForSeek.getRemoved() );
+        }
+        return EMPTY_ADDED_AND_REMOVED_WITH_VALUES;
+    }
+
+    // RANGE SEEK
     static AddedAndRemoved indexUpdatesForRangeSeek( ReadableTransactionState txState,
                                                      IndexDescriptor descriptor,
                                                      Value[] equalityPrefix,

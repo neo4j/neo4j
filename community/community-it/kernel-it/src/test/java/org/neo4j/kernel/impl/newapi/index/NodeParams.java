@@ -117,6 +117,12 @@ public class NodeParams implements EntityParams<NodeValueIndexCursor>
     }
 
     @Override
+    public void entitySetProperty( KernelTransaction tx, long entityId, int propId, Value value ) throws KernelException
+    {
+        tx.dataWrite().nodeSetProperty( entityId, propId, value );
+    }
+
+    @Override
     public int entityTokenId( KernelTransaction tx, String tokenName )
     {
         return tx.token().nodeLabel( tokenName );
@@ -158,5 +164,11 @@ public class NodeParams implements EntityParams<NodeValueIndexCursor>
     public void entityAddToken( KernelTransaction tx, long entityId, int tokenId ) throws KernelException
     {
         tx.dataWrite().nodeAddLabel( entityId, tokenId );
+    }
+
+    @Override
+    public long entityCreateNew( KernelTransaction tx, int tokenId ) throws KernelException
+    {
+        return tx.dataWrite().nodeCreateWithLabels( new int[] { tokenId } );
     }
 }

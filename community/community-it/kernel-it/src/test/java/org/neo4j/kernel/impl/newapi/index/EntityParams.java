@@ -63,6 +63,8 @@ public interface EntityParams<CURSOR extends Cursor & ValueIndexCursor>
 
     void entitySetProperty( KernelTransaction tx, long entityId, int propId, String value ) throws KernelException;
 
+    void entitySetProperty( KernelTransaction tx, long entityId, int propId, Value value ) throws KernelException;
+
     int entityTokenId( KernelTransaction tx, String tokenName );
 
     SchemaDescriptor schemaDescriptor( int tokenId, int propId );
@@ -74,4 +76,6 @@ public interface EntityParams<CURSOR extends Cursor & ValueIndexCursor>
     void entityRemoveToken( KernelTransaction tx, long entityId, int tokenId ) throws KernelException;
 
     void entityAddToken( KernelTransaction tx, long entityId, int tokenId ) throws KernelException;
+
+    long entityCreateNew( KernelTransaction tx, int tokenId ) throws KernelException;
 }
