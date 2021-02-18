@@ -238,8 +238,8 @@ final class ProfilingPipeQueryContext(inner: QueryContext)
   }
 
   override protected def manyDbHits(inner: RelationshipValueIndexCursor): RelationshipValueIndexCursor =  new ProfilingCursor(inner) with RelationshipValueIndexCursor {
-     override def numberOfProperties(): Int = inner.numberOfProperties()
-     override def hasValue: Boolean = inner.hasValue
+    override def numberOfProperties(): Int = inner.numberOfProperties()
+    override def hasValue: Boolean = inner.hasValue
     override def propertyValue(offset: Int): Value = inner.propertyValue(offset)
     override def relationship(cursor: RelationshipScanCursor): Unit = inner.relationship(cursor)
     override def sourceNode(cursor: NodeCursor): Unit = inner.sourceNode(cursor)

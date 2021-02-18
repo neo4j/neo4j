@@ -214,14 +214,14 @@ object IndexSeek {
   }
 
   private def createPlan[T <: LogicalLeafPlan](predicates: Array[String],
-                  getValue: GetValueFromIndexBehavior = DoNotGetValue,
-                  paramExpr: Option[Expression],
-                  propIds: Option[PartialFunction[String, Int]],
-                  customQueryExpression: Option[QueryExpression[Expression]],
-                  createSeek: (Seq[IndexedProperty], QueryExpression[Expression]) => T,
-                  createScan: (Seq[IndexedProperty]) => T,
-                  createEndsWithScan: (IndexedProperty, Expression) => T,
-                  createContainsScan: (IndexedProperty, Expression) => T): T = {
+                                               getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                                               paramExpr: Option[Expression],
+                                               propIds: Option[PartialFunction[String, Int]],
+                                               customQueryExpression: Option[QueryExpression[Expression]],
+                                               createSeek: (Seq[IndexedProperty], QueryExpression[Expression]) => T,
+                                               createScan: (Seq[IndexedProperty]) => T,
+                                               createEndsWithScan: (IndexedProperty, Expression) => T,
+                                               createContainsScan: (IndexedProperty, Expression) => T): T = {
     var propId = -1
     def nextPropId(): Int = {
       propId += 1

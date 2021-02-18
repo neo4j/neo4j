@@ -540,17 +540,16 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
 
-
-    test("should directed seek relationships with multiple less than bounds with different types") {
-      given {
-        relationshipIndex("R", "prop")
-        val (_, rels) = circleGraph(sizeHint)
-        rels.zipWithIndex.foreach {
-          case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
-          case _ =>
-        }
-        rels
+  test("should directed seek relationships with multiple less than bounds with different types") {
+    given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
+        case _ =>
       }
+      rels
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

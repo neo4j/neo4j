@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * Given each found `relationship`, the rows will have the following structure:
  *
  *  - `{idName: relationship, leftNode: relationship.startNode, relationship.endNode}`
- *  - `{idName: relationship, leftNode: relationship.endNode, relationship.startJ0de}`
+ *  - `{idName: relationship, leftNode: relationship.endNode, relationship.startNode}`
  */
 case class UndirectedRelationshipTypeScan(idName: String, leftNode: String, relType: RelTypeName, rightNode: String, argumentIds: Set[String])(implicit idGen: IdGen)
   extends RelationshipLogicalLeafPlan(idGen) {
