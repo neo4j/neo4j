@@ -49,10 +49,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
                            incomingPlans: BestResults[LogicalPlan],
                            prevInterestingOrder: Option[InterestingOrder],
                            context: LogicalPlanningContext): BestResults[LogicalPlan] = {
-    val pickBest: CandidateSelector = {
-      val limitSelectivity = LimitSelectivity.forRestOfQuery(plannerQuery, context)
-      context.config.pickBestCandidate(context.withLimitSelectivity(limitSelectivity))
-    }
+    val pickBest: CandidateSelector = context.config.pickBestCandidate(context)
     // This config will only plan Sort if there is a required order in this plannerQuery
     val sortIfSelfRequiredConfig = InterestingOrderConfig(plannerQuery.interestingOrder)
     // This config will even plan Sort if there is a required order in a tail plannerQuery

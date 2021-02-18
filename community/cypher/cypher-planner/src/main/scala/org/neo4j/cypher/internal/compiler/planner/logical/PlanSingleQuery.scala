@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.Selectivity
 
 import scala.annotation.tailrec
 
@@ -44,7 +45,11 @@ case class PlanSingleQuery(planMatch: MatchPlanner = planMatch,
   extends SingleQueryPlanner {
 
   override def apply(in: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
-    val updatedContext = addAggregatedPropertiesToContext(in, context)
+    val limitSelectivities = LimitSelectivity.forAllParts(in, context)
+
+    val updatedContext =
+      addAggregatedPropertiesToContext(in, context)
+        .withLimitSelectivity(limitSelectivities.head)
 
     val plans = countStorePlanner(in, updatedContext) match {
       case Some(plan) =>
@@ -58,7 +63,7 @@ case class PlanSingleQuery(planMatch: MatchPlanner = planMatch,
       }
 
     val contextForTail = updatedContext.withUpdatedLabelInfo(plans.bestResult) // cardinality should be the same for all plans, let's use the first one
-    val (plan, _) = planWithTail(plans, in, contextForTail)
+    val (plan, _) = planWithTail(plans, in, contextForTail, limitSelectivities)
     plan
   }
 
@@ -129,7 +134,10 @@ trait EventHorizonPlanner {
 }
 
 trait TailPlanner {
-  def apply(lhsPlans: BestPlans, in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext)
+  def apply(lhsPlans: BestPlans,
+            in: SinglePlannerQuery,
+            context: LogicalPlanningContext,
+            limitSelectivities: List[Selectivity]): (LogicalPlan, LogicalPlanningContext)
 }
 
 trait UpdatesPlanner {

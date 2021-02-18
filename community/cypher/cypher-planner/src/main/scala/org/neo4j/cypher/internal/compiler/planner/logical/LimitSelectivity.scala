@@ -30,23 +30,21 @@ import scala.annotation.tailrec
 
 object LimitSelectivity {
 
-  def forRestOfQuery(query: SinglePlannerQuery, context: LogicalPlanningContext): Selectivity = {
+  def forAllParts(query: SinglePlannerQuery, context: LogicalPlanningContext): List[Selectivity] = {
     @tailrec
-    def recurse(query: SinglePlannerQuery, context: LogicalPlanningContext, parentLimitSelectivity: Selectivity): Selectivity = {
-      val lastPartSelectivity = forPart(query, context, parentLimitSelectivity)
-
-      query.withoutLast match {
-        case None => lastPartSelectivity
-        case Some(withoutLast) =>
-          val currentSelectivity = lastPartSelectivity
-          recurse(withoutLast, context, currentSelectivity)
+    def recurse(query: Option[SinglePlannerQuery], parentLimitSelectivity: Selectivity, acc: List[Selectivity]): List[Selectivity] = {
+      query match {
+        case None => acc
+        case Some(query) =>
+          val lastPartSelectivity = forLastPart(query, context, parentLimitSelectivity)
+          recurse(query.withoutLast, lastPartSelectivity, lastPartSelectivity +: acc)
       }
     }
 
-    recurse(query, context, Selectivity.ONE)
+    recurse(Some(query), Selectivity.ONE, List.empty)
   }
 
-  def forPart(query: SinglePlannerQuery, context: LogicalPlanningContext, parentLimitSelectivity: Selectivity): Selectivity = {
+  def forLastPart(query: SinglePlannerQuery, context: LogicalPlanningContext, parentLimitSelectivity: Selectivity): Selectivity = {
     if (!query.readOnly) {
       Selectivity.ONE
     } else {

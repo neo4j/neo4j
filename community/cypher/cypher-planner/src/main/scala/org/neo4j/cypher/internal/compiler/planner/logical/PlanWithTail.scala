@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.attribution.Attributes
 
 import scala.annotation.tailrec
@@ -35,30 +36,33 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
                         planUpdates: UpdatesPlanner = PlanUpdates)
   extends TailPlanner {
 
-  override def apply(lhsPlans: BestPlans, in: SinglePlannerQuery, context: LogicalPlanningContext): (LogicalPlan, LogicalPlanningContext) = {
-    val (bestPlans, updatedContext) = doPlan(lhsPlans, in, context)
+  override def apply(lhsPlans: BestPlans,
+                     in: SinglePlannerQuery,
+                     context: LogicalPlanningContext,
+                     limitSelectivities: List[Selectivity]): (LogicalPlan, LogicalPlanningContext) = {
+
+    val (bestPlans, updatedContext) = doPlan(lhsPlans, in, context, limitSelectivities.tail)
     val pickBest = updatedContext.config.pickBestCandidate(updatedContext)
     val plan = pickBest(bestPlans.allResults.toIterable, s"best finalized plan for ${in.queryGraph}").get
     (plan, updatedContext)
   }
 
   @tailrec
-  private def doPlan(lhs: BestPlans, in: SinglePlannerQuery, context: LogicalPlanningContext): (BestPlans, LogicalPlanningContext) = {
-    in.tail match {
-      case Some(plannerQuery) =>
+  private def doPlan(lhs: BestPlans, in: SinglePlannerQuery, context: LogicalPlanningContext, limitSelectivities: List[Selectivity]): (BestPlans, LogicalPlanningContext) = {
+    (in.tail, limitSelectivities.headOption.fold(context)(context.withLimitSelectivity)) match {
+      case (Some(plannerQuery), context) =>
         val rhsContext = context.withOuterPlan(lhs.bestResult)
         val partPlan = planPart(plannerQuery, rhsContext, rhsPart = true).result // always expecting a single plan currently
         val planWithUpdates = planUpdates(plannerQuery, partPlan, firstPlannerQuery = false, context)
 
         val applyPlans = lhs.map(context.logicalPlanProducer.planTailApply(_, planWithUpdates, context))
         val applyContext = context.withUpdatedLabelInfo(applyPlans.bestResult)
-
         val horizonPlans = planEventHorizon.planHorizon(plannerQuery, applyPlans, Some(in.interestingOrder), applyContext)
         val contextForTail = applyContext.withUpdatedLabelInfo(horizonPlans.bestResult) // cardinality should be the same for all plans, let's use the first one
 
-        doPlan(horizonPlans, plannerQuery, contextForTail)
+        doPlan(horizonPlans, plannerQuery, contextForTail, limitSelectivities.tail)
 
-      case None =>
+      case (None, context) =>
         val attributes = Attributes(context.idGen, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders)
         val plans = lhs.map(_.endoRewrite(Eagerness.unnestEager(context.planningAttributes.solveds, attributes)))
         (plans, context)

@@ -42,19 +42,19 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  test("limitSelectivityForPart: no LIMIT") {
+  test("forLastPart: no LIMIT") {
     new given().withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery()
 
       // WHEN
-      val result = LimitSelectivity.forPart(query, context, Selectivity.ONE)
+      val result = LimitSelectivity.forLastPart(query, context, Selectivity.ONE)
 
       // THEN
       result shouldBe Selectivity.ONE
     }
   }
 
-  test("limitSelectivityForPart: LIMIT") {
+  test("forLastPart: LIMIT") {
     val limit = 10
     val nodes = 100
 
@@ -69,27 +69,27 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
         horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit)))))
 
       // WHEN
-      val result = LimitSelectivity.forPart(query, context, Selectivity.ONE)
+      val result = LimitSelectivity.forLastPart(query, context, Selectivity.ONE)
 
       // THEN
       result shouldBe Selectivity(limit / nodes.toDouble)
     }
   }
 
-  test("limitSelectivityForPart: no LIMIT, parentLimitSelectivity") {
+  test("forLastPart: no LIMIT, parentLimitSelectivity") {
     new given().withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery()
       val p = Selectivity(0.5)
 
       // WHEN
-      val result = LimitSelectivity.forPart(query, context, p)
+      val result = LimitSelectivity.forLastPart(query, context, p)
 
       // THEN
       result shouldBe p
     }
   }
 
-  test("limitSelectivityForPart: LIMIT, parentLimitSelectivity") {
+  test("forLastPart: LIMIT, parentLimitSelectivity") {
     val limit = 10
     val nodes = 100
 
@@ -105,40 +105,40 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val p = Selectivity(0.5)
 
       // WHEN
-      val result = LimitSelectivity.forPart(query, context, p)
+      val result = LimitSelectivity.forLastPart(query, context, p)
 
       // THEN
       result shouldBe Selectivity(limit / nodes.toDouble) * p
     }
   }
 
-  test("limitSelectivityForRestOfQuery: no LIMIT") {
+  test("forAllParts: no LIMIT") {
     new given().withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery()
 
       // WHEN
-      val result = LimitSelectivity.forRestOfQuery(query, context)
+      val result = LimitSelectivity.forAllParts(query, context)
 
       // THEN
-      result shouldBe Selectivity.ONE
+      result shouldBe List(Selectivity.ONE)
     }
   }
 
-  test("limitSelectivityForRestOfQuery: no LIMIT, tail") {
+  test("forAllParts: no LIMIT, tail") {
     new given().withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery(
         tail = Some(RegularSinglePlannerQuery())
       )
 
       // WHEN
-      val result = LimitSelectivity.forRestOfQuery(query, context)
+      val result = LimitSelectivity.forAllParts(query, context)
 
       // THEN
-      result shouldBe Selectivity.ONE
+      result shouldBe List(Selectivity.ONE, Selectivity.ONE)
     }
   }
 
-  test("limitSelectivityForRestOfQuery: LIMIT in first part, no tail") {
+  test("forAllParts: LIMIT in first part, no tail") {
     val limit = 10
     val nodes = 100
 
@@ -153,14 +153,14 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
         horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit)))))
 
       // WHEN
-      val result = LimitSelectivity.forRestOfQuery(query, context)
+      val result = LimitSelectivity.forAllParts(query, context)
 
       // THEN
-      result shouldBe Selectivity(limit / nodes.toDouble)
+      result shouldBe List(Selectivity(limit / nodes.toDouble))
     }
   }
 
-  test("limitSelectivityForRestOfQuery: LIMIT in first part, tail") {
+  test("forAllParts: LIMIT in first part, tail") {
     val limit = 10
     val nodes = 100
 
@@ -179,14 +179,17 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       )
 
       // WHEN
-      val result = LimitSelectivity.forRestOfQuery(query, context)
+      val result = LimitSelectivity.forAllParts(query, context)
 
       // THEN
-      result shouldBe Selectivity(limit / nodes.toDouble)
+      result shouldBe List(
+        Selectivity(limit / nodes.toDouble),
+        Selectivity.ONE
+      )
     }
   }
 
-  test("limitSelectivityForRestOfQuery: no LIMIT in first part, tail with LIMIT") {
+  test("forAllParts: no LIMIT in first part, tail with LIMIT") {
     val limit = 10
     val nodes = 100
 
@@ -205,14 +208,15 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       )
 
       // WHEN
-      val result = LimitSelectivity.forRestOfQuery(query, context)
+      val result = LimitSelectivity.forAllParts(query, context)
 
       // THEN
-      result shouldBe Selectivity(limit / (nodes.toDouble * nodes.toDouble))
+      val expectedSelectivity = Selectivity(limit / (nodes.toDouble * nodes.toDouble))
+      result shouldBe List(expectedSelectivity, expectedSelectivity)
     }
   }
 
-  test("limitSelectivityForRestOfQuery: with LIMIT in first part and tail with LIMIT") {
+  test("forAllParts: with LIMIT in first part and tail with LIMIT") {
     val lowLimit = 75 // Higher than 5000 / 100
     val highLimit = 5000
     val nodes = 100
@@ -233,14 +237,17 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       )
 
       // WHEN
-      val result = LimitSelectivity.forRestOfQuery(query, context)
+      val result = LimitSelectivity.forAllParts(query, context)
 
       // THEN
-      result shouldBe Selectivity(highLimit / (nodes.toDouble * nodes.toDouble))
+      result shouldBe List(
+        Selectivity(highLimit / (nodes.toDouble * nodes.toDouble)),
+        Selectivity(highLimit / (lowLimit.toDouble * nodes.toDouble)),
+      )
     }
   }
 
-  test("limitSelectivityForRestOfQuery: with LIMIT in first part and tail with LIMIT 2") {
+  test("forAllParts: with LIMIT in first part and tail with LIMIT 2") {
     val lowLimit = 25 // Lower than 5000 / 100
     val highLimit = 5000
     val nodes = 100
@@ -261,14 +268,17 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       )
 
       // WHEN
-      val result = LimitSelectivity.forRestOfQuery(query, context)
+      val result = LimitSelectivity.forAllParts(query, context)
 
       // THEN
-      result shouldBe Selectivity(lowLimit / nodes.toDouble)
+      result shouldBe List(
+        Selectivity(lowLimit / nodes.toDouble),
+        Selectivity.ONE,
+      )
     }
   }
 
-  test("limitSelectivityForRestOfQuery: multiple tails") {
+  test("forAllParts: multiple tails") {
     val lowLimit = 25
     val midLimit = 75
     val highLimit = 5000
@@ -296,15 +306,23 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
           )
 
           // WHEN
-          val result = LimitSelectivity.forRestOfQuery(query, context)
+          val result = LimitSelectivity.forAllParts(query, context)
 
           // THEN
-          result shouldBe Selectivity(lowLimit / nodes.toDouble)
+          result shouldBe List(
+            Selectivity(lowLimit / nodes.toDouble),
+            Selectivity
+              .of(math.min(secondLimit, thirdLimit) / math.min(nodes.toDouble, firstLimit))
+              .getOrElse(Selectivity.ONE),
+            Selectivity
+              .of(thirdLimit.toDouble / math.min(firstLimit, secondLimit))
+              .getOrElse(Selectivity.ONE)
+          )
         }
     }
   }
 
-  test("limitSelectivityForRestOfQuery: updating statement in first part, horizon with LIMIT") {
+  test("forAllParts: updating statement in first part, horizon with LIMIT") {
     val limit = 10
     val nodes = 100
 
@@ -323,14 +341,14 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       )
 
       // WHEN
-      val result = LimitSelectivity.forRestOfQuery(query, context)
+      val result = LimitSelectivity.forAllParts(query, context)
 
       // THEN
-      result shouldBe Selectivity.ONE
+      result shouldBe List(Selectivity.ONE)
     }
   }
 
-  test("limitSelectivityForRestOfQuery: updating procedure call in first horizon, tail with LIMIT") {
+  test("forAllParts: updating procedure call in first horizon, tail with LIMIT") {
     val limit = 10
     val nodes = 100
 
@@ -357,14 +375,17 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       )
 
       // WHEN
-      val result = LimitSelectivity.forRestOfQuery(query, context)
+      val result = LimitSelectivity.forAllParts(query, context)
 
       // THEN
-      result shouldBe Selectivity.ONE
+      result shouldBe List(
+        Selectivity.ONE,
+        Selectivity.ONE,
+      )
     }
   }
 
-  test("limitSelectivityForRestOfQuery: eager procedure call in first horizon, tail with LIMIT") {
+  test("forAllParts: eager procedure call in first horizon, tail with LIMIT") {
     val limit = 10
     val nodes = 100
 
@@ -391,14 +412,17 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       )
 
       // WHEN
-      val result = LimitSelectivity.forRestOfQuery(query, context)
+      val result = LimitSelectivity.forAllParts(query, context)
 
       // THEN
-      result shouldBe Selectivity.ONE
+      result shouldBe List(
+        Selectivity.ONE,
+        Selectivity(limit / (nodes * nodes * PlannerDefaults.DEFAULT_MULTIPLIER.coefficient)),
+      )
     }
   }
 
-  test("limitSelectivityForRestOfQuery: reading procedure call in first horizon, tail with LIMIT") {
+  test("forAllParts: reading procedure call in first horizon, tail with LIMIT") {
     val limit = 10
     val nodes = 100
 
@@ -425,14 +449,15 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       )
 
       // WHEN
-      val result = LimitSelectivity.forRestOfQuery(query, context)
+      val result = LimitSelectivity.forAllParts(query, context)
 
       // THEN
-      result shouldBe Selectivity(limit / (nodes.toDouble * nodes.toDouble * PlannerDefaults.DEFAULT_MULTIPLIER.coefficient))
+      val expectedSelectivity = Selectivity(limit / (nodes.toDouble * nodes.toDouble * PlannerDefaults.DEFAULT_MULTIPLIER.coefficient))
+      result shouldBe List(expectedSelectivity, expectedSelectivity)
     }
   }
 
-  test("limitSelectivityForRestOfQuery: limit in first part, updating statement in tail") {
+  test("forAllParts: limit in first part, updating statement in tail") {
     val limit = 10
     val nodes = 100
 
@@ -453,14 +478,17 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       )
 
       // WHEN
-      val result = LimitSelectivity.forRestOfQuery(query, context)
+      val result = LimitSelectivity.forAllParts(query, context)
 
       // THEN
-      result shouldBe Selectivity(limit / (nodes.toDouble * nodes.toDouble))
+      result shouldBe List(
+        Selectivity(limit / (nodes.toDouble * nodes.toDouble)),
+        Selectivity.ONE,
+      )
     }
   }
 
-  test("limitSelectivityForRestOfQuery: aggregation in first horizon, tail with LIMIT") {
+  test("forAllParts: aggregation in first horizon, tail with LIMIT") {
     val limit = 10
     val nodes = 100
 
@@ -480,10 +508,13 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       )
 
       // WHEN
-      val result = LimitSelectivity.forRestOfQuery(query, context)
+      val result = LimitSelectivity.forAllParts(query, context)
 
       // THEN
-      result shouldBe Selectivity.ONE
+      result shouldBe List(
+        Selectivity.ONE,
+        Selectivity(limit / nodes.toDouble)
+      )
     }
   }
 }
