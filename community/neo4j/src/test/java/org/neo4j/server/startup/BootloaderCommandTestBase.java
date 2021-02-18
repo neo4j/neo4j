@@ -81,17 +81,31 @@ import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 abstract class BootloaderCommandTestBase
 {
     @Inject
-    TestDirectory testDirectory;
+    private TestDirectory testDirectory;
+
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     ByteArrayOutputStream err = new ByteArrayOutputStream();
     Path confFile;
+    Path home;
     Config config;
 
     @BeforeEach
     void setUp() throws Exception
     {
-        confFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME, Config.DEFAULT_CONFIG_DIR_NAME );
-        config = Config.defaults( GraphDatabaseSettings.neo4j_home, testDirectory.homePath() );
+        // Windows allows us to do any simple character except for '\', '/', '.', '?', and '*
+        // ` - _ [ ] { } $% ! ; @ =
+        // Windows also limits path length to 260
+        home = IS_OS_WINDOWS ? testDirectory.directory( "%s `~#&-_$env${HOME} $(exit 1)$$[[+1]]@! x;" ) : testDirectory.homePath();
+        confFile = home.resolve( Config.DEFAULT_CONFIG_DIR_NAME ).resolve( Config.DEFAULT_CONFIG_FILE_NAME );
+        if ( IS_OS_WINDOWS )
+        {
+            //make the path on windows a little bit shorter as it can be problematic on CI by placing prunsrv in the home directory
+            addConf( BootloaderSettings.windows_tools_directory, "" );
+        }
+        config = Config.newBuilder()
+                .fromFileNoThrow( confFile )
+                .set( GraphDatabaseSettings.neo4j_home, home )
+                .build();
     }
 
     @AfterEach
@@ -130,7 +144,7 @@ abstract class BootloaderCommandTestBase
     protected int execute( List<String> args, Map<String, String> env )
     {
         HashMap<String,String> environment = new HashMap<>( env );
-        environment.putIfAbsent( Bootloader.ENV_NEO4J_HOME, testDirectory.homePath().toString() );
+        environment.putIfAbsent( Bootloader.ENV_NEO4J_HOME, home.toString() );
 
         return createCommand( environment )
                 .setResourceBundle( bundleFromMap( environment ) )
@@ -139,7 +153,7 @@ abstract class BootloaderCommandTestBase
 
     private CommandLine createCommand( Map<String,String> environment )
     {
-        Function<String, String> envLookup = key ->
+        Function<String,String> envLookup = key ->
         {
             if ( environment.containsKey( key ) )
             {
@@ -148,7 +162,7 @@ abstract class BootloaderCommandTestBase
             return System.getenv( key );
         };
 
-        Function<String, String> propLookup = key ->
+        Function<String,String> propLookup = key ->
         {
             if ( environment.containsKey( key ) )
             {
@@ -157,7 +171,7 @@ abstract class BootloaderCommandTestBase
             return System.getProperty( key );
         };
 
-        return createCommand( new PrintStream( out ) , new PrintStream( err ), envLookup, propLookup );
+        return createCommand( new PrintStream( out ), new PrintStream( err ), envLookup, propLookup );
     }
 
     protected abstract CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup );

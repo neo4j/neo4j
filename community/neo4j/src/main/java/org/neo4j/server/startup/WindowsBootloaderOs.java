@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.time.Stopwatch;
@@ -49,6 +50,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
 {
     static final String PRUNSRV_AMD_64_EXE = "prunsrv-amd64.exe";
     static final String PRUNSRV_I_386_EXE = "prunsrv-i386.exe";
+    private static final int WINDOWS_PATH_MAX_LENGTH = 250;
 
     WindowsBootloaderOs( BootloaderContext ctx )
     {
@@ -89,8 +91,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
                 .with( arg( "--StartMethod", "start" ) )
                 .with( arg( "--ServiceUser", "LocalSystem" ) )
                 .with( arg( "--StartPath", home.toString() ) )
-                .with( arg( "--StartParams", "--config-dir=" + ctx.confDir() ) )
-                .with( arg( "++StartParams", "--home-dir=" + home.toString() ) )
+                .with( multiArg( "--StartParams", "--config-dir=" + ctx.confDir(), "--home-dir=" + home.toString() ) )
                 .with( arg( "--StopMode", "jvm" ) )
                 .with( arg( "--StopMethod", "stop" ) )
                 .with( arg( "--StopPath", home.toString() ) )
@@ -102,7 +103,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
                 .with( arg( "--StdError", logs.resolve( "service-error.log" ).toString() ) )
                 .with( arg( "--LogPrefix", "neo4j-service" ) )
                 .with( arg( "--Classpath", getClassPath() ) )
-                .with( arg( "--JvmOptions", massagedJvmOpts( jvmOpts ) ) )
+                .with( multiArg( "--JvmOptions", jvmOpts.toArray( new String[0] ) ) )
                 .with( arg( "--Startup", "auto" ) )
                 .with( arg( "--StopClass", ctx.entrypoint.getName() ) )
                 .with( arg( "--StartClass", ctx.entrypoint.getName() ) );
@@ -114,6 +115,31 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
         argList = includeMemoryOption( jvmOpts, argList, "-Xms", "--JvmMs", "Start" );
         argList = includeMemoryOption( jvmOpts, argList, "-Xmx", "--JvmMx", "Max" );
         runProcess( argList, behaviour().inheritIO() );
+    }
+
+    private String multiArg( String key, String... values )
+    {
+        // Procrun expects us to split each option with `;` if these characters are used inside the actual option values
+        // that will cause problems in parsing. To overcome the problem, we need to escape those characters by placing
+        // them inside single quotes.
+        List<String> argsEscaped = stream( values )
+                .peek( WindowsBootloaderOs::throwIfContainsSingleQuotes )
+                .map( opt -> opt.replace( ";", "';'" ) )
+                .map( opt -> opt.replace( "#", "'#'" ) )
+                .collect( Collectors.toList() );
+        return arg( key, join( argsEscaped, ';' ) );
+    }
+
+    private static void throwIfContainsSingleQuotes( String s )
+    {
+        // A limitation/bug in prunsrv not parsing ' characters correctly. It is better to throw exception than fail silently like before
+        if ( s.contains( "'" ) )
+        {
+            var firstIndex = s.indexOf( "'" );
+            var context = s.substring( Math.max( firstIndex - 25, 0 ), Math.min( s.length(), firstIndex + 25 ) );
+            throw new BootFailureException(
+                    format( "We are unable to support values that contain single quote marks ('). Single quotes found in value: %s", context ) );
+        }
     }
 
     private String serviceName()
@@ -191,7 +217,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         try ( PrintStream out = new PrintStream( buffer ) )
         {
-            ctx.processManager().run( asExternalCommand( List.of( command ), true ), behaviour().blocking().outputConsumer( out ).errorConsumer( out ) );
+            ctx.processManager().run( asPowershellScript( List.of( command ) ), behaviour().blocking().outputConsumer( out ).errorConsumer( out ) );
             return buffer.toString().split( format( "%n" ) );
         }
     }
@@ -248,27 +274,23 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
     private MutableList<String> baseServiceCommandArgList( String serviceCommand )
     {
         return Lists.mutable
-                .with( findPrunCommand().toString() )
+                .with( format( "& %s", escapeQuote( findPrunCommand().toString() ) ) )
                 .with( format( "//%s//%s", serviceCommand, serviceName() ) );
+    }
+
+    private List<String> asPowershellScript( List<String> command )
+    {
+        return asExternalCommand( List.of( String.join( " ", command ) ) );
     }
 
     private List<String> asExternalCommand( List<String> command )
     {
-        return asExternalCommand( command, false );
-    }
-
-    private List<String> asExternalCommand( List<String> command, boolean forcePowershell )
-    {
-        String commandsAsOne = format( "\"%s\"", join( command, " " ) );
-        // These two are equal in functionality except cmd.exe doesn't support large argument lists and will wait, whereas powershell will not
-        if ( forcePowershell || commandsAsOne.length() > 1800 )
-        {
-            return List.of( powershellCmd(), "-Command", commandsAsOne );
-        }
-        else
-        {
-            return List.of( "cmd.exe", "/S", "/C", commandsAsOne );
-        }
+        // We use powershell rather than cmd.exe because cmd.exe doesn't support large argument lists and will wait.
+        // Powershell tolerates much longer argument lists and will not wait
+        Stream<String> argsAsOne = command.size() < 2 ? Stream.empty() : Stream
+                .of( command.stream().skip( 1 ).map( WindowsBootloaderOs::escapeQuote ).collect( Collectors.joining( " " ) ) );
+        return Stream.concat( Stream.of( powershellCmd(), "-OutputFormat", "Text", "-ExecutionPolicy", "Bypass", "-Command", command.get( 0 ) ), argsAsOne )
+                     .collect( Collectors.toList() );
     }
 
     private String powershellCmd()
@@ -285,16 +307,14 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
         Path tools = ctx.config().get( windows_tools_directory );
         Path path = tools.resolve( prunSrvName );
         Preconditions.checkState( Files.exists( path ), "Couldn't find prunsrv file for interacting with the windows service subsystem %s", path );
-        return path;
-    }
 
-    private static String massagedJvmOpts( List<String> jvmOpts )
-    {
-        // Procrun expects us to split each option with `;` if these characters are used inside the actual option values
-        // that will cause problems in parsing. To overcome the problem, we need to escape those characters by placing
-        // them inside single quotes.
-        List<String> jvmOptsEscaped = jvmOpts.stream().map( opt -> opt.replace( ";", "';'" ) ).collect( Collectors.toList() );
-        return join( jvmOptsEscaped, ';' );
+        int length = path.toString().length();
+        if ( length >= WINDOWS_PATH_MAX_LENGTH )
+        {
+            ctx.err.printf( "WARNING: Path length over %s characters detected. The service may not work correctly because of limitations in" +
+                    " the Windows operating system when dealing with long file paths. Path:%s (length:%s)%n", WINDOWS_PATH_MAX_LENGTH, path, length );
+        }
+        return path;
     }
 
     private MutableList<String> includeMemoryOption( List<String> jvmOpts, MutableList<String> argList, String option, String serviceOption,
@@ -303,7 +323,7 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
         String memory = findOptionValue( jvmOpts, option );
         if ( memory != null )
         {
-            argList = argList.with( arg( serviceOption, null ) ).with( arg( memory, null ) );
+            argList = argList.with( arg( serviceOption, memory ) );
             ctx.out.println( "Use JVM " + description + " Memory of " + memory );
         }
         return argList;
@@ -321,8 +341,15 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
         return null;
     }
 
-    private String arg( String key, String value )
+    private static String arg( String key, String value )
     {
-        return value == null ? key : format( "%s='%s'", key, value );
+        return value == null ? key : format( "%s=%s", key, value );
+    }
+
+    private static String escapeQuote( String str )
+    {
+        // Using single quotes stops powershell from trying to evaluate the contents of the string
+        // replace pre-existing single quotes with double single quotes - this is the correct escape mechanism for powershell
+        return format( "'%s'", str.replaceAll( "'", "''" ) );
     }
 }

@@ -41,6 +41,7 @@ import java.util.function.Function;
 
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.util.Preconditions;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
@@ -60,21 +61,21 @@ abstract class Neo4jCommandTestBase extends BootloaderCommandTestBase
         {
             URL resource = getClass().getClassLoader().getResource( WindowsBootloaderOs.PRUNSRV_AMD_64_EXE );
             Preconditions.checkState( resource != null, "Couldn't find windows binaries for running boot loader" );
-            Path toolsPath;
+            Path toolsInResources;
             if ( resource.getProtocol().equals( "jar" ) )
             {
                 // We're running in a scenario where we're probably not in an IDE and we have the prunsrv binaries in a jar file,
                 // we have to unpack it from that jar and place it in our own equivalent location
-                toolsPath = Path.of( getClass().getClassLoader().getResource( "" ).toURI() ).toAbsolutePath();
-                copyDependentTestResourceFromJar( toolsPath, WindowsBootloaderOs.PRUNSRV_AMD_64_EXE );
-                copyDependentTestResourceFromJar( toolsPath, WindowsBootloaderOs.PRUNSRV_I_386_EXE );
+                toolsInResources = Path.of( getClass().getClassLoader().getResource( "" ).toURI() ).toAbsolutePath();
+                copyDependentTestResourceFromJar( toolsInResources, WindowsBootloaderOs.PRUNSRV_AMD_64_EXE );
+                copyDependentTestResourceFromJar( toolsInResources, WindowsBootloaderOs.PRUNSRV_I_386_EXE );
             }
             else
             {
                 // We're running in an IDE or we're running the component which has the prunsrv binaries test resources directly
-                toolsPath = Path.of( resource.toURI() ).toAbsolutePath().getParent();
+                toolsInResources = Path.of( resource.toURI() ).toAbsolutePath().getParent();
             }
-            addConf( BootloaderSettings.windows_tools_directory, toolsPath.toString().replace( '\\', '/' ) );
+            FileUtils.copyDirectory( toolsInResources, config.get( BootloaderSettings.windows_tools_directory ) );
         }
     }
 

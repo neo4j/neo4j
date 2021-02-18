@@ -42,14 +42,17 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class Neo4jCommandIT extends Neo4jCommandTestBase
 {
+    private static final int MAX_HEAP_MB = 100;
+    private static final int INITIAL_HEAP_MB = 10;
+
     @Override
     @BeforeEach
     public void setUp() throws Exception
     {
         super.setUp();
         //VM
-        addConf( BootloaderSettings.max_heap_size, "100m" );
-        addConf( BootloaderSettings.initial_heap_size, "10m" );
+        addConf( BootloaderSettings.max_heap_size, String.format( "%dm", MAX_HEAP_MB ) );
+        addConf( BootloaderSettings.initial_heap_size, String.format( "%dm", INITIAL_HEAP_MB ) );
         //DBMS
         addConf( GraphDatabaseSettings.pagecache_memory, "8m" );
         addConf( GraphDatabaseSettings.logical_log_rotation_threshold, "128k" );
@@ -89,7 +92,10 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
 
     private void shouldBeAbleToStartAndStopRealServer()
     {
-        assertThat( execute( List.of( "start" ), Map.of( Bootloader.ENV_NEO4J_START_WAIT, "3" ) ) ).isEqualTo( 0 );
+        int startSig = execute( List.of( "start" ), Map.of( Bootloader.ENV_NEO4J_START_WAIT, "3" ) );
+        assertThat( startSig ).isEqualTo( 0 );
+        assertEventually( this::getDebugLogLines,
+                          s -> s.contains( String.format( "VM Arguments: [-Xms%dk, -Xmx%dk", INITIAL_HEAP_MB * 1024, MAX_HEAP_MB * 1024 ) ), 5, MINUTES );
         assertEventually( this::getDebugLogLines, s -> s.contains( getVersion() + "NeoWebServer] ========" ), 5, MINUTES );
         assertEventually( this::getUserLogLines, s -> s.contains( "Remote interface available at" ), 5, MINUTES );
         assertThat( execute( "stop" ) ).isEqualTo( 0 );
