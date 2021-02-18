@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with LogicalPlanConstructionTestSupport {
@@ -642,12 +643,24 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
     rewritten shouldBe plan
   }
 
-  test("should not pushdown read if property is available from index") {
+  test("should not pushdown read if property is available from node index") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
       .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .expand("(n)-->(m)").withEffectiveCardinality(235)
       .nodeIndexOperator("n:L(prop > 100)", getValue = CanGetValue).withEffectiveCardinality(90)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown read if property is available from relationship index") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "o")
+      .filter("r.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .expand("(n)-->(o)").withEffectiveCardinality(235)
+      .relationshipIndexOperator("(n)-[r:R(prop > 100)]->(m)", getValue = CanGetValue).withEffectiveCardinality(90)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
@@ -723,6 +736,19 @@ class PushdownPropertyReadsTest extends CypherFunSuite with PlanMatchHelp with L
       .projection("n AS mysteryNode").withEffectiveCardinality(235).newVar("mysteryNode", CTNode)
       .expand("(n)-->(m)").withEffectiveCardinality(235)
       .nodeIndexOperator("n:L(prop > 100)", getValue = CanGetValue).withEffectiveCardinality(90)
+
+    val plan = planBuilder.build()
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
+  }
+
+  test("should not pushdown read if property is available from relationship index, but renamed") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n", "m")
+      .filter("mysteryRel.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .projection("r AS mysteryRel").withEffectiveCardinality(235).newVar("mysteryRel", CTRelationship)
+      .expand("(n)-->(0)").withEffectiveCardinality(235)
+      .relationshipIndexOperator("(n)-[r:R(prop > 100)]->(m)", getValue = CanGetValue).withEffectiveCardinality(90)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
