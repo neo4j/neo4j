@@ -160,24 +160,25 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // DROP USER foo [IF EXISTS]
       case c@DropUser(userName, ifExists) =>
         val admin = plans.AssertNotCurrentUser(plans.AssertDbmsAdmin(DropUserAction), userName, "delete", "Deleting yourself is not allowed")
-        val source = if (ifExists) plans.DoNothingIfNotExists(admin, "User", userName) else plans.EnsureNodeExists(admin, "User", userName)
+        val source = if (ifExists) plans.DoNothingIfNotExists(admin, "User", userName, "delete") else plans.EnsureNodeExists(admin, "User", userName)
         Some(plans.LogSystemCommand(plans.DropUser(source, userName), prettifier.asString(c)))
 
       // ALTER USER foo
-      case c@AlterUser(userName, isEncryptedPassword, initialPassword, userOptions) =>
+      case c@AlterUser(userName, isEncryptedPassword, initialPassword, userOptions, ifExists) =>
         val adminActions = Vector((initialPassword, SetPasswordsAction),
                                (userOptions.requirePasswordChange, SetPasswordsAction),
                                (userOptions.suspended, SetUserStatusAction),
                                (userOptions.defaultDatabase, SetUserDefaultDatabaseAction)).collect{case (Some(_), action) => action}.distinct
         if (adminActions.isEmpty) throw new IllegalStateException("Alter user has nothing to do")
 
-       val admin = plans.AssertDbmsAdmin(None, adminActions)
+        val admin = plans.AssertDbmsAdmin(None, adminActions)
 
         val assertionSubPlan =
           if(userOptions.suspended.isDefined) plans.AssertNotCurrentUser(admin, userName, "alter", "Changing your own activation status is not allowed")
           else admin
+        val ifExistsSubPlan = if (ifExists) plans.DoNothingIfNotExists(assertionSubPlan, "User", userName, "alter") else assertionSubPlan
         Some(plans.LogSystemCommand(
-          plans.AlterUser(assertionSubPlan, userName, isEncryptedPassword, initialPassword, userOptions.requirePasswordChange, userOptions.suspended, userOptions.defaultDatabase),
+          plans.AlterUser(ifExistsSubPlan, userName, isEncryptedPassword, initialPassword, userOptions.requirePasswordChange, userOptions.suspended, userOptions.defaultDatabase),
           prettifier.asString(c)))
 
       // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
@@ -215,7 +216,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // DROP ROLE foo [IF EXISTS]
       case c@DropRole(roleName, ifExists) =>
         val admin = plans.AssertDbmsAdmin(DropRoleAction)
-        val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Role", roleName) else plans.EnsureNodeExists(admin, "Role", roleName)
+        val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Role", roleName, "delete") else plans.EnsureNodeExists(admin, "Role", roleName)
         Some(plans.LogSystemCommand(plans.DropRole(source, roleName), prettifier.asString(c)))
 
       // GRANT roles TO users
@@ -384,7 +385,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // DROP DATABASE foo [IF EXISTS] [DESTROY | DUMP DATA]
       case DropDatabase(dbName, ifExists, additionalAction, waitUntilComplete) =>
         val checkAllowed = plans.AssertDbmsAdmin(plans.AssertNotBlocked(DropDatabaseAction),DropDatabaseAction)
-        val source = if (ifExists) plans.DoNothingIfNotExists(checkAllowed, "Database", dbName, s => new NormalizedDatabaseName(s).name()) else checkAllowed
+        val source = if (ifExists) plans.DoNothingIfNotExists(checkAllowed, "Database", dbName, "delete", s => new NormalizedDatabaseName(s).name()) else checkAllowed
         Some(wrapInWait(plans.DropDatabase(plans.EnsureValidNonSystemDatabase(source, dbName, "delete"), dbName, additionalAction), dbName, waitUntilComplete))
 
       // START DATABASE foo

@@ -320,8 +320,9 @@ case class Prettifier(
         if (ifExists) s"${x.name} ${Prettifier.escapeName(userName)} IF EXISTS"
         else s"${x.name} ${Prettifier.escapeName(userName)}"
 
-      case x @ AlterUser(userName, isEncryptedPassword, initialPassword, userOptions) =>
+      case x @ AlterUser(userName, isEncryptedPassword, initialPassword, userOptions, ifExists) =>
         val userNameString = Prettifier.escapeName(userName)
+        val ifExistsString = if (ifExists) " IF EXISTS" else ""
         val passwordString = initialPassword.map(" " + expr.escapePassword(_)).getOrElse("")
         val passwordModeString = if (userOptions.requirePasswordChange.isDefined)
           s" CHANGE ${if (!userOptions.requirePasswordChange.get) "NOT " else ""}REQUIRED"
@@ -330,7 +331,7 @@ case class Prettifier(
         val setPasswordString = if(isEncryptedPassword.getOrElse(false)) "SET ENCRYPTED PASSWORD" else "SET PASSWORD"
         val passwordPrefix = if (passwordString.nonEmpty || passwordModeString.nonEmpty) s" $setPasswordString" else ""
         val statusString = if (userOptions.suspended.isDefined) s" SET STATUS ${if (userOptions.suspended.get) "SUSPENDED" else "ACTIVE"}" else ""
-        s"${x.name} $userNameString$passwordPrefix$passwordString$passwordModeString$statusString"
+        s"${x.name} $userNameString$ifExistsString$passwordPrefix$passwordString$passwordModeString$statusString"
 
       case x @ SetOwnPassword(newPassword, currentPassword) =>
         s"${x.name} FROM ${expr.escapePassword(currentPassword)} TO ${expr.escapePassword(newPassword)}"

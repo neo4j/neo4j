@@ -1108,6 +1108,34 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     assertFailure(s"ALTER USER $defaultUsername SET PASSWORD 'xxx' SET STATUS SUSPENDED", s"Failed to alter the specified user '$defaultUsername': 'SET STATUS' is not available in community edition.")
   }
 
+  test("should alter existing user using if exists") {
+    // GIVEN
+    prepareUser()
+
+    // WHEN
+    execute(s"ALTER USER $username IF EXISTS SET PASSWORD '$newPassword'")
+
+    // THEN
+    testUserLogin(username, newPassword, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+    testUserLogin(username, password, AuthenticationResult.FAILURE)
+  }
+
+  test("should do nothing when altering non-existing user using if exists") {
+    // WHEN
+    execute("ALTER USER foo IF EXISTS SET PASSWORD CHANGE NOT REQUIRED")
+
+    // THEN
+    execute("SHOW USERS").toSet should be(Set(defaultUser))
+  }
+
+  test("should do nothing when altering an invalid (non-existing) user using if exists") {
+    // WHEN
+    execute("ALTER USER `:foo` IF EXISTS SET PASSWORD CHANGE REQUIRED")
+
+    // THEN
+    execute("SHOW USERS").toSet should be(Set(defaultUser))
+  }
+
   // Tests for changing own password
 
   test("should change own password") {

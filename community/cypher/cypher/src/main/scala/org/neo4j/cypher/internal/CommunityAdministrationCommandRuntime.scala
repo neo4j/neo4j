@@ -320,7 +320,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
                      |$returnClause""".stripMargin
       SystemCommandExecutionPlan(scope.showCommandName, normalExecutionEngine, query, params, parameterGenerator = paramGenerator, parameterConverter = paramConverter)
 
-    case DoNothingIfNotExists(source, label, name, valueMapper) => context =>
+    case DoNothingIfNotExists(source, label, name, operation, valueMapper) => context =>
       val nameFields = getNameFields("name", name, valueMapper = valueMapper)
       UpdatingSystemCommandExecutionPlan("DoNothingIfNotExists", normalExecutionEngine,
         s"""
@@ -331,8 +331,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
           .ignoreNoResult()
           .handleError {
             case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
-              new DatabaseAdministrationOnFollowerException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}': $followerError", error)
-            case (error, p) => new IllegalStateException(s"Failed to delete the specified ${label.toLowerCase} '${runtimeValue(name, p)}'.", error) // should not get here but need a default case
+              new DatabaseAdministrationOnFollowerException(s"Failed to $operation the specified ${label.toLowerCase} '${runtimeValue(name, p)}': $followerError", error)
+            case (error, p) => new IllegalStateException(s"Failed to $operation the specified ${label.toLowerCase} '${runtimeValue(name, p)}'.", error) // should not get here but need a default case
           },
         Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context)),
         parameterConverter = nameFields.nameConverter

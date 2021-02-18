@@ -106,13 +106,19 @@ trait AdministrationCommand extends Parser
   }
 
   def AlterUser: Rule1[ast.AlterUser] = rule("ALTER USER") {
-    // ALTER USER username SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE}]*
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ SetPassword ~~ optional(UserOptions)) ~~>>
-      ((userName, isEncryptedPassword, initialPassword, userOptions) => ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), userOptions.getOrElse(ast.UserOptions(None, None, None)))) |
+    // ALTER USER username [IF EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE}]*
+    group(AlterUserStart ~~ SetPassword ~~ optional(UserOptions)) ~~>>
+      ((userName, ifExists, isEncryptedPassword, initialPassword, userOptions) => ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), userOptions.getOrElse(ast.UserOptions(None, None, None)), ifExists)) |
     //
-    // ALTER USER username [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE}]+
-    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ UserOptionsWithSetPart) ~~>>
-      ((userName, userOptions) => ast.AlterUser(userName, None, None, userOptions))
+    // ALTER USER username [IF EXISTS] [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE}]+
+    group(AlterUserStart ~~ UserOptionsWithSetPart) ~~>>
+      ((userName, ifExists, userOptions) => ast.AlterUser(userName, None, None, userOptions, ifExists))
+  }
+
+  def AlterUserStart: Rule2[Either[String, Parameter], Boolean] = {
+    // returns: userName, IfExists
+    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~~ keyword("IF EXISTS") ~> (_ => true)) |
+    group(keyword("ALTER USER") ~~ SymbolicNameOrStringParameter ~> (_ => false))
   }
 
   def SetOwnPassword: Rule1[ast.SetOwnPassword] = rule("ALTER CURRENT USER SET PASSWORD") {

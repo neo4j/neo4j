@@ -214,7 +214,8 @@ final case class DropUser(userName: Either[String, Parameter], ifExists: Boolean
 final case class AlterUser(userName: Either[String, Parameter],
                            isEncryptedPassword: Option[Boolean],
                            initialPassword: Option[Expression],
-                           userOptions: UserOptions)(val position: InputPosition) extends WriteAdministrationCommand {
+                           userOptions: UserOptions,
+                           ifExists: Boolean)(val position: InputPosition) extends WriteAdministrationCommand {
   assert(initialPassword.isDefined || userOptions.requirePasswordChange.isDefined || userOptions.suspended.isDefined || userOptions.defaultDatabase.isDefined)
 
   override def name = "ALTER USER"

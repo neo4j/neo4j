@@ -1308,11 +1308,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _alterUser: Gen[AlterUser] = for {
     userName              <- _nameAsEither
+    ifExists              <- boolean
     password              <- option(_password)
     requirePasswordChange <- option(boolean)
     isEncryptedPassword   <- if (password.isEmpty) const(None) else some(boolean)
     suspended             <- if (password.isEmpty && requirePasswordChange.isEmpty) some(boolean) else option(boolean) // All three are not allowed to be None
-  } yield AlterUser(userName, isEncryptedPassword, password, UserOptions(requirePasswordChange, suspended, None))(pos)
+  } yield AlterUser(userName, isEncryptedPassword, password, UserOptions(requirePasswordChange, suspended, None), ifExists)(pos)
 
   def _setOwnPassword: Gen[SetOwnPassword] = for {
     newPassword <- _password

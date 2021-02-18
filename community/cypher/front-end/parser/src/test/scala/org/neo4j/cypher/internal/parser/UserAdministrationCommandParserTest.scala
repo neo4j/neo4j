@@ -515,115 +515,127 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   //  Altering user
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password'") {
-    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(None, None, None)))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(None, None, None), ifExists = false))
   }
 
   test("CATALOG ALTER USER $foo SET PASSWORD 'password'") {
-    yields(ast.AlterUser(paramFoo, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(None, None, None)))
+    yields(ast.AlterUser(paramFoo, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(None, None, None), ifExists = false))
   }
 
   test("CATALOG ALTER USER foo SET PLAINTEXT PASSWORD 'password'") {
-    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(None, None, None)))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(None, None, None), ifExists = false))
   }
 
   test("CATALOG ALTER USER foo SET PLAINTEXT PASSWORD $password") {
-    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), ast.UserOptions(None, None, None)))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), ast.UserOptions(None, None, None), ifExists = false))
   }
 
   test("ALTER USER `` SET PASSWORD 'password'") {
-    yields(ast.AlterUser(literalEmpty, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(None, None, None)))
+    yields(ast.AlterUser(literalEmpty, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(None, None, None), ifExists = false))
   }
 
   test("ALTER USER `f:oo` SET PASSWORD 'password'") {
-    yields(ast.AlterUser(literalFColonOo, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(None, None, None)))
+    yields(ast.AlterUser(literalFColonOo, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(None, None, None), ifExists = false))
   }
 
   test("ALTER USER foo SET PASSWORD ''") {
-    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(passwordEmpty), ast.UserOptions(None, None, None)))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(passwordEmpty), ast.UserOptions(None, None, None), ifExists = false))
   }
 
   test("ALTER USER foo SET PASSWORD $password") {
-    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), ast.UserOptions(None, None, None)))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), ast.UserOptions(None, None, None), ifExists = false))
+  }
+
+  test("ALTER USER foo IF EXISTS SET PASSWORD $password") {
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), ast.UserOptions(None, None, None), ifExists = true))
   }
 
   test("CATALOG ALTER USER foo SET ENCRYPTED Password $password") {
-    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(true), Some(paramPassword), ast.UserOptions(None, None, None)))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(true), Some(paramPassword), ast.UserOptions(None, None, None), ifExists = false))
   }
 
   test("CATALOG ALTER USER foo SET ENCRYPTED PASSWORD 'password'") {
-    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(true), Some(password), ast.UserOptions(None, None, None)))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(true), Some(password), ast.UserOptions(None, None, None), ifExists = false))
   }
 
   test("CATALOG ALTER USER $foo SET ENCRYPTED PASSWORD 'password'") {
-    yields(ast.AlterUser(paramFoo, isEncryptedPassword = Some(true), Some(password), ast.UserOptions(None, None, None)))
+    yields(ast.AlterUser(paramFoo, isEncryptedPassword = Some(true), Some(password), ast.UserOptions(None, None, None), ifExists = false))
   }
 
   test("ALTER USER `` SET ENCRYPTED PASSWORD 'password'") {
-    yields(ast.AlterUser(literalEmpty, isEncryptedPassword = Some(true), Some(password), ast.UserOptions(None, None, None)))
+    yields(ast.AlterUser(literalEmpty, isEncryptedPassword = Some(true), Some(password), ast.UserOptions(None, None, None), ifExists = false))
   }
 
   test("CATALOG ALTER USER foo SET ENCRYPTED PASSWORD '1,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab'") {
-    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(true), Some(pw("1,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab")), ast.UserOptions(None, None, None)))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(true), Some(pw("1,04773b8510aea96ca2085cb81764b0a2,75f4201d047191c17c5e236311b7c4d77e36877503fe60b1ca6d4016160782ab")), ast.UserOptions(None, None, None), ifExists = false))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD CHANGE REQUIRED") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(requirePasswordChange = Some(true), None, None)))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(requirePasswordChange = Some(true), None, None), ifExists = false))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(requirePasswordChange = Some(false), None, None)))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(requirePasswordChange = Some(false), None, None), ifExists = false))
+  }
+
+  test("ALTER USER foo IF EXISTS SET PASSWORD CHANGE NOT REQUIRED") {
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(requirePasswordChange = Some(false), None, None), ifExists = true))
   }
 
   test("ALTER USER foo SET STATUS SUSPENDED") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, suspended = Some(true), None)))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, suspended = Some(true), None), ifExists = false))
   }
 
   test("ALTER USER foo SET STATUS ACTIVE") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, suspended = Some(false), None)))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, suspended = Some(false), None), ifExists = false))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password' CHANGE REQUIRED") {
-    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(requirePasswordChange = Some(true), None, None)))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(requirePasswordChange = Some(true), None, None), ifExists = false))
   }
 
   test("ALTER USER foo SET PASSWORD $password SET PASSWORD CHANGE NOT REQUIRED") {
-    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), ast.UserOptions(requirePasswordChange = Some(false), None, None)))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), ast.UserOptions(requirePasswordChange = Some(false), None, None), ifExists = false))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password' SET STATUS ACTIVE") {
-    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(None, suspended = Some(false), None)))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(None, suspended = Some(false), None), ifExists = false))
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(requirePasswordChange = Some(false), suspended = Some(false), None)))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(requirePasswordChange = Some(false), suspended = Some(false), None), ifExists = false))
   }
 
   test("ALTER USER foo SET PASSWORD $password SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {
-    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), ast.UserOptions(requirePasswordChange = Some(false), suspended = Some(true), None)))
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(paramPassword), ast.UserOptions(requirePasswordChange = Some(false), suspended = Some(true), None), ifExists = false))
+  }
+
+  test("ALTER USER foo IF EXISTS SET PASSWORD 'password' SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED") {
+    yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(requirePasswordChange = Some(false), suspended = Some(true), None), ifExists = true))
   }
 
   ignore("ALTER USER foo SET DEFAULT DATABASE db1") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(Left("db1")))))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(Left("db1"))), ifExists = false))
   }
 
   ignore("ALTER USER foo SET DEFAULT DATABASE $db") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(paramDb))))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(paramDb)), ifExists = false))
   }
 
   ignore("ALTER USER foo SET PASSWORD CHANGE REQUIRED SET DEFAULT DATABASE db1") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(requirePasswordChange = Some(true), suspended = None, Some(Left("db1")))))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(requirePasswordChange = Some(true), suspended = None, Some(Left("db1"))), ifExists = false))
   }
 
   ignore("ALTER USER foo SET password 'password' SET DEFAULT DATABASE db1") {
-    yields(ast.AlterUser(literalFoo, Some(false), Some(password), ast.UserOptions(None, None, Some(Left("db1")))))
+    yields(ast.AlterUser(literalFoo, Some(false), Some(password), ast.UserOptions(None, None, Some(Left("db1"))), ifExists = false))
   }
 
   ignore("ALTER USER foo SET password 'password' SET PASSWORD CHANGE NOT REQUIRED SET DEFAULT DAtabase $db") {
-    yields(ast.AlterUser(literalFoo, Some(false), Some(password), ast.UserOptions(requirePasswordChange = Some(false), None, Some(paramDb))))
+    yields(ast.AlterUser(literalFoo, Some(false), Some(password), ast.UserOptions(requirePasswordChange = Some(false), None, Some(paramDb)), ifExists = false))
   }
 
   ignore("ALTER USER foo SET DEFAULT DATABASE `#dfkfop!`") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(Left("#dfkfop!")))))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(Left("#dfkfop!"))), ifExists = false))
   }
 
   test("ALTER user command finds password literal at correct offset") {
@@ -655,7 +667,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   ).foreach {
     case (first: String, second: String, third: String) =>
       ignore(s"ALTER USER foo $first $second $third") {
-        yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(Some(true), Some(false), Some(Left("db1")))))
+        yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(Some(true), Some(false), Some(Left("db1"))), ifExists = false))
       }
   }
 
@@ -728,6 +740,10 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CATALOG ALTER USER foo SET PASSWORD 'password' SET STATUS IMAGINARY") {
+    failsToParse
+  }
+
+  test("ALTER USER foo IF NOT EXISTS SET PASSWORD 'password'") {
     failsToParse
   }
 

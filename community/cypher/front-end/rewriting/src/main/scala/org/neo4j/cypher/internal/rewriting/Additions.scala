@@ -100,11 +100,11 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Existential subquery is not supported in this Cypher version.", e.position)
 
       // SHOW [ALL|BTREE] INDEX[ES] [BRIEF|VERBOSE[OUTPUT]]
-      case s@ShowIndexes(_, _, _) =>
+      case s: ShowIndexes =>
         throw cypherExceptionFactory.syntaxException("SHOW INDEXES is not supported in this Cypher version.", s.position)
 
       // SHOW [ALL|UNIQUE|NODE EXIST[S]|RELATIONSHIP EXIST[S]|EXIST[S]|NODE KEY] CONSTRAINT[S] [BRIEF|VERBOSE[OUTPUT]]
-      case s@ShowConstraints(_, _, _) =>
+      case s: ShowConstraints =>
         throw cypherExceptionFactory.syntaxException("SHOW CONSTRAINTS is not supported in this Cypher version.", s.position)
 
       // Administration commands against system database are not supported at all in CYPHER 3.5.
@@ -125,14 +125,17 @@ object Additions {
       case c: CreateRelationshipPropertyExistenceConstraint if !c.oldSyntax =>
         throw cypherExceptionFactory.syntaxException("Creating relationship existence constraint using `IS NOT NULL` is not supported in this Cypher version.", c.position)
 
-      case c@CreateUser(_, _, _, userOptions, _) if userOptions.defaultDatabase.isDefined =>
+      case c: CreateUser if c.userOptions.defaultDatabase.isDefined =>
         throw cypherExceptionFactory.syntaxException("Creating a user with a default database is not supported in this Cypher version.", c.position)
 
-      case c@AlterUser(_, _, _, userOptions) if userOptions.defaultDatabase.isDefined =>
+      case c: AlterUser if c.userOptions.defaultDatabase.isDefined =>
         throw cypherExceptionFactory.syntaxException("Updating a user with a default database is not supported in this Cypher version.", c.position)
 
       case c: UnresolvedCall if c.yieldAll =>
         throw cypherExceptionFactory.syntaxException("Procedure call using `YIELD *` is not supported in this Cypher version.", c.position)
+
+      case c: AlterUser if c.ifExists =>
+        throw cypherExceptionFactory.syntaxException("Updating a user with `IF EXISTS` is not supported in this Cypher version.", c.position)
     }
   }
 

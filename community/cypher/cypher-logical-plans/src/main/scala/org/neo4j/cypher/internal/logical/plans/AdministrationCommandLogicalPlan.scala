@@ -66,7 +66,7 @@ case class ShowCurrentUser(override val returnColumns: List[String], yields: Opt
 case class CreateUser(source: SecurityAdministrationLogicalPlan, userName: Either[String, Parameter], isEncryptedPassword: Boolean, initialPassword: Expression,
                       requirePasswordChange: Boolean, suspended: Option[Boolean], defaultDatabase: Option[Either[String, Parameter]])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class DropUser(source: SecurityAdministrationLogicalPlan, userName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class AlterUser(source: PrivilegePlan, userName: Either[String, Parameter], isEncryptedPassword: Option[Boolean], initialPassword: Option[Expression],
+case class AlterUser(source: SecurityAdministrationLogicalPlan, userName: Either[String, Parameter], isEncryptedPassword: Option[Boolean], initialPassword: Option[Expression],
                      requirePasswordChange: Option[Boolean], suspended: Option[Boolean], defaultDatabase: Option[Either[String, Parameter]])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class SetOwnPassword(newPassword: Expression, currentPassword: Expression)
                          (implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan
@@ -126,7 +126,7 @@ case class ShowPrivilegeCommands(source: Option[PrivilegePlan],
                                  returns: Option[Return])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(source)
 
 case class LogSystemCommand(source: AdministrationCommandLogicalPlan, command: String)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class DoNothingIfNotExists(source: PrivilegePlan, label: String, name: Either[String, Parameter], valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class DoNothingIfNotExists(source: PrivilegePlan, label: String, name: Either[String, Parameter], operation: String, valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class DoNothingIfExists(source: PrivilegePlan, label: String, name: Either[String, Parameter], valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class EnsureNodeExists(source: PrivilegePlan, label: String, name: Either[String, Parameter], valueMapper: String => String = s => s)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 

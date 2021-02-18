@@ -1230,7 +1230,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(LogSystemCommand(privLhsLP, "command1"), 1.0), adminPlanDescription)
 
-    assertGood(attach(DoNothingIfNotExists(privLhsLP, "User", util.Left("user1")), 1.0), adminPlanDescription)
+    assertGood(attach(DoNothingIfNotExists(privLhsLP, "User", util.Left("user1"), "delete"), 1.0), adminPlanDescription)
 
     assertGood(attach(DoNothingIfExists(privLhsLP, "User", util.Left("user1")), 1.0), adminPlanDescription)
 

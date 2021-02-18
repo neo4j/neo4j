@@ -576,8 +576,8 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "alter user abc set password $password" ->
       "ALTER USER abc SET PASSWORD $password",
 
-    "alter user `ab%$c` set password 'foo'" ->
-      "ALTER USER `ab%$c` SET PASSWORD '******'",
+    "alter user `ab%$c` if exists set password 'foo'" ->
+      "ALTER USER `ab%$c` IF EXISTS SET PASSWORD '******'",
 
     "alter user abc set status active" ->
       "ALTER USER abc SET STATUS ACTIVE",
@@ -594,8 +594,8 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "alter user abc set password change not required set status suspended" ->
       "ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS SUSPENDED",
 
-    "alter user abc set password change not required set status active" ->
-      "ALTER USER abc SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE",
+    "alter user abc if EXiSTS set password change not required set status active" ->
+      "ALTER USER abc IF EXISTS SET PASSWORD CHANGE NOT REQUIRED SET STATUS ACTIVE",
 
     "alter user abc set encrypted password 'foo'" ->
       "ALTER USER abc SET ENCRYPTED PASSWORD '******'",
