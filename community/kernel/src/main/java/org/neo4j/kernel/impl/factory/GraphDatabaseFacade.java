@@ -988,7 +988,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         }
         catch ( TokenNotFoundException e )
         {
-            throw new IllegalStateException( "Kernel API returned non-existent relationship type: " + type );
+            throw new IllegalStateException( "Kernel API returned non-existent relationship type: " + type, e );
         }
     }
 

@@ -26,9 +26,9 @@ import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -70,13 +70,14 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
         {
             p = properties();
         }
-        catch ( NotFoundException e )
+        catch ( ReadAndDeleteTransactionConflictException e )
         {
+            if ( !e.wasDeletedInThisTransaction() )
+            {
+                throw e;
+            }
+            // If it isn't a transient error then the relationship was deleted in the current transaction and we should write an 'empty' relationship.
             p = VirtualValues.EMPTY_MAP;
-        }
-        catch ( IllegalStateException e )
-        {
-            throw new ReadAndDeleteTransactionConflictException( RelationshipProxy.isDeletedInCurrentTransaction( relationship ), e );
         }
 
         if ( id() < 0 )
@@ -149,13 +150,20 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
         TextValue t = type;
         if ( t == null )
         {
-            synchronized ( this )
+            try
             {
-                t = type;
-                if ( t == null )
+                synchronized ( this )
                 {
-                    t = type = Values.stringValue( relationship.getType().name() );
+                    t = type;
+                    if ( t == null )
+                    {
+                        t = type = Values.stringValue( relationship.getType().name() );
+                    }
                 }
+            }
+            catch ( IllegalStateException e )
+            {
+                throw new ReadAndDeleteTransactionConflictException( RelationshipProxy.isDeletedInCurrentTransaction( relationship ), e );
             }
         }
         return t;
@@ -167,13 +175,20 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
         MapValue m = properties;
         if ( m == null )
         {
-            synchronized ( this )
+            try
             {
-                m = properties;
-                if ( m == null )
+                synchronized ( this )
                 {
-                    m = properties = ValueUtils.asMapValue( relationship.getAllProperties() );
+                    m = properties;
+                    if ( m == null )
+                    {
+                        m = properties = ValueUtils.asMapValue( relationship.getAllProperties() );
+                    }
                 }
+            }
+            catch ( NotFoundException | IllegalStateException e )
+            {
+                throw new ReadAndDeleteTransactionConflictException( RelationshipProxy.isDeletedInCurrentTransaction( relationship ), e );
             }
         }
         return m;

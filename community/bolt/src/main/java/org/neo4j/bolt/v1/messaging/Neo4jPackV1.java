@@ -36,8 +36,8 @@ import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.packstream.PackType;
 import org.neo4j.collection.primitive.PrimitiveLongIntKeyValueArray;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.util.ReadAndDeleteTransactionConflictException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -295,14 +295,18 @@ public class Neo4jPackV1 implements Neo4jPack
                         packStructHeader( UNBOUND_RELATIONSHIP_SIZE, UNBOUND_RELATIONSHIP );
                         pack( edge.id() );
                         edge.type().writeTo( this );
-                        //note if relationship has been deleted we might throw here, if deleted
+                        //note if relationship has been deleted we might throw here, if deleted in this transaction
                         //we just return empty properties map.
                         try
                         {
                             edge.properties().writeTo( this );
                         }
-                        catch ( NotFoundException ignore )
+                        catch ( ReadAndDeleteTransactionConflictException e )
                         {
+                            if ( !e.wasDeletedInThisTransaction() )
+                            {
+                                throw e;
+                            }
                             EMPTY_MAP.writeTo( this );
                         }
                     }
