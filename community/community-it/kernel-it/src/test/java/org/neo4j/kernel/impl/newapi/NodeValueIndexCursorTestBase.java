@@ -69,6 +69,8 @@ import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
+import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSupport>
@@ -1457,7 +1459,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
 
         // then
         try ( KernelTransaction tx = beginTransaction();
-                NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             tx.dataRead().nodeIndexDistinctValues( index, node, true );
             long totalCount = 0;
@@ -1511,6 +1513,52 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
                 assertEquals( expected.remove( node.propertyValue( 0 ) ).intValue(), toIntExact( node.nodeReference() ) );
             }
             assertTrue( expected.isEmpty() );
+        }
+    }
+
+    @Test
+    void shouldHandleOrderedExactSeekWithNeedsValuesTrue() throws Exception
+    {
+        // given
+        int prop = token.propertyKey( "prop" );
+        IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( NODE_PROP_INDEX_NAME ) );
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.ASCENDING, true, IndexQuery.exact( prop, 5 ) );
+
+            // then
+            assertTrue( node.next() );
+            assertTrue( node.hasValue() );
+            assertEquals( node.propertyValue( 0 ), intValue( 5 ) );
+            assertFalse( node.next() );
+        }
+    }
+
+    @Test
+    void shouldHandleOrderedExactSeekWithNeedsValuesTrueWithTxChanges() throws Exception
+    {
+        // given
+        int prop = token.propertyKey( "prop" );
+        IndexReadSession index = tx.dataRead().indexReadSession( tx.schemaRead().indexGetForName( NODE_PROP_INDEX_NAME ) );
+        int label = token.nodeLabel( "Node" );
+        try ( KernelTransaction tx = beginTransaction();
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            // when
+            long newNode = tx.dataWrite().nodeCreateWithLabels( new int[]{label} );
+            tx.dataWrite().nodeSetProperty( newNode, prop, intValue( 5 ) );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.ASCENDING, true, IndexQuery.exact( prop, 5 ) );
+
+            // then
+            assertTrue( node.next() );
+            assertTrue( node.hasValue() );
+            assertEquals( node.propertyValue( 0 ), intValue( 5 ) );
+            assertTrue( node.next() );
+            assertTrue( node.hasValue() );
+            assertEquals( node.propertyValue( 0 ), intValue( 5 ) );
+
+            assertFalse( node.next() );
         }
     }
 
