@@ -55,6 +55,7 @@ import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForSu
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForRangeSeek;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForScan;
+import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForSeek;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains;
 
 class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
@@ -515,9 +516,18 @@ class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     {
         TransactionState txState = read.txState();
 
-        AddedAndRemoved changes = indexUpdatesForSeek( txState, descriptor, ValueTuple.of( values ) );
-        added = changes.getAdded().longIterator();
-        removed = removed( txState, changes.getRemoved() );
+        if ( needsValues )
+        {
+            AddedWithValuesAndRemoved changes = indexUpdatesWithValuesForSeek( txState, descriptor, ValueTuple.of( values ) );
+            addedWithValues = changes.getAdded().iterator();
+            removed = removed( txState, changes.getRemoved() );
+        }
+        else
+        {
+            AddedAndRemoved changes = indexUpdatesForSeek( txState, descriptor, ValueTuple.of( values ) );
+            added = changes.getAdded().longIterator();
+            removed = removed( txState, changes.getRemoved() );
+        }
     }
 
     private LongSet removed( TransactionState txState, LongSet removedFromIndex )
