@@ -169,6 +169,27 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
+  test("should not plan a rel count when start node has multiple labels") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH (n:Label1:Label2)-[r:REL]->()", "r")
+
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
+  test("should not plan a rel count when end node has multiple labels") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH ()-[r:REL]->(n:Label1:Label2)", "r")
+
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
+  test("should not plan a rel count when start and end nodes have multiple labels") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH (n:Label1:Label2)-[r:REL]->(m:Label1:Label2)", "r")
+
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
   private def producePlannerQuery(query: String, variable: String) = {
     val (pq, _) = producePlannerQueryForPattern(query)
     pq.withHorizon(AggregatingQueryProjection(
