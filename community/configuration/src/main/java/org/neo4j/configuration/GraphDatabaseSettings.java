@@ -733,7 +733,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Integer> log_queries_max_archives =
             newBuilder( "dbms.logs.query.rotation.keep_number", INT, 7 ).addConstraint( min( 1 ) ).dynamic().build();
 
-    @Description( "Obfuscates all literals of the query before writing to the log. Note that labels, types are still shown." )
+    @Description( "Obfuscates all literals of the query before writing to the log. " +
+                  "Note that node labels, relationship types and map property keys are still shown." )
     public static final Setting<Boolean> log_queries_obfuscate_literals =
             newBuilder( "dbms.logs.query.obfuscate_literals", BOOL, false ).dynamic().build();
     // Security settings
