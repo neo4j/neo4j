@@ -58,6 +58,7 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.String.format;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -65,6 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.database.DatabaseFileHelper.filesToKeepOnTruncation;
+import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 
 @TestDirectoryExtension
@@ -214,11 +216,16 @@ class DatabaseIT
     @Test
     void flushDatabaseDataOnStop()
     {
+        String logPrefix = database.getNamedDatabaseId().logPrefix();
         int flushesBeforeClose = pageCacheWrapper.getFileFlushes();
 
         database.stop();
 
         assertNotEquals( flushesBeforeClose, pageCacheWrapper.getFileFlushes() );
+        LogAssertions.assertThat( logProvider )
+                     .forClass( Database.class ).forLevel( INFO )
+                     .containsMessages( format( "[%s] Waiting for closing transactions.", logPrefix ),
+                                        format( "[%s] All transactions are closed.", logPrefix ) );
     }
 
     @Test

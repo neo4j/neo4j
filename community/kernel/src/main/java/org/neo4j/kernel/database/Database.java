@@ -941,6 +941,7 @@ public class Database extends LifecycleAdapter
 
     private void awaitAllClosingTransactions()
     {
+        msgLog.info( "Waiting for closing transactions." );
         KernelTransactions kernelTransactions = kernelModule.kernelTransactions();
         kernelTransactions.terminateTransactions();
 
@@ -948,6 +949,7 @@ public class Database extends LifecycleAdapter
         {
             LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
         }
+        msgLog.info( "All transactions are closed." );
     }
 
     public Config getConfig()

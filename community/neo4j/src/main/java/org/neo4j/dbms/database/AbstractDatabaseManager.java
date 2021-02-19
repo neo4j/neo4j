@@ -199,9 +199,11 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
             log.info( "Stopping '%s'.", namedDatabaseId );
             Database database = context.database();
             database.stop();
+            log.info( "Stopped '%s' successfully.", namedDatabaseId );
         }
         catch ( Throwable t )
         {
+            log.error( "Error stopping '%s'.", namedDatabaseId );
             throw new DatabaseManagementException( format( "An error occurred! Unable to stop `%s`.", namedDatabaseId ), t );
         }
     }
