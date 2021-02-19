@@ -199,7 +199,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   override def executeAndConsumeTransactionally(logicalQuery: LogicalQuery,
                                                 runtime: CypherRuntime[CONTEXT],
                                                 parameters: Map[String, Any] = Map.empty
-                                               ): IndexedSeq[Array[AnyValue]] = runtimeTestSupport.executeAndConsumeTransactionally(logicalQuery, runtime)
+                                               ): IndexedSeq[Array[AnyValue]] = runtimeTestSupport.executeAndConsumeTransactionally(logicalQuery, runtime, parameters)
 
   override def execute(executablePlan: ExecutionPlan, readOnly: Boolean): RecordingRuntimeResult = runtimeTestSupport.execute(executablePlan, readOnly)
 

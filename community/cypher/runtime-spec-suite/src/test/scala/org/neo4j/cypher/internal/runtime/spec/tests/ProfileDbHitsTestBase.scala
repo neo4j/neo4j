@@ -131,32 +131,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     seekProfile.operatorProfile(1).dbHits() shouldBe (difficulties.size /*row of seek*/ + 1 * difficulties.size /*last next per seek*/) // node index seek
   }
 
-  test("should profile dbHits of node index seek with IN predicate on locking unique index") {
-    val nodes = given {
-      uniqueIndex("Language", "difficulty")
-      nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("difficulty" -> i)
-      }, "Language")
-    }
-
-    val difficulties = nodes.filter(_.hasProperty("difficulty")).map(_.getProperty("difficulty").asInstanceOf[Int].longValue())
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .nodeIndexOperator("x:Language(difficulty IN ???)", paramExpr = Some(listOfInt(difficulties: _*)), unique = true)
-      .build(readOnly = false)
-
-    val result = profile(logicalQuery, runtime)
-    consume(result)
-
-    val seekProfile = result.runtimeResult.queryProfile()
-
-    // then
-    val expectedRowCount = difficulties.size
-    seekProfile.operatorProfile(1).dbHits() shouldBe (expectedRowCount + 1 * expectedRowCount /*DB Hits are incremented per next() call, even though last call will return false*/) // locking unique node index seek
-  }
-
   test("should profile dbHits of node index seek with IN predicate on composite index") {
     val nodes = given {
       index("Language", "difficulty", "usefulness")
@@ -815,8 +789,34 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   }
 }
 
-trait EnterpriseOnlyDbHitsTestBase[CONTEXT <: RuntimeContext] {
+trait UniqueIndexDbHitsTestBase[CONTEXT <: RuntimeContext] {
   self: ProfileDbHitsTestBase[CONTEXT] =>
+
+  test("should profile dbHits of node index seek with IN predicate on locking unique index") {
+    val nodes = given {
+      uniqueIndex("Language", "difficulty")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("difficulty" -> i)
+      }, "Language")
+    }
+
+    val difficulties = nodes.filter(_.hasProperty("difficulty")).map(_.getProperty("difficulty").asInstanceOf[Int].longValue())
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Language(difficulty IN ???)", paramExpr = Some(listOfInt(difficulties: _*)), unique = true)
+      .build(readOnly = false)
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    val seekProfile = result.runtimeResult.queryProfile()
+
+    // then
+    val expectedRowCount = difficulties.size * costOfCompositeUniqueIndexCursorRow /*DB Hits are incremented per next() call, even though last call will return false*/
+    seekProfile.operatorProfile(1).dbHits() shouldBe expectedRowCount // locking unique node index seek
+  }
 
   test("should profile dbHits of node index seek with node key") {
     val nodes = given {
