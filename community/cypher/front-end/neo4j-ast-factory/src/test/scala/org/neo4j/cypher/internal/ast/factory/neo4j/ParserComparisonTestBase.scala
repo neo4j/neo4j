@@ -31,12 +31,28 @@ import scala.util.Try
 
 abstract class ParserComparisonTestBase() extends Assertions with Matchers {
 
-  protected def assertSyntaxException(query: String): Unit = {
+  /**
+   * Tests that JavaCC parser produces SyntaxException.
+   */
+  protected def assertJavaCCException(query: String, expectedMessage: String): Unit = {
     val exceptionFactory = new OpenCypherExceptionFactory(None)
 
-    an[OpenCypherExceptionFactory.SyntaxException] should be thrownBy {
+    val exception = the[OpenCypherExceptionFactory.SyntaxException] thrownBy {
       JavaCCParser.parse(query, exceptionFactory)
     }
+    exception.getMessage shouldBe expectedMessage
+  }
+
+  /**
+   * Tests that JavaCC parser produces SyntaxException.
+   */
+  protected def assertJavaCCExceptionStart(query: String, expectedMessage: String): Unit = {
+    val exceptionFactory = new OpenCypherExceptionFactory(None)
+
+    val exception = the[OpenCypherExceptionFactory.SyntaxException] thrownBy {
+      JavaCCParser.parse(query, exceptionFactory)
+    }
+    exception.getMessage startsWith expectedMessage
   }
 
   /**

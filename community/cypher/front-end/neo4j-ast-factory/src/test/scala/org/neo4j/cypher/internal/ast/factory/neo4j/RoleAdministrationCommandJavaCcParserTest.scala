@@ -64,6 +64,10 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertSameAST(testName)
   }
 
+  test("SHOW ALL ROLES YIELD role RETURN") {
+    assertJavaCCException(testName, "Invalid input '': expected \"DISTINCT\", \"*\" or an expression (line 1, column 33 (offset: 32))")
+  }
+
   test("SHOW POPULATED ROLES YIELD role WHERE role='PUBLIC' RETURN role") {
     assertSameAST(testName)
   }
@@ -81,47 +85,47 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   }
 
   test("CATALOG SHOW ROLE") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ALL\", \"POPULATED\" or \"ROLES\" (line 1, column 14 (offset: 13))")
   }
 
   test("SHOW ALL ROLE") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 10 (offset: 9))")
   }
 
   test("SHOW POPULATED ROLE") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 16 (offset: 15))")
   }
 
   test("SHOW ROLE role") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ALL\", \"POPULATED\" or \"ROLES\" (line 1, column 6 (offset: 5))")
   }
 
   test("SHOW ROLE WITH USERS") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ALL\", \"POPULATED\" or \"ROLES\" (line 1, column 6 (offset: 5))")
   }
 
   test("CATALOG SHOW ROLES WITH USER") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 25 (offset: 24))")
   }
 
   test("SHOW ROLE WITH USER") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ALL\", \"POPULATED\" or \"ROLES\" (line 1, column 6 (offset: 5))")
   }
 
   test("SHOW ALL ROLE WITH USERS") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 10 (offset: 9))")
   }
 
   test("SHOW ALL ROLES WITH USER") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 21 (offset: 20))")
   }
 
   test("SHOW ALL ROLE WITH USER") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 10 (offset: 9))")
   }
 
   test("YIELD a, b, c WHERE a = b") {
-    assertSyntaxException(testName)
+    assertSameAST(testName)
   }
 
   test("SHOW POPULATED ROLES YIELD role ORDER BY role SKIP -1") {
@@ -137,23 +141,24 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   }
 
   test("CATALOG SHOW POPULATED ROLE WITH USERS") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 24 (offset: 23))")
   }
 
   test("CATALOG SHOW POPULATED ROLES WITH USER") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 35 (offset: 34))")
   }
 
   test("CATALOG SHOW POPULATED ROLE WITH USER") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 24 (offset: 23))")
   }
 
   test("CATALOG SHOW ROLES WITH USER user") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input 'USER': expected \"USERS\" (line 1, column 25 (offset: 24))")
   }
 
   test("SHOW POPULATED ROLES YIELD *,blah RETURN role") {
-    assertSameAST(testName)
+    assertJavaCCException(testName, "Invalid input ',': expected \n  <EOF>\n  \"RETURN\"\n  \"WHERE\"\n  \"ORDER\"\n  \"SKIP\"\n  \"LIMIT\" " +
+      "(line 1, column 29 (offset: 28))")
   }
 
   //  Creating roles
@@ -230,24 +235,24 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertSameAST(testName)
   }
 
-  test("CREATE OR REPLACE ROLE ") {
-    assertSyntaxException(testName)
+  test("CREATE OR REPLACE ROLE") {
+    assertJavaCCException(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 23 (offset: 22))")
   }
 
   test("CREATE ROLE foo AS COPY OF") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))")
   }
 
   test("CREATE ROLE foo IF NOT EXISTS AS COPY OF") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 41 (offset: 40))")
   }
 
   test("CREATE OR REPLACE ROLE foo AS COPY OF") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 38 (offset: 37))")
   }
 
   test("CREATE ROLE foo UNION CREATE ROLE foo2") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input 'UNION': expected <EOF>, \"AS\" or \"IF\" (line 1, column 17 (offset: 16))")
   }
 
   //  Dropping role
@@ -273,7 +278,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   }
 
   test("DROP ROLE ") {
-    assertSyntaxException(testName)
+    assertJavaCCException(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 10 (offset: 9))")
   }
 
   test("DROP ROLE  IF EXISTS") {
@@ -332,15 +337,15 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
           // Should fail to parse if not following the pattern $command $roleKeyword role(s) $preposition user(s)
 
           test(s"$verb $roleKeyword") {
-            assertSyntaxException(testName)
+            assertJavaCCExceptionStart(testName, "Invalid input '': expected identifier or parameter")
           }
 
           test(s"$verb $roleKeyword foo") {
-            assertSyntaxException(testName)
+            assertJavaCCExceptionStart(testName, "Invalid input '': expected \"TO\" or \",\"")
           }
 
           test(s"$verb $roleKeyword foo $preposition") {
-            assertSyntaxException(testName)
+            assertJavaCCExceptionStart(testName, "Invalid input '': expected identifier or parameter")
           }
 
           test(s"$verb $roleKeyword $preposition abc") {
@@ -371,7 +376,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
       // ROLES TO USER only have GRANT and REVOKE and not DENY
 
       test(s"DENY $roleKeyword foo TO abc") {
-        assertSyntaxException(testName)
+        // temporary error message until remaining administration commmands are ported
+        assertJavaCCExceptionStart(testName, "Invalid input 'DENY'")
       }
   }
 

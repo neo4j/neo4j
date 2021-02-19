@@ -245,10 +245,14 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
   }
 
   test("USE GRAPH db USING PERIODIC COMMIT LOAD CSV FROM 'url' AS line RETURN line") {
-    assertSyntaxException(testName)
+    assertJavaCCExceptionStart(testName, "Invalid input 'USING'")
   }
 
   test("MATCH (n:NODE) WITH true as n.prop RETURN true OR FALSE") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH (n)") {
     assertSameAST(testName)
   }
 
