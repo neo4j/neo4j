@@ -737,6 +737,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                   "Note that node labels, relationship types and map property keys are still shown." )
     public static final Setting<Boolean> log_queries_obfuscate_literals =
             newBuilder( "dbms.logs.query.obfuscate_literals", BOOL, false ).dynamic().build();
+
+    @Description( "Log query plan description table, useful for debugging purposes" )
+    @DocumentedDefaultValue( "false" )
+    public static final Setting<Boolean> log_queries_plan =
+            newBuilder( "dbms.logs.query.plan_description_enabled", BOOL, false ).dynamic().build();
+
     // Security settings
 
     @Description( "Enable auth requirement to access Neo4j." )
