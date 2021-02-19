@@ -435,7 +435,15 @@ class Neo4jCommandTest
                     StringBuilder sb = new StringBuilder();
                     assertEventually( () -> sb.append( new String( p.getInputStream().readNBytes( 1 ) ) ).toString(),
                             s -> s.contains( TestEntryPoint.STARTUP_MSG ), 5, MINUTES );
-                    Runtime.getRuntime().exec("kill -SIGINT " + p.pid() );
+                    try
+                    {
+                        Runtime.getRuntime().exec( "kill -SIGINT " + p.pid() );
+                    }
+                    catch ( IOException e )
+                    {
+                        ProcessHandle.of( p.pid() ).get().destroy(); //sends SIGTERM. Not possible to send SIGINT using java and kill is not always available
+                        return 143;
+                    }
                 }
                 catch ( Exception e )
                 {
