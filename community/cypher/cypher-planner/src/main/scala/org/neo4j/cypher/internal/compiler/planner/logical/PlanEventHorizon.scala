@@ -60,21 +60,30 @@ case object PlanEventHorizon extends EventHorizonPlanner {
       disallowSplittingTop = context.debugOptions.disallowSplittingTopEnabled
     )
 
+    // Plans horizon on top of the current best-overall plan, ensuring ordering only if required by the current query part.
     def planSortIfSelfRequired = planHorizonForPlan(plannerQuery, incomingPlans.bestResult, prevInterestingOrder, context, sortIfSelfRequiredConfig)
+    // Plans horizon on top of the current best-overall plan, ensuring ordering if required by the current OR later query part.
     def planSortIfTailOrSelfRequired = planHorizonForPlan(plannerQuery, incomingPlans.bestResult, prevInterestingOrder, context, sortIfTailOrSelfRequiredConfig)
+    // Plans horizon on top of the current best-sorted plan
     def maintainSort = incomingPlans.bestResultFulfillingReq.map(planHorizonForPlan(plannerQuery, _, prevInterestingOrder, context, sortIfTailOrSelfRequiredConfig))
 
-    if (plannerQuery.interestingOrder.requiredOrderCandidate.nonEmpty) {
+    val currentPartHasRequiredOrder = plannerQuery.interestingOrder.requiredOrderCandidate.nonEmpty
+    val tailHasRequiredOrder = sortIfSelfRequiredConfig != sortIfTailOrSelfRequiredConfig
+
+    if (currentPartHasRequiredOrder) {
+      // Both best-overall and best-sorted plans must fulfill the required order, so at this point we can pick one of them
       val Some(bestOverall) = pickBest(Seq(planSortIfSelfRequired) ++ maintainSort, "best overall plan with horizon")
       BestResults(bestOverall, None)
-    } else {
+    } else if (tailHasRequiredOrder) {
+      // For best-overall keep the current best-overall plan
       val bestOverall = planSortIfSelfRequired
-      val bestSorted = if (sortIfSelfRequiredConfig == sortIfTailOrSelfRequiredConfig) {
-        None
-      } else {
-        pickBest(Seq(planSortIfTailOrSelfRequired) ++ maintainSort, "best sorted plan with horizon")
-      }
+      // For best-sorted we can choose between the current best-sorted and the current best-overall with sorting planned on top
+      val bestSorted = pickBest(Seq(planSortIfTailOrSelfRequired) ++ maintainSort, "best sorted plan with horizon")
       BestResults(bestOverall, bestSorted)
+    } else {
+      // No ordering requirements, only keep the best-overall plan
+      val bestOverall = planSortIfSelfRequired
+      BestResults(bestOverall, None)
     }
   }
 
