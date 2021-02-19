@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ir.QgWithInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestingRewriter
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
@@ -49,46 +50,46 @@ object Eagerness {
   def readWriteConflictInHead(plan: LogicalPlan, plannerQuery: SinglePlannerQuery): Boolean = {
     // The first leaf node is always reading through a stable iterator.
     // We will only consider this analysis for all other node iterators.
-    val unstableLeaves = plan.leaves.collect {
+    val leaves = plan.leaves.collect {
       case n: NodeLogicalLeafPlan => n.idName
       case r: RelationshipLogicalLeafPlan => r.idName
     }
 
-    if (unstableLeaves.isEmpty)
+    if (leaves.isEmpty)
       false // the query did not start with a read, possibly CREATE () ...
-    else
-    // Start recursion by checking the given plannerQuery against itself
-      headConflicts(plannerQuery, plannerQuery, unstableLeaves.tail)
+    else {
+      // Start recursion by checking the given plannerQuery against itself
+      val headQgWithInfo = QgWithInfo(plannerQuery.queryGraph, unstableLeaves = leaves.tail.toSet, stableIdentifier = leaves.headOption)
+      headConflicts(plannerQuery, plannerQuery, headQgWithInfo)
+    }
   }
 
   @tailrec
-  private def headConflicts(head: SinglePlannerQuery, tail: SinglePlannerQuery, unstableLeaves: Seq[String]): Boolean = {
+  private def headConflicts(head: SinglePlannerQuery, tail: SinglePlannerQuery, headQgWithInfo: QgWithInfo): Boolean = {
     val mergeReadWrite = head == tail && head.queryGraph.containsMergeRecursive
     val conflict = if (tail.queryGraph.readOnly || mergeReadWrite) false
     else {
       //if we have unsafe rels we need to check relation overlap and delete
       //overlap immediately
       (hasUnsafeRelationships(head.queryGraph) &&
-        (tail.queryGraph.createRelationshipOverlap(head.queryGraph) ||
-          tail.queryGraph.deleteOverlap(head.queryGraph) ||
-          tail.queryGraph.setPropertyOverlap(head.queryGraph))
+        (tail.queryGraph.createRelationshipOverlap(headQgWithInfo) ||
+          tail.queryGraph.deleteOverlap(headQgWithInfo) ||
+          tail.queryGraph.setPropertyOverlap(headQgWithInfo))
         ) ||
-        //otherwise only do checks if we have more that one leaf
-        unstableLeaves.exists(
-          nodeOverlap(_, head.queryGraph, tail) ||
-            tail.queryGraph.createRelationshipOverlap(head.queryGraph) ||
-            tail.queryGraph.setLabelOverlap(head.queryGraph) || // TODO:H Verify. Pontus did this a bit differently
-            tail.queryGraph.removeLabelOverlap(head.queryGraph) ||
-            tail.queryGraph.setPropertyOverlap(head.queryGraph) ||
-            tail.queryGraph.deleteOverlap(head.queryGraph) ||
-            tail.queryGraph.foreachOverlap(head.queryGraph))
+        tail.queryGraph.nodeOverlap(headQgWithInfo) ||
+        tail.queryGraph.removeLabelOverlap(headQgWithInfo) ||
+        tail.queryGraph.setLabelOverlap(headQgWithInfo) ||
+        tail.queryGraph.createRelationshipOverlap(headQgWithInfo) ||
+        tail.queryGraph.setPropertyOverlap(headQgWithInfo) ||
+        tail.queryGraph.deleteOverlap(headQgWithInfo) ||
+        tail.queryGraph.foreachOverlap(headQgWithInfo)
     }
     if (conflict)
       true
     else if (tail.tail.isEmpty)
       false
     else
-      headConflicts(head, tail.tail.get, unstableLeaves)
+      headConflicts(head, tail.tail.get, headQgWithInfo)
   }
 
   def headReadWriteEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
@@ -162,21 +163,28 @@ object Eagerness {
       readWriteConflictInTail(head, tail.tail.get)
   }
 
+  /**
+   * @return a QgWithInfo, where there is no stable identifier. Moreover all variables are assumed to be leaves.
+   */
+  private def qgWithNoStableIdentifierAndOnlyLeaves(qg: QueryGraph): QgWithInfo =
+    QgWithInfo(qg, qg.allCoveredIds, None)
+
   def readWriteConflict(readQuery: SinglePlannerQuery, writeQuery: SinglePlannerQuery): Boolean = {
     val mergeReadWrite = readQuery == writeQuery && readQuery.queryGraph.containsMergeRecursive
     val conflict =
       if (writeQuery.queryGraph.readOnly || mergeReadWrite)
         false
       else
-        writeQuery.queryGraph overlaps readQuery.queryGraph
+        writeQuery.queryGraph overlaps qgWithNoStableIdentifierAndOnlyLeaves(readQuery.queryGraph)
     conflict
   }
 
   @tailrec
   def writeReadConflictInTail(head: SinglePlannerQuery, tail: SinglePlannerQuery, context: LogicalPlanningContext): Boolean = {
+    val tailQgWithInfo = qgWithNoStableIdentifierAndOnlyLeaves(tail.queryGraph)
     val conflict =
       if (tail.queryGraph.writeOnly) false
-      else (head.queryGraph overlaps tail.queryGraph) ||
+      else (head.queryGraph overlaps tailQgWithInfo) ||
         head.queryGraph.overlapsHorizon(tail.horizon, context.semanticTable) ||
         deleteReadOverlap(head.queryGraph, tail.queryGraph, context)
     if (conflict)
@@ -232,7 +240,7 @@ object Eagerness {
       else
       // NOTE: Here we do not check writeOnlyHeadOverlapsHorizon, because we do not know of any case where a
       // write-only head could cause problems with reads in future horizons
-        head.queryGraph writeOnlyHeadOverlaps tail.queryGraph
+        head.queryGraph writeOnlyHeadOverlaps qgWithNoStableIdentifierAndOnlyLeaves(tail.queryGraph)
 
     if (conflict)
       true
@@ -241,49 +249,6 @@ object Eagerness {
     else
       writeReadConflictInHeadRecursive(head, tail.tail.get)
   }
-
-  /*
-   * Check if the labels or properties of the node with the provided IdName overlaps
-   * with the labels or properties updated in this query. This may cause the read to affected
-   * by the writes.
-   */
-  private def nodeOverlap(currentNode: String, headQueryGraph: QueryGraph, tail: SinglePlannerQuery): Boolean = {
-    val labelsOnCurrentNode = headQueryGraph.allKnownLabelsOnNode(currentNode)
-    val propertiesOnCurrentNode = headQueryGraph.allKnownPropertiesOnIdentifier(currentNode).map(_.propertyKey)
-    val labelsToCreate = tail.queryGraph.createLabels
-    val propertiesToCreate = tail.queryGraph.createNodeProperties
-    val labelsToRemove = tail.queryGraph.labelsToRemoveFromOtherNodes(currentNode)
-
-    val tailCreatesNodes = tail.exists(_.queryGraph.createsNodes)
-    tail.queryGraph.updatesNodes &&
-      (labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tailCreatesNodes || //MATCH () CREATE/MERGE (...)?
-        (labelsOnCurrentNode intersect labelsToCreate).nonEmpty || //MATCH (:A) CREATE (:A)?
-        propertiesOnCurrentNode.exists(propertiesToCreate.overlaps) || //MATCH ({prop:42}) CREATE ({prop:...})
-
-        //MATCH (n:A), (m:B) REMOVE n:B
-        //MATCH (n:A), (m:A) REMOVE m:A
-        (labelsToRemove intersect labelsOnCurrentNode).nonEmpty
-        )
-  }
-
-  /*
-   * Unsafe relationships are what may cause unstable
-   * iterators when expanding. The unsafe cases are:
-   * - (a)-[r]-(b) (undirected)
-   * - (a)-[r1]->(b)-[r2]->(c) (multi step)
-   * - (a)-[r*]->(b) (variable length)
-   * - where the match pattern and the create/merge pattern
-   *   includes the same nodes, but the direction is reversed
-   */
-  private def hasUnsafeRelationships(queryGraph: QueryGraph): Boolean = {
-    /*
-     * It is difficult to implement a perfect fit for all four above rules (the fourth one is the tricky one).
-     * Therefore we are better safe than sorry, and just see all relationships as unsafe.
-     */
-    hasRelationships(queryGraph)
-  }
-
-  private def hasRelationships(queryGraph: QueryGraph) = queryGraph.allPatternRelationships.nonEmpty
 
   case class unnestEager(override val solveds: Solveds,
                          override val cardinalities: Cardinalities,

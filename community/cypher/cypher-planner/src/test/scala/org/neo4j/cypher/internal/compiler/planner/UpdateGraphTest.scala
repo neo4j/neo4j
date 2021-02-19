@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.MergeNodePattern
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.QgWithInfo
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
@@ -44,6 +45,9 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class UpdateGraphTest extends CypherFunSuite {
   private val pos = DummyPosition(0)
+
+  private def qgWithNoStableIdentifierAndOnlyLeaves(qg: QueryGraph): QgWithInfo =
+    QgWithInfo(qg, qg.allCoveredIds, None)
 
   test("should not be empty after adding label to set") {
     val original = QueryGraph()
@@ -57,7 +61,7 @@ class UpdateGraphTest extends CypherFunSuite {
     val qg = QueryGraph(patternNodes = Set("a"))
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
-    ug.overlaps(qg) shouldBe true
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe true
   }
 
   test("overlap when reading and creating the same label") {
@@ -66,7 +70,7 @@ class UpdateGraphTest extends CypherFunSuite {
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
-    ug.overlaps(qg) shouldBe true
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe true
   }
 
   test("no overlap when reading and creating different labels") {
@@ -75,7 +79,7 @@ class UpdateGraphTest extends CypherFunSuite {
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L3")))
 
-    ug.overlaps(qg) shouldBe false
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe false
   }
 
   test("no overlap when properties don't overlap even though labels do") {
@@ -85,7 +89,7 @@ class UpdateGraphTest extends CypherFunSuite {
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
-    ug.overlaps(qg) shouldBe false
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe false
   }
 
   test("no overlap when properties don't overlap even though labels explicitly do") {
@@ -96,7 +100,7 @@ class UpdateGraphTest extends CypherFunSuite {
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
-    ug.overlaps(qg) shouldBe false
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe false
   }
 
   test("overlap when reading all rel types and creating a specific type") {
@@ -106,7 +110,7 @@ class UpdateGraphTest extends CypherFunSuite {
         SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)))
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T", "b")))
 
-    ug.overlaps(qg) shouldBe true
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe true
   }
 
   test("no overlap when reading and writing different rel types") {
@@ -116,7 +120,7 @@ class UpdateGraphTest extends CypherFunSuite {
         SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)))
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T2", "b")))
 
-    ug.overlaps(qg) shouldBe false
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe false
   }
 
   test("overlap when reading and writing same rel types") {
@@ -126,7 +130,7 @@ class UpdateGraphTest extends CypherFunSuite {
         SemanticDirection.OUTGOING, Seq(RelTypeName("T1")(pos)), SimplePatternLength)))
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T1", "b")))
 
-    ug.overlaps(qg) shouldBe true
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe true
   }
 
   test("no overlap when reading and writing same rel types but matching on rel property") {
@@ -139,7 +143,7 @@ class UpdateGraphTest extends CypherFunSuite {
       selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T1", "b")))
 
-    ug.overlaps(qg) shouldBe false
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe false
   }
 
   test("overlap when reading and writing same property and rel type") {
@@ -166,7 +170,7 @@ class UpdateGraphTest extends CypherFunSuite {
         )
       ))
 
-    ug.overlaps(qg) shouldBe true
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe true
   }
 
   test("overlap when reading, deleting and merging") {
@@ -180,7 +184,7 @@ class UpdateGraphTest extends CypherFunSuite {
         QueryGraph.empty, Seq.empty, Seq.empty)
     ))
 
-    ug.overlaps(qg) shouldBe true
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe true
   }
 
   test("overlap when reading and deleting with collections") {
@@ -190,7 +194,7 @@ class UpdateGraphTest extends CypherFunSuite {
       DeleteExpression(Variable("col")(pos), forced = false)
     ))
 
-    ug.overlaps(qg) shouldBe true
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe true
   }
 
   private def createNode(name: String, labels: String*) =
