@@ -33,6 +33,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -131,7 +132,7 @@ public class TokenIndex implements ConsistencyCheckable
      */
     private final String tokenStoreName;
 
-    public TokenIndex( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, String tokenStoreName )
+    public TokenIndex( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexDescriptor descriptor )
     {
         this.readOnly = databaseIndexContext.readOnly;
         this.monitors = databaseIndexContext.monitors;
@@ -140,7 +141,7 @@ public class TokenIndex implements ConsistencyCheckable
         this.fs = databaseIndexContext.fileSystem;
         this.cacheTracer = databaseIndexContext.pageCacheTracer;
         this.indexFiles = indexFiles;
-        this.tokenStoreName = tokenStoreName;
+        this.tokenStoreName = descriptor.getName();
     }
 
     void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )

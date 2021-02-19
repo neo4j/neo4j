@@ -50,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.internal.schema.SchemaDescriptor.forAllEntityTokens;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
@@ -64,8 +66,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
     @Override
     IndexDescriptor indexDescriptor()
     {
-        //Not used for token indexes yet
-        return null;
+        return forSchema( forAllEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withName( "index" ).materialise( 0 );
     }
 
     @Override
@@ -102,8 +103,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
     {
         DatabaseIndexContext context =
                 DatabaseIndexContext.builder( pageCache, fs ).withMonitors( monitors ).withTag( monitorTag ).withReadOnly( false ).build();
-        return new TokenIndexPopulator( context, DatabaseLayout.ofFlat( directory.homePath() ), indexFiles, Config.defaults(),
-                EntityType.NODE, "Label Scan Store" );
+        return new TokenIndexPopulator( context, DatabaseLayout.ofFlat( directory.homePath() ), indexFiles, Config.defaults(), indexDescriptor );
     }
 
     @Test

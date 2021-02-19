@@ -95,17 +95,13 @@ public class TokenIndexProvider extends IndexProvider
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
 
-        EntityType entityType = descriptor.schema().entityType();
-        return new TokenIndexPopulator( databaseIndexContext, databaseLayout, indexFiles( descriptor ),
-                config, entityType, getStoreName( entityType ) );
+        return new TokenIndexPopulator( databaseIndexContext, databaseLayout, indexFiles( descriptor ), config, descriptor );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup ) throws IOException
     {
-        EntityType entityType = descriptor.schema().entityType();
-        return new TokenIndexAccessor( databaseIndexContext, databaseLayout, indexFiles( descriptor ), config, entityType,
-                getStoreName( entityType ), recoveryCleanupWorkCollector );
+        return new TokenIndexAccessor( databaseIndexContext, databaseLayout, indexFiles( descriptor ), config, descriptor, recoveryCleanupWorkCollector );
     }
 
     @Override
@@ -191,11 +187,6 @@ public class TokenIndexProvider extends IndexProvider
         boolean labelIndex = entityType == EntityType.NODE;
         Path filePath = labelIndex ? databaseLayout.labelScanStore() : databaseLayout.relationshipTypeScanStore();
         return new IndexFiles.SingleFile( databaseIndexContext.fileSystem, filePath );
-    }
-
-    private String getStoreName( EntityType entityType )
-    {
-        return entityType == EntityType.NODE ? "Label Scan Store" : "Relationship Type Scan Store";
     }
 
     private static class TokenIndexCapability implements IndexCapability

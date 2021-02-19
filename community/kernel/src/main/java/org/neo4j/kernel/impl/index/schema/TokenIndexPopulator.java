@@ -27,6 +27,7 @@ import java.util.Collection;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -58,12 +59,12 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
     private boolean closed;
 
     TokenIndexPopulator( DatabaseIndexContext databaseIndexContext, DatabaseLayout directoryStructure, IndexFiles indexFiles, Config config,
-            EntityType entityType, String tokenStoreName )
+            IndexDescriptor descriptor )
     {
-        super( databaseIndexContext, indexFiles, tokenStoreName );
+        super( databaseIndexContext, indexFiles, descriptor );
         this.directoryStructure = directoryStructure;
         this.config = config;
-        this.entityType = entityType;
+        this.entityType = descriptor.schema().entityType();
     }
 
     @Override

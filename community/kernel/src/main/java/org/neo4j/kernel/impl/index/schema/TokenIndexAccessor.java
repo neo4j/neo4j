@@ -23,11 +23,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -44,12 +44,12 @@ import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
 {
     public TokenIndexAccessor( DatabaseIndexContext databaseIndexContext, DatabaseLayout directoryStructure, IndexFiles indexFiles, Config config,
-            EntityType entityType, String tokenStoreName, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+            IndexDescriptor descriptor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        super( databaseIndexContext, indexFiles, tokenStoreName );
+        super( databaseIndexContext, indexFiles, descriptor );
 
         instantiateTree( recoveryCleanupWorkCollector, new NativeIndexHeaderWriter( ONLINE ) );
-        instantiateUpdater( config, directoryStructure, entityType );
+        instantiateUpdater( config, directoryStructure, descriptor.schema().entityType() );
     }
 
     @Override
