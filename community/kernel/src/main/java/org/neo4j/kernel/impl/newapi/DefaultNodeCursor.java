@@ -47,6 +47,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     StorageNodeCursor storeCursor;
     private long currentAddedInTx;
     private long single;
+    private boolean isSingle;
     private AccessMode accessMode;
 
     private final CursorPool<DefaultNodeCursor> pool;
@@ -61,7 +62,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     {
         storeCursor.scan();
         this.read = read;
-        this.single = NO_ID;
+        this.isSingle = false;
         this.currentAddedInTx = NO_ID;
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
@@ -75,7 +76,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
     boolean scanBatch( Read read, AllNodeScan scan, int sizeHint, LongIterator addedNodes, boolean hasChanges )
     {
         this.read = read;
-        this.single = NO_ID;
+        this.isSingle = false;
         this.currentAddedInTx = NO_ID;
         this.hasChanges = hasChanges ? HasChanges.YES : HasChanges.NO;
         this.addedNodes = addedNodes;
@@ -89,6 +90,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
         storeCursor.single( reference );
         this.read = read;
         this.single = reference;
+        this.isSingle = true;
         this.currentAddedInTx = NO_ID;
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
@@ -310,7 +312,7 @@ class DefaultNodeCursor extends TraceableCursor implements NodeCursor
             boolean changes = read.hasTxStateWithChanges();
             if ( changes )
             {
-                if ( single != NO_ID )
+                if ( this.isSingle )
                 {
                     addedNodes = read.txState().nodeIsAddedInThisTx( single ) ?
                                  LongSets.immutable.of( single ).longIterator() : ImmutableEmptyLongIterator.INSTANCE;
