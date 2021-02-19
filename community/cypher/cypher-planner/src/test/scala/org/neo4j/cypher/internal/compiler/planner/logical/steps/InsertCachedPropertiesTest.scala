@@ -84,12 +84,12 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   private val rProp3 = Property(r, prop)(InputPosition.NONE.newUniquePos())
   // Same property in different positions
   private val nFoo1 = Property(n, foo)(InputPosition.NONE)
-  private val cachedNProp1 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE)
-  private val cachedNFoo1 = CachedProperty("n", n, foo, NODE_TYPE)(InputPosition.NONE)
-  private val cachedNProp2 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE.newUniquePos())
-  private val cachedNProp3 = CachedProperty("n", n, prop, NODE_TYPE)(InputPosition.NONE.newUniquePos())
-  private val cachedRRelProp1 = CachedProperty("r", r, prop, RELATIONSHIP_TYPE)(InputPosition.NONE)
-  private val cachedRRelProp2 = CachedProperty("r", r, prop, RELATIONSHIP_TYPE)(InputPosition.NONE.newUniquePos())
+  private val cachedNProp1 = CachedProperty("n", n, prop, NODE_TYPE)(nProp1.position)
+  private val cachedNFoo1 = CachedProperty("n", n, foo, NODE_TYPE)(nFoo1.position)
+  private val cachedNProp2 = CachedProperty("n", n, prop, NODE_TYPE)(nProp2.position)
+  private val cachedNProp3 = CachedProperty("n", n, prop, NODE_TYPE)(nProp3.position)
+  private val cachedRRelProp1 = CachedProperty("r", r, prop, RELATIONSHIP_TYPE)(rProp1.position)
+  private val cachedRRelProp2 = CachedProperty("r", r, prop, RELATIONSHIP_TYPE)(rProp2.position)
 
   private val xProp = Property(x, prop)(InputPosition.NONE)
 
