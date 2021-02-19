@@ -43,6 +43,7 @@ class DefaultNodeCursor implements NodeCursor
     private LongIterator addedNodes;
     private StorageNodeCursor storeCursor;
     private long single;
+    private boolean isSingle;
 
     private final DefaultCursors pool;
 
@@ -56,7 +57,7 @@ class DefaultNodeCursor implements NodeCursor
     {
         storeCursor.scan();
         this.read = read;
-        this.single = NO_ID;
+        this.isSingle = false;
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
     }
@@ -66,6 +67,7 @@ class DefaultNodeCursor implements NodeCursor
         storeCursor.single( reference );
         this.read = read;
         this.single = reference;
+        this.isSingle = true;
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
     }
@@ -225,7 +227,7 @@ class DefaultNodeCursor implements NodeCursor
             boolean changes = read.hasTxStateWithChanges();
             if ( changes )
             {
-                if ( single != NO_ID )
+                if ( this.isSingle )
                 {
                     addedNodes = read.txState().nodeIsAddedInThisTx( single ) ?
                                  LongSets.immutable.of( single ).longIterator() : ImmutableEmptyLongIterator.INSTANCE;
