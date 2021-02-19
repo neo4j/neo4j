@@ -80,6 +80,8 @@ class SchemaRuleTest
     private IndexDescriptor nodeFtsIndex2Named = nodeFtsPrototype2Named.withName( "nodeFtsIndex2Named" ).materialise( 8 );
     private IndexDescriptor allLabelsIndexNamed = allLabelsPrototypeNamed.withName( "allLabelsIndexNamed" ).materialise( 9 );
     private IndexDescriptor allRelTypesIndexNamed = allRelTypesPrototypeNamed.withName( "allRelTypesIndexNamed" ).materialise( 10 );
+    private IndexDescriptor indexBelongingToConstraint =
+            labelUniquePrototypeNamed.withName( "indexBelongingToConstraint" ).materialise( 11 ).withOwningConstraintId( 1 );
     private ConstraintDescriptor uniqueLabelConstraint = ConstraintDescriptorFactory.uniqueForSchema( labelSchema );
     private ConstraintDescriptor existsLabelConstraint = ConstraintDescriptorFactory.existsForSchema( labelSchema );
     private ConstraintDescriptor nodeKeyConstraint = ConstraintDescriptorFactory.nodeKeyForSchema( labelSchema );
@@ -189,6 +191,9 @@ class SchemaRuleTest
                 allLabelsIndexNamed );
         assertUserDescription( "Index( id=10, name='allRelTypesIndexNamed', type='GENERAL LOOKUP', schema=-[:<any-types>]-, indexProvider='Undecided-0' )",
                 allRelTypesIndexNamed );
+        assertUserDescription(
+                "Index( id=11, name='indexBelongingToConstraint', type='UNIQUE BTREE', schema=(:Label1 {prop2, prop3}), " +
+                "indexProvider='Undecided-0', owningConstraint=1 )", indexBelongingToConstraint );
 
         assertUserDescription( "Constraint( id=1, name='uniqueLabelConstraintNamed', type='UNIQUENESS', schema=(:Label1 {prop2, prop3}), ownedIndex=1 )",
                 uniqueLabelConstraintNamed );

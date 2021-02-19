@@ -61,11 +61,15 @@ public final class SchemaUserDescription
     }
 
     static String forIndex( TokenNameLookup tokenNameLookup, long id, String name, boolean isUnique, IndexType indexType,
-            SchemaDescriptor schema, IndexProviderDescriptor indexProvider )
+            SchemaDescriptor schema, IndexProviderDescriptor indexProvider, Long owningConstraintId )
     {
         StringJoiner joiner = new StringJoiner( ", ", "Index( ", " )" );
         joiner.add( "id=" + id );
         addPrototypeParams( tokenNameLookup, name, isUnique, indexType, schema, indexProvider, joiner );
+        if ( owningConstraintId != null )
+        {
+            joiner.add( "owningConstraint=" + owningConstraintId );
+        }
         return joiner.toString();
     }
 
