@@ -45,6 +45,7 @@ abstract class LegacyDbHitsTestBase[CONTEXT <: RuntimeContext](edition: Edition[
                                 costOfExpandGetRelCursor = LegacyDbHitsTestBase.costOfExpandOneRel,
                                 costOfExpandOneRel = LegacyDbHitsTestBase.costOfExpandOneRel,
                                 costOfRelationshipTypeLookup = 1,
+                                costOfCompositeUniqueIndexCursorRow = 1,
                                 cartesianProductChunkSize = 1,
                                 canFuseOverPipelines = false,
                                 createsRelValueInExpand = createsRelValueInExpand)

@@ -48,6 +48,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
                                                                  costOfExpandGetRelCursor: Long, // the reported dbHits for obtaining a relationship cursor for expanding
                                                                  costOfExpandOneRel: Long, // the reported dbHits for expanding one relationship
                                                                  costOfRelationshipTypeLookup: Long, // the reported dbHits for finding the id of a relationship type
+                                                                 val costOfCompositeUniqueIndexCursorRow: Long, // the reported dbHits for finding one row from a composite unique index
                                                                  cartesianProductChunkSize: Long, // The size of a LHS chunk for cartesian product
                                                                  canFuseOverPipelines: Boolean,
                                                                  createsRelValueInExpand: Boolean
@@ -91,7 +92,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     queryProfile.operatorProfile(1).dbHits() shouldBe (sizeHint + 1 + costOfLabelLookup) // label scan
   }
 
-  test("should profile dbHits of node index seek") {
+  test("should profile dbHits of node index seek with range predicate") {
     given {
       nodeIndex("Language", "difficulty")
       nodePropertyGraph(sizeHint, {
@@ -103,6 +104,81 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val seekProfile = profileIndexSeek(s"x:Language(difficulty >= ${sizeHint / 2})")
     // then
     seekProfile.operatorProfile(1).dbHits() shouldBe (sizeHint / 10 / 2 + 1) // node index seek
+  }
+
+  test("should profile dbHits of node index seek with IN predicate") {
+    val nodes = given {
+      index("Language", "difficulty")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("difficulty" -> i)
+      }, "Language")
+    }
+
+    val difficulties = nodes.filter(_.hasProperty("difficulty")).map(_.getProperty("difficulty").asInstanceOf[Int].longValue())
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Language(difficulty IN ???)", paramExpr = Some(listOfInt(difficulties:_*)))
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    val seekProfile = result.runtimeResult.queryProfile()
+
+    // then
+    seekProfile.operatorProfile(1).dbHits() shouldBe (difficulties.size /*row of seek*/ + 1 * difficulties.size /*last next per seek*/) // node index seek
+  }
+
+  test("should profile dbHits of node index seek with IN predicate on locking unique index") {
+    val nodes = given {
+      uniqueIndex("Language", "difficulty")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("difficulty" -> i)
+      }, "Language")
+    }
+
+    val difficulties = nodes.filter(_.hasProperty("difficulty")).map(_.getProperty("difficulty").asInstanceOf[Int].longValue())
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Language(difficulty IN ???)", paramExpr = Some(listOfInt(difficulties: _*)), unique = true)
+      .build(readOnly = false)
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    val seekProfile = result.runtimeResult.queryProfile()
+
+    // then
+    val expectedRowCount = difficulties.size
+    seekProfile.operatorProfile(1).dbHits() shouldBe (expectedRowCount + 1 * expectedRowCount /*DB Hits are incremented per next() call, even though last call will return false*/) // locking unique node index seek
+  }
+
+  test("should profile dbHits of node index seek with IN predicate on composite index") {
+    val nodes = given {
+      index("Language", "difficulty", "usefulness")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("difficulty" -> i, "usefulness" -> i)
+      }, "Language")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:Language(difficulty >= ${sizeHint / 2}, usefulness >= ${sizeHint / 2})")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+    val seekProfile = result.runtimeResult.queryProfile()
+
+    // then
+    val expectedRowCount: Int = sizeHint / 10 / 2
+    result should beColumns("x").withRows(rowCount(expectedRowCount))
+    seekProfile.operatorProfile(1).dbHits() shouldBe (expectedRowCount + 1 /*DB Hits are incremented per next() call, even though last call will return false*/)
   }
 
   test("should profile dbHits of node index scan") {
@@ -737,6 +813,38 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be (sizeHint * (1 /* read node */ + 2 * costOfProperty)) // produceresults
   }
+}
+
+trait EnterpriseOnlyDbHitsTestBase[CONTEXT <: RuntimeContext] {
+  self: ProfileDbHitsTestBase[CONTEXT] =>
+
+  test("should profile dbHits of node index seek with node key") {
+    val nodes = given {
+      nodeKey("Language", "difficulty", "usefulness")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("difficulty" -> i, "usefulness" -> i)
+        case i => Map("difficulty" -> -i, "usefulness" -> -i)
+      }, "Language")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator(s"x:Language(difficulty = 0, usefulness = 0)", unique = true)
+      .build(readOnly = false)
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+    val seekProfile = result.runtimeResult.queryProfile()
+
+    // then
+    val expectedRowCount = 1
+    result should beColumns("x").withRows(rowCount(expectedRowCount))
+
+    val expectedDbHits = expectedRowCount * costOfCompositeUniqueIndexCursorRow
+    seekProfile.operatorProfile(1).dbHits() shouldBe expectedDbHits
+  }
+
 }
 
 trait ProcedureCallDbHitsTestBase[CONTEXT <: RuntimeContext] {
