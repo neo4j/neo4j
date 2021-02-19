@@ -62,7 +62,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -756,7 +756,7 @@ public class NeoStoresTest
                     storageEngine.testAccessNeoStores().getMetaDataStore().getLastClosedTransactionId(), tx -> tx, NULL, INSTANCE );
             PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
             tx.setHeader( EMPTY_BYTE_ARRAY, -1, -1, -1, -1, AUTH_DISABLED );
-            storageEngine.apply( new TransactionToApply( tx, EmptyVersionContext.EMPTY, NULL ), INTERNAL );
+            storageEngine.apply( new TransactionToApply( tx, EmptyVersionContextSupplier.EMPTY, NULL ), INTERNAL );
         }
     }
 

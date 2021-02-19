@@ -563,7 +563,7 @@ public class Database extends LifecycleAdapter
             transactionRepresentation.setHeader( EMPTY_BYTE_ARRAY, time, storageEngine.metadataProvider().getLastClosedTransactionId(), time,
                     leaseService.newClient().leaseId(), AuthSubject.AUTH_DISABLED );
             TransactionToApply toApply =
-                    new TransactionToApply( transactionRepresentation, versionContextSupplier.getVersionContext(), PageCursorTracer.NULL );
+                    new TransactionToApply( transactionRepresentation, PageCursorTracer.NULL );
 
             TransactionCommitProcess commitProcess = databaseDependencies.resolveDependency( TransactionCommitProcess.class );
             commitProcess.commit( toApply, CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
