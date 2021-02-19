@@ -67,7 +67,7 @@ public class TokenIndexProviderTest extends IndexProviderTests
     @Override
     IndexPrototype validPrototype()
     {
-        return forSchema( forAllEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.TOKEN ).withName( "index" );
+        return forSchema( forAllEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "index" );
     }
 
     @Override
@@ -75,9 +75,9 @@ public class TokenIndexProviderTest extends IndexProviderTests
     {
         return List.of( forSchema( forAllEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.BTREE )
                         .withName( "unsupported" ),
-                forSchema( forAllEntityTokens( EntityType.NODE ), GenericNativeIndexProvider.DESCRIPTOR ).withIndexType( IndexType.TOKEN )
+                forSchema( forAllEntityTokens( EntityType.NODE ), GenericNativeIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP )
                         .withName( "unsupported" ),
-                forSchema( forLabel( labelId, propId ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.TOKEN ).withName( "unsupported" ),
-                uniqueForSchema( forLabel( labelId, propId ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.TOKEN ).withName( "unsupported" ) );
+                forSchema( forLabel( labelId, propId ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "unsupported" ),
+                uniqueForSchema( forLabel( labelId, propId ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "unsupported" ) );
     }
 }

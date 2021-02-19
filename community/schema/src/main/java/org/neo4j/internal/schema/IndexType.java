@@ -37,7 +37,7 @@ public enum IndexType
     /**
      * todo: This type does not have corresponding public version because name is not fixed yet.
      */
-    TOKEN;
+    LOOKUP;
 
     public static IndexType fromPublicApi( org.neo4j.graphdb.schema.IndexType type )
     {

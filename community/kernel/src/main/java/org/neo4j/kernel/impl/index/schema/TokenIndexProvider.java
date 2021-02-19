@@ -152,7 +152,7 @@ public class TokenIndexProvider extends IndexProvider
     public void validatePrototype( IndexPrototype prototype )
     {
         IndexType indexType = prototype.getIndexType();
-        if ( indexType != IndexType.TOKEN )
+        if ( indexType != IndexType.LOOKUP )
         {
             throw new IllegalArgumentException(
                     "The '" + getProviderDescriptor().name() + "' index provider does not support " + indexType + " indexes: " + prototype );
