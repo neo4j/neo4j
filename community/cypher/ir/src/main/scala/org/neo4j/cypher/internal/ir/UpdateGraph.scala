@@ -147,27 +147,35 @@ trait UpdateGraph {
     hasSetLabelPatterns ||
     hasSetNodePropertyPatterns
 
-  def foreachOverlap(qg: QueryGraph): Boolean =
-    this != qg && // Foreach does not overlap itself
-      // Conservatively always assume overlap for now
-      (this.hasForeachPatterns && qg.containsReads ||
+  // TODO: We can be more precise and recursively check for overlaps inside nested foreach instead, e.g.
+  //  (foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(ug => ug.overlaps(qg) /* Read-Write */ ||
+  //  qg.foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(x => ug.overlaps(x))) /* Write-Read */)))
+  //  ...
+  def foreachOverlap(qgWithInfo: QgWithInfo): Boolean = {
+    val qg = qgWithInfo.qg
+    qgWithInfo.unstableLeaves.nonEmpty &&
+      this != qg && // Foreach does not overlap itself
+      (this.hasForeachPatterns && qg.containsReads || // Conservatively always assume overlap for now
         qg.hasForeachPatterns && qg.containsMergeRecursive && this.containsUpdates)
-    // TODO: We can be more precise and recursively check for overlaps inside nested foreach instead, e.g.
-    // (foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(ug => ug.overlaps(qg) /* Read-Write */ ||
-    //  qg.foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(x => ug.overlaps(x))) /* Write-Read */)))
-    //  ...
+  }
 
   /*
    * Checks if there is overlap between what is being read in the query graph
    * and what is being written here
    */
-  def overlaps(qg: QueryGraph): Boolean = {
+  def overlaps(qgWithInfo: QgWithInfo): Boolean = {
     containsUpdates && {
-      val readQg = qg.mergeQueryGraph.getOrElse(qg)
+      // A MERGE is always on its own in a QG. That's why we pick either the read graph of a MERGE or the qg itself.
+      val readQg = qgWithInfo.qg.mergeQueryGraph.map(mergeQg => qgWithInfo.copy(qg = mergeQg)).getOrElse(qgWithInfo)
 
-      createNodeOverlap(readQg) || createRelationshipOverlap(readQg) || deleteOverlap(readQg) ||
-        removeLabelOverlap(readQg) || setLabelOverlap(readQg) || setPropertyOverlap(readQg) ||
-        deleteOverlapWithMergeIn(qg) || foreachOverlap(readQg)
+      createNodeOverlap(readQg) ||
+        createRelationshipOverlap(readQg) ||
+        deleteOverlap(readQg) ||
+        removeLabelOverlap(readQg) ||
+        setLabelOverlap(readQg) ||
+        setPropertyOverlap(readQg) ||
+        deleteOverlapWithMergeIn(qgWithInfo.qg) ||
+        foreachOverlap(readQg)
     }
   }
 
@@ -206,12 +214,12 @@ trait UpdateGraph {
     containsUpdates && (hasSetPropertyOverlap || hasCreateRelationshipOverlap || hasLabelOverlap)
   }
 
-  def writeOnlyHeadOverlaps(qg: QueryGraph): Boolean = {
+  def writeOnlyHeadOverlaps(qgWithInfo: QgWithInfo): Boolean = {
     containsUpdates && {
-      val readQg = qg.mergeQueryGraph.getOrElse(qg)
+      val readQg = qgWithInfo.qg.mergeQueryGraph.map(mergeQg => qgWithInfo.copy(qg = mergeQg)).getOrElse(qgWithInfo)
 
       deleteOverlap(readQg) ||
-        deleteOverlapWithMergeIn(qg)
+        deleteOverlapWithMergeIn(qgWithInfo.qg)
     }
   }
 
@@ -226,7 +234,7 @@ trait UpdateGraph {
    * Checks for overlap between nodes being read in the query graph
    * and those being created here
    */
-  def createNodeOverlap(qg: QueryGraph): Boolean = {
+  def createNodeOverlap(qgWithInfo: QgWithInfo): Boolean = {
     def labelsOverlap(labelsToRead: Set[LabelName], labelsToWrite: Set[LabelName]): Boolean = {
       labelsToRead.isEmpty || (labelsToRead intersect labelsToWrite).nonEmpty
     }
@@ -234,17 +242,41 @@ trait UpdateGraph {
       propsToRead.isEmpty || propsToRead.exists(propsToWrite.overlaps)
     }
 
-    val nodesRead: Set[String] = qg.allPatternNodesRead.filterNot(qg.argumentIds)
+    val nodesRead: Set[String] = qgWithInfo.unstableNonArgumentPatternNodes
 
     createsNodes && nodesRead.exists(p => {
-      val readProps = qg.allKnownPropertiesOnIdentifier(p).map(_.propertyKey)
+      val readProps = qgWithInfo.qg.allKnownPropertiesOnIdentifier(p).map(_.propertyKey)
 
       //MATCH () CREATE ()?
-      qg.allKnownLabelsOnNode(p).isEmpty && readProps.isEmpty ||
+      qgWithInfo.qg.allKnownLabelsOnNode(p).isEmpty && readProps.isEmpty ||
         //MATCH (:B {prop:..}) CREATE (:B {prop:..})
-        labelsOverlap(qg.allKnownLabelsOnNode(p), createLabels) &&
+        labelsOverlap(qgWithInfo.qg.allKnownLabelsOnNode(p), createLabels) &&
           propsOverlap(readProps, createNodeProperties)
     })
+  }
+
+  /*
+   * Check if the labels or properties of any unstable leaf node overlaps
+   * with the labels or properties updated in this query. This may cause the read to affected
+   * by the writes.
+   */
+  def nodeOverlap(qgWithInfo: QgWithInfo): Boolean = {
+    val labelsToCreate = createLabels
+    val propertiesToCreate = createNodeProperties
+    val tailCreatesNodes = createsNodes
+
+    updatesNodes && qgWithInfo.unstableLeafPatternNodes.exists { currentNode =>
+      val labelsOnCurrentNode = qgWithInfo.qg.allKnownLabelsOnNode(currentNode)
+      val propertiesOnCurrentNode = qgWithInfo.qg.allKnownPropertiesOnIdentifier(currentNode).map(_.propertyKey)
+      val labelsToRemove = labelsToRemoveFromOtherNodes(currentNode)
+
+        labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tailCreatesNodes || //MATCH () CREATE/MERGE (...)?
+          (labelsOnCurrentNode intersect labelsToCreate).nonEmpty || //MATCH (:A) CREATE (:A)?
+          propertiesOnCurrentNode.exists(propertiesToCreate.overlaps) || //MATCH ({prop:42}) CREATE ({prop:...})
+          //MATCH (n:A), (m:B) REMOVE n:B
+          //MATCH (n:A), (m:A) REMOVE m:A
+          (labelsToRemove intersect labelsOnCurrentNode).nonEmpty
+    }
   }
 
   //if we do match delete and merge we always need to be eager
@@ -257,10 +289,10 @@ trait UpdateGraph {
    * Checks for overlap between rels being read in the query graph
    * and those being created here
    */
-  def createRelationshipOverlap(qg: QueryGraph): Boolean = {
+  def createRelationshipOverlap(qgWithInfo: QgWithInfo): Boolean = {
     //CREATE () MATCH ()-->()
-    (allRelPatternsWrittenNonEmpty && qg.allPatternRelationshipsRead.nonEmpty) && qg.allPatternRelationshipsRead.exists(r => {
-      val readProps = qg.allKnownPropertiesOnIdentifier(r.name).map(_.propertyKey)
+    allRelPatternsWrittenNonEmpty && qgWithInfo.unstablePatternRelationships.exists(r => {
+      val readProps = qgWithInfo.qg.allKnownPropertiesOnIdentifier(r.name).map(_.propertyKey)
       relationshipOverlap(r.types.toSet, readProps)
     })
   }
@@ -324,35 +356,35 @@ trait UpdateGraph {
    * Checks for overlap between labels being read in query graph
    * and labels being updated with SET and MERGE here
    */
-  def setLabelOverlap(qg: QueryGraph): Boolean =
-    qg.allPatternNodesRead.filterNot(qg.argumentIds)
-      .exists(p => qg.allKnownLabelsOnNode(p).intersect(labelsToSet).nonEmpty)
+  def setLabelOverlap(qgWithInfo: QgWithInfo): Boolean =
+    qgWithInfo.unstableNonArgumentPatternNodes
+      .exists(p => qgWithInfo.qg.allKnownLabelsOnNode(p).intersect(labelsToSet).nonEmpty)
 
   /*
    * Checks for overlap between what props are read in query graph
    * and what is updated with SET and MERGE here
    */
-  def setPropertyOverlap(qg: QueryGraph): Boolean =
-    setNodePropertyOverlap(qg.allKnownNodeProperties.map(_.propertyKey)) ||
-      setRelPropertyOverlap(qg.allKnownRelProperties.map(_.propertyKey))
+  def setPropertyOverlap(qgWithInfo: QgWithInfo): Boolean =
+    setNodePropertyOverlap(qgWithInfo.allKnownUnstableNodeProperties.map(_.propertyKey)) ||
+      setRelPropertyOverlap(qgWithInfo.allKnownUnstableRelProperties.map(_.propertyKey))
 
   /*
    * Checks for overlap between identifiers being read in query graph
    * and what is deleted here
    */
-  def deleteOverlap(qg: QueryGraph): Boolean = {
+  def deleteOverlap(qgWithInfo: QgWithInfo): Boolean = {
     // TODO:H FIXME qg.argumentIds here is not correct, but there is a unit test that depends on it
-    val identifiersToRead = qg.allPatternNodesRead ++ qg.allPatternRelationshipsRead.map(_.name) ++ qg.argumentIds
+    val identifiersToRead = qgWithInfo.unstablePatternNodes ++ qgWithInfo.qg.allPatternRelationshipsRead.map(_.name) ++ qgWithInfo.qg.argumentIds
     (identifiersToRead intersect identifiersToDelete).nonEmpty
   }
 
-  def removeLabelOverlap(qg: QueryGraph): Boolean = {
+  def removeLabelOverlap(qgWithInfo: QgWithInfo): Boolean = {
     removeLabelPatterns.exists {
-      case RemoveLabelPattern(removeId, labelsToRemove) =>
+      case RemoveLabelPattern(_, labelsToRemove) =>
         //does any other identifier match on the labels I am deleting?
         //MATCH (a:BAR)..(b) REMOVE b:BAR
         labelsToRemove.exists(l => {
-          val otherLabelsRead = qg.allPatternNodesRead.flatMap(qg.allKnownLabelsOnNode)
+          val otherLabelsRead = qgWithInfo.unstablePatternNodes.flatMap(qgWithInfo.qg.allKnownLabelsOnNode)
           otherLabelsRead(l)
         })
     }
