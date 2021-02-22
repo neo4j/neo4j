@@ -192,7 +192,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         // There may have been a previous import which was killed before it even started, where the label scan store could
         // be in a semi-initialized state. Better to be on the safe side and deleted it. We get her after determining that
         // the db is either completely empty or non-existent anyway, so deleting this file is OK.
-        fileSystem.deleteFile( databaseLayout.labelScanStore() );
+        if ( fileSystem.fileExists( databaseLayout.labelScanStore() ) )
+        {
+            fileSystem.deleteFile( databaseLayout.labelScanStore() );
+        }
         deleteCountsStore();
 
         instantiateStores();
