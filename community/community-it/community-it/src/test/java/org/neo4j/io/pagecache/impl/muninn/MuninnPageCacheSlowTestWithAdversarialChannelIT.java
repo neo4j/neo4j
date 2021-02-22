@@ -21,7 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import org.neo4j.adversaries.fs.AdversarialChannelDefaultFileSystemAbstraction;
 
-public class MuninnPageCacheSlowTestWithAdversarialChannel extends MuninnPageCacheSlowTestWithRealFileSystemIT
+public class MuninnPageCacheSlowTestWithAdversarialChannelIT extends MuninnPageCacheSlowTestWithRealFileSystemIT
 {
 
     @Override
