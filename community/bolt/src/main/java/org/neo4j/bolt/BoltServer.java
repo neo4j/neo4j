@@ -27,8 +27,11 @@ import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import javax.net.ssl.SSLException;
@@ -256,7 +259,6 @@ public class BoltServer extends LifecycleAdapter
     }
 
     private ProtocolInitializer createLoopbackProtocolInitializer( BoltProtocolFactory boltProtocolFactory, TransportThrottleGroup throttleGroup )
-
     {
         if ( config.get( BoltConnectorInternalSettings.enable_loopback_auth ) )
         {
@@ -269,7 +271,21 @@ public class BoltServer extends LifecycleAdapter
 
             if ( unixSocketFile.exists() ) // Check if the file does not exist before passing to netty to create it
             {
-                throw new IllegalArgumentException( "Loopback listen file: " + unixSocketFile + " already exists." );
+                if ( config.get( BoltConnectorInternalSettings.unsupported_loopback_delete ) )
+                {
+                    try
+                    {
+                        Files.deleteIfExists( Path.of( unixSocketFile.getPath() ) );
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new IllegalStateException( "Failed to delete loopback domain socket file '" + unixSocketFile + "': " + e.getMessage(), e );
+                    }
+                }
+                else
+                {
+                    throw new IllegalArgumentException( "Loopback listen file: " + unixSocketFile + " already exists." );
+                }
             }
 
             DomainSocketAddress loopbackListenAddress = new DomainSocketAddress( unixSocketFile );
