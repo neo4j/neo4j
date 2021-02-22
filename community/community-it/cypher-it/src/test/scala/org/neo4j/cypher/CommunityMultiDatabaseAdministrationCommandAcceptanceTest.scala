@@ -107,7 +107,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute(s"SHOW DATABASE $DEFAULT_DATABASE_NAME")
 
     // THEN
-    result.toList should be(List(db(DEFAULT_DATABASE_NAME, default = true, systemDefault = true)))
+    result.toList should be(List(db(DEFAULT_DATABASE_NAME, home = true, default = true)))
   }
 
   test(s"should show database $DEFAULT_DATABASE_NAME with params") {
@@ -118,7 +118,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DATABASE $db", dbDefaultMap)
 
     // THEN
-    result.toList should be(List(db(DEFAULT_DATABASE_NAME, default = true, systemDefault = true)))
+    result.toList should be(List(db(DEFAULT_DATABASE_NAME, home = true, default = true)))
   }
 
   test("should give nothing when showing a non-existing database") {
@@ -155,7 +155,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DATABASES")
 
     // THEN
-    result.toSet should be(Set(db(DEFAULT_DATABASE_NAME, default = true, systemDefault = true), db(SYSTEM_DATABASE_NAME)))
+    result.toSet should be(Set(db(DEFAULT_DATABASE_NAME, home = true, default = true), db(SYSTEM_DATABASE_NAME)))
   }
 
   test("should fail when showing databases when not on system database") {
@@ -174,7 +174,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toList should be(List(defaultDb(DEFAULT_DATABASE_NAME)))
+    result.toList should be(List(homeOrdefaultDb(DEFAULT_DATABASE_NAME)))
   }
 
   test("should show custom default database using show default database command") {
@@ -187,7 +187,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toList should be(List(defaultDb("foo")))
+    result.toList should be(List(homeOrdefaultDb("foo")))
   }
 
   test("should show correct default database for switch of default database") {
@@ -199,7 +199,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
     val result = execute("SHOW DEFAULT DATABASE")
 
     // THEN
-    result.toSet should be(Set(defaultDb(DEFAULT_DATABASE_NAME)))
+    result.toSet should be(Set(homeOrdefaultDb(DEFAULT_DATABASE_NAME)))
 
     // GIVEN
     config.set(default_database, "foo")
@@ -212,7 +212,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
     // Required because current acceptance test machinery doesn't actually start foo
     //   but the defaultDb row constructor assumes currentStatus -> started
-    val expectedRow = defaultDb("foo") + ("currentStatus" -> "unknown")
+    val expectedRow = homeOrdefaultDb("foo") + ("currentStatus" -> "unknown")
     result2.toSet should be(Set(expectedRow))
   }
 
@@ -222,6 +222,17 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
     // THEN
     assertFailWhenNotOnSystem("SHOW DEFAULT DATABASE", "SHOW DEFAULT DATABASE")
+  }
+
+  test("should show default database as home database when executing as anonymous user") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW HOME DATABASE")
+
+    // THEN
+    result.toList should be(List(homeOrdefaultDb(DEFAULT_DATABASE_NAME)))
   }
 
   // yield / skip / limit / order by / where
@@ -373,6 +384,17 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
     // THEN
     result.toList should be(List(Map("foo" -> DEFAULT_DATABASE_NAME)))
+  }
+
+  test("should show default database as home database with YIELD") {
+    // GIVEN
+    setup(defaultConfig)
+
+    // WHEN
+    val result = execute("SHOW HOME DATABASE YIELD name")
+
+    // THEN
+    result.toList should be(List(Map("name" -> DEFAULT_DATABASE_NAME)))
   }
 
   test("should not show database with invalid yield") {
@@ -538,17 +560,18 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
   // Helper methods
 
-  private def db(name: String, default: Boolean = false, systemDefault: Boolean = false): Map[String, Any] =
+  private def db(name: String, home: Boolean = false, default: Boolean = false): Map[String, Any] =
     Map("name" -> name,
       "address" -> localHostString,
       "role" -> "standalone",
       "requestedStatus" -> onlineStatus,
       "currentStatus" -> onlineStatus,
       "error" -> "",
-      "default" -> systemDefault
+      "default" -> default,
+      "home" -> home
     )
 
-  private def defaultDb(name: String): Map[String, String] =
+  private def homeOrdefaultDb(name: String): Map[String, String] =
     Map("name" -> name,
       "address" -> localHostString,
       "role" -> "standalone",

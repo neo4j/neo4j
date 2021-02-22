@@ -275,42 +275,48 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.CreateUser(literalFoo, isEncryptedPassword = true, pw("sha256,x1024,0x2460294fe,b3ddb287a"), ast.UserOptions(Some(true), None, None), ast.IfExistsReplace))
   }
 
-  ignore("CREATE USER foo SET password 'password' SET DEFAULT DATABASE db1") {
+  test("CREATE USER foo SET password 'password' SET HOME DATABASE db1") {
     yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(Left("db1"))), ast.IfExistsThrowError))
   }
 
-  ignore("CREATE USER foo SET password 'password' SET DEFAULT DATABASE $db") {
+  test("CREATE USER foo SET password 'password' SET HOME DATABASE $db") {
     yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(paramDb)), ast.IfExistsThrowError))
   }
 
-  ignore("CREATE OR REPLACE USER foo SET password 'password' SET DEFAULT DATABASE db1") {
+  test("CREATE OR REPLACE USER foo SET password 'password' SET HOME DATABASE db1") {
     yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(Left("db1"))), ast.IfExistsReplace))
   }
 
-  ignore("CREATE USER foo IF NOT EXISTS SET password 'password' SET DEFAULT DATABASE db1") {
+  test("CREATE USER foo IF NOT EXISTS SET password 'password' SET HOME DATABASE db1") {
     yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(Left("db1"))), ast.IfExistsDoNothing))
   }
 
-  ignore("CREATE USER foo SET password 'password' SET PASSWORD CHANGE NOT REQUIRED SET DEFAULT DAtabase $db") {
+  test("CREATE USER foo SET password 'password' SET PASSWORD CHANGE NOT REQUIRED SET HOME DAtabase $db") {
     yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(false), None, Some(paramDb)), ast.IfExistsThrowError))
   }
 
-  ignore("CREATE USER foo SET password 'password' SET DEFAULT DATABASE `#dfkfop!`") {
+  test("CREATE USER foo SET password 'password' SET HOME DATABASE `#dfkfop!`") {
     yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(Left("#dfkfop!"))), ast.IfExistsThrowError))
   }
 
+  test("CREATE USER foo SET password 'password' SET HOME DATABASE null") {
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(Left("null"))), ast.IfExistsThrowError))
+  }
+
   Seq(
-    ("CHANGE REQUIRED", "SET STATUS ACTIVE", "SET DEFAULT DATABASE db1"),
-    ("CHANGE REQUIRED", "SET DEFAULT DATABASE db1", "SET STATUS ACTIVE"),
-    ("SET PASSWORD CHANGE REQUIRED", "SET STATUS ACTIVE", "SET DEFAULT DATABASE db1"),
-    ("SET PASSWORD CHANGE REQUIRED", "SET DEFAULT DATABASE db1", "SET STATUS ACTIVE"),
-    ("SET STATUS ACTIVE", "SET PASSWORD CHANGE REQUIRED", "SET DEFAULT DATABASE db1"),
-    ("SET STATUS ACTIVE", "SET DEFAULT DATABASE db1", "SET PASSWORD CHANGE REQUIRED"),
-    ("SET DEFAULT DATABASE db1", "SET PASSWORD CHANGE REQUIRED", "SET STATUS ACTIVE"),
-    ("SET DEFAULT DATABASE db1", "SET STATUS ACTIVE", "SET PASSWORD CHANGE REQUIRED")
+    ("CHANGE REQUIRED", "SET STATUS ACTIVE", "SET HOME DATABASE db1"),
+    ("CHANGE REQUIRED", "SET HOME DATABASE db1", "SET STATUS ACTIVE")
   ).foreach {
     case (first: String, second: String, third: String) =>
-      ignore(s"CREATE USER foo SET password 'password' $first $second $third") {
+      test(s"CREATE USER foo SET password 'password' $first $second $third") {
+        yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), Some(false), Some(Left("db1"))), ast.IfExistsThrowError))
+      }
+  }
+
+  Seq("SET PASSWORD CHANGE REQUIRED", "SET STATUS ACTIVE", "SET HOME DATABASE db1")
+  .permutations.foreach {
+    clauses =>
+      test(s"CREATE USER foo SET password 'password' ${clauses.mkString(" ")}") {
         yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), Some(false), Some(Left("db1"))), ast.IfExistsThrowError))
       }
   }
@@ -394,7 +400,11 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
-  test("CREATE USER foo SET PASSWORD 'password' SET DEFAULT DATABASE db1 CHANGE NOT REQUIRED") {
+  test("CREATE USER foo SET PASSWORD 'password' SET HOME DATABASE db1 CHANGE NOT REQUIRED") {
+    failsToParse
+  }
+
+  test("CREATE USER foo SET PASSWORD 'password' SET DEFAULT DATABASE db1") {
     failsToParse
   }
 
@@ -466,11 +476,11 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
-  test("CREATE USER foo SET PASSWORD 'bar' SET DEFAULT DATABASE 123456") {
+  test("CREATE USER foo SET PASSWORD 'bar' SET HOME DATABASE 123456") {
     failsToParse
   }
 
-  test("CREATE USER foo SET PASSWORD 'bar' SET DEFAULT DATABASE #dfkfop!") {
+  test("CREATE USER foo SET PASSWORD 'bar' SET HOME DATABASE #dfkfop!") {
     failsToParse
   }
 
@@ -618,27 +628,31 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.AlterUser(literalFoo, isEncryptedPassword = Some(false), Some(password), ast.UserOptions(requirePasswordChange = Some(false), suspended = Some(true), None), ifExists = true))
   }
 
-  ignore("ALTER USER foo SET DEFAULT DATABASE db1") {
+  test("ALTER USER foo SET HOME DATABASE db1") {
     yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(Left("db1"))), ifExists = false))
   }
 
-  ignore("ALTER USER foo SET DEFAULT DATABASE $db") {
+  test("ALTER USER foo SET HOME DATABASE $db") {
     yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(paramDb)), ifExists = false))
   }
 
-  ignore("ALTER USER foo SET PASSWORD CHANGE REQUIRED SET DEFAULT DATABASE db1") {
+  test("ALTER USER foo SET HOME DATABASE null") {
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(Left("null"))), ifExists = false))
+  }
+
+  test("ALTER USER foo SET PASSWORD CHANGE REQUIRED SET HOME DATABASE db1") {
     yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(requirePasswordChange = Some(true), suspended = None, Some(Left("db1"))), ifExists = false))
   }
 
-  ignore("ALTER USER foo SET password 'password' SET DEFAULT DATABASE db1") {
+  test("ALTER USER foo SET password 'password' SET HOME DATABASE db1") {
     yields(ast.AlterUser(literalFoo, Some(false), Some(password), ast.UserOptions(None, None, Some(Left("db1"))), ifExists = false))
   }
 
-  ignore("ALTER USER foo SET password 'password' SET PASSWORD CHANGE NOT REQUIRED SET DEFAULT DAtabase $db") {
+  test("ALTER USER foo SET password 'password' SET PASSWORD CHANGE NOT REQUIRED SET HOME DAtabase $db") {
     yields(ast.AlterUser(literalFoo, Some(false), Some(password), ast.UserOptions(requirePasswordChange = Some(false), None, Some(paramDb)), ifExists = false))
   }
 
-  ignore("ALTER USER foo SET DEFAULT DATABASE `#dfkfop!`") {
+  test("ALTER USER foo SET HOME DATABASE `#dfkfop!`") {
     yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(Left("#dfkfop!"))), ifExists = false))
   }
 
@@ -661,18 +675,20 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     }
   }
 
-  Seq(
-    ("SET PASSWORD CHANGE REQUIRED", "SET STATUS ACTIVE", "SET DEFAULT DATABASE db1"),
-    ("SET PASSWORD CHANGE REQUIRED", "SET DEFAULT DATABASE db1", "SET STATUS ACTIVE"),
-    ("SET STATUS ACTIVE", "SET PASSWORD CHANGE REQUIRED", "SET DEFAULT DATABASE db1"),
-    ("SET STATUS ACTIVE", "SET DEFAULT DATABASE db1", "SET PASSWORD CHANGE REQUIRED"),
-    ("SET DEFAULT DATABASE db1", "SET PASSWORD CHANGE REQUIRED", "SET STATUS ACTIVE"),
-    ("SET DEFAULT DATABASE db1", "SET STATUS ACTIVE", "SET PASSWORD CHANGE REQUIRED")
-  ).foreach {
-    case (first: String, second: String, third: String) =>
-      ignore(s"ALTER USER foo $first $second $third") {
+  Seq("SET PASSWORD CHANGE REQUIRED", "SET STATUS ACTIVE", "SET HOME DATABASE db1"
+  ).permutations.foreach {
+    clauses =>
+      test(s"ALTER USER foo ${clauses.mkString(" ")}") {
         yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(Some(true), Some(false), Some(Left("db1"))), ifExists = false))
       }
+  }
+
+  test("ALTER USER foo REMOVE HOME DATABASE") {
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(Left(null))), ifExists = false))
+  }
+
+  test("ALTER USER foo IF EXISTS REMOVE HOME DATABASE") {
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(Left(null))), ifExists = true))
   }
 
   test("ALTER USER foo") {
@@ -735,11 +751,11 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
-  test("ALTER USER foo SET DEFAULT DATABASE 123456") {
+  test("ALTER USER foo SET HOME DATABASE 123456") {
     failsToParse
   }
 
-  test("ALTER USER foo SET DEFAULT DATABASE #dfkfop!") {
+  test("ALTER USER foo SET HOME DATABASE #dfkfop!") {
     failsToParse
   }
 
@@ -748,6 +764,22 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("ALTER USER foo IF NOT EXISTS SET PASSWORD 'password'") {
+    failsToParse
+  }
+
+  test("ALTER USER foo SET STATUS SUSPENDED REMOVE HOME DATABASE") {
+    failsToParse
+  }
+
+  test("ALTER USER foo SET HOME DATABASE db1 REMOVE HOME DATABASE") {
+    failsToParse
+  }
+
+  test("ALTER USER foo SET DEFAULT DATABASE db1") {
+    failsToParse
+  }
+
+  test("ALTER USER foo REMOVE DEFAULT DATABASE") {
     failsToParse
   }
 

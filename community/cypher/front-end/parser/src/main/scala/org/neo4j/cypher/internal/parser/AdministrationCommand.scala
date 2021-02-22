@@ -78,7 +78,7 @@ trait AdministrationCommand extends Parser
   }
 
   def CreateUser: Rule1[ast.CreateUser] = rule("CREATE USER") {
-    // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE}]*
+    // CREATE [OR REPLACE] USER username [IF NOT EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE} | {SET HOME DATABASE name}]*
     group(CreateUserStart ~~ SetPassword ~~ optional(UserOptions)) ~~>>
       ((userName, ifExistsDo, isEncryptedPassword, initialPassword, userOptions) => {
         val createUserOptions = userOptions.map {
@@ -105,13 +105,14 @@ trait AdministrationCommand extends Parser
   }
 
   def AlterUser: Rule1[ast.AlterUser] = rule("ALTER USER") {
-    // ALTER USER username [IF EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE}]*
+    // ALTER USER username [IF EXISTS] SET [PLAINTEXT | ENCRYPTED] PASSWORD stringLiteralPassword|parameterPassword [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE} | {SET HOME DATABASE name}]*
     group(AlterUserStart ~~ SetPassword ~~ optional(UserOptions)) ~~>>
       ((userName, ifExists, isEncryptedPassword, initialPassword, userOptions) => ast.AlterUser(userName, Some(isEncryptedPassword), Some(initialPassword), userOptions.getOrElse(ast.UserOptions(None, None, None)), ifExists)) |
     //
-    // ALTER USER username [IF EXISTS] [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE}]+
-    group(AlterUserStart ~~ UserOptionsWithSetPart) ~~>>
-      ((userName, ifExists, userOptions) => ast.AlterUser(userName, None, None, userOptions, ifExists))
+    // ALTER USER username [IF EXISTS] [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE} | {SET HOME DATABASE name}]+
+    group(AlterUserStart ~~ UserOptionsWithSetPart) ~~>> ((userName, ifExists, userOptions) => ast.AlterUser(userName, None, None, userOptions, ifExists)) |
+    // ALTER USER username [IF EXISTS] REMOVE HOME DATABASE
+    group(AlterUserStart ~~ keyword("REMOVE HOME DATABASE")) ~~>> ((userName, ifExists) => ast.AlterUser(userName, None, None, ast.UserOptions(None, None, Some(Left(null))), ifExists))
   }
 
   def AlterUserStart: Rule2[Either[String, Parameter], Boolean] = {
@@ -137,15 +138,29 @@ trait AdministrationCommand extends Parser
   def PasswordExpression: Rule1[Expression] = group(SensitiveStringLiteral | SensitiveStringParameter)
 
   def UserOptions: Rule1[ast.UserOptions] =
-    RequirePasswordChangeNoSetKeyword ~~ SetStatus                       ~~> ((password, status)           => ast.UserOptions(Some(password), Some(status), None)) |
-    RequirePasswordChangeNoSetKeyword                                    ~~> (password                     => ast.UserOptions(Some(password), None, None)) |
+    RequirePasswordChangeNoSetKeyword ~~ SetStatus ~~ SetHomeDatabase ~~> ((password, status, database) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    RequirePasswordChangeNoSetKeyword ~~ SetHomeDatabase ~~ SetStatus ~~> ((password, database, status) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    RequirePasswordChangeNoSetKeyword ~~ SetStatus                    ~~> ((password, status)           => ast.UserOptions(Some(password), Some(status), None)) |
+    RequirePasswordChangeNoSetKeyword ~~ SetHomeDatabase              ~~> ((password, database)         => ast.UserOptions(Some(password), None, Some(database))) |
+    RequirePasswordChangeNoSetKeyword                                 ~~> (password                     => ast.UserOptions(Some(password), None, None)) |
     UserOptionsWithSetPart
 
   def UserOptionsWithSetPart: Rule1[ast.UserOptions] =
-    RequirePasswordChange ~~ SetStatus                       ~~> ((password, status)           => ast.UserOptions(Some(password), Some(status), None)) |
-    SetStatus ~~ RequirePasswordChange                       ~~> ((status, password)           => ast.UserOptions(Some(password), Some(status), None)) |
-    RequirePasswordChange                                    ~~> (password                     => ast.UserOptions(Some(password), None, None)) |
-    SetStatus                                                ~~> (status                       => ast.UserOptions(None, Some(status), None))
+    RequirePasswordChange ~~ SetStatus ~~ SetHomeDatabase             ~~> ((password, status, database) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    RequirePasswordChange ~~ SetHomeDatabase ~~ SetStatus             ~~> ((password, database, status) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    SetStatus ~~ RequirePasswordChange ~~ SetHomeDatabase             ~~> ((status, password, database) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    SetStatus ~~ SetHomeDatabase ~~ RequirePasswordChange             ~~> ((status, database, password) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    SetHomeDatabase ~~ RequirePasswordChange ~~ SetStatus             ~~> ((database, password, status) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    SetHomeDatabase ~~ SetStatus ~~ RequirePasswordChange             ~~> ((database, status, password) => ast.UserOptions(Some(password), Some(status), Some(database))) |
+    RequirePasswordChange ~~ SetStatus                                ~~> ((password, status)           => ast.UserOptions(Some(password), Some(status), None)) |
+    RequirePasswordChange ~~ SetHomeDatabase                          ~~> ((password, database)         => ast.UserOptions(Some(password), None, Some(database))) |
+    SetStatus ~~ RequirePasswordChange                                ~~> ((status, password)           => ast.UserOptions(Some(password), Some(status), None)) |
+    SetStatus ~~ SetHomeDatabase                                      ~~> ((status, database)           => ast.UserOptions(None, Some(status), Some(database))) |
+    SetHomeDatabase ~~ RequirePasswordChange                          ~~> ((database, password)         => ast.UserOptions(Some(password), None, Some(database))) |
+    SetHomeDatabase ~~ SetStatus                                      ~~> ((database, status)           => ast.UserOptions(None, Some(status), Some(database))) |
+    RequirePasswordChange                                             ~~> (password                     => ast.UserOptions(Some(password), None, None)) |
+    SetStatus                                                         ~~> (status                       => ast.UserOptions(None, Some(status), None)) |
+    SetHomeDatabase                                                   ~~> (database                     => ast.UserOptions(None, None, Some(database)))
 
   def RequirePasswordChangeNoSetKeyword: Rule1[Boolean] =
     keyword("CHANGE NOT REQUIRED") ~>>> (_ => _ => false) |
@@ -159,6 +174,9 @@ trait AdministrationCommand extends Parser
   def SetStatus: Rule1[Boolean] =
     keyword("SET STATUS SUSPENDED") ~>>> (_ => _ => true) |
     keyword("SET STATUS ACTIVE") ~>>> (_ => _ => false)
+
+  def SetHomeDatabase: Rule1[Either[String, Parameter]] =
+    keyword("SET HOME DATABASE") ~~ SymbolicDatabaseNameOrStringParameter
 
   // Role management commands
 
@@ -317,6 +335,7 @@ trait AdministrationCommand extends Parser
     keyword("DROP USER") ~~~> (_ => ast.DropUserAction) |
     keyword("SHOW USER") ~~~> (_ => ast.ShowUserAction) |
     keyword("SET USER STATUS") ~~~> (_ => ast.SetUserStatusAction) |
+    keyword("SET USER HOME DATABASE") ~~~> (_ => ast.SetUserHomeDatabaseAction) |
     keyword("SET") ~~ PasswordKeyword ~~~> (_ => ast.SetPasswordsAction) |
     keyword("ALTER USER") ~~~> (_ => ast.AlterUserAction) |
     keyword("USER MANAGEMENT") ~~~> (_ => ast.AllUserActions) |
@@ -462,7 +481,8 @@ trait AdministrationCommand extends Parser
   private def ScopeForShowDatabase: Rule1[ast.DatabaseScope] = rule("show database scope") {
     group(keyword("DATABASE") ~~ SymbolicDatabaseNameOrStringParameter) ~~>> (ast.NamedDatabaseScope(_)) |
     keyword("DATABASES") ~~~> ast.AllDatabasesScope() |
-    keyword("DEFAULT DATABASE") ~~~> ast.DefaultDatabaseScope()
+    keyword("DEFAULT DATABASE") ~~~> ast.DefaultDatabaseScope() |
+    keyword("HOME DATABASE") ~~~> ast.HomeDatabaseScope()
   }
 
   def CreateDatabase: Rule1[ast.CreateDatabase] = rule("CREATE DATABASE") {

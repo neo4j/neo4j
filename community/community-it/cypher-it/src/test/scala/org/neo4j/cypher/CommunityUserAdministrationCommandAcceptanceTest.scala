@@ -369,7 +369,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should not return a user when not logged in") {
     // THEN
-    execute("SHOW CURRENT USER").toList should have size(0)
+    execute("SHOW CURRENT USER").toList.size should be(0)
   }
 
   // Tests for creating users
@@ -493,19 +493,10 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet shouldBe Set(defaultUser)
   }
 
-  ignore("should not be able to create user with a default database in community") {
+  test("should not be able to create user with a default database in community") {
     // WHEN
-    assertFailure("CREATE USER foo SET PASSWORD 'password' SET DEFAULT DATABASE foo",
-      "Failed to create the specified user 'foo': 'DEFAULT DATABASE' is not available in community edition.")
-
-    // THEN
-    execute("SHOW USERS").toSet shouldBe Set(defaultUser)
-  }
-
-  ignore("should not be able to alter a users default database in community") {
-    // WHEN
-    assertFailure("ALTER USER foo SET DEFAULT DATABASE foo",
-      "Failed to alter the specified user 'foo': 'DEFAULT DATABASE' is not available in community edition.")
+    assertFailure("CREATE USER foo SET PASSWORD 'password' SET HOME DATABASE foo",
+      "Failed to create the specified user 'foo': 'HOME DATABASE' is not available in community edition.")
 
     // THEN
     execute("SHOW USERS").toSet shouldBe Set(defaultUser)
@@ -1136,6 +1127,15 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet should be(Set(defaultUser))
   }
 
+  test("should not be able to alter a users default database in community") {
+    // WHEN
+    assertFailure("ALTER USER foo SET HOME DATABASE foo",
+      "Failed to alter the specified user 'foo': 'HOME DATABASE' is not available in community edition.")
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser)
+  }
+
   // Tests for changing own password
 
   test("should change own password") {
@@ -1389,10 +1389,8 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   // Helper methods
 
-  private def user(username: String, passwordChangeRequired: Boolean = true,
-                   defaultDatabase: String = DEFAULT_DATABASE_NAME): Map[String, Any] = {
-    Map("user" -> username, "roles" -> null, "passwordChangeRequired" -> passwordChangeRequired, "suspended" -> null)
-  }
+  private def user(username: String, passwordChangeRequired: Boolean = true): Map[String, Any] =
+    Map("user" -> username, "roles" -> null, "passwordChangeRequired" -> passwordChangeRequired, "suspended" -> null, "home" -> null)
 
   private def testUserLogin(username: String, password: String, expected: AuthenticationResult): Unit = {
     val login = authManager.login(SecurityTestUtils.authToken(username, password))

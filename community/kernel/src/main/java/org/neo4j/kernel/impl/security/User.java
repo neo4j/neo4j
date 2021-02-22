@@ -47,20 +47,13 @@ public class User
      */
     private final SortedSet<String> flags;
 
-    /**
-     * The user's default database, if the user does not have a default database set, this will
-     * be null
-     */
-    private final String defaultDatabase;
-
     public static final String PASSWORD_CHANGE_REQUIRED = "password_change_required";
 
-    private User( String name, Credential credential, String defaultDatabase, SortedSet<String> flags )
+    private User( String name, Credential credential, SortedSet<String> flags )
     {
         this.name = name;
         this.credential = credential;
         this.flags = flags;
-        this.defaultDatabase = defaultDatabase;
     }
 
     public String name()
@@ -71,11 +64,6 @@ public class User
     public Credential credentials()
     {
         return credential;
-    }
-
-    public String defaultDatabase()
-    {
-        return defaultDatabase;
     }
 
     public boolean hasFlag( String flag )
@@ -147,10 +135,9 @@ public class User
 
     public static class Builder
     {
-        private String name;
+        private final String name;
         private Credential credential;
-        private String defaultDatabase;
-        private SortedSet<String> flags = new TreeSet<>();
+        private final SortedSet<String> flags = new TreeSet<>();
 
         public Builder( String name, Credential credential )
         {
@@ -196,15 +183,9 @@ public class User
             return this;
         }
 
-        public Builder withDefaultDatabase( String defaultDatabase )
-        {
-            this.defaultDatabase = defaultDatabase;
-            return this;
-        }
-
         public User build()
         {
-            return new User( name, credential, defaultDatabase, flags );
+            return new User( name, credential, flags );
         }
     }
 }

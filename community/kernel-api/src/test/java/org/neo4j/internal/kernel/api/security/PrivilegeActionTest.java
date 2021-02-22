@@ -67,7 +67,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ROLE_MANAGE
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_LABEL;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_PASSWORDS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_PROPERTY;
-import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_USER_DEFAULT_DATABASE;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_USER_HOME_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_USER_STATUS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_CONSTRAINT;
@@ -96,7 +96,7 @@ class PrivilegeActionTest
         expected.put( TRANSACTION_MANAGEMENT, Set.of( SHOW_TRANSACTION, TERMINATE_TRANSACTION, SHOW_CONNECTION, TERMINATE_CONNECTION ) );
         expected.put( ROLE_MANAGEMENT, Set.of( SHOW_ROLE, CREATE_ROLE, DROP_ROLE, ASSIGN_ROLE, REMOVE_ROLE ) );
         expected.put( USER_MANAGEMENT, Set.of( SHOW_USER, CREATE_USER, DROP_USER, ALTER_USER ) );
-        expected.put( ALTER_USER, Set.of( SET_USER_STATUS, SET_PASSWORDS, SET_USER_DEFAULT_DATABASE ) );
+        expected.put( ALTER_USER, Set.of( SET_USER_STATUS, SET_PASSWORDS, SET_USER_HOME_DATABASE ) );
         expected.put( DATABASE_MANAGEMENT, Set.of( CREATE_DATABASE, DROP_DATABASE ) );
         expected.put( PRIVILEGE_MANAGEMENT, Set.of( SHOW_PRIVILEGE, ASSIGN_PRIVILEGE, REMOVE_PRIVILEGE ) );
         expected.put( WRITE, Set.of( SET_LABEL, REMOVE_LABEL, CREATE_ELEMENT, DELETE_ELEMENT, SET_PROPERTY ) );

@@ -64,7 +64,7 @@ import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.SetLabelAction
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetPropertyAction
-import org.neo4j.cypher.internal.ast.SetUserDefaultDatabaseAction
+import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowConstraintAction
 import org.neo4j.cypher.internal.ast.ShowIndexAction
@@ -83,73 +83,73 @@ object ActionMapper {
   def asKernelAction(action: AdminAction): security.PrivilegeAction = action match {
     case AccessDatabaseAction => security.PrivilegeAction.ACCESS
 
-    case AllIndexActions => security.PrivilegeAction.INDEX
-    case CreateIndexAction => security.PrivilegeAction.CREATE_INDEX
-    case DropIndexAction => security.PrivilegeAction.DROP_INDEX
-    case ShowIndexAction => security.PrivilegeAction.SHOW_INDEX
-    case AllConstraintActions => security.PrivilegeAction.CONSTRAINT
+    case AllIndexActions        => security.PrivilegeAction.INDEX
+    case CreateIndexAction      => security.PrivilegeAction.CREATE_INDEX
+    case DropIndexAction        => security.PrivilegeAction.DROP_INDEX
+    case ShowIndexAction        => security.PrivilegeAction.SHOW_INDEX
+    case AllConstraintActions   => security.PrivilegeAction.CONSTRAINT
     case CreateConstraintAction => security.PrivilegeAction.CREATE_CONSTRAINT
-    case DropConstraintAction => security.PrivilegeAction.DROP_CONSTRAINT
-    case ShowConstraintAction => security.PrivilegeAction.SHOW_CONSTRAINT
+    case DropConstraintAction   => security.PrivilegeAction.DROP_CONSTRAINT
+    case ShowConstraintAction   => security.PrivilegeAction.SHOW_CONSTRAINT
 
-    case AllTokenActions => security.PrivilegeAction.TOKEN
-    case CreateNodeLabelAction => security.PrivilegeAction.CREATE_LABEL
+    case AllTokenActions              => security.PrivilegeAction.TOKEN
+    case CreateNodeLabelAction        => security.PrivilegeAction.CREATE_LABEL
     case CreateRelationshipTypeAction => security.PrivilegeAction.CREATE_RELTYPE
-    case CreatePropertyKeyAction => security.PrivilegeAction.CREATE_PROPERTYKEY
+    case CreatePropertyKeyAction      => security.PrivilegeAction.CREATE_PROPERTYKEY
 
     case TraverseAction => security.PrivilegeAction.TRAVERSE
-    case ReadAction => security.PrivilegeAction.READ
-    case MatchAction => security.PrivilegeAction.MATCH
-    case WriteAction => security.PrivilegeAction.WRITE
+    case ReadAction     => security.PrivilegeAction.READ
+    case MatchAction    => security.PrivilegeAction.MATCH
+    case WriteAction    => security.PrivilegeAction.WRITE
 
     case CreateElementAction => security.PrivilegeAction.CREATE_ELEMENT
     case DeleteElementAction => security.PrivilegeAction.DELETE_ELEMENT
-    case SetLabelAction => security.PrivilegeAction.SET_LABEL
-    case RemoveLabelAction => security.PrivilegeAction.REMOVE_LABEL
-    case SetPropertyAction => security.PrivilegeAction.SET_PROPERTY
-    case MergeAdminAction => security.PrivilegeAction.MERGE
+    case SetLabelAction      => security.PrivilegeAction.SET_LABEL
+    case RemoveLabelAction   => security.PrivilegeAction.REMOVE_LABEL
+    case SetPropertyAction   => security.PrivilegeAction.SET_PROPERTY
+    case MergeAdminAction    => security.PrivilegeAction.MERGE
 
     case AllGraphAction => security.PrivilegeAction.GRAPH_ACTIONS
 
     case AllDatabaseAction => security.PrivilegeAction.DATABASE_ACTIONS
 
     case TerminateTransactionAction => security.PrivilegeAction.TERMINATE_TRANSACTION
-    case ShowTransactionAction => security.PrivilegeAction.SHOW_TRANSACTION
-    case AllTransactionActions => security.PrivilegeAction.TRANSACTION_MANAGEMENT
+    case ShowTransactionAction      => security.PrivilegeAction.SHOW_TRANSACTION
+    case AllTransactionActions      => security.PrivilegeAction.TRANSACTION_MANAGEMENT
 
     case StartDatabaseAction => security.PrivilegeAction.START_DATABASE
-    case StopDatabaseAction => security.PrivilegeAction.STOP_DATABASE
+    case StopDatabaseAction  => security.PrivilegeAction.STOP_DATABASE
 
-    case AllUserActions => security.PrivilegeAction.USER_MANAGEMENT
-    case ShowUserAction => security.PrivilegeAction.SHOW_USER
-    case CreateUserAction => security.PrivilegeAction.CREATE_USER
-    case SetUserStatusAction => security.PrivilegeAction.SET_USER_STATUS
-    case SetPasswordsAction => security.PrivilegeAction.SET_PASSWORDS
-    case SetUserDefaultDatabaseAction => security.PrivilegeAction.SET_USER_DEFAULT_DATABASE
-    case AlterUserAction => security.PrivilegeAction.ALTER_USER
-    case DropUserAction => security.PrivilegeAction.DROP_USER
+    case AllUserActions            => security.PrivilegeAction.USER_MANAGEMENT
+    case ShowUserAction            => security.PrivilegeAction.SHOW_USER
+    case CreateUserAction          => security.PrivilegeAction.CREATE_USER
+    case SetUserStatusAction       => security.PrivilegeAction.SET_USER_STATUS
+    case SetPasswordsAction        => security.PrivilegeAction.SET_PASSWORDS
+    case SetUserHomeDatabaseAction => security.PrivilegeAction.SET_USER_HOME_DATABASE
+    case AlterUserAction           => security.PrivilegeAction.ALTER_USER
+    case DropUserAction            => security.PrivilegeAction.DROP_USER
 
-    case AllRoleActions => security.PrivilegeAction.ROLE_MANAGEMENT
-    case ShowRoleAction => security.PrivilegeAction.SHOW_ROLE
+    case AllRoleActions   => security.PrivilegeAction.ROLE_MANAGEMENT
+    case ShowRoleAction   => security.PrivilegeAction.SHOW_ROLE
     case CreateRoleAction => security.PrivilegeAction.CREATE_ROLE
-    case DropRoleAction => security.PrivilegeAction.DROP_ROLE
+    case DropRoleAction   => security.PrivilegeAction.DROP_ROLE
     case AssignRoleAction => security.PrivilegeAction.ASSIGN_ROLE
     case RemoveRoleAction => security.PrivilegeAction.REMOVE_ROLE
 
     case AllDatabaseManagementActions => security.PrivilegeAction.DATABASE_MANAGEMENT
-    case CreateDatabaseAction => security.PrivilegeAction.CREATE_DATABASE
-    case DropDatabaseAction => security.PrivilegeAction.DROP_DATABASE
+    case CreateDatabaseAction         => security.PrivilegeAction.CREATE_DATABASE
+    case DropDatabaseAction           => security.PrivilegeAction.DROP_DATABASE
 
-    case AllPrivilegeActions => security.PrivilegeAction.PRIVILEGE_MANAGEMENT
-    case ShowPrivilegeAction => security.PrivilegeAction.SHOW_PRIVILEGE
+    case AllPrivilegeActions   => security.PrivilegeAction.PRIVILEGE_MANAGEMENT
+    case ShowPrivilegeAction   => security.PrivilegeAction.SHOW_PRIVILEGE
     case AssignPrivilegeAction => security.PrivilegeAction.ASSIGN_PRIVILEGE
     case RemovePrivilegeAction => security.PrivilegeAction.REMOVE_PRIVILEGE
 
-    case ExecuteProcedureAction => security.PrivilegeAction.EXECUTE
+    case ExecuteProcedureAction        => security.PrivilegeAction.EXECUTE
     case ExecuteBoostedProcedureAction => security.PrivilegeAction.EXECUTE_BOOSTED
-    case ExecuteAdminProcedureAction => security.PrivilegeAction.EXECUTE_ADMIN
+    case ExecuteAdminProcedureAction   => security.PrivilegeAction.EXECUTE_ADMIN
 
-    case ExecuteFunctionAction => security.PrivilegeAction.EXECUTE
+    case ExecuteFunctionAction        => security.PrivilegeAction.EXECUTE
     case ExecuteBoostedFunctionAction => security.PrivilegeAction.EXECUTE_BOOSTED
 
     case AllDbmsAction => security.PrivilegeAction.DBMS_ACTIONS

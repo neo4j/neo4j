@@ -61,7 +61,7 @@ import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
 import org.neo4j.cypher.internal.ast.RevokeType
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPasswordsAction
-import org.neo4j.cypher.internal.ast.SetUserDefaultDatabaseAction
+import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
@@ -154,7 +154,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           case _ => plans.AssertDbmsAdmin(CreateUserAction)
         }
         Some(plans.LogSystemCommand(
-          plans.CreateUser(source, userName, isEncryptedPassword, initialPassword, userOptions.requirePasswordChange.getOrElse(true), userOptions.suspended, userOptions.defaultDatabase),
+          plans.CreateUser(source, userName, isEncryptedPassword, initialPassword, userOptions.requirePasswordChange.getOrElse(true), userOptions.suspended, userOptions.homeDatabase),
           prettifier.asString(c)))
 
       // DROP USER foo [IF EXISTS]
@@ -168,7 +168,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val adminActions = Vector((initialPassword, SetPasswordsAction),
                                (userOptions.requirePasswordChange, SetPasswordsAction),
                                (userOptions.suspended, SetUserStatusAction),
-                               (userOptions.defaultDatabase, SetUserDefaultDatabaseAction)).collect{case (Some(_), action) => action}.distinct
+                               (userOptions.homeDatabase, SetUserHomeDatabaseAction)).collect{case (Some(_), action) => action}.distinct
         if (adminActions.isEmpty) throw new IllegalStateException("Alter user has nothing to do")
 
         val admin = plans.AssertDbmsAdmin(None, adminActions)
@@ -178,7 +178,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           else admin
         val ifExistsSubPlan = if (ifExists) plans.DoNothingIfNotExists(assertionSubPlan, "User", userName, "alter") else assertionSubPlan
         Some(plans.LogSystemCommand(
-          plans.AlterUser(ifExistsSubPlan, userName, isEncryptedPassword, initialPassword, userOptions.requirePasswordChange, userOptions.suspended, userOptions.defaultDatabase),
+          plans.AlterUser(ifExistsSubPlan, userName, isEncryptedPassword, initialPassword, userOptions.requirePasswordChange, userOptions.suspended, userOptions.homeDatabase),
           prettifier.asString(c)))
 
       // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword

@@ -24,6 +24,7 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.ast.AdminAction
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
+import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
@@ -160,9 +161,9 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case ShowUsers(source, symbols, yields, returns) => context =>
       SystemCommandExecutionPlan("ShowUsers", normalExecutionEngine,
         s"""MATCH (u:User)
-          |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended
-          |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
-          |""".stripMargin,
+           |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended, null as home
+           |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
+           |""".stripMargin,
         VirtualValues.EMPTY_MAP,
         source = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
       )
@@ -172,7 +173,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       val currentUserKey = internalKey("currentUser")
       SystemCommandExecutionPlan("ShowCurrentUser", normalExecutionEngine,
         s"""MATCH (u:User)
-           |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended
+           |WITH u.name as user, null as roles, u.passwordChangeRequired AS passwordChangeRequired, null as suspended, null as home
            |WHERE user = $$`$currentUserKey`
            |${AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("user"))}
            |""".stripMargin,
@@ -197,7 +198,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       if (suspendedOptional.isDefined) { // Users are always active in community
         failWithError("SET STATUS")
       } else if (defaultDatabase.isDefined) { // There is only one database in community
-        failWithError("DEFAULT DATABASE")
+        failWithError("HOME DATABASE")
       }
       else {
         makeCreateUserExecutionPlan(userName, isEncryptedPassword, password, requirePasswordChange, suspended = false, defaultDatabase = None)(sourcePlan, normalExecutionEngine)
@@ -217,7 +218,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       if (suspended.isDefined) { // Users are always active in community
         failWithError("SET STATUS")
       } else if (defaultDatabase.isDefined ) {
-        failWithError("DEFAULT DATABASE")
+        failWithError("HOME DATABASE")
       } else {
         makeAlterUserExecutionPlan(userName, isEncryptedPassword, password, requirePasswordChange, suspended = None, defaultDatabase = None)(sourcePlan, normalExecutionEngine)
       }
@@ -290,6 +291,31 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
         parameterConverter = (tx, m) => newPw.mapValueConverter(tx, currentConverterBytes(m))
       )
 
+    // SHOW HOME DATABASES
+    case ShowDatabase(scope: HomeDatabaseScope, symbols, yields, returns) => _ =>
+      val usernameKey = internalKey("username")
+
+      val paramGenerator: (Transaction, SecurityContext) => MapValue = (_, securityContext) => {
+        val username = Option(securityContext.subject().username()) match {
+          case None       => Values.NO_VALUE
+          case Some("")   => Values.NO_VALUE
+          case Some(user) => Values.stringValue(user)
+        }
+        VirtualValues.map(Array(internalKey("username")), Array(username))
+      }
+
+      val returnClause = AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("name"))
+      val query =
+        s"""
+          |OPTIONAL MATCH (default: Database {default: true})
+          |OPTIONAL MATCH (user:User {name: $$`$usernameKey`})
+          |WITH coalesce(user.homeDatabase, default.name) AS homeDatabase
+          |MATCH (d:Database) WHERE d.name = homeDatabase
+          |CALL dbms.database.state(d.name) yield status, error, address, role
+          |WITH d.name as name, address, role, d.status as requestedStatus, status as currentStatus, error
+          |$returnClause""".stripMargin
+      SystemCommandExecutionPlan(scope.showCommandName, normalExecutionEngine, query, VirtualValues.EMPTY_MAP, parameterGenerator = paramGenerator)
+
     // SHOW DATABASES | SHOW DEFAULT DATABASE | SHOW DATABASE foo
     case ShowDatabase(scope, symbols, yields, returns) => _ =>
       val usernameKey = internalKey("username")
@@ -311,11 +337,16 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       }
       val returnClause = AdministrationShowCommandUtils.generateReturnClause(symbols, yields, returns, Seq("name"))
 
-      val query = s"""MATCH (d: Database)
+      val query = s"""// First resolve which database is the home database
+                     |OPTIONAL MATCH (default: Database {default: true})
+                     |OPTIONAL MATCH (user:User {name: $$`$usernameKey`})
+                     |WITH coalesce(user.homeDatabase, default.name) as homeDbName
+                     |
+                     |MATCH (d: Database)
                      |WHERE d.name IN $$`$accessibleDbsKey`
                      |CALL dbms.database.state(d.name) yield status, error, address, role
                      |WITH d.name as name, address, role, d.status as requestedStatus, status as currentStatus, error,
-                     |d.default as default
+                     |d.default as default, coalesce(d.name = homeDbName, false) as home
                      |$extraFilter
                      |$returnClause""".stripMargin
       SystemCommandExecutionPlan(scope.showCommandName, normalExecutionEngine, query, params, parameterGenerator = paramGenerator, parameterConverter = paramConverter)

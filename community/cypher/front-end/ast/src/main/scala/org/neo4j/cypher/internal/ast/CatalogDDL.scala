@@ -155,9 +155,12 @@ final case class ShowUsers(override val yieldOrWhere: YieldOrWhere, override val
 
 object ShowUsers {
   def apply(yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowUsers =
-    ShowUsers(yieldOrWhere, List(ShowColumn("user")(position), ShowColumn(Variable("roles")(position), CTList(CTString), "roles"),
-      ShowColumn(Variable("passwordChangeRequired")(position), CTBoolean, "passwordChangeRequired"),
-      ShowColumn(Variable("suspended")(position), CTBoolean,"suspended")))(position)
+    ShowUsers(yieldOrWhere, List(
+      ShowColumn("user")(position),
+      ShowColumn("roles", CTList(CTString))(position),
+      ShowColumn("passwordChangeRequired", CTBoolean)(position),
+      ShowColumn("suspended", CTBoolean)(position),
+      ShowColumn("home")(position)))(position)
 }
 
 final case class ShowCurrentUser(override val yieldOrWhere: YieldOrWhere, override val defaultColumnSet: List[ShowColumn])(val position: InputPosition) extends ReadAdministrationCommand {
@@ -170,9 +173,12 @@ final case class ShowCurrentUser(override val yieldOrWhere: YieldOrWhere, overri
 
 object ShowCurrentUser {
   def apply(yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowCurrentUser =
-    ShowCurrentUser(yieldOrWhere, List(ShowColumn("user")(position), ShowColumn(Variable("roles")(position), CTList(CTString), "roles"),
-      ShowColumn(Variable("passwordChangeRequired")(position), CTBoolean, "passwordChangeRequired"),
-      ShowColumn(Variable("suspended")(position), CTBoolean,"suspended")))(position)
+    ShowCurrentUser(yieldOrWhere, List(
+      ShowColumn("user")(position),
+      ShowColumn("roles", CTList(CTString))(position),
+      ShowColumn("passwordChangeRequired", CTBoolean)(position),
+      ShowColumn("suspended", CTBoolean)(position),
+      ShowColumn("home")(position)))(position)
 }
 
 trait EitherAsString {
@@ -216,7 +222,10 @@ final case class AlterUser(userName: Either[String, Parameter],
                            initialPassword: Option[Expression],
                            userOptions: UserOptions,
                            ifExists: Boolean)(val position: InputPosition) extends WriteAdministrationCommand {
-  assert(initialPassword.isDefined || userOptions.requirePasswordChange.isDefined || userOptions.suspended.isDefined || userOptions.defaultDatabase.isDefined)
+  assert(initialPassword.isDefined || userOptions.requirePasswordChange.isDefined || userOptions.suspended.isDefined || userOptions.homeDatabase.isDefined)
+  if ( userOptions.homeDatabase.isDefined && userOptions.homeDatabase.get == null ) {
+    assert(initialPassword.isEmpty && userOptions.requirePasswordChange.isEmpty && userOptions.suspended.isEmpty)
+  }
 
   override def name = "ALTER USER"
 
@@ -235,7 +244,7 @@ final case class SetOwnPassword(newPassword: Expression, currentPassword: Expres
       SemanticState.recordCurrentScope(this)
 }
 
-final case class UserOptions(requirePasswordChange: Option[Boolean], suspended: Option[Boolean], defaultDatabase: Option[Either[String, Parameter]])
+final case class UserOptions(requirePasswordChange: Option[Boolean], suspended: Option[Boolean], homeDatabase: Option[Either[String, Parameter]])
 
 final case class ShowRoles(withUsers: Boolean, showAll: Boolean, override val yieldOrWhere: YieldOrWhere, override val defaultColumnSet: List[ShowColumn])(val position: InputPosition) extends ReadAdministrationCommand {
 
@@ -446,6 +455,10 @@ final case class DefaultDatabaseScope()(val position: InputPosition) extends Dat
   override val showCommandName: String = "ShowDefaultDatabase"
 }
 
+final case class HomeDatabaseScope()(val position: InputPosition) extends DatabaseScope {
+  override val showCommandName: String = "ShowHomeDatabase"
+}
+
 sealed trait ShowPrivilegeScope extends Rewritable {
   override def dup(children: Seq[AnyRef]): ShowPrivilegeScope.this.type = this
 }
@@ -545,7 +558,7 @@ case object SetUserStatusAction extends UserManagementAction("SET USER STATUS")
 
 case object SetPasswordsAction extends UserManagementAction("SET PASSWORDS")
 
-case object SetUserDefaultDatabaseAction extends UserManagementAction("SET USER DEFAULT DATABASE")
+case object SetUserHomeDatabaseAction extends UserManagementAction("SET USER HOME DATABASE")
 
 case object AlterUserAction extends UserManagementAction("ALTER USER")
 
@@ -774,6 +787,7 @@ final case class ShowDatabase(scope: DatabaseScope, override val yieldOrWhere: Y
     case _: NamedDatabaseScope => "SHOW DATABASE"
     case _: AllDatabasesScope => "SHOW DATABASES"
     case _: DefaultDatabaseScope => "SHOW DEFAULT DATABASE"
+    case _: HomeDatabaseScope => "SHOW HOME DATABASE"
   }
 
   override def semanticCheck: SemanticCheck =
@@ -787,7 +801,8 @@ object ShowDatabase{
       ShowColumn("name")(position), ShowColumn("address")(position), ShowColumn("role")(position), ShowColumn("requestedStatus")(position),
       ShowColumn("currentStatus")(position), ShowColumn("error")(position)) ++ (scope match {
       case _: DefaultDatabaseScope => List.empty
-      case _ => List(ShowColumn(Variable("default")(position), CTBoolean, "default"))})
+      case _: HomeDatabaseScope => List.empty
+      case _ => List(ShowColumn("default", CTBoolean)(position), ShowColumn("home", CTBoolean)(position))})
     ShowDatabase(scope, yieldOrWhere, columns)(position)
   }
 }

@@ -186,29 +186,29 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                             normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
     val passwordChangeRequiredKey = internalKey("passwordChangeRequired")
     val suspendedKey = internalKey("suspended")
-    val defaultDatabaseFields= defaultDatabase.map(d => getNameFields("homeDatabase", d))
+    val homeDatabaseFields = defaultDatabase.map(d => getNameFields("homeDatabase", d))
     val userNameFields = getNameFields("username", userName)
     val credentials = getPasswordExpression(password, isEncryptedPassword)
-    val defaultDatabaseCypher = defaultDatabaseFields.map(ddf => s", defaultDatabase: $$`${ddf.nameKey}`").getOrElse("")
+    val homeDatabaseCypher = homeDatabaseFields.map(ddf => s", homeDatabase: $$`${ddf.nameKey}`").getOrElse("")
     val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => {
       val newParams = credentials.mapValueConverter(tx, userNameFields.nameConverter(tx, p))
-      defaultDatabaseFields.map(ddf => ddf.nameConverter(tx, newParams)).getOrElse(newParams)
+      homeDatabaseFields.map(ddf => ddf.nameConverter(tx, newParams)).getOrElse(newParams)
     }
     UpdatingSystemCommandExecutionPlan("CreateUser", normalExecutionEngine,
       // NOTE: If username already exists we will violate a constraint
       s"""CREATE (u:User {name: $$`${userNameFields.nameKey}`, credentials: $$`${credentials.key}`,
          |passwordChangeRequired: $$`$passwordChangeRequiredKey`, suspended: $$`$suspendedKey`
-         |$defaultDatabaseCypher })
+         |$homeDatabaseCypher })
          |RETURN u.name""".stripMargin,
       VirtualValues.map(
-        Array(userNameFields.nameKey, credentials.key, credentials.bytesKey, passwordChangeRequiredKey, suspendedKey) ++ defaultDatabaseFields.map(_.nameKey),
+        Array(userNameFields.nameKey, credentials.key, credentials.bytesKey, passwordChangeRequiredKey, suspendedKey) ++ homeDatabaseFields.map(_.nameKey),
         Array[AnyValue](
           userNameFields.nameValue,
           credentials.value,
           credentials.bytesValue,
           Values.booleanValue(requirePasswordChange),
           Values.booleanValue(suspended),
-          ) ++ defaultDatabaseFields.map(_.nameValue)
+          ) ++ homeDatabaseFields.map(_.nameValue)
       ),
       QueryHandler
         .handleNoResult(params => Some(new IllegalStateException(s"Failed to create the specified user '${runtimeValue(userName, params)}'.")))
@@ -235,13 +235,13 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                           (sourcePlan: Option[ExecutionPlan],
                                            normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
     val userNameFields = getNameFields("username", userName)
-    val defaultDatabaseFields= defaultDatabase.map(d => getNameFields("homeDatabase", d))
+    val homeDatabaseFields = defaultDatabase.map(d => getNameFields("homeDatabase", d))
     val maybePw = password.map(p => getPasswordExpression(p, isEncryptedPassword.getOrElse(false)))
     val params = Seq(
       maybePw -> "credentials",
       requirePasswordChange -> "passwordChangeRequired",
       suspended -> "suspended",
-      defaultDatabaseFields -> "homeDatabase"
+      homeDatabaseFields -> "homeDatabase"
     ).flatMap { param =>
       param._1 match {
         case None => Seq.empty
@@ -262,7 +262,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     val parameterValues: Seq[Value] = (values ++ maybePw.map(_.bytesValue).toSeq) :+ userNameFields.nameValue
     val mapper: (Transaction, MapValue) => MapValue = (tx, p) => {
       val newParams = maybePw.map(_.mapValueConverter).getOrElse(IdentityConverter)(tx, userNameFields.nameConverter(tx, p))
-      defaultDatabaseFields.map(ddf => ddf.nameConverter(tx, newParams)).getOrElse(newParams)
+      homeDatabaseFields.map(ddf => ddf.nameConverter(tx, newParams)).getOrElse(newParams)
     }
     UpdatingSystemCommandExecutionPlan("AlterUser", normalExecutionEngine,
       s"$query RETURN oldCredentials",

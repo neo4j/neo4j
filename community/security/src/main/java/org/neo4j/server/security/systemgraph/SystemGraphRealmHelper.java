@@ -71,12 +71,10 @@ public class SystemGraphRealmHelper
             Credential credential = SystemGraphCredential.deserialize( (String) userNode.getProperty( "credentials" ), secureHasher );
             boolean requirePasswordChange = (boolean) userNode.getProperty( "passwordChangeRequired" );
             boolean suspended = (boolean) userNode.getProperty( "suspended" );
-            String defaultDatabase = (String) userNode.getProperty( "homeDatabase", null );
             tx.commit();
 
             User.Builder builder = new User.Builder( username, credential ).withRequiredPasswordChange( requirePasswordChange );
             builder = suspended ? builder.withFlag( IS_SUSPENDED ) : builder.withoutFlag( IS_SUSPENDED );
-            builder = builder.withDefaultDatabase( defaultDatabase );
             return builder.build();
         }
         catch ( NotFoundException n )
