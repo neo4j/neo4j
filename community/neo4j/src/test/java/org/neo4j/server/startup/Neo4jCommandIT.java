@@ -22,7 +22,10 @@ package org.neo4j.server.startup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.condition.OS;
 
 import java.util.List;
@@ -65,11 +68,23 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
     }
 
     @DisabledOnOs( OS.WINDOWS )
+    @EnabledOnJre( JRE.JAVA_11 )
     @Test
     void shouldBeAbleToStartAndStopRealServerOnNonWindows()
     {
         shouldBeAbleToStartAndStopRealServer();
         assertThat( err.toString() ).isEmpty();
+    }
+
+    @DisabledOnOs( OS.WINDOWS )
+    @EnabledForJreRange( min = JRE.JAVA_12 )
+    @Test
+    void shouldBeAbleToStartAndStopRealServerOnNonWindowsWithWarning()
+    {
+        shouldBeAbleToStartAndStopRealServer();
+        assertThat( err.toString().trim() ).isEqualTo("WARNING! You are using an unsupported Java runtime.\n" +
+                "* Please use Oracle(R) Java(TM) 11, OpenJDK(TM) 11 to run Neo4j.\n" +
+                "* Please see https://neo4j.com/docs/ for Neo4j installation instructions.");
     }
 
     @EnabledOnOs( OS.WINDOWS )
