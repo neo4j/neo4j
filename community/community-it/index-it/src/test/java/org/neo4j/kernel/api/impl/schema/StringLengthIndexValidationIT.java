@@ -58,8 +58,9 @@ import static org.neo4j.test.TestLabels.LABEL_ONE;
 public abstract class StringLengthIndexValidationIT
 {
     private static final String propKey = "largeString";
-    private static final AtomicBoolean trapPopulation = new AtomicBoolean();
-    private static final Barrier.Control populationScanFinished = new Barrier.Control();
+
+    private final AtomicBoolean trapPopulation = new AtomicBoolean();
+    private final Barrier.Control populationScanFinished = new Barrier.Control();
     private final int singleKeySizeLimit = getSingleKeySizeLimit();
     private final GraphDatabaseSettings.SchemaIndex schemaIndex = getSchemaIndex();
 
