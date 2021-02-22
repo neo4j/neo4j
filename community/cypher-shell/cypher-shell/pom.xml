@@ -156,7 +156,7 @@
         <dependency>
             <groupId>net.sourceforge.argparse4j</groupId>
             <artifactId>argparse4j</artifactId>
-            <version>0.7.0</version>
+            <version>0.8.1</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.findbugs</groupId>

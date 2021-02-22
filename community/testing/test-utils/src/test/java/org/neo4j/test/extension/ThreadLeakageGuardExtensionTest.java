@@ -39,6 +39,7 @@ class ThreadLeakageGuardExtensionTest
     void threadLeakageTest() throws InterruptedException
     {
         Events testEvents = EngineTestKit.engine( ENGINE_ID )
+                .enableImplicitConfigurationParameters( true )
                 .selectors( selectClass( IncorrectThreadLeakage.class ) )
                 .execute()
                 .allEvents();

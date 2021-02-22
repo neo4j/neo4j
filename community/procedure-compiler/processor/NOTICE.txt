@@ -41,9 +41,6 @@ Apache Software License, Version 2.0
   J2ObjC Annotations
   Truth Core
 
-BSD License
-  asm
-
 MIT License
   Checker Qual
 

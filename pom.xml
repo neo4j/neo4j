@@ -108,7 +108,7 @@
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
     <jamm.version>0.3.3</jamm.version>
-    <lucene.version>8.7.0</lucene.version>
+    <lucene.version>8.8.0</lucene.version>
     <bouncycastle.version>1.68</bouncycastle.version>
     <jetty.version>9.4.35.v20201120</jetty.version>
     <findbugs.version>3.0.1u2</findbugs.version>
@@ -116,17 +116,17 @@
     <scala.version>2.12.13</scala.version>
     <scala.binary.version>2.12</scala.binary.version>
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
-    <asm.version>9.0</asm.version>
-    <metrics.version>4.1.16</metrics.version>
+    <asm.version>9.1</asm.version>
+    <metrics.version>4.1.17</metrics.version>
     <scala.target.vm>1.8</scala.target.vm>
     <jersey.version>2.33</jersey.version>
-    <junit.version>5.6.2</junit.version>
-    <junit.platform.version>1.6.2</junit.platform.version>
-    <mockito.version>3.7.0</mockito.version>
+    <junit.version>5.7.1</junit.version>
+    <junit.platform.version>1.7.1</junit.platform.version>
+    <mockito.version>3.7.7</mockito.version>
     <opencypher.version>1.0.0-M16</opencypher.version>
-    <caffeine.version>2.8.8</caffeine.version>
+    <caffeine.version>3.0.0</caffeine.version>
     <required.maven.version>3.5.4</required.maven.version>
-    <jackson.version>2.12.0</jackson.version>
+    <jackson.version>2.12.1</jackson.version>
 	<amazon-sdk.version>1.11.850</amazon-sdk.version>
     <guava.version>30.1-jre</guava.version>
     <awaitility.version>4.0.3</awaitility.version>
@@ -705,7 +705,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.39</version>
+            <version>8.40</version>
           </dependency>
           <dependency>
             <groupId>org.neo4j.build</groupId>
@@ -909,7 +909,7 @@
       <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
-        <version>5.6.0</version>
+        <version>5.7.0</version>
       </dependency>
       <dependency>
         <groupId>org.apache.lucene</groupId>
@@ -989,14 +989,14 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.4.1</version>
+        <version>3.4.3</version>
       </dependency>
 
       <!-- testing -->
       <dependency>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver</artifactId>
-        <version>4.2.0</version>
+        <version>4.2.1</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -1056,7 +1056,7 @@
       <dependency>
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
-        <version>3.18.1</version>
+        <version>3.19.0</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -1204,7 +1204,7 @@
       <dependency>
         <groupId>org.eclipse.collections</groupId>
         <artifactId>eclipse-collections</artifactId>
-        <version>10.3.0</version>
+        <version>10.4.0</version>
       </dependency>
       <dependency>
         <groupId>org.jctools</groupId>
@@ -1264,7 +1264,7 @@
       <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.4.8-1</version>
+        <version>1.4.8-5</version>
       </dependency>
 
       <dependency>
@@ -1429,7 +1429,7 @@
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>4.13</version>
+        <version>4.13.2</version>
         <scope>provided</scope>
         <exclusions>
           <exclusion>
@@ -1485,7 +1485,7 @@
       <dependency>
         <groupId>com.google.truth</groupId>
         <artifactId>truth</artifactId>
-        <version>1.1</version>
+        <version>1.1.2</version>
         <exclusions>
           <exclusion>
             <groupId>com.google.guava</groupId>
