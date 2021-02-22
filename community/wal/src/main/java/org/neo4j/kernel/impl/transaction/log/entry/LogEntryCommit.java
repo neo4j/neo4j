@@ -20,9 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.util.Objects;
-import java.util.TimeZone;
 
-import org.neo4j.internal.helpers.Format;
 import org.neo4j.kernel.KernelVersion;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
@@ -64,13 +62,7 @@ public class LogEntryCommit extends AbstractLogEntry
     @Override
     public String toString()
     {
-        return toString( Format.DEFAULT_TIME_ZONE );
-    }
-
-    @Override
-    public String toString( TimeZone timeZone )
-    {
-        return "Commit[txId=" + getTxId() + ", " + timestamp( getTimeWritten(), timeZone ) + ", checksum=" + checksum + "]";
+        return "Commit[txId=" + getTxId() + ", " + timestamp( getTimeWritten() ) + ", checksum=" + checksum + "]";
     }
 
     @Override

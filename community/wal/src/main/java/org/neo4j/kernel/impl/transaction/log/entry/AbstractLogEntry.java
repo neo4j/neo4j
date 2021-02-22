@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.util.TimeZone;
-
 import org.neo4j.internal.helpers.Format;
 import org.neo4j.kernel.KernelVersion;
 
@@ -48,14 +46,8 @@ public abstract class AbstractLogEntry implements LogEntry
     }
 
     @Override
-    public String toString( TimeZone timeZone )
+    public String timestamp( long timeWritten )
     {
-        return toString();
-    }
-
-    @Override
-    public String timestamp( long timeWritten, TimeZone timeZone )
-    {
-        return Format.date( timeWritten, timeZone ) + "/" + timeWritten;
+        return Format.date( timeWritten ) + "/" + timeWritten;
     }
 }

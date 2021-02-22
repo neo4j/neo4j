@@ -20,9 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.util.Arrays;
-import java.util.TimeZone;
 
-import org.neo4j.internal.helpers.Format;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
@@ -77,14 +75,8 @@ public class LogEntryStart extends AbstractLogEntry
     @Override
     public String toString()
     {
-        return toString( Format.DEFAULT_TIME_ZONE );
-    }
-
-    @Override
-    public String toString( TimeZone timeZone )
-    {
         return "Start[" +
-                "time=" + timestamp( timeWritten, timeZone ) + "," +
+                "time=" + timestamp( timeWritten ) + "," +
                 "lastCommittedTxWhenTransactionStarted=" + lastCommittedTxWhenTransactionStarted + "," +
                 "previousChecksum=" + previousChecksum + "," +
                 "additionalHeaderLength=" + (additionalHeader == null ? -1 : additionalHeader.length) + "," +

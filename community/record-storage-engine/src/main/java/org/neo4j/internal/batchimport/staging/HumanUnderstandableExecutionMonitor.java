@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import java.util.TimeZone;
-
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.batchimport.CountGroupsStage;
 import org.neo4j.internal.batchimport.DataImporter;
@@ -46,8 +44,8 @@ import static org.neo4j.internal.batchimport.ImportMemoryCalculator.defensivelyP
 import static org.neo4j.internal.batchimport.ImportMemoryCalculator.estimatedCacheSize;
 import static org.neo4j.internal.batchimport.cache.GatheringMemoryStatsVisitor.totalMemoryUsageOf;
 import static org.neo4j.internal.helpers.Format.count;
-import static org.neo4j.internal.helpers.Format.date;
 import static org.neo4j.internal.helpers.Format.duration;
+import static org.neo4j.internal.helpers.Format.localDate;
 import static org.neo4j.internal.helpers.collection.Iterables.last;
 import static org.neo4j.io.ByteUnit.bytesToString;
 
@@ -397,7 +395,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
 
     private void printStageHeader( String name, Object... data )
     {
-        System.out.println( name + " " + date( TimeZone.getDefault() ) );
+        System.out.println( name + " " + localDate() );
         if ( data.length > 0 )
         {
             for ( int i = 0; i < data.length; )

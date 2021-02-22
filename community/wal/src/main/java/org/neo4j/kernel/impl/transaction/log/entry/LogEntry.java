@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import java.util.TimeZone;
-
 import org.neo4j.kernel.KernelVersion;
 
 public interface LogEntry
@@ -29,7 +27,5 @@ public interface LogEntry
 
     byte getType();
 
-    String toString( TimeZone timeZone );
-
-    String timestamp( long timeWritten, TimeZone timeZone );
+    String timestamp( long timeWritten );
 }

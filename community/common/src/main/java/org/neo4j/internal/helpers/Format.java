@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.helpers;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -33,74 +33,50 @@ public final class Format
      * Default time zone is UTC (+00:00) so that comparing timestamped logs from different
      * sources is an easier task.
      */
-    public static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone( "UTC" );
+    static final ZoneId DEFAULT_TIME_ZONE = TimeZone.getTimeZone( "UTC" ).toZoneId();
 
     private static final String[] COUNT_SIZES = { "", "k", "M", "G", "T" };
 
-    public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSZ";
-    public static final String TIME_FORMAT = "HH:mm:ss.SSS";
+    static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSZ";
+    static final String TIME_FORMAT = "HH:mm:ss.SSS";
 
-    private static final ThreadLocalFormat DATE = new ThreadLocalFormat( DATE_FORMAT );
-    private static final ThreadLocalFormat TIME = new ThreadLocalFormat( TIME_FORMAT );
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern( DATE_FORMAT ).withZone( DEFAULT_TIME_ZONE );
+    private static final DateTimeFormatter LOCAL_DATE_FORMATTER = DateTimeFormatter.ofPattern( DATE_FORMAT ).withZone( TimeZone.getDefault().toZoneId() );
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern( TIME_FORMAT ).withZone( DEFAULT_TIME_ZONE );
+
+    public static String localDate()
+    {
+        return LOCAL_DATE_FORMATTER.format( Instant.now() );
+    }
 
     public static String date()
     {
-        return date( DEFAULT_TIME_ZONE );
-    }
-
-    public static String date( TimeZone timeZone )
-    {
-        return date( new Date(), timeZone );
+        return date( Instant.now() );
     }
 
     public static String date( long millis )
     {
-        return date( millis, DEFAULT_TIME_ZONE );
+        return date( Instant.ofEpochMilli( millis ) );
     }
 
-    public static String date( long millis, TimeZone timeZone )
+    public static String date( Instant instant )
     {
-        return date( new Date( millis ), timeZone );
-    }
-
-    public static String date( Date date )
-    {
-        return date( date, DEFAULT_TIME_ZONE );
-    }
-
-    public static String date( Date date, TimeZone timeZone )
-    {
-        return DATE.format( date, timeZone );
+        return DATE_FORMATTER.format( instant );
     }
 
     public static String time()
     {
-        return time( DEFAULT_TIME_ZONE );
-    }
-
-    public static String time( TimeZone timeZone )
-    {
-        return time( new Date(), timeZone );
+        return time( Instant.now() );
     }
 
     public static String time( long millis )
     {
-        return time( millis, DEFAULT_TIME_ZONE );
+        return time( Instant.ofEpochMilli( millis ) );
     }
 
-    public static String time( long millis, TimeZone timeZone )
+    public static String time( Instant instant )
     {
-        return time( new Date( millis ), timeZone );
-    }
-
-    public static String time( Date date )
-    {
-        return time( date, DEFAULT_TIME_ZONE );
-    }
-
-    public static String time( Date date, TimeZone timeZone )
-    {
-        return TIME.format( date, timeZone );
+        return TIME_FORMATTER.format( instant );
     }
 
     public static String count( long count )
@@ -137,7 +113,7 @@ public final class Format
         StringBuilder builder = new StringBuilder();
 
         TimeUnit[] units = TimeUnit.values();
-        reverse( units );
+        ArrayUtil.reverse( units );
         boolean use = false;
         for ( TimeUnit unit : units )
         {
@@ -164,18 +140,6 @@ public final class Format
         }
 
         return builder.toString();
-    }
-
-    private static <T> void reverse( T[] array )
-    {
-        int half = array.length >> 1;
-        for ( int i = 0; i < half; i++ )
-        {
-            T temp = array[i];
-            int highIndex = array.length - 1 - i;
-            array[i] = array[highIndex];
-            array[highIndex] = temp;
-        }
     }
 
     private static String shortName( TimeUnit unit )
@@ -208,28 +172,5 @@ public final class Format
     private Format()
     {
         // No instances
-    }
-
-    private static class ThreadLocalFormat extends ThreadLocal<DateFormat>
-    {
-        private final String format;
-
-        ThreadLocalFormat( String format )
-        {
-            this.format = format;
-        }
-
-        String format( Date date, TimeZone timeZone )
-        {
-            DateFormat dateFormat = get();
-            dateFormat.setTimeZone( timeZone );
-            return dateFormat.format( date );
-        }
-
-        @Override
-        protected DateFormat initialValue()
-        {
-            return new SimpleDateFormat( format );
-        }
     }
 }
