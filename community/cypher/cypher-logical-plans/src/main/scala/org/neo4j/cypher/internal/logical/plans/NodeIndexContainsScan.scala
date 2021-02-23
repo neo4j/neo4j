@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LabelToken, Property}
-import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SameId}
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.expressions.LabelToken
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.util.attribution.SameId
 
 /**
   * This operator does a full scan of an index, producing rows for all entries that contain a string value
@@ -29,7 +31,7 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SameId}
   * all-nodes scan or label scan followed by a property value filter.
   */
 case class NodeIndexContainsScan(idName: String,
-                                 label: LabelToken,
+                                 override val label: LabelToken,
                                  property: IndexedProperty,
                                  valueExpr: Expression,
                                  argumentIds: Set[String],

@@ -205,6 +205,8 @@ abstract class NodeLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) 
 }
 
 abstract class IndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {
+  def label: LabelToken
+
   /**
     * Indexed properties that will be retrieved from the index and cached in the row.
     */

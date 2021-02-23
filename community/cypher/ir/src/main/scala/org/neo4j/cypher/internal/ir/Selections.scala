@@ -57,11 +57,7 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
 
   def labelPredicates: Map[String, Set[HasLabels]] =
     predicates.foldLeft(Map.empty[String, Set[HasLabels]]) {
-      case (acc, Predicate(_, hasLabels@HasLabels(Variable(name), labels))) =>
-        // FIXME: remove when we have test for checking that we construct the expected plan
-        if (labels.size > 1) {
-          throw new IllegalStateException("Rewriting should introduce single label HasLabels predicates in the WHERE clause")
-        }
+      case (acc, Predicate(_, hasLabels@HasLabels(Variable(name), _))) =>
         acc.updated(name, acc.getOrElse(name, Set.empty) + hasLabels)
       case (acc, _) => acc
     }

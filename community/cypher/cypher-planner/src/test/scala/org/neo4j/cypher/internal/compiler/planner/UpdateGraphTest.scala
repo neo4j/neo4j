@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.v4_0.expressions._
 class UpdateGraphTest extends CypherFunSuite {
   private val pos = DummyPosition(0)
 
-  private def qgWithNoStableIdentifierAndOnlyLeaves(qg: QueryGraph): QgWithInfo =
-    QgWithInfo(qg, qg.allCoveredIds, None)
+  private def qgWithNoStableIdentifierAndOnlyLeaves(qg: QueryGraph): QgWithLeafInfo =
+    QgWithLeafInfo(qg, Set.empty, qg.allCoveredIds, None)
 
   test("should not be empty after adding label to set") {
     val original = QueryGraph()

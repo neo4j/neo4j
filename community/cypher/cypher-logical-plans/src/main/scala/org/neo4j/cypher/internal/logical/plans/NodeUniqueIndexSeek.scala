@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SameId}
   * node is guaranteed.
   */
 case class NodeUniqueIndexSeek(idName: String,
-                               label: LabelToken,
+                               override val label: LabelToken,
                                properties: Seq[IndexedProperty],
                                valueExpr: QueryExpression[Expression],
                                argumentIds: Set[String],

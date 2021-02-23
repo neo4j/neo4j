@@ -55,6 +55,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def prop(map: Expression, key: String): Property =
     Property(map, PropertyKeyName(key)(pos))(pos)
 
+  def propName(s: String): PropertyKeyName = PropertyKeyName(s)(pos)
+
   def propEquality(variable: String, propKey: String, intValue: Int): Equals =
     Equals(prop(variable, propKey), literalInt(intValue))(pos)
 

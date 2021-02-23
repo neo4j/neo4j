@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SameId}
   * For every node with the given label and property values, produces rows with that node.
   */
 case class NodeIndexSeek(idName: String,
-                         label: LabelToken,
+                         override val label: LabelToken,
                          properties: Seq[IndexedProperty],
                          valueExpr: QueryExpression[Expression],
                          argumentIds: Set[String],
