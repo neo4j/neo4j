@@ -33,8 +33,8 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
-import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -59,34 +59,50 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
   def flatPredicates: Seq[Expression] =
     predicates.map(_.expr).toIndexedSeq
 
-  def labelPredicates: Map[String, Set[HasLabels]] =
+  /**
+   * The top level label predicates for each variable.
+   * That means if "a" -> hasLabels("a", "A") is returned, we can safely assume that a has the label A.
+   */
+  lazy val labelPredicates: Map[String, Set[HasLabels]] =
     predicates.foldLeft(Map.empty[String, Set[HasLabels]]) {
       case (acc, Predicate(_, hasLabels@HasLabels(Variable(name), _))) =>
         acc.updated(name, acc.getOrElse(name, Set.empty) + hasLabels)
       case (acc, _) => acc
     }
 
-  def typePredicates: Map[String, Set[HasTypes]] =
-    predicates.foldLeft(Map.empty[String, Set[HasTypes]]) {
-      case (acc, Predicate(_, hasTypes@HasTypes(Variable(name), _))) =>
-        acc.updated(name, acc.getOrElse(name, Set.empty) + hasTypes)
-      case (acc, _) => acc
+  /**
+   * All label predicates for each variable.
+   * This includes deeply nested predicates (e.g. in OR).
+   */
+  lazy val allHasLabelsInvolving: Map[String, Set[HasLabels]] = {
+    predicates.treeFold(Map.empty[String, Set[HasLabels]]) {
+      case hasLabels@HasLabels(Variable(name), _) => acc =>
+        val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + hasLabels)
+        SkipChildren(newMap)
     }
+  }
 
-  lazy val propertyPredicatesForSet: Map[String, Set[Property]] = {
-    def updateMap(map: Map[String, Set[Property]], key: String, prop: Property) =
-      map.updated(key, map.getOrElse(key, Set.empty) + prop)
-
-    def findPropertiesAndUpdateMap(map: Map[String, Set[Property]], expression: Expression) = {
-      expression.treeFold(map) {
-        case prop@Property(key: Variable, _) => acc => SkipChildren(updateMap(acc, key.name, prop))
-        case _: Expression => acc => TraverseChildren(acc)
-      }
+  /**
+   * All type predicates for each variable.
+   * This includes deeply nested predicates (e.g. in OR).
+   */
+  lazy val allHasTypesInvolving: Map[String, Set[HasTypes]] = {
+    predicates.treeFold(Map.empty[String, Set[HasTypes]]) {
+      case hasTypes@HasTypes(Variable(name), _) => acc =>
+        val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + hasTypes)
+        SkipChildren(newMap)
     }
+  }
 
-    predicates.foldLeft(Map.empty[String, Set[Property]]) {
-      case (acc, Predicate(_, expression)) => findPropertiesAndUpdateMap(acc, expression)
-      case (acc, _) => acc
+  /**
+   * All property predicates for each variable.
+   * This includes deeply nested predicates (e.g. in OR).
+   */
+  lazy val allPropertyPredicatesInvolving: Map[String, Set[Property]] = {
+    predicates.treeFold(Map.empty[String, Set[Property]]) {
+      case prop@Property(Variable(name), _) => acc =>
+        val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + prop)
+        SkipChildren(newMap)
     }
   }
 

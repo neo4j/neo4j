@@ -94,7 +94,7 @@ case class QgWithLeafInfo(private val solvedQg: QueryGraph,
 
   def allKnownUnstableNodeLabelsFor(identifier: Identifier): Set[LabelName] = {
     if (identifier.isIdStable) Set.empty
-    else queryGraph.allKnownLabelsOnNode(identifier.name)
+    else queryGraph.allPossibleLabelsOnNode(identifier.name)
   }
 
   def allPossibleUnstableRelTypesFor(identifier: Identifier): Set[RelTypeName] = {
