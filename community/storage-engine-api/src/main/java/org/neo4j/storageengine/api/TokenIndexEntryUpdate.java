@@ -29,14 +29,9 @@ public class TokenIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> e
     private final long[] before;
     private final long[] values;
 
-    TokenIndexEntryUpdate( long entityId, INDEX_KEY index_key, UpdateMode updateMode, long[] values )
+    TokenIndexEntryUpdate( long entityId, INDEX_KEY index_key, long[] before, long[] values )
     {
-        this( entityId, index_key, updateMode, null, values );
-    }
-
-    TokenIndexEntryUpdate( long entityId, INDEX_KEY index_key, UpdateMode updateMode, long[] before, long[] values )
-    {
-        super( entityId, index_key, updateMode );
+        super( entityId, index_key, UpdateMode.CHANGED );
         this.before = before;
         this.values = values;
     }

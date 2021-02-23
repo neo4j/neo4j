@@ -203,7 +203,7 @@ public class SchemaCache
         return schemaCacheState.constraintForName( name );
     }
 
-    public Set<IndexDescriptor> getIndexesRelatedTo(
+    public Set<IndexDescriptor> getValueIndexesRelatedTo(
             long[] changedEntityTokens, long[] unchangedEntityTokens, int[] properties,
             boolean propertyListIsComplete, EntityType entityType )
     {
@@ -214,6 +214,11 @@ public class SchemaCache
             boolean propertyListIsComplete, EntityType entityType )
     {
         return schemaCacheState.getUniquenessConstraintsRelatedTo( entityType, changedLabels, unchangedLabels, properties, propertyListIsComplete );
+    }
+
+    IndexDescriptor getTokenIndex( EntityType entityType )
+    {
+        return schemaCacheState.getTokenIndex( entityType );
     }
 
     boolean hasRelatedSchema( long[] tokens, int propertyKey, EntityType entityType )
@@ -430,6 +435,11 @@ public class SchemaCache
             }
             return constraintCache.computeIfAbsent( key,
                     k -> getSchemaRelatedTo( set, changedEntityTokens, unchangedEntityTokens, properties, propertyListIsComplete ) );
+        }
+
+        IndexDescriptor getTokenIndex( EntityType entityType )
+        {
+            return indexesBySchema.get( SchemaDescriptor.forAllEntityTokens( entityType ) );
         }
 
         private <T extends SchemaDescriptorSupplier> Set<T> getSchemaRelatedTo( SchemaDescriptorLookupSet<T> set, long[] changedEntityTokens,

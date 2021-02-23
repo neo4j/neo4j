@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.neo4j.collection.PrimitiveArrays;
 import org.neo4j.common.EntityType;
@@ -177,8 +178,8 @@ public class EntityUpdates
     }
 
     /**
-     * Matches the provided schema descriptors to the node updates in this object, and generates an IndexEntryUpdate
-     * for any index that needs to be updated.
+     * Matches the provided schema descriptors to the entity updates in this object, and generates an IndexEntryUpdate
+     * for any value index that needs to be updated.
      *
      * Note that unless this object contains a full representation of the node state after the update, the results
      * from this methods will not be correct. In that case, use the propertyLoader variant.
@@ -186,7 +187,7 @@ public class EntityUpdates
      * @param indexKeys The index keys to generate entry updates for
      * @return IndexEntryUpdates for all relevant index keys
      */
-    public <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> forIndexKeys(
+    public <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> valueUpdatesForIndexKeys(
             Iterable<INDEX_KEY> indexKeys )
     {
         Iterable<INDEX_KEY> potentiallyRelevant = Iterables.filter( indexKey -> atLeastOneRelevantChange( indexKey.schema() ), indexKeys );
@@ -196,7 +197,7 @@ public class EntityUpdates
 
     /**
      * Matches the provided schema descriptors to the entity updates in this object, and generates an IndexEntryUpdate
-     * for any index that needs to be updated.
+     * for any value index that needs to be updated.
      *
      * In some cases the updates to an entity are not enough to determine whether some index should be affected. For
      * example if we have and index of label :A and property p1, and :A is added to this node, we cannot say whether
@@ -209,7 +210,7 @@ public class EntityUpdates
      * @param type EntityType of the indexes
      * @return IndexEntryUpdates for all relevant index keys
      */
-    public <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> forIndexKeys(
+    public <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> valueUpdatesForIndexKeys(
             Iterable<INDEX_KEY> indexKeys, StorageReader reader, EntityType type, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         List<INDEX_KEY> potentiallyRelevant = new ArrayList<>();
@@ -260,6 +261,22 @@ public class EntityUpdates
             }
         }
         return indexUpdates;
+    }
+
+    /**
+     * Matches the provided schema descriptor to the entity updates in this object, and generates an IndexEntryUpdate
+     * for any token index that needs to be updated.
+     *
+     * @param indexKey The index key to generate entry updates for
+     */
+    public <INDEX_KEY extends SchemaDescriptorSupplier> Optional<IndexEntryUpdate<INDEX_KEY>> tokenUpdateForIndexKey( INDEX_KEY indexKey )
+    {
+        if ( indexKey == null || Arrays.equals( entityTokensBefore, entityTokensAfter ) )
+        {
+            return Optional.empty();
+        }
+
+        return Optional.of( IndexEntryUpdate.change( entityId, indexKey, entityTokensBefore, entityTokensAfter ) );
     }
 
     private boolean relevantBefore( SchemaDescriptor schema )

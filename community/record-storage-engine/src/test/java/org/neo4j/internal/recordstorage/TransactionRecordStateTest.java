@@ -315,7 +315,7 @@ class TransactionRecordStateTest
 
         // WHEN
         CommandsToApply transaction = transaction( recordState );
-        PropertyCommandsExtractor extractor = new PropertyCommandsExtractor();
+        IndexUpdatesExtractor extractor = new IndexUpdatesExtractor();
         transaction.accept( extractor );
 
         // THEN
@@ -1530,7 +1530,7 @@ class TransactionRecordStateTest
     private Iterable<Iterable<IndexEntryUpdate<IndexDescriptor>>> indexUpdatesOf( NeoStores neoStores, CommandsToApply transaction )
             throws IOException
     {
-        PropertyCommandsExtractor extractor = new PropertyCommandsExtractor();
+        IndexUpdatesExtractor extractor = new IndexUpdatesExtractor();
         transaction.accept( extractor );
 
         StorageReader reader = new RecordStorageReader( neoStores );

@@ -483,7 +483,7 @@ public class FullCheckIntegrationTest
                 for ( long nodeId : indexedNodes )
                 {
                     EntityUpdates updates = fixture.nodeAsUpdates( nodeId );
-                    for ( IndexEntryUpdate<?> update : updates.forIndexKeys( singletonList( indexDescriptor ) ) )
+                    for ( IndexEntryUpdate<?> update : updates.valueUpdatesForIndexKeys( singletonList( indexDescriptor ) ) )
                     {
                         updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, ((ValueIndexEntryUpdate<?>) update).values() ) );
                     }

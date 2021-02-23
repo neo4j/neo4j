@@ -102,21 +102,22 @@ public class OnlineIndexUpdates implements IndexUpdates
 
     private void gatherUpdatesFor( long nodeId, NodeCommand nodeCommand, EntityCommandGrouper<NodeCommand>.Cursor propertyCommands )
     {
-        EntityUpdates.Builder nodePropertyUpdate = gatherUpdatesFromCommandsForNode( nodeId, nodeCommand, propertyCommands );
-        eagerlyGatherUpdates( nodePropertyUpdate, EntityType.NODE );
+        EntityUpdates nodeUpdates = gatherUpdatesFromCommandsForNode( nodeId, nodeCommand, propertyCommands );
+        eagerlyGatherValueIndexUpdates( nodeUpdates, EntityType.NODE );
+        eagerlyGatherTokenIndexUpdates( nodeUpdates, EntityType.NODE );
     }
 
     private void gatherUpdatesFor( long relationshipId, RelationshipCommand relationshipCommand,
             EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands )
     {
-        EntityUpdates.Builder relationshipPropertyUpdate = gatherUpdatesFromCommandsForRelationship( relationshipId, relationshipCommand, propertyCommands );
-        eagerlyGatherUpdates( relationshipPropertyUpdate, EntityType.RELATIONSHIP );
+        EntityUpdates relationshipUpdates = gatherUpdatesFromCommandsForRelationship( relationshipId, relationshipCommand, propertyCommands );
+        eagerlyGatherValueIndexUpdates( relationshipUpdates, EntityType.RELATIONSHIP );
+        eagerlyGatherTokenIndexUpdates( relationshipUpdates, EntityType.RELATIONSHIP );
     }
 
-    private void eagerlyGatherUpdates( EntityUpdates.Builder entityUpdatesBuilder, EntityType entityType )
+    private void eagerlyGatherValueIndexUpdates( EntityUpdates entityUpdates, EntityType entityType )
     {
-        EntityUpdates entityUpdates = entityUpdatesBuilder.build();
-        Iterable<IndexDescriptor> relatedIndexes = schemaCache.getIndexesRelatedTo(
+        Iterable<IndexDescriptor> relatedIndexes = schemaCache.getValueIndexesRelatedTo(
                 entityUpdates.entityTokensChanged(),
                 entityUpdates.entityTokensUnchanged(),
                 entityUpdates.propertiesChanged(),
@@ -124,10 +125,10 @@ public class OnlineIndexUpdates implements IndexUpdates
                 entityType );
         // we need to materialize the IndexEntryUpdates here, because when we
         // consume (later in separate thread) the store might have changed.
-        entityUpdates.forIndexKeys( relatedIndexes, reader, entityType, cursorTracer, memoryTracker ).forEach( updates::add );
+        entityUpdates.valueUpdatesForIndexKeys( relatedIndexes, reader, entityType, cursorTracer, memoryTracker ).forEach( updates::add );
     }
 
-    private EntityUpdates.Builder gatherUpdatesFromCommandsForNode( long nodeId,
+    private EntityUpdates gatherUpdatesFromCommandsForNode( long nodeId,
             NodeCommand nodeChanges,
             EntityCommandGrouper<NodeCommand>.Cursor propertyCommandsForNode )
     {
@@ -167,7 +168,13 @@ public class OnlineIndexUpdates implements IndexUpdates
 
         // Then look for property changes
         converter.convertPropertyRecord( propertyCommandsForNode, nodePropertyUpdates );
-        return nodePropertyUpdates;
+        return nodePropertyUpdates.build();
+    }
+
+    private void eagerlyGatherTokenIndexUpdates( EntityUpdates entityUpdates, EntityType entityType )
+    {
+        IndexDescriptor relatedToken = schemaCache.getTokenIndex( entityType );
+        entityUpdates.tokenUpdateForIndexKey( relatedToken ).ifPresent( updates::add );
     }
 
     private static boolean providesCompleteListOfProperties( Command entityCommand )
@@ -175,7 +182,7 @@ public class OnlineIndexUpdates implements IndexUpdates
         return entityCommand != null && (entityCommand.getMode() == CREATE || entityCommand.getMode() == DELETE);
     }
 
-    private EntityUpdates.Builder gatherUpdatesFromCommandsForRelationship( long relationshipId, RelationshipCommand relationshipCommand,
+    private EntityUpdates gatherUpdatesFromCommandsForRelationship( long relationshipId, RelationshipCommand relationshipCommand,
             EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands )
     {
         long reltypeBefore;
@@ -193,7 +200,7 @@ public class OnlineIndexUpdates implements IndexUpdates
         EntityUpdates.Builder relationshipPropertyUpdates =
                 EntityUpdates.forEntity( relationshipId, complete ).withTokens( reltypeBefore ).withTokensAfter( reltypeAfter );
         converter.convertPropertyRecord( propertyCommands, relationshipPropertyUpdates );
-        return relationshipPropertyUpdates;
+        return relationshipPropertyUpdates.build();
     }
 
     private StorageNodeCursor loadNode( long nodeId )

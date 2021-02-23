@@ -153,21 +153,9 @@ public abstract class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplie
         return new ValueIndexEntryUpdate<>( entityId, indexKey, UpdateMode.CHANGED, before, after );
     }
 
-    public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> add(
-            long entityId, INDEX_KEY indexKey, long[] values )
-    {
-        return new TokenIndexEntryUpdate<>( entityId, indexKey, UpdateMode.ADDED, values );
-    }
-
-    public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> remove(
-            long entityId, INDEX_KEY indexKey, long[] values )
-    {
-        return new TokenIndexEntryUpdate<>( entityId, indexKey, UpdateMode.REMOVED, values );
-    }
-
     public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> change(
             long entityId, INDEX_KEY indexKey, long[] before, long[] after )
     {
-        return new TokenIndexEntryUpdate<>( entityId, indexKey, UpdateMode.CHANGED, before, after );
+        return new TokenIndexEntryUpdate<>( entityId, indexKey, before, after );
     }
 }

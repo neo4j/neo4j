@@ -728,7 +728,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
             Map<IndexPopulation,List<IndexEntryUpdate<IndexPopulation>>> updates = new HashMap<>( populations.size() );
             for ( EntityUpdates update : entityUpdates )
             {
-                for ( IndexEntryUpdate<IndexPopulation> indexUpdate : update.forIndexKeys( populations ) )
+                for ( IndexEntryUpdate<IndexPopulation> indexUpdate : update.valueUpdatesForIndexKeys( populations ) )
                 {
                     IndexPopulation population = indexUpdate.indexKey();
                     population.populator.includeSample( indexUpdate );

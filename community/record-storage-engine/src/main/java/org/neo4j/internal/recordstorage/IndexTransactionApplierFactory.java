@@ -66,7 +66,7 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
     {
         private final long txId;
         private final Subject subject;
-        private final PropertyCommandsExtractor indexUpdatesExtractor = new PropertyCommandsExtractor();
+        private final IndexUpdatesExtractor indexUpdatesExtractor = new IndexUpdatesExtractor();
         private List<IndexDescriptor> createdIndexes;
         private final IndexActivator indexActivator;
         private final BatchContext batchContext;
@@ -101,20 +101,24 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
         @Override
         public boolean visitNodeCommand( Command.NodeCommand command )
         {
-            // for label store updates
-            NodeRecord before = command.getBefore();
-            NodeRecord after = command.getAfter();
-
-            NodeLabels labelFieldBefore = parseLabelsField( before );
-            NodeLabels labelFieldAfter = parseLabelsField( after );
-            if ( !(labelFieldBefore.isInlined() && labelFieldAfter.isInlined() &&
-                    before.getLabelField() == after.getLabelField()) )
+            if ( batchContext.specialHandlingOfScanStoresNeeded() )
             {
-                long[] labelsBefore = labelFieldBefore.getIfLoaded();
-                long[] labelsAfter = labelFieldAfter.getIfLoaded();
-                if ( labelsBefore != null && labelsAfter != null )
+
+                // for label store updates
+                NodeRecord before = command.getBefore();
+                NodeRecord after = command.getAfter();
+
+                NodeLabels labelFieldBefore = parseLabelsField( before );
+                NodeLabels labelFieldAfter = parseLabelsField( after );
+                if ( !(labelFieldBefore.isInlined() && labelFieldAfter.isInlined() &&
+                        before.getLabelField() == after.getLabelField()) )
                 {
-                    batchContext.labelUpdates().add( EntityTokenUpdate.tokenChanges( command.getKey(), labelsBefore, labelsAfter, txId ) );
+                    long[] labelsBefore = labelFieldBefore.getIfLoaded();
+                    long[] labelsAfter = labelFieldAfter.getIfLoaded();
+                    if ( labelsBefore != null && labelsAfter != null )
+                    {
+                        batchContext.labelUpdates().add( EntityTokenUpdate.tokenChanges( command.getKey(), labelsBefore, labelsAfter, txId ) );
+                    }
                 }
             }
 
@@ -125,17 +129,20 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
         @Override
         public boolean visitRelationshipCommand( Command.RelationshipCommand command )
         {
-            // for relationship type scan store updates
-            RelationshipRecord before = command.getBefore();
-            RelationshipRecord after = command.getAfter();
-
-            int beforeType = before.getType();
-            int afterType = after.getType();
-            long[] beforeArray = beforeType == -1 || !before.inUse() ? EMPTY_LONG_ARRAY : new long[]{beforeType};
-            long[] afterArray = afterType == -1 || !after.inUse() ? EMPTY_LONG_ARRAY : new long[]{afterType};
-            if ( !Arrays.equals( beforeArray, afterArray ) )
+            if ( batchContext.specialHandlingOfScanStoresNeeded() )
             {
-                batchContext.relationshipTypeUpdates().add( EntityTokenUpdate.tokenChanges( command.getKey(), beforeArray, afterArray ) );
+                // for relationship type scan store updates
+                RelationshipRecord before = command.getBefore();
+                RelationshipRecord after = command.getAfter();
+
+                int beforeType = before.getType();
+                int afterType = after.getType();
+                long[] beforeArray = beforeType == -1 || !before.inUse() ? EMPTY_LONG_ARRAY : new long[]{beforeType};
+                long[] afterArray = afterType == -1 || !after.inUse() ? EMPTY_LONG_ARRAY : new long[]{afterType};
+                if ( !Arrays.equals( beforeArray, afterArray ) )
+                {
+                    batchContext.relationshipTypeUpdates().add( EntityTokenUpdate.tokenChanges( command.getKey(), beforeArray, afterArray ) );
+                }
             }
 
             return indexUpdatesExtractor.visitRelationshipCommand( command );

@@ -132,15 +132,15 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public Collection<IndexDescriptor> indexesGetRelated( long[] labels, int propertyKeyId, EntityType entityType )
+    public Collection<IndexDescriptor> valueIndexesGetRelated( long[] labels, int propertyKeyId, EntityType entityType )
     {
-        return schemaCache.getIndexesRelatedTo( EMPTY_LONG_ARRAY, labels, new int[]{propertyKeyId}, false, entityType );
+        return schemaCache.getValueIndexesRelatedTo( EMPTY_LONG_ARRAY, labels, new int[]{propertyKeyId}, false, entityType );
     }
 
     @Override
-    public Collection<IndexDescriptor> indexesGetRelated( long[] labels, int[] propertyKeyIds, EntityType entityType )
+    public Collection<IndexDescriptor> valueIndexesGetRelated( long[] labels, int[] propertyKeyIds, EntityType entityType )
     {
-        return schemaCache.getIndexesRelatedTo( labels, PrimitiveLongCollections.EMPTY_LONG_ARRAY, propertyKeyIds, true, entityType );
+        return schemaCache.getValueIndexesRelatedTo( labels, PrimitiveLongCollections.EMPTY_LONG_ARRAY, propertyKeyIds, true, entityType );
     }
 
     @Override

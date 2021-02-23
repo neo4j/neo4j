@@ -146,13 +146,13 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public Collection<IndexDescriptor> indexesGetRelated( long[] labels, int propertyKeyId, EntityType entityType )
+    public Collection<IndexDescriptor> valueIndexesGetRelated( long[] labels, int propertyKeyId, EntityType entityType )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public Collection<IndexDescriptor> indexesGetRelated( long[] labels, int[] propertyKeyIds, EntityType entityType )
+    public Collection<IndexDescriptor> valueIndexesGetRelated( long[] labels, int[] propertyKeyIds, EntityType entityType )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }

@@ -26,15 +26,18 @@ import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRecordOfLabels;
 
 /**
- * Gathers node/property commands by node id, preparing for extraction of updates.
+ * Gathers commands that can result in an index update.
+ * <p>
+ * This class does not investigate if a relevant index exists, it just gathers
+ * commands that have potential to result in changes to index content.
  */
-public class PropertyCommandsExtractor extends TransactionApplier.Adapter
+public class IndexUpdatesExtractor extends TransactionApplier.Adapter
 {
     private EntityCommandGrouper<NodeCommand> nodeCommands;
     private EntityCommandGrouper<RelationshipCommand> relationshipCommands;
     private boolean hasUpdates;
 
-    public PropertyCommandsExtractor()
+    public IndexUpdatesExtractor()
     {
         nodeCommands = new EntityCommandGrouper<>( NodeCommand.class, 16 );
         relationshipCommands = new EntityCommandGrouper<>( RelationshipCommand.class, 16 );

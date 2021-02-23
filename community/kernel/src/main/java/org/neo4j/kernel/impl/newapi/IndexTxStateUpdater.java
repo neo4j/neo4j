@@ -83,7 +83,7 @@ public class IndexTxStateUpdater
         assert noSchemaChangedInTx();
 
         // Check all indexes of the changed label
-        Collection<IndexDescriptor> indexes = storageReader.indexesGetRelated( new long[]{labelId}, existingPropertyKeyIds, NODE );
+        Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( new long[]{labelId}, existingPropertyKeyIds, NODE );
         if ( !indexes.isEmpty() )
         {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
@@ -157,7 +157,7 @@ public class IndexTxStateUpdater
             Value value )
     {
         assert noSchemaChangedInTx();
-        Collection<IndexDescriptor> indexes = storageReader.indexesGetRelated( tokens, propertyKeyId, entity.entityType() );
+        Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( tokens, propertyKeyId, entity.entityType() );
         if ( !indexes.isEmpty() )
         {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
@@ -180,7 +180,7 @@ public class IndexTxStateUpdater
             Value value )
     {
         assert noSchemaChangedInTx();
-        Collection<IndexDescriptor> indexes = storageReader.indexesGetRelated( tokens, propertyKeyId, entity.entityType() );
+        Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( tokens, propertyKeyId, entity.entityType() );
         if ( !indexes.isEmpty() )
         {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();
@@ -202,7 +202,7 @@ public class IndexTxStateUpdater
             Value beforeValue, Value afterValue )
     {
         assert noSchemaChangedInTx();
-        Collection<IndexDescriptor> indexes = storageReader.indexesGetRelated( tokens, propertyKeyId, entity.entityType() );
+        Collection<IndexDescriptor> indexes = storageReader.valueIndexesGetRelated( tokens, propertyKeyId, entity.entityType() );
         if ( !indexes.isEmpty() )
         {
             MutableIntObjectMap<Value> materializedProperties = IntObjectMaps.mutable.empty();

@@ -616,7 +616,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                         {
                             LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propertyId );
                             for ( IndexEntryUpdate<?> indexUpdate :
-                                    update.forIndexKeys( Collections.singleton( schema ) ) )
+                                    update.valueUpdatesForIndexKeys( Collections.singleton( schema ) ) )
                             {
                                 ValueIndexEntryUpdate<?> valueUpdate = (ValueIndexEntryUpdate<?>) indexUpdate;
                                 switch ( valueUpdate.updateMode() )
@@ -644,12 +644,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 {
                     for ( EntityUpdates update : updates )
                     {
-                        Iterable<IndexDescriptor> relatedIndexes = schemaCache.getIndexesRelatedTo(
+                        Iterable<IndexDescriptor> relatedIndexes = schemaCache.getValueIndexesRelatedTo(
                                 update.entityTokensChanged(),
                                 update.entityTokensUnchanged(),
                                 update.propertiesChanged(), false, EntityType.NODE );
-                        Iterable<IndexEntryUpdate<IndexDescriptor>> entryUpdates = update.forIndexKeys( relatedIndexes, reader, EntityType.NODE, NULL,
-                                INSTANCE );
+                        Iterable<IndexEntryUpdate<IndexDescriptor>> entryUpdates =
+                                update.valueUpdatesForIndexKeys( relatedIndexes, reader, EntityType.NODE, NULL, INSTANCE );
                         indexService.applyUpdates( entryUpdates, NULL );
                     }
                 }

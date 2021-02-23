@@ -62,6 +62,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -137,6 +138,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final int denseNodeThreshold;
     private final Map<IdType,WorkSync<IdGenerator,IdGeneratorUpdateWork>> idGeneratorWorkSyncs = new EnumMap<>( IdType.class );
     private final Map<TransactionApplicationMode,TransactionApplierFactoryChain> applierChains = new EnumMap<>( TransactionApplicationMode.class );
+    private final boolean usingTokenIndexes;
 
     // installed later
     private IndexUpdateListener indexUpdateListener;
@@ -175,6 +177,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.otherMemoryTracker = otherMemoryTracker;
         this.commandLockVerificationFactory = commandLockVerificationFactory;
         this.lockVerificationFactory = lockVerificationFactory;
+        this.usingTokenIndexes = config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes );
 
         StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, logProvider, cacheTracer );
         neoStores = factory.openAllNeoStores( createStoreIfNotExists );
@@ -417,9 +420,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         TransactionApplierFactoryChain batchApplier = applierChain( mode );
         CommandsToApply initialBatch = batch;
-        try ( BatchContext context = new BatchContext( indexUpdateListener, labelScanStoreSync, relationshipTypeScanStoreSync, indexUpdatesSync,
-                neoStores.getNodeStore(), neoStores.getPropertyStore(), this, schemaCache, initialBatch.cursorTracer(), otherMemoryTracker,
-                batchApplier.getIdUpdateListenerSupplier().get() ) )
+        try ( BatchContext context =  createBatchContext( batchApplier, batch ) )
         {
             while ( batch != null )
             {
@@ -437,6 +438,19 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             databaseHealth.panic( kernelException );
             throw kernelException;
         }
+    }
+
+    private BatchContext createBatchContext( TransactionApplierFactoryChain batchApplier, CommandsToApply initialBatch )
+    {
+        if ( usingTokenIndexes )
+        {
+            return new BatchContextImpl( indexUpdateListener, indexUpdatesSync, neoStores.getNodeStore(), neoStores.getPropertyStore(),
+                    this, schemaCache, initialBatch.cursorTracer(), otherMemoryTracker, batchApplier.getIdUpdateListenerSupplier().get() );
+        }
+
+        return new LegacyBatchContext( indexUpdateListener, labelScanStoreSync, relationshipTypeScanStoreSync, indexUpdatesSync, neoStores.getNodeStore(),
+                neoStores.getPropertyStore(), this, schemaCache, initialBatch.cursorTracer(), otherMemoryTracker,
+                batchApplier.getIdUpdateListenerSupplier().get() );
     }
 
     /**

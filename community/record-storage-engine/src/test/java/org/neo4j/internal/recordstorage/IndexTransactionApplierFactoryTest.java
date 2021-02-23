@@ -66,7 +66,7 @@ class IndexTransactionApplierFactoryTest
         WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
         PropertyStore propertyStore = mock( PropertyStore.class );
         IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory( indexUpdateListener );
-        try ( var batchContext = new BatchContext( indexUpdateListener, labelScanSync, relationshipTypeScanStoreSync, indexUpdatesSync,
+        try ( var batchContext = new LegacyBatchContext( indexUpdateListener, labelScanSync, relationshipTypeScanStoreSync, indexUpdatesSync,
                 mock( NodeStore.class ), propertyStore, mock( RecordStorageEngine.class ), mock( SchemaCache.class ), NULL, INSTANCE,
                 mock( IdUpdateListener.class ) ) )
         {
@@ -105,7 +105,7 @@ class IndexTransactionApplierFactoryTest
         IndexDescriptor rule2 = uniqueForSchema( forLabel( 2, 1 ), providerKey, providerVersion, indexId2, constraintId2 );
         IndexDescriptor rule3 = uniqueForSchema( forLabel( 3, 1 ), providerKey, providerVersion, indexId3, constraintId3 );
         IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory( indexUpdateListener );
-        var batchContext = mock( BatchContext.class );
+        var batchContext = mock( LegacyBatchContext.class );
         when( batchContext.getLockGroup() ).thenReturn( new LockGroup() );
         when( batchContext.indexUpdates() ).thenReturn( mock( IndexUpdates.class ) );
         when( batchContext.getIndexActivator() ).thenReturn( indexActivator );
