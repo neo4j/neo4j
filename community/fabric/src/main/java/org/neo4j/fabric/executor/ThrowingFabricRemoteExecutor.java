@@ -41,7 +41,8 @@ public class ThrowingFabricRemoteExecutor implements FabricRemoteExecutor
     {
 
         @Override
-        public Mono<StatementResult> run( Location.Remote location, String query, TransactionMode transactionMode, MapValue params )
+        public Mono<StatementResult> run( Location.Remote location, ExecutionOptions executionOptions, String query, TransactionMode transactionMode,
+                MapValue params )
         {
             throw new IllegalStateException( "Remote query execution not supported" );
         }
