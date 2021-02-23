@@ -157,11 +157,11 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
       patternRelationships = Set(r),
-      selections = Selections.from(hasLabels("a", "A"))
+      selections = Selections.from(Seq(hasLabels("a", "A"), or(hasLabels("a", "A2"), hasLabels("a", "A3"))))
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(StableIdentifier("b", isIdStable = false)))
 
-    qgWithLeafInfo.allKnownUnstableNodeLabelsFor(a) should equal(Set(labelName("A")))
+    qgWithLeafInfo.allKnownUnstableNodeLabelsFor(a) should equal(Set(labelName("A"), labelName("A2"), labelName("A3")))
   }
 
   test("allKnownUnstableNodeLabelsFor should include all labels from optional matches") {
@@ -214,7 +214,6 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
       patternRelationships = Set(r),
-      //selections = Selections.from(hasTypes("a", "A"))
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(StableIdentifier("b", isIdStable = false)))
 
@@ -228,11 +227,11 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
       patternRelationships = Set(r),
-      selections = Selections.from(hasTypes("r", "R"))
+      selections = Selections.from(Seq(hasTypes("r", "R"), or(hasTypes("r", "R2"), hasTypes("r", "R3"))))
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(StableIdentifier("b", isIdStable = false)))
 
-    qgWithLeafInfo.allPossibleUnstableRelTypesFor(rIdent) should equal(Set(relTypeName("R")))
+    qgWithLeafInfo.allPossibleUnstableRelTypesFor(rIdent) should equal(Set(relTypeName("R"), relTypeName("R2"), relTypeName("R3")))
   }
 
   test("allPossibleUnstableRelTypesFor should include all types from optional matches") {

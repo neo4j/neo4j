@@ -193,11 +193,11 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     copy(patternNodes = nodes)
 
   def knownProperties(idName: String): Set[PropertyKeyName] =
-    selections.propertyPredicatesForSet.getOrElse(idName, Set.empty).map(_.propertyKey)
+    selections.allPropertyPredicatesInvolving.getOrElse(idName, Set.empty).map(_.propertyKey)
 
-  private def knownLabelsOnNode(node: String): Set[LabelName] =
+  private def possibleLabelsOnNode(node: String): Set[LabelName] =
     selections
-      .labelPredicates.getOrElse(node, Set.empty)
+      .allHasLabelsInvolving.getOrElse(node, Set.empty)
       .flatMap(_.labels)
 
   private def possibleTypesOnRel(rel: String): Set[RelTypeName] = {
@@ -207,14 +207,14 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
       .flatMap(_.types.toSet)
 
     val whereClauseTypes = selections
-      .typePredicates.getOrElse(rel, Set.empty)
+      .allHasTypesInvolving.getOrElse(rel, Set.empty)
       .flatMap(_.types)
 
     inlinedTypes ++ whereClauseTypes
   }
 
-  def allKnownLabelsOnNode(node: String): Set[LabelName] =
-    knownLabelsOnNode(node) ++ optionalMatches.flatMap(_.allKnownLabelsOnNode(node))
+  def allPossibleLabelsOnNode(node: String): Set[LabelName] =
+    possibleLabelsOnNode(node) ++ optionalMatches.flatMap(_.allPossibleLabelsOnNode(node))
 
   def allPossibleTypesOnRel(rel: String): Set[RelTypeName] =
     possibleTypesOnRel(rel) ++ optionalMatches.flatMap(_.allPossibleTypesOnRel(rel))
