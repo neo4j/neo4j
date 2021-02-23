@@ -118,6 +118,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def relTypeName(s: String): RelTypeName = RelTypeName(s)(pos)
 
+  def propName(s: String): PropertyKeyName = PropertyKeyName(s)(pos)
+
   def hasLabels(v: String, label: String): HasLabels =
     hasLabels(varFor(v), label)
 
@@ -131,16 +133,16 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     FunctionInvocation(FunctionName(Exists.name)(e.position), e)(e.position)
 
   def prop(variable: String, propKey: String): Property =
-    Property(varFor(variable), PropertyKeyName(propKey)(pos))(pos)
+    Property(varFor(variable), propName(propKey))(pos)
 
   def cachedNodeProp(variable: String, propKey: String): CachedProperty =
-    CachedProperty(variable, varFor(variable), PropertyKeyName(propKey)(pos), NODE_TYPE)(pos)
+    CachedProperty(variable, varFor(variable), propName(propKey), NODE_TYPE)(pos)
 
   def cachedRelProp(variable: String, propKey: String): CachedProperty =
-    CachedProperty(variable, varFor(variable), PropertyKeyName(propKey)(pos), RELATIONSHIP_TYPE)(pos)
+    CachedProperty(variable, varFor(variable), propName(propKey), RELATIONSHIP_TYPE)(pos)
 
   def prop(map: Expression, key: String): Property =
-    Property(map, PropertyKeyName(key)(pos))(pos)
+    Property(map, propName(key))(pos)
 
   def propEquality(variable: String, propKey: String, intValue: Int): Equals =
     Equals(prop(variable, propKey), literalInt(intValue))(pos)
@@ -177,12 +179,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def mapOf(keysAndValues: (String, Expression)*): MapExpression =
     MapExpression(keysAndValues.map {
-      case (k, v) => PropertyKeyName(k)(pos) -> v
+      case (k, v) => propName(k) -> v
     })(pos)
 
   def mapOfInt(keyValues: (String, Int)*): MapExpression =
     MapExpression(keyValues.map {
-      case (k, v) => (PropertyKeyName(k)(pos), literalInt(v))
+      case (k, v) => (propName(k), literalInt(v))
     })(pos)
 
   def nullLiteral: Null = Null()(pos)

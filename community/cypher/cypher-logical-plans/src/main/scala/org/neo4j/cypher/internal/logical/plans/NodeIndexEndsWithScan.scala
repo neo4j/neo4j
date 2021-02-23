@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * all-nodes scan or label scan followed by a property value filter.
  */
 case class NodeIndexEndsWithScan(idName: String,
-                                 label: LabelToken,
+                                 override val label: LabelToken,
                                  property: IndexedProperty,
                                  valueExpr: Expression,
                                  argumentIds: Set[String],

@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * node is guaranteed.
  */
 case class NodeUniqueIndexSeek(idName: String,
-                               label: LabelToken,
+                               override val label: LabelToken,
                                properties: Seq[IndexedProperty],
                                valueExpr: QueryExpression[Expression],
                                argumentIds: Set[String],

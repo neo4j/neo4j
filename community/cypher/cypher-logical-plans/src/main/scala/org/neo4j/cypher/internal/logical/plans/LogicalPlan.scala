@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Strictness
 import org.neo4j.cypher.internal.util.Foldable
@@ -258,6 +259,7 @@ trait IndexedPropertyProvidingPlan {
 }
 
 abstract class IndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) with IndexedPropertyProvidingPlan {
+  def label: LabelToken
   override def cachedProperties: Seq[CachedProperty] = properties.flatMap(_.maybeCachedProperty(idName))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): IndexLeafPlan
@@ -272,8 +274,6 @@ abstract class MultiNodeIndexLeafPlan(idGen: IdGen) extends MultiNodeLogicalLeaf
 abstract class IndexSeekLeafPlan(idGen: IdGen) extends IndexLeafPlan(idGen) {
 
   def valueExpr: QueryExpression[Expression]
-
-  def label: LabelToken
 
   def properties: Seq[IndexedProperty]
 
