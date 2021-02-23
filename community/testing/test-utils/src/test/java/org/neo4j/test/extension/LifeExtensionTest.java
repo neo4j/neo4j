@@ -61,7 +61,6 @@ class LifeExtensionTest
     void componentShutdownAfterTest()
     {
         Events testEvents = EngineTestKit.engine( ENGINE_ID )
-                .enableImplicitConfigurationParameters( true )
                 .selectors( selectClass( LifeExtensionComponentShutdownCase.class ) ).execute()
                 .testEvents();
 
@@ -74,7 +73,6 @@ class LifeExtensionTest
     void incorrectLifeSupportExtensionUsageTest()
     {
         Events testEvents = EngineTestKit.engine( ENGINE_ID )
-                .enableImplicitConfigurationParameters( true )
                 .selectors( selectClass( LifeExtensionIncorrectUsage.class ) ).execute()
                 .testEvents();
 

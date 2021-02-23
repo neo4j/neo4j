@@ -389,8 +389,6 @@ Eclipse Public License v2.0
   JUnit Jupiter API
   JUnit Jupiter Params
   JUnit Platform Commons
-  JUnit Platform Engine API
-  JUnit Platform Launcher
 ------------------------------------------------------------------------------
 
 Eclipse Public License - v 2.0

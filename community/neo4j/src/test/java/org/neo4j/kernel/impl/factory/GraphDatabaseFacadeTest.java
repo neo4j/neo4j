@@ -46,7 +46,6 @@ class GraphDatabaseFacadeTest
     private GraphDatabaseFacade graphDatabaseFacade;
     private GraphDatabaseQueryService queryService;
     private Kernel kernel;
-    private KernelTransaction kernelTransaction;
 
     @BeforeEach
     void setUp()
@@ -61,8 +60,6 @@ class GraphDatabaseFacadeTest
         when( resolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
         Config config = Config.defaults();
         when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
-
-        kernelTransaction = mock( KernelTransaction.class );
 
         graphDatabaseFacade = new GraphDatabaseFacade( database, config, DbmsInfo.COMMUNITY, mock( DatabaseAvailabilityGuard.class ) );
     }

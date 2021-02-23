@@ -84,7 +84,6 @@ Apache Software License, Version 2.0
   Netty/All-in-One
   Non-Blocking Reactive Foundation for the JVM
   org.apiguardian:apiguardian-api
-  org.opentest4j:opentest4j
   parboiled-core
   parboiled-scala
   picocli - a mighty tiny Command Line Interface
@@ -149,9 +148,6 @@ Eclipse Public License v2.0
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
-  JUnit Platform Commons
-  JUnit Platform Engine API
-  JUnit Platform Launcher
   JUnit Vintage Engine
   ServiceLocator Default Implementation
 

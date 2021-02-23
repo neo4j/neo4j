@@ -81,6 +81,6 @@ class JUnitUsageGuardExtensionTest
 
     private static Events executeTest( Class<?> clazz )
     {
-        return EngineTestKit.engine( ENGINE_ID ).enableImplicitConfigurationParameters( true ).selectors( selectClass( clazz ) ).execute().allEvents();
+        return EngineTestKit.engine( ENGINE_ID ).selectors( selectClass( clazz ) ).execute().allEvents();
     }
 }

@@ -121,7 +121,7 @@
     <scala.target.vm>1.8</scala.target.vm>
     <jersey.version>2.33</jersey.version>
     <junit.version>5.7.1</junit.version>
-    <junit.platform.version>1.7.1</junit.platform.version>
+    <junit.platform.version>1.6.2</junit.platform.version>
     <mockito.version>3.7.7</mockito.version>
     <opencypher.version>1.0.0-M16</opencypher.version>
     <caffeine.version>3.0.0</caffeine.version>
