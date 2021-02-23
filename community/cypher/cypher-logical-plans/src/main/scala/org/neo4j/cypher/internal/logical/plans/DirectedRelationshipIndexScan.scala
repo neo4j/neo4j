@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 case class DirectedRelationshipIndexScan(idName: String,
                                          startNode: String,
                                          endNode: String,
-                                         typeToken: RelationshipTypeToken,
+                                         override val typeToken: RelationshipTypeToken,
                                          properties: Seq[IndexedProperty],
                                          argumentIds: Set[String],
                                          indexOrder: IndexOrder)

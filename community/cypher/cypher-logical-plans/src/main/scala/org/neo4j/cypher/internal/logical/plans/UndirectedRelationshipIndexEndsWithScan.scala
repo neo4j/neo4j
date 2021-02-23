@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 case class UndirectedRelationshipIndexEndsWithScan(idName: String,
                                                    leftNode: String,
                                                    rightNode: String,
-                                                   typeToken: RelationshipTypeToken,
+                                                   override val typeToken: RelationshipTypeToken,
                                                    property: IndexedProperty,
                                                    valueExpr: Expression,
                                                    argumentIds: Set[String],

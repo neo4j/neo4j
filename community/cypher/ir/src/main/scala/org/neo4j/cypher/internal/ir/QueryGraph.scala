@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
 
 import scala.collection.GenSet
@@ -136,6 +137,11 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     copy(selections = selections ++ newSelections)
   }
 
+  def removePredicates(predicates: Set[Predicate]): QueryGraph = {
+    val newSelections = Selections(selections.predicates -- predicates)
+    copy(selections = newSelections)
+  }
+
   def addPredicates(outerScope: Set[String], predicates: Expression*): QueryGraph = {
     val newSelections = Selections(predicates.flatMap(_.asPredicates(outerScope)).toSet)
     copy(selections = selections ++ newSelections)
@@ -186,27 +192,35 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   def withPatternNodes(nodes: Set[String]): QueryGraph =
     copy(patternNodes = nodes)
 
-  def knownProperties(idName: String): Set[Property] =
-    selections.propertyPredicatesForSet.getOrElse(idName, Set.empty)
+  def knownProperties(idName: String): Set[PropertyKeyName] =
+    selections.propertyPredicatesForSet.getOrElse(idName, Set.empty).map(_.propertyKey)
 
   private def knownLabelsOnNode(node: String): Set[LabelName] =
     selections
       .labelPredicates.getOrElse(node, Set.empty)
       .flatMap(_.labels)
 
+  private def possibleTypesOnRel(rel: String): Set[RelTypeName] = {
+    val inlinedTypes = patternRelationships
+      .find(_.name == rel)
+      .toSet[PatternRelationship]
+      .flatMap(_.types.toSet)
+
+    val whereClauseTypes = selections
+      .typePredicates.getOrElse(rel, Set.empty)
+      .flatMap(_.types)
+
+    inlinedTypes ++ whereClauseTypes
+  }
+
   def allKnownLabelsOnNode(node: String): Set[LabelName] =
     knownLabelsOnNode(node) ++ optionalMatches.flatMap(_.allKnownLabelsOnNode(node))
 
-  def allKnownPropertiesOnIdentifier(idName: String): Set[Property] =
+  def allPossibleTypesOnRel(rel: String): Set[RelTypeName] =
+    possibleTypesOnRel(rel) ++ optionalMatches.flatMap(_.allPossibleTypesOnRel(rel))
+
+  def allKnownPropertiesOnIdentifier(idName: String): Set[PropertyKeyName] =
     knownProperties(idName) ++ optionalMatches.flatMap(_.allKnownPropertiesOnIdentifier(idName))
-
-  def allKnownNodeProperties: Set[Property] = {
-    val matchedNodes = patternNodes ++ patternRelationships.flatMap(r => Set(r.nodes._1, r.nodes._2))
-    matchedNodes.flatMap(knownProperties) ++ optionalMatches.flatMap(_.allKnownNodeProperties)
-  }
-
-  def allKnownRelProperties: Set[Property] =
-    patternRelationships.map(_.name).flatMap(knownProperties) ++ optionalMatches.flatMap(_.allKnownRelProperties)
 
   def findRelationshipsEndingOn(id: String): Set[PatternRelationship] =
     patternRelationships.filter { r => r.left == id || r.right == id }

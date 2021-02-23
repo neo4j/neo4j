@@ -19,16 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.ir.QgWithInfo
+import org.neo4j.cypher.internal.ir.Predicate
+import org.neo4j.cypher.internal.ir.QgWithLeafInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestingRewriter
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Eager
+import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -47,54 +52,70 @@ object Eagerness {
    * and the remaining parts of the PlannerQuery. This function assumes that the
    * argument PlannerQuery is the very head of the PlannerQuery chain.
    */
-  def readWriteConflictInHead(plan: LogicalPlan, plannerQuery: SinglePlannerQuery): Boolean = {
-    // The first leaf node is always reading through a stable iterator.
-    // We will only consider this analysis for all other node iterators.
-    val leaves = plan.leaves.collect {
-      case n: NodeLogicalLeafPlan => n.idName
-      case r: RelationshipLogicalLeafPlan => r.idName
+  def readWriteConflictInHead(plan: LogicalPlan, plannerQuery: SinglePlannerQuery, context: LogicalPlanningContext): Boolean = {
+    val nodeOrRelLeaves: Seq[LogicalLeafPlan] = plan.leaves.collect {
+      case n: NodeLogicalLeafPlan => n
+      case r: RelationshipLogicalLeafPlan => r
     }
 
-    if (leaves.isEmpty)
+    if (nodeOrRelLeaves.isEmpty)
       false // the query did not start with a read, possibly CREATE () ...
     else {
+      // The first leaf node is always reading through a stable iterator.
+      // Collect all predicates solved by that leaf and exclude them from the eagerness analysis.
+      val stablySolvedPredicates: Set[Predicate] = nodeOrRelLeaves.headOption.map { p =>
+          context.planningAttributes.solveds(p.id).asSinglePlannerQuery.queryGraph.selections.predicates
+      }.getOrElse(Set.empty[Predicate])
+
+      // We still need to distinguish the stable leaf from the others, and denote whether it is id-stable (== IdSeek).
+      val stableIdentifier = nodeOrRelLeaves.headOption.map {
+        case NodeByIdSeek(idName, _, _) => QgWithLeafInfo.StableIdentifier(idName, isIdStable = true)
+        case DirectedRelationshipByIdSeek(idName, _, _, _, _) => QgWithLeafInfo.StableIdentifier(idName, isIdStable = true)
+        case UndirectedRelationshipByIdSeek(idName, _, _, _, _) => QgWithLeafInfo.StableIdentifier(idName, isIdStable = true)
+
+        case n: NodeLogicalLeafPlan => QgWithLeafInfo.StableIdentifier(n.idName, isIdStable = false)
+        case r: RelationshipLogicalLeafPlan => QgWithLeafInfo.StableIdentifier(r.idName, isIdStable = false)
+      }
+      val unstableLeaves = nodeOrRelLeaves.tail.map {
+        case n: NodeLogicalLeafPlan => n.idName
+        case r: RelationshipLogicalLeafPlan => r.idName
+      }.toSet
+
+      val headQgWithLeafInfo = QgWithLeafInfo(
+        plannerQuery.queryGraph,
+        stablySolvedPredicates,
+        unstableLeaves = unstableLeaves,
+        stableIdentifier = stableIdentifier)
+
       // Start recursion by checking the given plannerQuery against itself
-      val headQgWithInfo = QgWithInfo(plannerQuery.queryGraph, unstableLeaves = leaves.tail.toSet, stableIdentifier = leaves.headOption)
-      headConflicts(plannerQuery, plannerQuery, headQgWithInfo)
+      headConflicts(plannerQuery, plannerQuery, headQgWithLeafInfo)
     }
   }
 
   @tailrec
-  private def headConflicts(head: SinglePlannerQuery, tail: SinglePlannerQuery, headQgWithInfo: QgWithInfo): Boolean = {
+  private def headConflicts(head: SinglePlannerQuery, tail: SinglePlannerQuery, headQgWithLeafInfo: QgWithLeafInfo): Boolean = {
     val mergeReadWrite = head == tail && head.queryGraph.containsMergeRecursive
     val conflict = if (tail.queryGraph.readOnly || mergeReadWrite) false
     else {
-      //if we have unsafe rels we need to check relation overlap and delete
-      //overlap immediately
-      (hasUnsafeRelationships(head.queryGraph) &&
-        (tail.queryGraph.createRelationshipOverlap(headQgWithInfo) ||
-          tail.queryGraph.deleteOverlap(headQgWithInfo) ||
-          tail.queryGraph.setPropertyOverlap(headQgWithInfo))
-        ) ||
-        tail.queryGraph.nodeOverlap(headQgWithInfo) ||
-        tail.queryGraph.removeLabelOverlap(headQgWithInfo) ||
-        tail.queryGraph.setLabelOverlap(headQgWithInfo) ||
-        tail.queryGraph.createRelationshipOverlap(headQgWithInfo) ||
-        tail.queryGraph.setPropertyOverlap(headQgWithInfo) ||
-        tail.queryGraph.deleteOverlap(headQgWithInfo) ||
-        tail.queryGraph.foreachOverlap(headQgWithInfo)
+        tail.queryGraph.nodeOverlap(headQgWithLeafInfo) ||
+        tail.queryGraph.removeLabelOverlap(headQgWithLeafInfo) ||
+        tail.queryGraph.setLabelOverlap(headQgWithLeafInfo) ||
+        tail.queryGraph.createRelationshipOverlap(headQgWithLeafInfo) ||
+        tail.queryGraph.setPropertyOverlap(headQgWithLeafInfo) ||
+        tail.queryGraph.deleteOverlap(headQgWithLeafInfo) ||
+        tail.queryGraph.foreachOverlap(headQgWithLeafInfo)
     }
     if (conflict)
       true
     else if (tail.tail.isEmpty)
       false
     else
-      headConflicts(head, tail.tail.get, headQgWithInfo)
+      headConflicts(head, tail.tail.get, headQgWithLeafInfo)
   }
 
   def headReadWriteEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
-    if (alwaysEager || readWriteConflictInHead(inputPlan, query))
+    if (alwaysEager || readWriteConflictInHead(inputPlan, query, context))
       context.logicalPlanProducer.planEager(inputPlan, context)
     else
       inputPlan
@@ -164,10 +185,10 @@ object Eagerness {
   }
 
   /**
-   * @return a QgWithInfo, where there is no stable identifier. Moreover all variables are assumed to be leaves.
+   * @return a QgWithLeafInfo, where there is no stable identifier. Moreover all variables are assumed to be leaves.
    */
-  private def qgWithNoStableIdentifierAndOnlyLeaves(qg: QueryGraph): QgWithInfo =
-    QgWithInfo(qg, qg.allCoveredIds, None)
+  private def qgWithNoStableIdentifierAndOnlyLeaves(qg: QueryGraph): QgWithLeafInfo =
+    QgWithLeafInfo(qg, Set.empty, qg.allCoveredIds, None)
 
   def readWriteConflict(readQuery: SinglePlannerQuery, writeQuery: SinglePlannerQuery): Boolean = {
     val mergeReadWrite = readQuery == writeQuery && readQuery.queryGraph.containsMergeRecursive
@@ -181,10 +202,10 @@ object Eagerness {
 
   @tailrec
   def writeReadConflictInTail(head: SinglePlannerQuery, tail: SinglePlannerQuery, context: LogicalPlanningContext): Boolean = {
-    val tailQgWithInfo = qgWithNoStableIdentifierAndOnlyLeaves(tail.queryGraph)
+    val tailQgWithLeafInfo = qgWithNoStableIdentifierAndOnlyLeaves(tail.queryGraph)
     val conflict =
       if (tail.queryGraph.writeOnly) false
-      else (head.queryGraph overlaps tailQgWithInfo) ||
+      else (head.queryGraph overlaps tailQgWithLeafInfo) ||
         head.queryGraph.overlapsHorizon(tail.horizon, context.semanticTable) ||
         deleteReadOverlap(head.queryGraph, tail.queryGraph, context)
     if (conflict)

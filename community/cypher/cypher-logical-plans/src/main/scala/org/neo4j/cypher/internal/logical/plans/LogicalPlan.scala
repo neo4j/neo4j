@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -286,6 +287,8 @@ trait IndexedPropertyProvidingPlan {
 }
 
 abstract class NodeIndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) with IndexedPropertyProvidingPlan {
+  def label: LabelToken
+
   override def cachedProperties: Seq[CachedProperty] = properties.flatMap(_.maybeCachedProperty(idName))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeIndexLeafPlan
@@ -294,6 +297,8 @@ abstract class NodeIndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen
 }
 
 abstract class RelationshipIndexLeafPlan(idGen: IdGen) extends RelationshipLogicalLeafPlan(idGen) with IndexedPropertyProvidingPlan {
+  def typeToken: RelationshipTypeToken
+
   override def cachedProperties: Seq[CachedProperty] = properties.flatMap(_.maybeCachedProperty(idName))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): RelationshipIndexLeafPlan
@@ -308,8 +313,6 @@ abstract class MultiNodeIndexLeafPlan(idGen: IdGen) extends MultiNodeLogicalLeaf
 abstract class NodeIndexSeekLeafPlan(idGen: IdGen) extends NodeIndexLeafPlan(idGen) {
 
   def valueExpr: QueryExpression[Expression]
-
-  def label: LabelToken
 
   def properties: Seq[IndexedProperty]
 

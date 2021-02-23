@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 case class DirectedRelationshipIndexSeek(idName: String,
                                          startNode: String,
                                          endNode: String,
-                                         typeToken: RelationshipTypeToken,
+                                         override val typeToken: RelationshipTypeToken,
                                          properties: Seq[IndexedProperty],
                                          valueExpr: QueryExpression[Expression],
                                          argumentIds: Set[String],
