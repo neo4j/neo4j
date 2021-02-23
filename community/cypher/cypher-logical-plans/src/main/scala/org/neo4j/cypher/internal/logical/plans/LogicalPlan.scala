@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
-import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Strictness
 import org.neo4j.cypher.internal.util.Foldable
