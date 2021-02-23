@@ -75,6 +75,8 @@ object Eagerness {
       }
       val unstableLeaves = nodeOrRelLeaves.tail.map {
       case n: NodeLogicalLeafPlan => n.idName
+      case d: DirectedRelationshipByIdSeek => d.idName
+      case u: UndirectedRelationshipByIdSeek => u.idName
     }.toSet
 
       val headQgWithLeafInfo = QgWithLeafInfo(
