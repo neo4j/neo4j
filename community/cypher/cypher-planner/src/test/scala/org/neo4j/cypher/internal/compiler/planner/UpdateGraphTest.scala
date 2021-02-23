@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.MergeNodePattern
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.QgWithInfo
+import org.neo4j.cypher.internal.ir.QgWithLeafInfo
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
@@ -46,8 +46,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class UpdateGraphTest extends CypherFunSuite {
   private val pos = DummyPosition(0)
 
-  private def qgWithNoStableIdentifierAndOnlyLeaves(qg: QueryGraph): QgWithInfo =
-    QgWithInfo(qg, qg.allCoveredIds, None)
+  private def qgWithNoStableIdentifierAndOnlyLeaves(qg: QueryGraph): QgWithLeafInfo =
+    QgWithLeafInfo(qg, Set.empty, qg.allCoveredIds, None)
 
   test("should not be empty after adding label to set") {
     val original = QueryGraph()

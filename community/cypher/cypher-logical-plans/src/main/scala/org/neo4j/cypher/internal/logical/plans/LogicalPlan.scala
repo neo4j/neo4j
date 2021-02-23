@@ -250,6 +250,7 @@ trait IndexedPropertyProvidingPlan {
 }
 
 abstract class IndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) with IndexedPropertyProvidingPlan {
+  def label: LabelToken
   override def cachedProperties: Seq[CachedProperty] = properties.flatMap(_.maybeCachedProperty(idName))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): IndexLeafPlan
@@ -264,8 +265,6 @@ abstract class MultiNodeIndexLeafPlan(idGen: IdGen) extends MultiNodeLogicalLeaf
 abstract class IndexSeekLeafPlan(idGen: IdGen) extends IndexLeafPlan(idGen) {
 
   def valueExpr: QueryExpression[Expression]
-
-  def label: LabelToken
 
   def properties: Seq[IndexedProperty]
 

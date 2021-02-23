@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.util.attribution.SameId
  * This operator does a full scan of an index, producing one row per entry.
  */
 case class NodeIndexScan(idName: String,
-                         label: LabelToken,
+                         override val label: LabelToken,
                          properties: Seq[IndexedProperty],
                          argumentIds: Set[String],
                          indexOrder: IndexOrder)
