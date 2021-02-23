@@ -118,7 +118,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   }
 
   def allPatternRelationshipsRead: Set[PatternRelationship] =
-    patternRelationships ++ optionalMatches.flatMap(_.allPatternRelationshipsRead)
+    patternRelationships ++ optionalMatches.flatMap(_.allPatternRelationshipsRead) ++ shortestPathPatterns.map(_.rel)
 
   def allPatternNodesRead: Set[String] =
     patternNodes ++ optionalMatches.flatMap(_.allPatternNodesRead)
