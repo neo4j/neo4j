@@ -162,7 +162,10 @@ class RelationshipChangesForNodeTest
     private void visitExpectedIds( RelationshipModifications.NodeRelationshipTypeIds typeIds, Map<RelationshipDirection,MutableLongSet> dirMap,
             RelationshipDirection direction, Function<RelationshipModifications.NodeRelationshipTypeIds,RelationshipModifications.RelationshipBatch> dude )
     {
-        dude.apply( typeIds ).forEach( ( id, type, startNode, endNode ) -> assertThat( dirMap.get( direction ).remove( id ) ).isTrue() );
-        assertThat( dirMap.remove( direction ).isEmpty() );
+        if ( dirMap.containsKey( direction ) )
+        {
+            dude.apply( typeIds ).forEach( ( id, type, startNode, endNode ) -> assertThat( dirMap.get( direction ).remove( id ) ).isTrue() );
+            assertThat( dirMap.remove( direction ).isEmpty() );
+        }
     }
 }
