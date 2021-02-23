@@ -36,7 +36,7 @@ public interface FabricRemoteExecutor
 
     interface RemoteTransactionContext extends AutoCloseable
     {
-        Mono<StatementResult> run( Location.Remote location, String query, TransactionMode transactionMode, MapValue params );
+        Mono<StatementResult> run( Location.Remote location, ExecutionOptions options, String query, TransactionMode transactionMode, MapValue params );
 
         void close();
     }

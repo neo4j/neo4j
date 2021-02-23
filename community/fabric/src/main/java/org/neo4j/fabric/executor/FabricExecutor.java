@@ -383,7 +383,11 @@ public class FabricExecutor
 
         FragmentResult runRemoteQueryAt( Location.Remote location, TransactionMode transactionMode, String queryString, MapValue parameters )
         {
-            Mono<StatementResult> statementResult = ctx.getRemote().run( location, queryString, transactionMode, parameters );
+            ExecutionOptions executionOptions = plan.inFabricContext()
+                                                ? new ExecutionOptions( location.getGraphId() )
+                                                : new ExecutionOptions();
+
+            Mono<StatementResult> statementResult = ctx.getRemote().run( location, executionOptions, queryString, transactionMode, parameters );
             Flux<Record> records = statementResult.flatMapMany( sr -> sr.records().doOnComplete( () -> sr.summary().subscribe( this::updateSummary ) ) );
 
             // 'onComplete' signal coming from an inner stream might cause more data being requested from an upstream operator
