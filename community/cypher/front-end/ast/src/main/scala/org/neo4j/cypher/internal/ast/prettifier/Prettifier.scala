@@ -369,43 +369,37 @@ case class Prettifier(
       // Privilege commands
       // dbms privileges
 
-      case x @ GrantPrivilege(DbmsPrivilege(_), _, _, qualifiers, roleNames) =>
+      case x @ GrantPrivilege(DbmsPrivilege(_), _, qualifiers, roleNames) =>
         s"${x.name}${Prettifier.extractQualifierString(qualifiers)} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
 
-      case x @ DenyPrivilege(DbmsPrivilege(_), _, _, qualifiers, roleNames) =>
+      case x @ DenyPrivilege(DbmsPrivilege(_), _, qualifiers, roleNames) =>
         s"${x.name}${Prettifier.extractQualifierString(qualifiers)} ON DBMS TO ${Prettifier.escapeNames(roleNames)}"
 
-      case x @ RevokePrivilege(DbmsPrivilege(_), _, _, qualifiers, roleNames, _) =>
+      case x @ RevokePrivilege(DbmsPrivilege(_), _, qualifiers, roleNames, _) =>
         s"${x.name}${Prettifier.extractQualifierString(qualifiers)} ON DBMS FROM ${Prettifier.escapeNames(roleNames)}"
 
       // database privileges
 
-      case x @ GrantPrivilege(DatabasePrivilege(_), _, dbOrGraphScope, qualifier, roleNames) =>
-        val dbScope = dbOrGraphScope.map(d => d.asInstanceOf[DatabaseScope])
+      case x @ GrantPrivilege(DatabasePrivilege(_, dbScope), _, qualifier, roleNames) =>
         Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "TO", roleNames)
 
-      case x @ DenyPrivilege(DatabasePrivilege(_), _, dbOrGraphScope, qualifier, roleNames) =>
-        val dbScope = dbOrGraphScope.map(d => d.asInstanceOf[DatabaseScope])
+      case x @ DenyPrivilege(DatabasePrivilege(_, dbScope), _, qualifier, roleNames) =>
         Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "TO", roleNames)
 
-      case x @ RevokePrivilege(DatabasePrivilege(_), _, dbOrGraphScope, qualifier, roleNames, _) =>
-        val dbScope = dbOrGraphScope.map(d => d.asInstanceOf[DatabaseScope])
+      case x @ RevokePrivilege(DatabasePrivilege(_, dbScope), _, qualifier, roleNames, _) =>
         Prettifier.prettifyDatabasePrivilege(x.name, dbScope, qualifier, "FROM", roleNames)
 
       // graph privileges
 
-      case x @ GrantPrivilege(GraphPrivilege(action), resource, dbOrGraphScope, qualifier, roleNames) =>
-        val graphScope = dbOrGraphScope.map(d => d.asInstanceOf[GraphScope])
+      case x @ GrantPrivilege(GraphPrivilege(action, graphScope), resource, qualifier, roleNames) =>
         val qualifierString = Prettifier.prettifyGraphQualifier(action, qualifier)
         Prettifier.prettifyGraphPrivilege(x.name, graphScope, qualifierString, resource, "TO", roleNames)
 
-      case x @ DenyPrivilege(GraphPrivilege(action), resource, dbOrGraphScope, qualifier, roleNames) =>
-        val graphScope = dbOrGraphScope.map(d => d.asInstanceOf[GraphScope])
+      case x @ DenyPrivilege(GraphPrivilege(action, graphScope), resource, qualifier, roleNames) =>
         val qualifierString = Prettifier.prettifyGraphQualifier(action, qualifier)
         Prettifier.prettifyGraphPrivilege(x.name, graphScope, qualifierString, resource, "TO", roleNames)
 
-      case x @ RevokePrivilege(GraphPrivilege(action), resource, dbOrGraphScope, qualifier, roleNames, _) =>
-        val graphScope = dbOrGraphScope.map(d => d.asInstanceOf[GraphScope])
+      case x @ RevokePrivilege(GraphPrivilege(action, graphScope), resource, qualifier, roleNames, _) =>
         val qualifierString = Prettifier.prettifyGraphQualifier(action, qualifier)
         Prettifier.prettifyGraphPrivilege(x.name, graphScope, qualifierString, resource, "FROM", roleNames)
 

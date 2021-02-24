@@ -305,11 +305,11 @@ final case class RevokeRolesFromUsers(roleNames: Seq[Either[String, Parameter]],
 
 abstract class PrivilegeType(val name: String)
 
-final case class DatabasePrivilege(action: DatabaseAction)(val position: InputPosition) extends PrivilegeType(action.name)
+final case class DatabasePrivilege(action: DatabaseAction, scope: List[DatabaseScope])(val position: InputPosition) extends PrivilegeType(action.name)
 
 final case class DbmsPrivilege(action: AdminAction)(val position: InputPosition) extends PrivilegeType(action.name)
 
-final case class GraphPrivilege(action: GraphAction)(val position: InputPosition) extends PrivilegeType(action.name)
+final case class GraphPrivilege(action: GraphAction, scope: List[GraphScope])(val position: InputPosition) extends PrivilegeType(action.name)
 
 abstract class RevokeType(val name: String, val relType: String)
 
@@ -613,20 +613,20 @@ object GrantPrivilege {
                  roleNames: Seq[Either[String, Parameter]],
                  qualifier: List[PrivilegeQualifier] = List(AllQualifier()(InputPosition.NONE))
                 ): InputPosition => GrantPrivilege =
-    GrantPrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, List(AllGraphsScope()(InputPosition.NONE)), qualifier, roleNames)
+    GrantPrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, qualifier, roleNames)
 
   def databaseAction(action: DatabaseAction,
                      scope: List[DatabaseScope],
                      roleNames: Seq[Either[String, Parameter]],
                      qualifier: List[DatabasePrivilegeQualifier] = List(AllDatabasesQualifier()(InputPosition.NONE))): InputPosition => GrantPrivilege =
-    GrantPrivilege(DatabasePrivilege(action)(InputPosition.NONE), None, scope, qualifier, roleNames)
+    GrantPrivilege(DatabasePrivilege(action, scope)(InputPosition.NONE), None, qualifier, roleNames)
 
   def graphAction[T <: GraphPrivilegeQualifier](action: GraphAction,
                   resource: Option[ActionResource],
                   scope: List[GraphScope],
                   qualifier: List[T],
                   roleNames: Seq[Either[String, Parameter]]): InputPosition => GrantPrivilege =
-    GrantPrivilege(GraphPrivilege(action)(InputPosition.NONE), resource, scope, qualifier, roleNames)
+    GrantPrivilege(GraphPrivilege(action, scope)(InputPosition.NONE), resource, qualifier, roleNames)
 }
 
 object DenyPrivilege {
@@ -634,20 +634,20 @@ object DenyPrivilege {
                  roleNames: Seq[Either[String, Parameter]],
                  qualifier: List[PrivilegeQualifier] = List(AllQualifier()(InputPosition.NONE))
                 ): InputPosition => DenyPrivilege =
-    DenyPrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, List(AllGraphsScope()(InputPosition.NONE)), qualifier, roleNames)
+    DenyPrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, qualifier, roleNames)
 
   def databaseAction(action: DatabaseAction,
                      scope: List[DatabaseScope],
                      roleNames: Seq[Either[String, Parameter]],
                      qualifier: List[DatabasePrivilegeQualifier] = List(AllDatabasesQualifier()(InputPosition.NONE))): InputPosition => DenyPrivilege =
-    DenyPrivilege(DatabasePrivilege(action)(InputPosition.NONE), None, scope, qualifier, roleNames)
+    DenyPrivilege(DatabasePrivilege(action, scope)(InputPosition.NONE), None, qualifier, roleNames)
 
   def graphAction[T <: GraphPrivilegeQualifier](action: GraphAction,
                   resource: Option[ActionResource],
                   scope: List[GraphScope],
                   qualifier: List[T],
                   roleNames: Seq[Either[String, Parameter]]): InputPosition => DenyPrivilege =
-    DenyPrivilege(GraphPrivilege(action)(InputPosition.NONE), resource, scope, qualifier, roleNames)
+    DenyPrivilege(GraphPrivilege(action, scope)(InputPosition.NONE), resource, qualifier, roleNames)
 }
 
 object RevokePrivilege {
@@ -656,14 +656,14 @@ object RevokePrivilege {
                  revokeType: RevokeType,
                  qualifier: List[PrivilegeQualifier] = List(AllQualifier()(InputPosition.NONE))
                 ): InputPosition => RevokePrivilege =
-    RevokePrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, List(AllGraphsScope()(InputPosition.NONE)), qualifier, roleNames, revokeType)
+    RevokePrivilege(DbmsPrivilege(action)(InputPosition.NONE), None, qualifier, roleNames, revokeType)
 
   def databaseAction(action: DatabaseAction,
                      scope: List[DatabaseScope],
                      roleNames: Seq[Either[String, Parameter]],
                      revokeType: RevokeType,
                      qualifier: List[DatabasePrivilegeQualifier] = List(AllDatabasesQualifier()(InputPosition.NONE))): InputPosition => RevokePrivilege =
-    RevokePrivilege(DatabasePrivilege(action)(InputPosition.NONE), None, scope, qualifier, roleNames, revokeType)
+    RevokePrivilege(DatabasePrivilege(action, scope)(InputPosition.NONE), None, qualifier, roleNames, revokeType)
 
   def graphAction[T <: GraphPrivilegeQualifier](action: GraphAction,
                   resource: Option[ActionResource],
@@ -671,7 +671,7 @@ object RevokePrivilege {
                   qualifier: List[T],
                   roleNames: Seq[Either[String, Parameter]],
                   revokeType: RevokeType): InputPosition => RevokePrivilege =
-    RevokePrivilege(GraphPrivilege(action)(InputPosition.NONE), resource, scope, qualifier, roleNames, revokeType)
+    RevokePrivilege(GraphPrivilege(action, scope)(InputPosition.NONE), resource, qualifier, roleNames, revokeType)
 }
 
 sealed abstract class PrivilegeCommand(privilege: PrivilegeType, qualifier: List[PrivilegeQualifier], position: InputPosition)
@@ -684,7 +684,6 @@ sealed abstract class PrivilegeCommand(privilege: PrivilegeType, qualifier: List
 
 final case class GrantPrivilege(privilege: PrivilegeType,
                                 resource: Option[ActionResource],
-                                scope: List[GraphOrDatabaseScope],
                                 qualifier: List[PrivilegeQualifier],
                                 roleNames: Seq[Either[String, Parameter]])
                                (val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
@@ -693,7 +692,6 @@ final case class GrantPrivilege(privilege: PrivilegeType,
 
 final case class DenyPrivilege(privilege: PrivilegeType,
                                resource: Option[ActionResource],
-                               scope: List[GraphOrDatabaseScope],
                                qualifier: List[PrivilegeQualifier],
                                roleNames: Seq[Either[String, Parameter]])
                               (val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
@@ -702,7 +700,7 @@ final case class DenyPrivilege(privilege: PrivilegeType,
 
   override def semanticCheck: SemanticCheck = {
     privilege match {
-      case GraphPrivilege(MergeAdminAction) => SemanticError(s"`DENY MERGE` is not supported. Use `DENY SET PROPERTY` and `DENY CREATE` instead.", position)
+      case GraphPrivilege(MergeAdminAction, _) => SemanticError(s"`DENY MERGE` is not supported. Use `DENY SET PROPERTY` and `DENY CREATE` instead.", position)
       case _ => super.semanticCheck
     }
   }
@@ -710,7 +708,6 @@ final case class DenyPrivilege(privilege: PrivilegeType,
 
 final case class RevokePrivilege(privilege: PrivilegeType,
                                  resource: Option[ActionResource],
-                                 scope: List[GraphOrDatabaseScope],
                                  qualifier: List[PrivilegeQualifier],
                                  roleNames: Seq[Either[String, Parameter]],
                                  revokeType: RevokeType)(val position: InputPosition) extends PrivilegeCommand(privilege, qualifier, position) {
@@ -725,7 +722,7 @@ final case class RevokePrivilege(privilege: PrivilegeType,
 
   override def semanticCheck: SemanticCheck = {
     (privilege, revokeType) match {
-      case (GraphPrivilege(MergeAdminAction), RevokeDenyType())  => SemanticError(s"`DENY MERGE` is not supported. Use `DENY SET PROPERTY` and `DENY CREATE` instead.", position)
+      case (GraphPrivilege(MergeAdminAction, _), RevokeDenyType())  => SemanticError(s"`DENY MERGE` is not supported. Use `DENY SET PROPERTY` and `DENY CREATE` instead.", position)
       case _ => super.semanticCheck
     }
   }

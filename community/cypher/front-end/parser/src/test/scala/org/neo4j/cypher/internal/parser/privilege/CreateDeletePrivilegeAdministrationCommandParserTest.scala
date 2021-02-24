@@ -39,37 +39,37 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
         case (createOrDelete, action) =>
 
           test(s"$verb $createOrDelete ON GRAPH foo $preposition role") {
-            yields(func(ast.GraphPrivilege(action)(_), List(graphScopeFoo), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
+            yields(func(ast.GraphPrivilege(action, List(graphScopeFoo))(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
           }
 
           test(s"$verb $createOrDelete ON GRAPH foo ELEMENTS A $preposition role") {
-            yields(func(ast.GraphPrivilege(action)(_), List(graphScopeFoo), List(elemQualifierA), Seq(literalRole)))
+            yields(func(ast.GraphPrivilege(action, List(graphScopeFoo))(_), List(elemQualifierA), Seq(literalRole)))
           }
 
           test(s"$verb $createOrDelete ON GRAPH foo NODE A $preposition role") {
-            yields(func(ast.GraphPrivilege(action)(_), List(graphScopeFoo), List(labelQualifierA), Seq(literalRole)))
+            yields(func(ast.GraphPrivilege(action, List(graphScopeFoo))(_), List(labelQualifierA), Seq(literalRole)))
           }
 
           test(s"$verb $createOrDelete ON GRAPH foo RELATIONSHIPS * $preposition role") {
-            yields(func(ast.GraphPrivilege(action)(_), List(graphScopeFoo), List(ast.RelationshipAllQualifier()(_)), Seq(literalRole)))
+            yields(func(ast.GraphPrivilege(action, List(graphScopeFoo))(_), List(ast.RelationshipAllQualifier()(_)), Seq(literalRole)))
           }
 
           // Default graph
 
           test(s"$verb $createOrDelete ON DEFAULT GRAPH $preposition role") {
-            yields(func(ast.GraphPrivilege(action)(_), List(ast.DefaultGraphScope()(_)), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
+            yields(func(ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
           }
 
           test(s"$verb $createOrDelete ON DEFAULT GRAPH $preposition role1, role2") {
-            yields(func(ast.GraphPrivilege(action)(_), List(ast.DefaultGraphScope()(_)), List(ast.ElementsAllQualifier()(_)), Seq(literalRole1, literalRole2)))
+            yields(func(ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole1, literalRole2)))
           }
 
           test(s"$verb $createOrDelete ON DEFAULT GRAPH $preposition $$role1, role2") {
-            yields(func(ast.GraphPrivilege(action)(_), List(ast.DefaultGraphScope()(_)), List(ast.ElementsAllQualifier()(_)), Seq(paramRole1, literalRole2)))
+            yields(func(ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_), List(ast.ElementsAllQualifier()(_)), Seq(paramRole1, literalRole2)))
           }
 
           test(s"$verb $createOrDelete ON DEFAULT GRAPH RELATIONSHIPS * $preposition role") {
-            yields(func(ast.GraphPrivilege(action)(_), List(ast.DefaultGraphScope()(_)), List(ast.RelationshipAllQualifier()(_)), Seq(literalRole)))
+            yields(func(ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(_)))(_), List(ast.RelationshipAllQualifier()(_)), Seq(literalRole)))
           }
 
           // Both Default and * should not parse

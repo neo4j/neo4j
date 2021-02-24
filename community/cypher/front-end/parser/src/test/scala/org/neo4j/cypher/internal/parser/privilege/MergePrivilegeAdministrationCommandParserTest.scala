@@ -33,79 +33,79 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationComman
     case (verb: String, preposition: String, func: resourcePrivilegeFunc) =>
 
       test(s"$verb MERGE { prop } ON GRAPH foo $preposition role") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(propSeq)(_), List(graphScopeFoo), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(graphScopeFoo))(_), ast.PropertiesResource(propSeq)(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
       }
 
       // Multiple properties should be allowed
 
       test(s"$verb MERGE { * } ON GRAPH foo $preposition role") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), AllPropertyResource()(_), List(graphScopeFoo), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(graphScopeFoo))(_), AllPropertyResource()(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
       }
 
       test(s"$verb MERGE { prop1, prop2 } ON GRAPH foo $preposition role") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(Seq("prop1", "prop2"))(_), List(graphScopeFoo), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(graphScopeFoo))(_), ast.PropertiesResource(Seq("prop1", "prop2"))(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
       }
 
       // Default graph should be allowed
 
       test(s"$verb MERGE { * } ON DEFAULT GRAPH $preposition role") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), AllPropertyResource()(_), List(ast.DefaultGraphScope()(_)), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(ast.DefaultGraphScope()(_)))(_), AllPropertyResource()(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
       }
 
       test(s"$verb MERGE { prop1, prop2 } ON DEFAULT GRAPH RELATIONSHIP * $preposition role") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(Seq("prop1", "prop2"))(_), List(ast.DefaultGraphScope()(_)), List(ast.RelationshipAllQualifier()(_)), Seq(literalRole)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(ast.DefaultGraphScope()(_)))(_), ast.PropertiesResource(Seq("prop1", "prop2"))(_), List(ast.RelationshipAllQualifier()(_)), Seq(literalRole)))
       }
 
       // Multiple graphs should be allowed
 
       test(s"$verb MERGE { prop } ON GRAPHS * $preposition role") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(propSeq)(_), List(ast.AllGraphsScope()(_)), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(ast.AllGraphsScope()(_)))(_), ast.PropertiesResource(propSeq)(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
       }
 
       test(s"$verb MERGE { prop } ON GRAPHS foo,baz $preposition role") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(propSeq)(_), List(graphScopeFoo, graphScopeBaz), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(graphScopeFoo, graphScopeBaz))(_), ast.PropertiesResource(propSeq)(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
       }
 
       // Qualifiers
 
       test(s"$verb MERGE { prop } ON GRAPHS foo ELEMENTS A,B $preposition role") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(propSeq)(_), List(graphScopeFoo), List(elemQualifierA, elemQualifierB), Seq(literalRole)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(graphScopeFoo))(_), ast.PropertiesResource(propSeq)(_), List(elemQualifierA, elemQualifierB), Seq(literalRole)))
       }
 
       test(s"$verb MERGE { prop } ON GRAPHS foo ELEMENT A $preposition role") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(propSeq)(_), List(graphScopeFoo), List(elemQualifierA), Seq(literalRole)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(graphScopeFoo))(_), ast.PropertiesResource(propSeq)(_), List(elemQualifierA), Seq(literalRole)))
       }
 
       test(s"$verb MERGE { prop } ON GRAPHS foo NODES A,B $preposition role") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(propSeq)(_), List(graphScopeFoo), List(labelQualifierA, labelQualifierB), Seq(literalRole)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(graphScopeFoo))(_), ast.PropertiesResource(propSeq)(_), List(labelQualifierA, labelQualifierB), Seq(literalRole)))
       }
 
       test(s"$verb MERGE { prop } ON GRAPHS foo NODES * $preposition role") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(propSeq)(_), List(graphScopeFoo), List(ast.LabelAllQualifier()(_)), Seq(literalRole)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(graphScopeFoo))(_), ast.PropertiesResource(propSeq)(_), List(ast.LabelAllQualifier()(_)), Seq(literalRole)))
       }
 
       test(s"$verb MERGE { prop } ON GRAPHS foo RELATIONSHIPS A,B $preposition role") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(propSeq)(_), List(graphScopeFoo), List(relQualifierA, relQualifierB), Seq(literalRole)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(graphScopeFoo))(_), ast.PropertiesResource(propSeq)(_), List(relQualifierA, relQualifierB), Seq(literalRole)))
       }
 
       test(s"$verb MERGE { prop } ON GRAPHS foo RELATIONSHIP * $preposition role") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(propSeq)(_), List(graphScopeFoo), List(ast.RelationshipAllQualifier()(_)), Seq(literalRole)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(graphScopeFoo))(_), ast.PropertiesResource(propSeq)(_), List(ast.RelationshipAllQualifier()(_)), Seq(literalRole)))
       }
 
       // Multiple roles should be allowed
 
       test(s"$verb MERGE { prop } ON GRAPHS foo $preposition role1, role2") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(propSeq)(_), List(graphScopeFoo), List(ast.ElementsAllQualifier()(_)), Seq(literalRole1, literalRole2)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(graphScopeFoo))(_), ast.PropertiesResource(propSeq)(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole1, literalRole2)))
       }
 
       // Parameter values
 
       test(s"$verb MERGE { prop } ON GRAPH $$foo $preposition role") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(propSeq)(_), List(graphScopeParamFoo), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(graphScopeParamFoo))(_), ast.PropertiesResource(propSeq)(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
       }
 
       test(s"$verb MERGE { prop } ON GRAPH foo $preposition $$role") {
-        yields(func(ast.GraphPrivilege(MergeAdminAction)(_), ast.PropertiesResource(propSeq)(_), List(graphScopeFoo), List(ast.ElementsAllQualifier()(_)), Seq(paramRole)))
+        yields(func(ast.GraphPrivilege(MergeAdminAction, List(graphScopeFoo))(_), ast.PropertiesResource(propSeq)(_), List(ast.ElementsAllQualifier()(_)), Seq(paramRole)))
       }
 
       // Database instead of graph keyword
