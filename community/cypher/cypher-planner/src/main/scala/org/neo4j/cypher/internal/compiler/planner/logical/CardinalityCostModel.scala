@@ -44,19 +44,24 @@ import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
+import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LimitingLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
@@ -79,6 +84,7 @@ import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
@@ -367,11 +373,22 @@ object CardinalityCostModel {
     case _ if parentWorkReduction == WorkReduction.NoReduction =>
       (parentWorkReduction, parentWorkReduction)
 
+
+    case _: ForeachApply =>
+      // ForeachApply is an ApplyPlan, but only yields LHS rows, therefore we match this before matching ApplyPlan
+      (parentWorkReduction, WorkReduction.NoReduction)
+
     case a:ApplyPlan =>
       nestedLoopChildrenWorkReduction(a, parentWorkReduction, VolcanoBatchSize, cardinalities)
 
     case p: CartesianProduct =>
       nestedLoopChildrenWorkReduction(p, parentWorkReduction, batchSize, cardinalities)
+
+    case _: AssertSameNode =>
+      (parentWorkReduction, WorkReduction.NoReduction)
+
+    case _: EitherPlan =>
+      (parentWorkReduction, WorkReduction.NoReduction)
 
     case HashJoin() =>
       (WorkReduction.NoReduction, parentWorkReduction)
@@ -379,8 +396,16 @@ object CardinalityCostModel {
     case _: ExhaustiveLogicalPlan =>
       (WorkReduction.NoReduction, WorkReduction.NoReduction)
 
-    case _ =>
-      (parentWorkReduction, parentWorkReduction)
+    case _: LogicalUnaryPlan =>
+      (parentWorkReduction, WorkReduction.NoReduction)
+
+    case _:LogicalLeafPlan =>
+      (parentWorkReduction, WorkReduction.NoReduction)
+
+    case lp:LogicalBinaryPlan =>
+      // Forces us to hopefully think about this when adding new binary plans
+      AssertMacros.checkOnlyWhenAssertionsAreEnabled(false, s"childrenWorkReduction: No case for ${lp.getClass.getSimpleName} added.")
+      (parentWorkReduction, WorkReduction.NoReduction)
   }
 
   /**

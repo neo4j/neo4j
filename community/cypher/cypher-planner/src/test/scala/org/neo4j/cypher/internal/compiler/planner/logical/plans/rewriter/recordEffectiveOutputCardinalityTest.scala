@@ -395,6 +395,84 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
+  test("Should apply WorkReduction only to LHS of AssertSameNode") {
+    // GIVEN
+    val initial = new LogicalPlanBuilder(false)
+      .limit(100).withCardinality(100)
+      .assertSameNode("n").withCardinality(200)
+      .|.allNodeScan("n").withCardinality(200)
+      .allNodeScan("n").withCardinality(200)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .limit(100).withEffectiveCardinality(100)
+      .assertSameNode("n").withEffectiveCardinality(100)
+      .|.allNodeScan("n").withEffectiveCardinality(200)
+      .allNodeScan("n").withEffectiveCardinality(100)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+  test("Should apply WorkReduction only to LHS of EitherPlan") {
+    // GIVEN
+    val initial = new LogicalPlanBuilder(false)
+      .limit(100).withCardinality(100)
+      .either().withCardinality(200)
+      .|.allNodeScan("n").withCardinality(200)
+      .allNodeScan("n").withCardinality(200)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .limit(100).withEffectiveCardinality(100)
+      .either().withEffectiveCardinality(100)
+      .|.allNodeScan("n").withEffectiveCardinality(200)
+      .allNodeScan("n").withEffectiveCardinality(100)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+  test("Should multiply RHS cardinality of ForeachApply and apply WorkReduction if there is a Limit") {
+    // GIVEN
+    val initial = new LogicalPlanBuilder(false)
+      .limit(100).withCardinality(100)
+      .foreachApply("n", "[1,2,3]").withCardinality(200)
+      .|.expand("(n)-->(m)").withCardinality(10) // This plan is not realistic, but necessary to differentiate the code from other ApplyPlans
+      .|.setProperty("n", "prop", "5").withCardinality(1)
+      .|.argument("n").withCardinality(1)
+      .allNodeScan("n").withCardinality(200)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .limit(100).withEffectiveCardinality(100)
+      .foreachApply("n", "[1,2,3]").withEffectiveCardinality(100)
+      .|.expand("(n)-->(m)").withEffectiveCardinality(1000)
+      .|.setProperty("n", "prop", "5").withEffectiveCardinality(100)
+      .|.argument("n").withEffectiveCardinality(100)
+      .allNodeScan("n").withEffectiveCardinality(100)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+
+
   private def rewrite(pb: LogicalPlanBuilder, executionModel: ExecutionModel = ExecutionModel.default): (LogicalPlan, EffectiveCardinalities) = {
     val plan = pb.build().endoRewrite(recordEffectiveOutputCardinality(executionModel, pb.cardinalities, pb.effectiveCardinalities, pb.providedOrders))
     (plan, pb.effectiveCardinalities)
