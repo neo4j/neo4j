@@ -33,7 +33,6 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
@@ -46,7 +45,6 @@ import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.neo4j.bolt.packstream.PackStream.UNKNOWN_SIZE;
 import static org.neo4j.values.storable.Values.byteArray;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
@@ -509,34 +507,15 @@ public class Neo4jPackV1 implements Neo4jPack
             {
                 return VirtualValues.EMPTY_LIST;
             }
-            else if ( size == UNKNOWN_SIZE )
+
+            sizeSanityCheck( size, in );
+
+            ListValueBuilder builder = ListValueBuilder.newListBuilder( size );
+            for ( int i = 0; i < size; i++ )
             {
-                ListValueBuilder builder = ListValueBuilder.newListBuilder();
-                boolean more = true;
-                while ( more )
-                {
-                    PackType keyType = peekNextType();
-                    if ( keyType == PackType.END_OF_STREAM )
-                    {
-                        unpack();
-                        more = false;
-                    }
-                    else
-                    {
-                        builder.add( unpack() );
-                    }
-                }
-                return builder.build();
+                builder.add( unpack() );
             }
-            else
-            {
-                ListValueBuilder builder = ListValueBuilder.newListBuilder( size );
-                for ( int i = 0; i < size; i++ )
-                {
-                    builder.add( unpack() );
-                }
-                return builder.build();
-            }
+            return builder.build();
         }
 
         protected AnyValue unpackStruct( char signature, long size ) throws IOException
@@ -560,60 +539,29 @@ public class Neo4jPackV1 implements Neo4jPack
             {
                 return EMPTY_MAP;
             }
-            MapValueBuilder map;
-            if ( size == UNKNOWN_SIZE )
-            {
-                map = new MapValueBuilder();
-                boolean more = true;
-                while ( more )
-                {
-                    PackType keyType = peekNextType();
-                    String key;
-                    AnyValue val;
-                    switch ( keyType )
-                    {
-                    case END_OF_STREAM:
-                        unpack();
-                        more = false;
-                        break;
-                    case STRING:
-                        key = unpackString();
-                        val = unpack();
-                        if ( map.add( key, val ) != null )
-                        {
-                            throw new BoltIOException( Status.Request.Invalid, "Duplicate map key `" + key + "`." );
-                        }
-                        break;
-                    case NULL:
-                        throw new BoltIOException( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string." );
-                    default:
-                        throw new BoltIOException( Status.Request.InvalidFormat, "Bad key type: " + keyType );
-                    }
-                }
-            }
-            else
-            {
-                map = new MapValueBuilder( size );
-                for ( int i = 0; i < size; i++ )
-                {
-                    PackType keyType = peekNextType();
-                    String key;
-                    switch ( keyType )
-                    {
-                    case NULL:
-                        throw new BoltIOException( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string." );
-                    case STRING:
-                        key = unpackString();
-                        break;
-                    default:
-                        throw new BoltIOException( Status.Request.InvalidFormat, "Bad key type: " + keyType );
-                    }
 
-                    AnyValue val = unpack();
-                    if ( map.add( key, val ) != null )
-                    {
-                        throw new BoltIOException( Status.Request.Invalid, "Duplicate map key `" + key + "`." );
-                    }
+            sizeSanityCheck( size, in );
+
+            MapValueBuilder map = new MapValueBuilder( size );
+            for ( int i = 0; i < size; i++ )
+            {
+                PackType keyType = peekNextType();
+                String key;
+                switch ( keyType )
+                {
+                case NULL:
+                    throw new BoltIOException( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string." );
+                case STRING:
+                    key = unpackString();
+                    break;
+                default:
+                    throw new BoltIOException( Status.Request.InvalidFormat, "Bad key type: " + keyType );
+                }
+
+                AnyValue val = unpack();
+                if ( map.add( key, val ) != null )
+                {
+                    throw new BoltIOException( Status.Request.Invalid, "Duplicate map key `" + key + "`." );
                 }
             }
             return map.build();

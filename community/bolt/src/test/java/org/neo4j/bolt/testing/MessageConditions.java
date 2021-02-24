@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.testing;
 
+import io.netty.buffer.Unpooled;
 import org.assertj.core.api.Condition;
 
 import java.io.IOException;
@@ -36,8 +37,8 @@ import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.RecordingByteChannel;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.ResponseMessage;
-import org.neo4j.bolt.packstream.BufferedChannelInput;
 import org.neo4j.bolt.packstream.BufferedChannelOutput;
+import org.neo4j.bolt.packstream.ByteBufInput;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
 import org.neo4j.bolt.v3.messaging.response.FailureMessage;
@@ -280,8 +281,8 @@ public class MessageConditions
 
     private static BoltResponseMessageReader responseReader( Neo4jPack neo4jPack, byte[] bytes )
     {
-        BufferedChannelInput input = new BufferedChannelInput( 128 );
-        input.reset( new ArrayByteChannel( bytes ) );
-        return new BoltResponseMessageReader( neo4jPack.newUnpacker( input ) );
+        ByteBufInput byteBufInput = new ByteBufInput();
+        byteBufInput.start( Unpooled.wrappedBuffer( bytes ) );
+        return new BoltResponseMessageReader( neo4jPack.newUnpacker( byteBufInput ) );
     }
 }

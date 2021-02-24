@@ -47,4 +47,7 @@ public interface PackInput
 
     /** Get the next byte without forwarding the internal pointer */
     byte peekByte() throws IOException;
+
+    /** Remaining Readable bytes */
+    int readableBytes();
 }

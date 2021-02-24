@@ -23,8 +23,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.StructType;
 import org.neo4j.bolt.packstream.utf8.UTF8Encoder;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * PackStream is a messaging serialisation format heavily inspired by MessagePack.
@@ -754,6 +756,15 @@ public class PackStream
                 throw new PackStreamException(
                         String.format( "Invalid message received, serialized %s structures should have %d fields, " + "received %s structure has %d fields.",
                                 structType.description(), expected, structType.description(), actual ) );
+            }
+        }
+
+        public static void sizeSanityCheck( int reportedSize, PackInput packInput ) throws BoltIOException
+        {
+            // We check if the stated size of the read item makes sense with respect to the remaining available bytes.
+            if ( reportedSize > packInput.readableBytes() )
+            {
+                throw new BoltIOException( Status.Request.Invalid, "Collection size exceeds message capacity." );
             }
         }
     }
