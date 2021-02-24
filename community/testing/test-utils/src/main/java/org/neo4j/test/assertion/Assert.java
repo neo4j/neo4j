@@ -41,6 +41,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.test.conditions.Conditions.condition;
 
@@ -133,6 +134,11 @@ public final class Assert
             Supplier<String> messageGenerator, Class<T> expectedType, Executable actual, long timeout, TimeUnit timeUnit )
     {
         awaitCondition( "should throw", timeout, timeUnit ).untilAsserted( () -> assertThrows( expectedType, actual, messageGenerator ) );
+    }
+
+    public static void assertEventuallyDoesNotThrow( String message, Executable action, long timeout, TimeUnit timeUnit )
+    {
+        awaitCondition( "should not throw", timeout, timeUnit ).untilAsserted( () -> assertDoesNotThrow( action, message ) );
     }
 
     private static ConditionFactory awaitCondition( String alias, long timeout, TimeUnit timeUnit )
