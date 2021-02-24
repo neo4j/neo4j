@@ -43,6 +43,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
@@ -82,7 +83,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void initialize( LeaseClient leaseClient, long transactionId )
+    public void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker )
     {
         this.lockTransaction.setTransactionId( transactionId );
     }

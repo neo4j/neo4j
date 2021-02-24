@@ -27,6 +27,7 @@ import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * A lock client that prevents interactions with the state of the locks. This is used to guarantee that we do not perform any locking while reading from
@@ -60,9 +61,9 @@ public class FrozenLockClient implements Locks.Client
     }
 
     @Override
-    public void initialize( LeaseClient leaseClient, long transactionId )
+    public void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker )
     {
-        delegate.initialize( leaseClient, transactionId );
+        delegate.initialize( leaseClient, transactionId, memoryTracker );
     }
 
     @Override

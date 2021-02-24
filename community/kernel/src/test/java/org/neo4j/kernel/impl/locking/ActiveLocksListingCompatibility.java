@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
@@ -50,7 +51,7 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
     @Test
     void activeLockShouldContainUserTransactionFromClient()
     {
-        clientA.initialize( LeaseService.NO_LEASES.newClient(), 15 );
+        clientA.initialize( LeaseService.NO_LEASES.newClient(), 15, EmptyMemoryTracker.INSTANCE );
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1 );
 
         assertEquals( 1, clientA.activeLockCount() );
@@ -62,7 +63,7 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
     void visitedExclusiveLockPreserveOwningTransaction()
     {
         int userTransactionId = 15;
-        clientA.initialize( LeaseService.NO_LEASES.newClient(), userTransactionId );
+        clientA.initialize( LeaseService.NO_LEASES.newClient(), userTransactionId, EmptyMemoryTracker.INSTANCE );
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1 );
 
         MutableInt observedLocks = new MutableInt();
@@ -79,7 +80,7 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
     void visitedSharedLockPreserveOwningTransaction()
     {
         int userTransactionId = 15;
-        clientA.initialize( LeaseService.NO_LEASES.newClient(), userTransactionId );
+        clientA.initialize( LeaseService.NO_LEASES.newClient(), userTransactionId, EmptyMemoryTracker.INSTANCE );
         clientA.acquireShared( LockTracer.NONE, NODE, 1 );
 
         MutableInt observedLocks = new MutableInt();
@@ -98,10 +99,10 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
         int userTransactionIdA = 15;
         int userTransactionIdB = 16;
 
-        clientA.initialize( LeaseService.NO_LEASES.newClient(), userTransactionIdA );
+        clientA.initialize( LeaseService.NO_LEASES.newClient(), userTransactionIdA, EmptyMemoryTracker.INSTANCE );
         clientA.acquireShared( LockTracer.NONE, NODE, 1 );
 
-        clientB.initialize( LeaseService.NO_LEASES.newClient(), userTransactionIdB );
+        clientB.initialize( LeaseService.NO_LEASES.newClient(), userTransactionIdB, EmptyMemoryTracker.INSTANCE );
         clientB.acquireShared( LockTracer.NONE, NODE, 1 );
 
         MutableInt observedLocks = new MutableInt();
@@ -121,7 +122,7 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
     void shouldListLocksHeldByTheCurrentClient()
     {
         // given
-        clientA.initialize( LeaseService.NO_LEASES.newClient(), 1 );
+        clientA.initialize( LeaseService.NO_LEASES.newClient(), 1, EmptyMemoryTracker.INSTANCE );
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1, 2, 3 );
         clientA.acquireShared( LockTracer.NONE, NODE, 3, 4, 5 );
 
@@ -144,6 +145,7 @@ abstract class ActiveLocksListingCompatibility extends LockCompatibilityTestSupp
     void shouldCountNumberOfActiveLocks()
     {
         // given
+        clientA.initialize( LeaseService.NO_LEASES.newClient(), 1, EmptyMemoryTracker.INSTANCE );
         clientA.acquireShared( LockTracer.NONE, LABEL, 0 );
         clientA.acquireShared( LockTracer.NONE, RELATIONSHIP, 17 );
         clientA.acquireShared( LockTracer.NONE, NODE, 12 );

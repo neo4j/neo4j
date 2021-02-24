@@ -285,7 +285,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.lockClient = lockClient;
         this.userTransactionId = userTransactionId;
         this.leaseClient = leaseService.newClient();
-        this.lockClient.initialize( leaseClient, userTransactionId );
+        this.lockClient.initialize( leaseClient, userTransactionId, memoryTracker );
         this.terminationReason = null;
         this.closing = false;
         this.closed = false;

@@ -23,6 +23,7 @@ import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * API for managing locks.
@@ -70,8 +71,9 @@ public interface Locks
          * An lease that has become invalid can abort a transaction midway.
          * @param leaseClient {@link LeaseClient} of the owning transaction.
          * @param transactionId lock client owning transaction id
+         * @param memoryTracker memory tracker from the transaction
          */
-        void initialize( LeaseClient leaseClient, long transactionId );
+        void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker );
 
         /** Try grabbing shared lock, not waiting and returning a boolean indicating if we got the lock. */
         boolean trySharedLock( ResourceType resourceType, long resourceId );

@@ -514,7 +514,7 @@ public final class HeapEstimator
     }
 
     private static final long HASH_MAP_SHALLOW_SIZE = shallowSizeOfInstance( HashMap.class );
-    private static final long HASH_MAP_NODE_SHALLOW_SIZE = shallowSizeOfInstance( HashMapNode.class );
+    public static final long HASH_MAP_NODE_SHALLOW_SIZE = shallowSizeOfInstance( HashMapNode.class );
 
     @SuppressWarnings( "unused" )
     private static class HashMapNode

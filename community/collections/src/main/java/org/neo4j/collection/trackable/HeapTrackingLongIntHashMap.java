@@ -29,7 +29,7 @@ import static org.neo4j.memory.HeapEstimator.alignObjectSize;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 @SuppressWarnings( "ExternalizableWithoutPublicNoArgConstructor" )
-class HeapTrackingLongIntHashMap extends LongIntHashMap implements AutoCloseable
+public class HeapTrackingLongIntHashMap extends LongIntHashMap implements AutoCloseable
 {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingLongIntHashMap.class );
     static final int DEFAULT_INITIAL_CAPACITY = 16;
@@ -65,6 +65,16 @@ class HeapTrackingLongIntHashMap extends LongIntHashMap implements AutoCloseable
     public void close()
     {
         memoryTracker.releaseHeap( arraysHeapSize( trackedCapacity ) + SHALLOW_SIZE );
+    }
+
+    /**
+     * Make size() "thread-safer" by grabbing a reference to the values.
+     */
+    @Override
+    public int size()
+    {
+        SentinelValues sentinelValues = getSentinelValues();
+        return getOccupiedWithData() + (sentinelValues == null ? 0 : sentinelValues.size());
     }
 
     static long arraysHeapSize( int arrayLength )
