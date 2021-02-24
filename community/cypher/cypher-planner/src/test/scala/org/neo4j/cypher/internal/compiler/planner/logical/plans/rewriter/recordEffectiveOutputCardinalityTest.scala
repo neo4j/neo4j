@@ -343,6 +343,58 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
+  test("Should multiply RHS cardinality of Apply and apply WorkReduction if there is a Limit") {
+    // GIVEN
+    val initial = new LogicalPlanBuilder(false)
+      .limit(10).withCardinality(10)
+      .apply().withCardinality(20)
+      .|.expandAll("(n)-->(m)").withCardinality(2)
+      .|.allNodeScan("m").withCardinality(10)
+      .allNodeScan("n").withCardinality(10)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .limit(10).withEffectiveCardinality(10)
+      .apply().withEffectiveCardinality(10)
+      .|.expandAll("(n)-->(m)").withEffectiveCardinality(10)
+      .|.allNodeScan("m").withEffectiveCardinality(50)
+      .allNodeScan("n").withEffectiveCardinality(5)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+  test("Should multiply RHS cardinality of Apply with Argument plan and apply WorkReduction if there is a Limit") {
+    // GIVEN
+    val initial = new LogicalPlanBuilder(false)
+      .limit(100).withCardinality(100)
+      .apply().withCardinality(200)
+      .|.expandAll("(n)-->(m)").withCardinality(20)
+      .|.argument("n").withCardinality(1)
+      .allNodeScan("n").withCardinality(10)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .limit(100).withEffectiveCardinality(100)
+      .apply().withEffectiveCardinality(100)
+      .|.expandAll("(n)-->(m)").withEffectiveCardinality(100)
+      .|.argument("n").withEffectiveCardinality(5)
+      .allNodeScan("n").withEffectiveCardinality(5)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
   private def rewrite(pb: LogicalPlanBuilder, executionModel: ExecutionModel = ExecutionModel.default): (LogicalPlan, EffectiveCardinalities) = {
     val plan = pb.build().endoRewrite(recordEffectiveOutputCardinality(executionModel, pb.cardinalities, pb.effectiveCardinalities, pb.providedOrders))
     (plan, pb.effectiveCardinalities)

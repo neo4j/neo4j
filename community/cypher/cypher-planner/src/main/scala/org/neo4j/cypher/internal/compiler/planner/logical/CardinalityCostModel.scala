@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.ExecutionModel.SelectedBatchSize
+import org.neo4j.cypher.internal.compiler.ExecutionModel.VolcanoBatchSize
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.EffectiveCardinalities
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.HashJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROBE_BUILD_COST
@@ -54,6 +55,7 @@ import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LimitingLogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -343,7 +345,6 @@ object CardinalityCostModel {
 
   /**
    * Given an parent WorkReduction, calculate how this reduction applies to the LHS and RHS of the plan.
-   *
    */
   private[logical] def childrenWorkReduction(plan: LogicalPlan, parentWorkReduction: WorkReduction, batchSize: SelectedBatchSize, cardinalities: Cardinalities): (WorkReduction, WorkReduction) = plan match {
 
@@ -366,36 +367,11 @@ object CardinalityCostModel {
     case _ if parentWorkReduction == WorkReduction.NoReduction =>
       (parentWorkReduction, parentWorkReduction)
 
+    case a:ApplyPlan =>
+      nestedLoopChildrenWorkReduction(a, parentWorkReduction, VolcanoBatchSize, cardinalities)
+
     case p: CartesianProduct =>
-      // number of rows available from lhs/rhs plan
-      val lhsCardinality: Cardinality = cardinalities.get(p.left.id)
-      val rhsCardinality: Cardinality = cardinalities.get(p.right.id)
-
-      // smallest number of rows we can get from lhs/rhs
-      val chunkSize: Cardinality = Cardinality.min(batchSize.size, lhsCardinality)
-      val rhsRowsMinimum: Cardinality = Cardinality.min(batchSize.size, rhsCardinality)
-
-      // number of rows we can produce per execution of rhs
-      val outputRowsPerExecution: Cardinality = chunkSize * rhsCardinality
-
-      // round required output to nearest multiple of the smallest output chunk
-      val outputChunk = chunkSize * rhsRowsMinimum
-      val requiredOutput: Cardinality = outputChunk * Multiplier.ofDivision(parentWorkReduction.calculate(cardinalities.get(p.id)), outputChunk).getOrElse(Multiplier.ZERO).ceil
-
-      // number of executions needed to produce the required output
-      val rhsExecutions: Multiplier = Multiplier.ofDivision(requiredOutput, outputRowsPerExecution).getOrElse(Multiplier.ZERO)
-      val lhsFullBatches: Cardinality = Cardinality(rhsExecutions.coefficient).ceil
-
-      // total number of rows fetched from lhs/rhs
-      val lhsProducedRows: Cardinality = Cardinality.min(lhsFullBatches * chunkSize, lhsCardinality)
-      val rhsProducedRows: Cardinality = Cardinality.max(rhsExecutions * rhsCardinality, rhsRowsMinimum)
-
-      val rhsProducedRowsPerExecution = Cardinality(Multiplier.ofDivision(rhsProducedRows * chunkSize, lhsProducedRows).getOrElse(Multiplier.ZERO).coefficient)
-
-      val lhsFraction = (lhsProducedRows / lhsCardinality).getOrElse(Selectivity.ONE)
-      val rhsFraction = (rhsProducedRowsPerExecution / rhsCardinality).getOrElse(Selectivity.ONE)
-
-      (parentWorkReduction.withFraction(lhsFraction), parentWorkReduction.withFraction(rhsFraction))
+      nestedLoopChildrenWorkReduction(p, parentWorkReduction, batchSize, cardinalities)
 
     case HashJoin() =>
       (WorkReduction.NoReduction, parentWorkReduction)
@@ -405,6 +381,41 @@ object CardinalityCostModel {
 
     case _ =>
       (parentWorkReduction, parentWorkReduction)
+  }
+
+  /**
+   * Given an parent WorkReduction, calculate how this reduction applies to the LHS and RHS of this plan that implements a nested loop.
+   */
+  private def nestedLoopChildrenWorkReduction(plan: LogicalBinaryPlan, parentWorkReduction: WorkReduction, batchSize: SelectedBatchSize, cardinalities: Cardinalities): (WorkReduction, WorkReduction) = {
+    // number of rows available from lhs/rhs plan
+    val lhsCardinality: Cardinality = cardinalities.get(plan.left.id)
+    val rhsCardinality: Cardinality = cardinalities.get(plan.right.id)
+
+    // smallest number of rows we can get from lhs/rhs
+    val chunkSize: Cardinality = Cardinality.min(batchSize.size, lhsCardinality)
+    val rhsRowsMinimum: Cardinality = Cardinality.min(batchSize.size, rhsCardinality)
+
+    // number of rows we can produce per execution of rhs
+    val outputRowsPerExecution: Cardinality = chunkSize * rhsCardinality
+
+    // round required output to nearest multiple of the smallest output chunk
+    val outputChunk = chunkSize * rhsRowsMinimum
+    val requiredOutput: Cardinality = outputChunk * Multiplier.ofDivision(parentWorkReduction.calculate(cardinalities.get(plan.id)), outputChunk).getOrElse(Multiplier.ZERO).ceil
+
+    // number of executions needed to produce the required output
+    val rhsExecutions: Multiplier = Multiplier.ofDivision(requiredOutput, outputRowsPerExecution).getOrElse(Multiplier.ZERO)
+    val lhsFullBatches: Cardinality = Cardinality(rhsExecutions.coefficient).ceil
+
+    // total number of rows fetched from lhs/rhs
+    val lhsProducedRows: Cardinality = Cardinality.min(lhsFullBatches * chunkSize, lhsCardinality)
+    val rhsProducedRows: Cardinality = Cardinality.max(rhsExecutions * rhsCardinality, rhsRowsMinimum)
+
+    val rhsProducedRowsPerExecution = Cardinality(Multiplier.ofDivision(rhsProducedRows * chunkSize, lhsProducedRows).getOrElse(Multiplier.ZERO).coefficient)
+
+    val lhsFraction = (lhsProducedRows / lhsCardinality).getOrElse(Selectivity.ONE)
+    val rhsFraction = (rhsProducedRowsPerExecution / rhsCardinality).getOrElse(Selectivity.ONE)
+
+    (parentWorkReduction.withFraction(lhsFraction), parentWorkReduction.withFraction(rhsFraction))
   }
 
   private[logical] def getEffectiveBatchSize(batchSize: SelectedBatchSize, plan: LogicalPlan, providedOrders: ProvidedOrders): SelectedBatchSize = {
