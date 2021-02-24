@@ -795,10 +795,10 @@ object Prettifier {
                              roleNames: Seq[Either[String, Parameter]]): String = {
 
     val resourceName = resource match {
-      case Some(PropertyResource(name)) => " {" + ExpressionStringifier.backtick(name) + "}"
-      case Some(PropertiesResource(names)) => " {" + names.map(ExpressionStringifier.backtick(_)).mkString(", ") + "}"
+      case Some(PropertyResource(name)) => s" {${ExpressionStringifier.backtick(name)}}"
+      case Some(PropertiesResource(names)) => s" {${names.map(ExpressionStringifier.backtick(_)).mkString(", ")}}"
       case Some(AllPropertyResource()) => " {*}"
-      case Some(LabelsResource(names)) => " " + names.map(ExpressionStringifier.backtick(_)).mkString(", ")
+      case Some(LabelsResource(names)) => s" ${names.map(ExpressionStringifier.backtick(_)).mkString(", ")}"
       case Some(AllLabelResource()) => " *"
       case None => ""
       case _ => throw new IllegalStateException(s"Unknown resource: $resource")
