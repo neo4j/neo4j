@@ -71,6 +71,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Optional
+import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
@@ -389,6 +390,27 @@ object CardinalityCostModel {
 
     case _: EitherPlan =>
       (parentWorkReduction, WorkReduction.NoReduction)
+
+    case u:Union =>
+      // number of rows available from lhs/rhs plan
+      val lhsCardinality: Cardinality = cardinalities.get(u.left.id)
+      val rhsCardinality: Cardinality = cardinalities.get(u.right.id)
+
+      val parentEffectiveCardinality = cardinalities.get(u.id) * parentWorkReduction.fraction
+
+      val (lhsEffectiveCardinality, rhsEffectiveCardinality) = if (lhsCardinality > parentEffectiveCardinality) {
+        (parentEffectiveCardinality, Cardinality.EMPTY)
+      } else {
+        (lhsCardinality, parentEffectiveCardinality - lhsCardinality)
+      }
+
+      val lhsFraction = (lhsEffectiveCardinality / lhsCardinality).getOrElse(Selectivity.ONE)
+      val rhsFraction = (rhsEffectiveCardinality / rhsCardinality).getOrElse(Selectivity.ONE)
+
+      (parentWorkReduction.withFraction(lhsFraction), parentWorkReduction.withFraction(rhsFraction))
+
+    case _: OrderedUnion =>
+      (parentWorkReduction, parentWorkReduction)
 
     case HashJoin() =>
       (WorkReduction.NoReduction, parentWorkReduction)

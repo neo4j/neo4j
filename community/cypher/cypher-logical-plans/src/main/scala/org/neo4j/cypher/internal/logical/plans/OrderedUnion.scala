@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  * produce the 'left' rows, and the 'right' rows merged in that order.
  * This operator does not guarantee row uniqueness.
  */
-case class OrderedUnion(left: LogicalPlan, right: LogicalPlan, sortedColumns: Seq[ColumnOrder])(implicit idGen: IdGen) extends LogicalPlan(idGen) {
+case class OrderedUnion(left: LogicalPlan, right: LogicalPlan, sortedColumns: Seq[ColumnOrder])(implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) {
 
-  val lhs = Some(left)
-  val rhs = Some(right)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
+  override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 
   override val availableSymbols: Set[String] = left.availableSymbols intersect right.availableSymbols
 }

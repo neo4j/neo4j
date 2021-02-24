@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -471,7 +473,77 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
+  test("Should apply WorkReduction first only to RHS of Union") {
+    // GIVEN
+    val initial = new LogicalPlanBuilder(false)
+      .limit(17).withCardinality(17)
+      .union().withCardinality(30)
+      .|.nodeByLabelScan("n", "M").withCardinality(20)
+      .nodeByLabelScan("n", "N").withCardinality(10)
 
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .limit(17).withEffectiveCardinality(17)
+      .union().withEffectiveCardinality(17)
+      .|.nodeByLabelScan("n", "M").withEffectiveCardinality(7)
+      .nodeByLabelScan("n", "N").withEffectiveCardinality(10)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+  test("Should apply WorkReduction then also to LHS of Union") {
+    // GIVEN
+    val initial = new LogicalPlanBuilder(false)
+      .limit(7).withCardinality(7)
+      .union().withCardinality(30)
+      .|.nodeByLabelScan("n", "M").withCardinality(20)
+      .nodeByLabelScan("n", "N").withCardinality(10)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .limit(7).withEffectiveCardinality(7)
+      .union().withEffectiveCardinality(7)
+      .|.nodeByLabelScan("n", "M").withEffectiveCardinality(0)
+      .nodeByLabelScan("n", "N").withEffectiveCardinality(7)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+  test("Should apply WorkReduction equally to LHS and RHS of OrderedUnion") {
+    // GIVEN
+    val initial = new LogicalPlanBuilder(false)
+      .limit(15).withCardinality(15)
+      .orderedUnion(Seq(Ascending("N"))).withCardinality(30)
+      .|.nodeByLabelScan("n", "M", IndexOrderAscending).withCardinality(20)
+      .nodeByLabelScan("n", "N", IndexOrderAscending).withCardinality(10)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .limit(15).withEffectiveCardinality(15)
+      .orderedUnion(Seq(Ascending("N"))).withEffectiveCardinality(15)
+      .|.nodeByLabelScan("n", "M", IndexOrderAscending).withEffectiveCardinality(10)
+      .nodeByLabelScan("n", "N", IndexOrderAscending).withEffectiveCardinality(5)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSameEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
+  }
 
   private def rewrite(pb: LogicalPlanBuilder, executionModel: ExecutionModel = ExecutionModel.default): (LogicalPlan, EffectiveCardinalities) = {
     val plan = pb.build().endoRewrite(recordEffectiveOutputCardinality(executionModel, pb.cardinalities, pb.effectiveCardinalities, pb.providedOrders))
