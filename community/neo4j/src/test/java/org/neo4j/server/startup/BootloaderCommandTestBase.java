@@ -278,25 +278,9 @@ abstract class BootloaderCommandTestBase
             }
             else
             {
-                StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-                StackTraceElement frame = null;
-                for ( int i = 2; i < stack.length; i++ ) //start at index 2, thats the caller, and walk up
-                {
-                    StackTraceElement currentFrame = stack[i];
-                    try
-                    {
-                        Method actualMethod = Class.forName( currentFrame.getClassName() ).getDeclaredMethod( currentFrame.getMethodName() );
-                        if ( actualMethod.isAnnotationPresent( Test.class ) )
-                        {
-                            frame = currentFrame;
-                            break;
-                        }
-                    }
-                    catch ( ClassNotFoundException | NoSuchMethodException | SecurityException e )
-                    {
-                        //This can happen, and then is its not the frame we're looking for, skip it
-                    }
-                }
+                var frame = StackWalker.getInstance()
+                        .walk( frames -> frames.skip( 1 ).filter( BootloaderCommandTestBase::isTestFrame )
+                        .findFirst().orElseThrow() );
                 assertNotNull( frame, "No test found" );
 
                 String[] args = {
@@ -326,11 +310,25 @@ abstract class BootloaderCommandTestBase
             String className = args[0];
             String methodName = args[1];
             //Use Junit to execute test, ensures all extensions and initialization is setup correctly
-            Events testEvents = EngineTestKit.engine( ENGINE_ID ).selectors( selectMethod( className, methodName ) ).execute().tests();
+            Events testEvents = EngineTestKit.engine( ENGINE_ID ).selectors( selectMethod( className, methodName ) ).execute().testEvents();
 
             testEvents.assertThatEvents().haveExactly( 1, event( finishedSuccessfully() ) );
             System.exit( SUCCESS_CODE );
         }
+    }
+
+    private static boolean isTestFrame( StackWalker.StackFrame frame )
+    {
+        try
+        {
+            Method actualMethod = Class.forName( frame.getClassName() ).getDeclaredMethod( frame.getMethodName() );
+            return actualMethod.isAnnotationPresent( Test.class );
+        }
+        catch ( NoSuchMethodException | ClassNotFoundException e )
+        {
+            // not a test frame we are looking for so we ignoring any exceptions like that
+        }
+        return false;
     }
 
     /**
@@ -417,7 +415,7 @@ abstract class BootloaderCommandTestBase
         private final BootloaderContext ctx;
         private final ProcessHandler handler;
         private final Class<?> entryPoint;
-        private Config config;
+        private final Config config;
 
         FakeProcessManager( Config config, BootloaderContext ctx, ProcessHandler handler, Class<?> entryPoint )
         {
