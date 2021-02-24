@@ -28,6 +28,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
@@ -37,6 +38,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
@@ -57,6 +59,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -97,19 +100,22 @@ public class AllStoreHolder extends Read
     private final IndexStatisticsStore indexStatisticsStore;
     private final Dependencies databaseDependencies;
     private final MemoryTracker memoryTracker;
-    private final IndexReaderCache indexReaderCache;
+    private final IndexReaderCache<ValueIndexReader> valueIndexReaderCache;
+    private final IndexReaderCache<TokenIndexReader> tokenIndexReaderCache;
     private TokenScanReader labelScanReader;
     private TokenScanReader relationshipTypeScanReader;
 
     public AllStoreHolder( StorageReader storageReader, KernelTransactionImplementation ktx, DefaultPooledCursors cursors, GlobalProcedures globalProcedures,
-            SchemaState schemaState, IndexingService indexingService, LabelScanStore labelScanStore, RelationshipTypeScanStore relationshipTypeScanStore,
-            IndexStatisticsStore indexStatisticsStore, PageCursorTracer cursorTracer, Dependencies databaseDependencies, Config config,
-            MemoryTracker memoryTracker )
+                           SchemaState schemaState, IndexingService indexingService, LabelScanStore labelScanStore,
+                           RelationshipTypeScanStore relationshipTypeScanStore,
+                           IndexStatisticsStore indexStatisticsStore, PageCursorTracer cursorTracer, Dependencies databaseDependencies, Config config,
+                           MemoryTracker memoryTracker )
     {
         super( storageReader, cursors, cursorTracer, ktx, config );
         this.globalProcedures = globalProcedures;
         this.schemaState = schemaState;
-        this.indexReaderCache = new IndexReaderCache( indexingService );
+        this.valueIndexReaderCache = new IndexReaderCache<>( index -> indexingService.getIndexProxy( index ).newValueReader() );
+        this.tokenIndexReaderCache = new IndexReaderCache<>( index -> indexingService.getIndexProxy( index ).newTokenReader() );
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
         this.relationshipTypeScanStore = relationshipTypeScanStore;
@@ -403,12 +409,37 @@ public class AllStoreHolder extends Read
     public IndexReadSession indexReadSession( IndexDescriptor index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        return new DefaultIndexReadSession( indexReaderCache.getOrCreate( index ), index );
+        return new DefaultIndexReadSession( valueIndexReaderCache.getOrCreate( index ), index );
+    }
+
+    @Override
+    public TokenReadSession tokenReadSession( IndexDescriptor index ) throws IndexNotFoundKernelException
+    {
+        assertValidIndex( index );
+        return new DefaultTokenReadSession( tokenIndexReaderCache.getOrCreate( index ), index );
     }
 
     @Override
     public void prepareForLabelScans()
     {
+        if ( scanStoreAsTokenIndexEnabled() )
+        {
+            try
+            {
+                var descriptor = SchemaDescriptor.forAllEntityTokens( EntityType.NODE );
+                var indexes = index( descriptor );
+                if ( indexes.hasNext() )
+                {
+                    tokenReadSession( indexes.next() );
+                    return;
+                }
+                throw new IndexNotFoundKernelException( "Token index for labels no found" );
+            }
+            catch ( KernelException e )
+            {
+                throw new UnsupportedOperationException( e );
+            }
+        }
         labelScanReader();
     }
 
@@ -1061,7 +1092,8 @@ public class AllStoreHolder extends Read
 
     public void release()
     {
-        indexReaderCache.close();
+        valueIndexReaderCache.close();
+        tokenIndexReaderCache.close();
     }
 
     @Override

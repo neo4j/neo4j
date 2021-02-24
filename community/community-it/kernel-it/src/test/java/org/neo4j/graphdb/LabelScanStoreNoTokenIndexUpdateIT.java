@@ -17,16 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
 
-import org.neo4j.internal.schema.IndexDescriptor;
+package org.neo4j.graphdb;
+
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
 
 /**
- * Token which represents a read session towards a specific value index. The life-span of this session is tied to
- * the transaction. It might be created at any time in an open transaction, and will be closed automatically
- * on transaction close.
+ * LabelScanStoreUpdateIT but with enable_scan_stores_as_token_indexes on and without token index to test fallback to allNodesScan
  */
-public interface IndexReadSession
+@ImpermanentDbmsExtension( configurationCallback = "configure" )
+public class LabelScanStoreNoTokenIndexUpdateIT extends LabelScanStoreUpdateIT
 {
-    IndexDescriptor reference();
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
+    }
 }

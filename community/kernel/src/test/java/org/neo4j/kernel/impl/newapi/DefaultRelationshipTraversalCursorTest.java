@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
+import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
@@ -413,7 +414,7 @@ class DefaultRelationshipTraversalCursorTest
         }
 
         @Override
-        public ValueIndexReader newValueIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException
+        public ValueIndexReader newValueIndexReader( IndexDescriptor index )
         {
             return null;
         }
@@ -504,6 +505,12 @@ class DefaultRelationshipTraversalCursorTest
 
         @Override
         public IndexReadSession indexReadSession( IndexDescriptor index )
+        {
+            return null;
+        }
+
+        @Override
+        public TokenReadSession tokenReadSession( IndexDescriptor index ) throws IndexNotFoundKernelException
         {
             return null;
         }

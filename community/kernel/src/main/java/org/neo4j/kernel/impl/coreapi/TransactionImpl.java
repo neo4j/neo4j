@@ -52,18 +52,19 @@ import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
@@ -87,6 +88,7 @@ import org.neo4j.kernel.impl.core.NodeEntity;
 import org.neo4j.kernel.impl.core.RelationshipEntity;
 import org.neo4j.kernel.impl.coreapi.internal.NodeCursorResourceIterator;
 import org.neo4j.kernel.impl.coreapi.internal.NodeLabelPropertyIterator;
+import org.neo4j.kernel.impl.coreapi.internal.FilteringCursorIterator;
 import org.neo4j.kernel.impl.coreapi.internal.RelationshipCursorResourceIterator;
 import org.neo4j.kernel.impl.coreapi.internal.RelationshipTypePropertyIterator;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
@@ -970,9 +972,38 @@ public class TransactionImpl extends EntityValidationTransactionImpl
             return Iterators.emptyResourceIterator();
         }
 
+        if ( ktx.schemaRead().scanStoreAsTokenIndexEnabled() )
+        {
+            var index = findUsableMatchingIndex( ktx, SchemaDescriptor.forAllEntityTokens( EntityType.NODE ) );
+
+            if ( index != IndexDescriptor.NO_INDEX )
+            {
+                try
+                {
+                    var session = ktx.dataRead().tokenReadSession( index );
+                    var cursor = ktx.cursors().allocateNodeLabelIndexCursor( transaction.pageCursorTracer() );
+                    ktx.dataRead().nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( labelId ) );
+                    return new NodeCursorResourceIterator<>( cursor, this::newNodeEntity );
+                }
+                catch ( KernelException e )
+                {
+                    // ignore, fallback to all node scan
+                }
+            }
+
+            return allNodesByLabelWithoutIndex( ktx, labelId );
+        }
+
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor( transaction.pageCursorTracer() );
         ktx.dataRead().nodeLabelScan( labelId, cursor, IndexOrder.NONE );
         return new NodeCursorResourceIterator<>( cursor, this::newNodeEntity );
+    }
+
+    private ResourceIterator<Node> allNodesByLabelWithoutIndex( KernelTransaction ktx, int labelId )
+    {
+        NodeCursor cursor = ktx.cursors().allocateNodeCursor( ktx.pageCursorTracer() );
+        ktx.dataRead().allNodesScan( cursor );
+        return new FilteringCursorIterator<>( cursor, c -> c.hasLabel( labelId), NodeCursor::nodeReference, this::newNodeEntity );
     }
 
     private ResourceIterator<Relationship> allRelationshipsWithType( final RelationshipType type )

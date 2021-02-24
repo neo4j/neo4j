@@ -22,11 +22,11 @@ package org.neo4j.internal.kernel.api;
 import org.neo4j.internal.schema.IndexDescriptor;
 
 /**
- * Token which represents a read session towards a specific value index. The life-span of this session is tied to
+ * Token which represents a read session towards a specific token index. The life-span of this session is tied to
  * the transaction. It might be created at any time in an open transaction, and will be closed automatically
  * on transaction close.
  */
-public interface IndexReadSession
+public interface TokenReadSession
 {
     IndexDescriptor reference();
 }

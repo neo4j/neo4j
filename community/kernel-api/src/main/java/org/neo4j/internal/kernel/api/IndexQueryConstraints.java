@@ -61,6 +61,11 @@ public class IndexQueryConstraints
         return needsValues ? unorderedValues() : unconstrained();
     }
 
+    public static IndexQueryConstraints ordered( IndexOrder order )
+    {
+        return constrained( order, false );
+    }
+
     public static IndexQueryConstraints constrained( IndexOrder order, boolean needsValues )
     {
         return new IndexQueryConstraints( order, needsValues, false, false, 0, 0 );

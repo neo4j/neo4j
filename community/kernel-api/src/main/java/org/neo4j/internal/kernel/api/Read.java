@@ -35,12 +35,22 @@ public interface Read
     long NO_ID = -1;
 
     /**
-     * Ensure there is an IndexReadSession for the given index bound to this transaction, and return it. Not Thread-safe.
+     * Ensure there is an IndexReadSession for the given value index bound to this transaction, and return it. Not Thread-safe.
      *
      * @param index descriptor for the index to read from
+     * @throws UnsupportedOperationException for non applicable index type
      * @return the IndexReadSession.
      */
     IndexReadSession indexReadSession( IndexDescriptor index ) throws IndexNotFoundKernelException;
+
+    /**
+     * Ensure there is an TokenReadSession for the given token index bound to this transaction, and return it. Not Thread-safe.
+     *
+     * @param index descriptor for the index to read from
+     * @throws UnsupportedOperationException for non applicable index type
+     * @return the TokenReadSession.
+     */
+    TokenReadSession tokenReadSession( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Ensure this transaction is prepared for node label scans. This avoids concurrency issues. Not Thread-safe.
@@ -118,6 +128,17 @@ public interface Read
     void nodeLabelScan( int label, NodeLabelIndexCursor cursor, IndexOrder order );
 
     Scan<NodeLabelIndexCursor> nodeLabelScan( int label );
+
+    /**
+     * Scan all nodes in a token index.
+     * @param session {@link TokenReadSession} token read session to query.
+     * @param cursor the cursor to use for consuming the results.
+     * @param constraints The requested constraints on the query result, such as the {@link IndexOrder}.
+     *                    The constraints must be satisfiable given the capabilities of the index.
+     * @param query the query to run against index
+     */
+    void nodeLabelScan( TokenReadSession session, NodeLabelIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query )
+            throws KernelException;
 
     /**
      * Return all nodes in the graph.
@@ -309,6 +330,17 @@ public interface Read
      * @param order the requested order on the query result.
      */
     void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor, IndexOrder order );
+
+    /**
+     * Scan all relationships in a token index of the specified type.
+     * @param session {@link TokenReadSession} token read session to query.
+     * @param cursor the cursor to use for consuming the results.
+     * @param constraints The requested constraints on the query result, such as the {@link IndexOrder}.
+     *                    The constraints must be satisfiable given the capabilities of the index.
+     * @param query the query to run against index
+     */
+    void relationshipTypeScan( TokenReadSession session, RelationshipTypeIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query )
+            throws KernelException;
 
     /**
      * @param nodeReference

@@ -32,6 +32,8 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
+import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.storageengine.api.RelationshipSelection;
@@ -41,6 +43,12 @@ public class StubRead implements Read
 {
     @Override
     public IndexReadSession indexReadSession( IndexDescriptor index )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public TokenReadSession tokenReadSession( IndexDescriptor index )
     {
         throw new UnsupportedOperationException();
     }
@@ -91,6 +99,12 @@ public class StubRead implements Read
 
     @Override
     public Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void nodeLabelScan( TokenReadSession session, NodeLabelIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query )
     {
         throw new UnsupportedOperationException();
     }
@@ -187,6 +201,12 @@ public class StubRead implements Read
 
     @Override
     public void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor, IndexOrder order )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void relationshipTypeScan( TokenReadSession session, RelationshipTypeIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query )
     {
         throw new UnsupportedOperationException();
     }

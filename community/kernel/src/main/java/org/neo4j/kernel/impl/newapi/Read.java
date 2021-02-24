@@ -37,6 +37,8 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
+import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -47,7 +49,6 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexProgressor;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -64,6 +65,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.ordered;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 abstract class Read implements TxStateHolder,
@@ -80,6 +82,7 @@ abstract class Read implements TxStateHolder,
     protected final PageCursorTracer cursorTracer;
     final KernelTransactionImplementation ktx;
     private final boolean relationshipTypeScanStoreEnabled;
+    private final boolean scanStoreAsTokenIndexEnabled;
 
     Read( StorageReader storageReader, DefaultPooledCursors cursors, PageCursorTracer cursorTracer,
             KernelTransactionImplementation ktx, Config config )
@@ -89,6 +92,7 @@ abstract class Read implements TxStateHolder,
         this.cursorTracer = cursorTracer;
         this.ktx = ktx;
         this.relationshipTypeScanStoreEnabled = config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store );
+        this.scanStoreAsTokenIndexEnabled = config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes );
     }
 
     @Override
@@ -100,12 +104,13 @@ abstract class Read implements TxStateHolder,
 
         if ( indexSession.reference.schema().entityType() != EntityType.NODE )
         {
-            throw new IndexNotApplicableKernelException( "Node index seek can only be performed on node indexes: " + index );
+            throw new IndexNotApplicableKernelException( "Node index seek can only be performed on node indexes: " +
+                                                         index.reference().userDescription( ktx.tokenRead() ) );
         }
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead( this );
-        ((ValueIndexReader)indexSession.reader).query( this, client, constraints, query );
+        indexSession.reader.query( this, client, constraints, query );
     }
 
     @Override
@@ -116,12 +121,13 @@ abstract class Read implements TxStateHolder,
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
         if ( indexSession.reference.schema().entityType() != EntityType.RELATIONSHIP )
         {
-            throw new IndexNotApplicableKernelException( "Relationship index seek can only be performed on relationship indexes: " + index );
+            throw new IndexNotApplicableKernelException( "Relationship index seek can only be performed on relationship indexes: " +
+                                                         index.reference().userDescription( ktx.tokenRead() ) );
         }
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead( this );
-        ((ValueIndexReader)indexSession.reader).query( this, client, constraints, query );
+        indexSession.reader.query( this, client, constraints, query );
     }
 
     @Override
@@ -177,7 +183,8 @@ abstract class Read implements TxStateHolder,
 
         if ( indexSession.reference.schema().entityType() != EntityType.NODE )
         {
-            throw new IndexNotApplicableKernelException( "Node index scan can only be performed on node indexes: " + index );
+            throw new IndexNotApplicableKernelException( "Node index scan can only be performed on node indexes: " +
+                                                         index.reference().userDescription( ktx.tokenRead() ) );
         }
 
         scanIndex( indexSession, (EntityIndexSeekClient) cursor, constraints );
@@ -193,7 +200,8 @@ abstract class Read implements TxStateHolder,
 
         if ( indexSession.reference.schema().entityType() != EntityType.RELATIONSHIP )
         {
-            throw new IndexNotApplicableKernelException( "Relationship index scan can only be performed on relationship indexes: " + index );
+            throw new IndexNotApplicableKernelException( "Relationship index scan can only be performed on relationship indexes: " +
+                                                         index.reference().userDescription( ktx.tokenRead() ) );
         }
 
         scanIndex( indexSession, (EntityIndexSeekClient) cursor, constraints );
@@ -207,13 +215,33 @@ abstract class Read implements TxStateHolder,
         int firstProperty = indexSession.reference.schema().getPropertyIds()[0];
 
         indexSeekClient.setRead( this );
-        ((ValueIndexReader)indexSession.reader).query( this, indexSeekClient, constraints, PropertyIndexQuery.exists( firstProperty ) );
+        indexSession.reader.query( this, indexSeekClient, constraints, PropertyIndexQuery.exists( firstProperty ) );
     }
 
     @Override
     public final void nodeLabelScan( int label, NodeLabelIndexCursor cursor, IndexOrder order )
     {
         ktx.assertOpen();
+
+        if ( scanStoreAsTokenIndexEnabled )
+        {
+            try
+            {
+                var descriptor = SchemaDescriptor.forAllEntityTokens( EntityType.NODE );
+                var indexes = index( descriptor );
+                if ( indexes.hasNext() )
+                {
+                    var session = tokenReadSession( indexes.next() );
+                    nodeLabelScan( session, cursor, ordered( order ), new TokenPredicate( label ) );
+                    return;
+                }
+                throw new IndexNotFoundKernelException( "Token index for labels no found" );
+            }
+            catch ( KernelException e )
+            {
+                throw new UnsupportedOperationException( e );
+            }
+        }
 
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
@@ -227,6 +255,30 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
         return new NodeLabelIndexCursorScan( this, label, labelScanReader().entityTokenScan( label, cursorTracer ), cursorTracer );
+    }
+
+    @Override
+    public final void nodeLabelScan( TokenReadSession session, NodeLabelIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query )
+            throws KernelException
+    {
+        ktx.assertOpen();
+
+        if ( !scanStoreAsTokenIndexEnabled )
+        {
+            throw new IllegalStateException( "Cannot scan label index when feature is not enabled." );
+        }
+
+        if ( session.reference().schema().entityType() != EntityType.NODE )
+        {
+            throw new IndexNotApplicableKernelException( "Node label index scan can not be performed on index " +
+                                                         session.reference().userDescription( ktx.tokenRead() ) );
+        }
+
+        var tokenSession = (DefaultTokenReadSession) session;
+
+        DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
+        indexCursor.setRead( this );
+        tokenSession.reader.query( this, indexCursor, constraints, query );
     }
 
     @Override
@@ -282,9 +334,30 @@ abstract class Read implements TxStateHolder,
     public final void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor, IndexOrder order )
     {
         ktx.assertOpen();
+
+        if ( scanStoreAsTokenIndexEnabled )
+        {
+            try
+            {
+                var descriptor = SchemaDescriptor.forAllEntityTokens( EntityType.RELATIONSHIP );
+                var indexes = index( descriptor );
+                if ( indexes.hasNext() )
+                {
+                    var session = tokenReadSession( indexes.next() );
+                    relationshipTypeScan( session, relationshipTypeIndexCursor, ordered( order ), new TokenPredicate( type ) );
+                    return;
+                }
+                throw new IndexNotFoundKernelException( "Token index for relationships no found" );
+            }
+            catch ( KernelException e )
+            {
+                throw new UnsupportedOperationException( e );
+            }
+        }
+
         if ( relationshipTypeScanStoreEnabled() )
         {
-            DefaultRelationshipTypeIndexCursor cursor = (DefaultRelationshipTypeIndexCursor)relationshipTypeIndexCursor;
+            DefaultRelationshipTypeIndexCursor cursor = (DefaultRelationshipTypeIndexCursor) relationshipTypeIndexCursor;
             cursor.setRead( this );
 
             TokenScanReader relationshipTypeScanReader = relationshipTypeScanReader();
@@ -297,6 +370,31 @@ abstract class Read implements TxStateHolder,
         {
             throw new IllegalStateException( "Cannot search relationship type scan store when feature is not enabled." );
         }
+    }
+
+    @Override
+    public final void relationshipTypeScan( TokenReadSession session, RelationshipTypeIndexCursor cursor, IndexQueryConstraints constraints,
+                                            TokenPredicate query )
+            throws KernelException
+    {
+        ktx.assertOpen();
+
+        if ( !scanStoreAsTokenIndexEnabled )
+        {
+            throw new IllegalStateException( "Cannot scan relationship type index when feature is not enabled." );
+        }
+
+        if ( session.reference().schema().entityType() != EntityType.RELATIONSHIP )
+        {
+            throw new IndexNotApplicableKernelException( "Relationship type index scan can not be performed on index " +
+                                                         session.reference().userDescription( ktx.tokenRead() ) );
+        }
+
+        var tokenSession = (DefaultTokenReadSession) session;
+
+        var indexCursor = (DefaultRelationshipTypeIndexCursor) cursor;
+        indexCursor.setRead( this );
+        tokenSession.reader.query( this, indexCursor, constraints, query );
     }
 
     @Override
@@ -437,6 +535,12 @@ abstract class Read implements TxStateHolder,
     public boolean relationshipTypeScanStoreEnabled()
     {
         return relationshipTypeScanStoreEnabled;
+    }
+
+    @Override
+    public boolean scanStoreAsTokenIndexEnabled()
+    {
+        return scanStoreAsTokenIndexEnabled;
     }
 
     private void acquireExclusiveLock( ResourceTypes types, long... ids )

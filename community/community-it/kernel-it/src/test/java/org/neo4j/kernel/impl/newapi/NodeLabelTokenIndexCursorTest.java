@@ -19,24 +19,25 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.index.ValueIndexReader;
+import org.junit.jupiter.api.Disabled;
 
-class DefaultIndexReadSession implements IndexReadSession
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+
+@Disabled( "Scan stores as token indexes are not fully implemented yet" )
+public class NodeLabelTokenIndexCursorTest extends NodeLabelIndexCursorTestBase<WriteTestSupport>
 {
-    final ValueIndexReader reader;
-    final IndexDescriptor reference;
-
-    DefaultIndexReadSession( ValueIndexReader reader, IndexDescriptor reference )
-    {
-        this.reader = reader;
-        this.reference = reference;
-    }
-
     @Override
-    public IndexDescriptor reference()
+    public WriteTestSupport newTestSupport()
     {
-        return reference;
+        return new WriteTestSupport()
+        {
+            @Override
+            protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
+            {
+                builder = builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
+                return super.configure( builder );
+            }
+        };
     }
 }

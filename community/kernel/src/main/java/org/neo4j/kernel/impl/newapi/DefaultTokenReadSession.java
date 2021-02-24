@@ -17,16 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.index.TokenIndexReader;
 
-/**
- * Token which represents a read session towards a specific value index. The life-span of this session is tied to
- * the transaction. It might be created at any time in an open transaction, and will be closed automatically
- * on transaction close.
- */
-public interface IndexReadSession
+class DefaultTokenReadSession implements TokenReadSession
 {
-    IndexDescriptor reference();
+    final TokenIndexReader reader;
+    final IndexDescriptor reference;
+
+    DefaultTokenReadSession( TokenIndexReader reader, IndexDescriptor reference )
+    {
+        this.reader = reader;
+        this.reference = reference;
+    }
+
+    @Override
+    public IndexDescriptor reference()
+    {
+        return reference;
+    }
 }

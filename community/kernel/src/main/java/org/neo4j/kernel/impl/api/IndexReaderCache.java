@@ -22,46 +22,34 @@ package org.neo4j.kernel.impl.api;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.impl.api.index.IndexProxy;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 
 /**
  * Cache which maps IndexDescriptors to IndexReaders. This is intended for reusing IndexReaders during a transaction.
  */
-public class IndexReaderCache
+public class IndexReaderCache<T extends IndexReader>
 {
-    private final Map<IndexDescriptor,IndexReader> indexReaders;
-    private final IndexingService indexingService;
+    private final Map<IndexDescriptor,T> indexReaders;
+    private final ThrowingFunction<IndexDescriptor,T,IndexNotFoundKernelException> indexSupplier;
 
-    public IndexReaderCache( IndexingService indexingService )
+    public IndexReaderCache( ThrowingFunction<IndexDescriptor,T,IndexNotFoundKernelException> indexSupplier )
     {
-        this.indexingService = indexingService;
+        this.indexSupplier = indexSupplier;
         this.indexReaders = new HashMap<>();
     }
 
-    public IndexReader getOrCreate( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public T getOrCreate( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         var reader = indexReaders.get( descriptor );
         if ( reader == null )
         {
-            reader = newUnCachedReader( descriptor );
+            reader = indexSupplier.apply( descriptor );
             indexReaders.put( descriptor, reader );
         }
         return reader;
-    }
-
-    private IndexReader newUnCachedReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        IndexProxy index = indexingService.getIndexProxy( descriptor );
-        if ( isTokenIndex( descriptor.schema() ) )
-        {
-            return index.newTokenReader();
-        }
-        return index.newValueReader();
     }
 
     public void close()
@@ -76,11 +64,5 @@ public class IndexReaderCache
             indexReader.close();
         }
         indexReaders.clear();
-    }
-
-    private static boolean isTokenIndex( SchemaDescriptor schema )
-    {
-        // TODO replace with actual check when SchemaDescriptor for token index is implemented
-        return false;
     }
 }
