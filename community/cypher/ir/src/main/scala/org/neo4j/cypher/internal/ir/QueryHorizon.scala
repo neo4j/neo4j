@@ -39,6 +39,8 @@ trait QueryHorizon {
   }
 
   def readOnly = true
+
+  def allQueryGraphs: Seq[QueryGraph] = Seq.empty
 }
 
 final case class PassthroughAllHorizon() extends QueryHorizon {
@@ -65,6 +67,8 @@ case class CallSubqueryHorizon(callSubquery: PlannerQueryPart, correlated: Boole
   override def dependingExpressions: Seq[Expression] = Seq.empty
 
   override def readOnly: Boolean = callSubquery.readOnly
+
+  override def allQueryGraphs: Seq[QueryGraph] = callSubquery.allQueryGraphs
 }
 
 sealed abstract class QueryProjection extends QueryHorizon {

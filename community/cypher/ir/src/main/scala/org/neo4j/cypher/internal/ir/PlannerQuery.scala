@@ -40,6 +40,8 @@ trait PlannerQueryPart {
   def withoutHints(hintsToIgnore: Set[Hint]): PlannerQueryPart
   def numHints: Int
 
+  def allQueryGraphs: Seq[QueryGraph]
+
   /**
    * Use this method when you are certain that you are dealing with a SinglePlannerQuery, and not a UnionQuery.
    * It will throw an Exception if this is a UnionQuery.
@@ -76,4 +78,6 @@ case class UnionQuery(part: PlannerQueryPart,
   override def numHints: Int = part.numHints + query.numHints
 
   override def asSinglePlannerQuery: SinglePlannerQuery = throw new IllegalStateException("Called asSinglePlannerQuery on a UnionQuery")
+
+  override def allQueryGraphs: Seq[QueryGraph] = query.allQueryGraphs ++ part.allQueryGraphs
 }

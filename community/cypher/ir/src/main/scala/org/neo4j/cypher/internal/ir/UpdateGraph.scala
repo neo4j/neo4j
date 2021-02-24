@@ -170,7 +170,7 @@ trait UpdateGraph {
       // A MERGE is always on its own in a QG. That's why we pick either the read graph of a MERGE or the qg itself.
       val readQg = qgWithInfo.queryGraph.mergeQueryGraph.map(mergeQg => qgWithInfo.copy(solvedQg = mergeQg)).getOrElse(qgWithInfo)
 
-      createNodeOverlap(readQg) ||
+      nodeOverlap(readQg) ||
         createRelationshipOverlap(readQg) ||
         deleteOverlap(readQg) ||
         removeLabelOverlap(readQg) ||
@@ -233,31 +233,6 @@ trait UpdateGraph {
   }
 
   /*
-   * Checks for overlap between nodes being read in the query graph
-   * and those being created here
-   */
-  def createNodeOverlap(qgWithInfo: QgWithLeafInfo): Boolean = {
-    def labelsOverlap(labelsToRead: Set[LabelName], labelsToWrite: Set[LabelName]): Boolean = {
-      labelsToRead.isEmpty || (labelsToRead intersect labelsToWrite).nonEmpty
-    }
-    def propsOverlap(propsToRead: Set[PropertyKeyName], propsToWrite: CreatesPropertyKeys) = {
-      propsToRead.isEmpty || propsToRead.exists(propsToWrite.overlaps)
-    }
-
-    val nodesRead: Set[QgWithLeafInfo.Identifier] = qgWithInfo.nonArgumentPatternNodes
-
-    createsNodes && nodesRead.exists(p => {
-      val readProps = qgWithInfo.allKnownUnstablePropertiesFor(p)
-
-      //MATCH () CREATE ()?
-      qgWithInfo.allKnownUnstableNodeLabelsFor(p).isEmpty && readProps.isEmpty ||
-        //MATCH (:B {prop:..}) CREATE (:B {prop:..})
-        labelsOverlap(qgWithInfo.allKnownUnstableNodeLabelsFor(p), createLabels) &&
-          propsOverlap(readProps, createNodeProperties)
-    })
-  }
-
-  /*
    * Check if the labels or properties of any unstable leaf node overlaps
    * with the labels or properties updated in this query. This may cause the read to affected
    * by the writes.
@@ -267,7 +242,8 @@ trait UpdateGraph {
     val propertiesToCreate = createNodeProperties
     val tailCreatesNodes = createsNodes
 
-    updatesNodes && qgWithInfo.leafPatternNodes.exists { currentNode =>
+    val relevantNodes = qgWithInfo.nonArgumentPatternNodes intersect qgWithInfo.leafPatternNodes
+    updatesNodes && relevantNodes.exists { currentNode =>
       val labelsOnCurrentNode = qgWithInfo.allKnownUnstableNodeLabelsFor(currentNode)
       val propertiesOnCurrentNode = qgWithInfo.allKnownUnstablePropertiesFor(currentNode)
       val labelsToRemove = labelsToRemoveFromOtherNodes(currentNode.name)

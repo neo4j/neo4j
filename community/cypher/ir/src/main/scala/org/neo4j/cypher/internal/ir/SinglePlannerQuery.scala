@@ -219,7 +219,7 @@ trait SinglePlannerQuery extends PlannerQueryPart {
   }
 
   //Returns a list of query graphs from this plannerquery and all of its tails
-  def allQueryGraphs: Seq[QueryGraph] = allPlannerQueries.map(_.queryGraph)
+  override def allQueryGraphs: Seq[QueryGraph] = allPlannerQueries.flatMap(q => q.queryGraph +: q.horizon.allQueryGraphs)
 
   //Returns list of planner query and all of its tails
   def allPlannerQueries: Seq[SinglePlannerQuery] = {
