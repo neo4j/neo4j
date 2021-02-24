@@ -35,8 +35,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.actors.Actor;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -67,6 +69,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport
     void setUp()
     {
         client = locks.newClient();
+        client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
     }
 
     @AfterEach
@@ -568,6 +571,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport
     private Locks.Client newLockClient( LockAcquisition lockAcquisition )
     {
         Locks.Client client = locks.newClient();
+        client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
         lockAcquisition.setClient( client );
         return client;
     }

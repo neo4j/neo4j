@@ -29,9 +29,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.actors.Actor;
 import org.neo4j.test.extension.actors.ActorsExtension;
@@ -80,6 +82,9 @@ public abstract class LockCompatibilityTestSupport
         clientA = locks.newClient();
         clientB = locks.newClient();
         clientC = locks.newClient();
+        clientA.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
+        clientB.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
+        clientC.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
 
         clientToThreadMap.put( clientA, threadA );
         clientToThreadMap.put( clientB, threadB );
@@ -98,7 +103,7 @@ public abstract class LockCompatibilityTestSupport
 
     // Utilities
 
-    public abstract class LockCommand implements Runnable
+    public abstract static class LockCommand implements Runnable
     {
         private final Actor thread;
         private final Locks.Client client;

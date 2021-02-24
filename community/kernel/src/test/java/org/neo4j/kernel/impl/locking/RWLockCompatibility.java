@@ -27,7 +27,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -202,6 +204,7 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport
             this.depthCount = depthCount;
             this.readWriteRatio = readWriteRatio;
             this.startSignal = startSignal;
+            client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
         }
 
         @Override

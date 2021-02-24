@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.locking;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
+import org.neo4j.memory.EmptyMemoryTracker;
+
 class LockWorkerState
 {
     final Locks grabber;
@@ -34,6 +37,7 @@ class LockWorkerState
     {
         this.grabber = locks;
         this.client = locks.newClient();
+        this.client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
     }
 
     public void doing( String doing )

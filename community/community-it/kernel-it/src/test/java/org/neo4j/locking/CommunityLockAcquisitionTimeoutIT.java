@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockClient;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -140,7 +142,9 @@ public class CommunityLockAcquisitionTimeoutIT
             try ( Transaction tx = database.beginTx() )
             {
                 Locks lockManger = getLockManager();
-                lockManger.newClient().acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 1 );
+                Locks.Client client = lockManger.newClient();
+                client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
+                client.acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 1 );
 
                 Future<Void> propertySetFuture = secondTransactionExecutor.executeDontWait( () ->
                 {

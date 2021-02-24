@@ -21,9 +21,11 @@ package org.neo4j.kernel.impl.locking;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,6 +45,7 @@ abstract class CloseCompatibility extends LockCompatibilityTestSupport
         // GIVEN a lock manager and working clients
         try ( Client client = locks.newClient() )
         {
+            client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
             client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 0 );
         }
 

@@ -30,8 +30,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
@@ -59,6 +61,8 @@ abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupp
         lockManager = suite.createLockManager( customConfig, clock );
         client = lockManager.newClient();
         client2 = lockManager.newClient();
+        client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
+        client2.initialize( NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE );
     }
 
     @AfterEach

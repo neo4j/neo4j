@@ -29,7 +29,7 @@ public interface LeaseService
 
     class NoLeaseClient implements LeaseClient
     {
-        private static final NoLeaseClient INSTANCE = new NoLeaseClient();
+        public static final NoLeaseClient INSTANCE = new NoLeaseClient();
 
         private NoLeaseClient()
         {
