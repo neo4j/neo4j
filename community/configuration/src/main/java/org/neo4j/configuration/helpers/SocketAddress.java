@@ -27,6 +27,7 @@ import java.util.Set;
 import org.neo4j.annotations.api.PublicApi;
 
 import static java.util.Arrays.asList;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 /**
  * Socket address derived from configuration.
@@ -122,7 +123,7 @@ public class SocketAddress
             InetSocketAddress inetSocketAddress = (InetSocketAddress) address;
             return format( inetSocketAddress.getHostString(), inetSocketAddress.getPort() );
         }
-        return address.toString();
+        return address == null ? EMPTY : address.toString();
     }
 
     public static String format( String hostname, int port )
