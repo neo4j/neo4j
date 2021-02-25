@@ -90,4 +90,10 @@ public class ByteBufInput implements PackInput
             throw new IllegalStateException( "Already started" );
         }
     }
+
+    @Override
+    public int readableBytes()
+    {
+        return buf.readableBytes();
+    }
 }
