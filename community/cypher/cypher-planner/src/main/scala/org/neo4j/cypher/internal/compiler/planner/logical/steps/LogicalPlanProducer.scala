@@ -137,6 +137,7 @@ import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
 import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
@@ -1619,7 +1620,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
         case Some(ProvidedOrder.Self) => // done
         case None =>
           AssertMacros.checkOnlyWhenAssertionsAreEnabled(false,
-            s"While marking leveraged order we encountered a plan with no provided order: $current")
+            s"While marking leveraged order we encountered a plan with no provided order:\n ${LogicalPlanToPlanBuilderString(current)}")
       }
     }
 

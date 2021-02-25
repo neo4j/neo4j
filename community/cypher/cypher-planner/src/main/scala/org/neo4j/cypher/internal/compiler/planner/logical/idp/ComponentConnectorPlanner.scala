@@ -118,7 +118,7 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
         case Some(outerPlan) =>
           // We pass in an empty Attributes, since we throw away these plans after cost-comparison.
           // There is no need to have all attributes correctly assigned.
-          val unnest = unnestApply(context.planningAttributes.solveds, context.planningAttributes.cardinalities, Attributes(context.idGen))
+          val unnest = unnestApply(context.planningAttributes.solveds, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders, Attributes(context.idGen))
           lp => {
             val connectedPlan = context.logicalPlanProducer.planTailApply(outerPlan, lp, context)
             connectedPlan.endoRewrite(unnest)

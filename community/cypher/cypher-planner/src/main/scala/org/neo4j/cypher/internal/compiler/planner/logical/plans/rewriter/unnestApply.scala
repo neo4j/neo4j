@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Rewriter
@@ -44,7 +45,10 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.topDown
 
-case class unnestApply(solveds: Solveds, cardinalities: Cardinalities, attributes: Attributes[LogicalPlan]) extends Rewriter {
+case class unnestApply(override val solveds: Solveds,
+                       override val cardinalities: Cardinalities,
+                       override val providedOrders: ProvidedOrders,
+                       override val attributes: Attributes[LogicalPlan]) extends Rewriter with UnnestingRewriter {
 
   /*
   Based on the paper
@@ -92,10 +96,12 @@ case class unnestApply(solveds: Solveds, cardinalities: Cardinalities, attribute
       val selectionLHS = Selection(predicate, lhs)(attributes.copy(sel.id))
       solveds.copy(original.id, selectionLHS.id)
       cardinalities.set(selectionLHS.id, maybeSelectivity.fold(cardinalities(sel.id))(cardinalities(lhs.id) * _))
+      providedOrders.copy(lhs.id, selectionLHS.id)
 
       val apply2 = Apply(lhs2, rhs)(attributes.copy(lhs.id))
       solveds.copy(original.id, apply2.id)
       cardinalities.set(apply2.id, cardinalities(lhs2.id) * cardinalities(rhs.id))
+      providedOrders.copy(lhs2.id, apply2.id)
 
       Apply(selectionLHS, apply2)(SameId(original.id))
 
@@ -136,42 +142,54 @@ case class unnestApply(solveds: Solveds, cardinalities: Cardinalities, attribute
       val res = projection.copy(rhsCopy, projections)(attributes.copy(projection.id))
       solveds.copy(projection.id, res.id)
       cardinalities.copy(apply.id, res.id)
+      providedOrders.copy(rhsLeaf.id, res.id)
       res
   })
 
+  override def apply(input: AnyRef): AnyRef = fixedPoint(instance).apply(input)
+}
+
+trait UnnestingRewriter {
+  def solveds: Solveds
+  def cardinalities: Cardinalities
+  def providedOrders: ProvidedOrders
+  def attributes: Attributes[LogicalPlan]
+
   // L Ax (UP R) => UP (L Ax R)
-  private def unnestRightUnary(apply: Apply, lhs: LogicalPlan, rhs: LogicalUnaryPlan): LogicalPlan = {
+  protected def unnestRightUnary(apply: Apply, lhs: LogicalPlan, rhs: LogicalUnaryPlan): LogicalPlan = {
     val newApply = apply.copy(right = rhs.source)(attributes.copy(apply.id))
     solveds.copy(apply.id, newApply.id)
     cardinalities.set(newApply.id, cardinalities(lhs.id) * cardinalities(rhs.source.id))
+    providedOrders.copy(apply.id, newApply.id)
 
     val res = rhs.withLhs(newApply)(attributes.copy(rhs.id))
     solveds.copy(apply.id, res.id)
     cardinalities.set(res.id, cardinalities(lhs.id) * cardinalities(rhs.id))
+    providedOrders.copy(apply.id, res.id)
     res
   }
 
   // L Ax (_ BP R) => L BP R
-  private def unnestRightBinaryLeft(apply: Apply, lhs: LogicalPlan, rhs: LogicalBinaryPlan): LogicalPlan = {
+  protected def unnestRightBinaryLeft(apply: Apply, lhs: LogicalPlan, rhs: LogicalBinaryPlan): LogicalPlan = {
     val res = rhs.withLhs(lhs)(attributes.copy(rhs.id))
     solveds.copy(apply.id, res.id)
     cardinalities.copy(apply.id, res.id)
+    providedOrders.copy(rhs.id, res.id)
     res
   }
 
   // L Ax (L2 BP _) => L2 BP L
-  private def unnestRightBinaryRight(apply: Apply, lhs: LogicalPlan, rhs: LogicalBinaryPlan): LogicalPlan = {
+  protected def unnestRightBinaryRight(apply: Apply, lhs: LogicalPlan, rhs: LogicalBinaryPlan): LogicalPlan = {
     val res = rhs.withRhs(lhs)(attributes.copy(rhs.id))
     solveds.copy(apply.id, res.id)
     cardinalities.copy(apply.id, res.id)
+    providedOrders.copy(rhs.id, res.id)
     res
   }
 
-  private def assertArgumentHasCardinality1(arg: Argument): Unit = {
+  protected def assertArgumentHasCardinality1(arg: Argument): Unit = {
     // Argument plans are always supposed to have a Cardinality of 1.
     // If this should not hold, we would need to multiply Cardinality for this rewrite rule.
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(cardinalities(arg.id) == Cardinality.SINGLE, s"Argument plans should always have Cardinality 1. Had: ${cardinalities(arg.id)}")
   }
-
-  override def apply(input: AnyRef): AnyRef = fixedPoint(instance).apply(input)
 }

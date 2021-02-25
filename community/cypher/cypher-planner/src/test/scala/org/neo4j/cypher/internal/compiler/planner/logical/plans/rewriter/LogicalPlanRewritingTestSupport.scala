@@ -19,10 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
@@ -36,7 +40,13 @@ trait LogicalPlanRewritingTestSupport {
       val (actPlan, actCards) = actual
       val (expPlan, expCards) = expected
 
-      planAndCardinalitiesMatchResult(actPlan, expPlan, x => actCards(x).amount, x => expCards(x).amount)
+      planAndAttributeMatchResult[EffectiveCardinality](
+        actPlan,
+        expPlan,
+        x => actCards(x),
+        x => expCards(x),
+        (x, y) => (x.amount - y.amount).abs < precision
+      )
     }
 
   def haveSameCardinalitiesAs(expected: (LogicalPlan, Cardinalities)): Matcher[(LogicalPlan, Cardinalities)] =
@@ -44,13 +54,33 @@ trait LogicalPlanRewritingTestSupport {
       val (actPlan, actCards) = actual
       val (expPlan, expCards) = expected
 
-      planAndCardinalitiesMatchResult(actPlan, expPlan, x => actCards(x).amount, x => expCards(x).amount)
+      planAndAttributeMatchResult[Cardinality](actPlan,
+        expPlan,
+        x => actCards(x),
+        x => expCards(x),
+        (x, y) => (x.amount - y.amount).abs < precision
+      )
     }
 
-  private def planAndCardinalitiesMatchResult(actPlan: LogicalPlan,
-                                              expPlan: LogicalPlan,
-                                              getActualCardinality: Id => Double,
-                                              getExpectedCardinality: Id => Double,
+  def haveSameProvidedOrdersAs(expected: (LogicalPlan, ProvidedOrders)): Matcher[(LogicalPlan, ProvidedOrders)] =
+    (actual: (LogicalPlan, ProvidedOrders)) => {
+      val (actPlan, actOrders) = actual
+      val (expPlan, expOrders) = expected
+
+      planAndAttributeMatchResult[ProvidedOrder](
+        actPlan,
+        expPlan,
+        x => actOrders(x),
+        x => expOrders(x),
+        _ == _
+      )
+    }
+
+  private def planAndAttributeMatchResult[T](actPlan: LogicalPlan,
+                                             expPlan: LogicalPlan,
+                                             getActual: Id => T,
+                                             getExpected: Id => T,
+                                             checkMatches: (T, T) => Boolean
                                              ): MatchResult = {
     val planPairs = actPlan.flatten.zip(expPlan.flatten)
 
@@ -68,21 +98,21 @@ trait LogicalPlanRewritingTestSupport {
 
     val results = planPairs.map {
       case (act, exp) =>
-        val actCard = getActualCardinality(act.id)
-        val expCard = getExpectedCardinality(exp.id)
+        val actualAttribute = getActual(act.id)
+        val expectedAttribute = getExpected(exp.id)
         val actPlanString = LogicalPlanToPlanBuilderString(act)
         MatchResult(
-          matches = (actCard - expCard).abs < precision,
-          rawFailureMessage = s"Expected cardinality $expCard but was $actCard for plan:\n$actPlanString",
+          matches = checkMatches(actualAttribute, expectedAttribute),
+          rawFailureMessage = s"Expected $expectedAttribute but was $actualAttribute for plan:\n$actPlanString",
           rawNegatedFailureMessage = "")
     }
 
-    val cardinalityMismatch = results.find(!_.matches)
+    val attributeMismatch = results.find(!_.matches)
     val ok = MatchResult(
       matches = true,
       rawFailureMessage = "",
       rawNegatedFailureMessage = "")
 
-    (planMismatch orElse cardinalityMismatch) getOrElse ok
+    (planMismatch orElse attributeMismatch) getOrElse ok
   }
 }
