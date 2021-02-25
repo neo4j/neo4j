@@ -81,4 +81,10 @@ public class PackedInputArray implements PackInput
         data.reset();
         return value;
     }
+
+    @Override
+    public int readableBytes()
+    {
+        return bytes.available();
+    }
 }

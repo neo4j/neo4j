@@ -214,6 +214,55 @@ public class Neo4jPackV1Test
     }
 
     @Test
+    void shouldThrowOnUnpackingMapWithOversizeDeclaredSize() throws IOException
+    {
+        // Given
+        PackedOutputArray output = new PackedOutputArray();
+        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
+        packer.packMapHeader( Integer.MAX_VALUE );
+        packer.pack( "key" );
+        packer.pack( intValue( 1 ) );
+
+        // When
+        try
+        {
+            PackedInputArray input = new PackedInputArray( output.bytes() );
+            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+            unpacker.unpack();
+
+            fail( "exception expected" );
+        }
+        catch ( BoltIOException ex )
+        {
+            assertEquals( Neo4jError.from( Status.Request.Invalid, "Collection size exceeds message capacity." ), Neo4jError.from( ex ) );
+        }
+    }
+
+    @Test
+    void shouldThrowOnUnpackingListWithOversizeDeclaredSize() throws IOException
+    {
+        // Given
+        PackedOutputArray output = new PackedOutputArray();
+        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
+        packer.packListHeader( Integer.MAX_VALUE );
+        packer.pack( intValue( 1 ) );
+
+        // When
+        try
+        {
+            PackedInputArray input = new PackedInputArray( output.bytes() );
+            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+            unpacker.unpack();
+
+            fail( "exception expected" );
+        }
+        catch ( BoltIOException ex )
+        {
+            assertEquals( Neo4jError.from( Status.Request.Invalid, "Collection size exceeds message capacity." ), Neo4jError.from( ex ) );
+        }
+    }
+
+    @Test
     void shouldNotBeAbleToUnpackNode()
     {
         var ex = assertThrows( BoltIOException.class, () -> unpacked( packed( ALICE ) ) );

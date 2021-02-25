@@ -140,6 +140,12 @@ public class BufferedChannelInput implements PackInput
         return buffer.get( buffer.position() );
     }
 
+    @Override
+    public int readableBytes()
+    {
+        return buffer.remaining();
+    }
+
     private void ensure( int numBytes ) throws IOException
     {
         if ( !attempt( numBytes ) )
