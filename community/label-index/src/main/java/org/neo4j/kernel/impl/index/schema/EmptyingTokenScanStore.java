@@ -39,8 +39,6 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityTokenUpdateListener;
 
-import static org.neo4j.common.EntityType.RELATIONSHIP;
-
 /**
  * This is an almost no-op relationship type scan store and is used
  * in place of the real implementation when rtss is turned OFF.
@@ -50,23 +48,38 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
  * rebuilt. We need to do this because we don't know if rtss missed any updates
  * while it was turned OFF.
  */
-public final class EmptyingRelationshipTypeScanStore implements RelationshipTypeScanStore
+public class EmptyingTokenScanStore implements TokenScanStore
 {
     private final FileSystemAbstraction fileSystem;
     private final DatabaseLayout directoryStructure;
     private final boolean readOnly;
+    private final EntityType entityType;
+    private final boolean shouldDeleteExistingStore;
 
-    public EmptyingRelationshipTypeScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
+    private EmptyingTokenScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly,
+            EntityType entityType, boolean shouldDeleteExistingStore )
     {
         this.fileSystem = fileSystem;
         this.directoryStructure = directoryStructure;
         this.readOnly = readOnly;
+        this.entityType = entityType;
+        this.shouldDeleteExistingStore = shouldDeleteExistingStore;
+    }
+
+    public static LabelScanStore emptyLss( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
+    {
+        return new EmptyingLabelScanStore( fileSystem, directoryStructure, readOnly );
+    }
+
+    public static RelationshipTypeScanStore emptyRtss( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
+    {
+        return new EmptyingRelationshipTypeScanStore( fileSystem, directoryStructure, readOnly );
     }
 
     @Override
     public EntityType entityType()
     {
-        return RELATIONSHIP;
+        return entityType;
     }
 
     @Override
@@ -125,19 +138,22 @@ public final class EmptyingRelationshipTypeScanStore implements RelationshipType
     @Override
     public void init() throws IOException
     {
-        if ( readOnly && fileSystem.fileExists( directoryStructure.relationshipTypeScanStore() ) )
+        if ( shouldDeleteExistingStore )
         {
-            throw new IllegalStateException(
-                    "Database was started in read only mode and with relationship type scan store turned OFF, " +
-                            "but relationship type scan store file still exists and cannot be deleted in read only mode. " +
-                            "Please start database with relationship type scan store turned ON or " +
-                            "without read only mode to let database delete the relationship type scan store safely. " +
-                            "Note that consistency check use read only mode. " +
-                            "Use setting 'unsupported.dbms.enable_relationship_type_scan_store' to turn relationship type scan store ON or OFF." );
-        }
-        if ( fileSystem.fileExists( directoryStructure.relationshipTypeScanStore() ) )
-        {
-            fileSystem.deleteFile( directoryStructure.relationshipTypeScanStore() );
+            if ( readOnly && fileSystem.fileExists( directoryStructure.relationshipTypeScanStore() ) )
+            {
+                throw new IllegalStateException(
+                        "Database was started in read only mode and with relationship type scan store turned OFF, " +
+                                "but relationship type scan store file still exists and cannot be deleted in read only mode. " +
+                                "Please start database with relationship type scan store turned ON or " +
+                                "without read only mode to let database delete the relationship type scan store safely. " +
+                                "Note that consistency check use read only mode. " +
+                                "Use setting 'unsupported.dbms.enable_relationship_type_scan_store' to turn relationship type scan store ON or OFF." );
+            }
+            if ( fileSystem.fileExists( directoryStructure.relationshipTypeScanStore() ) )
+            {
+                fileSystem.deleteFile( directoryStructure.relationshipTypeScanStore() );
+            }
         }
     }
 
@@ -248,6 +264,22 @@ public final class EmptyingRelationshipTypeScanStore implements RelationshipType
         public IndexProgressor initializeBatch( IndexProgressor.EntityTokenClient client, int sizeHint, PageCursorTracer cursorTracer )
         {
             return IndexProgressor.EMPTY;
+        }
+    }
+
+    private static class EmptyingLabelScanStore extends EmptyingTokenScanStore implements LabelScanStore
+    {
+        public EmptyingLabelScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
+        {
+            super( fileSystem, directoryStructure, readOnly, EntityType.NODE, false );
+        }
+    }
+
+    private static class EmptyingRelationshipTypeScanStore extends EmptyingTokenScanStore implements RelationshipTypeScanStore
+    {
+        public EmptyingRelationshipTypeScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
+        {
+            super( fileSystem, directoryStructure, readOnly, EntityType.RELATIONSHIP, true );
         }
     }
 }

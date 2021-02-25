@@ -56,6 +56,10 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             Config config, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
+        if ( config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
+        {
+            return EmptyingTokenScanStore.emptyLss( fs, directoryStructure, readOnly );
+        }
         return new NativeLabelScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, config, monitors, recoveryCleanupWorkCollector,
                 NODE, cacheTracer, memoryTracker );
     }
@@ -80,7 +84,7 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
             return relationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
                     config, cacheTracer, memoryTracker );
         }
-        return new EmptyingRelationshipTypeScanStore( fs, directoryStructure, readOnly );
+        return EmptyingTokenScanStore.emptyRtss( fs, directoryStructure, readOnly );
     }
 
     /**

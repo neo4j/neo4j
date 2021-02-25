@@ -112,7 +112,8 @@ public class DynamicIndexStoreView implements IndexStoreView
     {
         try ( PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( ALL_NODE_STORE_SCAN_TAG ) )
         {
-            return ArrayUtils.isEmpty( labelIds ) || isEmptyLabelScanStore( cursorTracer );
+            return config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) || ArrayUtils.isEmpty( labelIds ) ||
+                    isEmptyLabelScanStore( cursorTracer );
         }
         catch ( Exception e )
         {
