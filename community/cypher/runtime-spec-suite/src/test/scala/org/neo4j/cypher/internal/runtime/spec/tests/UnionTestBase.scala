@@ -21,10 +21,12 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RowCount
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 
 abstract class UnionTestBase[CONTEXT <: RuntimeContext](
@@ -861,6 +863,29 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("n", "x").withRows(nodes.map(n => Array(n, n)))
+  }
+
+  test("union must not initialize RHS before LHS is exhausted") {
+    assume(runtime.name.toLowerCase() != "parallel")
+
+    val nodes = given {
+      nodeGraph(sizeHintAlignedToMorselSize)
+    }.size
+
+    // This behavior is needed for MERGE to work correctly if present in both branches of the union.
+    // The plan below is simplified.
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "m")
+      .union()
+      .|.projection("m AS n")
+      .|.nodeByLabelScan("m", "M")
+      .create(createNode("m", "M"))
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("n", "m").withRows(RowCount(2 * nodes))
   }
 
   private def sizeHintAlignedToMorselSize: Int = {
