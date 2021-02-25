@@ -65,7 +65,6 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.lang.String.format;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.ordered;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 abstract class Read implements TxStateHolder,
@@ -223,26 +222,6 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
 
-        if ( scanStoreAsTokenIndexEnabled )
-        {
-            try
-            {
-                var descriptor = SchemaDescriptor.forAllEntityTokens( EntityType.NODE );
-                var indexes = index( descriptor );
-                if ( indexes.hasNext() )
-                {
-                    var session = tokenReadSession( indexes.next() );
-                    nodeLabelScan( session, cursor, ordered( order ), new TokenPredicate( label ) );
-                    return;
-                }
-                throw new IndexNotFoundKernelException( "Token index for labels no found" );
-            }
-            catch ( KernelException e )
-            {
-                throw new UnsupportedOperationException( e );
-            }
-        }
-
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
         TokenScan labelScan = labelScanReader().entityTokenScan( label, cursorTracer );
@@ -334,26 +313,6 @@ abstract class Read implements TxStateHolder,
     public final void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor, IndexOrder order )
     {
         ktx.assertOpen();
-
-        if ( scanStoreAsTokenIndexEnabled )
-        {
-            try
-            {
-                var descriptor = SchemaDescriptor.forAllEntityTokens( EntityType.RELATIONSHIP );
-                var indexes = index( descriptor );
-                if ( indexes.hasNext() )
-                {
-                    var session = tokenReadSession( indexes.next() );
-                    relationshipTypeScan( session, relationshipTypeIndexCursor, ordered( order ), new TokenPredicate( type ) );
-                    return;
-                }
-                throw new IndexNotFoundKernelException( "Token index for relationships no found" );
-            }
-            catch ( KernelException e )
-            {
-                throw new UnsupportedOperationException( e );
-            }
-        }
 
         if ( relationshipTypeScanStoreEnabled() )
         {

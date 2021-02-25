@@ -28,7 +28,6 @@ import java.util.function.Predicate;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
-import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
@@ -422,24 +421,6 @@ public class AllStoreHolder extends Read
     @Override
     public void prepareForLabelScans()
     {
-        if ( scanStoreAsTokenIndexEnabled() )
-        {
-            try
-            {
-                var descriptor = SchemaDescriptor.forAllEntityTokens( EntityType.NODE );
-                var indexes = index( descriptor );
-                if ( indexes.hasNext() )
-                {
-                    tokenReadSession( indexes.next() );
-                    return;
-                }
-                throw new IndexNotFoundKernelException( "Token index for labels no found" );
-            }
-            catch ( KernelException e )
-            {
-                throw new UnsupportedOperationException( e );
-            }
-        }
         labelScanReader();
     }
 
