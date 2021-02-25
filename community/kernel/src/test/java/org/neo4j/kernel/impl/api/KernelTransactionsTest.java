@@ -71,6 +71,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -690,7 +691,9 @@ class KernelTransactionsTest
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
                 mockedTokenHolders(), DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
                 mock( IndexStatisticsStore.class ), createDependencies(), tracers, LeaseService.NO_LEASES,
-                new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ), writable() );
+                new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ), writable(),
+                TransactionExecutionMonitor.NO_OP
+        );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -757,7 +760,8 @@ class KernelTransactionsTest
                    versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
                    DEFAULT_DATABASE_ID, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
                    mock( IndexStatisticsStore.class ), databaseDependencies, tracers, LeaseService.NO_LEASES,
-                   new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ), writable() );
+                   new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ), writable(),
+                   TransactionExecutionMonitor.NO_OP );
         }
 
         @Override

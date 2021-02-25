@@ -94,6 +94,7 @@ import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.Operations;
+import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
@@ -159,6 +160,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // For committing
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
+    private final TransactionExecutionMonitor transactionExecutionMonitor;
     private final VersionContextSupplier versionContextSupplier;
     private final LeaseService leaseService;
     private final StorageReader storageReader;
@@ -228,7 +230,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             LabelScanStore labelScanStore, RelationshipTypeScanStore relationshipTypeScanStore,
             IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
             NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool,
-            DatabaseReadOnlyChecker readOnlyDatabaseChecker )
+            DatabaseReadOnlyChecker readOnlyDatabaseChecker, TransactionExecutionMonitor transactionExecutionMonitor )
     {
         this.pageCursorTracer = tracers.getPageCacheTracer().createPageCursorTracer( TRANSACTION_TAG );
         this.accessCapabilityFactory = accessCapabilityFactory;
@@ -241,6 +243,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.constraintIndexCreator = constraintIndexCreator;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
+        this.transactionExecutionMonitor = transactionExecutionMonitor;
         this.storageReader = storageEngine.newReader();
         this.commandCreationContext = storageEngine.newCommandCreationContext( pageCursorTracer, memoryTracker );
         this.namedDatabaseId = namedDatabaseId;
@@ -993,6 +996,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         finally
         {
             transactionMonitor.transactionFinished( true, hasTxStateWithChanges() );
+            transactionExecutionMonitor.commit( this );
         }
     }
 
@@ -1006,6 +1010,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         finally
         {
             transactionMonitor.transactionFinished( false, hasTxStateWithChanges() );
+            if ( listenersState == null || listenersState.failure() == null )
+            {
+                transactionExecutionMonitor.rollback( this );
+            }
+            else
+            {
+                transactionExecutionMonitor.rollback( this, listenersState.failure() );
+            }
         }
     }
 
@@ -1138,7 +1150,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return locks == null ? Stream.empty() : locks.activeLocks();
     }
 
-    long userTransactionId()
+    @Override
+    public long getUserTransactionId()
     {
         return userTransactionId;
     }

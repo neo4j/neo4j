@@ -273,6 +273,12 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
+    public long getUserTransactionId()
+    {
+        return 8;
+    }
+
+    @Override
     public long getCommitTime()
     {
         throw new UnsupportedOperationException( "not implemented" );

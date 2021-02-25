@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
@@ -191,7 +192,8 @@ class KernelTransactionTestBase
                                                     mock( IndexingService.class ), mock( LabelScanStore.class ),
                                                     mock( RelationshipTypeScanStore.class ), mock( IndexStatisticsStore.class ), dependencies, databaseId,
                                                     leaseService, memoryPool,
-                                                    new DatabaseReadOnlyChecker.Default( new DbmsReadOnlyChecker.Default( config ), databaseId.name() ) );
+                                                    new DatabaseReadOnlyChecker.Default( new DbmsReadOnlyChecker.Default( config ), databaseId.name() ),
+                                                    TransactionExecutionMonitor.NO_OP);
     }
 
     KernelTransactionImplementation newNotInitializedTransaction( LeaseService leaseService )

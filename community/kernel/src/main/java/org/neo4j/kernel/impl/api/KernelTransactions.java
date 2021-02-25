@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
@@ -90,6 +91,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final TransactionCommitProcess transactionCommitProcess;
     private final DatabaseTransactionEventListeners eventListeners;
     private final TransactionMonitor transactionMonitor;
+    private final TransactionExecutionMonitor transactionExecutionMonitor;
     private final AvailabilityGuard databaseAvailabilityGuard;
     private final StorageEngine storageEngine;
     private final GlobalProcedures globalProcedures;
@@ -143,15 +145,16 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private volatile boolean stopped = true;
 
     public KernelTransactions( Config config, Locks locks, ConstraintIndexCreator constraintIndexCreator,
-            TransactionCommitProcess transactionCommitProcess,
-            DatabaseTransactionEventListeners eventListeners, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard,
-            StorageEngine storageEngine, GlobalProcedures globalProcedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
-            AtomicReference<CpuClock> cpuClockRef, AccessCapabilityFactory accessCapabilityFactory,
-            VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
-            SchemaState schemaState, TokenHolders tokenHolders, NamedDatabaseId namedDatabaseId, IndexingService indexingService, LabelScanStore labelScanStore,
-            RelationshipTypeScanStore relationshipTypeScanStore, IndexStatisticsStore indexStatisticsStore,
-            Dependencies databaseDependencies, DatabaseTracers tracers, LeaseService leaseService,
-            GlobalMemoryGroupTracker transactionsMemoryPool, DatabaseReadOnlyChecker readOnlyDatabaseChecker )
+                               TransactionCommitProcess transactionCommitProcess,
+                               DatabaseTransactionEventListeners eventListeners, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard,
+                               StorageEngine storageEngine, GlobalProcedures globalProcedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
+                               AtomicReference<CpuClock> cpuClockRef, AccessCapabilityFactory accessCapabilityFactory,
+                               VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
+                               SchemaState schemaState, TokenHolders tokenHolders, NamedDatabaseId namedDatabaseId, IndexingService indexingService, LabelScanStore labelScanStore,
+                               RelationshipTypeScanStore relationshipTypeScanStore, IndexStatisticsStore indexStatisticsStore,
+                               Dependencies databaseDependencies, DatabaseTracers tracers, LeaseService leaseService,
+                               GlobalMemoryGroupTracker transactionsMemoryPool, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
+                               TransactionExecutionMonitor transactionExecutionMonitor )
     {
         this.config = config;
         this.locks = locks;
@@ -159,6 +162,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.transactionCommitProcess = transactionCommitProcess;
         this.eventListeners = eventListeners;
         this.transactionMonitor = transactionMonitor;
+        this.transactionExecutionMonitor = transactionExecutionMonitor;
         this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.storageEngine = storageEngine;
         this.globalProcedures = globalProcedures;
@@ -400,7 +404,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                             tracers, storageEngine, accessCapabilityFactory,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                             schemaState, tokenHolders, indexingService, labelScanStore, relationshipTypeScanStore, indexStatisticsStore,
-                            databaseDependendies, namedDatabaseId, leaseService, transactionMemoryPool, readOnlyDatabaseChecker );
+                            databaseDependendies, namedDatabaseId, leaseService, transactionMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor );
             this.transactions.add( tx );
             return tx;
         }

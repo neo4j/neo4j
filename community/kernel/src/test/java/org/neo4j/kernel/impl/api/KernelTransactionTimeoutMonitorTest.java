@@ -127,7 +127,7 @@ class KernelTransactionTimeoutMonitorTest
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         when( transaction.startTime() ).thenReturn( startMillis );
-        when( transaction.userTransactionId() ).thenReturn( userTxId );
+        when( transaction.getUserTransactionId() ).thenReturn( userTxId );
         when( transaction.getReuseCount() ).thenReturn( EXPECTED_REUSE_COUNT );
         when( transaction.timeout() ).thenReturn( timeoutMillis );
         when( transaction.markForTermination( EXPECTED_REUSE_COUNT, Status.Transaction.TransactionTimedOut ) ).thenReturn( true );

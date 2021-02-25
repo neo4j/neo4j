@@ -112,6 +112,7 @@ import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.store.stats.DatabaseEntityCounters;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
@@ -861,19 +862,21 @@ public class Database extends LifecycleAdapter
 
         ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService, internalLogProvider );
 
+        TransactionExecutionMonitor transactionExecutionMonitor = getMonitors().newMonitor( TransactionExecutionMonitor.class );
         KernelTransactions kernelTransactions = life.add(
                 new KernelTransactions( databaseConfig, locks, constraintIndexCreator,
-                        transactionCommitProcess, databaseTransactionEventListeners, transactionStats,
-                        databaseAvailabilityGuard,
-                        storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
-                        accessCapabilityFactory, versionContextSupplier, collectionsFactorySupplier,
-                        constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService, labelScanStore,
-                        relationshipTypeScanStore, indexStatisticsStore, databaseDependencies,
-                        tracers, leaseService, transactionsMemoryPool, readOnlyDatabaseChecker ) );
+                                        transactionCommitProcess, databaseTransactionEventListeners, transactionStats,
+                                        databaseAvailabilityGuard,
+                                        storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
+                                        accessCapabilityFactory, versionContextSupplier, collectionsFactorySupplier,
+                                        constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService, labelScanStore,
+                                        relationshipTypeScanStore, indexStatisticsStore, databaseDependencies,
+                                        tracers, leaseService, transactionsMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor ) );
 
         buildTransactionMonitor( kernelTransactions, databaseConfig );
 
-        KernelImpl kernel = new KernelImpl( kernelTransactions, databaseHealth, transactionStats, globalProcedures, databaseConfig, storageEngine );
+        KernelImpl kernel = new KernelImpl( kernelTransactions, databaseHealth, transactionStats, globalProcedures, databaseConfig, storageEngine,
+                                            transactionExecutionMonitor );
 
         life.add( kernel );
 

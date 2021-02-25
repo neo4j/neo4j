@@ -717,6 +717,12 @@ class QueryExecutionLocksIT
         }
 
         @Override
+        public long getUserTransactionId()
+        {
+            return internal.getUserTransactionId();
+        }
+
+        @Override
         public long getCommitTime()
         {
             return internal.getCommitTime();

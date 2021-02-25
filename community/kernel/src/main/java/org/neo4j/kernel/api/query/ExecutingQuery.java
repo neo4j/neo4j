@@ -128,7 +128,7 @@ public class ExecutingQuery
                 cpuClock,
                 trackQueryAllocations
         );
-        onTransactionBound( new TransactionBinding( namedDatabaseId, hitsSupplier, faultsSupplier, activeLockCount ) );
+        onTransactionBound( new TransactionBinding( namedDatabaseId, hitsSupplier, faultsSupplier, activeLockCount, -1 ) );
     }
 
     public static class TransactionBinding
@@ -138,21 +138,24 @@ public class ExecutingQuery
         private final LongSupplier faultsSupplier;
         private final LongSupplier activeLockCount;
         private final long initialActiveLocks;
+        private final long transactionId;
 
         public TransactionBinding( NamedDatabaseId namedDatabaseId,
                                    LongSupplier hitsSupplier,
                                    LongSupplier faultsSupplier,
-                                   LongSupplier activeLockCount )
+                                   LongSupplier activeLockCount,
+                                   long transactionId )
         {
             this.namedDatabaseId = namedDatabaseId;
             this.hitsSupplier = hitsSupplier;
             this.faultsSupplier = faultsSupplier;
             this.activeLockCount = activeLockCount;
             this.initialActiveLocks = activeLockCount.getAsLong();
+            this.transactionId = transactionId;
         }
 
         public static final TransactionBinding EMPTY =
-                new TransactionBinding( null, () -> 0L, () -> 0L, () -> 0L );
+                new TransactionBinding( null, () -> 0L, () -> 0L, () -> 0L, -1L );
     }
 
     // update state
@@ -274,7 +277,8 @@ public class ExecutingQuery
                 totalActiveLocks - transactionBinding.initialActiveLocks,
                 memoryTracker.totalAllocatedMemory(),
                 Optional.ofNullable( queryText ),
-                Optional.ofNullable( queryParameters )
+                Optional.ofNullable( queryParameters ),
+                transactionBinding.transactionId
         );
     }
 

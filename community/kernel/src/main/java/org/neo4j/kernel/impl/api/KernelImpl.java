@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.newapi.DefaultThreadSafeCursors;
+import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Health;
@@ -58,6 +59,7 @@ public class KernelImpl extends LifecycleAdapter implements Kernel
     private final KernelTransactions transactions;
     private final Health health;
     private final TransactionMonitor transactionMonitor;
+    private final TransactionExecutionMonitor transactionExecutionMonitor;
     private final GlobalProcedures globalProcedures;
     private final Config config;
     private final DefaultThreadSafeCursors cursors;
@@ -65,7 +67,8 @@ public class KernelImpl extends LifecycleAdapter implements Kernel
 
     public KernelImpl( KernelTransactions transactionFactory, Health health,
                        TransactionMonitor transactionMonitor,
-                       GlobalProcedures globalProcedures, Config config, StorageEngine storageEngine )
+                       GlobalProcedures globalProcedures, Config config, StorageEngine storageEngine,
+                       TransactionExecutionMonitor transactionExecutionMonitor )
     {
         this.transactions = transactionFactory;
         this.health = health;
@@ -73,6 +76,7 @@ public class KernelImpl extends LifecycleAdapter implements Kernel
         this.globalProcedures = globalProcedures;
         this.config = config;
         this.cursors = new DefaultThreadSafeCursors( storageEngine.newReader(), config );
+        this.transactionExecutionMonitor = transactionExecutionMonitor;
     }
 
     @Override
@@ -99,6 +103,7 @@ public class KernelImpl extends LifecycleAdapter implements Kernel
         health.assertHealthy( TransactionFailureException.class );
         KernelTransaction transaction = transactions.newInstance( type, loginContext, connectionInfo, timeout );
         transactionMonitor.transactionStarted();
+        transactionExecutionMonitor.start( transaction );
         return transaction;
     }
 

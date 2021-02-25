@@ -81,7 +81,8 @@ public class ExecutingQueryFactory
                 statement.namedDatabaseId(),
                 statement::getHits,
                 statement::getFaults,
-                () -> statement.locks().activeLockCount()
+                () -> statement.locks().activeLockCount(),
+                statement.getTransaction().getUserTransactionId()
         ) );
     }
 }

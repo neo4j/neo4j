@@ -72,7 +72,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.terminationReason = tx.getReasonIfTerminated();
         this.executingQuery = tx.executingQuery();
         this.metaData = tx.getMetaData();
-        this.userTransactionId = tx.userTransactionId();
+        this.userTransactionId = tx.getUserTransactionId();
         this.initializationTrace = tx.getInitializationTrace();
         this.clientInfo = tx.clientInfo();
         databaseName = tx.getDatabaseName();

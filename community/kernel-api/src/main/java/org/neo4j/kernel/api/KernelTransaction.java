@@ -364,6 +364,12 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable
     long getTransactionId();
 
     /**
+     * Return the transaction id that is exposed to the users.
+     * @return transaction id.
+     */
+    long getUserTransactionId();
+
+    /**
      * Return transaction commit time (in millis) that assigned during transaction commit process.
      * @return transaction commit time
      * @throws IllegalStateException if commit time is not assigned yet

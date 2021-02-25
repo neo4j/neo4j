@@ -59,6 +59,8 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
+import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.query.clientconnection.HttpConnectionInfo;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
@@ -272,7 +274,8 @@ class TransactionStatusResultTest
         {
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependency( mock( DefaultValueMapper.class ) );
-            KernelTransactionImplementation transaction = new KernelTransactionImplementation( Config.defaults(),
+            KernelTransactionImplementation transaction = new KernelTransactionImplementation(
+                    Config.defaults(),
                     mock( DatabaseTransactionEventListeners.class ),
                     mock( ConstraintIndexCreator.class ), mock( GlobalProcedures.class ),
                     mock( TransactionCommitProcess.class ), new DatabaseTransactionStats(),
@@ -283,7 +286,9 @@ class TransactionStatusResultTest
                     EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
                     mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ),
                     mock( RelationshipTypeScanStore.class ), mock( IndexStatisticsStore.class ), dependencies,
-                    new TestDatabaseIdRepository().defaultDatabase(), LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable() )
+                    new TestDatabaseIdRepository().defaultDatabase(), LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
+                    TransactionExecutionMonitor.NO_OP
+                                                                                               )
             {
                 @Override
                 public Statistics getStatistics()

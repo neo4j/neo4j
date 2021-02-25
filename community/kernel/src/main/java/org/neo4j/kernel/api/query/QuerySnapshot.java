@@ -48,11 +48,12 @@ public class QuerySnapshot
     private final PageCounterValues page;
     private final Optional<String> obfuscatedQueryText;
     private final Optional<MapValue> obfuscatedQueryParameters;
+    private final long transactionId;
 
     QuerySnapshot( ExecutingQuery query, CompilerInfo compilerInfo, PageCounterValues page, long compilationTimeMicros,
                    long elapsedTimeMicros, long cpuTimeMicros, long waitTimeMicros, String status,
                    Map<String,Object> resourceInfo, List<ActiveLock> waitingLocks, long activeLockCount, long allocatedBytes,
-                   Optional<String> obfuscatedQueryText, Optional<MapValue> obfuscatedQueryParameters )
+                   Optional<String> obfuscatedQueryText, Optional<MapValue> obfuscatedQueryParameters, long transactionId )
     {
         this.query = query;
         this.compilerInfo = compilerInfo;
@@ -68,6 +69,7 @@ public class QuerySnapshot
         this.allocatedBytes = allocatedBytes;
         this.obfuscatedQueryText = obfuscatedQueryText;
         this.obfuscatedQueryParameters = obfuscatedQueryParameters;
+        this.transactionId = transactionId;
     }
 
     public long internalQueryId()
@@ -164,6 +166,11 @@ public class QuerySnapshot
     public long startTimestampMillis()
     {
         return query.startTimestampMillis();
+    }
+
+    public long transactionId()
+    {
+        return transactionId;
     }
 
     /**
