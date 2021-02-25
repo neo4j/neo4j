@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestingRewriter
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestingRewriter
+import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
@@ -188,12 +190,6 @@ object Eagerness {
     else
       readWriteConflictInTail(head, tail.tail.get)
   }
-
-  /**
-   * @return a QgWithLeafInfo, where there is no stable identifier. Moreover all variables are assumed to be leaves.
-   */
-  private def qgWithNoStableIdentifierAndOnlyLeaves(qg: QueryGraph): QgWithLeafInfo =
-    QgWithLeafInfo(qg, Set.empty, qg.allCoveredIds, None)
 
   def readWriteConflict(readQuery: SinglePlannerQuery, writeQuery: SinglePlannerQuery): Boolean = {
     val qgWithLeafInfo = qgWithNoStableIdentifierAndOnlyLeaves(readQuery.queryGraph)

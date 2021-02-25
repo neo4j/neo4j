@@ -41,6 +41,12 @@ object QgWithLeafInfo {
     override def isIdStable: Boolean = false
   }
 
+  /**
+   * @return a QgWithInfo, where there is no stable identifier. Moreover all variables are assumed to be leaves.
+   */
+  def qgWithNoStableIdentifierAndOnlyLeaves(qg: QueryGraph): QgWithLeafInfo =
+    QgWithLeafInfo(qg, Set.empty, qg.allCoveredIds, None)
+
 }
 
 /**

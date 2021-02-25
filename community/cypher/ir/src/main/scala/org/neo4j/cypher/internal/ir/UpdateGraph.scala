@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
+import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
@@ -185,6 +186,9 @@ trait UpdateGraph {
    * Determines whether there's an overlap in writes being done here, and reads being done in the given horizon.
    */
   def overlapsHorizon(horizon: QueryHorizon, semanticTable: SemanticTable): Boolean = {
+
+    def conflictFromQg = horizon.allQueryGraphs.map(qgWithNoStableIdentifierAndOnlyLeaves).exists(overlaps)
+
     val dependingExpressions = horizon.dependingExpressions
 
     def hasSetPropertyOverlap = {
@@ -213,7 +217,7 @@ trait UpdateGraph {
       }
     }
 
-    containsUpdates && (hasSetPropertyOverlap || hasCreateRelationshipOverlap || hasLabelOverlap)
+    containsUpdates && (hasSetPropertyOverlap || hasCreateRelationshipOverlap || hasLabelOverlap || conflictFromQg)
   }
 
   def writeOnlyHeadOverlaps(qgWithInfo: QgWithLeafInfo): Boolean = {

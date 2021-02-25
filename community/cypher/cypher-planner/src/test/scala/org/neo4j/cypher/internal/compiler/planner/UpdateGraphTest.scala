@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.MergeNodePattern
 import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.QgWithLeafInfo
+import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
@@ -45,9 +45,6 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class UpdateGraphTest extends CypherFunSuite {
   private val pos = DummyPosition(0)
-
-  private def qgWithNoStableIdentifierAndOnlyLeaves(qg: QueryGraph): QgWithLeafInfo =
-    QgWithLeafInfo(qg, Set.empty, qg.allCoveredIds, None)
 
   test("should not be empty after adding label to set") {
     val original = QueryGraph()
@@ -82,7 +79,7 @@ class UpdateGraphTest extends CypherFunSuite {
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe false
   }
 
-  test("no overlap when properties don't overlap even though labels do") {
+  test("no overlap when properties don't overlap and no label on read GQ, but a label on write QG") {
     //MATCH (a {foo: 42}) CREATE (a:L)
     val selections = Selections.from(In(Variable("a")(pos),
       Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos))
@@ -92,15 +89,15 @@ class UpdateGraphTest extends CypherFunSuite {
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe false
   }
 
-  test("no overlap when properties don't overlap even though labels explicitly do") {
-    //MATCH (a:L {foo: 42}) CREATE (a:L)
+  test("overlap when properties don't overlap but labels explicitly do") {
+    //MATCH (a:L {foo: 42}) CREATE (a:L) assuming `a` is unstable
     val selections = Selections.from(Seq(
       In(Variable("a")(pos),Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos))(pos),
       HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos)))
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe false
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe true
   }
 
   test("overlap when reading all rel types and creating a specific type") {
