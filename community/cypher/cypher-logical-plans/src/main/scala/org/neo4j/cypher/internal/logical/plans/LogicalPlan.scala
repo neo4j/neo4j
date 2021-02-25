@@ -206,9 +206,8 @@ trait AggregatingPlan extends LogicalPlan {
 }
 
 // Marker interface for all plans that performs updates
-trait UpdatingPlan extends LogicalPlan {
-  def source: LogicalPlan
-  def withLhs(source: LogicalPlan)(idGen: IdGen): UpdatingPlan
+trait UpdatingPlan extends LogicalUnaryPlan {
+  override def withLhs(source: LogicalPlan)(idGen: IdGen): UpdatingPlan
 }
 
 abstract class LogicalBinaryPlan(idGen: IdGen) extends LogicalPlan(idGen) {

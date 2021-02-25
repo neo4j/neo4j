@@ -63,8 +63,14 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
         doPlan(horizonPlans, plannerQuery, contextForTail, limitSelectivities.tail)
 
       case (None, context) =>
-        val attributes = Attributes(context.idGen, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders)
-        val plans = lhs.map(_.endoRewrite(Eagerness.unnestEager(context.planningAttributes.solveds, attributes)))
+        val unnest = Eagerness.unnestEager(
+          context.planningAttributes.solveds,
+          context.planningAttributes.cardinalities,
+          context.planningAttributes.providedOrders,
+          Attributes(context.idGen)
+        )
+
+        val plans = lhs.map(_.endoRewrite(unnest))
         (plans, context)
     }
   }

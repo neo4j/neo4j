@@ -19,106 +19,171 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.Eagerness.unnestEager
-import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.LogicalPlanRewritingTestSupport
+import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Apply
-import org.neo4j.cypher.internal.logical.plans.Create
-import org.neo4j.cypher.internal.logical.plans.DeleteExpression
-import org.neo4j.cypher.internal.logical.plans.DeleteNode
-import org.neo4j.cypher.internal.logical.plans.DeletePath
-import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
-import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
-import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
-import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
 import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
-import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.SetLabels
-import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
-import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
-import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
-import org.neo4j.cypher.internal.logical.plans.SetProperty
-import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
-import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.attribution.Attributes
-import org.neo4j.cypher.internal.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.Assertion
 
-class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class unnestEagerTest extends CypherFunSuite with LogicalPlanRewritingTestSupport with LogicalPlanningTestSupport {
+
+  private val po_n: ProvidedOrder = ProvidedOrder.asc(varFor("n"))
 
   test("should unnest create from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val create = Create(rhs, nodes = List(CreateNode("a", Seq.empty, None)), Nil)
-    val input = Apply(lhs, create)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.create(createNode("n")).withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    rewrite(input) should equal(create.copy(source = Apply(lhs, rhs)))
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20)
+        .create(createNode("n")).withCardinality(20)
+        .apply().withCardinality(20)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
   }
 
   test("should unnest delete expression from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val delete = DeleteExpression(rhs, null)
-    val input = Apply(lhs, delete)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.deleteExpression("n").withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    rewrite(input) should equal(DeleteExpression(Apply(lhs, rhs), null))
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20)
+        .deleteExpression("n").withCardinality(20)
+        .apply().withCardinality(20)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
   }
 
   test("should unnest delete node from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val delete = DeleteNode(rhs, null)
-    val input = Apply(lhs, delete)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.deleteNode("n").withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    rewrite(input) should equal(DeleteNode(Apply(lhs, rhs), null))
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20)
+        .deleteNode("n").withCardinality(20)
+        .apply().withCardinality(20)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
   }
 
   test("should unnest delete path from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val delete = DeletePath(rhs, null)
-    val input = Apply(lhs, delete)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.deletePath("n").withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    rewrite(input) should equal(DeletePath(Apply(lhs, rhs), null))
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20)
+        .deletePath("n").withCardinality(20)
+        .apply().withCardinality(20)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
   }
 
   test("should unnest delete relationship from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val delete = DeleteRelationship(rhs, null)
-    val input = Apply(lhs, delete)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.deleteRelationship("n").withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    rewrite(input) should equal(DeleteRelationship(Apply(lhs, rhs), null))
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20)
+        .deleteRelationship("n").withCardinality(20)
+        .apply().withCardinality(20)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
   }
 
   test("should unnest detach delete expression from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val delete = DetachDeleteExpression(rhs, null)
-    val input = Apply(lhs, delete)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.detachDeleteExpression("n").withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    rewrite(input) should equal(DetachDeleteExpression(Apply(lhs, rhs), null))
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20)
+        .detachDeleteExpression("n").withCardinality(20)
+        .apply().withCardinality(20)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
   }
 
   test("should unnest detach delete node from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val delete = DetachDeleteNode(rhs, null)
-    val input = Apply(lhs, delete)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.detachDeleteNode("n").withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    rewrite(input) should equal(DetachDeleteNode(Apply(lhs, rhs), null))
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20)
+        .detachDeleteNode("n").withCardinality(20)
+        .apply().withCardinality(20)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
   }
 
   test("should unnest detach delete path from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val delete = DetachDeletePath(rhs, null)
-    val input = Apply(lhs, delete)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.detachDeletePath("n").withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    rewrite(input) should equal(DetachDeletePath(Apply(lhs, rhs), null))
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20)
+        .detachDeletePath("n").withCardinality(20)
+        .apply().withCardinality(20)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
   }
 
   test("should unnest merge create node from rhs of apply") {
@@ -140,57 +205,111 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should unnest set node property from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val set = SetNodeProperty(rhs, "a", PropertyKeyName("prop")(pos), null)
-    val input = Apply(lhs, set)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.setNodeProperty("n", "prop", "5").withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    rewrite(input) should equal(SetNodeProperty(Apply(lhs, rhs), "a", PropertyKeyName("prop")(pos), null))
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20)
+        .setNodeProperty("n", "prop", "5").withCardinality(20)
+        .apply().withCardinality(20)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
   }
 
   test("should unnest set rel property from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val set = SetRelationshipProperty(rhs, "a", PropertyKeyName("prop")(pos), null)
-    val input = Apply(lhs, set)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.setRelationshipProperty("n", "prop", "5").withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    rewrite(input) should equal(SetRelationshipProperty(Apply(lhs, rhs), "a", PropertyKeyName("prop")(pos), null))
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20)
+        .setRelationshipProperty("n", "prop", "5").withCardinality(20)
+        .apply().withCardinality(20)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
   }
 
   test("should unnest set generic property from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val set = SetProperty(rhs, varFor("a"), PropertyKeyName("prop")(pos), null)
-    val input = Apply(lhs, set)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.setProperty("n", "prop", "5").withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    rewrite(input) should equal(SetProperty(Apply(lhs, rhs), varFor("a"), PropertyKeyName("prop")(pos), null))
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20)
+        .setProperty("n", "prop", "5").withCardinality(20)
+        .apply().withCardinality(20)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
   }
 
   test("should unnest set node property from map from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val set = SetNodePropertiesFromMap(rhs, "a", null, removeOtherProps = false)
-    val input = Apply(lhs, set)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.setNodePropertiesFromMap("n", "prop", removeOtherProps = false).withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    rewrite(input) should equal(SetNodePropertiesFromMap(Apply(lhs, rhs), "a", null, removeOtherProps = false))
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20)
+        .setNodePropertiesFromMap("n", "prop", removeOtherProps = false).withCardinality(20)
+        .apply().withCardinality(20)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
   }
 
   test("should unnest set relationship property from map from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val set = SetRelationshipPropertiesFromMap(rhs, "a", null, removeOtherProps = false)
-    val input = Apply(lhs, set)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.setRelationshipPropertiesFromMap("n", "prop", removeOtherProps = false).withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    rewrite(input) should equal(SetRelationshipPropertiesFromMap(Apply(lhs, rhs), "a", null, removeOtherProps = false))
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20)
+        .setRelationshipPropertiesFromMap("n", "prop", removeOtherProps = false).withCardinality(20)
+        .apply().withCardinality(20)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
   }
 
   test("should unnest set generic property from map from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val set = SetPropertiesFromMap(rhs, varFor("a"), null, removeOtherProps = false)
-    val input = Apply(lhs, set)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.setPropertiesFromMap("n", "prop", removeOtherProps = false).withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    rewrite(input) should equal(SetPropertiesFromMap(Apply(lhs, rhs), varFor("a"), null, removeOtherProps = false))
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20)
+        .setPropertiesFromMap("n", "prop", removeOtherProps = false).withCardinality(20)
+        .apply().withCardinality(20)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
   }
 
   test("should unnest set labels from rhs of apply") {
@@ -203,14 +322,62 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should unnest remove labels from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val remove = RemoveLabels(rhs, "a", Seq.empty)
-    val input = Apply(lhs, remove)
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20)
+      .apply().withCardinality(20)
+      .|.removeLabels("n", "N").withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
 
-    rewrite(input) should equal(RemoveLabels(Apply(lhs, rhs), "a", Seq.empty))
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20)
+        .removeLabels("n", "N").withCardinality(20)
+        .apply().withCardinality(20)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
   }
 
-  private def rewrite(p: LogicalPlan) =
-    fixedPoint((p: LogicalPlan) => p.endoRewrite(unnestEager(new StubSolveds, Attributes(idGen))))(p)
+  test("should unnest Eager from rhs of apply") {
+    val inputBuilder = new LogicalPlanBuilder()
+      .produceResults("x", "n").withCardinality(20).withProvidedOrder(po_n)
+      .apply().withCardinality(20).withProvidedOrder(po_n)
+      .|.eager().withCardinality(1)
+      .|.argument("m").withCardinality(1)
+      .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+
+    inputBuilder shouldRewriteToPlanWithAttributes (
+      new LogicalPlanBuilder()
+        .produceResults("x", "n").withCardinality(20).withProvidedOrder(po_n)
+        .eager().withCardinality(20).withProvidedOrder(po_n)
+        .apply().withCardinality(20).withProvidedOrder(po_n)
+        .|.argument("m").withCardinality(1)
+        .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
+      )
+  }
+
+  implicit private class AssertableInputBuilder(inputBuilder: LogicalPlanBuilder) {
+    def shouldRewriteToPlanWithAttributes(expectedBuilder: LogicalPlanBuilder): Assertion = {
+      val resultPlan = rewrite(inputBuilder.build(), inputBuilder.cardinalities, inputBuilder.providedOrders,inputBuilder.idGen)
+      (resultPlan, inputBuilder.cardinalities) should haveSameCardinalitiesAs((expectedBuilder.build(), expectedBuilder.cardinalities))
+      (resultPlan, inputBuilder.providedOrders) should haveSameProvidedOrdersAs((expectedBuilder.build(), expectedBuilder.providedOrders))
+    }
+  }
+
+  private def rewrite(p: LogicalPlan, cardinalities: Cardinalities, providedOrders: ProvidedOrders, idGen: IdGen): LogicalPlan = {
+    val unnest = unnestEager(
+      new StubSolveds,
+      cardinalities,
+      providedOrders,
+      Attributes(idGen)
+    )
+    p.endoRewrite(unnest)
+  }
+
+  private def stubCardinalities(): StubCardinalities = new StubCardinalities {
+    override def defaultValue: Cardinality = Cardinality.SINGLE
+  }
+
+  private def rewrite(p: LogicalPlan): LogicalPlan = rewrite(p, stubCardinalities(), new StubProvidedOrders, idGen)
 }

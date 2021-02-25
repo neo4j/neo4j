@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestingRewriter
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Apply
@@ -28,10 +29,11 @@ import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
-import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 
@@ -282,7 +284,10 @@ object Eagerness {
 
   private def hasRelationships(queryGraph: QueryGraph) = queryGraph.allPatternRelationships.nonEmpty
 
-  case class unnestEager(solveds: Solveds, attributes: Attributes[LogicalPlan]) extends Rewriter {
+  case class unnestEager(override val solveds: Solveds,
+                         override val cardinalities: Cardinalities,
+                         override val providedOrders: ProvidedOrders,
+                         override val attributes: Attributes[LogicalPlan]) extends Rewriter with UnnestingRewriter {
 
     /*
     Based on unnestApply (which references a paper)
@@ -300,16 +305,12 @@ object Eagerness {
     private val instance: Rewriter = fixedPoint(bottomUp(Rewriter.lift {
 
       // L Ax (E R) => E Ax (L R)
-      case apply@Apply(lhs, eager@Eager(inner)) =>
-        val res = eager.copy(source = Apply(lhs, inner)(SameId(apply.id)))(attributes.copy(eager.id))
-        solveds.copy(apply.id, res.id)
-        res
+      case apply@Apply(lhs, eager: Eager) =>
+        unnestRightUnary(apply, lhs, eager)
 
      // L Ax (Up R) => Up Ax (L R)
       case apply@Apply(lhs, updatingPlan: UpdatingPlan) =>
-        val res = updatingPlan.withLhs(Apply(lhs, updatingPlan.source)(SameId(apply.id)))(attributes.copy(updatingPlan.id))
-        solveds.copy(apply.id, res.id)
-        res
+        unnestRightUnary(apply, lhs, updatingPlan)
     }))
 
     override def apply(input: AnyRef): AnyRef = instance.apply(input)
