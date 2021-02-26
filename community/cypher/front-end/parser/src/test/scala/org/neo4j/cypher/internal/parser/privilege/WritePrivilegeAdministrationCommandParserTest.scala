@@ -57,7 +57,11 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationComman
         yields(func(ast.GraphPrivilege(WriteAction, List(graphScopeFoo, graphScopeBaz))(pos), List(ast.ElementsAllQualifier() _), List(literalRole)))
       }
 
-      // Default graph should parse
+      // Default and home graph should parse
+
+      test(s"$verb WRITE ON HOME GRAPH $preposition role") {
+        yields(func(ast.GraphPrivilege(WriteAction, List(ast.HomeGraphScope()(_)))(pos), List(ast.ElementsAllQualifier() _), Seq(literalRole)))
+      }
 
       test(s"$verb WRITE ON DEFAULT GRAPH $preposition role") {
         yields(func(ast.GraphPrivilege(WriteAction, List(ast.DefaultGraphScope()(_)))(pos), List(ast.ElementsAllQualifier() _), Seq(literalRole)))
@@ -143,13 +147,21 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationComman
         failsToParse
       }
 
-      // DEFAULT together with plural GRAPHS
+      // DEFAULT and HOME together with plural GRAPHS
+
+      test(s"$verb WRITE ON HOME GRAPHS $preposition role") {
+        failsToParse
+      }
 
       test(s"$verb WRITE ON DEFAULT GRAPHS $preposition role") {
         failsToParse
       }
 
-      // Default graph and named graph
+      // Default and home graph with named graph
+
+      test(s"$verb WRITE ON HOME GRAPH baz $preposition role") {
+        failsToParse
+      }
 
       test(s"$verb WRITE ON DEFAULT GRAPH baz $preposition role") {
         failsToParse
@@ -172,6 +184,10 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationComman
       }
 
       test(s"$verb WRITE ON DATABASE foo $preposition role") {
+        failsToParse
+      }
+
+      test(s"$verb WRITE ON HOME DATABASE $preposition role") {
         failsToParse
       }
 

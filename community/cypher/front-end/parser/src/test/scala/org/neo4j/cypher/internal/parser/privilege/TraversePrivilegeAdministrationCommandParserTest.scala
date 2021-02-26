@@ -30,6 +30,22 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationCom
   ).foreach {
     case (verb: String, preposition: String, func: noResourcePrivilegeFunc) =>
 
+      test(s"$verb TRAVERSE ON HOME GRAPH $preposition role") {
+        yields(func(ast.GraphPrivilege(ast.TraverseAction, List(ast.HomeGraphScope()(_)))(pos), List(ast.ElementsAllQualifier() _), Seq(literalRole)))
+      }
+
+      test(s"$verb TRAVERSE ON HOME GRAPH NODE A $preposition role") {
+        yields(func(ast.GraphPrivilege(ast.TraverseAction, List(ast.HomeGraphScope()(_)))(pos), List(labelQualifierA), Seq(literalRole)))
+      }
+
+      test(s"$verb TRAVERSE ON HOME GRAPH RELATIONSHIP * $preposition role") {
+        yields(func(ast.GraphPrivilege(ast.TraverseAction, List(ast.HomeGraphScope()(_)))(pos), List(ast.RelationshipAllQualifier() _), Seq(literalRole)))
+      }
+
+      test(s"$verb TRAVERSE ON HOME GRAPH ELEMENT A $preposition role") {
+        yields(func(ast.GraphPrivilege(ast.TraverseAction, List(ast.HomeGraphScope()(_)))(pos), List(elemQualifierA), Seq(literalRole)))
+      }
+
       test(s"$verb TRAVERSE ON DEFAULT GRAPH $preposition role") {
         yields(func(ast.GraphPrivilege(ast.TraverseAction, List(ast.DefaultGraphScope()(_)))(pos), List(ast.ElementsAllQualifier() _), Seq(literalRole)))
       }
@@ -234,6 +250,10 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationCom
       }
 
       test(s"$verb TRAVERSE ON DATABASE foo $preposition role") {
+        failsToParse
+      }
+
+      test(s"$verb TRAVERSE ON HOME DATABASE $preposition role") {
         failsToParse
       }
 

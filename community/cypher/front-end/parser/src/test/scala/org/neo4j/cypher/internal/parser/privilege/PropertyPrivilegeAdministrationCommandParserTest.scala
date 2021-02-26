@@ -46,6 +46,20 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationCom
         yields(func(ast.GraphPrivilege(SetPropertyAction, List(graphScopeFoo))(_), ast.PropertiesResource(Seq("prop1", "prop2"))(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
       }
 
+      // Home graph should be allowed
+
+      test(s"$verb SET PROPERTY { * } ON HOME GRAPH $preposition role") {
+        yields(func(ast.GraphPrivilege(SetPropertyAction, List(ast.HomeGraphScope()(_)))(_), AllPropertyResource()(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
+      }
+
+      test(s"$verb SET PROPERTY { prop } ON HOME GRAPH $preposition role") {
+        yields(func(ast.GraphPrivilege(SetPropertyAction, List(ast.HomeGraphScope()(_)))(_), ast.PropertiesResource(propSeq)(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
+      }
+
+      test(s"$verb SET PROPERTY { prop } ON HOME GRAPH NODES A,B $preposition role") {
+        yields(func(ast.GraphPrivilege(SetPropertyAction, List(ast.HomeGraphScope()(_)))(_), ast.PropertiesResource(propSeq)(_), List(labelQualifierA, labelQualifierB), Seq(literalRole)))
+      }
+
       // Default graph should be allowed
 
       test(s"$verb SET PROPERTY { * } ON DEFAULT GRAPH $preposition role") {
@@ -125,6 +139,10 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationCom
       }
 
       test(s"$verb SET PROPERTY { prop } ON DATABASE foo $preposition role") {
+        failsToParse
+      }
+
+      test(s"$verb SET PROPERTY { prop } ON HOME DATABASE $preposition role") {
         failsToParse
       }
 

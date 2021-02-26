@@ -63,7 +63,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationCommand
 
         test(s"dbmsPrivilegeParsingErrors$command $privilege $preposition") {
           assertFails(s"$command $privilege ON DATABASE $preposition role")
-          assertFails(s"$command $privilege ON DEFAULT DATABASE $preposition role")
+          assertFails(s"$command $privilege ON HOME DATABASE $preposition role")
           assertFails(s"$command $privilege DBMS $preposition role")
           assertFails(s"$command $privilege ON $preposition role")
           assertFails(s"$command $privilege ON DBMS $preposition r:ole")

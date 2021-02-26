@@ -76,6 +76,8 @@ import org.neo4j.cypher.internal.ast.GraphAction
 import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.GraphSelection
+import org.neo4j.cypher.internal.ast.HomeDatabaseScope
+import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
@@ -794,7 +796,7 @@ object Prettifier {
                                 roleNames: Seq[Either[String, Parameter]]): String = {
     val (dbName, default, multiple) = Prettifier.extractDbScope(dbScope)
     val db = if (default) {
-      s"DEFAULT DATABASE"
+      s"$dbName DATABASE"
     } else if (multiple) {
       s"DATABASES $dbName"
     } else {
@@ -882,9 +884,10 @@ object Prettifier {
 
   def extractDbScope(dbScope: List[DatabaseScope]): (String, Boolean, Boolean) = dbScope match {
     case NamedDatabaseScope(name) :: Nil => (escapeName(name), false, false)
-    case AllDatabasesScope() :: Nil => ("*", false, false)
-    case DefaultDatabaseScope() :: Nil => ("DEFAULT", true, false)
-    case namedDatabaseScopes => (escapeNames(namedDatabaseScopes.collect { case NamedDatabaseScope(name) => name }), false, true)
+    case AllDatabasesScope() :: Nil      => ("*", false, false)
+    case DefaultDatabaseScope() :: Nil   => ("DEFAULT", true, false)
+    case HomeDatabaseScope() :: Nil      => ("HOME", true, false)
+    case namedDatabaseScopes             => (escapeNames(namedDatabaseScopes.collect { case NamedDatabaseScope(name) => name }), false, true)
   }
 
     def extractGraphScope(graphScope: List[GraphScope]): String = {
@@ -892,6 +895,7 @@ object Prettifier {
         case NamedGraphScope(name) :: Nil => s"GRAPH ${escapeName(name)}"
         case AllGraphsScope() :: Nil => "GRAPH *"
         case DefaultGraphScope() :: Nil => "DEFAULT GRAPH"
+        case HomeGraphScope() :: Nil => "HOME GRAPH"
         case namedGraphScopes => s"GRAPHS ${escapeNames(namedGraphScopes.collect { case NamedGraphScope(name) => name })}"
       }
   }

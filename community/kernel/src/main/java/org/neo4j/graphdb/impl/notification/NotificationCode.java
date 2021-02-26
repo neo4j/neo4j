@@ -134,6 +134,16 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The property existence syntax `... exists(variable.property)` is deprecated, please use `variable.property IS NOT NULL` instead"
     ),
+    DEPRECATED_DEFAULT_DATABASE_SYNTAX(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The `ON DEFAULT DATABASE` syntax is deprecated, use `ON HOME DATABASE` instead"
+    ),
+    DEPRECATED_DEFAULT_GRAPH_SYNTAX(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The `ON DEFAULT GRAPH` syntax is deprecated, use `ON HOME GRAPH` instead"
+    ),
     DEPRECATED_OCTAL_LITERAL_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,

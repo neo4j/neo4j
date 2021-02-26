@@ -425,6 +425,8 @@ sealed trait GraphOrDatabaseScope extends Rewritable {
   override def dup(children: Seq[AnyRef]): GraphOrDatabaseScope.this.type = this
 }
 
+sealed trait DefaultScope
+
 sealed trait GraphScope extends GraphOrDatabaseScope
 
 final case class NamedGraphScope(graph: Either[String, Parameter])(val position: InputPosition) extends GraphScope {
@@ -434,7 +436,9 @@ final case class NamedGraphScope(graph: Either[String, Parameter])(val position:
 
 final case class AllGraphsScope()(val position: InputPosition) extends GraphScope
 
-final case class DefaultGraphScope()(val position: InputPosition) extends GraphScope
+final case class DefaultGraphScope()(val position: InputPosition) extends GraphScope with DefaultScope
+
+final case class HomeGraphScope()(val position: InputPosition) extends GraphScope with DefaultScope
 
 sealed trait DatabaseScope extends GraphOrDatabaseScope {
   val showCommandName: String
@@ -451,11 +455,11 @@ final case class AllDatabasesScope()(val position: InputPosition) extends Databa
   override val showCommandName: String = "ShowDatabases"
 }
 
-final case class DefaultDatabaseScope()(val position: InputPosition) extends DatabaseScope {
+final case class DefaultDatabaseScope()(val position: InputPosition) extends DatabaseScope with DefaultScope {
   override val showCommandName: String = "ShowDefaultDatabase"
 }
 
-final case class HomeDatabaseScope()(val position: InputPosition) extends DatabaseScope {
+final case class HomeDatabaseScope()(val position: InputPosition) extends DatabaseScope with DefaultScope {
   override val showCommandName: String = "ShowHomeDatabase"
 }
 

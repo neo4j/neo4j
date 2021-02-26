@@ -376,6 +376,7 @@ trait AdministrationCommand extends Parser
 
   private def Database: Rule1[List[ast.DatabaseScope]] = rule("on a database") {
     keyword("ON DEFAULT DATABASE") ~~~> (pos => List(ast.DefaultDatabaseScope()(pos))) |
+    keyword("ON HOME DATABASE") ~~~> (pos => List(ast.HomeDatabaseScope()(pos))) |
     group(keyword("ON") ~~ DatabaseKeyword) ~~ group(
       (SymbolicDatabaseNameOrStringParameterList ~~>> (params => pos => params.map(ast.NamedDatabaseScope(_)(pos)))) |
       (keyword("*") ~~~> (pos => List(ast.AllDatabasesScope()(pos))))
@@ -419,6 +420,7 @@ trait AdministrationCommand extends Parser
 
   private def Graph: Rule1[List[ast.GraphScope]] = rule("on a graph") {
     keyword("ON DEFAULT GRAPH") ~~~> (pos => List(ast.DefaultGraphScope()(pos))) |
+    keyword("ON HOME GRAPH") ~~~> (pos => List(ast.HomeGraphScope()(pos))) |
     group(keyword("ON") ~~ GraphKeyword) ~~ group(
       (SymbolicDatabaseNameOrStringParameterList ~~>> (names => ipp => names.map(ast.NamedGraphScope(_)(ipp)))) |
       keyword("*") ~~~> (ipp => List(ast.AllGraphsScope()(ipp)))

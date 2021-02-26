@@ -40,6 +40,8 @@ import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCreatePropertyExistenceConstraintSyntax
+import org.neo4j.cypher.internal.util.DeprecatedDefaultDatabaseSyntax
+import org.neo4j.cypher.internal.util.DeprecatedDefaultGraphSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDropConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDropIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
@@ -168,6 +170,42 @@ object Deprecations {
         Deprecation(
           () => s,
           () => Some(DeprecatedShowSchemaSyntax(s.position))
+        )
+
+      case c@ast.GrantPrivilege(ast.DatabasePrivilege(_, List(ast.DefaultDatabaseScope())), _, _, _) =>
+        Deprecation(
+          () => c,
+          () => Some(DeprecatedDefaultDatabaseSyntax(c.position))
+        )
+
+      case c@ast.DenyPrivilege(ast.DatabasePrivilege(_, List(ast.DefaultDatabaseScope())), _, _, _) =>
+        Deprecation(
+          () => c,
+          () => Some(DeprecatedDefaultDatabaseSyntax(c.position))
+        )
+
+      case c@ast.RevokePrivilege(ast.DatabasePrivilege(_, List(ast.DefaultDatabaseScope())), _, _, _, _) =>
+        Deprecation(
+          () => c,
+          () => Some(DeprecatedDefaultDatabaseSyntax(c.position))
+        )
+
+      case c@ast.GrantPrivilege(ast.GraphPrivilege(_, List(ast.DefaultGraphScope())), _, _, _) =>
+        Deprecation(
+          () => c,
+          () => Some(DeprecatedDefaultGraphSyntax(c.position))
+        )
+
+      case c@ast.DenyPrivilege(ast.GraphPrivilege(_, List(ast.DefaultGraphScope())), _, _, _) =>
+        Deprecation(
+          () => c,
+          () => Some(DeprecatedDefaultGraphSyntax(c.position))
+        )
+
+      case c@ast.RevokePrivilege(ast.GraphPrivilege(_, List(ast.DefaultGraphScope())), _, _, _, _) =>
+        Deprecation(
+          () => c,
+          () => Some(DeprecatedDefaultGraphSyntax(c.position))
         )
     }
   }

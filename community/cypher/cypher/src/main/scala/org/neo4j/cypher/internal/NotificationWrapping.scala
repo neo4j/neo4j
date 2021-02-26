@@ -40,6 +40,8 @@ import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotific
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCreatePropertyExistenceConstraintSyntax
+import org.neo4j.cypher.internal.util.DeprecatedDefaultDatabaseSyntax
+import org.neo4j.cypher.internal.util.DeprecatedDefaultGraphSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDropConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDropIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
@@ -118,6 +120,10 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_SHOW_SCHEMA_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedPropertyExistenceSyntax(pos) =>
       NotificationCode.DEPRECATED_PROPERTY_EXISTENCE_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedDefaultDatabaseSyntax(pos) =>
+      NotificationCode.DEPRECATED_DEFAULT_DATABASE_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedDefaultGraphSyntax(pos) =>
+      NotificationCode.DEPRECATED_DEFAULT_GRAPH_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case ProcedureWarningNotification(pos, name, warning) =>
       NotificationCode.PROCEDURE_WARNING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
     case ExperimentalFeatureNotification(msg) =>

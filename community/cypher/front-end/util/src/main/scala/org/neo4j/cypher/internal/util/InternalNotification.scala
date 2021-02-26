@@ -57,6 +57,10 @@ case class DeprecatedHexLiteralSyntax(position: InputPosition) extends InternalN
 
 case class DeprecatedPatternExpressionOutsideExistsSyntax(position: InputPosition) extends InternalNotification
 
+case class DeprecatedDefaultDatabaseSyntax(position: InputPosition) extends InternalNotification
+
+case class DeprecatedDefaultGraphSyntax(position: InputPosition) extends InternalNotification
+
 case class SubqueryVariableShadowing(position: InputPosition, varName: String) extends InternalNotification
 
 case class MissingAliasNotification(pos: InputPosition) extends InternalNotification

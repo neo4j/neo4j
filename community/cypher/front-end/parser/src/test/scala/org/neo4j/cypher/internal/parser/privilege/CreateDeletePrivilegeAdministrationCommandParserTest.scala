@@ -54,6 +54,29 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
             yields(func(ast.GraphPrivilege(action, List(graphScopeFoo))(_), List(ast.RelationshipAllQualifier()(_)), Seq(literalRole)))
           }
 
+          // Home graph
+
+          test(s"$verb $createOrDelete ON HOME GRAPH $preposition role") {
+            yields(func(ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole)))
+          }
+
+          test(s"$verb $createOrDelete ON HOME GRAPH $preposition role1, role2") {
+            yields(func(ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_), List(ast.ElementsAllQualifier()(_)), Seq(literalRole1, literalRole2)))
+          }
+
+          test(s"$verb $createOrDelete ON HOME GRAPH $preposition $$role1, role2") {
+            yields(func(ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_), List(ast.ElementsAllQualifier()(_)), Seq(paramRole1, literalRole2)))
+          }
+
+          test(s"$verb $createOrDelete ON HOME GRAPH RELATIONSHIPS * $preposition role") {
+            yields(func(ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_), List(ast.RelationshipAllQualifier()(_)), Seq(literalRole)))
+          }
+
+          // Both Home and * should not parse
+          test(s"$verb $createOrDelete ON HOME GRAPH * $preposition role") {
+            failsToParse
+          }
+
           // Default graph
 
           test(s"$verb $createOrDelete ON DEFAULT GRAPH $preposition role") {

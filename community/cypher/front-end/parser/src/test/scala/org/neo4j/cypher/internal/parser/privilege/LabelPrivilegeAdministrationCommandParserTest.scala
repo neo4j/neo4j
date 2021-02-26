@@ -64,6 +64,16 @@ class LabelPrivilegeAdministrationCommandParserTest extends AdministrationComman
             yields(func(ast.GraphPrivilege(action, List(graphScopeFoo, graphScopeBaz))(_), labelResource, List(ast.LabelAllQualifier()(_)), Seq(literalRole)))
           }
 
+          // Home graph should be allowed
+
+          test(s"$verb $setOrRemove LABEL label ON HOME GRAPH $preposition role") {
+            yields(func(ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_), labelResource, List(ast.LabelAllQualifier()(_)), Seq(literalRole)))
+          }
+
+          test(s"$verb $setOrRemove LABEL * ON HOME GRAPH $preposition role") {
+            yields(func(ast.GraphPrivilege(action, List(ast.HomeGraphScope()(_)))(_), ast.AllLabelResource()(_), List(ast.LabelAllQualifier()(_)), Seq(literalRole)))
+          }
+
           // Default graph should be allowed
 
           test(s"$verb $setOrRemove LABEL label ON DEFAULT GRAPH $preposition role") {
@@ -108,6 +118,10 @@ class LabelPrivilegeAdministrationCommandParserTest extends AdministrationComman
           }
 
           test(s"$verb $setOrRemove LABEL label ON DATABASE foo $preposition role") {
+            failsToParse
+          }
+
+          test(s"$verb $setOrRemove LABEL label ON HOME DATABASE $preposition role") {
             failsToParse
           }
 

@@ -37,6 +37,14 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationCo
   ).foreach {
     case (action: ast.GraphAction, verb: String, preposition: String, func: resourcePrivilegeFunc) =>
 
+      test(s"$verb ${action.name} { prop } ON HOME GRAPH $preposition role"){
+        yields(func(ast.GraphPrivilege(action, List(ast.HomeGraphScope()(pos)))(pos), ast.PropertiesResource(propSeq)(pos), List(ast.ElementsAllQualifier() _), Seq(literalRole)))
+      }
+
+      test(s"$verb ${action.name} { prop } ON HOME GRAPH NODE A $preposition role"){
+        yields(func(ast.GraphPrivilege(action, List(ast.HomeGraphScope()(pos)))(pos), ast.PropertiesResource(propSeq)(pos), List(labelQualifierA), Seq(literalRole)))
+      }
+
       test(s"$verb ${action.name} { prop } ON DEFAULT GRAPH $preposition role"){
         yields(func(ast.GraphPrivilege(action, List(ast.DefaultGraphScope()(pos)))(pos), ast.PropertiesResource(propSeq)(pos), List(ast.ElementsAllQualifier() _), Seq(literalRole)))
       }
@@ -352,6 +360,10 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationCo
       }
 
       test(s"$verb ${action.name} ON DATABASE foo $preposition role") {
+        failsToParse
+      }
+
+      test(s"$verb ${action.name} ON HOME DATABASE $preposition role") {
         failsToParse
       }
 

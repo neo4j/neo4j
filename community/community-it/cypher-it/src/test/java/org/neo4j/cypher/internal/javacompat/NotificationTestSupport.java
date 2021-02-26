@@ -90,7 +90,7 @@ public class NotificationTestSupport
         } );
     }
 
-    static Matcher<Notification> notification( String code, Matcher<String> description, Matcher<InputPosition> position, SeverityLevel severity )
+    public static Matcher<Notification> notification( String code, Matcher<String> description, Matcher<InputPosition> position, SeverityLevel severity )
     {
         return new TypeSafeMatcher<>()
         {
@@ -110,7 +110,7 @@ public class NotificationTestSupport
         };
     }
 
-    static <T> Matcher<Iterable<T>> containsItem( Matcher<T> itemMatcher )
+    public static <T> Matcher<Iterable<T>> containsItem( Matcher<T> itemMatcher )
     {
         return new TypeSafeMatcher<>()
         {
@@ -135,7 +135,7 @@ public class NotificationTestSupport
         };
     }
 
-    static <T> Matcher<Iterable<T>> containsNoItem( Matcher<T> itemMatcher )
+    public static <T> Matcher<Iterable<T>> containsNoItem( Matcher<T> itemMatcher )
     {
         return new TypeSafeMatcher<>()
         {
