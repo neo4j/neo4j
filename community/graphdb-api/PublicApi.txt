@@ -91,7 +91,8 @@ org.neo4j.graphdb.InputPosition::toString() java.lang.String public
 org.neo4j.graphdb.Label public abstract interface
 org.neo4j.graphdb.Label::label(java.lang.String) org.neo4j.graphdb.Label public static
 org.neo4j.graphdb.Label::name() java.lang.String public abstract
-org.neo4j.graphdb.Lock public abstract interface
+org.neo4j.graphdb.Lock public abstract interface implements java.lang.AutoCloseable
+org.neo4j.graphdb.Lock::close() void public default
 org.neo4j.graphdb.Lock::release() void public abstract
 org.neo4j.graphdb.MultipleFoundException public class extends java.lang.RuntimeException
 org.neo4j.graphdb.MultipleFoundException::MultipleFoundException() void public
