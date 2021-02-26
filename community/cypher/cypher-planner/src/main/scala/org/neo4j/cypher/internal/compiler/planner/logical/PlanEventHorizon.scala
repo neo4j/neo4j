@@ -172,7 +172,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         }, "Command projections should only be planned as if they were leaf plans.")
 
         val commandPlan = context.logicalPlanProducer.planCommand(clause, context)
-        SortPlanner.ensureSortedPlanWithSolved(commandPlan, interestingOrderForPlanning, context)
+        SortPlanner.ensureSortedPlanWithSolved(commandPlan, interestingOrderConfig, context, updateSolvedOrdering)
 
       case _ =>
         throw new InternalException(s"Received QG with unknown horizon type: ${query.horizon}")
