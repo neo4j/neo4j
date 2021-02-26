@@ -49,6 +49,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   // When planning tails, this gives contextual information about the plan of the so-far solved
                                   // query graphs, which will be connected with an Apply with the tail-query graph plan.
                                   outerPlan: Option[LogicalPlan] = None,
+                                  isInSubquery: Boolean = false,
                                   notificationLogger: InternalNotificationLogger,
                                   useErrorsOverWarnings: Boolean = false,
                                   errorIfShortestPathFallbackUsedAtRuntime: Boolean = false,
@@ -109,7 +110,11 @@ case class LogicalPlanningContext(planContext: PlanContext,
    * query graphs, which will be connected with an Apply with the tail-query graph plan.
    */
   def withOuterPlan(outerPlan: LogicalPlan): LogicalPlanningContext = {
-    copy(outerPlan= Some(outerPlan))
+    copy(outerPlan = Some(outerPlan))
+  }
+
+  def forSubquery(): LogicalPlanningContext = {
+    copy(isInSubquery = true)
   }
 
   def withActivePlanner(planner: PlannerType): LogicalPlanningContext =

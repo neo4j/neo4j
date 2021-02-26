@@ -66,14 +66,17 @@ object Eagerness {
     if (nodeOrRelLeaves.isEmpty)
       false // the query did not start with a read, possibly CREATE () ...
     else {
+
+      val (maybeStableLeaf, unstableLeaves) = if (context.isInSubquery) (None, nodeOrRelLeaves) else (nodeOrRelLeaves.headOption, nodeOrRelLeaves.tail)
+
       // The first leaf node is always reading through a stable iterator.
       // Collect all predicates solved by that leaf and exclude them from the eagerness analysis.
-      val stablySolvedPredicates: Set[Predicate] = nodeOrRelLeaves.headOption.map { p =>
+      val stablySolvedPredicates: Set[Predicate] = maybeStableLeaf.map { p =>
           context.planningAttributes.solveds(p.id).asSinglePlannerQuery.queryGraph.selections.predicates
       }.getOrElse(Set.empty[Predicate])
 
       // We still need to distinguish the stable leaf from the others, and denote whether it is id-stable (== IdSeek).
-      val stableIdentifier = nodeOrRelLeaves.headOption.map {
+      val stableIdentifier = maybeStableLeaf.map {
         case NodeByIdSeek(idName, _, _) => QgWithLeafInfo.StableIdentifier(idName, isIdStable = true)
         case DirectedRelationshipByIdSeek(idName, _, _, _, _) => QgWithLeafInfo.StableIdentifier(idName, isIdStable = true)
         case UndirectedRelationshipByIdSeek(idName, _, _, _, _) => QgWithLeafInfo.StableIdentifier(idName, isIdStable = true)
@@ -81,7 +84,8 @@ object Eagerness {
         case n: NodeLogicalLeafPlan => QgWithLeafInfo.StableIdentifier(n.idName, isIdStable = false)
         case r: RelationshipLogicalLeafPlan => QgWithLeafInfo.StableIdentifier(r.idName, isIdStable = false)
       }
-      val unstableLeaves = nodeOrRelLeaves.tail.map {
+
+      val unstableLeafIdNames = unstableLeaves.map {
         case n: NodeLogicalLeafPlan => n.idName
         case r: RelationshipLogicalLeafPlan => r.idName
       }.toSet
@@ -89,7 +93,7 @@ object Eagerness {
       val headQgWithLeafInfo = QgWithLeafInfo(
         plannerQuery.queryGraph,
         stablySolvedPredicates,
-        unstableLeaves = unstableLeaves,
+        unstableLeaves = unstableLeafIdNames,
         stableIdentifier = stableIdentifier)
 
       // Start recursion by checking the given plannerQuery against itself
