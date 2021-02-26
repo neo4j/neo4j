@@ -269,7 +269,7 @@ public class EmptyingTokenScanStore implements TokenScanStore
 
     private static class EmptyingLabelScanStore extends EmptyingTokenScanStore implements LabelScanStore
     {
-        public EmptyingLabelScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
+        EmptyingLabelScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
         {
             super( fileSystem, directoryStructure, readOnly, EntityType.NODE, false );
         }
@@ -277,7 +277,7 @@ public class EmptyingTokenScanStore implements TokenScanStore
 
     private static class EmptyingRelationshipTypeScanStore extends EmptyingTokenScanStore implements RelationshipTypeScanStore
     {
-        public EmptyingRelationshipTypeScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
+        EmptyingRelationshipTypeScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
         {
             super( fileSystem, directoryStructure, readOnly, EntityType.RELATIONSHIP, true );
         }
