@@ -78,10 +78,6 @@ public interface Locks
         /** Try grabbing shared lock, not waiting and returning a boolean indicating if we got the lock. */
         boolean trySharedLock( ResourceType resourceType, long resourceId );
 
-        boolean reEnterShared( ResourceType resourceType, long resourceId );
-
-        boolean reEnterExclusive( ResourceType resourceType, long resourceId );
-
         /**
          * Start preparing this transaction for committing. In two-phase locking palace, we will in principle no longer
          * be acquiring any new locks - though we still allow it because it is useful in certain technical situations -

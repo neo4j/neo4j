@@ -91,18 +91,6 @@ public class FrozenLockClient implements Locks.Client
     }
 
     @Override
-    public boolean reEnterShared( ResourceType resourceType, long resourceId )
-    {
-        throw frozenLockException();
-    }
-
-    @Override
-    public boolean reEnterExclusive( ResourceType resourceType, long resourceId )
-    {
-        throw frozenLockException();
-    }
-
-    @Override
     public void releaseShared( ResourceType resourceType, long... resourceIds )
     {
         throw frozenLockException();

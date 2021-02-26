@@ -58,18 +58,6 @@ public class NoOpClient implements Locks.Client
     }
 
     @Override
-    public boolean reEnterShared( ResourceType resourceType, long resourceId )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean reEnterExclusive( ResourceType resourceType, long resourceId )
-    {
-        return false;
-    }
-
-    @Override
     public void releaseShared( ResourceType resourceType, long... resourceIds )
     {
     }
