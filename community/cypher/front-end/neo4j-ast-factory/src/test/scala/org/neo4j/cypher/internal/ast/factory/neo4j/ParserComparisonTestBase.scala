@@ -30,13 +30,12 @@ import scala.util.Success
 import scala.util.Try
 
 abstract class ParserComparisonTestBase() extends Assertions with Matchers {
+  private val exceptionFactory = new OpenCypherExceptionFactory(None)
 
   /**
    * Tests that JavaCC parser produces SyntaxException.
    */
-  protected def assertJavaCCException(query: String, expectedMessage: String): Unit = {
-    val exceptionFactory = new OpenCypherExceptionFactory(None)
-
+  protected def assertJavaCCException(query: String, expectedMessage: String): Assertion = {
     val exception = the[OpenCypherExceptionFactory.SyntaxException] thrownBy {
       JavaCCParser.parse(query, exceptionFactory)
     }
@@ -46,13 +45,11 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
   /**
    * Tests that JavaCC parser produces SyntaxException.
    */
-  protected def assertJavaCCExceptionStart(query: String, expectedMessage: String): Unit = {
-    val exceptionFactory = new OpenCypherExceptionFactory(None)
-
+  protected def assertJavaCCExceptionStart(query: String, expectedMessage: String): Assertion = {
     val exception = the[OpenCypherExceptionFactory.SyntaxException] thrownBy {
       JavaCCParser.parse(query, exceptionFactory)
     }
-    exception.getMessage startsWith expectedMessage
+    exception.getMessage should startWith(expectedMessage)
   }
 
   /**
@@ -61,7 +58,6 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
   protected def assertSameAST(query: String): Assertion = {
     withClue(query+System.lineSeparator()) {
       val parboiledParser = new org.neo4j.cypher.internal.parser.CypherParser()
-      val exceptionFactory = new OpenCypherExceptionFactory(None)
       val parboiledAST = Try(parboiledParser.parse(query, exceptionFactory, None))
 
       val javaccAST = Try(JavaCCParser.parse(query, exceptionFactory))

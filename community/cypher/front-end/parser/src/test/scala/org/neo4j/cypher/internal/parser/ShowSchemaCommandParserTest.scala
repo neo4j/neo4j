@@ -23,96 +23,155 @@ import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
+import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.parboiled.scala.Rule1
 
 class ShowSchemaCommandParserTest
-  extends ParserAstTest[ast.SchemaCommand]
-    with SchemaCommand
+  extends ParserAstTest[ast.Statement]
+    with Statement
     with AstConstructionTestSupport {
 
-  implicit val parser: Rule1[ast.SchemaCommand] = SchemaCommand
+  implicit val parser: Rule1[ast.Statement] = Statement
 
-  // Show indexes
+    // Show indexes
 
-  Seq("INDEX", "INDEXES").foreach { indexKeyword =>
+    Seq("INDEX", "INDEXES").foreach { indexKeyword =>
 
-    // Default values
+      // No explicit output
 
-    test(s"SHOW $indexKeyword") {
-      yields(ast.ShowIndexes(all = true, verbose = false))
+      test(s"SHOW $indexKeyword") {
+        yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = false)(pos)))
+      }
+
+      test(s"SHOW ALL $indexKeyword") {
+        yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = false)(pos)))
+      }
+
+      test(s"SHOW BTREE $indexKeyword") {
+        yields(_ => query(ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = false)(pos)))
+      }
+
+      test(s"USE db SHOW $indexKeyword") {
+        yields(_ => query(use(varFor("db")), ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = false)(pos)))
+      }
+
+      // Brief output (deprecated)
+
+      test(s"SHOW $indexKeyword BRIEF") {
+        yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
+      }
+
+      test(s"SHOW $indexKeyword BRIEF OUTPUT") {
+        yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
+      }
+
+      test(s"SHOW ALL $indexKeyword BRIEF") {
+        yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
+      }
+
+      test(s"SHOW  ALL $indexKeyword BRIEF OUTPUT") {
+        yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
+      }
+
+      test(s"SHOW BTREE $indexKeyword BRIEF") {
+        yields(_ => query(ShowIndexesClause(all = false, brief = true, verbose = false, None, hasYield = false)(pos)))
+      }
+
+      // Verbose output (deprecated)
+
+      test(s"SHOW $indexKeyword VERBOSE") {
+        yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = true, None, hasYield = false)(pos)))
+      }
+
+      test(s"SHOW ALL $indexKeyword VERBOSE") {
+        yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = true, None, hasYield = false)(pos)))
+      }
+
+      test(s"SHOW BTREE $indexKeyword VERBOSE OUTPUT") {
+        yields(_ => query(ShowIndexesClause(all = false, brief = false, verbose = true, None, hasYield = false)(pos)))
+      }
     }
 
-    test(s"SHOW ALL $indexKeyword") {
-      yields(ast.ShowIndexes(all = true, verbose = false))
+    // Show indexes filtering
+
+    test("SHOW INDEX WHERE uniqueness = 'UNIQUE'") {
+      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, Some(where(equals(varFor("uniqueness"), literalString("UNIQUE")))), hasYield = false)(pos)))
     }
 
-    test(s"SHOW $indexKeyword BRIEF") {
-      yields(ast.ShowIndexes(all = true, verbose = false))
+    test("SHOW INDEXES YIELD populationPercent") {
+      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnItems(variableReturnItem("populationPercent")))))
     }
 
-    test(s"SHOW $indexKeyword BRIEF OUTPUT") {
-      yields(ast.ShowIndexes(all = true, verbose = false))
+    test("SHOW BTREE INDEXES YIELD *") {
+      yields(_ => query(ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnAllItems)))
     }
 
-    test(s"SHOW ALL $indexKeyword BRIEF") {
-      yields(ast.ShowIndexes(all = true, verbose = false))
+    test("USE db SHOW BTREE INDEXES YIELD name, populationPercent AS pp WHERE pp < 50.0 RETURN name") {
+      yields(_ => query(
+        use(varFor("db")),
+        ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = true)(pos),
+        yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
+          where = Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
+        return_(variableReturnItem("name"))
+      ))
     }
 
-    test(s"SHOW  ALL $indexKeyword BRIEF OUTPUT") {
-      yields(ast.ShowIndexes(all = true, verbose = false))
+    test("SHOW INDEXES YIELD name AS INDEX, type AS OUTPUT") {
+      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = true)(pos),
+        yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))))
     }
 
-    // Non-default values
-
-    test(s"SHOW BTREE $indexKeyword") {
-      yields(ast.ShowIndexes(all = false, verbose = false))
+    test("SHOW INDEXES WHERE name = 'GRANT'") {
+      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false,
+        Some(where(equals(varFor("name"), literalString("GRANT")))), hasYield = false)(pos)))
     }
 
-    test(s"SHOW BTREE $indexKeyword BRIEF") {
-      yields(ast.ShowIndexes(all = false, verbose = false))
+    // Negative tests for show indexes
+
+    test("SHOW ALL BTREE INDEXES") {
+      failsToParse
     }
 
-    test(s"SHOW $indexKeyword VERBOSE") {
-      yields(ast.ShowIndexes(all = true, verbose = true))
+    test("SHOW INDEX OUTPUT") {
+      failsToParse
     }
 
-    test(s"SHOW ALL $indexKeyword VERBOSE") {
-      yields(ast.ShowIndexes(all = true, verbose = true))
+    test("SHOW INDEX YIELD") {
+      failsToParse
     }
 
-    test(s"SHOW BTREE $indexKeyword VERBOSE OUTPUT") {
-      yields(ast.ShowIndexes(all = false, verbose = true))
+    test("SHOW INDEX VERBOSE BRIEF OUTPUT") {
+      failsToParse
     }
-  }
 
-  // Negative tests for show indexes
+    test("SHOW INDEXES BRIEF YIELD *") {
+      failsToParse
+    }
 
-  test("SHOW ALL BTREE INDEXES") {
-    failsToParse
-  }
+    test("SHOW INDEXES VERBOSE YIELD *") {
+      failsToParse
+    }
 
-  test("SHOW INDEX OUTPUT") {
-    failsToParse
-  }
+    test("SHOW INDEXES BRIEF WHERE uniqueness = 'UNIQUE'") {
+      failsToParse
+    }
 
-  test("SHOW INDEX VERBOSE BRIEF OUTPUT") {
-    failsToParse
-  }
+    test("SHOW INDEXES VERBOSE WHERE uniqueness = 'UNIQUE'") {
+      failsToParse
+    }
 
-  // Show indexes filtering is not supported
+    test("SHOW INDEXES YIELD * YIELD *") {
+      failsToParse
+    }
 
-  test("SHOW INDEX WHERE uniqueness = 'UNIQUE'") {
-    failsToParse
-  }
+    test("SHOW INDEXES WHERE uniqueness = 'UNIQUE' YIELD *") {
+      failsToParse
+    }
 
-  test("SHOW INDEXES YIELD populationPercent") {
-    failsToParse
-  }
-
-  test("SHOW BTREE INDEXES YIELD *") {
-    failsToParse
-  }
+    test("SHOW INDEXES YIELD a b RETURN *") {
+      failsToParse
+    }
 
   // Show constraints
 
@@ -126,45 +185,45 @@ class ShowSchemaCommandParserTest
         (" VERBOSE", true),
         (" VERBOSE OUTPUT", true)
       ).foreach {
-        case (indexOutput, verbose) =>
+        case (output, verbose) =>
 
-          test(s"SHOW $constraintKeyword$indexOutput") {
+          test(s"SHOW $constraintKeyword$output") {
             yields(ast.ShowConstraints(constraintType = AllConstraints, verbose = verbose))
           }
 
-          test(s"SHOW ALL $constraintKeyword$indexOutput") {
+          test(s"SHOW ALL $constraintKeyword$output") {
             yields(ast.ShowConstraints(constraintType = AllConstraints, verbose = verbose))
           }
 
-          test(s"SHOW UNIQUE $constraintKeyword$indexOutput") {
+          test(s"SHOW UNIQUE $constraintKeyword$output") {
             yields(ast.ShowConstraints(constraintType = UniqueConstraints, verbose = verbose))
           }
 
-          test(s"SHOW EXIST $constraintKeyword$indexOutput") {
+          test(s"SHOW EXIST $constraintKeyword$output") {
             yields(ast.ShowConstraints(constraintType = ExistsConstraints, verbose = verbose))
           }
 
-          test(s"SHOW EXISTS $constraintKeyword$indexOutput") {
+          test(s"SHOW EXISTS $constraintKeyword$output") {
             yields(ast.ShowConstraints(constraintType = ExistsConstraints, verbose = verbose))
           }
 
-          test(s"SHOW NODE EXIST $constraintKeyword$indexOutput") {
+          test(s"SHOW NODE EXIST $constraintKeyword$output") {
             yields(ast.ShowConstraints(constraintType = NodeExistsConstraints, verbose = verbose))
           }
 
-          test(s"SHOW NODE EXISTS $constraintKeyword$indexOutput") {
+          test(s"SHOW NODE EXISTS $constraintKeyword$output") {
             yields(ast.ShowConstraints(constraintType = NodeExistsConstraints, verbose = verbose))
           }
 
-          test(s"SHOW RELATIONSHIP EXIST $constraintKeyword$indexOutput") {
+          test(s"SHOW RELATIONSHIP EXIST $constraintKeyword$output") {
             yields(ast.ShowConstraints(constraintType = RelExistsConstraints, verbose = verbose))
           }
 
-          test(s"SHOW RELATIONSHIP EXISTS $constraintKeyword$indexOutput") {
+          test(s"SHOW RELATIONSHIP EXISTS $constraintKeyword$output") {
             yields(ast.ShowConstraints(constraintType = RelExistsConstraints, verbose = verbose))
           }
 
-          test(s"SHOW NODE KEY $constraintKeyword$indexOutput") {
+          test(s"SHOW NODE KEY $constraintKeyword$output") {
             yields(ast.ShowConstraints(constraintType = NodeKeyConstraints, verbose = verbose))
           }
       }

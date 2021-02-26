@@ -43,7 +43,7 @@ sealed trait SchemaCommand extends Statement {
 sealed trait ReadSchemaCommand extends SchemaCommand {
   override def containsUpdates: Boolean = false
 }
-
+// TODO: once show constraints are moved as well, ReadSchemaCommand can die and WriteSchemaCommand can be merged with SchemaCommand
 sealed trait WriteSchemaCommand extends SchemaCommand {
   override def containsUpdates: Boolean = true
 }
@@ -83,17 +83,6 @@ case class DropIndex(label: LabelName, properties: List[PropertyKeyName], useGra
 case class DropIndexOnName(name: String, ifExists: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteSchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
-}
-
-case class ShowIndexes(all: Boolean, verbose: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends ReadSchemaCommand {
-  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
-  def semanticCheck = Seq()
-
-  private val briefColumnNames: List[String] =
-    List("id", "name", "state", "populationPercent", "uniqueness", "type", "entityType", "labelsOrTypes", "properties", "indexProvider")
-  val defaultColumnNames: List[String] = if (verbose) briefColumnNames ++ List("options", "failureMessage", "createStatement") else briefColumnNames
-
-  override def returnColumns: List[LogicalVariable] = defaultColumnNames.map(name => Variable(name)(position))
 }
 
 trait PropertyConstraintCommand extends WriteSchemaCommand with SemanticAnalysisTooling {

@@ -220,10 +220,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     case false => falseLiteral
   }
 
-  def returnLit(items: (Any, String)*) =
+  def returnLit(items: (Any, String)*): Return =
     return_(items.map(i => literal(i._1).as(i._2)): _*)
 
-  def returnVars(vars: String*) =
+  def returnVars(vars: String*): Return =
     return_(vars.map(v => varFor(v).aliased): _*)
 
   def function(name: String, args: Expression*): FunctionInvocation =
@@ -402,14 +402,27 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def return_(ob: OrderBy, items: ReturnItem*): Return =
     Return(distinct = false, ReturnItems(includeExisting = false, items)(pos), Some(ob), None, None)(pos)
 
-  def returnAll: Return =
-    Return(ReturnItems(includeExisting = true, Seq.empty)(pos))(pos)
+  def returnAll: Return = Return(returnAllItems)(pos)
+
+  def returnAllItems: ReturnItems = ReturnItems(includeExisting = true, Seq.empty)(pos)
+
+  def returnItems(items: ReturnItem*): ReturnItems = ReturnItems(includeExisting = false, items)(pos)
+
+  def returnItem(expr: Expression, text: String): UnaliasedReturnItem = UnaliasedReturnItem(expr, text)(pos)
+
+  def variableReturnItem(text: String): UnaliasedReturnItem = returnItem(varFor(text), text)
+
+  def aliasedReturnItem(variable: Variable): AliasedReturnItem = AliasedReturnItem(variable)
+
+  def aliasedReturnItem(originalName: String, newName: String): AliasedReturnItem = AliasedReturnItem(varFor(originalName), varFor(newName))(pos)
 
   def orderBy(items: SortItem*): OrderBy =
     OrderBy(items)(pos)
 
   def sortItem(e: Expression): AscSortItem =
     AscSortItem(e)(pos)
+
+  def where(expr: Expression): Where = Where(expr)(pos)
 
   def input(variables: Variable*): InputDataStream =
     InputDataStream(variables)(pos)
@@ -435,6 +448,13 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     UseGraph(e)(pos)
 
   def union(part: QueryPart, query: SingleQuery): UnionDistinct = UnionDistinct(part, query)(pos)
+
+  def yieldClause(returnItems: ReturnItems,
+                  orderBy: Option[OrderBy] = None,
+                  skip: Option[Skip] = None,
+                  limit: Option[Limit] = None,
+                  where: Option[Where] = None): Yield =
+    Yield(returnItems, orderBy, skip, limit, where)(pos)
 
   implicit class ExpressionOps(expr: Expression) {
     def as(name: String): ReturnItem = AliasedReturnItem(expr, varFor(name))(pos)

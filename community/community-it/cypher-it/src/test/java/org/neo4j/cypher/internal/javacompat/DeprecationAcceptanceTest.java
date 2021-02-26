@@ -198,6 +198,16 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
                 containsNoItem( deprecatedPropertyExistenceSyntax ) );
     }
 
+    @Test
+    void deprecatedShowIndexSyntax()
+    {
+        // Note: Show indexes was introduced in Neo4j 4.2
+        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW INDEXES BRIEF", containsItem( deprecatedShowSchemaSyntax ) );
+        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW INDEXES BRIEF OUTPUT", containsItem( deprecatedShowSchemaSyntax ) );
+        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW INDEXES VERBOSE", containsItem( deprecatedShowSchemaSyntax ) );
+        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW INDEXES VERBOSE OUTPUT", containsItem( deprecatedShowSchemaSyntax ) );
+    }
+
     // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
 
     @Test
@@ -374,6 +384,9 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
             deprecation( "A pattern expression should only be used in order to test the existence of a pattern. " +
                          "It should therefore only be used in contexts that evaluate to a Boolean, e.g. inside the function exists() or in a WHERE-clause. " +
                          "All other uses are deprecated." );
+
+    private final Matcher<Notification> deprecatedShowSchemaSyntax =
+            deprecation( "The `BRIEF` and `VERBOSE` keywords for `SHOW INDEXES` are deprecated, please omit `BRIEF` and use `YIELD *` instead of `VERBOSE`" );
 
     private static Matcher<Notification> deprecation( String message )
     {

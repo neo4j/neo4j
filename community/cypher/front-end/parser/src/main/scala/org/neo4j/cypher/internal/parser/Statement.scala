@@ -30,7 +30,7 @@ trait Statement extends Parser
   with AdministrationCommand
   with Base {
 
-  def Statement: Rule1[ast.Statement] = AdministrationCommand | MultiGraphCommand | SchemaCommand | Query
+  def Statement: Rule1[ast.Statement] = ShowIndexes | AdministrationCommand | MultiGraphCommand | SchemaCommand | Query
 
   // Graph/View commands
 

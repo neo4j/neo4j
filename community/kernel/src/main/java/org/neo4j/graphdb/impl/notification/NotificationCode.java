@@ -124,6 +124,11 @@ public enum NotificationCode
             "The create property existence constraint syntax `CREATE CONSTRAINT ON ... ASSERT exists(variable.property)` is deprecated, " +
                     "please use `CREATE CONSTRAINT ON ... ASSERT (variable.property) IS NOT NULL` instead"
     ),
+    DEPRECATED_SHOW_SCHEMA_SYNTAX(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The `BRIEF` and `VERBOSE` keywords for `SHOW INDEXES` are deprecated, please omit `BRIEF` and use `YIELD *` instead of `VERBOSE`"
+    ),
     DEPRECATED_PROPERTY_EXISTENCE_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,

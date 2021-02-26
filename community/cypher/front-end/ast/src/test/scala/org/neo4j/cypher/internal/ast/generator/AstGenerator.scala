@@ -185,7 +185,6 @@ import org.neo4j.cypher.internal.ast.ShowConstraints
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowIndexAction
-import org.neo4j.cypher.internal.ast.ShowIndexes
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivileges
@@ -237,6 +236,7 @@ import org.neo4j.cypher.internal.ast.generator.AstGenerator.char
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.oneOrMore
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.tuple
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.zeroOrMore
+import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -1196,11 +1196,22 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     command   <- oneOf(CreateIndexOldSyntax(labelName, props, use)(pos), DropIndex(labelName, props, use)(pos))
   } yield command
 
-  def _showIndexes: Gen[ShowIndexes] = for {
+  def _showIndexes: Gen[Query] = for {
     all     <- boolean
-    verbose <- boolean
-    use <- option(_use)
-  }  yield ShowIndexes(all, verbose, use)(pos)
+    verbose <- frequency(8 -> const(None), 2 -> some(boolean)) // option(boolean) but None more often than Some
+    use     <- option(_use)
+    yields  <- option(_eitherYieldOrWhere)
+  } yield {
+    val showClauses = (yields, verbose) match {
+      case (Some(Right(w)), _)           => Seq(ShowIndexesClause(all, brief = false, verbose = false, Some(w), hasYield = false)(pos))
+      case (Some(Left((y, Some(r)))), _) => Seq(ShowIndexesClause(all, brief = false, verbose = false, None, hasYield = true)(pos), y, r)
+      case (Some(Left((y, None))), _)    => Seq(ShowIndexesClause(all, brief = false, verbose = false, None, hasYield = true)(pos), y)
+      case (_, Some(v))                  => Seq(ShowIndexesClause(all, !v, v, None, hasYield = false)(pos))
+      case _                             => Seq(ShowIndexesClause(all, brief = false, verbose = false, None, hasYield = false)(pos))
+    }
+    val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
+    Query(None, SingleQuery(fullClauses)(pos))(pos)
+  }
 
   def _createConstraint: Gen[SchemaCommand] = for {
     variable            <- _variable
@@ -1249,11 +1260,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     use <- option(_use)
   }  yield ShowConstraints(constraintType, verbose, use)(pos)
 
-  def _indexCommand: Gen[SchemaCommand] = oneOf(_createIndex, _dropIndex, _indexCommandsOldSyntax, _showIndexes)
+  def _indexCommand: Gen[Statement] = oneOf(_createIndex, _dropIndex, _indexCommandsOldSyntax, _showIndexes)
 
   def _constraintCommand: Gen[SchemaCommand] = oneOf(_createConstraint, _dropConstraint, _dropConstraintOldSyntax, _showConstraints)
 
-  def _schemaCommand: Gen[SchemaCommand] = oneOf(_indexCommand, _constraintCommand)
+  def _schemaCommand: Gen[Statement] = oneOf(_indexCommand, _constraintCommand)
 
   // Administration commands
   // ----------------------------------

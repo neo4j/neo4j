@@ -157,8 +157,10 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   }
 
   test("SHOW POPULATED ROLES YIELD *,blah RETURN role") {
-    assertJavaCCException(testName, "Invalid input ',': expected \n  <EOF>\n  \"RETURN\"\n  \"WHERE\"\n  \"ORDER\"\n  \"SKIP\"\n  \"LIMIT\" " +
-      "(line 1, column 29 (offset: 28))")
+    val newline = System.getProperty("line.separator")
+    val exceptionMessage =
+      s"""Invalid input ',': expected $newline  <EOF>$newline  "RETURN"$newline  "WHERE"$newline  "ORDER"$newline  "SKIP"$newline  "LIMIT" (line 1, column 29 (offset: 28))"""
+    assertJavaCCException(testName, exceptionMessage)
   }
 
   //  Creating roles
@@ -337,15 +339,15 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
           // Should fail to parse if not following the pattern $command $roleKeyword role(s) $preposition user(s)
 
           test(s"$verb $roleKeyword") {
-            assertJavaCCExceptionStart(testName, "Invalid input '': expected identifier or parameter")
+            assertJavaCCExceptionStart(testName, "Invalid input '': expected a parameter or an identifier")
           }
 
           test(s"$verb $roleKeyword foo") {
-            assertJavaCCExceptionStart(testName, "Invalid input '': expected \"TO\" or \",\"")
+            assertJavaCCExceptionStart(testName, s"""Invalid input '': expected "$preposition" or ","""")
           }
 
           test(s"$verb $roleKeyword foo $preposition") {
-            assertJavaCCExceptionStart(testName, "Invalid input '': expected identifier or parameter")
+            assertJavaCCExceptionStart(testName, "Invalid input '': expected a parameter or an identifier")
           }
 
           test(s"$verb $roleKeyword $preposition abc") {

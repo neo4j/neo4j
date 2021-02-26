@@ -259,16 +259,58 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       "DROP INDEX foo IF EXISTS",
 
     "show index" ->
-      "SHOW ALL INDEXES BRIEF",
+      "SHOW ALL INDEXES",
+
+    "show all inDEXES" ->
+      "SHOW ALL INDEXES",
 
     "show indexes brief" ->
       "SHOW ALL INDEXES BRIEF",
 
-    "show all inDEXES" ->
-      "SHOW ALL INDEXES BRIEF",
+    "show index verbose" ->
+      "SHOW ALL INDEXES VERBOSE",
+
+    "show BTREE index" ->
+      "SHOW BTREE INDEXES",
+
+    "show BTREE index BRIEF" ->
+      "SHOW BTREE INDEXES BRIEF",
 
     "show BTREE index VERBOSE output" ->
       "SHOW BTREE INDEXES VERBOSE",
+
+    "show \nindex\n verbose" ->
+      "SHOW ALL INDEXES VERBOSE",
+
+    "show index WHERE uniqueness = 'UNIQUE'" ->
+      """SHOW ALL INDEXES
+        |  WHERE uniqueness = "UNIQUE"""".stripMargin,
+
+    "show btree inDEXES WHERE uniqueness = 'UNIQUE'" ->
+      """SHOW BTREE INDEXES
+        |  WHERE uniqueness = "UNIQUE"""".stripMargin,
+
+    "show index  YIELD *" ->
+      """SHOW ALL INDEXES
+        |YIELD *""".stripMargin,
+
+    "show index  YIELD * Return DISTINCT type" ->
+      """SHOW ALL INDEXES
+        |YIELD *
+        |RETURN DISTINCT type""".stripMargin,
+
+    "show index YIELD * where name = 'neo4j' Return *" ->
+      """SHOW ALL INDEXES
+        |YIELD *
+        |  WHERE name = "neo4j"
+        |RETURN *""".stripMargin,
+
+    "show index yield name order by name skip 1 limit 1" ->
+      """SHOW ALL INDEXES
+        |YIELD name
+        |  ORDER BY name ASCENDING
+        |  SKIP 1
+        |  LIMIT 1""".stripMargin,
 
     "create CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY" ->
       "CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY",

@@ -206,7 +206,7 @@ public class BuiltInProcedures
     @Deprecated( since = "4.2.0", forRemoval = true )
     @SystemProcedure
     @Description( "Detailed description of specific index." )
-    @Procedure( name = "db.indexDetails", mode = READ, deprecatedBy = "SHOW INDEXES VERBOSE OUTPUT command" )
+    @Procedure( name = "db.indexDetails", mode = READ, deprecatedBy = "SHOW INDEXES YIELD * command" )
     public Stream<IndexDetailResult> indexDetails( @Name( "indexName" ) String indexName ) throws ProcedureException
     {
         if ( callContext.isSystemDatabase() )
@@ -240,7 +240,7 @@ public class BuiltInProcedures
     @Deprecated( since = "4.2.0", forRemoval = true )
     @SystemProcedure
     @Description( "List all statements for creating and dropping existing indexes and constraints." )
-    @Procedure( name = "db.schemaStatements", mode = READ, deprecatedBy = "SHOW INDEXES VERBOSE OUTPUT command and SHOW CONSTRAINTS VERBOSE OUTPUT command" )
+    @Procedure( name = "db.schemaStatements", mode = READ, deprecatedBy = "SHOW INDEXES YIELD * command and SHOW CONSTRAINTS VERBOSE OUTPUT command" )
     public Stream<SchemaStatementResult> schemaStatements() throws ProcedureException
     {
         if ( callContext.isSystemDatabase() )

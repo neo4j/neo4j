@@ -66,7 +66,6 @@ trait SchemaCommand extends Parser
       | DropConstraintOnName
       | DropIndex
       | DropIndexOnName
-      | ShowIndexes
       | ShowConstraints) ~~> ((use, command) => command.withGraph(use))
   )
 
@@ -84,7 +83,7 @@ trait SchemaCommand extends Parser
 
   private def SchemaOutput: Rule1[Boolean] = rule("type of show output") {
     keyword("VERBOSE") ~~ optional(keyword("OUTPUT")) ~~~> (_ => true) |
-      optional(keyword("BRIEF") ~~ optional(keyword("OUTPUT"))) ~~~> (_ => false)
+    keyword("BRIEF") ~~ optional(keyword("OUTPUT")) ~~~> (_ => false)
   }
 
   def CreateIndexOldSyntax: Rule1[ast.CreateIndexOldSyntax] = rule {
@@ -126,9 +125,22 @@ trait SchemaCommand extends Parser
     group(keyword("DROP INDEX") ~~ SymbolicNameString) ~~>> (ast.DropIndexOnName(_, ifExists = false))
   }
 
-  def ShowIndexes: Rule1[ast.ShowIndexes] = rule("SHOW INDEXES") {
-    keyword("SHOW") ~~ IndexType ~~ IndexKeyword ~~ SchemaOutput ~~>>
-      ((all, verbose) => ast.ShowIndexes(all, verbose))
+  def ShowIndexes: Rule1[ast.Query] = rule("SHOW INDEXES") {
+    UseGraph ~~ ShowIndexesClauses ~~>> ((use, show) => pos => ast.Query(None, ast.SingleQuery(use +: show)(pos))(pos)) |
+    ShowIndexesClauses ~~>> (show => pos => ast.Query(None, ast.SingleQuery(show)(pos))(pos))
+  }
+
+  def ShowIndexesClauses: Rule1[Seq[ast.Clause]] = rule("SHOW INDEXES YIELD / WHERE / RETURN") {
+    keyword("SHOW") ~~ IndexType ~~ IndexKeyword ~~ SchemaOutput  ~~>>
+      ((all, verbose) => pos => Seq(ast.ShowIndexesClause(all, !verbose, verbose, None, hasYield = false)(pos))) |
+    keyword("SHOW") ~~ IndexType ~~ IndexKeyword ~~ ShowCommandClauses  ~~>>
+      ((all, clauses) => pos => clauses match {
+        case Right(where) => Seq(ast.ShowIndexesClause(all, brief = false, verbose = false, Some(where), hasYield = false)(pos))
+        case Left((y, Some(r))) => Seq(ast.ShowIndexesClause(all, brief = false, verbose = false, None, hasYield = true)(pos), y, r)
+        case Left((y, None)) => Seq(ast.ShowIndexesClause(all, brief = false, verbose = false, None, hasYield = true)(pos), y)
+      }) |
+    keyword("SHOW") ~~ IndexType ~~ IndexKeyword ~~>>
+      (all => pos => Seq(ast.ShowIndexesClause(all, brief = false, verbose = false, None, hasYield = false)(pos)))
   }
 
   private def IndexType: Rule1[Boolean] = rule("type of indexes") {
@@ -260,8 +272,8 @@ trait SchemaCommand extends Parser
   }
 
   def ShowConstraints: Rule1[ast.ShowConstraints] = rule("SHOW CONSTRAINTS") {
-    keyword("SHOW") ~~ ConstraintType ~~ ConstraintKeyword ~~ SchemaOutput ~~>>
-      ((constraintType, verbose) => ast.ShowConstraints(constraintType, verbose))
+    keyword("SHOW") ~~ ConstraintType ~~ ConstraintKeyword ~~ optional(SchemaOutput) ~~>>
+      ((constraintType, verbose) => ast.ShowConstraints(constraintType, verbose.getOrElse(false)))
   }
 
   private def ConstraintType: Rule1[ShowConstraintType] = rule("type of constraints") {

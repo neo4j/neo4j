@@ -23,21 +23,21 @@ import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 
 class JavaCCPrettifierIT extends CypherFunSuite {
   private implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
   val prettifier: Prettifier = Prettifier(ExpressionStringifier())
-
   val parboiledPrettifier = new ParboiledPrettifierIT()
-  val tests: Seq[(String, String)] = parboiledPrettifier.tests
+
   val javaCcOnlyTests: Seq[(String, String)] = Seq[(String, String)](
     "CALL nsp.proc() yield *" ->
       """CALL nsp.proc()
         |  YIELD *""".stripMargin,
   )
 
-  (tests ++ javaCcOnlyTests) foreach {
+  (parboiledPrettifier.tests ++ javaCcOnlyTests) foreach {
     case (inputString, expected) =>
       test(inputString) {
         try {
@@ -45,13 +45,13 @@ class JavaCCPrettifierIT extends CypherFunSuite {
           val str = prettifier.asString(parsingResults)
           str should equal(expected)
         } catch {
-          case _ if JavaCCParser.shouldFallBack(inputString) =>
+          case _: SyntaxException if JavaCCParser.shouldFallBack(inputString) =>
           // Should not succeed in new parser so this is correct
         }
       }
   }
 
-  test("Ensure tests don't include fallback strings") {
+  test("Ensure tests don't include fallback triggers") {
     // Sanity check
     (parboiledPrettifier.queryTests() ++ javaCcOnlyTests) foreach {
       case (inputString, _) if JavaCCParser.shouldFallBack(inputString) =>

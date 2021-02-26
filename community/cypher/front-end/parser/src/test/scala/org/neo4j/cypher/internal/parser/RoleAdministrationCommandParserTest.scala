@@ -28,6 +28,10 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.ShowRoles(withUsers = false, showAll = true, None))
   }
 
+  test("USE neo4j SHOW ROLES") {
+    yields(ast.ShowRoles(withUsers = false, showAll = true, None))
+  }
+
   test("CATALOG SHOW ALL ROLES") {
     yields(ast.ShowRoles(withUsers = false, showAll = true, None))
   }

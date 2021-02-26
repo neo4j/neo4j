@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.rewriting.RewriterStep
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralsAreAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.expandCallWhere
 import org.neo4j.cypher.internal.rewriting.rewriters.expandShowWhere
+import org.neo4j.cypher.internal.rewriting.rewriters.rewriteShowQuery
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.rewriting.rewriters.insertWithBetweenOptionalMatchAndMatch
 import org.neo4j.cypher.internal.rewriting.rewriters.mergeInPredicates
@@ -42,6 +43,7 @@ case class PreparatoryRewriting(deprecations: Deprecations) extends Phase[BaseCo
     insertWithBetweenOptionalMatchAndMatch,
     expandCallWhere,
     expandShowWhere,
+    rewriteShowQuery,
     replaceDeprecatedCypherSyntax,
     mergeInPredicates), initialConditions = Set(LiteralsAreAvailable))
 

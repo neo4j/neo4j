@@ -35,6 +35,10 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
     yields(ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None))
   }
 
+  test("use system show privileges") {
+    yields(ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None))
+  }
+
   test("SHOW ALL PRIVILEGES") {
     yields(ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None))
   }

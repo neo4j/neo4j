@@ -29,12 +29,12 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
 /**
- * Execution plan for performing schema reads, i.e. showing indexes and constraints.
+ * Execution plan for performing schema reads, i.e. showing constraints.
  *
  * @param name       A name of the schema read
  * @param schemaRead The actual schema read to perform
  */
-case class SchemaReadExecutionPlan(name: String, assertType: AssertType, schemaRead: QueryContext => SchemaReadExecutionResult)
+case class SchemaReadExecutionPlan(name: String, schemaRead: QueryContext => SchemaReadExecutionResult)
   extends SchemaCommandChainedExecutionPlan(None) {
 
   override def runSpecific(ctx: UpdateCountingQueryContext,
@@ -43,11 +43,6 @@ case class SchemaReadExecutionPlan(name: String, assertType: AssertType, schemaR
                            prePopulateResults: Boolean,
                            ignore: InputDataStream,
                            subscriber: QuerySubscriber): RuntimeResult = {
-
-    assertType match {
-      case AssertIndex      => ctx.assertShowIndexAllowed()
-      case AssertConstraint => ctx.assertShowConstraintAllowed()
-    }
     ctx.transactionalContext.close()
     val schemaReadResult = schemaRead(ctx)
     val runtimeResult = SchemaReadRuntimeResult(ctx, subscriber, schemaReadResult.columnNames, schemaReadResult.result)
@@ -56,7 +51,3 @@ case class SchemaReadExecutionPlan(name: String, assertType: AssertType, schemaR
 }
 
 case class SchemaReadExecutionResult(columnNames: Array[String], result: List[Map[String, AnyValue]])
-
-sealed trait AssertType
-case object AssertIndex extends AssertType
-case object AssertConstraint extends AssertType

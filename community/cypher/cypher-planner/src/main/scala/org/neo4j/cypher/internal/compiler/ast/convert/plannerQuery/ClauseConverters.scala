@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DescSortItem
@@ -51,6 +52,7 @@ import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
+import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
@@ -73,6 +75,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.CommandProjection
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
@@ -145,6 +148,8 @@ object ClauseConverters {
     case c: Foreach => addForeachToLogicalPlanInput(acc, c)
     case c: InputDataStream => addInputDataStreamToLogicalPlanInput(acc, c)
     case c: SubQuery => addCallSubqueryToLogicalPlanInput(acc, c)
+    case c: CommandClause => addCommandClauseToLogicalPlanInput(acc, c)
+    case c: Yield => addYieldToLogicalPlanInput(acc, c)
 
     case x: UnresolvedCall => throw new IllegalArgumentException(s"$x is not expected here")
     case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $x")
@@ -467,6 +472,31 @@ object ClauseConverters {
     val subquery = clause.part
     val callSubquery = StatementConverters.toPlannerQueryPart(subquery, acc.semanticTable)
     acc.withCallSubquery(callSubquery, subquery.isCorrelated)
+  }
+
+  private def addCommandClauseToLogicalPlanInput(acc: PlannerQueryBuilder, clause: CommandClause): PlannerQueryBuilder = {
+    acc
+      .withHorizon(CommandProjection(clause))
+      .withTail(SinglePlannerQuery.empty)
+  }
+
+  private def addYieldToLogicalPlanInput(builder: PlannerQueryBuilder, `yield`: Yield): PlannerQueryBuilder = {
+    val selections = asSelections(`yield`.where)
+    val returnItems = asReturnItems(builder.currentQueryGraph, `yield`.returnItems)
+
+    val queryPagination = QueryPagination().withLimit(`yield`.limit).withSkip(`yield`.skip)
+
+    val queryProjection =
+      asQueryProjection(distinct = false, returnItems).
+        withPagination(queryPagination).
+        withSelection(selections)
+
+    val requiredOrder = findRequiredOrder(queryProjection, `yield`.orderBy)
+
+    builder.
+      withHorizon(queryProjection).
+      withInterestingOrder(requiredOrder).
+      withTail(RegularSinglePlannerQuery(QueryGraph()))
   }
 
   private def toPropertyMap(expr: Option[Expression]): Map[PropertyKeyName, Expression] = expr match {

@@ -79,6 +79,8 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -599,6 +601,54 @@ case class Match(
   }
 
   def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.findByAllClass[LogicalVariable].toSet
+}
+
+sealed trait CommandClause extends Clause with SemanticAnalysisTooling {
+  def unfilteredColumns: DefaultOrAllShowColumns
+  override def semanticCheck: SemanticCheck = semanticCheckFold(unfilteredColumns.columns)(sc => declareVariable(sc.variable, sc.cypherType))
+
+  def where: Option[Where]
+
+  def moveWhereToYield: CommandClause
+}
+
+object CommandClause {
+  def unapply(cc: CommandClause): Option[(Set[ShowColumn], Option[Where])] = Some((cc.unfilteredColumns.columns, cc.where))
+}
+
+case class DefaultOrAllShowColumns(useAllColumns: Boolean, brief: Set[ShowColumn], verbose: Set[ShowColumn]) {
+  def columns: Set[ShowColumn] = if (useAllColumns) brief ++ verbose else brief
+}
+
+case class ShowIndexesClause(unfilteredColumns: DefaultOrAllShowColumns, all: Boolean, brief: Boolean, verbose: Boolean, where: Option[Where], hasYield: Boolean)
+                            (val position: InputPosition) extends CommandClause {
+  override def name: String = "SHOW INDEXES"
+
+  override def moveWhereToYield: CommandClause = copy(where = None, hasYield = true)(position)
+}
+
+object ShowIndexesClause {
+  def apply(all: Boolean, brief: Boolean, verbose: Boolean, where: Option[Where], hasYield: Boolean)(position: InputPosition): ShowIndexesClause = {
+    val briefCols = Set(
+      ShowColumn("id", CTInteger)(position),
+      ShowColumn("name")(position),
+      ShowColumn("state")(position),
+      ShowColumn("populationPercent", CTFloat)(position),
+      ShowColumn("uniqueness")(position),
+      ShowColumn("type")(position),
+      ShowColumn("entityType")(position),
+      ShowColumn("labelsOrTypes", CTList(CTString))(position),
+      ShowColumn("properties", CTList(CTString))(position),
+      ShowColumn("indexProvider")(position)
+    )
+    val verboseCols = Set(
+      ShowColumn("options", CTMap)(position),
+      ShowColumn("failureMessage")(position),
+      ShowColumn("createStatement")(position)
+    )
+
+    ShowIndexesClause(DefaultOrAllShowColumns(hasYield | verbose, briefCols, verboseCols), all, brief, verbose, where, hasYield)(position)
+  }
 }
 
 case class Merge(pattern: Pattern, actions: Seq[MergeAction], where: Option[Where] = None)(val position: InputPosition)

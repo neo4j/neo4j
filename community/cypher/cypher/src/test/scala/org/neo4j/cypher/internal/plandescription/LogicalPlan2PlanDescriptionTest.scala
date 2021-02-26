@@ -648,8 +648,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("ShowIndexes") {
-    assertGood(attach(ShowIndexes(all = true, verbose = false, List.empty), 1.0),
-      planDescription(id, "ShowIndexes", NoChildren, Seq(), Set.empty))
+    assertGood(attach(ShowIndexes(all = true, verbose = true, Set.empty), 1.0),
+      planDescription(id, "ShowIndexes", NoChildren, Seq(details("allIndexes, allColumns")), Set.empty))
+
+    assertGood(attach(ShowIndexes(all = false, verbose = false, Set.empty), 1.0),
+      planDescription(id, "ShowIndexes", NoChildren, Seq(details("btreeIndexes, defaultColumns")), Set.empty))
   }
 
   test("CreateUniquePropertyConstraint") {

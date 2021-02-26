@@ -44,6 +44,10 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     yields(ast.ShowUsers(None))
   }
 
+  test("USE system SHOW USERS") {
+    yields(ast.ShowUsers(None))
+  }
+
   test("SHOW USERS WHERE user = 'GRANTED'") {
     yields(ast.ShowUsers(Some(Right(where(equals(varUser, grantedString))))))
   }

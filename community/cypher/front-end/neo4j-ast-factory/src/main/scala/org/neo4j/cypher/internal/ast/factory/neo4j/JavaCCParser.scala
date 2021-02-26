@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 
 case object JavaCCParser {
+  // Triggers to fallback to parboiled parser
   private val FALLBACK_TRIGGERS = Seq(
     // Schema commands
     "INDEX",

@@ -112,6 +112,7 @@ import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
@@ -139,6 +140,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AllNodesScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AllOrderedDistinctPipe
@@ -148,6 +150,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.ArgumentPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AssertSameNodePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CachePropertiesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CartesianProductPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.CommandPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ConditionalApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateNodeCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreatePipe
@@ -330,6 +333,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case NodeIndexEndsWithScan(ident, label, property, valueExpr, _, indexOrder) =>
         NodeIndexEndsWithScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(label, property),
           buildExpression(valueExpr), indexOrder)(id = id)
+
+      case ShowIndexes(all, verbose, columns) => CommandPipe(ShowIndexesCommand(all, verbose, columns))(id)
 
       // Currently used for testing only
       case MultiNodeIndexSeek(indexLeafPlans) =>

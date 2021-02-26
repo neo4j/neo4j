@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.projection
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
+import org.neo4j.cypher.internal.ir.CommandProjection
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.LoadCSVProjection
 import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
@@ -35,7 +36,9 @@ import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.exceptions.InternalException
 
 /*
@@ -161,6 +164,15 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         val subPlan = plannerQueryPartPlanner.plan(callSubquery, subqueryContext)
         val projected = context.logicalPlanProducer.planSubquery(plan, subPlan, context, correlated)
         SortPlanner.ensureSortedPlanWithSolved(projected, interestingOrderConfig, context, updateSolvedOrdering)
+
+      case CommandProjection(clause) =>
+        AssertMacros.checkOnlyWhenAssertionsAreEnabled(plan match {
+          case Argument(args) => args.isEmpty
+          case _ => false
+        }, "Command projections should only be planned as if they were leaf plans.")
+
+        val commandPlan = context.logicalPlanProducer.planCommand(clause, context)
+        SortPlanner.ensureSortedPlanWithSolved(commandPlan, interestingOrderForPlanning, context)
 
       case _ =>
         throw new InternalException(s"Received QG with unknown horizon type: ${query.horizon}")

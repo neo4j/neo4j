@@ -36,7 +36,6 @@ import org.parboiled.scala.group
 // Can't convert since that breaks parsing
 trait AdministrationCommand extends Parser
                             with GraphSelection
-                            with Query
                             with CommandHelper
                             with Base {
 
@@ -494,11 +493,6 @@ trait AdministrationCommand extends Parser
   }
 
   // Shared help methods
-
-  private def ShowCommandClauses: Rule1[Either[(ast.Yield, Option[ast.Return]), ast.Where]] = rule("YIELD, WHERE") {
-    (Yield ~~ optional(ReturnWithoutGraph)) ~~> ((y,r) => Left(y,r)) |
-      (Where ~~>> (where => _ => Right(where)))
-  }
 
   def SymbolicNameOrStringParameter: Rule1[Either[String, Parameter]] =
     group(SymbolicNameString) ~~>> (s => _ => Left(s)) |

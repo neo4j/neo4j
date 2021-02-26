@@ -113,7 +113,7 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
   }
 }
 
-case class ShowColumn(variable: Variable, cypherType: CypherType, name: String)
+case class ShowColumn(variable: LogicalVariable, cypherType: CypherType, name: String)
 
 object ShowColumn {
   def apply(name: String, cypherType: CypherType = CTString)(position: InputPosition): ShowColumn = ShowColumn(Variable(name)(position), cypherType, name)
