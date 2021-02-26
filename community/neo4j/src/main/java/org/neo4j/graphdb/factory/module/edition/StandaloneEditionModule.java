@@ -77,7 +77,7 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     }
 
     @Override
-    public DatabaseManager<StandaloneDatabaseContext> createDatabaseManager( GlobalModule globalModule )
+    public DatabaseManager<? extends StandaloneDatabaseContext> createDatabaseManager( GlobalModule globalModule )
     {
         var databaseManager = new DefaultDatabaseManager( globalModule, this );
         databaseStateService = new CommunityDatabaseStateService( databaseManager );
