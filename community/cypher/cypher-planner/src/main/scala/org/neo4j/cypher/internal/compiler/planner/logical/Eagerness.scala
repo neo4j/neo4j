@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.ir.QgWithLeafInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestingRewriter
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
@@ -189,7 +188,7 @@ object Eagerness {
   }
 
   private def horizonReadWriteConflict(query: SinglePlannerQuery, context: LogicalPlanningContext): Boolean = {
-    query.tail.nonEmpty && horizonReadWriteConflictRecursive(query.horizon, query.tail.get, context.semanticTable)
+    query.tail.toSeq.flatMap(_.allQueryGraphs).exists(_.overlapsHorizon(query.horizon, context.semanticTable))
   }
 
   private def horizonWriteReadConflict(query: SinglePlannerQuery): Boolean = {
@@ -243,17 +242,6 @@ object Eagerness {
       false
     else
       writeReadConflictInTail(head, tail.tail.get, context)
-  }
-
-  @tailrec
-  def horizonReadWriteConflictRecursive(headHorizon: QueryHorizon, tail: SinglePlannerQuery, semanticTable: SemanticTable): Boolean = {
-    val conflict = tail.queryGraph.overlapsHorizon(headHorizon, semanticTable)
-    if (conflict)
-      true
-    else if (tail.tail.isEmpty)
-      false
-    else
-      horizonReadWriteConflictRecursive(headHorizon, tail.tail.get, semanticTable)
   }
 
   private def deleteReadOverlap(from: QueryGraph, to: QueryGraph, context: LogicalPlanningContext): Boolean = {
