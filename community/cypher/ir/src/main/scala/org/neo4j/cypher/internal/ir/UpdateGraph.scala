@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.PatternComprehension
@@ -210,8 +211,9 @@ trait UpdateGraph {
 
     def hasLabelOverlap = {
       (labelsToSet.nonEmpty || hasRemoveLabelPatterns) && {
-        dependingExpressions.exists {
+        dependingExpressions.treeExists {
           case f: FunctionInvocation => f.function == Labels
+          case HasLabels(_, labelsToRead) => (labelsToRead.toSet intersect labelsToSet).nonEmpty
           case _ => false
         }
       }

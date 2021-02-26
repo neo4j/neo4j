@@ -80,7 +80,7 @@ sealed abstract class QueryProjection extends QueryHorizon {
   def withAddedProjections(projections: Map[String, Expression]): QueryProjection
   def withPagination(queryPagination: QueryPagination): QueryProjection
 
-  override def dependingExpressions: Seq[Expression] = projections.values.toSeq
+  override def dependingExpressions: Seq[Expression] = projections.values.toSeq ++ selections.predicates.map(_.expr)
 
   def updatePagination(f: QueryPagination => QueryPagination): QueryProjection = withPagination(f(queryPagination))
 
