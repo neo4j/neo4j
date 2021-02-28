@@ -25,6 +25,8 @@ import org.mockito.Mockito;
 import org.neo4j.configuration.Config;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.Clocks;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,13 +46,13 @@ class LockManagerImplTest
         LockManagerImpl lockManager = createLockManager();
 
         // expect
-        assertTrue( lockManager.getReadLock( LockTracer.NONE, node1, lockTransaction ) );
-        assertTrue( lockManager.getReadLock( LockTracer.NONE, node2, lockTransaction ) );
-        assertTrue( lockManager.getWriteLock( LockTracer.NONE, node2, lockTransaction ) );
+        assertTrue( lockManager.getReadLock( LockTracer.NONE, node1, lockTransaction, EmptyMemoryTracker.INSTANCE ) );
+        assertTrue( lockManager.getReadLock( LockTracer.NONE, node2, lockTransaction, EmptyMemoryTracker.INSTANCE ) );
+        assertTrue( lockManager.getWriteLock( LockTracer.NONE, node2, lockTransaction, EmptyMemoryTracker.INSTANCE ) );
 
-        lockManager.releaseReadLock( node1, lockTransaction );
-        lockManager.releaseReadLock( node2, lockTransaction );
-        lockManager.releaseWriteLock( node2, lockTransaction );
+        lockManager.releaseReadLock( node1, lockTransaction, EmptyMemoryTracker.INSTANCE );
+        lockManager.releaseReadLock( node2, lockTransaction, EmptyMemoryTracker.INSTANCE );
+        lockManager.releaseWriteLock( node2, lockTransaction, EmptyMemoryTracker.INSTANCE );
 
         int lockCount = countLocks( lockManager );
         assertEquals( 0, lockCount );
@@ -64,7 +66,7 @@ class LockManagerImplTest
         LockTransaction lockTransaction = new LockTransaction();
         LockManagerImpl lockManager = createLockManager();
 
-        var e = assertThrows( LockNotFoundException.class, () -> lockManager.releaseReadLock( node1, lockTransaction ) );
+        var e = assertThrows( LockNotFoundException.class, () -> lockManager.releaseReadLock( node1, lockTransaction, EmptyMemoryTracker.INSTANCE ) );
         assertThat( e.getMessage() ).startsWith( "Lock not found for: " );
     }
 
@@ -75,20 +77,20 @@ class LockManagerImplTest
         LockResource node = new LockResource( ResourceTypes.NODE, 3 );
         LockTransaction lockTransaction = new LockTransaction();
         LockManagerImpl lockManager = createLockManager();
-        lockManager.getWriteLock( LockTracer.NONE, node, lockTransaction );
+        lockManager.getWriteLock( LockTracer.NONE, node, lockTransaction, EmptyMemoryTracker.INSTANCE );
 
         // expect
-        assertTrue( lockManager.tryReadLock( node, lockTransaction ) );
+        assertTrue( lockManager.tryReadLock( node, lockTransaction, EmptyMemoryTracker.INSTANCE ) );
         assertEquals( 1, countLocks( lockManager ) );
 
         // and when
-        lockManager.releaseWriteLock( node, lockTransaction );
+        lockManager.releaseWriteLock( node, lockTransaction, EmptyMemoryTracker.INSTANCE );
 
         // expect to see one old reader
         assertEquals( 1, countLocks( lockManager ) );
 
         // and when
-        lockManager.releaseReadLock( node, lockTransaction );
+        lockManager.releaseReadLock( node, lockTransaction, EmptyMemoryTracker.INSTANCE );
 
         // no more locks left
         assertEquals( 0, countLocks( lockManager ) );
@@ -105,7 +107,7 @@ class LockManagerImplTest
         LockManagerImpl lockManager = new MockedLockLockManager( new RagManager(), rwLock );
 
         // expect
-        lockManager.tryReadLock( node, lockTransaction );
+        lockManager.tryReadLock( node, lockTransaction, EmptyMemoryTracker.INSTANCE );
 
         // during client close any of the attempts to get read/write lock can be scheduled as last one
         // in that case lock will hot have marks, readers, writers anymore and optimistically created lock
@@ -141,7 +143,7 @@ class LockManagerImplTest
         }
 
         @Override
-        protected RWLock createLock( LockResource resource )
+        protected RWLock createLock( LockResource resource, MemoryTracker memoryTracker )
         {
             return lock;
         }

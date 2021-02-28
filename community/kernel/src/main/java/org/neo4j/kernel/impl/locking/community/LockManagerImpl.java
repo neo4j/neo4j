@@ -28,6 +28,8 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
@@ -50,36 +52,36 @@ public class LockManagerImpl
         this.lockAcquisitionTimeoutNano = config.get( GraphDatabaseSettings.lock_acquisition_timeout ).toNanos();
     }
 
-    boolean getReadLock( LockTracer tracer, LockResource resource, LockTransaction tx )
+    boolean getReadLock( LockTracer tracer, LockResource resource, LockTransaction tx, MemoryTracker memoryTracker )
             throws DeadlockDetectedException
     {
-        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).acquireReadLock( tracer, tx ) );
+        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx, memoryTracker ).acquireReadLock( tracer, tx, memoryTracker ) );
     }
 
-    boolean tryReadLock( LockResource resource, LockTransaction tx )
+    boolean tryReadLock( LockResource resource, LockTransaction tx, MemoryTracker memoryTracker )
     {
-        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).tryAcquireReadLock( tx ) );
+        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx, memoryTracker ).tryAcquireReadLock( tx, memoryTracker ) );
     }
 
-    boolean getWriteLock( LockTracer tracer, LockResource resource, LockTransaction tx )
+    boolean getWriteLock( LockTracer tracer, LockResource resource, LockTransaction tx, MemoryTracker memoryTracker )
             throws DeadlockDetectedException
     {
-        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).acquireWriteLock( tracer, tx ) );
+        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx, memoryTracker ).acquireWriteLock( tracer, tx, memoryTracker ) );
     }
 
-    boolean tryWriteLock( LockResource resource, LockTransaction tx )
+    boolean tryWriteLock( LockResource resource, LockTransaction tx, MemoryTracker memoryTracker )
     {
-        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).tryAcquireWriteLock( tx ) );
+        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx, memoryTracker ).tryAcquireWriteLock( tx, memoryTracker ) );
     }
 
-    void releaseReadLock( Object resource, LockTransaction tx )
+    void releaseReadLock( Object resource, LockTransaction tx, MemoryTracker memoryTracker )
     {
-        getRWLockForReleasing( resource, tx, 1, 0, true ).releaseReadLock( tx );
+        getRWLockForReleasing( resource, tx, 1, 0, true ).releaseReadLock( tx, memoryTracker );
     }
 
-    void releaseWriteLock( Object resource, LockTransaction tx )
+    void releaseWriteLock( Object resource, LockTransaction tx, MemoryTracker memoryTracker )
     {
-        getRWLockForReleasing( resource, tx, 0, 1, true ).releaseWriteLock( tx );
+        getRWLockForReleasing( resource, tx, 0, 1, true ).releaseWriteLock( tx, memoryTracker );
     }
 
     /**
@@ -129,20 +131,21 @@ public class LockManagerImpl
         }
     }
 
-    private RWLock getRWLockForAcquiring( LockResource resource, Object tx )
+    private RWLock getRWLockForAcquiring( LockResource resource, Object tx, MemoryTracker memoryTracker )
     {
         assertValidArguments( resource, tx );
         synchronized ( resourceLockMap )
         {
-            RWLock lock = resourceLockMap.computeIfAbsent( resource, k -> createLock( resource ) );
+            RWLock lock = resourceLockMap.computeIfAbsent( resource, k -> createLock( resource, memoryTracker ) );
             lock.mark();
             return lock;
         }
     }
 
     @VisibleForTesting
-    protected RWLock createLock( LockResource resource )
+    protected RWLock createLock( LockResource resource, MemoryTracker memoryTracker )
     {
+        memoryTracker.allocateHeap( RWLock.SHALLOW_SIZE + HeapEstimator.HASH_MAP_NODE_SHALLOW_SIZE );
         return new RWLock( resource, ragManager, clock, lockAcquisitionTimeoutNano );
     }
 

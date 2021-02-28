@@ -34,6 +34,8 @@ import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.LockWaitEvent;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
@@ -72,6 +74,8 @@ import static org.neo4j.lock.LockType.SHARED;
 @VisibleForTesting
 public class RWLock
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( RWLock.class );
+
     private final LockResource resource; // the resource this RWLock locks
     private final LinkedList<LockRequest> waitingThreadList = new LinkedList<>();
     private final Map<LockTransaction, TxLockElement> txLockElementMap = new HashMap<>();
@@ -93,8 +97,10 @@ public class RWLock
     }
 
     // keeps track of a transactions read and write lock count on this RWLock
-    private static class TxLockElement
+    static class TxLockElement
     {
+        static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TxLockElement.class );
+
         private final LockTransaction tx;
 
         // access to these is guarded by synchronized blocks
@@ -150,6 +156,8 @@ public class RWLock
     // keeps track of what type of lock a thread is waiting for
     private static class LockRequest
     {
+        private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( LockRequest.class );
+
         private final TxLockElement element;
         private final LockType lockType;
         private final Thread waitingThread;
@@ -200,9 +208,9 @@ public class RWLock
      * @return true is lock was acquired, false otherwise
      * @throws DeadlockDetectedException if a deadlock is detected
      */
-    synchronized boolean acquireReadLock( LockTracer tracer, LockTransaction tx ) throws DeadlockDetectedException
+    synchronized boolean acquireReadLock( LockTracer tracer, LockTransaction tx, MemoryTracker memoryTracker ) throws DeadlockDetectedException
     {
-        TxLockElement tle = getOrCreateLockElement( tx );
+        TxLockElement tle = getOrCreateLockElement( tx, memoryTracker );
 
         LockRequest lockRequest = null;
         LockWaitEvent waitEvent = null;
@@ -221,6 +229,7 @@ public class RWLock
 
                 if ( addLockRequest )
                 {
+                    memoryTracker.allocateHeap( LockRequest.SHALLOW_SIZE );
                     lockRequest = new LockRequest( tle, SHARED, currentThread, clock );
                     waitingThreadList.addFirst( lockRequest );
                 }
@@ -245,6 +254,7 @@ public class RWLock
                 // if it was register before it will be cleaned up during standard lock release call
                 if ( tle.requests == 1 && tle.isFree() )
                 {
+                    memoryTracker.releaseHeap( TxLockElement.SHALLOW_SIZE + HeapEstimator.HASH_MAP_NODE_SHALLOW_SIZE );
                     txLockElementMap.remove( tx );
                 }
                 return false;
@@ -256,7 +266,7 @@ public class RWLock
             {
                 waitEvent.close();
             }
-            cleanupWaitingListRequests( lockRequest, tle, addLockRequest );
+            cleanupWaitingListRequests( lockRequest, tle, addLockRequest, memoryTracker );
             // for cases when spurious wake up was the reason why we waked up, but also there
             // was an interruption as described at 17.2 just clearing interruption flag
             interrupted();
@@ -266,9 +276,9 @@ public class RWLock
         }
     }
 
-    synchronized boolean tryAcquireReadLock( LockTransaction tx )
+    synchronized boolean tryAcquireReadLock( LockTransaction tx, MemoryTracker memoryTracker )
     {
-        TxLockElement tle = getOrCreateLockElement( tx );
+        TxLockElement tle = getOrCreateLockElement( tx, memoryTracker );
 
         try
         {
@@ -296,7 +306,7 @@ public class RWLock
      * transactions in the queue they will be interrupted if they can acquire
      * the lock.
      */
-    synchronized void releaseReadLock( LockTransaction tx ) throws LockNotFoundException
+    synchronized void releaseReadLock( LockTransaction tx, MemoryTracker memoryTracker ) throws LockNotFoundException
     {
         TxLockElement tle = getLockElement( tx );
 
@@ -312,6 +322,7 @@ public class RWLock
             ragManager.lockReleased( this, tx );
             if ( tle.hasNoRequests() )
             {
+                memoryTracker.releaseHeap( TxLockElement.SHALLOW_SIZE + HeapEstimator.HASH_MAP_NODE_SHALLOW_SIZE );
                 txLockElementMap.remove( tx );
             }
         }
@@ -388,9 +399,9 @@ public class RWLock
      * @return true is lock was acquired, false otherwise
      * @throws DeadlockDetectedException if a deadlock is detected
      */
-    synchronized boolean acquireWriteLock( LockTracer tracer, LockTransaction tx ) throws DeadlockDetectedException
+    synchronized boolean acquireWriteLock( LockTracer tracer, LockTransaction tx, MemoryTracker memoryTracker ) throws DeadlockDetectedException
     {
-        TxLockElement tle = getOrCreateLockElement( tx );
+        TxLockElement tle = getOrCreateLockElement( tx, memoryTracker );
 
         LockRequest lockRequest = null;
         LockWaitEvent waitEvent = null;
@@ -409,6 +420,7 @@ public class RWLock
 
                 if ( addLockRequest )
                 {
+                    memoryTracker.allocateHeap( LockRequest.SHALLOW_SIZE );
                     lockRequest = new LockRequest( tle, EXCLUSIVE, currentThread, clock );
                     waitingThreadList.addFirst( lockRequest );
                 }
@@ -433,6 +445,7 @@ public class RWLock
                 // if it was register before it will be cleaned up during standard lock release call
                 if ( tle.requests == 1 && tle.isFree() )
                 {
+                    memoryTracker.releaseHeap( TxLockElement.SHALLOW_SIZE + HeapEstimator.HASH_MAP_NODE_SHALLOW_SIZE );
                     txLockElementMap.remove( tx );
                 }
                 return false;
@@ -444,7 +457,7 @@ public class RWLock
             {
                 waitEvent.close();
             }
-            cleanupWaitingListRequests( lockRequest, tle, addLockRequest );
+            cleanupWaitingListRequests( lockRequest, tle, addLockRequest, memoryTracker );
             // for cases when spurious wake up was the reason why we waked up, but also there
             // was an interruption as described at 17.2 just clearing interruption flag
             interrupted();
@@ -481,17 +494,18 @@ public class RWLock
     // in case of spurious wake up, deadlock during spurious wake up, termination
     // when we already have request in a queue we need to clean it up
     private void cleanupWaitingListRequests( LockRequest lockRequest, TxLockElement lockElement,
-                                             boolean addLockRequest )
+                                             boolean addLockRequest, MemoryTracker memoryTracker )
     {
         if ( lockRequest != null && (lockElement.isTerminated() || !addLockRequest) )
         {
             waitingThreadList.remove( lockRequest );
+            memoryTracker.releaseHeap( LockRequest.SHALLOW_SIZE );
         }
     }
 
-    synchronized boolean tryAcquireWriteLock( LockTransaction tx )
+    synchronized boolean tryAcquireWriteLock( LockTransaction tx, MemoryTracker memoryTracker )
     {
-        TxLockElement tle = getOrCreateLockElement( tx );
+        TxLockElement tle = getOrCreateLockElement( tx, memoryTracker );
 
         try
         {
@@ -519,7 +533,7 @@ public class RWLock
      * transactions in the queue they will be interrupted if they can acquire
      * the lock.
      */
-    synchronized void releaseWriteLock( LockTransaction tx ) throws LockNotFoundException
+    synchronized void releaseWriteLock( LockTransaction tx, MemoryTracker memoryTracker ) throws LockNotFoundException
     {
         TxLockElement tle = getLockElement( tx );
 
@@ -535,6 +549,7 @@ public class RWLock
             ragManager.lockReleased( this, tx );
             if ( tle.hasNoRequests() )
             {
+                memoryTracker.releaseHeap( TxLockElement.SHALLOW_SIZE + HeapEstimator.HASH_MAP_NODE_SHALLOW_SIZE );
                 txLockElementMap.remove( tx );
             }
         }
@@ -681,10 +696,13 @@ public class RWLock
         }
     }
 
-    private TxLockElement getOrCreateLockElement( LockTransaction tx )
+    private TxLockElement getOrCreateLockElement( LockTransaction tx, MemoryTracker memoryTracker )
     {
         assertTransaction( tx );
-        return txLockElementMap.computeIfAbsent( tx, TxLockElement::new );
+        return txLockElementMap.computeIfAbsent( tx, transaction -> {
+            memoryTracker.allocateHeap( TxLockElement.SHALLOW_SIZE + HeapEstimator.HASH_MAP_NODE_SHALLOW_SIZE );
+            return new TxLockElement( transaction );
+        } );
     }
 
     private void assertNotExpired( long waitStartNano )

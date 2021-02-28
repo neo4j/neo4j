@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class RWLockTest
 {
@@ -66,11 +67,11 @@ class RWLockTest
         var tx = mock( LockTransaction.class );
 
         lock.mark();
-        lock.acquireWriteLock( LockTracer.NONE, tx );
+        lock.acquireWriteLock( LockTracer.NONE, tx, INSTANCE );
         lock.mark();
 
         assertEquals( 1, lock.getTxLockElementCount() );
-        lock.releaseWriteLock( tx );
+        lock.releaseWriteLock( tx, INSTANCE );
         assertEquals( 0, lock.getTxLockElementCount() );
     }
 
@@ -83,11 +84,11 @@ class RWLockTest
         var tx = mock( LockTransaction.class );
 
         lock.mark();
-        lock.acquireReadLock( LockTracer.NONE, tx );
+        lock.acquireReadLock( LockTracer.NONE, tx, INSTANCE );
         lock.mark();
 
         assertEquals( 1, lock.getTxLockElementCount() );
-        lock.releaseReadLock( tx );
+        lock.releaseReadLock( tx, INSTANCE );
         assertEquals( 0, lock.getTxLockElementCount() );
     }
 
@@ -105,9 +106,9 @@ class RWLockTest
         final LockTransaction anotherTransaction = new LockTransaction();
 
         lock.mark();
-        lock.acquireReadLock( LockTracer.NONE, lockTransaction );
+        lock.acquireReadLock( LockTracer.NONE, lockTransaction, INSTANCE );
         lock.mark();
-        lock.acquireReadLock( LockTracer.NONE, anotherTransaction );
+        lock.acquireReadLock( LockTracer.NONE, anotherTransaction, INSTANCE );
 
         final CountDownLatch writerCompletedLatch = new CountDownLatch( 1 );
 
@@ -123,8 +124,8 @@ class RWLockTest
         assertEquals( 2, lock.getReadCount() );
 
         // releasing read locks that will allow writer to grab the lock
-        lock.releaseReadLock( lockTransaction );
-        lock.releaseReadLock( anotherTransaction );
+        lock.releaseReadLock( lockTransaction, INSTANCE );
+        lock.releaseReadLock( anotherTransaction, INSTANCE );
 
         // wait till writer will have write lock
         writerCompletedLatch.await();
@@ -133,7 +134,7 @@ class RWLockTest
         assertEquals( 0, lock.getReadCount() );
 
         // now releasing write lock
-        lock.releaseWriteLock( lockTransaction );
+        lock.releaseWriteLock( lockTransaction, INSTANCE );
 
         assertEquals( 0, lock.getWriteCount(), "Lock should not have any writers left." );
         assertEquals( 0, lock.getWaitingThreadsCount(), "No waiting threads left." );
@@ -152,7 +153,7 @@ class RWLockTest
         final CountDownLatch readerCompletedLatch = new CountDownLatch( 1 );
 
         lock.mark();
-        lock.acquireWriteLock( LockTracer.NONE, transaction );
+        lock.acquireWriteLock( LockTracer.NONE, transaction, INSTANCE );
 
         Runnable reader = createReader( lock, readerTransaction, readerCompletedLatch );
 
@@ -164,7 +165,7 @@ class RWLockTest
         assertEquals( 1, lock.getWriteCount() );
         assertEquals( 0, lock.getReadCount(), "No readers for now" );
 
-        lock.releaseWriteLock( transaction );
+        lock.releaseWriteLock( transaction, INSTANCE );
 
         // wait till reader finish lock grab
         readerCompletedLatch.await();
@@ -172,7 +173,7 @@ class RWLockTest
         assertEquals( 0, lock.getWriteCount() );
         assertEquals( 1, lock.getReadCount() );
 
-        lock.releaseReadLock( readerTransaction );
+        lock.releaseReadLock( readerTransaction, INSTANCE );
 
         assertEquals( 0, lock.getReadCount(), "Lock should not have any readers left." );
         assertEquals( 0, lock.getWaitingThreadsCount(), "No waiting threads left." );
@@ -199,8 +200,8 @@ class RWLockTest
 
         lock.mark();
         lock.mark();
-        lock.acquireReadLock( LockTracer.NONE, lockTransaction );
-        lock.acquireReadLock( LockTracer.NONE, anotherTransaction );
+        lock.acquireReadLock( LockTracer.NONE, lockTransaction, INSTANCE );
+        lock.acquireReadLock( LockTracer.NONE, anotherTransaction, INSTANCE );
 
         // writer will be added to a waiting list
         // then spurious wake up will be simulated
@@ -210,7 +211,7 @@ class RWLockTest
             try
             {
                 lock.mark();
-                lock.acquireWriteLock( LockTracer.NONE, lockTransaction );
+                lock.acquireWriteLock( LockTracer.NONE, lockTransaction, INSTANCE );
             }
             catch ( DeadlockDetectedException ignored )
             {
@@ -253,9 +254,9 @@ class RWLockTest
         final CountDownLatch writerCompletedLatch = new CountDownLatch( 1 );
 
         lock.mark();
-        lock.acquireReadLock( LockTracer.NONE, lockTransaction );
+        lock.acquireReadLock( LockTracer.NONE, lockTransaction, INSTANCE );
         lock.mark();
-        lock.acquireReadLock( LockTracer.NONE, anotherTransaction );
+        lock.acquireReadLock( LockTracer.NONE, anotherTransaction, INSTANCE );
 
         assertEquals( 2, lock.getReadCount() );
         assertEquals( 0, lock.getWriteCount() );
@@ -273,8 +274,8 @@ class RWLockTest
         assertEquals( 3, lock.getTxLockElementCount() );
         assertEquals( 1, lock.getWaitingThreadsCount() );
 
-        lock.releaseReadLock( lockTransaction );
-        lock.releaseReadLock( anotherTransaction );
+        lock.releaseReadLock( lockTransaction, INSTANCE );
+        lock.releaseReadLock( anotherTransaction, INSTANCE );
         writerCompletedLatch.await();
 
         // test readers and waiting thread gone
@@ -283,7 +284,7 @@ class RWLockTest
         assertEquals( 1, lock.getTxLockElementCount() );
         assertEquals( 0, lock.getWaitingThreadsCount() );
 
-        lock.releaseWriteLock( writeTransaction );
+        lock.releaseWriteLock( writeTransaction, INSTANCE );
 
         // check lock is clean in the end
         assertEquals( 0, lock.getTxLockElementCount() );
@@ -311,11 +312,11 @@ class RWLockTest
         final CountDownLatch deadLockDetector = new CountDownLatch( 1 );
 
         lockNode1.mark();
-        lockNode1.acquireWriteLock( LockTracer.NONE, client1Transaction );
+        lockNode1.acquireWriteLock( LockTracer.NONE, client1Transaction, INSTANCE );
         lockNode2.mark();
-        lockNode2.acquireWriteLock( LockTracer.NONE, client2Transaction );
+        lockNode2.acquireWriteLock( LockTracer.NONE, client2Transaction, INSTANCE );
         lockNode3.mark();
-        lockNode3.acquireWriteLock( LockTracer.NONE, client3Transaction );
+        lockNode3.acquireWriteLock( LockTracer.NONE, client3Transaction, INSTANCE );
 
         Runnable readerLockNode2 = createReaderForDeadlock( lockNode3, client1Transaction, deadLockDetector );
         Runnable readerLockNode3 = createReaderForDeadlock( lockNode1, client2Transaction, deadLockDetector );
@@ -327,9 +328,9 @@ class RWLockTest
         // Deadlock should occur
         assertTrue( deadLockDetector.await( 100, TimeUnit.SECONDS ), "Deadlock was detected as expected." );
 
-        lockNode3.releaseWriteLock( client3Transaction );
-        lockNode2.releaseWriteLock( client2Transaction );
-        lockNode1.releaseWriteLock( client1Transaction );
+        lockNode3.releaseWriteLock( client3Transaction, INSTANCE );
+        lockNode2.releaseWriteLock( client2Transaction, INSTANCE );
+        lockNode1.releaseWriteLock( client1Transaction, INSTANCE );
     }
 
     @Test
@@ -351,7 +352,7 @@ class RWLockTest
 
         // when
         lock.mark();
-        assertTrue( lock.acquireWriteLock( LockTracer.NONE, mainTransaction ) );
+        assertTrue( lock.acquireWriteLock( LockTracer.NONE, mainTransaction, INSTANCE ) );
         executor.submit( reader );
         executor.submit( conflictingWriter );
 
@@ -379,7 +380,7 @@ class RWLockTest
         return () ->
         {
             lock.mark();
-            lock.acquireReadLock( LockTracer.NONE, transaction );
+            lock.acquireReadLock( LockTracer.NONE, transaction, INSTANCE );
             latch.countDown();
         };
     }
@@ -389,7 +390,7 @@ class RWLockTest
         return () ->
         {
             lock.mark();
-            assertFalse( lock.acquireReadLock( LockTracer.NONE, transaction ) );
+            assertFalse( lock.acquireReadLock( LockTracer.NONE, transaction, INSTANCE ) );
             latch.countDown();
         };
     }
@@ -399,7 +400,7 @@ class RWLockTest
         return () ->
         {
             lock.mark();
-            lock.acquireWriteLock( LockTracer.NONE, transaction );
+            lock.acquireWriteLock( LockTracer.NONE, transaction, INSTANCE );
             latch.countDown();
         };
     }
@@ -409,7 +410,7 @@ class RWLockTest
         return () ->
         {
             lock.mark();
-            assertFalse( lock.acquireWriteLock( LockTracer.NONE, transaction ) );
+            assertFalse( lock.acquireWriteLock( LockTracer.NONE, transaction, INSTANCE ) );
             latch.countDown();
         };
     }
@@ -421,7 +422,7 @@ class RWLockTest
             try
             {
                 node.mark();
-                node.acquireReadLock( LockTracer.NONE, transaction );
+                node.acquireReadLock( LockTracer.NONE, transaction, INSTANCE );
             }
             catch ( DeadlockDetectedException e )
             {

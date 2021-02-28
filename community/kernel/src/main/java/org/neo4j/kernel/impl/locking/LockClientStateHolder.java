@@ -42,7 +42,7 @@ public final class LockClientStateHolder
     private static final int PREPARE = 1 << CLIENT_BITS - 1;
     private static final int STATE_BIT_MASK = STOPPED | PREPARE;
     private static final int INITIAL_STATE = 0;
-    private AtomicInteger clientState = new AtomicInteger( INITIAL_STATE );
+    private final AtomicInteger clientState = new AtomicInteger( INITIAL_STATE );
 
     /**
      * Check if we still have any active client

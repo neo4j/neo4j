@@ -25,8 +25,6 @@ import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure
 import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,9 +41,12 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
+import static org.neo4j.collection.trackable.HeapTrackingCollections.newIntObjectHashMap;
+import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObjectMap;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.LockType.SHARED;
 
@@ -56,9 +57,10 @@ public class CommunityLockClient implements Locks.Client
 {
     private final LockManagerImpl manager;
     private final LockTransaction lockTransaction = new LockTransaction();
+    private volatile MemoryTracker memoryTracker;
 
-    private final MutableIntObjectMap<MutableLongObjectMap<LockResource>> sharedLocks = new IntObjectHashMap<>();
-    private final MutableIntObjectMap<MutableLongObjectMap<LockResource>> exclusiveLocks = new IntObjectHashMap<>();
+    private MutableIntObjectMap<MutableLongObjectMap<LockResource>> sharedLocks;
+    private MutableIntObjectMap<MutableLongObjectMap<LockResource>> exclusiveLocks;
     private final LongObjectProcedure<LockResource> readReleaser;
     private final LongObjectProcedure<LockResource> writeReleaser;
     private final Procedure<LongObjectMap<LockResource>> typeReadReleaser;
@@ -76,8 +78,8 @@ public class CommunityLockClient implements Locks.Client
     {
         this.manager = manager;
 
-        readReleaser = ( key, lockResource ) -> manager.releaseReadLock( lockResource, lockTransaction );
-        writeReleaser = ( key, lockResource ) -> manager.releaseWriteLock( lockResource, lockTransaction );
+        readReleaser = ( key, lockResource ) -> manager.releaseReadLock( lockResource, lockTransaction, EmptyMemoryTracker.INSTANCE );
+        writeReleaser = ( key, lockResource ) -> manager.releaseWriteLock( lockResource, lockTransaction, EmptyMemoryTracker.INSTANCE );
         typeReadReleaser = value -> value.forEachKeyValue( readReleaser );
         typeWriteReleaser = value -> value.forEachKeyValue( writeReleaser );
     }
@@ -86,6 +88,7 @@ public class CommunityLockClient implements Locks.Client
     public void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker )
     {
         this.lockTransaction.setTransactionId( transactionId );
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -105,8 +108,9 @@ public class CommunityLockClient implements Locks.Client
                 else
                 {
                     resource = new LockResource( resourceType, resourceId );
-                    if ( manager.getReadLock( tracer, resource, lockTransaction ) )
+                    if ( manager.getReadLock( tracer, resource, lockTransaction, memoryTracker ) )
                     {
+                        memoryTracker.allocateHeap( LockResource.SHALLOW_SIZE );
                         localLocks.put( resourceId, resource );
                     }
                     else
@@ -139,7 +143,7 @@ public class CommunityLockClient implements Locks.Client
                 else
                 {
                     resource = new LockResource( resourceType, resourceId );
-                    if ( manager.getWriteLock( tracer, resource, lockTransaction ) )
+                    if ( manager.getWriteLock( tracer, resource, lockTransaction, memoryTracker ) )
                     {
                         localLocks.put( resourceId, resource );
                     }
@@ -172,7 +176,7 @@ public class CommunityLockClient implements Locks.Client
             else
             {
                 resource = new LockResource( resourceType, resourceId );
-                if ( manager.tryWriteLock( resource, lockTransaction ) )
+                if ( manager.tryWriteLock( resource, lockTransaction, memoryTracker ) )
                 {
                     localLocks.put( resourceId, resource );
                     return true;
@@ -205,7 +209,7 @@ public class CommunityLockClient implements Locks.Client
             else
             {
                 resource = new LockResource( resourceType, resourceId );
-                if ( manager.tryReadLock( resource, lockTransaction ) )
+                if ( manager.tryReadLock( resource, lockTransaction, memoryTracker ) )
                 {
                     localLocks.put( resourceId, resource );
                     return true;
@@ -235,7 +239,7 @@ public class CommunityLockClient implements Locks.Client
                 if ( resource.releaseReference() == 0 )
                 {
                     localLocks.remove( resourceId );
-                    manager.releaseReadLock( new LockResource( resourceType, resourceId ), lockTransaction );
+                    manager.releaseReadLock( new LockResource( resourceType, resourceId ), lockTransaction, memoryTracker );
                 }
             }
         }
@@ -258,7 +262,7 @@ public class CommunityLockClient implements Locks.Client
                 if ( resource.releaseReference() == 0 )
                 {
                     localLocks.remove( resourceId );
-                    manager.releaseWriteLock( new LockResource( resourceType, resourceId ), lockTransaction );
+                    manager.releaseWriteLock( new LockResource( resourceType, resourceId ), lockTransaction, memoryTracker );
                 }
             }
         }
@@ -303,15 +307,22 @@ public class CommunityLockClient implements Locks.Client
         stateHolder.closeClient();
         terminateAllWaitersAndWaitForClientsToLeave();
         releaseLocks();
+        memoryTracker = null;
         lockTransaction.setTransactionId( INVALID_TRANSACTION_ID );
     }
 
     private synchronized void releaseLocks()
     {
-        exclusiveLocks.forEachValue( typeWriteReleaser );
-        sharedLocks.forEachValue( typeReadReleaser );
-        exclusiveLocks.clear();
-        sharedLocks.clear();
+        if ( exclusiveLocks != null )
+        {
+            exclusiveLocks.forEachValue( typeWriteReleaser );
+            exclusiveLocks = null;
+        }
+        if ( sharedLocks != null )
+        {
+            sharedLocks.forEachValue( typeReadReleaser );
+            sharedLocks = null;
+        }
     }
 
     // waking up and terminate all waiters that were waiting for any lock for current client
@@ -334,8 +345,14 @@ public class CommunityLockClient implements Locks.Client
     public Stream<ActiveLock> activeLocks()
     {
         List<ActiveLock> locks = new ArrayList<>();
-        exclusiveLocks.forEachKeyValue( collectActiveLocks( locks, EXCLUSIVE, lockTransaction.getTransactionId() ) );
-        sharedLocks.forEachKeyValue( collectActiveLocks( locks, SHARED, lockTransaction.getTransactionId() ) );
+        if ( exclusiveLocks != null )
+        {
+            exclusiveLocks.forEachKeyValue( collectActiveLocks( locks, EXCLUSIVE, lockTransaction.getTransactionId() ) );
+        }
+        if ( sharedLocks != null )
+        {
+            sharedLocks.forEachKeyValue( collectActiveLocks( locks, SHARED, lockTransaction.getTransactionId() ) );
+        }
         return locks.stream();
     }
 
@@ -343,8 +360,14 @@ public class CommunityLockClient implements Locks.Client
     public long activeLockCount()
     {
         LockCounter counter = new LockCounter();
-        exclusiveLocks.forEachKeyValue( counter );
-        sharedLocks.forEachKeyValue( counter );
+        if ( exclusiveLocks != null )
+        {
+            exclusiveLocks.forEachKeyValue( counter );
+        }
+        if ( sharedLocks != null )
+        {
+            sharedLocks.forEachKeyValue( counter );
+        }
         return counter.locks;
     }
 
@@ -370,12 +393,20 @@ public class CommunityLockClient implements Locks.Client
 
     private MutableLongObjectMap<LockResource> localShared( ResourceType resourceType )
     {
-        return sharedLocks.getIfAbsentPut( resourceType.typeId(), LongObjectHashMap::new );
+        if ( this.sharedLocks == null )
+        {
+            this.sharedLocks = newIntObjectHashMap( memoryTracker );
+        }
+        return sharedLocks.getIfAbsentPut( resourceType.typeId(), () -> newLongObjectMap( memoryTracker ) );
     }
 
     private MutableLongObjectMap<LockResource> localExclusive( ResourceType resourceType )
     {
-        return exclusiveLocks.getIfAbsentPut( resourceType.typeId(), LongObjectHashMap::new );
+        if ( this.exclusiveLocks == null )
+        {
+            this.exclusiveLocks = newIntObjectHashMap( memoryTracker );
+        }
+        return exclusiveLocks.getIfAbsentPut( resourceType.typeId(), () -> newLongObjectMap( memoryTracker ) );
     }
 
     @Override

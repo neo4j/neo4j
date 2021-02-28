@@ -23,9 +23,12 @@ import java.util.Objects;
 
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.memory.HeapEstimator;
 
 public class LockResource
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( LockResource.class );
+
     private final ResourceType resourceType;
     private final long resourceId;
 
