@@ -18,13 +18,11 @@ package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.util.symbols.CTAny
 
 class MultiGraphDDLParserTest extends AdministrationCommandParserTestBase {
 
   private val singleQuery = ast.SingleQuery(Seq(ast.ConstructGraph()(pos)))(pos)
   private val returnGraph: ast.ReturnGraph = ast.ReturnGraph(None)(pos)
-  private val returnQuery = ast.SingleQuery(Seq(returnGraph))(pos)
 
   test("CATALOG CREATE GRAPH foo.bar { RETURN GRAPH }") {
     val query = ast.SingleQuery(Seq(returnGraph))(pos)
@@ -115,45 +113,5 @@ class MultiGraphDDLParserTest extends AdministrationCommandParserTestBase {
   // missing graph name; doesn't fail because it's a valid query if GRAPH is a variable
   ignore("CATALOG DROP GRAPH") {
     failsToParse
-  }
-
-  test("CATALOG CREATE VIEW viewName { RETURN GRAPH }") {
-    val graphName = ast.CatalogName("viewName")
-
-    yields(ast.CreateView(graphName, Seq.empty, returnQuery, "RETURN GRAPH"))
-  }
-
-  test("CATALOG CREATE QUERY viewName { RETURN GRAPH }") {
-    val graphName = ast.CatalogName("viewName")
-
-    yields(ast.CreateView(graphName, Seq.empty, returnQuery, "RETURN GRAPH"))
-  }
-
-  test("CATALOG CREATE VIEW foo.bar($graph1, $graph2) { FROM $graph1 RETURN GRAPH }") {
-    val from = ast.FromGraph(expressions.Parameter("graph1", CTAny)(pos))(pos)
-    val query = ast.SingleQuery(Seq(from,  returnGraph))(pos)
-    val graphName = ast.CatalogName("foo", List("bar"))
-    val params = Seq(parameter("graph1", CTAny), parameter("graph2", CTAny))
-
-    yields(ast.CreateView(graphName, params, query, "FROM $graph1 RETURN GRAPH"))
-  }
-
-  test("CATALOG CREATE VIEW foo.bar() { RETURN GRAPH }") {
-    val query = ast.SingleQuery(Seq(returnGraph))(pos)
-    val graphName = ast.CatalogName("foo", List("bar"))
-
-    yields(ast.CreateView(graphName, Seq.empty, query, "RETURN GRAPH"))
-  }
-
-  test("CATALOG DROP VIEW viewName") {
-    val graphName = ast.CatalogName("viewName")
-
-    yields(ast.DropView(graphName))
-  }
-
-  test("CATALOG DROP QUERY viewName") {
-    val graphName = ast.CatalogName("viewName")
-
-    yields(ast.DropView(graphName))
   }
 }

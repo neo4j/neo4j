@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstrai
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreateUser
-import org.neo4j.cypher.internal.ast.CreateView
 import org.neo4j.cypher.internal.ast.DatabasePrivilege
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
@@ -62,7 +61,6 @@ import org.neo4j.cypher.internal.ast.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropUser
-import org.neo4j.cypher.internal.ast.DropView
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
@@ -463,15 +461,6 @@ case class Prettifier(
     case x @ DropGraph(catalogName) =>
       val graphName = catalogName.parts.mkString(".")
       s"${x.name} $graphName"
-
-    case CreateView(catalogName, params, query, _) =>
-      val graphName = catalogName.parts.mkString(".")
-      val paramString = params.map(p => "$" + p.name).mkString("(", ", ", ")")
-      s"CATALOG CREATE VIEW $graphName$paramString {$NL${base.indented().queryPart(query)}$NL}"
-
-    case DropView(catalogName) =>
-      val graphName = catalogName.parts.mkString(".")
-      s"CATALOG DROP VIEW $graphName"
   }
 
   private def asString(use: Option[GraphSelection]) = {

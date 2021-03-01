@@ -20,7 +20,6 @@ import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
@@ -36,7 +35,6 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewritable
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
-import org.neo4j.cypher.internal.util.symbols.CTGraphRef
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
@@ -898,42 +896,6 @@ final case class CreateGraph(graphName: CatalogName, query: QueryPart)
 final case class DropGraph(graphName: CatalogName)(val position: InputPosition) extends MultiGraphDDL {
 
   override def name = "CATALOG DROP GRAPH"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
-}
-
-object CreateView {
-  def apply(graphName: CatalogName, params: Seq[Parameter], query: Query, innerQString: String)(position: InputPosition): CreateView =
-    CreateView(graphName, params, query.part, innerQString)(position)
-}
-
-final case class CreateView(graphName: CatalogName, params: Seq[Parameter], query: QueryPart, innerQString: String)
-                           (val position: InputPosition) extends MultiGraphDDL {
-
-  override def name = "CATALOG CREATE VIEW/QUERY"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      SemanticState.recordCurrentScope(this) chain
-      recordGraphParameters chain
-      query.semanticCheck
-
-  private def recordGraphParameters(state: SemanticState): SemanticCheckResult = {
-    params.foldLeft(success(state): SemanticCheckResult) { case (SemanticCheckResult(s, errors), p) =>
-      s.declareVariable(Variable(s"$$${p.name}")(position), CTGraphRef) match {
-        case Right(updatedState) => success(updatedState)
-        case Left(semanticError) => SemanticCheckResult(s, errors :+ semanticError)
-      }
-    }
-  }
-
-}
-
-final case class DropView(graphName: CatalogName)(val position: InputPosition) extends MultiGraphDDL {
-
-  override def name = "CATALOG DROP VIEW/QUERY"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain

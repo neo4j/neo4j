@@ -35,7 +35,7 @@ trait Statement extends Parser
   // Graph/View commands
 
   def MultiGraphCommand: Rule1[ast.MultiGraphDDL] = rule("Multi graph DDL statement") {
-    CreateGraph | DropGraph | CreateView | DropView
+    CreateGraph | DropGraph
   }
 
   def CreateGraph: Rule1[ast.CreateGraph] = rule("CATALOG CREATE GRAPH") {
@@ -46,17 +46,6 @@ trait Statement extends Parser
 
   def DropGraph: Rule1[ast.DropGraph] = rule("CATALOG DROP GRAPH") {
     group(keyword("CATALOG DROP GRAPH") ~~ CatalogName) ~~>> (ast.DropGraph(_))
-  }
-
-  def CreateView: Rule1[ast.CreateView] = rule("CATALOG CREATE VIEW") {
-    group((keyword("CATALOG CREATE VIEW") | keyword("CATALOG CREATE QUERY")) ~~
-      CatalogName ~~ optional("(" ~~ zeroOrMore(Parameter, separator = CommaSep) ~~ ")") ~~ "{" ~~
-      captureString(RegularQuery) ~~
-      "}") ~~>> { case (name, params, (query, string)) => ast.CreateView(name, params.getOrElse(Seq.empty), query, string) }
-  }
-
-  def DropView: Rule1[ast.DropView] = rule("CATALOG DROP VIEW") {
-    group((keyword("CATALOG DROP VIEW") | keyword("CATALOG DROP QUERY")) ~~ CatalogName) ~~>> (ast.DropView(_))
   }
 
 }

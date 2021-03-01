@@ -1648,17 +1648,6 @@ class ParboiledPrettifierIT extends CypherFunSuite {
 
     "catalog DROP graph com.neo4j.Users" ->
       "CATALOG DROP GRAPH com.neo4j.Users",
-
-    "catalog create VIEW com.neo4j.Users($p, $k) { MATCH (n) WHERE n.p=$p RETURN n LIMIT $k }" ->
-      """CATALOG CREATE VIEW com.neo4j.Users($p, $k) {
-        |  MATCH (n)
-        |    WHERE n.p = $p
-        |  RETURN n
-        |    LIMIT $k
-        |}""".stripMargin,
-
-    "catalog DROP VIEW com.neo4j.Users" ->
-      "CATALOG DROP VIEW com.neo4j.Users",
   )
 
   def startTests(entityType: String): Seq[(String, String)] = {
