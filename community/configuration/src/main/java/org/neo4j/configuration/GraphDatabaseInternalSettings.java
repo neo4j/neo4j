@@ -69,7 +69,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Boolean> ephemeral_lucene = newBuilder( "unsupported.dbms.lucene.ephemeral", BOOL, false ).build();
 
     @Internal
-    public static final Setting<String> lock_manager = newBuilder( "unsupported.dbms.lock_manager", STRING, "" ).build();
+    public static final Setting<String> lock_manager = newBuilder( "unsupported.dbms.lock_manager", STRING, "forseti" ).build();
 
     @Internal
     public static final Setting<String> tracer = newBuilder( "unsupported.dbms.tracer", STRING, null ).build();

@@ -50,7 +50,6 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.locking.community.CommunityLockClient;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -279,7 +278,8 @@ class DatabaseUpgradeTransactionIT
                 tx.acquireWriteLock( tx.getNodeById( lockNode ) ); //take the lock
                 tx.createNode(); //and make sure it is a write to trigger upgrade
                 l1.release();
-                executor.waitUntilWaiting( details -> details.isAt( CommunityLockClient.class, "acquireExclusive" ) );
+                //TODO:
+//                executor.waitUntilWaiting( details -> details.isAt( CommunityLockClient.class, "acquireExclusive" ) );
                 tx.commit();
             }
             executor.awaitFuture( f1 );

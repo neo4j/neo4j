@@ -35,7 +35,6 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.TestDatabaseIdRepository;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.community.CommunityLockClient;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.time.Clocks;
@@ -131,7 +130,7 @@ class KernelStatementTest
         var queryFactory = new ExecutingQueryFactory( Clocks.nanoClock(), cpuClockRef, Config.defaults() );
         var transaction = mock( KernelTransactionImplementation.class, RETURNS_DEEP_STUBS );
         var statement = createStatement( transaction );
-        statement.initialize( mock( CommunityLockClient.class ), PageCursorTracer.NULL, 100 );
+        statement.initialize( mock( Locks.Client.class ), PageCursorTracer.NULL, 100 );
 
         var query1 = queryFactory.createForStatement( statement, "test1", MapValue.EMPTY );
         var query2 = queryFactory.createForStatement( statement, "test2", MapValue.EMPTY );

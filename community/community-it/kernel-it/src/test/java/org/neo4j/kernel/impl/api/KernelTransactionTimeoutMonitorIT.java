@@ -50,7 +50,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.lock_manager;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_monitor_check_interval;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 
@@ -68,7 +67,6 @@ public class KernelTransactionTimeoutMonitorIT
     @ExtensionCallback
     protected void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( lock_manager, "community");
         builder.setConfig( transaction_monitor_check_interval, Duration.ofMillis( 100 ) );
     }
 

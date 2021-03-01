@@ -24,13 +24,11 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.locking.LocksFactory;
-import org.neo4j.kernel.impl.locking.community.CommunityLocksFactory;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
@@ -54,24 +52,25 @@ class EditionLocksFactoriesTest
         verify( lockFactory ).newInstance( eq( config ), eq( clock ), eq( ResourceTypes.values() ) );
     }
 
-    @Test
-    void createCommunityLocksFactoryWhenNotConfigured()
-    {
-        Config config = Config.defaults();
-        LocksFactory lockFactory = createLockFactory( config, NullLogService.getInstance() );
-
-        assertThat( lockFactory ).isInstanceOf( CommunityLocksFactory.class );
-    }
-
-    @Test
-    void createCommunityLocksFactoryWhenSpecified()
-    {
-        Config config = Config.defaults( GraphDatabaseInternalSettings.lock_manager, "community");
-
-        LocksFactory lockFactory = createLockFactory( config, NullLogService.getInstance() );
-
-        assertThat( lockFactory ).isInstanceOf( CommunityLocksFactory.class );
-    }
+//    TODO:
+//    @Test
+//    void createCommunityLocksFactoryWhenNotConfigured()
+//    {
+//        Config config = Config.defaults();
+//        LocksFactory lockFactory = createLockFactory( config, NullLogService.getInstance() );
+//
+//        assertThat( lockFactory ).isInstanceOf( CommunityLocksFactory.class );
+//    }
+//
+//    @Test
+//    void createCommunityLocksFactoryWhenSpecified()
+//    {
+//        Config config = Config.defaults( GraphDatabaseInternalSettings.lock_manager, "community");
+//
+//        LocksFactory lockFactory = createLockFactory( config, NullLogService.getInstance() );
+//
+//        assertThat( lockFactory ).isInstanceOf( CommunityLocksFactory.class );
+//    }
 
     @Test
     void failToCreateWhenConfiguredFactoryNotFound()

@@ -34,7 +34,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Predicate;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -46,11 +45,9 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
-import org.neo4j.kernel.impl.locking.community.RWLock;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -158,12 +155,13 @@ class DetachDeleteIT
         Future<Object> lockVerifier = executor.submit( () ->
         {
             sequencer.await( Phases.OTHER_REL_CREATED );
-            Predicate<Thread> predicate = ThreadingRule.waitingWhileIn( RWLock.class, "waitUninterruptedly" );
-            do
-            {
-                Thread.sleep( 100 );
-            }
-            while ( !predicate.test( main ) );
+            //TODO:
+//            Predicate<Thread> predicate = ThreadingRule.waitingWhileIn( RWLock.class, "waitUninterruptedly" );
+//            do
+//            {
+//                Thread.sleep( 100 );
+//            }
+//            while ( !predicate.test( main ) );
             sequencer.release( Phases.DETACH_DELETE_HAS_STARTED );
             sequencer.await( Phases.DETACH_DELETE_HAS_FINISHED ); // Now the DETACH DELETE *should* be holding a lock on all neighbours. Verify.
             try ( Transaction ignore = db.beginTx() )
