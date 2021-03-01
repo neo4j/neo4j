@@ -23,12 +23,15 @@ import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreateUser
+import org.neo4j.cypher.internal.ast.DatabasePrivilege
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
 import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.GrantPrivilege
+import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
+import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
@@ -157,6 +160,22 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("SET USER HOME DATABASE privilege is not supported in this Cypher version.", p.position)
       case p@RevokePrivilege(DbmsPrivilege(SetUserHomeDatabaseAction), _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("SET USER HOME DATABASE privilege is not supported in this Cypher version.", p.position)
+
+      // GRANT/DENY/REVOKE ... ON HOME DATABASE ...
+      case p@GrantPrivilege(DatabasePrivilege(_, List(HomeDatabaseScope())), _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("Granting privileges on `HOME DATABASE` is not supported in this Cypher version.", p.position)
+      case p@DenyPrivilege(DatabasePrivilege(_, List(HomeDatabaseScope())), _, _, _)      =>
+        throw cypherExceptionFactory.syntaxException("Denying privileges on `HOME DATABASE` is not supported in this Cypher version.", p.position)
+      case p@RevokePrivilege(DatabasePrivilege(_, List(HomeDatabaseScope())), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("Revoking privileges on `HOME DATABASE` is not supported in this Cypher version.", p.position)
+
+      // GRANT/DENY/REVOKE ... ON HOME GRAPH ...
+      case p@GrantPrivilege(GraphPrivilege(_, List(HomeGraphScope())), _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("Granting privileges on `HOME GRAPH` is not supported in this Cypher version.", p.position)
+      case p@DenyPrivilege(GraphPrivilege(_, List(HomeGraphScope())), _, _, _)   =>
+        throw cypherExceptionFactory.syntaxException("Denying privileges on `HOME GRAPH` is not supported in this Cypher version.", p.position)
+      case p@RevokePrivilege(GraphPrivilege(_, List(HomeGraphScope())), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("Revoking privileges on `HOME GRAPH` is not supported in this Cypher version.", p.position)
     }
   }
 
