@@ -19,6 +19,14 @@
  */
 package org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
@@ -396,12 +404,48 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
     qgWithLeafInfo.allKnownUnstableNodeProperties should equal(Set(propName("prop")))
   }
 
+  test("allKnownUnstableNodeProperties includes pattern expression property key names") {
+    val a = StableIdentifier("a", isIdStable = false)
+    val pExp = PatternExpression(RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(varFor("a")), Seq.empty, Some(MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)))(pos),
+      RelationshipPattern(None, Seq.empty, None, None, BOTH)(pos),
+      NodePattern(None, Seq.empty, None)(pos)
+    )(pos))(pos))(Set.empty)
+
+    val qg = QueryGraph(
+      patternNodes = Set("a"),
+      argumentIds = Set("b"),
+      selections = Selections.from(pExp)
+    )
+    val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(a))
+
+    qgWithLeafInfo.allKnownUnstableNodeProperties should equal(Set(propName("prop")))
+  }
+
   test("allKnownUnstableRelProperties includes arguments not proven to be relationships") {
     val a = StableIdentifier("a", isIdStable = false)
     val qg = QueryGraph(
       patternNodes = Set("a"),
       argumentIds = Set("b"),
       selections = Selections.from(Seq(propEquality("b", "prop", 5)))
+    )
+    val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(a))
+
+    qgWithLeafInfo.allKnownUnstableRelProperties should equal(Set(propName("prop")))
+  }
+
+  test("allKnownUnstableRelProperties includes pattern comprehension property key names") {
+    val a = StableIdentifier("a", isIdStable = false)
+    val pComp = PatternComprehension(None, RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(varFor("a")), Seq.empty, Some(MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)))(pos),
+      RelationshipPattern(None, Seq.empty, None, None, BOTH)(pos),
+      NodePattern(None, Seq.empty, None)(pos)
+    )(pos))(pos), None, literalInt(5))(pos, Set.empty)
+
+    val qg = QueryGraph(
+      patternNodes = Set("a"),
+      argumentIds = Set("b"),
+      selections = Selections.from(pComp)
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, Some(a))
 

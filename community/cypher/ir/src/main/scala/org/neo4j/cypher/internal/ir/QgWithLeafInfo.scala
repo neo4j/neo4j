@@ -20,11 +20,14 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.Identifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 object QgWithLeafInfo {
 
@@ -126,10 +129,16 @@ case class QgWithLeafInfo(private val solvedQg: QueryGraph,
   }
 
   def allKnownUnstableNodeProperties: Set[PropertyKeyName] = {
-    patternNodesAndArguments.flatMap(allKnownUnstablePropertiesFor)
+    patternNodesAndArguments.flatMap(allKnownUnstablePropertiesFor) ++ patternExpressionProperties
   }
 
   def allKnownUnstableRelProperties: Set[PropertyKeyName] = {
-    patternRelationshipsAndArguments.flatMap(allKnownUnstablePropertiesFor)
+    patternRelationshipsAndArguments.flatMap(allKnownUnstablePropertiesFor) ++ patternExpressionProperties
+  }
+
+  private lazy val patternExpressionProperties: Set[PropertyKeyName] = {
+    (queryGraph.findByAllClass[PatternComprehension] ++ queryGraph.findByAllClass[PatternExpression]).flatMap {
+      _.findByAllClass[PropertyKeyName]
+    }.toSet
   }
 }

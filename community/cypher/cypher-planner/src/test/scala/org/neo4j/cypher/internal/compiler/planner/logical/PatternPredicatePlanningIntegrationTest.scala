@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
+import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
@@ -1136,7 +1137,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     planFor(q)._2 should beLike {
       case EmptyResult(
       Foreach(
-        RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _), _, _, _)) => ()
+        RollUpApply(Eager(Argument(SetExtractor())), _/* <- This is the subQuery */, _, _), _, _, _)) => ()
     }
   }
 

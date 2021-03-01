@@ -21,9 +21,13 @@ package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
+import org.neo4j.cypher.internal.rewriting.rewriters.SameNameNamer
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.exceptions.InternalException
 
@@ -40,7 +44,11 @@ trait QueryHorizon {
 
   def readOnly = true
 
-  def allQueryGraphs: Seq[QueryGraph] = Seq.empty
+  def allQueryGraphs: Seq[QueryGraph] = {
+    val patternComprehensions = dependingExpressions.findByAllClass[PatternComprehension].map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), SameNameNamer))
+    val patternExpressions = dependingExpressions.findByAllClass[PatternExpression].map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), SameNameNamer))
+    patternComprehensions ++ patternExpressions
+  }
 }
 
 final case class PassthroughAllHorizon() extends QueryHorizon {
@@ -68,7 +76,7 @@ case class CallSubqueryHorizon(callSubquery: PlannerQueryPart, correlated: Boole
 
   override def readOnly: Boolean = callSubquery.readOnly
 
-  override def allQueryGraphs: Seq[QueryGraph] = callSubquery.allQueryGraphs
+  override def allQueryGraphs: Seq[QueryGraph] = super.allQueryGraphs ++ callSubquery.allQueryGraphs
 }
 
 sealed abstract class QueryProjection extends QueryHorizon {

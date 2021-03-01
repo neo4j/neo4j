@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.ContainerIndex
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.expressions.HasLabels
-import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.MapExpression
-import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -34,9 +34,10 @@ import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
-import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.exceptions.InternalException
 
@@ -188,36 +189,24 @@ trait UpdateGraph {
    * Determines whether there's an overlap in writes being done here, and reads being done in the given horizon.
    */
   def overlapsHorizon(horizon: QueryHorizon, semanticTable: SemanticTable): Boolean = {
+    containsUpdates && {
+      val dependingExpressions = horizon.dependingExpressions
+      val dependencies = dependingExpressions
+        .flatMap(_.dependencies)
+        // This filter avoids being eager on simple projections like `WITH a.prop AS prop`, if we can rule out `a` is an entity.
+        .filter(couldBeEntity(semanticTable, _))
+        .map(_.name)
+        .toSet
 
-    def conflictFromQg = horizon.allQueryGraphs.map(qgWithNoStableIdentifierAndOnlyLeaves).exists(overlaps)
 
-    val dependingExpressions = horizon.dependingExpressions
+      val qgFromDependingExpressions = QueryGraph(
+        argumentIds = dependencies,
+        selections = Selections.from(dependingExpressions),
+      )
+      val allQgs = horizon.allQueryGraphs :+ qgFromDependingExpressions
 
-    def setPropertyOverlap = {
-      val propertiesReadInHorizon = dependingExpressions.findByAllClass[Property].toSet
-      val maybeNode: Property => Boolean = maybeType(semanticTable, CTNode.invariant)
-      val maybeRel: Property => Boolean = maybeType(semanticTable, CTRelationship.invariant)
-      setNodePropertyOverlap(propertiesReadInHorizon.filter(maybeNode).map(_.propertyKey)) ||
-        setRelPropertyOverlap(propertiesReadInHorizon.filter(maybeRel).map(_.propertyKey))
+      allQgs.map(qgWithNoStableIdentifierAndOnlyLeaves).exists(overlaps)
     }
-
-    def createRelationshipOverlap = {
-      val allPatternRelationshipsRead = dependingExpressions.findByAllClass[RelationshipPattern].toSet
-      createRelationshipOverlapHorizon(allPatternRelationshipsRead)
-    }
-
-    def setLabelOverlap = {
-      (labelsToSet.nonEmpty || hasRemoveLabelPatterns) && {
-        dependingExpressions.treeExists {
-          case f: FunctionInvocation => f.function == Labels
-          case HasLabels(_, labelsToRead) => (labelsToRead.toSet intersect labelsToSet).nonEmpty
-          case HasLabelsOrTypes(_, labelsToRead) => (labelsToRead.map(_.name).toSet intersect labelsToSet.map(_.name)).nonEmpty
-          case _ => false
-        }
-      }
-    }
-
-    containsUpdates && (setPropertyOverlap || createRelationshipOverlap || setLabelOverlap || conflictFromQg)
   }
 
   def writeOnlyHeadOverlaps(qgWithInfo: QgWithLeafInfo): Boolean = {
@@ -389,15 +378,17 @@ trait UpdateGraph {
   }
 
   /**
-   * Checks whether the expression that a property is called on could be of type `typeSpec`.
+   * Checks whether the given expression could be of type `CTNode` or `CTRelationship`.
    */
-  def maybeType(semanticTable: SemanticTable, typeSpec: TypeSpec)(p:Property): Boolean =
-    semanticTable.types.get(p.map) match {
+  private def couldBeEntity(semanticTable: SemanticTable, exp:Expression): Boolean =
+    semanticTable.types.get(exp) match {
       case Some(expressionTypeInfo) =>
         val actualType = expressionTypeInfo.actual
-        actualType == typeSpec || actualType == CTAny.invariant
+        actualType.contains(CTNode) || actualType.contains(CTRelationship)
 
-      case None => throw new InternalException(s"Expression ${p.map} has no type from semantic analysis")
+      case None =>
+        // No type information available, we have to be conservative
+        true
     }
 
   /*
