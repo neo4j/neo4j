@@ -348,9 +348,15 @@ trait UpdateGraph {
    * Checks for overlap between labels being read in query graph
    * and labels being updated with SET and MERGE here
    */
-  def setLabelOverlap(qgWithInfo: QgWithLeafInfo): Boolean =
-    qgWithInfo.nonArgumentPatternNodes
+  def setLabelOverlap(qgWithInfo: QgWithLeafInfo): Boolean = {
+    // For SET label, we even have to look at the arguments for which we don't know if they are a node or not, so we consider HasLabelsOrTypes predicates.
+    def overlapWithKnownLabels = qgWithInfo.patternNodesAndArguments
       .exists(p => qgWithInfo.allKnownUnstableNodeLabelsFor(p).intersect(labelsToSet).nonEmpty)
+    def overlapWithLabelsFunction = qgWithInfo.treeExists {
+      case f: FunctionInvocation => f.function == Labels
+    }
+    overlapWithKnownLabels || overlapWithLabelsFunction
+  }
 
   /*
    * Checks for overlap between what props are read in query graph

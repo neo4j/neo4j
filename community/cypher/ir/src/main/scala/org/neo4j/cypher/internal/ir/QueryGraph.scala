@@ -196,10 +196,15 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   def knownProperties(idName: String): Set[PropertyKeyName] =
     selections.allPropertyPredicatesInvolving.getOrElse(idName, Set.empty).map(_.propertyKey)
 
-  private def possibleLabelsOnNode(node: String): Set[LabelName] =
-    selections
+  private def possibleLabelsOnNode(node: String): Set[LabelName] = {
+    val lbl = selections
       .allHasLabelsInvolving.getOrElse(node, Set.empty)
       .flatMap(_.labels)
+    val lblOrT = selections
+      .allHasLabelsOrTypesInvolving.getOrElse(node, Set.empty)
+      .flatMap(_.labelsOrTypes).map(lblOrType => LabelName(lblOrType.name)(lblOrType.position))
+    lbl ++ lblOrT
+  }
 
   private def possibleTypesOnRel(rel: String): Set[RelTypeName] = {
     val inlinedTypes = patternRelationships
@@ -211,7 +216,11 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
       .allHasTypesInvolving.getOrElse(rel, Set.empty)
       .flatMap(_.types)
 
-    inlinedTypes ++ whereClauseTypes
+    val whereClauseLabelOrTypes = selections
+      .allHasLabelsOrTypesInvolving.getOrElse(rel, Set.empty)
+      .flatMap(_.labelsOrTypes).map(lblOrType => RelTypeName(lblOrType.name)(lblOrType.position))
+
+    inlinedTypes ++ whereClauseTypes ++ whereClauseLabelOrTypes
   }
 
   def allPossibleLabelsOnNode(node: String): Set[LabelName] =

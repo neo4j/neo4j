@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Not
@@ -77,6 +78,18 @@ case class Selections private (predicates: Set[Predicate]) {
   lazy val allHasLabelsInvolving: Map[String, Set[HasLabels]] = {
     predicates.treeFold(Map.empty[String, Set[HasLabels]]) {
       case hasLabels@HasLabels(Variable(name), _) => acc =>
+        val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + hasLabels)
+        SkipChildren(newMap)
+    }
+  }
+
+  /**
+   * All label/type predicates for each variable.
+   * This includes deeply nested predicates (e.g. in OR).
+   */
+  lazy val allHasLabelsOrTypesInvolving: Map[String, Set[HasLabelsOrTypes]] = {
+    predicates.treeFold(Map.empty[String, Set[HasLabelsOrTypes]]) {
+      case hasLabels@HasLabelsOrTypes(Variable(name), _) => acc =>
         val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + hasLabels)
         SkipChildren(newMap)
     }

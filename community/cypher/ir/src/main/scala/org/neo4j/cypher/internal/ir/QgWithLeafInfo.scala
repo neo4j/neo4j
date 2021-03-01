@@ -92,6 +92,14 @@ case class QgWithLeafInfo(private val solvedQg: QueryGraph,
     patternNodes.filterNot(node => queryGraph.argumentIds.contains(node.name))
   }
 
+  def patternNodesAndArguments: Set[Identifier] = {
+    patternNodes ++ queryGraph.argumentIds.map(UnstableIdentifier)
+  }
+
+  def patternRelationshipsAndArguments: Set[Identifier] = {
+    patternRelationships ++ queryGraph.argumentIds.map(UnstableIdentifier)
+  }
+
   def patternRelationships: Set[Identifier] = {
     val unstableIdentifiers: Set[Identifier] = unstablePatternRelationships.map(rel => UnstableIdentifier(rel.name))
     val maybeStableIdentifier = stableIdentifier.filter(i => queryGraph.patternRelationships.exists(rel => i.name == rel.name))
@@ -114,14 +122,14 @@ case class QgWithLeafInfo(private val solvedQg: QueryGraph,
   }
 
   def allKnownUnstableNodeLabels: Set[LabelName] = {
-    patternNodes.flatMap(allKnownUnstableNodeLabelsFor)
+    patternNodesAndArguments.flatMap(allKnownUnstableNodeLabelsFor)
   }
 
   def allKnownUnstableNodeProperties: Set[PropertyKeyName] = {
-    patternNodes.flatMap(allKnownUnstablePropertiesFor)
+    patternNodesAndArguments.flatMap(allKnownUnstablePropertiesFor)
   }
 
   def allKnownUnstableRelProperties: Set[PropertyKeyName] = {
-    patternRelationships.flatMap(allKnownUnstablePropertiesFor)
+    patternRelationshipsAndArguments.flatMap(allKnownUnstablePropertiesFor)
   }
 }
