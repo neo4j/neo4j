@@ -21,9 +21,9 @@ package org.neo4j.internal.helpers;
 
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -33,7 +33,7 @@ public final class Format
      * Default time zone is UTC (+00:00) so that comparing timestamped logs from different
      * sources is an easier task.
      */
-    static final ZoneId DEFAULT_TIME_ZONE = TimeZone.getTimeZone( "UTC" ).toZoneId();
+    static final ZoneId DEFAULT_TIME_ZONE = ZoneOffset.UTC;
 
     private static final String[] COUNT_SIZES = { "", "k", "M", "G", "T" };
 
@@ -41,7 +41,7 @@ public final class Format
     static final String TIME_FORMAT = "HH:mm:ss.SSS";
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern( DATE_FORMAT ).withZone( DEFAULT_TIME_ZONE );
-    private static final DateTimeFormatter LOCAL_DATE_FORMATTER = DateTimeFormatter.ofPattern( DATE_FORMAT ).withZone( TimeZone.getDefault().toZoneId() );
+    private static final DateTimeFormatter LOCAL_DATE_FORMATTER = DateTimeFormatter.ofPattern( DATE_FORMAT ).withZone( ZoneOffset.systemDefault() );
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern( TIME_FORMAT ).withZone( DEFAULT_TIME_ZONE );
 
     public static String localDate()
