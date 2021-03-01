@@ -30,7 +30,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
   val prettifier: Prettifier = Prettifier(ExpressionStringifier())
 
   val parser = new CypherParser
-  val tests: Seq[(String, String)] = queryTests() ++ schemaTests() ++ administrationTests() ++ graphTests()
+  val tests: Seq[(String, String)] = queryTests() ++ schemaTests() ++ administrationTests()
 
   def queryTests(): Seq[(String, String)] = Seq[(String, String)](
     "return 42" -> "RETURN 42",
@@ -1638,17 +1638,6 @@ class ParboiledPrettifierIT extends CypherFunSuite {
         )
     }
   }
-
-  def graphTests(): Seq[(String, String)] = Seq[(String, String)](
-    "catalog create graph com.neo4j.Users { MATCH (n) RETURN n }" ->
-      """CATALOG CREATE GRAPH com.neo4j.Users {
-        |  MATCH (n)
-        |  RETURN n
-        |}""".stripMargin,
-
-    "catalog DROP graph com.neo4j.Users" ->
-      "CATALOG DROP GRAPH com.neo4j.Users",
-  )
 
   def startTests(entityType: String): Seq[(String, String)] = {
     // Not valid in JavaCC parser

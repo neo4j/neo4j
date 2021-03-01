@@ -96,8 +96,6 @@ object Errors {
   def ddlNotSupported(ddl: CatalogDDL) = throw new DatabaseAdministrationException(
     s"This is an administration command and it should be executed against the system database: ${ddl.name}")
 
-  def notSupported(feature:String): Nothing = semantic(s"$feature is not supported in Fabric")
-
   def entityNotFound(kind: String, needle: String): Nothing = throw new EntityNotFoundException(s"$kind not found: $needle")
 
   /** Attaches position and query info to exceptions, if it is missing */

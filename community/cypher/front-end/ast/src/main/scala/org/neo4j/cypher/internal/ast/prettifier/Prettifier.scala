@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateDatabase
-import org.neo4j.cypher.internal.ast.CreateGraph
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
@@ -52,7 +51,6 @@ import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
-import org.neo4j.cypher.internal.ast.DropGraph
 import org.neo4j.cypher.internal.ast.DropIndex
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.DropNodeKeyConstraint
@@ -89,7 +87,6 @@ import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.MergeAction
-import org.neo4j.cypher.internal.ast.MultiGraphDDL
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.ast.NodeByIds
@@ -195,7 +192,6 @@ case class Prettifier(
     case q: Query                 => base.query(q)
     case c: SchemaCommand         => asString(c)
     case c: AdministrationCommand => asString(c)
-    case c: MultiGraphDDL         => asString(c)
     case _ => throw new IllegalStateException(s"Unknown statement: $statement")
   }
 
@@ -451,16 +447,6 @@ case class Prettifier(
         s"${x.name} ${Prettifier.escapeName(dbName)}${waitUntilComplete.name}"
     }
     useString + commandString
-  }
-
-  def asString(multiGraph: MultiGraphDDL): String = multiGraph match {
-    case x @ CreateGraph(catalogName, query) =>
-      val graphName = catalogName.parts.mkString(".")
-      s"${x.name} $graphName {$NL${base.indented().queryPart(query)}$NL}"
-
-    case x @ DropGraph(catalogName) =>
-      val graphName = catalogName.parts.mkString(".")
-      s"${x.name} $graphName"
   }
 
   private def asString(use: Option[GraphSelection]) = {

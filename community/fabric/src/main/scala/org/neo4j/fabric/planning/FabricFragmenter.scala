@@ -43,7 +43,6 @@ class FabricFragmenter(
 
   def fragment: Fragment = queryStatement match {
     case query: ast.Query  => fragmentPart(start, query.part)
-    case ddl: ast.MultiGraphDDL => Errors.notSupported(ddl.name)
     case command: ast.AdministrationCommand =>
       Fragment.AdminCommand(systemUse, command)
     case command: ast.SchemaCommand =>

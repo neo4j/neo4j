@@ -122,16 +122,6 @@ sealed trait WriteAdministrationCommand extends AdministrationCommand {
   override def returnColumns: List[LogicalVariable] = List.empty
 }
 
-sealed trait MultiGraphDDL extends CatalogDDL {
-  override def returnColumns: List[LogicalVariable] = List.empty
-
-  override def containsUpdates: Boolean = true
-
-  //TODO Refine to split between multigraph and views
-  override def semanticCheck: SemanticCheck =
-    requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleGraphs, position)
-}
-
 sealed trait IfExistsDo
 
 case object IfExistsReplace extends IfExistsDo
@@ -871,31 +861,6 @@ final case class StartDatabase(dbName: Either[String, Parameter], waitUntilCompl
 final case class StopDatabase(dbName: Either[String, Parameter], waitUntilComplete: WaitUntilComplete)(val position: InputPosition) extends WaitableAdministrationCommand {
 
   override def name = "STOP DATABASE"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
-}
-
-object CreateGraph {
-  def apply(graphName: CatalogName, query: Query)(position: InputPosition): CreateGraph =
-    CreateGraph(graphName, query.part)(position)
-}
-
-final case class CreateGraph(graphName: CatalogName, query: QueryPart)
-                            (val position: InputPosition) extends MultiGraphDDL {
-
-  override def name = "CATALOG CREATE GRAPH"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      SemanticState.recordCurrentScope(this) chain
-      query.semanticCheck
-}
-
-final case class DropGraph(graphName: CatalogName)(val position: InputPosition) extends MultiGraphDDL {
-
-  override def name = "CATALOG DROP GRAPH"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
