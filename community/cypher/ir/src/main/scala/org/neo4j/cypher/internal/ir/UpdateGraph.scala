@@ -193,24 +193,20 @@ trait UpdateGraph {
 
     val dependingExpressions = horizon.dependingExpressions
 
-    def hasSetPropertyOverlap = {
-      val propertiesReadInHorizon = dependingExpressions.collect {
-        case p: Property => p
-      }.toSet
+    def setPropertyOverlap = {
+      val propertiesReadInHorizon = dependingExpressions.findByAllClass[Property].toSet
       val maybeNode: Property => Boolean = maybeType(semanticTable, CTNode.invariant)
       val maybeRel: Property => Boolean = maybeType(semanticTable, CTRelationship.invariant)
       setNodePropertyOverlap(propertiesReadInHorizon.filter(maybeNode).map(_.propertyKey)) ||
         setRelPropertyOverlap(propertiesReadInHorizon.filter(maybeRel).map(_.propertyKey))
     }
 
-    def hasCreateRelationshipOverlap = {
-      val allPatternRelationshipsRead = dependingExpressions.collect {
-        case p: PatternComprehension => p.pattern.element.relationship
-      }.toSet
+    def createRelationshipOverlap = {
+      val allPatternRelationshipsRead = dependingExpressions.findByAllClass[RelationshipPattern].toSet
       createRelationshipOverlapHorizon(allPatternRelationshipsRead)
     }
 
-    def hasLabelOverlap = {
+    def setLabelOverlap = {
       (labelsToSet.nonEmpty || hasRemoveLabelPatterns) && {
         dependingExpressions.treeExists {
           case f: FunctionInvocation => f.function == Labels
@@ -221,7 +217,7 @@ trait UpdateGraph {
       }
     }
 
-    containsUpdates && (hasSetPropertyOverlap || hasCreateRelationshipOverlap || hasLabelOverlap || conflictFromQg)
+    containsUpdates && (setPropertyOverlap || createRelationshipOverlap || setLabelOverlap || conflictFromQg)
   }
 
   def writeOnlyHeadOverlaps(qgWithInfo: QgWithLeafInfo): Boolean = {
