@@ -55,33 +55,37 @@ public class LockManagerImpl
     boolean getReadLock( LockTracer tracer, LockResource resource, LockTransaction tx, MemoryTracker memoryTracker )
             throws DeadlockDetectedException
     {
-        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx, memoryTracker ).acquireReadLock( tracer, tx, memoryTracker ) );
+        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx, memoryTracker )
+                        .acquireReadLock( tracer, tx, memoryTracker ), memoryTracker );
     }
 
     boolean tryReadLock( LockResource resource, LockTransaction tx, MemoryTracker memoryTracker )
     {
-        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx, memoryTracker ).tryAcquireReadLock( tx, memoryTracker ) );
+        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx, memoryTracker )
+                .tryAcquireReadLock( tx, memoryTracker ), memoryTracker );
     }
 
     boolean getWriteLock( LockTracer tracer, LockResource resource, LockTransaction tx, MemoryTracker memoryTracker )
             throws DeadlockDetectedException
     {
-        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx, memoryTracker ).acquireWriteLock( tracer, tx, memoryTracker ) );
+        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx, memoryTracker )
+                .acquireWriteLock( tracer, tx, memoryTracker ), memoryTracker );
     }
 
     boolean tryWriteLock( LockResource resource, LockTransaction tx, MemoryTracker memoryTracker )
     {
-        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx, memoryTracker ).tryAcquireWriteLock( tx, memoryTracker ) );
+        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx, memoryTracker )
+                .tryAcquireWriteLock( tx, memoryTracker ), memoryTracker );
     }
 
     void releaseReadLock( Object resource, LockTransaction tx, MemoryTracker memoryTracker )
     {
-        getRWLockForReleasing( resource, tx, 1, 0, true ).releaseReadLock( tx, memoryTracker );
+        getRWLockForReleasing( resource, tx, 1, 0, true, memoryTracker ).releaseReadLock( tx, memoryTracker );
     }
 
     void releaseWriteLock( Object resource, LockTransaction tx, MemoryTracker memoryTracker )
     {
-        getRWLockForReleasing( resource, tx, 0, 1, true ).releaseWriteLock( tx, memoryTracker );
+        getRWLockForReleasing( resource, tx, 0, 1, true, memoryTracker ).releaseWriteLock( tx, memoryTracker );
     }
 
     /**
@@ -90,14 +94,14 @@ public class LockManagerImpl
      *
      * @return {@code lockObtained }
      **/
-    private boolean unusedResourceGuard( Object resource, LockTransaction tx, boolean lockObtained )
+    private boolean unusedResourceGuard( Object resource, LockTransaction tx, boolean lockObtained, MemoryTracker memoryTracker )
     {
         if ( !lockObtained )
         {
             // if lock was not acquired cleaning up optimistically allocated value
             // for case when it was only used by current call, if it was used by somebody else
             // lock will be released during release call
-            getRWLockForReleasing( resource, tx, 0, 0, false );
+            getRWLockForReleasing( resource, tx, 0, 0, false, memoryTracker );
         }
         return lockObtained;
     }
@@ -150,7 +154,7 @@ public class LockManagerImpl
     }
 
     private RWLock getRWLockForReleasing( Object resource, Object tx, int readCountPrerequisite,
-                                          int writeCountPrerequisite, boolean strict )
+                                          int writeCountPrerequisite, boolean strict, MemoryTracker memoryTracker )
     {
         assertValidArguments( resource, tx );
         synchronized ( resourceLockMap )
@@ -176,6 +180,7 @@ public class LockManagerImpl
                      lock.getWaitingThreadsCount() == 0 )
                 {
                     resourceLockMap.remove( resource );
+                    memoryTracker.releaseHeap( RWLock.SHALLOW_SIZE + HeapEstimator.HASH_MAP_NODE_SHALLOW_SIZE );
                 }
             }
             return lock;

@@ -64,8 +64,6 @@ class CommunityLockClientMemoryTest
     @AfterEach
     void tearDown()
     {
-//        TODO:
-//        assertThat( memoryTracker.estimatedHeapMemory() ).isEqualTo( 0 );
         memoryTracker.close();
         assertThat( memoryPool.getPoolMemoryTracker().estimatedHeapMemory() ).isEqualTo( 0 );
     }
@@ -139,7 +137,7 @@ class CommunityLockClientMemoryTest
     }
 
     @Test
-    void exclusiveLockOverSharedDoesNotAllocateMemory()
+    void exclusiveLockOverSharedAllocateMemory()
     {
         try ( Locks.Client client = getClient() )
         {
@@ -150,7 +148,8 @@ class CommunityLockClientMemoryTest
 
             client.acquireExclusive( LockTracer.NONE, NODE, 1 );
             var twoLocksAllocatedMemory = memoryTracker.estimatedHeapMemory();
-            assertEquals( sharedAllocatedMemory, twoLocksAllocatedMemory );
+            // we also create set of new maps when new exclusive lock will be created
+            assertThat( twoLocksAllocatedMemory ).isGreaterThan( sharedAllocatedMemory + ONE_LOCK_SIZE_ESTIMATE );
         }
     }
 
@@ -200,10 +199,6 @@ class CommunityLockClientMemoryTest
             assertThat( memoryTracker.estimatedHeapMemory() ).isEqualTo( 0 );
             client.acquireExclusive( LockTracer.NONE, NODE, 1 );
 
-            // we take shared lock here as well to create internal maps and report them into tracker before release call
-            client.acquireShared( LockTracer.NONE, NODE, 1 );
-            client.releaseShared( NODE, 1 );
-
             var exclusiveAllocatedMemory = memoryTracker.estimatedHeapMemory();
             assertThat( exclusiveAllocatedMemory ).isGreaterThan( 0 );
 
@@ -215,7 +210,7 @@ class CommunityLockClientMemoryTest
     }
 
     @Test
-    void releaseExclusiveLockWhyHoldingSharedDoNotReleaseAnyMemory()
+    void releaseExclusiveLockWhyHoldingSharedReleasesMemory()
     {
         try ( Locks.Client client = getClient() )
         {
@@ -229,7 +224,7 @@ class CommunityLockClientMemoryTest
             client.releaseExclusive(  NODE, 1 );
             var noExclusiveLockMemory = memoryTracker.estimatedHeapMemory();
             assertThat( noExclusiveLockMemory ).isGreaterThan( 0 )
-                    .isEqualTo( locksMemory );
+                    .isLessThan( locksMemory );
         }
     }
 
@@ -260,7 +255,7 @@ class CommunityLockClientMemoryTest
                 client.acquireShared( LockTracer.NONE, NODE, i );
             }
             long sharedLocksMemory = memoryTracker.estimatedHeapMemory();
-            assertThat( sharedLocksMemory ).isEqualTo( exclusiveLocksMemory );
+            assertThat( sharedLocksMemory ).isGreaterThan( exclusiveLocksMemory );
 
             for ( int i = 0; i < lockNumber; i++ )
             {

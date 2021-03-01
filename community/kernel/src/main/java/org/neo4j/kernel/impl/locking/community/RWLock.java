@@ -549,8 +549,8 @@ public class RWLock
             ragManager.lockReleased( this, tx );
             if ( tle.hasNoRequests() )
             {
-                memoryTracker.releaseHeap( TxLockElement.SHALLOW_SIZE + HeapEstimator.HASH_MAP_NODE_SHALLOW_SIZE );
                 txLockElementMap.remove( tx );
+                memoryTracker.releaseHeap( TxLockElement.SHALLOW_SIZE + HeapEstimator.HASH_MAP_NODE_SHALLOW_SIZE );
             }
         }
 

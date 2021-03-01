@@ -41,7 +41,6 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
@@ -61,10 +60,10 @@ public class CommunityLockClient implements Locks.Client
 
     private MutableIntObjectMap<MutableLongObjectMap<LockResource>> sharedLocks;
     private MutableIntObjectMap<MutableLongObjectMap<LockResource>> exclusiveLocks;
-    private final LongObjectProcedure<LockResource> readReleaser;
-    private final LongObjectProcedure<LockResource> writeReleaser;
-    private final Procedure<LongObjectMap<LockResource>> typeReadReleaser;
-    private final Procedure<LongObjectMap<LockResource>> typeWriteReleaser;
+    private LongObjectProcedure<LockResource> readReleaser;
+    private LongObjectProcedure<LockResource> writeReleaser;
+    private Procedure<LongObjectMap<LockResource>> typeReadReleaser;
+    private Procedure<LongObjectMap<LockResource>> typeWriteReleaser;
 
     // To be able to close Locks.Client instance properly we should be able to do couple of things:
     //  - have a possibility to prevent new clients to come
@@ -77,11 +76,6 @@ public class CommunityLockClient implements Locks.Client
     public CommunityLockClient( LockManagerImpl manager )
     {
         this.manager = manager;
-
-        readReleaser = ( key, lockResource ) -> manager.releaseReadLock( lockResource, lockTransaction, EmptyMemoryTracker.INSTANCE );
-        writeReleaser = ( key, lockResource ) -> manager.releaseWriteLock( lockResource, lockTransaction, EmptyMemoryTracker.INSTANCE );
-        typeReadReleaser = value -> value.forEachKeyValue( readReleaser );
-        typeWriteReleaser = value -> value.forEachKeyValue( writeReleaser );
     }
 
     @Override
@@ -89,6 +83,10 @@ public class CommunityLockClient implements Locks.Client
     {
         this.lockTransaction.setTransactionId( transactionId );
         this.memoryTracker = memoryTracker;
+        this.readReleaser = ( key, lockResource ) -> manager.releaseReadLock( lockResource, lockTransaction, memoryTracker );
+        this.writeReleaser = ( key, lockResource ) -> manager.releaseWriteLock( lockResource, lockTransaction, memoryTracker );
+        this.typeReadReleaser = value -> value.forEachKeyValue( readReleaser );
+        this.typeWriteReleaser = value -> value.forEachKeyValue( writeReleaser );
     }
 
     @Override
@@ -145,6 +143,7 @@ public class CommunityLockClient implements Locks.Client
                     resource = new LockResource( resourceType, resourceId );
                     if ( manager.getWriteLock( tracer, resource, lockTransaction, memoryTracker ) )
                     {
+                        memoryTracker.allocateHeap( LockResource.SHALLOW_SIZE );
                         localLocks.put( resourceId, resource );
                     }
                     else
@@ -239,7 +238,8 @@ public class CommunityLockClient implements Locks.Client
                 if ( resource.releaseReference() == 0 )
                 {
                     localLocks.remove( resourceId );
-                    manager.releaseReadLock( new LockResource( resourceType, resourceId ), lockTransaction, memoryTracker );
+                    manager.releaseReadLock( resource, lockTransaction, memoryTracker );
+                    memoryTracker.releaseHeap( LockResource.SHALLOW_SIZE );
                 }
             }
         }
@@ -263,6 +263,7 @@ public class CommunityLockClient implements Locks.Client
                 {
                     localLocks.remove( resourceId );
                     manager.releaseWriteLock( new LockResource( resourceType, resourceId ), lockTransaction, memoryTracker );
+                    memoryTracker.releaseHeap( LockResource.SHALLOW_SIZE );
                 }
             }
         }
