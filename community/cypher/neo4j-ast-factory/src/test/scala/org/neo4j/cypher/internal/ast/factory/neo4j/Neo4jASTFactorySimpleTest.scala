@@ -36,8 +36,8 @@ class Neo4jASTFactorySimpleTest extends ParsingTestBase with FunSuiteLike with T
     assertSameAST(testName)
   }
 
-  test("RETURN '\r\n\t\b\f'") {
-    assertSameAST(testName)
+  test("RETURN special characters") {
+    assertSameAST("RETURN '\r\n\t\b\f'")
   }
   test("RETURN '\\\\\\''") {
     assertSameAST(testName)
