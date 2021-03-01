@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.locking;
 
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
-import org.neo4j.lock.ResourceType;
 import org.neo4j.service.NamedService;
 import org.neo4j.service.PrioritizedService;
 import org.neo4j.time.SystemNanoClock;
@@ -29,5 +28,5 @@ import org.neo4j.time.SystemNanoClock;
 @Service
 public interface LocksFactory extends NamedService, PrioritizedService
 {
-    Locks newInstance( Config config, SystemNanoClock clock, ResourceType[] resourceTypes );
+    Locks newInstance( Config config, SystemNanoClock clock );
 }

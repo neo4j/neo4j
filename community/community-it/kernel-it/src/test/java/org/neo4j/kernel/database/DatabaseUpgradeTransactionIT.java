@@ -49,7 +49,9 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -200,13 +202,21 @@ class DatabaseUpgradeTransactionIT
             dbms.database( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ).executeTransactionally( "CALL dbms.upgrade()" );
         } ), 1 );
         race.addContestants( max( Runtime.getRuntime().availableProcessors() - 1, 2 ), throwing( () -> {
-            try ( Transaction tx = db.beginTx() )
+            while ( true )
             {
-                tx.getNodeById( nodeId ).createRelationshipTo( tx.createNode(),
-                        RelationshipType.withName( "TYPE_" + ThreadLocalRandom.current().nextInt( 3 ) ) );
-                tx.commit();
+                try ( Transaction tx = db.beginTx() )
+                {
+                    tx.getNodeById( nodeId ).createRelationshipTo( tx.createNode(),
+                            RelationshipType.withName( "TYPE_" + ThreadLocalRandom.current().nextInt( 3 ) ) );
+                    tx.commit();
+                    Thread.sleep( ThreadLocalRandom.current().nextInt( 0, 2 ) );
+                    return;
+                }
+                catch ( DeadlockDetectedException ignore )
+                {
+                    // ignore deadlocks
+                }
             }
-            Thread.sleep( ThreadLocalRandom.current().nextInt( 0, 2 ) );
         } ) );
         race.go( 1, TimeUnit.MINUTES );
 
@@ -247,7 +257,8 @@ class DatabaseUpgradeTransactionIT
         setKernelVersion( V4_2 );
         setDbmsRuntime( DbmsRuntimeVersion.V4_2 );
         restartDbms();
-        long lockNode = createWriteTransaction();
+        long lockNode1 = createWriteTransaction();
+        long lockNode2 = createWriteTransaction();
         BinaryLatch l1 = new BinaryLatch();
         BinaryLatch l2 = new BinaryLatch();
         long numNodesBefore = getNodeCount();
@@ -261,7 +272,10 @@ class DatabaseUpgradeTransactionIT
                 dbms.unregisterTransactionEventListener( db.databaseName(), this ); //Unregister so only the first transaction gets this
                 l2.release();
                 l1.await(); //Hold here until the upgrade transaction is ongoing
-                transaction.acquireWriteLock( transaction.getNodeById( lockNode ) ); //Then wait for the lock held by that "triggering" tx
+                // we need to lock several entities here since deadlock termination is based on number of locks client holds.
+                // and we want other transaction to be canceled
+                transaction.acquireWriteLock( transaction.getNodeById( lockNode2 ) );
+                transaction.acquireWriteLock( transaction.getNodeById( lockNode1 ) ); //Then wait for the lock held by that "triggering" tx
                 return null;
             }
         } );
@@ -275,11 +289,10 @@ class DatabaseUpgradeTransactionIT
 
             try ( Transaction tx = db.beginTx() )
             {
-                tx.acquireWriteLock( tx.getNodeById( lockNode ) ); //take the lock
+                tx.acquireWriteLock( tx.getNodeById( lockNode1 ) ); //take the lock
                 tx.createNode(); //and make sure it is a write to trigger upgrade
                 l1.release();
-                //TODO:
-//                executor.waitUntilWaiting( details -> details.isAt( CommunityLockClient.class, "acquireExclusive" ) );
+                executor.waitUntilWaiting( details -> details.isAt( ForsetiClient.class, "acquireExclusive" ) );
                 tx.commit();
             }
             executor.awaitFuture( f1 );

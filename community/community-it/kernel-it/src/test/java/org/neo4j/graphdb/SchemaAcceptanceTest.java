@@ -56,6 +56,7 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintWithNameAlreadyExistsException;
@@ -95,6 +96,7 @@ import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
 import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.neo4j.lock.ResourceTypes.SCHEMA_NAME;
 
 @ImpermanentDbmsExtension( configurationCallback = "configure" )
 @ExtendWith( OtherThreadExtension.class )
@@ -381,10 +383,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
 
         // WHEN
 
-        Exception e = assertThrows( Exception.class, () ->
-        {
-            dropIndex( index );
-        });
+        Exception e = assertThrows( Exception.class, () -> dropIndex( index ) );
         assertThat( e ).hasMessageContaining( "No index found with the name 'index_a0d2924'." );
 
         // THEN
@@ -479,10 +478,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
 
         // WHEN recreating that index
         IndexDefinition newIndex = createIndex( db, label, propertyKey );
-        NotFoundException e = assertThrows( NotFoundException.class, () ->
-        {
-            waitForIndex( db, index );
-        });
+        NotFoundException e = assertThrows( NotFoundException.class, () -> waitForIndex( db, index ) );
         assertThat( e ).hasMessageContaining( "No index was found" );
         waitForIndex( db, newIndex );
 
@@ -495,7 +491,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
-    private List<Node> findNodesByLabelAndProperty( Label label, String propertyKey, String value, Transaction transaction )
+    private static List<Node> findNodesByLabelAndProperty( Label label, String propertyKey, String value, Transaction transaction )
     {
         return Iterators.asList( transaction.findNodes( label, propertyKey, value ) );
     }
@@ -563,7 +559,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
-    private Iterable<ConstraintDefinition> getConstraints( Transaction tx, Label label )
+    private static Iterable<ConstraintDefinition> getConstraints( Transaction tx, Label label )
     {
         return tx.schema().getConstraints( label );
     }
@@ -605,10 +601,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         createIndex( db, label, propertyKey );
 
         // WHEN
-        ConstraintViolationException e = assertThrows( ConstraintViolationException.class, () ->
-        {
-            createUniquenessConstraint( label, propertyKey );
-        });
+        ConstraintViolationException e = assertThrows( ConstraintViolationException.class, () -> createUniquenessConstraint( label, propertyKey ) );
         assertEquals( "There already exists an index (:MY_LABEL {my_property_key}). A constraint cannot be created " +
                           "until the index has been dropped.", e.getMessage() );
     }
@@ -625,10 +618,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
 
         // WHEN
-        ConstraintViolationException e = assertThrows( ConstraintViolationException.class, () ->
-        {
-            createUniquenessConstraint( label, propertyKey );
-        } );
+        ConstraintViolationException e = assertThrows( ConstraintViolationException.class, () -> createUniquenessConstraint( label, propertyKey ) );
         assertThat( e ).hasMessageContaining(
                 "Unable to create Constraint( name='constraint_c8a3b28f', type='UNIQUENESS', schema=(:MY_LABEL {my_property_key}) )" );
     }
@@ -2119,7 +2109,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             tx.commit();
         }
         // And constraint should guard for duplicates
-        ConstraintViolationException e = assertThrows( ConstraintViolationException.class, () ->
+        assertThrows( ConstraintViolationException.class, () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
@@ -2236,22 +2226,22 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
-    private IndexDefinition getIndex( Transaction tx, String name )
+    private static IndexDefinition getIndex( Transaction tx, String name )
     {
         return tx.schema().getIndexByName( name );
     }
 
-    private Schema.IndexState getIndexState( Transaction tx, IndexDefinition name )
+    private static Schema.IndexState getIndexState( Transaction tx, IndexDefinition name )
     {
         return tx.schema().getIndexState( name );
     }
 
-    private Schema.IndexState getIndexState( Transaction tx, String name )
+    private static Schema.IndexState getIndexState( Transaction tx, String name )
     {
         return getIndexState( tx, getIndex( tx, name ) );
     }
 
-    private String tooLargeString()
+    private static String tooLargeString()
     {
         int violatingSize = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( PageCache.PAGE_SIZE ) + 1;
         return IndexEntryTestUtil.generateStringResultingInIndexEntrySize( violatingSize );
@@ -2367,7 +2357,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
 
             first.untilWaitingIn( BinaryLatch.class.getMethod( "await") );
             beforeSecondCreatesIndex.await();
-            second.untilWaitingIn( Object.class.getMethod( "wait", long.class ) );
+            second.untilWaitingIn( SCHEMA_NAME.waitStrategy().getClass().getMethod( "apply", long.class) );
             second.untilWaiting();
             pauseFirst.release();
             firstFuture.get();
@@ -2433,6 +2423,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                             Thread.sleep( 1 );
                             getIndex( tx, index.getName() ).drop();
                             tx.commit();
+                        }
+                        catch ( DeadlockDetectedException ignore )
+                        {
+                            //ignore
                         }
                     }
                 }
@@ -2518,7 +2512,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
-    private void dropConstraint( GraphDatabaseService db, ConstraintDefinition constraint )
+    private static void dropConstraint( GraphDatabaseService db, ConstraintDefinition constraint )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -2553,7 +2547,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
-    private Node createNode( GraphDatabaseService db, String key, Object value, Label label )
+    private static Node createNode( GraphDatabaseService db, String key, Object value, Label label )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -2636,7 +2630,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
-    private Iterable<IndexDefinition> getIndexes( Transaction tx, RelationshipType relType )
+    private static Iterable<IndexDefinition> getIndexes( Transaction tx, RelationshipType relType )
     {
         return tx.schema().getIndexes( relType );
     }
@@ -2649,7 +2643,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
-    private Iterable<IndexDefinition> getIndexes( Transaction tx, Label label )
+    private static Iterable<IndexDefinition> getIndexes( Transaction tx, Label label )
     {
         return tx.schema().getIndexes( label );
     }

@@ -1002,8 +1002,8 @@ public class ForsetiClient implements Locks.Client
         return false;
     }
 
-    private void collectNextOwners( Set<ForsetiLockManager.Lock> waitedUpon, Set<ForsetiClient> owners,
-                                    Set<ForsetiLockManager.Lock> nextWaitedUpon, Set<ForsetiClient> nextOwners )
+    private static void collectNextOwners( Set<ForsetiLockManager.Lock> waitedUpon, Set<ForsetiClient> owners, Set<ForsetiLockManager.Lock> nextWaitedUpon,
+            Set<ForsetiClient> nextOwners )
     {
         nextWaitedUpon.clear();
         for ( ForsetiClient owner : owners )

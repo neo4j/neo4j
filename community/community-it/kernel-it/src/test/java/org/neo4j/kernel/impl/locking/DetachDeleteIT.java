@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -41,13 +42,16 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
+import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -155,13 +159,12 @@ class DetachDeleteIT
         Future<Object> lockVerifier = executor.submit( () ->
         {
             sequencer.await( Phases.OTHER_REL_CREATED );
-            //TODO:
-//            Predicate<Thread> predicate = ThreadingRule.waitingWhileIn( RWLock.class, "waitUninterruptedly" );
-//            do
-//            {
-//                Thread.sleep( 100 );
-//            }
-//            while ( !predicate.test( main ) );
+            Predicate<Thread> predicate = ThreadingRule.waitingWhileIn( ForsetiClient.class, "waitFor" );
+            do
+            {
+                Thread.sleep( 100 );
+            }
+            while ( !predicate.test( main ) );
             sequencer.release( Phases.DETACH_DELETE_HAS_STARTED );
             sequencer.await( Phases.DETACH_DELETE_HAS_FINISHED ); // Now the DETACH DELETE *should* be holding a lock on all neighbours. Verify.
             try ( Transaction ignore = db.beginTx() )
@@ -212,7 +215,7 @@ class DetachDeleteIT
                     node.createRelationshipTo( tx.createNode(), type );
                     tx.commit();
                 }
-                catch ( NotFoundException ignore )
+                catch ( NotFoundException | DeadlockDetectedException ignore )
                 {
                     // The DETACH DELETE got ahead of us. It's fine.
                 }
@@ -227,11 +230,20 @@ class DetachDeleteIT
         {
             latch.countDown();
             latch.await();
-            try ( Transaction tx = db.beginTx() )
+            var retry = true;
+            while ( retry )
             {
-                Write write = getWrite( tx );
-                write.nodeDetachDelete( nodeId );
-                tx.commit();
+                try ( Transaction tx = db.beginTx() )
+                {
+                    Write write = getWrite( tx );
+                    write.nodeDetachDelete( nodeId );
+                    tx.commit();
+                    retry = false;
+                }
+                catch ( DeadlockDetectedException de )
+                {
+                    retry = false;
+                }
             }
             return null;
         } );
@@ -288,18 +300,18 @@ class DetachDeleteIT
         return nodeId;
     }
 
-    private Write getWrite( Transaction tx ) throws Exception
+    private static Write getWrite( Transaction tx ) throws Exception
     {
         return getKernelTransaction( tx ).dataWrite();
     }
 
-    private Locks.Client getLocksClient( Transaction tx )
+    private static Locks.Client getLocksClient( Transaction tx )
     {
         KernelTransactionImplementation kti = (KernelTransactionImplementation) getKernelTransaction( tx );
         return kti.lockClient();
     }
 
-    private KernelTransaction getKernelTransaction( Transaction tx )
+    private static KernelTransaction getKernelTransaction( Transaction tx )
     {
         InternalTransaction itx = (InternalTransaction) tx;
         return itx.kernelTransaction();

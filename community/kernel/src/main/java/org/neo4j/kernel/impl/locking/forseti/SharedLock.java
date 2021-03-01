@@ -239,7 +239,7 @@ class SharedLock implements ForsetiLockManager.Lock
     @Override
     public LockType type()
     {
-        return LockType.SHARED;
+        return isUpdateLock() ? LockType.EXCLUSIVE : LockType.SHARED;
     }
 
     @Override

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.ThrowingSupplier;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
@@ -150,6 +151,12 @@ public class GraphDatabaseServiceTest
         Relationship r2 = createRelationship( database, n1 );
         Relationship r1 = createRelationship( database, n1 );
 
+        // Nodes to lock for deadlock strategy to close expected lock client.
+        // Since we use ABORT_YOUNG strategy by default we need expected client to hold less locks.
+        var emptyNodes = List.of( createNode( database ), createNode( database ),
+                createNode( database ), createNode( database ), createNode( database ),
+                createNode( database ) );
+
         // WHEN creating a deadlock scenario where the final deadlock would have happened due to locks
         //      acquired during linkage of relationship records
         //
@@ -163,6 +170,12 @@ public class GraphDatabaseServiceTest
         t1Tx.getNodeById( n2.getId() ).setProperty( "locked", "indeed" );
         // (t2) <-- (r1)
         t2.executeDontWait( setProperty( t2Tx.getRelationshipById( r1.getId() ), "locked", "absolutely" ) ).get();
+        // dummy locks
+        for ( Node emptyNode : emptyNodes )
+        {
+            t2.executeDontWait( setProperty( t2Tx.getNodeById( emptyNode.getId() ), "locked", "absolutely" ) ).get();
+        }
+
         // (t2) --> (n2)
         Future<Void> t2n2Wait = t2.executeDontWait( setProperty( t2Tx.getNodeById( n2.getId() ), "locked", "In my dreams" ) );
         t2.waitUntilWaiting();
@@ -202,12 +215,12 @@ public class GraphDatabaseServiceTest
         }
     }
 
-    private Callable<Transaction> beginTx( final GraphDatabaseService db )
+    private static Callable<Transaction> beginTx( final GraphDatabaseService db )
     {
         return db::beginTx;
     }
 
-    private Callable<Void> setProperty( final Entity entity, final String key, final String value )
+    private static Callable<Void> setProperty( final Entity entity, final String key, final String value )
     {
         return () ->
         {
@@ -216,7 +229,7 @@ public class GraphDatabaseServiceTest
         };
     }
 
-    private Callable<Void> close( final Transaction tx )
+    private static Callable<Void> close( final Transaction tx )
     {
         return () ->
         {
@@ -225,7 +238,7 @@ public class GraphDatabaseServiceTest
         };
     }
 
-    private Relationship createRelationship( GraphDatabaseService db, Node node )
+    private static Relationship createRelationship( GraphDatabaseService db, Node node )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -235,7 +248,7 @@ public class GraphDatabaseServiceTest
         }
     }
 
-    private Node createNode( GraphDatabaseService db )
+    private static Node createNode( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {

@@ -19,15 +19,17 @@
  */
 package org.neo4j.server.http.cypher.integration;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.locking.LockCountVisitor;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThreadExtension;
@@ -35,27 +37,25 @@ import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.server.HTTP;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.DeadlockDetected;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 @ExtendWith( OtherThreadExtension.class )
-public class DeadlockIT extends AbstractRestFunctionalTestBase
+class DeadlockIT extends AbstractRestFunctionalTestBase
 {
     private final HTTP.Builder http = HTTP.withBaseUri( container().getBaseUri() );
 
     @Inject
-    public OtherThreadRule otherThread;
-
-    private final CountDownLatch secondNodeLocked = new CountDownLatch( 1 );
+    private OtherThreadRule otherThread;
 
     @Test
-    public void shouldReturnCorrectStatusCodeOnDeadlock() throws Exception
+    void shouldReturnCorrectStatusCodeOnDeadlock() throws Exception
     {
         // Given
         try ( Transaction tx = graphdb().beginTx() )
         {
             tx.createNode( Label.label( "First" ) );
+            tx.createNode( Label.label( "Second" ) );
             tx.createNode( Label.label( "Second" ) );
             tx.commit();
         }
@@ -66,15 +66,25 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
         // and I lock node:Second, and wait for a lock on node:First in another transaction
         otherThread.execute( writeToFirstAndSecond() );
 
-        // and I wait for those locks to be pending
-        assertTrue( secondNodeLocked.await( 10, TimeUnit.SECONDS ) );
-        Thread.sleep( 1000 );
+        waitForLocksToBeAquired();
 
         // and I then try and lock node:Second in the first transaction
         HTTP.Response deadlock = http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:Second) SET n.prop=1' } ] }" ) );
 
         // Then
-        assertThat( deadlock.get( "errors" ).get( 0 ).get( "code" ).asText() ).isEqualTo( DeadlockDetected.code().serialize() );
+        JsonNode errors = deadlock.get( "errors" ).get( 0 );
+        assertThat( errors.get( "code" ).asText() ).isEqualTo( DeadlockDetected.code().serialize() );
+    }
+
+    private void waitForLocksToBeAquired()
+    {
+        LockCountVisitor lockCountVisitor;
+        do
+        {
+            lockCountVisitor = new LockCountVisitor();
+            ((GraphDatabaseAPI) graphdb()).getDependencyResolver().resolveDependency( Locks.class ).accept( lockCountVisitor );
+        }
+        while ( lockCountVisitor.getLockCount() < 5 );
     }
 
     private Callable<Void> writeToFirstAndSecond()
@@ -82,7 +92,6 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
         return () ->
         {
             HTTP.Response post = http.POST( txUri(), quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:Second) SET n.prop=1' } ] }" ) );
-            secondNodeLocked.countDown();
             http.POST( post.location(), quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:First) SET n.prop=1' } ] }" ) );
             return null;
         };

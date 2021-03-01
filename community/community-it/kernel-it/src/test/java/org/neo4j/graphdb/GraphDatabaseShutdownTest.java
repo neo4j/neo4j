@@ -27,6 +27,7 @@ import java.util.concurrent.Future;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.impl.locking.LockCountVisitor;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -100,9 +101,8 @@ public class GraphDatabaseShutdownTest
                 tx.getNodeById( node.getId() ).addLabel( label( "ABC" ) );
                 nodeLockedLatch.countDown();
 
-                //TODO:
                 // Wait for T3 to start waiting for this node write lock
-//                t3.waitUntilWaiting( details -> details.isAt( CommunityLockClient.class, "acquireExclusive" ) );
+                t3.waitUntilWaiting( details -> details.isAt( ForsetiClient.class, "acquireExclusive" ) );
 
                 managementService.shutdown();
 

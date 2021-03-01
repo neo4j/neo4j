@@ -21,7 +21,10 @@ package org.neo4j.kernel.impl.locking.forseti;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.lock.LockType;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -58,5 +61,18 @@ class SharedLockTest
         // Then
         assertThat( lock.numberOfHolders() ).isEqualTo( 0 );
         assertThat( lock.isUpdateLock() ).isEqualTo( false );
+    }
+
+    @Test
+    void lockTypeChangesToBeExclusiveAfterUpdate()
+    {
+        var client = mock( ForsetiClient.class );
+
+        SharedLock lock = new SharedLock( client );
+        assertEquals( LockType.SHARED, lock.type() );
+
+        assertTrue( lock.tryAcquireUpdateLock( client ) );
+
+        assertEquals( LockType.EXCLUSIVE, lock.type() );
     }
 }

@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.graphdb.Node
+import org.neo4j.kernel.DeadlockDetectedException
+
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
-
-import org.neo4j.graphdb.Node
 
 class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
 
@@ -106,7 +107,16 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
       executor.submit(new Callable[Unit] {
         override def call(): Unit = {
           for (x <- 1 to UPDATES) {
-            execute(query)
+            var retry = true;
+            while (retry) {
+              try {
+                execute(query)
+                retry = false
+              } catch {
+                case e: DeadlockDetectedException => e
+                case t: Throwable => throw new RuntimeException(t)
+              }
+            }
           }
         }})
       }

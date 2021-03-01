@@ -70,6 +70,7 @@ import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.NodeEntity;
@@ -219,6 +220,10 @@ class DenseNodeConcurrencyIT
                         creations++;
                         Thread.sleep( 1 ); // Provoke race, since we do not have fair locking, this will give a small windows to grab exclusive
                     }
+                    catch ( DeadlockDetectedException ignore )
+                    {
+                        // ignore deadlock, try again
+                    }
                 }
             }
             catch ( NotFoundException e )
@@ -242,6 +247,10 @@ class DenseNodeConcurrencyIT
                         }
                         tx.commit();
                         Thread.sleep( 1 ); // Provoke race, since we do not have fair locking, this will give a small windows to grab exclusive
+                    }
+                    catch ( DeadlockDetectedException ignore )
+                    {
+                        // deadlock, retry
                     }
                 }
             }
