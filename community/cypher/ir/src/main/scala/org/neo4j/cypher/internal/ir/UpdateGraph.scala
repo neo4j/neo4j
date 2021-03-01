@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir
 
+import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
@@ -26,7 +27,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.MapExpression
-import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
@@ -351,9 +351,13 @@ trait UpdateGraph {
    * Checks for overlap between what props are read in query graph
    * and what is updated with SET and MERGE here
    */
-  def setPropertyOverlap(qgWithInfo: QgWithLeafInfo): Boolean =
-    setNodePropertyOverlap(qgWithInfo.allKnownUnstableNodeProperties) ||
-      setRelPropertyOverlap(qgWithInfo.allKnownUnstableRelProperties)
+  def setPropertyOverlap(qgWithInfo: QgWithLeafInfo): Boolean = {
+    val hasDynamicProperties = qgWithInfo.treeExists {
+      case _: ContainerIndex => true
+    }
+    setNodePropertyOverlap(qgWithInfo.allKnownUnstableNodeProperties, hasDynamicProperties) ||
+      setRelPropertyOverlap(qgWithInfo.allKnownUnstableRelProperties, hasDynamicProperties)
+  }
 
   /*
    * Checks for overlap between identifiers being read in query graph
@@ -395,7 +399,7 @@ trait UpdateGraph {
   * Checks for overlap between what node props are read in query graph
   * and what is updated with SET here (properties added by create/merge directly is handled elsewhere)
   */
-  private def setNodePropertyOverlap(propertiesToRead: Set[PropertyKeyName]): Boolean = {
+  private def setNodePropertyOverlap(propertiesToRead: Set[PropertyKeyName], hasDynamicProperties: Boolean): Boolean = {
 
     @tailrec
     def toNodePropertyPattern(patterns: Seq[MutatingPattern], acc: CreatesPropertyKeys): CreatesPropertyKeys = {
@@ -419,16 +423,17 @@ trait UpdateGraph {
       }
     }
 
-    val propertiesToSet = toNodePropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
+    val propertiesToSet: CreatesPropertyKeys = toNodePropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
 
-    propertiesToRead.exists(propertiesToSet.overlaps)
+    (hasDynamicProperties && propertiesToSet.overlapsWithDynamicPropertyRead) ||
+      propertiesToRead.exists(propertiesToSet.overlaps)
   }
 
   /*
    * Checks for overlap between what relationship props are read in query graph
    * and what is updated with SET here
    */
-  private def setRelPropertyOverlap(propertiesToRead: Set[PropertyKeyName]): Boolean = {
+  private def setRelPropertyOverlap(propertiesToRead: Set[PropertyKeyName], hasDynamicProperties: Boolean): Boolean = {
     @tailrec
     def toRelPropertyPattern(patterns: Seq[MutatingPattern], acc: CreatesPropertyKeys): CreatesPropertyKeys = {
 
@@ -454,7 +459,8 @@ trait UpdateGraph {
 
     val propertiesToSet = toRelPropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
 
-    propertiesToRead.exists(propertiesToSet.overlaps)
+    (hasDynamicProperties && propertiesToSet.overlapsWithDynamicPropertyRead) ||
+      propertiesToRead.exists(propertiesToSet.overlaps)
   }
 
   private def deleteExpressions = mutatingPatterns.collect {

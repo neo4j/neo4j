@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 sealed trait CreatesPropertyKeys {
   def overlaps(propertyKeyName: PropertyKeyName): Boolean
 
+  def overlapsWithDynamicPropertyRead: Boolean = true
+
   def +(createsPropertyKeys: CreatesPropertyKeys): CreatesPropertyKeys
 }
 
@@ -53,6 +55,8 @@ object CreatesPropertyKeys {
  */
 case object CreatesNoPropertyKeys extends CreatesPropertyKeys {
   override def overlaps(propertyKeyName: PropertyKeyName) = false
+
+  override def overlapsWithDynamicPropertyRead: Boolean = false
 
   override def +(createsPropertyKeys: CreatesPropertyKeys) = createsPropertyKeys
 }
