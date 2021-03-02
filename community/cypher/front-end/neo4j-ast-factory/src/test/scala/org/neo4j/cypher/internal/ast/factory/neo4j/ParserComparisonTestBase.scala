@@ -19,16 +19,19 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.junit.runner.RunWith
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 import org.scalatest.Assertion
 import org.scalatest.Assertions
 import org.scalatest.Matchers
+import org.scalatest.junit.JUnitRunner
 
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
+@RunWith(classOf[JUnitRunner])
 abstract class ParserComparisonTestBase() extends Assertions with Matchers {
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
 

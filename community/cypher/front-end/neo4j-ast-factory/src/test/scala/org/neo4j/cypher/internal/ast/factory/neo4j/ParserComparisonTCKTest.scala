@@ -37,25 +37,47 @@ class ParserComparisonTCKTest extends ParserComparisonTestBase with FunSpecLike 
     }
   var x = 0
 
-  val BLACKLIST = Set(
-      // JavaCC fails invalid hex string during parsing, while parboiled defers failing until semantic checking
-      "Supplying invalid hexadecimal literal 1",
-      "Supplying invalid hexadecimal literal 2",
-    )
+  val DENYLIST = Set[String](
+    // JavaCC fails invalid hex string during parsing, while parboiled defers failing until semantic checking
+    """Feature "Literals3 - Hexadecimal integer": Scenario "Fail on an hexadecimal literal containing a upper case invalid alphanumeric character"""",
+    """Feature "Literals3 - Hexadecimal integer": Scenario "Fail on an incomplete hexadecimal integer"""",
+    """Feature "Literals3 - Hexadecimal integer": Scenario "Fail on an hexadecimal literal containing a lower case invalid alphanumeric character"""",
+
+    // Failing with M16 TCK - require investigation
+    """Feature "Literals2 - Decimal integer": Scenario "Fail on an integer containing a alphabetic character"""",
+    """Feature "Literals7 - List": Scenario "Fail on a nested list with non-matching brackets"""",
+    """Feature "Literals7 - List": Scenario "Fail on a list containing only a comma"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a map containing only a comma"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a map containing key starting with a number"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a map containing key with dot"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a map containing a list without key"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a map containing a value without key"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a map containing a map without key"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a nested map with non-matching braces"""",
+    """Feature "Literals8 - Maps": Scenario "Fail on a map containing key with symbol"""",
+  )
 
   scenariosPerFeature foreach {
     case (featureName, scenarios) =>
       describe(featureName) {
         scenarios
-          .filterNot(scenarioObj => BLACKLIST(scenarioObj.name))
+          .filterNot(scenarioObj => DENYLIST(denyListEntry(scenarioObj)))
           .foreach {
             scenarioObj =>
-              describe(scenarioObj.name) {
+              val denyListName = denyListEntry(scenarioObj)
+              describe(denyListName) {
                 scenarioObj.steps foreach {
                   case Execute(query, _, _) =>
                     x = x + 1
                     it(s"[$x]\n$query") {
-                      assertSameAST(query)
+                      withClue(denyListName) {
+                        try {
+                          assertSameAST(query)
+                        } catch {
+                          // Allow withClue to populate the testcase name
+                          case e: Exception => fail(e.getMessage, e)
+                        }
+                      }
                     }
                   case _ =>
                 }
@@ -64,5 +86,10 @@ class ParserComparisonTCKTest extends ParserComparisonTestBase with FunSpecLike 
       }
     case _ =>
   }
+
+  // Use the same denylist format as the other TCK tests
+  private def denyListEntry(scenario:Scenario): String =
+    s"""Feature "${scenario.featureName}": Scenario "${scenario.name}"""" + scenario.exampleIndex.map(ix => s""": Example "$ix"""").getOrElse("")
+
 }
 

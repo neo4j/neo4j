@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
-import org.scalatest.FunSuiteLike
-import org.scalatest.Matchers
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class JavaCCParserFallbackTest extends FunSuiteLike with Matchers {
+class JavaCCParserFallbackTest extends CypherFunSuite {
 
   test("should fall back") {
     Seq(
