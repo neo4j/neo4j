@@ -29,7 +29,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
@@ -60,8 +59,6 @@ public class FulltextIndexProviderFactory extends ExtensionFactory<FulltextIndex
         JobScheduler scheduler();
 
         TokenHolders tokenHolders();
-
-        GlobalProcedures procedures();
 
         LogService getLogService();
     }
