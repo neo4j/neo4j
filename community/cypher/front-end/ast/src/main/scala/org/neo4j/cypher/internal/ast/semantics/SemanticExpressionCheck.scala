@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.Equivalent
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
@@ -190,11 +189,6 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       case x:Equals =>
         check(ctx, x.arguments, x +: parents) chain checkTypes(x, x.signatures)
-
-      case x:Equivalent =>
-        requireCypher10Support("`~` (equivalence)", x.position) chain
-          check(ctx, x.arguments, x +: parents) chain
-          checkTypes(x, x.signatures)
 
       case x:NotEquals =>
         check(ctx, x.arguments, x +: parents) chain checkTypes(x, x.signatures)

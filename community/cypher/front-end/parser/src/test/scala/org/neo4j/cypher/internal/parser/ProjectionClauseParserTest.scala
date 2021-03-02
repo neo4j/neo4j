@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.parser
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.expressions
 import org.parboiled.scala.Rule1
 
 class ProjectionClauseParserTest
@@ -44,11 +43,6 @@ class ProjectionClauseParserTest
 
   test("WITH ") {
     failsToParse
-  }
-
-  test("WITH * WHERE a ~ b") {
-    val where = ast.Where(expressions.Equivalent(varFor("a"), varFor("b"))(pos))(pos)
-    yields(ast.With(distinct = false, ast.ReturnItems(includeExisting = true, Seq.empty)(pos), None, None, None, Some(where)))
   }
 
   test("RETURN *") {

@@ -296,7 +296,6 @@ TOKEN [IGNORE_CASE] :
     | < END: "END" >
     | < ENDS: "ENDS" >
     | < EQ: "=" >
-    | < EQUIV: "~" >
     | < EXISTS: "EXISTS" >
     | < EXTRACT: "EXTRACT" >
     | < FALSE: "false">

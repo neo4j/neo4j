@@ -44,8 +44,6 @@ trait ParserAstTest[AST] extends ParserTest[AST, AST] with TestName {
 
   final def eq(lhs: Expression, rhs: Expression): Expression = { pos => expressions.Equals(lhs(pos), rhs(pos))(pos) }
 
-  final def equiv(lhs: Expression, rhs: Expression): Expression = { pos => expressions.Equivalent(lhs(pos), rhs(pos))(pos) }
-
   final def ne(lhs: Expression, rhs: Expression): Expression = { pos => expressions.NotEquals(lhs(pos), rhs(pos))(pos) }
 
   final def and(lhs: Expression, rhs: Expression): Expression = { pos => expressions.And(lhs(pos), rhs(pos))(pos) }

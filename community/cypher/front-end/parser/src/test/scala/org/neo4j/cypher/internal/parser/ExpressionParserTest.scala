@@ -27,14 +27,6 @@ class ExpressionParserTest
 
   implicit val parser: Rule1[expressions.Expression] = Expression
 
-  test("a ~ b") {
-    yields(expressions.Equivalent(varFor("a"), varFor("b")))
-  }
-
-  test("[] ~ []") {
-    yields(expressions.Equivalent(listOf(), listOf()))
-  }
-
   test("thing CONTAINS 'a' + 'b'") {
     yields(expressions.Contains(varFor("thing"), add(literalString("a"), literalString("b"))))
   }

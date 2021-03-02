@@ -41,5 +41,4 @@ object SemanticFeature {
   }
   case object ExpressionsInViewInvocations extends SemanticFeature
   case object WithInitialQuerySignature extends SemanticFeature
-  case object Cypher10Support extends SemanticFeature
 }

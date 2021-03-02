@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast.generator
 
+import java.nio.charset.StandardCharsets
+
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AccessDatabaseAction
 import org.neo4j.cypher.internal.ast.ActionResource
@@ -101,7 +103,6 @@ import org.neo4j.cypher.internal.ast.ExecuteFunctionAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.Foreach
-import org.neo4j.cypher.internal.ast.FromGraph
 import org.neo4j.cypher.internal.ast.FunctionQualifier
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
@@ -189,6 +190,7 @@ import org.neo4j.cypher.internal.ast.ShowConstraints
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowIndexAction
+import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
 import org.neo4j.cypher.internal.ast.ShowPrivileges
@@ -240,7 +242,6 @@ import org.neo4j.cypher.internal.ast.generator.AstGenerator.char
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.oneOrMore
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.tuple
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.zeroOrMore
-import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -257,7 +258,6 @@ import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.Equivalent
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
@@ -357,8 +357,6 @@ import org.scalacheck.Gen.posNum
 import org.scalacheck.Gen.sequence
 import org.scalacheck.Gen.some
 import org.scalacheck.util.Buildable
-
-import java.nio.charset.StandardCharsets
 
 object AstGenerator {
   val OR_MORE_UPPER_BOUND = 3
@@ -533,7 +531,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     LessThanOrEqual(l, r)(pos),
     LessThan(l, r)(pos),
     Equals(l, r)(pos),
-    Equivalent(l, r)(pos),
     NotEquals(l, r)(pos),
     InvalidNotEquals(l, r)(pos)
   )

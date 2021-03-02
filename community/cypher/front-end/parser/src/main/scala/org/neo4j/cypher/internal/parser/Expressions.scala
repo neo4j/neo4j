@@ -80,7 +80,6 @@ trait Expressions extends Parser
 
   private def PartialComparisonExpression: Rule1[PartialComparison] = (
       group(operator("=") ~~ Expression7) ~~>> { expr: expressions.Expression => pos: InputPosition => PartialComparison(eq, expr, pos) }
-    | group(operator("~") ~~ Expression7) ~~>> { expr: expressions.Expression => pos: InputPosition => PartialComparison(eqv, expr, pos) }
     | group(operator("<>") ~~ Expression7) ~~>> { expr: expressions.Expression => pos: InputPosition => PartialComparison(ne, expr, pos) }
     | group(operator("!=") ~~ Expression7) ~~>> { expr: expressions.Expression => pos: InputPosition => PartialComparison(bne, expr, pos) }
     | group(operator("<") ~~ Expression7) ~~>> { expr: expressions.Expression => pos: InputPosition => PartialComparison(lt, expr, pos) }
@@ -89,7 +88,6 @@ trait Expressions extends Parser
     | group(operator(">=") ~~ Expression7) ~~>> { expr: expressions.Expression => pos: InputPosition => PartialComparison(gte, expr, pos) } )
 
   private def eq(lhs:expressions.Expression, rhs:expressions.Expression): InputPosition => expressions.Expression = expressions.Equals(lhs, rhs)
-  private def eqv(lhs:expressions.Expression, rhs:expressions.Expression): InputPosition => expressions.Expression = expressions.Equivalent(lhs, rhs)
   private def ne(lhs:expressions.Expression, rhs:expressions.Expression): InputPosition => expressions.Expression = expressions.NotEquals(lhs, rhs)
   private def bne(lhs:expressions.Expression, rhs:expressions.Expression): InputPosition => expressions.Expression = expressions.InvalidNotEquals(lhs, rhs)
   private def lt(lhs:expressions.Expression, rhs:expressions.Expression): InputPosition => expressions.Expression = expressions.LessThan(lhs, rhs)

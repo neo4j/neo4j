@@ -233,15 +233,6 @@ trait SemanticAnalysisTooling {
         SemanticCheckResult.success(s)
   }
 
-  def requireCypher10Support(msg: String, position: InputPosition): SemanticCheck =
-    s => {
-      if(!s.features(SemanticFeature.Cypher10Support))
-        SemanticCheckResult(s,
-          List(FeatureError(s"$msg is a Cypher 10 feature and is not available in this implementation of Cypher.", SemanticFeature.Cypher10Support, position)))
-      else
-        SemanticCheckResult.success(s)
-    }
-
   def error(msg: String, position: InputPosition)(state: SemanticState): SemanticCheckResult =
     SemanticCheckResult(state, Vector(SemanticError(msg, position)))
 
