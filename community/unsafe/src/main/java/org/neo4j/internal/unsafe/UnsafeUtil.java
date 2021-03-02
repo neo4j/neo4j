@@ -20,6 +20,7 @@
 package org.neo4j.internal.unsafe;
 
 import com.sun.jna.Native;
+import com.sun.jna.Pointer;
 import sun.misc.Unsafe;
 
 import java.lang.invoke.MethodHandles;
@@ -945,15 +946,7 @@ public final class UnsafeUtil
     public static void setMemory( long address, long bytes, byte value )
     {
         checkAccess( address, bytes );
-        if ( 0 == (address & 1) && bytes > 64 )
-        {
-            unsafe.putByte( address, value );
-            unsafe.setMemory( address + 1, bytes - 1, value );
-        }
-        else
-        {
-            unsafe.setMemory( address, bytes, value );
-        }
+        new Pointer( address ).setMemory( 0, bytes, value );
     }
 
     /**
