@@ -38,6 +38,7 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -268,7 +269,7 @@ class CheckPointerImplTest
         verify( spyLock, times( 2 ) ).unlock();
     }
 
-    private StoreCopyCheckPointMutex mutex( Lock lock )
+    private static StoreCopyCheckPointMutex mutex( Lock lock )
     {
         return new StoreCopyCheckPointMutex( new ReadWriteLock()
         {
@@ -329,7 +330,7 @@ class CheckPointerImplTest
         limiter = new IOLimiter()
         {
             @Override
-            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
+            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
             {
                 return 42;
             }
@@ -370,7 +371,7 @@ class CheckPointerImplTest
         limiter = new IOLimiter()
         {
             @Override
-            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
+            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
             {
                 return 0;
             }
@@ -401,7 +402,7 @@ class CheckPointerImplTest
         limiter = new IOLimiter()
         {
             @Override
-            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
+            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
             {
                 return 0;
             }
@@ -476,7 +477,7 @@ class CheckPointerImplTest
         limiter = new IOLimiter()
         {
             @Override
-            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
+            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
             {
                 return 0;
             }

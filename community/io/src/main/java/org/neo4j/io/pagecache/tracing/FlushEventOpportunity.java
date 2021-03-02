@@ -50,6 +50,16 @@ public interface FlushEventOpportunity
         {
             return ChunkEvent.NULL;
         }
+
+        @Override
+        public void throttle( long millis )
+        {
+        }
+
+        @Override
+        public void reportIO( int completedIOs )
+        {
+        }
     };
 
     /**
@@ -68,6 +78,14 @@ public interface FlushEventOpportunity
      * @param chunk chunk we start flushing
      */
     ChunkEvent startChunk( int[] chunk );
+
+    /**
+     * Throttle this flush event
+     * @param millis millis to throttle this flush event
+     */
+    void throttle( long millis );
+
+    void reportIO( int completedIOs );
 
     /**
      * Event generated during translation table chunk flushing from memory to backing file

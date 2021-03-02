@@ -2332,13 +2332,22 @@ public class PageListTest
         @Override
         public void startFlush( int[][] translationTable )
         {
-
         }
 
         @Override
         public ChunkEvent startChunk( int[] chunk )
         {
             return ChunkEvent.NULL;
+        }
+
+        @Override
+        public void throttle( long millis )
+        {
+        }
+
+        @Override
+        public void reportIO( int completedIOs )
+        {
         }
 
         // --- FlushEvent:
@@ -2360,7 +2369,6 @@ public class PageListTest
         {
             this.flushDone = true;
             this.flushException = exception;
-
         }
 
         @Override

@@ -37,6 +37,7 @@ import java.util.function.BooleanSupplier;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.scheduler.Group;
@@ -381,7 +382,7 @@ class CheckPointSchedulerTest
         private volatile boolean limitEnabled;
 
         @Override
-        public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
+        public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
         {
             return 0;
         }

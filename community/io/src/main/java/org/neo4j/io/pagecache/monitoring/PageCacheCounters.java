@@ -95,4 +95,19 @@ public interface PageCacheCounters
      * be determined.
      */
     double usageRatio();
+
+    /**
+     * @return The number of IOPQ performed thus far.
+     */
+    long iopqPerformed();
+
+    /**
+     * @return The number of times page cache io was throttled by io limiter thus far.
+     */
+    long ioLimitedTimes();
+
+    /**
+     * @return The number of millis page cache io was throttled by io limiter thus far.
+     */
+    long ioLimitedMillis();
 }

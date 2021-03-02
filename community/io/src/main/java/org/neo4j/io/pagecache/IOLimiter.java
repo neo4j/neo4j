@@ -22,10 +22,12 @@ package org.neo4j.io.pagecache;
 import java.io.Flushable;
 import java.io.IOException;
 
+import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
+
 /**
  * IOLimiter instances can be passed to the {@link PageCache#flushAndForce(IOLimiter)} and
  * {@link PagedFile#flushAndForce(IOLimiter)} methods, which will invoke the
- * {@link #maybeLimitIO(long, int, Flushable)} method on regular intervals.
+ * {@link #maybeLimitIO(long, int, Flushable, FlushEventOpportunity)} method on regular intervals.
  * <p/>
  * This allows the limiter to measure the rate of IO, and inject sleeps, pauses or flushes into the process.
  * The flushes are in this case referring to the underlying hardware.
@@ -38,7 +40,7 @@ public interface IOLimiter
 {
     /**
      * The value of the initial stamp; that is, what should be passed as the {@code previousStamp} to
-     * {@link #maybeLimitIO(long, int, Flushable)} on the first call in a flush.
+     * {@link #maybeLimitIO(long, int, Flushable, FlushEventOpportunity)} on the first call in a flush.
      */
     long INITIAL_STAMP = 0;
 
@@ -63,9 +65,10 @@ public interface IOLimiter
      * @param recentlyCompletedIOs The number of IOs completed since the last call to this method.
      * @param flushable A {@link Flushable} instance that can flush any relevant dirty system buffers, to help smooth
      * out the IO load on the storage device.
+     * @param flushes // TODO:
      * @return A new stamp to pass into the next call to this method.
      */
-    long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable );
+    long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes );
 
     /**
      * Temporarily disable the IOLimiter, to allow IO to proceed at full speed.
@@ -107,7 +110,7 @@ public interface IOLimiter
      * An IOPSLimiter implementation that does not restrict the rate of IO. Use this implementation if you want the
      * flush to go as fast as possible.
      */
-    IOLimiter UNLIMITED = ( previousStamp, recentlyCompletedIOs, flushable ) -> previousStamp;
+    IOLimiter UNLIMITED = ( previousStamp, recentlyCompletedIOs, flushable, flushes ) -> previousStamp;
 
     /**
      * @return {@code true} if IO is currently limited

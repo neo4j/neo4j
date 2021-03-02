@@ -156,6 +156,24 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
+        public long iopqPerformed()
+        {
+            return 0;
+        }
+
+        @Override
+        public long ioLimitedTimes()
+        {
+            return 0;
+        }
+
+        @Override
+        public long ioLimitedMillis()
+        {
+            return 0;
+        }
+
+        @Override
         public void pins( long pins )
         {
         }
@@ -207,6 +225,16 @@ public interface PageCacheTracer extends PageCacheCounters
 
         @Override
         public void maxPages( long maxPages )
+        {
+        }
+
+        @Override
+        public void iopq( long iopq )
+        {
+        }
+
+        @Override
+        public void limitIO( long millis )
         {
         }
 
@@ -318,4 +346,16 @@ public interface PageCacheTracer extends PageCacheCounters
      * @param maxPages the total number of available pages.
      */
     void maxPages( long maxPages );
+
+    /**
+     * Report number of performed iopq.
+     * @param iopq number of performed io operations per quantum of time.
+     */
+    void iopq( long iopq );
+
+    /**
+     * Report io throttling by io limiter.
+     * @param millis number of millisecond io should be blocked.
+     */
+    void limitIO( long millis );
 }

@@ -46,6 +46,9 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     protected final LongAdder filesMapped = new LongAdder();
     protected final LongAdder filesUnmapped = new LongAdder();
     protected final LongAdder evictionExceptions = new LongAdder();
+    protected final LongAdder iopqPerformed = new LongAdder();
+    protected final LongAdder ioLimitedTimes = new LongAdder();
+    protected final LongAdder ioLimitedMillis = new LongAdder();
     protected final AtomicLong maxPages = new AtomicLong();
 
     private final FlushEvent flushEvent = new FlushEvent()
@@ -98,6 +101,19 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         public ChunkEvent startChunk( int[] chunk )
         {
             return ChunkEvent.NULL;
+        }
+
+        @Override
+        public void throttle( long millis )
+        {
+            ioLimitedTimes.increment();
+            ioLimitedMillis.add( millis );
+        }
+
+        @Override
+        public void reportIO( int completedIOs )
+        {
+            iopqPerformed.add( completedIOs );
         }
     };
 
@@ -288,6 +304,37 @@ public class DefaultPageCacheTracer implements PageCacheTracer
             return 0;
         }
         return Math.max( 0, (faults.sum() - evictions.sum()) / (double) pages );
+    }
+
+    @Override
+    public long iopqPerformed()
+    {
+        return iopqPerformed.sum();
+    }
+
+    @Override
+    public long ioLimitedTimes()
+    {
+        return ioLimitedTimes.sum();
+    }
+
+    @Override
+    public long ioLimitedMillis()
+    {
+        return ioLimitedMillis.sum();
+    }
+
+    @Override
+    public void iopq( long iopq )
+    {
+        iopqPerformed.add( iopq );
+    }
+
+    @Override
+    public void limitIO( long millis )
+    {
+        ioLimitedTimes.increment();
+        ioLimitedMillis.add( millis );
     }
 
     @Override

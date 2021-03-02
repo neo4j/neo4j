@@ -245,6 +245,16 @@ class HEvents
         }
 
         @Override
+        public void throttle( long millis )
+        {
+        }
+
+        @Override
+        public void reportIO( int completedIOs )
+        {
+        }
+
+        @Override
         void printBody( PrintStream out, String exceptionLinePrefix )
         {
             print( out, path );
@@ -415,13 +425,22 @@ class HEvents
         @Override
         public void startFlush( int[][] translationTable )
         {
-
         }
 
         @Override
         public ChunkEvent startChunk( int[] chunk )
         {
             return ChunkEvent.NULL;
+        }
+
+        @Override
+        public void throttle( long millis )
+        {
+        }
+
+        @Override
+        public void reportIO( int completedIOs )
+        {
         }
 
         @Override

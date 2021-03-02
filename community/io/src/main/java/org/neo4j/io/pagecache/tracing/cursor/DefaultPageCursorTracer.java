@@ -280,6 +280,18 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         {
             return ChunkEvent.NULL;
         }
+
+        @Override
+        public void throttle( long millis )
+        {
+            // so far we do not throttle on a page cursor level
+        }
+
+        @Override
+        public void reportIO( int completedIOs )
+        {
+            // so far we do not track io's on a cursor level
+        }
     };
 
     private final FlushEvent flushEvent = new FlushEvent()

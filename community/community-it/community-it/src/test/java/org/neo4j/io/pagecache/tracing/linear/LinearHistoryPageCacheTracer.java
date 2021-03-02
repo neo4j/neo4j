@@ -170,6 +170,24 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public long iopqPerformed()
+    {
+        return 0;
+    }
+
+    @Override
+    public long ioLimitedTimes()
+    {
+        return 0;
+    }
+
+    @Override
+    public long ioLimitedMillis()
+    {
+        return 0;
+    }
+
+    @Override
     public void pins( long pins )
     {
     }
@@ -221,6 +239,16 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
 
     @Override
     public void maxPages( long maxPages )
+    {
+    }
+
+    @Override
+    public void iopq( long iopq )
+    {
+    }
+
+    @Override
+    public void limitIO( long millis )
     {
     }
 }

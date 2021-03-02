@@ -1508,6 +1508,16 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             {
                 return new FlushInfoChunk();
             }
+
+            @Override
+            public void throttle( long millis )
+            {
+            }
+
+            @Override
+            public void reportIO( int completedIOs )
+            {
+            }
         }
 
         private class FlushInfoChunk extends FlushEventOpportunity.ChunkEvent

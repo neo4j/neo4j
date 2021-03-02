@@ -1672,7 +1672,7 @@ class GBPTreeTest
             assertThat( e.getMessage() ).contains( "GBPTree was opened in read only mode and can not finish operation: " );
 
             MutableBoolean ioLimitChecked = new MutableBoolean();
-            tree.checkpoint( ( previousStamp, recentlyCompletedIOs, flushable ) -> {
+            tree.checkpoint( ( previousStamp, recentlyCompletedIOs, flushable, flushes ) -> {
                 ioLimitChecked.setTrue();
                 return 0;
             }, NULL );

@@ -343,7 +343,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         AtomicInteger callbackCounter = new AtomicInteger();
         AtomicInteger ioCounter = new AtomicInteger();
-        cache.flushAndForce( ( previousStamp, recentlyCompletedIOs, swapper ) ->
+        cache.flushAndForce( ( previousStamp, recentlyCompletedIOs, swapper, flushes ) ->
         {
             ioCounter.addAndGet( recentlyCompletedIOs * pagesPerFlush );
             return callbackCounter.getAndIncrement();
@@ -369,7 +369,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         AtomicInteger callbackCounter = new AtomicInteger();
         AtomicInteger ioCounter = new AtomicInteger();
-        pf.flushAndForce( ( previousStamp, recentlyCompletedIOs, swapper ) ->
+        pf.flushAndForce( ( previousStamp, recentlyCompletedIOs, swapper, flushes ) ->
         {
             ioCounter.addAndGet( recentlyCompletedIOs * pagesPerFlush );
             return callbackCounter.getAndIncrement();
@@ -380,12 +380,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertThat( ioCounter.get() ).isGreaterThanOrEqualTo( pagesToDirty - 30 ); // -30 because of the eviction thread
     }
 
-    private void dirtyManyPages( PagedFile pf, int pagesToDirty ) throws IOException
+    private static void dirtyManyPages( PagedFile pf, int pagesToDirty ) throws IOException
     {
         dirtyManyPages( pf, pagesToDirty, NULL );
     }
 
-    private void dirtyManyPages( PagedFile pf, int pagesToDirty, PageCursorTracer cursorTracer ) throws IOException
+    private static void dirtyManyPages( PagedFile pf, int pagesToDirty, PageCursorTracer cursorTracer ) throws IOException
     {
         try ( PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, cursorTracer ) )
         {
@@ -469,7 +469,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 BinaryLatch limiterBlockLatch = new BinaryLatch();
                 Future<?> flusher = executor.submit( () ->
                 {
-                    pageCache.flushAndForce( ( stamp, ios, flushable ) ->
+                    pageCache.flushAndForce( ( stamp, ios, flushable, flushes ) ->
                     {
                         limiterStartLatch.release();
                         limiterBlockLatch.await();
@@ -523,7 +523,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
             flusher = executor.submit( () ->
             {
-                pageCache.flushAndForce( ( stamp, ios, flushable ) ->
+                pageCache.flushAndForce( ( stamp, ios, flushable, flushes ) ->
                 {
                     limiterStartLatch.release();
                     limiterBlockLatch.await();
@@ -1414,7 +1414,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnWriteCursor( this::checkPreviouslyBoundWriteCursorAfterFailedNext ) );
     }
 
-    private void verifyOnReadCursor( ThrowingConsumer<PageCursorAction,IOException> testTemplate ) throws IOException
+    private static void verifyOnReadCursor( ThrowingConsumer<PageCursorAction,IOException> testTemplate ) throws IOException
     {
         testTemplate.accept( PageCursor::getByte );
         testTemplate.accept( PageCursor::getInt );
@@ -1426,7 +1426,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         testTemplate.accept( cursor -> cursor.getShort( 0 ) );
     }
 
-    private void verifyOnWriteCursor( ThrowingConsumer<PageCursorAction,IOException> testTemplate ) throws IOException
+    private static void verifyOnWriteCursor( ThrowingConsumer<PageCursorAction,IOException> testTemplate ) throws IOException
     {
         testTemplate.accept( cursor -> cursor.putByte( (byte) 1 ) );
         testTemplate.accept( cursor -> cursor.putInt( 1 ) );

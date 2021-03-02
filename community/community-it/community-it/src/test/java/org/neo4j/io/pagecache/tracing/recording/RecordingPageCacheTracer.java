@@ -175,6 +175,24 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
+    public long iopqPerformed()
+    {
+        return 0;
+    }
+
+    @Override
+    public long ioLimitedTimes()
+    {
+        return 0;
+    }
+
+    @Override
+    public long ioLimitedMillis()
+    {
+        return 0;
+    }
+
+    @Override
     public void pins( long pins )
     {
         this.pins.getAndAdd( pins );
@@ -229,6 +247,16 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
 
     @Override
     public void maxPages( long maxPages )
+    {
+    }
+
+    @Override
+    public void iopq( long iopq )
+    {
+    }
+
+    @Override
+    public void limitIO( long millis )
     {
     }
 

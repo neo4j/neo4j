@@ -129,6 +129,24 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
+    public long iopqPerformed()
+    {
+        return delegate.iopqPerformed();
+    }
+
+    @Override
+    public long ioLimitedTimes()
+    {
+        return delegate.ioLimitedTimes();
+    }
+
+    @Override
+    public long ioLimitedMillis()
+    {
+        return delegate.ioLimitedMillis();
+    }
+
+    @Override
     public void pins( long pins )
     {
         delegate.pins( pins );
@@ -192,6 +210,18 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     public void maxPages( long maxPages )
     {
         delegate.maxPages( maxPages );
+    }
+
+    @Override
+    public void iopq( long iopq )
+    {
+        delegate.iopq( iopq );
+    }
+
+    @Override
+    public void limitIO( long millis )
+    {
+        delegate.limitIO( millis );
     }
 
     @Override
