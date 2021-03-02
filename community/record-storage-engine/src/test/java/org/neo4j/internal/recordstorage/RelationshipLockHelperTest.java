@@ -230,7 +230,7 @@ class RelationshipLockHelperTest
                 .contains( new ActiveLock( ResourceTypes.RELATIONSHIP, LockType.EXCLUSIVE, -1, 1 ) )
                 .contains( new ActiveLock( ResourceTypes.RELATIONSHIP, LockType.EXCLUSIVE, -1, 2 ) )
                 .contains( new ActiveLock( ResourceTypes.RELATIONSHIP, LockType.EXCLUSIVE, -1, 5 ) )
-                .contains( new ActiveLock( ResourceTypes.RELATIONSHIP, LockType.EXCLUSIVE, -1,7 ) );
+                .contains( new ActiveLock( ResourceTypes.RELATIONSHIP, LockType.EXCLUSIVE, -1, 7 ) );
     }
 
     @ParameterizedTest
