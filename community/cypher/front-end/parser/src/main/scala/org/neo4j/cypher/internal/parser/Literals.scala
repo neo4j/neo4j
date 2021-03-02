@@ -59,7 +59,6 @@ trait Literals extends Parser
     keyword("USING") |
     keyword("UNWIND") |
     keyword("USE") |
-    keyword("CONSTRUCT") |
     keyword("WITH") |
     keyword("COPY")
 

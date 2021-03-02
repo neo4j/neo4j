@@ -45,27 +45,6 @@ trait Clauses extends Parser
       (ast.LoadCSV(_, _, _, _))
   }
 
-  def ConstructGraph: Rule1[ast.ConstructGraph] = rule("CONSTRUCT") {
-    group(keyword("CONSTRUCT") ~~ optional(keyword("ON") ~~ oneOrMore(CatalogName, CommaSep)) ~~
-      zeroOrMore(WS ~ Clone) ~~
-      zeroOrMore(WS ~ ConstructCreate) ~~
-      zeroOrMore(WS ~ SetClause) ~~>> { (on, clones, news, sets) =>
-      ast.ConstructGraph(clones, news, on.getOrElse(List.empty), sets)
-    })
-  }
-
-  def Clone: Rule1[ast.Clone] = rule("CLONE (construct subclause)") {
-    group(keyword("CLONE") ~~ oneOrMore(ReturnItem, CommaSep)) ~~>> (ast.Clone(_))
-  }
-
-  def ConstructCreate: Rule1[ast.CreateInConstruct] = rule("NEW (construct subclause)") {
-    group(keyword("CREATE") ~~ Pattern) ~~>> (ast.CreateInConstruct(_))
-  }
-
-  def CatalogName: Rule1[ast.CatalogName] = rule("catalog name with parts; foo.bar.baz") {
-    group(SymbolicNameString ~~ zeroOrMore("." ~~ SymbolicNameString) ~~> (ast.CatalogName(_, _)))
-  }
-
   def Start: Rule1[ast.Start] = rule("START") {
     group(
       keyword("START") ~~ oneOrMore(StartPoint, separator = CommaSep) ~~ optional(Where)
