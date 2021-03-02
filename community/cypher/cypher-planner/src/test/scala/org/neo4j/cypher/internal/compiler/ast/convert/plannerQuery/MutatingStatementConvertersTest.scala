@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.ForeachPattern
+import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
@@ -152,7 +153,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
           Selections(Set.empty), Vector.empty, Set.empty, Set.empty,
           IndexedSeq(CreatePattern(nodes("a"), Nil))),
           InterestingOrder.empty,
-          RegularQueryProjection(Map("i" -> varFor("i"))), None)))
+          PassthroughAllHorizon(), None)))
     )
   }
 
