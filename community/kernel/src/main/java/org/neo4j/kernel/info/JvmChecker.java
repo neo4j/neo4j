@@ -25,7 +25,6 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.Log;
 
 import static java.util.regex.Pattern.compile;
@@ -69,11 +68,11 @@ public class JvmChecker
         MemoryUsage heapMemoryUsage = jvmMetadataRepository.getHeapMemoryUsage();
         if ( missingOption( jvmArguments, "-Xmx" ) )
         {
-            log.warn( memorySettingWarning( max_heap_size, heapMemoryUsage.getMax() ) );
+            log.warn( maxMemorySettingWarning( heapMemoryUsage.getMax() ) );
         }
         if ( missingOption( jvmArguments, "-Xms" ) )
         {
-            log.warn( memorySettingWarning( initial_heap_size, heapMemoryUsage.getInit() ) );
+            log.warn( initialMemorySettingWarning( heapMemoryUsage.getInit() ) );
         }
         if ( !serializationFilterIsAvailable() )
         {
@@ -81,12 +80,20 @@ public class JvmChecker
         }
     }
 
-    static String memorySettingWarning( Setting<?> setting, long currentUsage )
+    static String initialMemorySettingWarning( long currentUsage )
     {
-        return "The " + setting.name() + " setting has not been configured. It is recommended that this " +
-                "setting is always explicitly configured, to ensure the system has a balanced configuration. " +
-                "Until then, a JVM computed heuristic of " + currentUsage + " bytes is used instead. " +
-                "Run `neo4j-admin memrec` for memory configuration suggestions.";
+        return String.format( "The initial heap memory has not been configured. It is recommended that it is always explicitly configured, to " +
+                "ensure the system has a balanced configuration. Until then, a JVM computed heuristic of %d bytes is used instead. If you are running " +
+                "neo4j server, you need to configure %s in neo4j.conf. If you are running neo4j embedded, you have to launch the JVM with -Xms set to a " +
+                "value. You can run neo4j-admin memrec for memory configuration suggestions.", currentUsage, initial_heap_size.name() );
+    }
+
+    static String maxMemorySettingWarning( long currentUsage )
+    {
+        return String.format( "The max heap memory has not been configured. It is recommended that it is always explicitly configured, to " +
+                "ensure the system has a balanced configuration. Until then, a JVM computed heuristic of %d bytes is used instead. If you are running " +
+                "neo4j server, you need to configure %s in neo4j.conf. If you are running neo4j embedded, you have to launch the JVM with -Xmx set to a " +
+                "value. You can run neo4j-admin memrec for memory configuration suggestions.", currentUsage, max_heap_size.name() );
     }
 
     private static boolean missingOption( List<String> jvmArguments, String option )
