@@ -312,23 +312,27 @@ final class RelationshipLockHelper
 
     private static void lockRelationshipsExclusively( ResourceLocker locker, long[] ids )
     {
+        long lastId = NULL_REFERENCE.longValue();
         for ( long id : ids )
         {
-            if ( !isNull( id ) )
+            if ( id != lastId && !isNull( id ) )
             {
                 locker.acquireExclusive( NONE, RELATIONSHIP, id );
             }
+            lastId = id;
         }
     }
 
     private static void unlockRelationshipsExclusively( ResourceLocker locker, long[] ids )
     {
+        long lastId = NULL_REFERENCE.longValue();
         for ( long id : ids )
         {
-            if ( !isNull( id ) )
+            if ( id != lastId && !isNull( id ) )
             {
                 locker.releaseExclusive( RELATIONSHIP, id );
             }
+            lastId = id;
         }
     }
 

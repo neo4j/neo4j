@@ -40,11 +40,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.neo4j.internal.recordstorage.RelationshipLockHelper.SortedLockList;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
@@ -52,6 +55,8 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.Integer.min;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.internal.recordstorage.TrackingResourceLocker.LockAcquisitionMonitor.NO_MONITOR;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.Record.isNull;
@@ -178,13 +183,13 @@ class RelationshipLockHelperTest
             if ( idsToDelete.add( id ) )
             {
                 VolatileRelationshipRecord record = new VolatileRelationshipRecord( id, expectedLocks, maxId );
-                var proxy = Mockito.mock( RecordAccess.RecordProxy.class );
-                Mockito.when( proxy.forReadingLinkage() ).thenAnswer( invocation -> new RelationshipRecord( record.maybeChange() ) );
+                var proxy = mock( RecordAccess.RecordProxy.class );
+                when( proxy.forReadingLinkage() ).thenAnswer( invocation -> new RelationshipRecord( record.maybeChange() ) );
                 proxies.put( id, proxy );
             }
         }
-        RecordAccess<RelationshipRecord, Void> relRecords = Mockito.mock( RecordAccess.class );
-        Mockito.when( relRecords.getOrLoad( Mockito.anyLong(), Mockito.any(), Mockito.any() ) )
+        RecordAccess<RelationshipRecord, Void> relRecords = mock( RecordAccess.class );
+        when( relRecords.getOrLoad( Mockito.anyLong(), Mockito.any(), Mockito.any() ) )
                 .thenAnswer( invocation -> proxies.get( invocation.getArgument( 0 ) ) );
         TrackingResourceLocker locks = new TrackingResourceLocker( random, NO_MONITOR ).withStrictAssertionsOn( ResourceTypes.RELATIONSHIP );
 
@@ -194,6 +199,38 @@ class RelationshipLockHelperTest
 
         //Then
         assertThat( locks.getExclusiveLocks( ResourceTypes.RELATIONSHIP ).toSortedArray() ).containsExactly( expectedLocks.toSet().toSortedArray() );
+    }
+
+    @Test
+    void avoidTakingDuplicateLocks()
+    {
+        MutableLongObjectMap<RecordAccess.RecordProxy<RelationshipRecord,Void>> proxies = LongObjectMaps.mutable.empty();
+
+        MutableLongSet idsToDelete = LongSets.mutable.empty();
+        MutableLongBag expectedLocks = LongBags.mutable.empty();
+        idsToDelete.add( 1 );
+
+        RelationshipRecord record = new RelationshipRecord( 1 );
+        record.initialize( true, 1, 2, 3, 4, 5, 7, 7, 5, false, false );
+        var proxy = mock( RecordAccess.RecordProxy.class );
+        when( proxy.forReadingLinkage() ).thenAnswer( invocation -> record );
+        proxies.put( 1, proxy );
+
+        RecordAccess<RelationshipRecord, Void> relRecords = mock( RecordAccess.class );
+        when( relRecords.getOrLoad( Mockito.anyLong(), Mockito.any(), Mockito.any() ) )
+                .thenAnswer( invocation -> proxies.get( invocation.getArgument( 0 ) ) );
+
+        TrackingResourceLocker locks = new TrackingResourceLocker( random, NO_MONITOR ).withStrictAssertionsOn( ResourceTypes.RELATIONSHIP );
+
+        RelationshipLockHelper.lockRelationshipsInOrder( idsAsBatch( idsToDelete ), 2, relRecords, locks, PageCursorTracer.NULL,
+                EmptyMemoryTracker.INSTANCE );
+
+        List<ActiveLock> activeLocks = locks.activeLocks().collect( Collectors.toList() );
+        assertThat( activeLocks ).hasSize( 4 )
+                .contains( new ActiveLock( ResourceTypes.RELATIONSHIP, LockType.EXCLUSIVE, -1, 1 ) )
+                .contains( new ActiveLock( ResourceTypes.RELATIONSHIP, LockType.EXCLUSIVE, -1, 2 ) )
+                .contains( new ActiveLock( ResourceTypes.RELATIONSHIP, LockType.EXCLUSIVE, -1, 5 ) )
+                .contains( new ActiveLock( ResourceTypes.RELATIONSHIP, LockType.EXCLUSIVE, -1,7 ) );
     }
 
     @ParameterizedTest
@@ -206,15 +243,15 @@ class RelationshipLockHelperTest
         MutableLongObjectMap<RecordAccess.RecordProxy<RelationshipRecord,Void>> proxies = LongObjectMaps.mutable.empty();
         chain.forEach( record ->
         {
-            RecordAccess.RecordProxy<RelationshipRecord,Void> proxy = Mockito.mock( RecordAccess.RecordProxy.class );
-            Mockito.when( proxy.getKey() ).thenAnswer( invocation -> record.getId() );
-            Mockito.when( proxy.forReadingLinkage() ).thenAnswer( invocation -> record );
-            Mockito.when( proxy.forReadingData() ).thenAnswer( invocation -> record );
+            RecordAccess.RecordProxy<RelationshipRecord,Void> proxy = mock( RecordAccess.RecordProxy.class );
+            when( proxy.getKey() ).thenAnswer( invocation -> record.getId() );
+            when( proxy.forReadingLinkage() ).thenAnswer( invocation -> record );
+            when( proxy.forReadingData() ).thenAnswer( invocation -> record );
             proxies.put( record.getId(), proxy );
         } );
 
-        RecordAccess<RelationshipRecord, Void> relRecords = Mockito.mock( RecordAccess.class );
-        Mockito.when( relRecords.getOrLoad( Mockito.anyLong(), Mockito.any(), Mockito.any(), Mockito.any() ) )
+        RecordAccess<RelationshipRecord, Void> relRecords = mock( RecordAccess.class );
+        when( relRecords.getOrLoad( Mockito.anyLong(), Mockito.any(), Mockito.any(), Mockito.any() ) )
                 .thenAnswer( invocation -> proxies.get( invocation.getArgument( 0 ) ) );
 
         double chanceOfGettingLock = Math.sqrt( 0.8 / ((double) chainLength * 0.5) );
