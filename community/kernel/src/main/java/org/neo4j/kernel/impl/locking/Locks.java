@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
@@ -72,8 +73,9 @@ public interface Locks
          * @param leaseClient {@link LeaseClient} of the owning transaction.
          * @param transactionId lock client owning transaction id
          * @param memoryTracker memory tracker from the transaction
+         * @param config neo4j configuration
          */
-        void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker );
+        void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config );
 
         /** Try grabbing shared lock, not waiting and returning a boolean indicating if we got the lock. */
         boolean trySharedLock( ResourceType resourceType, long resourceId );

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.exceptions.FrozenLocksException;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.lock.AcquireLockTimeoutException;
@@ -61,9 +62,9 @@ public class FrozenLockClient implements Locks.Client
     }
 
     @Override
-    public void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker )
+    public void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config )
     {
-        delegate.initialize( leaseClient, transactionId, memoryTracker );
+        delegate.initialize( leaseClient, transactionId, memoryTracker, config );
     }
 
     @Override

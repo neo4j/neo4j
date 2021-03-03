@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.ActiveLock;
@@ -31,7 +32,7 @@ import org.neo4j.memory.MemoryTracker;
 public class NoOpClient implements Locks.Client
 {
     @Override
-    public void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker )
+    public void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config )
     {
     }
 

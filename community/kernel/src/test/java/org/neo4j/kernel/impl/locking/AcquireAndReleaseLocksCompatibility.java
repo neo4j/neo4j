@@ -54,7 +54,7 @@ abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTest
         clientA.releaseExclusive( NODE, 1L );
 
         // Then this should not block
-        assertNotWaiting( clientB, clientBLock );
+        assertNotWaiting( clientBLock );
     }
 
     @Test
@@ -74,7 +74,7 @@ abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTest
         clientC.releaseShared( NODE, 1L );
 
         // Then this should not block
-        assertNotWaiting( clientB, clientBLock );
+        assertNotWaiting( clientBLock );
     }
 
     @Test
@@ -90,7 +90,7 @@ abstract class AcquireAndReleaseLocksCompatibility extends LockCompatibilityTest
         clientA.releaseExclusive( NODE, 1L );
 
         // Then this should not block
-        assertNotWaiting( clientB, clientBLock );
+        assertNotWaiting( clientBLock );
     }
 
     @Test

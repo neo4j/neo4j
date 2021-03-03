@@ -157,8 +157,8 @@ class ForsetiFalseDeadlockTest
         try ( Locks.Client a = manager.newClient();
               Locks.Client b = manager.newClient() )
         {
-            a.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
-            b.initialize( NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE );
+            a.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults() );
+            b.initialize( NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, Config.defaults() );
 
             BinaryLatch startLatch = new BinaryLatch();
             BlockedCallable callA = new BlockedCallable( startLatch,

@@ -202,6 +202,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile TraceProvider traceProvider;
     private volatile TransactionInitializationTrace initializationTrace;
     private final LimitedMemoryTracker memoryTracker;
+    private final Config config;
     private volatile long transactionHeapBytesLimit;
 
     /**
@@ -271,6 +272,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         traceProvider = getTraceProvider( config );
         transactionHeapBytesLimit = config.get( memory_transaction_max_size );
         registerConfigChangeListeners( config );
+        this.config = config;
         this.collectionsFactory = collectionsFactorySupplier.create();
     }
 
@@ -285,7 +287,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.lockClient = lockClient;
         this.userTransactionId = userTransactionId;
         this.leaseClient = leaseService.newClient();
-        this.lockClient.initialize( leaseClient, userTransactionId, memoryTracker );
+        this.lockClient.initialize( leaseClient, userTransactionId, memoryTracker, config );
         this.terminationReason = null;
         this.closing = false;
         this.closed = false;

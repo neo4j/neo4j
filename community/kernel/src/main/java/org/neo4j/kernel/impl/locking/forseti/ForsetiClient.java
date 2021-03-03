@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingLongIntHashMap;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.unsafe.UnsafeUtil;
@@ -113,7 +114,7 @@ public class ForsetiClient implements Locks.Client
      *
      * @see GraphDatabaseSettings#lock_acquisition_timeout
      */
-    private final long lockAcquisitionTimeoutNano;
+    private long lockAcquisitionTimeoutNano;
 
     private final SystemNanoClock clock;
 
@@ -154,7 +155,7 @@ public class ForsetiClient implements Locks.Client
     public ForsetiClient( int id, ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps,
                           WaitStrategy[] waitStrategies, Pool<ForsetiClient> clientPool,
                           DeadlockResolutionStrategy deadlockResolutionStrategy, IntFunction<ForsetiClient> clientById,
-                          long lockAcquisitionTimeoutNano, SystemNanoClock clock )
+                          SystemNanoClock clock )
     {
         this.clientId = id;
         this.lockMaps = lockMaps;
@@ -164,7 +165,6 @@ public class ForsetiClient implements Locks.Client
         this.clientById = clientById;
         this.sharedLockCounts = new HeapTrackingLongIntHashMap[lockMaps.length];
         this.exclusiveLockCounts = new HeapTrackingLongIntHashMap[lockMaps.length];
-        this.lockAcquisitionTimeoutNano = lockAcquisitionTimeoutNano;
         this.clock = clock;
     }
 
@@ -178,10 +178,11 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker )
+    public void initialize( LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config )
     {
         this.userTransactionId = transactionId;
         this.memoryTracker = requireNonNull( memoryTracker );
+        this.lockAcquisitionTimeoutNano = config.get( GraphDatabaseSettings.lock_acquisition_timeout ).toNanos();
     }
 
     @Override

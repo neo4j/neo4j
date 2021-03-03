@@ -344,7 +344,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     // @see Status.Transaction#LockAcquisitionTimeout
     @Description( "The maximum time interval within which lock should be acquired. Zero (default) means timeout is disabled." )
     public static final Setting<Duration> lock_acquisition_timeout =
-            newBuilder( "dbms.lock.acquisition.timeout", DURATION, Duration.ZERO ).build();
+            newBuilder( "dbms.lock.acquisition.timeout", DURATION, Duration.ZERO ).dynamic().build();
 
     @Description( "Configures the time interval between transaction monitor checks. Determines how often " +
             "monitor thread will check transaction for timeout." )

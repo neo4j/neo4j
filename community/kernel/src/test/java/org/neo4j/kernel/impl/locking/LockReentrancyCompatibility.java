@@ -57,7 +57,7 @@ abstract class LockReentrancyCompatibility extends LockCompatibilityTestSupport
         clientA.releaseShared( NODE, 1L );
 
         // Then
-        assertNotWaiting( clientB, clientBLock );
+        assertNotWaiting( clientBLock );
     }
 
     @Test
@@ -80,7 +80,7 @@ abstract class LockReentrancyCompatibility extends LockCompatibilityTestSupport
         clientA.releaseExclusive( NODE, 1L );
 
         // Then
-        assertNotWaiting( clientB, clientBLock );
+        assertNotWaiting( clientBLock );
     }
 
     @Test
@@ -103,7 +103,7 @@ abstract class LockReentrancyCompatibility extends LockCompatibilityTestSupport
         clientA.releaseShared( NODE, 1L );
 
         // Then
-        assertNotWaiting( clientB, clientBLock );
+        assertNotWaiting( clientBLock );
     }
 
     @Test
@@ -128,7 +128,7 @@ abstract class LockReentrancyCompatibility extends LockCompatibilityTestSupport
         clientA.releaseShared( NODE, 1L );
 
         // Then
-        assertNotWaiting( clientB, clientBLock );
+        assertNotWaiting( clientBLock );
     }
 
     @Test
@@ -153,7 +153,7 @@ abstract class LockReentrancyCompatibility extends LockCompatibilityTestSupport
         clientA.releaseExclusive( NODE, 1L );
 
         // Then
-        assertNotWaiting( clientB, clientBLock );
+        assertNotWaiting( clientBLock );
     }
 
     @Test
@@ -178,7 +178,7 @@ abstract class LockReentrancyCompatibility extends LockCompatibilityTestSupport
         clientA.releaseExclusive( NODE, 1L );
 
         // Then
-        assertNotWaiting( clientB, clientBLock );
+        assertNotWaiting( clientBLock );
     }
 
     @Test
@@ -201,7 +201,7 @@ abstract class LockReentrancyCompatibility extends LockCompatibilityTestSupport
         clientA.releaseExclusive( NODE, 1L );
 
         // Then
-        assertNotWaiting( clientB, clientBLock );
+        assertNotWaiting( clientBLock );
     }
 
     @Test
@@ -221,7 +221,7 @@ abstract class LockReentrancyCompatibility extends LockCompatibilityTestSupport
         clientA.releaseShared( NODE, 1L );
 
         // exclusive lock should be received
-        assertNotWaiting( clientB, exclusiveLockFuture );
+        assertNotWaiting( exclusiveLockFuture );
 
         // and when releasing exclusive
         clientB.releaseExclusive( NODE, 1L );

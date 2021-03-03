@@ -334,7 +334,7 @@ class ForsetiMemoryTrackingTest
         {
             trackers[i] = new LocalMemoryTracker( memoryPool );
             Locks.Client client = forsetiLockManager.newClient();
-            client.initialize( LeaseService.NoLeaseClient.INSTANCE, 1, trackers[i] );
+            client.initialize( LeaseService.NoLeaseClient.INSTANCE, 1, trackers[i], Config.defaults() );
             race.addContestant( new SimulatedTransaction( client ) );
         }
         race.go();
@@ -440,7 +440,7 @@ class ForsetiMemoryTrackingTest
     private Locks.Client getClient()
     {
         Locks.Client client = forsetiLockManager.newClient();
-        client.initialize( LeaseService.NoLeaseClient.INSTANCE, 1, memoryTracker );
+        client.initialize( LeaseService.NoLeaseClient.INSTANCE, 1, memoryTracker, Config.defaults() );
         return client;
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.locking;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.lock.LockTracer;
@@ -45,7 +46,7 @@ abstract class CloseCompatibility extends LockCompatibilityTestSupport
         // GIVEN a lock manager and working clients
         try ( Client client = locks.newClient() )
         {
-            client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
+            client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults() );
             client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 0 );
         }
 

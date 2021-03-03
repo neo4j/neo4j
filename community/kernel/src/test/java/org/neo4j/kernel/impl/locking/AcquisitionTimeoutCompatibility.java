@@ -61,8 +61,8 @@ abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupp
         lockManager = suite.createLockManager( customConfig, clock );
         client = lockManager.newClient();
         client2 = lockManager.newClient();
-        client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
-        client2.initialize( NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE );
+        client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults() );
+        client2.initialize( NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, Config.defaults() );
     }
 
     @AfterEach
@@ -142,7 +142,7 @@ abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupp
         verifyAcquisitionFailure( exclusiveLockAcquisition );
     }
 
-    private void verifyAcquisitionFailure( Future<Boolean> lockAcquisition )
+    private static void verifyAcquisitionFailure( Future<Boolean> lockAcquisition )
     {
         ExecutionException exception = assertThrows( ExecutionException.class, lockAcquisition::get );
         assertThat( getRootCause( exception ) ).isInstanceOf( LockAcquisitionTimeoutException.class );

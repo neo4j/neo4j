@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.lock.LockType;
@@ -316,9 +315,8 @@ public class ForsetiLockManager implements Locks
             {
                 id = clientIds.getAndIncrement();
             }
-            long lockAcquisitionTimeoutNano = config.get( GraphDatabaseSettings.lock_acquisition_timeout ).toNanos();
             ForsetiClient client = new ForsetiClient( id, lockMaps, waitStrategies, this,
-                    deadlockResolutionStrategy, clientsById::get, lockAcquisitionTimeoutNano, clock );
+                    deadlockResolutionStrategy, clientsById::get, clock );
             clientsById.put( id, client );
             return client;
         }

@@ -82,9 +82,9 @@ public abstract class LockCompatibilityTestSupport
         clientA = locks.newClient();
         clientB = locks.newClient();
         clientC = locks.newClient();
-        clientA.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
-        clientB.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
-        clientC.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE );
+        clientA.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults() );
+        clientB.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults() );
+        clientC.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults() );
 
         clientToThreadMap.put( clientA, threadA );
         clientToThreadMap.put( clientB, threadB );
@@ -195,7 +195,7 @@ public abstract class LockCompatibilityTestSupport
         };
     }
 
-    void assertNotWaiting( Locks.Client client, Future<Void> lock )
+    void assertNotWaiting( Future<Void> lock )
     {
         assertDoesNotThrow( () -> lock.get( 5, TimeUnit.SECONDS ), "Waiting for lock timed out!" );
     }
