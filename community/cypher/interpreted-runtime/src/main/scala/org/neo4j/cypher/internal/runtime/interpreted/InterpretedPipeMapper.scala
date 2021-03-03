@@ -45,6 +45,8 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
@@ -120,6 +122,8 @@ import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
+import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
@@ -159,6 +163,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreatePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateRelationshipCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DeletePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipByIdSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipIndexContainsScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipIndexEndsWithScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipIndexScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipIndexSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.DirectedRelationshipTypeScanPipe
@@ -238,6 +244,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1WithTiesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TopNPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TriadicSelectionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipByIdSeekPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipIndexContainsScanPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipIndexEndsWithScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipIndexScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipIndexSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.UndirectedRelationshipTypeScanPipe
@@ -324,6 +332,22 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case UndirectedRelationshipIndexScan(idName, startNode, endNode, typeToken, properties, _, indexOrder) =>
         UndirectedRelationshipIndexScanPipe(idName, startNode, endNode, typeToken, properties.toArray,
           indexRegistrator.registerQueryIndex(typeToken, properties), indexOrder)(id = id)
+
+      case DirectedRelationshipIndexContainsScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder) =>
+        DirectedRelationshipIndexContainsScanPipe(idName, startNode, endNode, typeToken, property,
+          indexRegistrator.registerQueryIndex(typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
+
+      case UndirectedRelationshipIndexContainsScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder) =>
+        UndirectedRelationshipIndexContainsScanPipe(idName, startNode, endNode, typeToken, property,
+          indexRegistrator.registerQueryIndex(typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
+
+      case DirectedRelationshipIndexEndsWithScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder) =>
+        DirectedRelationshipIndexEndsWithScanPipe(idName, startNode, endNode, typeToken, property,
+          indexRegistrator.registerQueryIndex(typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
+
+      case UndirectedRelationshipIndexEndsWithScan(idName, startNode, endNode, typeToken, property, valueExpr, _, indexOrder) =>
+        UndirectedRelationshipIndexEndsWithScanPipe(idName, startNode, endNode, typeToken, property,
+          indexRegistrator.registerQueryIndex(typeToken, property), buildExpression(valueExpr), indexOrder)(id = id)
 
       case NodeIndexSeek(ident, label, properties, valueExpr, _, indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
