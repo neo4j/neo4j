@@ -19,6 +19,8 @@
  */
 package org.neo4j.lock;
 
+import java.util.concurrent.locks.LockSupport;
+
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Interrupted;
@@ -59,11 +61,11 @@ public enum LockWaitStrategies implements WaitStrategy
             {
                 if ( iteration < multiplyUntilIteration )
                 {
-                    Thread.sleep( 0, 1 << (iteration - spinIterations) );
+                    Thread.sleep( 1 );
                 }
                 else
                 {
-                    Thread.sleep( 0, 500 );
+                    LockSupport.parkNanos( 500 );
                 }
             }
             catch ( InterruptedException e )

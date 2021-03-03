@@ -121,7 +121,7 @@ public class RingRecentBuffer<T> implements RecentBuffer<T>
             // writing to the buffer. We yield and hope the previous produce is done when we get back.
             try
             {
-                Thread.sleep(0, 1000);
+                Thread.sleep(1);
             }
             catch ( InterruptedException e )
             {

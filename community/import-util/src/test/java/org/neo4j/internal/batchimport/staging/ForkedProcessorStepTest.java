@@ -349,7 +349,7 @@ class ForkedProcessorStepTest
                 @Override
                 protected void process( Long batch, BatchSender sender, PageCursorTracer cursorTracer ) throws Throwable
                 {
-                    Thread.sleep( 0, ThreadLocalRandom.current().nextInt( 100_000 ) );
+                    Thread.sleep( 1 );
                     sender.send( batch );
                 }
             } );
@@ -358,7 +358,7 @@ class ForkedProcessorStepTest
                 @Override
                 protected void forkedProcess( int id, int processors, Long batch ) throws Throwable
                 {
-                    Thread.sleep( 0, ThreadLocalRandom.current().nextInt( 100_000 ) );
+                    Thread.sleep( 1 );
                 }
             } );
             add( new DeadEndStep( control() ) );
