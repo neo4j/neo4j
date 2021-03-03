@@ -150,6 +150,7 @@ public class FindRelationshipsIT
         dbmsController.restartDbms( builder ->
         {
             builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, false );
+            builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false );
             return builder;
         });
 

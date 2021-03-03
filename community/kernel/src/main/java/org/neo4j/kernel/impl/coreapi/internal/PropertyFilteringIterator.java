@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.impl.newapi.CursorPredicates;
 
 public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR extends Cursor, ENTITY_CURSOR extends Cursor>
         extends PrefetchingEntityResourceIterator<T>
@@ -76,32 +77,11 @@ public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR e
 
     private boolean hasPropertiesWithValues()
     {
-        int targetCount = queries.length;
         singleEntity( entityReference( entityTokenCursor ), entityCursor );
         if ( entityCursor.next() )
         {
             properties( entityCursor, propertyCursor );
-            while ( propertyCursor.next() )
-            {
-                for ( PropertyIndexQuery query : queries )
-                {
-                    if ( propertyCursor.propertyKey() == query.propertyKeyId() )
-                    {
-                        if ( query.acceptsValueAt( propertyCursor ) )
-                        {
-                            targetCount--;
-                            if ( targetCount == 0 )
-                            {
-                                return true;
-                            }
-                        }
-                        else
-                        {
-                            return false;
-                        }
-                    }
-                }
-            }
+            return CursorPredicates.propertiesMatch( propertyCursor, queries );
         }
         return false;
     }

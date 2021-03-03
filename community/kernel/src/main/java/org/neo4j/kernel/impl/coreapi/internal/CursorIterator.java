@@ -17,22 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.neo4j.kernel.impl.coreapi.internal;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.internal.kernel.api.NodeIndexCursor;
-import org.neo4j.kernel.impl.core.NodeEntity;
+import java.util.function.ToLongFunction;
+
+import org.neo4j.graphdb.Entity;
+import org.neo4j.internal.kernel.api.Cursor;
 
 import static org.neo4j.io.IOUtils.closeAllSilently;
 
-public class NodeCursorResourceIterator<CURSOR extends NodeIndexCursor> extends PrefetchingEntityResourceIterator<Node>
+public class CursorIterator<CURSOR extends Cursor, E extends Entity> extends PrefetchingEntityResourceIterator<E>
 {
     private final CURSOR cursor;
+    private final ToLongFunction<CURSOR> toReferenceFunction;
 
-    public NodeCursorResourceIterator( CURSOR cursor, EntityFactory<Node> nodeFactory )
+    public CursorIterator( CURSOR cursor, ToLongFunction<CURSOR> toReferenceFunction, EntityFactory<E> entityFactory )
     {
-        super( nodeFactory );
+        super( entityFactory );
         this.cursor = cursor;
+        this.toReferenceFunction = toReferenceFunction;
     }
 
     @Override
@@ -40,13 +44,10 @@ public class NodeCursorResourceIterator<CURSOR extends NodeIndexCursor> extends 
     {
         if ( cursor.next() )
         {
-            return cursor.nodeReference();
+            return toReferenceFunction.applyAsLong( cursor );
         }
-        else
-        {
-            close();
-            return NO_ID;
-        }
+        close();
+        return NO_ID;
     }
 
     @Override
