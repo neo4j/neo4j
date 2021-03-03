@@ -874,7 +874,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "INFO: log queries at the end of execution, that take longer than the configured threshold, dbms.logs.query.threshold.\n" +
             "VERBOSE: log queries at the start and end of execution, regardless of dbms.logs.query.threshold.\n" +
             "Log entries are by default written to the file _query.log_ located in the Logs directory. " +
-            "For location of the Logs directory, see <<file-locations>>. " +
             "This feature is available in the Neo4j Enterprise Edition." )
     public static final Setting<LogQueryLevel> log_queries =
             newBuilder( "dbms.logs.query.enabled", ofEnum( LogQueryLevel.class ), LogQueryLevel.VERBOSE ).dynamic().build();
@@ -885,8 +884,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     }
 
     @Description( "Send user logs to the process stdout. " +
-            "If this is disabled then logs will instead be sent to the file _neo4j.log_ located in the logs directory. " +
-            "For location of the Logs directory, see <<file-locations>>." )
+            "If this is disabled then logs will instead be sent to the file _neo4j.log_ located in the logs directory." )
     public static final Setting<Boolean> store_user_log_to_stdout = newBuilder( "dbms.logs.user.stdout_enabled", BOOL, true ).build();
 
     @Description( "Path of the logs directory." )
