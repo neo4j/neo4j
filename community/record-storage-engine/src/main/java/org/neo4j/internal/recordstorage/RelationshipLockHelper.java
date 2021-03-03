@@ -315,7 +315,7 @@ final class RelationshipLockHelper
         long lastId = NULL_REFERENCE.longValue();
         for ( long id : ids )
         {
-            if ( id != lastId && !isNull( id ) )
+            if ( id != lastId )
             {
                 locker.acquireExclusive( NONE, RELATIONSHIP, id );
             }
@@ -328,7 +328,7 @@ final class RelationshipLockHelper
         long lastId = NULL_REFERENCE.longValue();
         for ( long id : ids )
         {
-            if ( id != lastId && !isNull( id ) )
+            if ( id != lastId )
             {
                 locker.releaseExclusive( RELATIONSHIP, id );
             }
