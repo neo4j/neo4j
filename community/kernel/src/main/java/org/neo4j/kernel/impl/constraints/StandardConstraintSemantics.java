@@ -156,4 +156,18 @@ public class StandardConstraintSemantics extends ConstraintSemantics
     {
         return visitor;
     }
+
+    @Override
+    public void validateNodePropertyExistenceConstraint( NodeCursor nodeCursor, PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor,
+                                                         TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException
+    {
+        throw propertyExistenceConstraintsNotAllowed( descriptor );
+    }
+
+    @Override
+    public void validateNodeKeyConstraint( NodeCursor nodeCursor, PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor,
+                                           TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException
+    {
+        throw nodeKeyConstraintsNotAllowed( descriptor );
+    }
 }

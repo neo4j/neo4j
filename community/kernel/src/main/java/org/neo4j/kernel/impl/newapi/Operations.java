@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
@@ -47,6 +48,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Token;
+import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
@@ -100,7 +102,6 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
@@ -114,6 +115,7 @@ import static java.lang.String.format;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.additional_lock_verification;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.INDEX_CREATION;
@@ -1244,15 +1246,60 @@ public class Operations implements Write, SchemaWrite
         }
 
         //enforce constraints
-        try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
-        {
-            allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes, IndexOrder.NONE );
-            constraintSemantics.validateNodeKeyConstraint( nodes, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor(), token );
-        }
+        enforceNodeKeyConstraint( schema );
 
         //create constraint
         indexBackedConstraintCreate( constraint, prototype );
         return constraint;
+    }
+
+    private void enforceNodeKeyConstraint( SchemaDescriptor schema ) throws KernelException
+    {
+        if ( allStoreHolder.scanStoreAsTokenIndexEnabled() )
+        {
+            IndexDescriptor index = findUsableTokenIndex( NODE );
+            if ( index != IndexDescriptor.NO_INDEX )
+            {
+                try ( var cursor = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
+                {
+                    var session = allStoreHolder.tokenReadSession( index );
+                    allStoreHolder.nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( schema.getLabelId() ) );
+                    constraintSemantics.validateNodeKeyConstraint( cursor, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor(), token );
+                }
+            }
+            else
+            {
+                try ( var cursor = cursors.allocateFullAccessNodeCursor( cursorTracer ) )
+                {
+                    allStoreHolder.allNodesScan( cursor );
+                    constraintSemantics.validateNodeKeyConstraint( new FilteringNodeCursorWrapper( cursor, CursorPredicates.hasLabel( schema.getLabelId() ) ),
+                            propertyCursor, schema.asLabelSchemaDescriptor(), token );
+                }
+            }
+        }
+        else
+        {
+            try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
+            {
+                allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes, IndexOrder.NONE );
+                constraintSemantics.validateNodeKeyConstraint( nodes, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor(), token );
+            }
+        }
+    }
+
+    private IndexDescriptor findUsableTokenIndex( EntityType entityType ) throws IndexNotFoundKernelException
+    {
+        var descriptor = SchemaDescriptor.forAllEntityTokens( entityType );
+        var indexes = allStoreHolder.index( descriptor );
+        if ( indexes.hasNext() )
+        {
+            IndexDescriptor index = indexes.next();
+            if ( allStoreHolder.indexGetState( index ) == InternalIndexState.ONLINE )
+            {
+                return index;
+            }
+        }
+        return IndexDescriptor.NO_INDEX;
     }
 
     @Override
@@ -1261,15 +1308,46 @@ public class Operations implements Write, SchemaWrite
         ConstraintDescriptor constraint = lockAndValidatePropertyExistenceConstraint( schema, name );
 
         //enforce constraints
-        try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
-        {
-            allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes, IndexOrder.NONE );
-            constraintSemantics.validateNodePropertyExistenceConstraint( nodes, nodeCursor, propertyCursor, schema, token );
-        }
+        enforceNodePropertyExistenceConstraint( schema );
 
         //create constraint
         ktx.txState().constraintDoAdd( constraint );
         return constraint;
+    }
+
+    private void enforceNodePropertyExistenceConstraint( LabelSchemaDescriptor schema ) throws KernelException
+    {
+        if ( allStoreHolder.scanStoreAsTokenIndexEnabled() )
+        {
+            IndexDescriptor index = findUsableTokenIndex( NODE );
+            if ( index != IndexDescriptor.NO_INDEX )
+            {
+                try ( var cursor = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
+                {
+                    var session = allStoreHolder.tokenReadSession( index );
+                    allStoreHolder.nodeLabelScan( session, cursor, unconstrained(), new TokenPredicate( schema.getLabelId() ) );
+                    constraintSemantics.validateNodePropertyExistenceConstraint( cursor, nodeCursor, propertyCursor, schema.asLabelSchemaDescriptor(), token );
+                }
+            }
+            else
+            {
+                try ( var cursor = cursors.allocateFullAccessNodeCursor( cursorTracer ) )
+                {
+                    allStoreHolder.allNodesScan( cursor );
+                    constraintSemantics.validateNodePropertyExistenceConstraint(
+                            new FilteringNodeCursorWrapper( cursor, CursorPredicates.hasLabel( schema.getLabelId() ) ),
+                            propertyCursor, schema.asLabelSchemaDescriptor(), token );
+                }
+            }
+        }
+        else
+        {
+            try ( NodeLabelIndexCursor nodes = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
+            {
+                allStoreHolder.nodeLabelScan( schema.getLabelId(), nodes, IndexOrder.NONE );
+                constraintSemantics.validateNodePropertyExistenceConstraint( nodes, nodeCursor, propertyCursor, schema, token );
+            }
+        }
     }
 
     @Override
@@ -1278,27 +1356,40 @@ public class Operations implements Write, SchemaWrite
         ConstraintDescriptor constraint = lockAndValidatePropertyExistenceConstraint( schema, name );
 
         //enforce constraints
-        if ( config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
-        {
-            try ( var fullAccessIndexCursor = cursors.allocateFullAccessRelationshipTypeIndexCursor();
-                  var fullAccessCursor = cursors.allocateFullAccessRelationshipScanCursor( cursorTracer ) )
-            {
-                allStoreHolder.relationshipTypeScan( schema.getRelTypeId(), fullAccessIndexCursor, IndexOrder.NONE );
-                constraintSemantics.validateRelationshipPropertyExistenceConstraint( fullAccessIndexCursor, fullAccessCursor, propertyCursor, schema, token );
-            }
-        }
-        else
-        {
-            try ( var fullAccessCursor = cursors.allocateFullAccessRelationshipScanCursor( cursorTracer ) )
-            {
-                allStoreHolder.relationshipTypeScan( schema.getRelTypeId(), fullAccessCursor );
-                constraintSemantics.validateRelationshipPropertyExistenceConstraint( fullAccessCursor, propertyCursor, schema, token );
-            }
-        }
+        enforceRelationshipPropertyExistenceConstraint( schema );
 
         //Create
         ktx.txState().constraintDoAdd( constraint );
         return constraint;
+    }
+
+    private void enforceRelationshipPropertyExistenceConstraint( RelationTypeSchemaDescriptor schema ) throws KernelException
+    {
+        if ( allStoreHolder.scanStoreAsTokenIndexEnabled() )
+        {
+            var index = findUsableTokenIndex( RELATIONSHIP );
+            if ( index != IndexDescriptor.NO_INDEX )
+            {
+                try ( var fullAccessIndexCursor = cursors.allocateFullAccessRelationshipTypeIndexCursor();
+                      var fullAccessCursor = cursors.allocateFullAccessRelationshipScanCursor( cursorTracer ) )
+                {
+                    var session = allStoreHolder.tokenReadSession( index );
+                    allStoreHolder.relationshipTypeScan( session, fullAccessIndexCursor, unconstrained(), new TokenPredicate( schema.getRelTypeId() ) );
+                    constraintSemantics.validateRelationshipPropertyExistenceConstraint( fullAccessIndexCursor, fullAccessCursor, propertyCursor, schema,
+                            token );
+                    return;
+                }
+            }
+        }
+
+        // keep this part as fallback to all relationship scan when removing scanStoreAsTokenIndexEnabled flag
+        try ( var fullAccessCursor = cursors.allocateFullAccessRelationshipScanCursor( cursorTracer ) )
+        {
+            allStoreHolder.allRelationshipsScan( fullAccessCursor );
+            constraintSemantics.validateRelationshipPropertyExistenceConstraint(
+                    new FilteringRelationshipScanCursorWrapper( fullAccessCursor, CursorPredicates.hasType( schema.getRelTypeId() ) ),
+                    propertyCursor, schema, token );
+        }
     }
 
     private ConstraintDescriptor lockAndValidatePropertyExistenceConstraint( SchemaDescriptor descriptor, String name ) throws KernelException

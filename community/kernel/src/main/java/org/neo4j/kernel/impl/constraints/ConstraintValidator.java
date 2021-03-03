@@ -54,4 +54,11 @@ public interface ConstraintValidator
 
     TxStateVisitor decorateTxStateVisitor( StorageReader storageReader, Read read, CursorFactory cursorFactory, ReadableTransactionState state,
             TxStateVisitor visitor, PageCursorTracer pageCursorTracer, MemoryTracker memoryTracker );
+
+    void validateNodePropertyExistenceConstraint( NodeCursor nodeCursor, PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor,
+                                                  TokenNameLookup tokenNameLookup )
+            throws CreateConstraintFailureException;
+
+    void validateNodeKeyConstraint( NodeCursor nodeCursor, PropertyCursor propertyCursor,
+                                    LabelSchemaDescriptor descriptor, TokenNameLookup tokenNameLookup ) throws CreateConstraintFailureException;
 }
