@@ -336,6 +336,52 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should(be (sizeHint / 5 + 2)  or be (2 * (sizeHint / 5) + 2))
   }
 
+  test("should profile dbHits of directed relationship index scan") {
+    given {
+      relationshipIndex("R", "difficulty")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i)  if i % 10 == 0 => r.setProperty("difficulty", i)
+        case _ =>
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .relationshipIndexOperator(s"(x)-[r:R(difficulty)]->(y)")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be (sizeHint / 10 + 1) or be (2 * (sizeHint / 10) + 1))
+  }
+
+  test("should profile dbHits of undirected relationship index scan") {
+    given {
+      relationshipIndex("R", "difficulty")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i)  if i % 10 == 0 => r.setProperty("difficulty", i)
+        case _ =>
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .relationshipIndexOperator(s"(x)-[r:R(difficulty)]-(y)")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+    consume(result)
+
+    // then, in interpreted runtime it is free to call relationshipById whereas in the other cases this is counted as a dbhit
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() should (be (sizeHint / 10 + 1) or be (2 * (sizeHint / 10) + 1))
+  }
+
   test("should profile dbHits of node by id") {
     // given
     val nodes = given { nodeGraph(17) }

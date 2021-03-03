@@ -1677,6 +1677,56 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     queryProfile.operatorProfile(1).rows() shouldBe 2 // relationship index seek
   }
 
+  test("should profile rows of directed relationshipIndexScan + produce results") {
+    given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
+        case _ =>
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe sizeHint / 10 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe sizeHint / 10  // relationship index scan
+  }
+
+  test("should profile rows of undirected relationshipIndexScan + produce results") {
+    given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
+        case _ =>
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 2 * sizeHint / 10 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 2 * sizeHint / 10// relationship index scan
+  }
+
   test("should profile rows of cartesian product") {
     val size = Math.sqrt(sizeHint).toInt
     given { nodeGraph(size) }
