@@ -44,7 +44,7 @@ abstract class AbstractDirectBufferTest
     void setUp()
     {
         var buckets = List.of("1K:1", "2K:1", "4K:1", "8K:1");
-        var poolConfig = new NeoBufferPoolConfigOverride( Duration.ZERO, null, buckets );
+        var poolConfig = new NeoBufferPoolConfigOverride( Duration.ZERO, buckets );
         var bufferManger = new NeoByteBufferPool( poolConfig, EmptyMemoryTracker.INSTANCE, null );
         tracingPoolWrapper = new TracingPoolWrapper( bufferManger );
         nettyBufferAllocator = new NettyMemoryManagerWrapper( tracingPoolWrapper );
@@ -105,12 +105,6 @@ abstract class AbstractDirectBufferTest
         public int recommendNewCapacity( int minNewCapacity, int maxCapacity )
         {
             return wrappedPool.recommendNewCapacity( minNewCapacity, maxCapacity );
-        }
-
-        @Override
-        public int getHeapBufferPreferenceThreshold()
-        {
-            return wrappedPool.getHeapBufferPreferenceThreshold();
         }
     }
 }

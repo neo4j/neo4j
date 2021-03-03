@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
 
@@ -50,7 +51,7 @@ class BucketBootstrapper
     // Technically, larger buffers could be used, but that should be very rare
     // and we have to put the ceiling for pooled buffer size somewhere.
     // Having to occasionally allocate a large buffer is not a performance tragedy.
-    private static final int DEFAULT_LARGEST_POOLED_BUFFER = 1024 * 1024; // 1MB
+    private static final int DEFAULT_LARGEST_POOLED_BUFFER = (int) ByteUnit.mebiBytes( 1 ); // 1MB
 
     // As mentioned above, larger buffers are expected to be used less frequently than smaller ones.
     // So 'large' does not signify just the size, but means less frequently used in this context.
@@ -62,7 +63,7 @@ class BucketBootstrapper
     // can submit large buffers (Obviously, when the application layer sends a buffer larger
     // that 64K, the high watermark is the size of the buffer and not 64K),
     // but experiments show that 64K is a significant point in buffer use frequency.
-    private static final int DEFAULT_LARGE_BUFFER_THRESHOLD = 64 * 1024;
+    private static final int DEFAULT_LARGE_BUFFER_THRESHOLD = (int) ByteUnit.kibiBytes( 64 );
 
     private final List<Bucket> buckets;
     private final int maxPooledBufferCapacity;
@@ -78,7 +79,7 @@ class BucketBootstrapper
             for ( int bufferSize = DEFAULT_SMALLEST_POOLED_BUFFER; bufferSize <= DEFAULT_LARGEST_POOLED_BUFFER; bufferSize <<= 1 )
             {
                 int bufferCapacity = bufferSize;
-                if ( bufferCapacity == 16 * 1024 )
+                if ( bufferCapacity == ByteUnit.kibiBytes( 16 ) )
                 {
                     // Let's replace the 16K bucket with a similar one
                     // more aligned for max SSL packet size.
@@ -92,7 +93,7 @@ class BucketBootstrapper
                     // Max padding = 256
                     // MAX Mac = 48
                     // So let's go for 16K plus some nicely rounded extra for headroom:
-                    bufferCapacity = 16 * 1024 + 512;
+                    bufferCapacity = (int) ByteUnit.kibiBytes( 16 ) + 512;
                 }
 
                 buckets.add( createBucket( bufferCapacity, memoryTracker ) );
@@ -110,7 +111,7 @@ class BucketBootstrapper
         maxPooledBufferCapacity = buckets.get( buckets.size() - 1 ).getBufferCapacity();
     }
 
-    private Bucket createBucket( NeoBufferPoolConfigOverride.Bucket bucketConfig, MemoryTracker memoryTracker )
+    private Bucket createBucket( NeoBufferPoolConfigOverride.BucketConfig bucketConfig, MemoryTracker memoryTracker )
     {
         int sliceCount = getSliceCount( bucketConfig );
         return new Bucket( bucketConfig.getBufferCapacity(), sliceCount, memoryTracker );
@@ -127,7 +128,7 @@ class BucketBootstrapper
         return new Bucket( bufferCapacity, sliceCount, memoryTracker );
     }
 
-    private int getSliceCount( NeoBufferPoolConfigOverride.Bucket bucketConfig )
+    private int getSliceCount( NeoBufferPoolConfigOverride.BucketConfig bucketConfig )
     {
         if ( bucketConfig.getSliceCoefficient() != null )
         {

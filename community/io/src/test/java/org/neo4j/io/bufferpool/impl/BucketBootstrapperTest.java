@@ -84,12 +84,12 @@ class BucketBootstrapperTest
         assertSlices( buckets, kb( 1024 ), 1 );
     }
 
-    private int kb( int value )
+    private static int kb( int value )
     {
         return (int) ByteUnit.kibiBytes( value );
     }
 
-    private void assertSlices( List<Bucket> buckets, int bufferCapacity, int expectedSliceCount )
+    private static void assertSlices( List<Bucket> buckets, int bufferCapacity, int expectedSliceCount )
     {
         var sliceCount = buckets.stream()
                                 .filter( bucket -> bucket.getBufferCapacity() == bufferCapacity )
@@ -98,14 +98,14 @@ class BucketBootstrapperTest
         assertEquals( expectedSliceCount, sliceCount );
     }
 
-    private List<Bucket> constructBuckets( String... expressions )
+    private static List<Bucket> constructBuckets( String... expressions )
     {
-        var config = new NeoBufferPoolConfigOverride( Duration.ZERO, null, Arrays.asList( expressions ) );
+        var config = new NeoBufferPoolConfigOverride( Duration.ZERO, Arrays.asList( expressions ) );
         var bootstrapper = new TestBucketBootstrapper( config );
         return bootstrapper.getBuckets();
     }
 
-    private void assertCapacities( List<Bucket> buckets, Integer... capacities )
+    private static void assertCapacities( List<Bucket> buckets, Integer... capacities )
     {
         var bucketCapacities = buckets.stream()
                                       .map( Bucket::getBufferCapacity )

@@ -63,20 +63,12 @@ public class NettyMemoryManagerWrapper implements ByteBufAllocator
     @Override
     public ByteBuf buffer( int initialCapacity )
     {
-        if ( initialCapacity < pooledBufferManger.getHeapBufferPreferenceThreshold() )
-        {
-            return heapBuffer( initialCapacity );
-        }
         return directBuffer( initialCapacity );
     }
 
     @Override
     public ByteBuf buffer( int initialCapacity, int maxCapacity )
     {
-        if ( initialCapacity < pooledBufferManger.getHeapBufferPreferenceThreshold() )
-        {
-            return heapBuffer( initialCapacity, maxCapacity );
-        }
         return directBuffer( initialCapacity, maxCapacity );
     }
 

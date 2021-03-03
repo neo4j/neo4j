@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBufAllocator;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 abstract class DirectBufferTest extends AbstractDirectBufferTest
@@ -36,8 +35,6 @@ abstract class DirectBufferTest extends AbstractDirectBufferTest
 
     protected abstract ByteBuf allocate( ByteBufAllocator allocator, int initCapacity, Integer maxCapacity );
 
-    protected abstract void verifyType( ByteBuf buffer );
-
     @Test
     void testBasicAllocation()
     {
@@ -45,7 +42,7 @@ abstract class DirectBufferTest extends AbstractDirectBufferTest
 
         assertEquals( 1500, buf.capacity() );
         assertEquals( 10_000, buf.maxCapacity() );
-        verifyType( buf );
+        assertTrue( buf.isDirect() );
 
         write( buf, 1000 );
         buf.release();
@@ -99,20 +96,6 @@ abstract class DirectBufferTest extends AbstractDirectBufferTest
         assertAcquiredAndReleased( 1024 );
     }
 
-    @Test
-    void testTinyBuffer()
-    {
-        ByteBuf buf = allocate( nettyBufferAllocator, 10 );
-        assertEquals( 10, buf.capacity() );
-        verifyType( buf );
-        buf.release();
-
-        if ( buf.isDirect() )
-        {
-            assertAcquiredAndReleased( 10 );
-        }
-    }
-
     public static class DirectBufferAllocationTest extends DirectBufferTest
     {
 
@@ -132,12 +115,6 @@ abstract class DirectBufferTest extends AbstractDirectBufferTest
         protected ByteBuf allocate( ByteBufAllocator allocator, int initCapacity, Integer maxCapacity )
         {
             return allocator.directBuffer( initCapacity, maxCapacity );
-        }
-
-        @Override
-        protected void verifyType( ByteBuf buffer )
-        {
-            assertTrue( buffer.isDirect() );
         }
     }
 
@@ -161,19 +138,6 @@ abstract class DirectBufferTest extends AbstractDirectBufferTest
         {
             return allocator.buffer( initCapacity, maxCapacity );
         }
-
-        @Override
-        protected void verifyType( ByteBuf buffer )
-        {
-            if ( buffer.capacity() > 64 )
-            {
-                assertTrue( buffer.isDirect() );
-            }
-            else
-            {
-                assertFalse( buffer.isDirect() );
-            }
-        }
     }
 
     public static class IoBufferAllocationTest extends DirectBufferTest
@@ -195,12 +159,6 @@ abstract class DirectBufferTest extends AbstractDirectBufferTest
         protected ByteBuf allocate( ByteBufAllocator allocator, int initCapacity, Integer maxCapacity )
         {
             return allocator.ioBuffer( initCapacity, maxCapacity );
-        }
-
-        @Override
-        protected void verifyType( ByteBuf buffer )
-        {
-            assertTrue( buffer.isDirect() );
         }
     }
 }

@@ -48,7 +48,7 @@ class BufferLifecycleTest
     void setUp()
     {
         var buckets = List.of( "1K:1", "2K:1", "4K:1" );
-        var poolConfig = new NeoBufferPoolConfigOverride( null, null, buckets );
+        var poolConfig = new NeoBufferPoolConfigOverride( null, buckets );
         bufferPool = new NeoByteBufferPool( poolConfig, memoryTracker, jobScheduler );
     }
 

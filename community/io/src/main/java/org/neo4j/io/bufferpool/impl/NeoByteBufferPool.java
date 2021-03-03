@@ -31,6 +31,7 @@ import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -59,29 +60,13 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
 {
     private static final Duration DEFAULT_COLLECTION_INTERVAL = Duration.ofSeconds( 20 );
 
-    // This magical constant is used for two things.
-    // Firstly, since most of the overhead of allocating
-    // direct buffers comes from the need to zero them,
-    // it gets more expensive the larger the buffer is.
-    // Allocating very small buffers is as performant as getting them from
-    // this pool, so it is just better to allocate them.
-    // The number is a result of benchmarking and it is really confirmed
-    // that allocating buffers up to this size (and slightly over) is super cheap.
-    // Secondly, nothing can beat JVM terms of performance and efficiency
-    // when working with small heap buffers, so if not insisting on a direct buffer,
-    // it is better to use heap for small buffers.
-    // So this number is also used as a hint for decision
-    // when to use heap and when direct buffers.
-    // This second use of the constant is pure intuition
-    // and is not supported by any data (benchmarks).
-    private static final int DEFAULT_TINY_BUFFER_THRESHOLD = 48;
-
     private final JobScheduler jobScheduler;
     private final Duration collectionInterval;
     private final Bucket[] buckets;
     private final MemoryTracker memoryTracker;
     private final int maxPooledBufferCapacity;
-    private final int tinyBufferThreshold;
+
+    private JobHandle<?> collectionJob;
 
     public NeoByteBufferPool( NeoBufferPoolConfigOverride configOverride, MemoryTracker memoryTracker, JobScheduler jobScheduler )
     {
@@ -95,14 +80,6 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
             collectionInterval = configOverride.getCollectionInterval();
         }
 
-        if ( configOverride.getTinyBufferThreshold() == null )
-        {
-            tinyBufferThreshold = DEFAULT_TINY_BUFFER_THRESHOLD;
-        }
-        else
-        {
-            tinyBufferThreshold = configOverride.getTinyBufferThreshold();
-        }
         var bucketBootstrapper = new BucketBootstrapper( configOverride, memoryTracker );
         buckets = bucketBootstrapper.getBuckets().toArray( new Bucket[0] );
         maxPooledBufferCapacity = bucketBootstrapper.getMaxPooledBufferCapacity();
@@ -112,7 +89,7 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
     @Override
     public void start() throws Exception
     {
-        jobScheduler.scheduleRecurring(
+        collectionJob = jobScheduler.scheduleRecurring(
                 Group.BUFFER_POOL_MAINTENANCE,
                 JobMonitoringParams.systemJob( "Buffer pool maintenance" ),
                 () -> Arrays.stream( buckets ).forEach( Bucket::prunePooledBuffers ),
@@ -123,13 +100,28 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
     @Override
     public void stop() throws Exception
     {
+        // the collection job can return back buffers it examines,
+        // so it needs to be cancelled first if we want to be sure
+        // that all buffers are released when this is done.
+        if ( collectionJob != null )
+        {
+            collectionJob.cancel();
+            try
+            {
+                collectionJob.waitTermination();
+            }
+            catch ( Exception e )
+            {
+                // ignore
+            }
+        }
         Arrays.stream( buckets ).forEach( Bucket::releasePooledBuffers );
     }
 
     @Override
     public ByteBuffer acquire( int size )
     {
-        if ( size < tinyBufferThreshold || size > maxPooledBufferCapacity )
+        if ( size > maxPooledBufferCapacity )
         {
             return ByteBuffers.allocateDirect( size, memoryTracker );
         }
@@ -147,7 +139,7 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
             throw alienBufferException( buffer );
         }
 
-        if ( buffer.capacity() < tinyBufferThreshold || buffer.capacity() > maxPooledBufferCapacity )
+        if ( buffer.capacity() > maxPooledBufferCapacity )
         {
             ByteBuffers.releaseBuffer( buffer, memoryTracker );
             return;
@@ -167,16 +159,10 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
     {
         if ( minNewCapacity > maxPooledBufferCapacity )
         {
-            return -1;
+            return NO_CAPACITY_PREFERENCE;
         }
 
         return Math.min( getBucketFor( minNewCapacity ).getBufferCapacity(), maxCapacity );
-    }
-
-    @Override
-    public int getHeapBufferPreferenceThreshold()
-    {
-        return tinyBufferThreshold;
     }
 
     private Bucket getBucketFor( int size )
@@ -194,7 +180,7 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
         throw new IllegalStateException( "There is no bucket big enough to allocate " + size + " bytes" );
     }
 
-    private RuntimeException alienBufferException( ByteBuffer buffer )
+    private static RuntimeException alienBufferException( ByteBuffer buffer )
     {
         return new IllegalArgumentException( "Trying to release a buffer not acquired from this buffer manager: " + buffer );
     }

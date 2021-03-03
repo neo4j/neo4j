@@ -423,7 +423,6 @@ public class GlobalModule
         }
         var configOverride = new NeoBufferPoolConfigOverride(
                 globalConfig.get( GraphDatabaseInternalSettings.neo_byte_buffer_pool_collection_interval_override ),
-                globalConfig.get( GraphDatabaseInternalSettings.neo_byte_buffer_pool_unpooled_buffer_size_override ),
                 globalConfig.get( GraphDatabaseInternalSettings.neo_byte_buffer_pool_buckets_override )
         );
 

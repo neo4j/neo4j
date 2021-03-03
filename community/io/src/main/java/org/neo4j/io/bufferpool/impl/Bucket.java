@@ -25,6 +25,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
 import org.neo4j.io.memory.ByteBuffers;
@@ -39,8 +40,7 @@ class Bucket
     private final int bufferCapacity;
     private final Slice[] slices;
     private final MemoryTracker memoryTracker;
-
-    private volatile long currentTick;
+    private final AtomicLong currentTick = new AtomicLong();
 
     Bucket( int bufferCapacity, int sliceCount, MemoryTracker memoryTracker )
     {
@@ -66,7 +66,7 @@ class Bucket
 
     void release( ByteBuffer buffer )
     {
-        var idleBuffer = new IdleBuffer( buffer, currentTick );
+        var idleBuffer = new IdleBuffer( buffer, currentTick.get() );
         var slice = getSlice();
         slice.stack.offerFirst( idleBuffer );
     }
@@ -78,8 +78,7 @@ class Bucket
 
     void prunePooledBuffers()
     {
-        long previousTick = currentTick;
-        currentTick++;
+        long previousTick = currentTick.getAndIncrement();
 
         for ( Slice slice : slices )
         {

@@ -671,8 +671,4 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     public static Setting<List<String>> neo_byte_buffer_pool_buckets_override =
             newBuilder( "unsupported.dbms.memory.neo_byte_buffer_pool.buckets_override", listOf( STRING ), List.of() ).build();
-
-    @Internal
-    public static Setting<Integer> neo_byte_buffer_pool_unpooled_buffer_size_override =
-            newBuilder( "unsupported.dbms.memory.neo_byte_buffer_pool.unpooled_buffer_size_override", INT, null ).build();
 }

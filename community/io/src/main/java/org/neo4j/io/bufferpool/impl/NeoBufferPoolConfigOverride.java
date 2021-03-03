@@ -28,19 +28,17 @@ import org.neo4j.io.ByteUnit;
 public class NeoBufferPoolConfigOverride
 {
     private final Duration collectionInterval;
-    private final Integer tinyBufferThreshold;
-    private final List<Bucket> buckets;
+    private final List<BucketConfig> buckets;
 
-    public NeoBufferPoolConfigOverride( Duration collectionInterval, Integer tinyBufferThreshold, List<String> buckets )
+    public NeoBufferPoolConfigOverride( Duration collectionInterval, List<String> buckets )
     {
         this.collectionInterval = collectionInterval;
-        this.tinyBufferThreshold = tinyBufferThreshold;
         this.buckets = buckets.stream()
                               .map( NeoBufferPoolConfigOverride::parseBucketExpression )
                               .collect( Collectors.toList() );
     }
 
-    private static Bucket parseBucketExpression( String bucketExpression )
+    private static BucketConfig parseBucketExpression( String bucketExpression )
     {
         // The format is <buffer size>:<slice expression>,
         // where <buffer size> has format supported by ByteUnit.parse
@@ -65,7 +63,7 @@ public class NeoBufferPoolConfigOverride
             try
             {
                 double coefficient = Double.parseDouble( coefficientStr );
-                return new Bucket( bufferSize, coefficient );
+                return new BucketConfig( bufferSize, coefficient );
             }
             catch ( Exception e )
             {
@@ -77,7 +75,7 @@ public class NeoBufferPoolConfigOverride
             try
             {
                 int sliceCount = Integer.parseInt( sliceExpression );
-                return new Bucket( bufferSize, sliceCount );
+                return new BucketConfig( bufferSize, sliceCount );
             }
             catch ( Exception e )
             {
@@ -96,30 +94,25 @@ public class NeoBufferPoolConfigOverride
         return collectionInterval;
     }
 
-    public Integer getTinyBufferThreshold()
-    {
-        return tinyBufferThreshold;
-    }
-
-    public List<Bucket> getBuckets()
+    public List<BucketConfig> getBuckets()
     {
         return buckets;
     }
 
-    static class Bucket
+    static class BucketConfig
     {
         private final int bufferCapacity;
         private final Integer sliceCount;
         private final Double sliceCoefficient;
 
-        Bucket( int bufferCapacity, int sliceCount )
+        BucketConfig( int bufferCapacity, int sliceCount )
         {
             this.bufferCapacity = bufferCapacity;
             this.sliceCoefficient = null;
             this.sliceCount = sliceCount;
         }
 
-        Bucket( int bufferCapacity, double sliceCoefficient )
+        BucketConfig( int bufferCapacity, double sliceCoefficient )
         {
             this.bufferCapacity = bufferCapacity;
             this.sliceCount = null;

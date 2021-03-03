@@ -31,6 +31,8 @@ import java.nio.ByteBuffer;
  */
 public interface ByteBufferManger
 {
+    int NO_CAPACITY_PREFERENCE = -1;
+
     /**
      * Requests a {@link ByteBuffer} of the given size.
      * <p>
@@ -57,21 +59,10 @@ public interface ByteBufferManger
      * <p>
      * The recommended size should be used as a parameter {@link #acquire(int)}
      * to request buffer sizes friendly to the underlying implementation.
-     * If {@code -1} is returned, it means that the implementation does not care
+     * If {@link #NO_CAPACITY_PREFERENCE} is returned, it means that the implementation does not care
      * about buffer size in the requested range (most likely because buffers in this range are not pooled).
      * <p>
      * If this method does not seem exactly logical, it is because its existence is dictated by Netty's APIs.
      */
     int recommendNewCapacity( int minNewCapacity, int maxCapacity );
-
-    /**
-     * Generally it is better to use heap buffers for very small buffers not used
-     * for IO (submitted to OS).
-     * Most of the implementations of this interface will not be anywhere near JVM
-     * in terms of performance and efficiency when working with small heap buffers.
-     *
-     * @return threshold that can be used by the caller
-     * when deciding if a heap or direct buffer should be used.
-     */
-    int getHeapBufferPreferenceThreshold();
 }

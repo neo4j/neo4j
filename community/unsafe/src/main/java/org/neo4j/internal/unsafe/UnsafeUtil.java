@@ -64,14 +64,7 @@ public final class UnsafeUtil
      * and verify that our code does not assume that memory is clean when allocated.
      */
     private static final boolean DIRTY_MEMORY = flag( UnsafeUtil.class, "DIRTY_MEMORY", false );
-    private static final boolean CHECK_NATIVE_ACCESS = false;
-    /**
-     * Invoking unsafe entails some overhead, so using {@link #setMemory} for very small buffers
-     * is actually significantly slower than looping over the buffer bytes and setting them to the initial value.
-     * Probably thanks to the automatic vectorization support in Open JDK 9+, benchmarks show that the looping
-     * variant is doing better for buffers up to around 100 bytes long, so the value 64 is actually quite conservative.
-     */
-    private static final int ZERO_BUFFER_WITH_UNSAFE_THRESHOLD = 64;
+    private static final boolean CHECK_NATIVE_ACCESS = flag( UnsafeUtil.class, "CHECK_NATIVE_ACCESS", false );
     // this allows us to temporarily disable the checking, for performance:
     private static boolean nativeAccessCheckEnabled = true;
 
@@ -397,22 +390,8 @@ public final class UnsafeUtil
         try
         {
             long addr = allocateMemory( size, memoryTracker );
-
-            ByteBuffer buffer = newDirectByteBuffer( addr, size );
-            if ( size > ZERO_BUFFER_WITH_UNSAFE_THRESHOLD )
-            {
-                setMemory( addr, size, (byte) 0 );
-            }
-            else
-            {
-                for ( int i = 0; i < size; i++ )
-                {
-                    buffer.put( (byte) 0 );
-                }
-
-                buffer.clear();
-            }
-            return buffer;
+            setMemory( addr, size, (byte) 0 );
+            return newDirectByteBuffer( addr, size );
         }
         catch ( Exception e )
         {

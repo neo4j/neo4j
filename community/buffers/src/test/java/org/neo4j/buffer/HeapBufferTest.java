@@ -130,11 +130,5 @@ class HeapBufferTest
         {
             throw new IllegalStateException( "Trying to recommend new capacity" );
         }
-
-        @Override
-        public int getHeapBufferPreferenceThreshold()
-        {
-            return -1;
-        }
     }
 }
