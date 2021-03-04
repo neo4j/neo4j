@@ -26,7 +26,6 @@ object Pattern {
     case object Match extends SemanticContext
     case object Merge extends SemanticContext
     case object Create extends SemanticContext
-    case object CreateUnique extends SemanticContext
     case object Expression extends SemanticContext
 
     case object Construct extends SemanticContext
@@ -35,7 +34,6 @@ object Pattern {
       case Match => "MATCH"
       case Merge => "MERGE"
       case Create => "CREATE"
-      case CreateUnique => "CREATE UNIQUE"
       case Expression => "expression"
       case Construct => "Construct"
     }

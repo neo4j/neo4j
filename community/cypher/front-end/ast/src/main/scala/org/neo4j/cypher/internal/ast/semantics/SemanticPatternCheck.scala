@@ -106,7 +106,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
               SemanticError(s"${
                 x.name
               }(...) cannot be used to MERGE", x.position)
-            case SemanticContext.Create | SemanticContext.CreateUnique =>
+            case SemanticContext.Create =>
               SemanticError(s"${
                 x.name
               }(...) cannot be used to CREATE", x.position)
@@ -225,7 +225,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         ctx match {
           case SemanticContext.Merge |
                SemanticContext.Create |
-               SemanticContext.CreateUnique |
                SemanticContext.Construct =>
             error(s"Variable length relationships cannot be used in ${name(ctx)}", x.position)
           case _ =>
