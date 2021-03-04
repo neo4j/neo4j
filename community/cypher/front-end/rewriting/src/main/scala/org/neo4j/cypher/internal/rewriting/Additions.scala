@@ -29,11 +29,15 @@ import org.neo4j.cypher.internal.ast.DbmsPrivilege
 import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
+import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
+import org.neo4j.cypher.internal.ast.NewSyntax
+import org.neo4j.cypher.internal.ast.NodeExistsConstraints
+import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.RevokePrivilege
@@ -189,6 +193,18 @@ object Additions {
       // CREATE INDEX [name] [IF NOT EXISTS] FOR ()-[n:RelType]-() ON (n.prop) [OPTIONS {...}]
       case c: CreateRelationshipIndex =>
         throw cypherExceptionFactory.syntaxException("Relationship property indexes are not supported in this Cypher version.", c.position)
+
+      // SHOW {[PROPERTY] EXISTENCE | PROPERTY EXIST[ENCE]} CONSTRAINTS
+      case c@ShowConstraints(ExistsConstraints(NewSyntax), _, _) =>
+        throw cypherExceptionFactory.syntaxException("Using `PROPERTY` or `EXISTENCE` when listing property existence constraints is not supported in this Cypher version.", c.position)
+
+      // SHOW {NODE [PROPERTY] EXISTENCE | NODE PROPERTY EXIST[ENCE]} CONSTRAINTS
+      case c@ShowConstraints(NodeExistsConstraints(NewSyntax), _, _) =>
+        throw cypherExceptionFactory.syntaxException("Using `PROPERTY` or `EXISTENCE` when listing node property existence constraints is not supported in this Cypher version.", c.position)
+
+      // SHOW {RELATIONSHIP [PROPERTY] EXISTENCE | RELATIONSHIP PROPERTY EXIST[ENCE] | REL [PROPERTY] EXIST[ENCE]} CONSTRAINTS
+      case c@ShowConstraints(RelExistsConstraints(NewSyntax), _, _) =>
+        throw cypherExceptionFactory.syntaxException("Using `REL`, `PROPERTY` or `EXISTENCE` when listing relationship property existence constraints is not supported in this Cypher version.", c.position)
     }
   }
 

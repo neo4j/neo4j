@@ -525,14 +525,38 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "show constraints" ->
       "SHOW ALL CONSTRAINTS BRIEF",
 
-    "show exist constraint brief" ->
+    "show exists constraint brief" ->
       "SHOW EXISTS CONSTRAINTS BRIEF",
+
+    "show exist constraint" ->
+      "SHOW EXIST CONSTRAINTS BRIEF",
+
+    "show property existence constraint" ->
+      "SHOW EXISTENCE CONSTRAINTS BRIEF",
 
     "SHOW NODE EXISTS constraint BRIEF output" ->
       "SHOW NODE EXISTS CONSTRAINTS BRIEF",
 
+    "SHOW NODE EXIST constraint" ->
+      "SHOW NODE EXIST CONSTRAINTS BRIEF",
+
+    "SHOW NODE property EXIST constraint" ->
+      "SHOW NODE EXISTENCE CONSTRAINTS BRIEF",
+
     "show relationship EXISTS cOnStRaInTs VERBOSE" ->
       "SHOW RELATIONSHIP EXISTS CONSTRAINTS VERBOSE",
+
+    "show relationship EXIST cOnStRaInTs" ->
+      "SHOW RELATIONSHIP EXIST CONSTRAINTS BRIEF",
+
+    "show relationship EXISTENCE cOnStRaInTs" ->
+      "SHOW RELATIONSHIP EXISTENCE CONSTRAINTS BRIEF",
+
+    "show rel EXIST cOnStRaInTs brief" ->
+      "SHOW RELATIONSHIP EXISTENCE CONSTRAINTS BRIEF",
+
+    "show rel property EXISTence cOnStRaInTs" ->
+      "SHOW RELATIONSHIP EXISTENCE CONSTRAINTS BRIEF",
 
     "show unique constraint VERBOSE output" ->
       "SHOW UNIQUE CONSTRAINTS VERBOSE",

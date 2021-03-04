@@ -203,7 +203,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
-    // SHOW [ALL|UNIQUE|NODE EXIST[S]|RELATIONSHIP EXIST[S]|EXIST[S]|NODE KEY] CONSTRAINT[S] [BRIEF|VERBOSE[OUTPUT]]
+    // SHOW [ALL|UNIQUE|NODE EXIST|RELATIONSHIP EXIST|EXIST|NODE KEY] CONSTRAINT[S] [BRIEF|VERBOSE[OUTPUT]]
     case ShowConstraints(constraintType, verbose, defaultColumnNames) => (_, _) =>
       SchemaReadExecutionPlan("ShowConstraints", ctx => {
         ctx.assertShowConstraintAllowed()
@@ -212,9 +212,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         val predicate: ConstraintDescriptor => Boolean = constraintType match {
           case UniqueConstraints => c => c.`type`().equals(schema.ConstraintType.UNIQUE)
           case NodeKeyConstraints => c => c.`type`().equals(schema.ConstraintType.UNIQUE_EXISTS)
-          case ExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS)
-          case NodeExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.NODE)
-          case RelExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.RELATIONSHIP)
+          case _: ExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS)
+          case _: NodeExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.NODE)
+          case _: RelExistsConstraints => c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.RELATIONSHIP)
           case AllConstraints => _ => true // Should keep all and not filter away any constraints
           case c => throw new IllegalStateException(s"Unknown constraint type: $c")
         }
@@ -441,10 +441,10 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         val escapedProperties = asEscapedString(properties, propStringJoiner)
         val options = extractOptionsString(providerName, indexConfig, NodeKeyConstraints.prettyPrint)
         s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NODE KEY OPTIONS $options"
-      case NodeExistsConstraints =>
+      case _: NodeExistsConstraints =>
         val escapedProperties = asEscapedString(properties, propStringJoiner)
         s"CREATE CONSTRAINT `$name` ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NOT NULL"
-      case RelExistsConstraints =>
+      case _: RelExistsConstraints =>
         val escapedProperties = asEscapedString(properties, relPropStringJoiner)
         s"CREATE CONSTRAINT `$name` ON ()-[r$labelsOrTypesWithColons]-() ASSERT ($escapedProperties) IS NOT NULL"
       case _ => throw new IllegalArgumentException(s"Did not expect constraint type ${constraintType.prettyPrint} for constraint create command.")
@@ -516,8 +516,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     (internalConstraintType, entityType) match {
       case (schema.ConstraintType.UNIQUE, EntityType.NODE) => UniqueConstraints
       case (schema.ConstraintType.UNIQUE_EXISTS, EntityType.NODE) => NodeKeyConstraints
-      case (schema.ConstraintType.EXISTS, EntityType.NODE) => NodeExistsConstraints
-      case (schema.ConstraintType.EXISTS, EntityType.RELATIONSHIP) => RelExistsConstraints
+      case (schema.ConstraintType.EXISTS, EntityType.NODE) => NodeExistsConstraints()
+      case (schema.ConstraintType.EXISTS, EntityType.RELATIONSHIP) => RelExistsConstraints()
       case _ => throw new IllegalStateException(s"Invalid constraint combination: ConstraintType $internalConstraintType and EntityType $entityType.")
     }
   }

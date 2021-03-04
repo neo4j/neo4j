@@ -17,6 +17,11 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.DeprecatedSyntax
+import org.neo4j.cypher.internal.ast.ExistsConstraints
+import org.neo4j.cypher.internal.ast.NodeExistsConstraints
+import org.neo4j.cypher.internal.ast.RelExistsConstraints
+import org.neo4j.cypher.internal.ast.ShowConstraints
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
@@ -53,6 +58,7 @@ import org.neo4j.cypher.internal.util.DeprecatedParameterSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
+import org.neo4j.cypher.internal.util.DeprecatedShowExistenceConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedShowSchemaSyntax
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -211,6 +217,24 @@ object Deprecations {
         Deprecation(
           () => c,
           () => Some(DeprecatedDefaultGraphSyntax(c.position))
+        )
+
+      case c@ShowConstraints(ExistsConstraints(DeprecatedSyntax), _, _) =>
+        Deprecation(
+          () => c,
+          () => Some(DeprecatedShowExistenceConstraintSyntax(c.position))
+        )
+
+      case c@ShowConstraints(NodeExistsConstraints(DeprecatedSyntax), _, _) =>
+        Deprecation(
+          () => c,
+          () => Some(DeprecatedShowExistenceConstraintSyntax(c.position))
+        )
+
+      case c@ShowConstraints(RelExistsConstraints(DeprecatedSyntax), _, _) =>
+        Deprecation(
+          () => c,
+          () => Some(DeprecatedShowExistenceConstraintSyntax(c.position))
         )
     }
   }

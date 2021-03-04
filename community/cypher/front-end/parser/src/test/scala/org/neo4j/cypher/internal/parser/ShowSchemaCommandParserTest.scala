@@ -18,9 +18,12 @@ package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AllConstraints
+import org.neo4j.cypher.internal.ast.DeprecatedSyntax
 import org.neo4j.cypher.internal.ast.ExistsConstraints
+import org.neo4j.cypher.internal.ast.NewSyntax
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.OldValidSyntax
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.UniqueConstraints
@@ -216,53 +219,60 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
     constraintKeyword =>
 
       Seq(
-        ("", false),
-        (" BRIEF", false),
-        (" BRIEF OUTPUT", false),
-        (" VERBOSE", true),
-        (" VERBOSE OUTPUT", true)
+        ("", AllConstraints),
+        ("ALL", AllConstraints),
+        ("UNIQUE", UniqueConstraints),
+        ("NODE KEY", NodeKeyConstraints),
+
+        ("PROPERTY EXISTENCE", ExistsConstraints(NewSyntax)),
+        ("PROPERTY EXIST", ExistsConstraints(NewSyntax)),
+        ("EXISTENCE", ExistsConstraints(NewSyntax)),
+        ("EXIST", ExistsConstraints(OldValidSyntax)),
+        ("EXISTS", ExistsConstraints(DeprecatedSyntax)),
+
+        ("NODE PROPERTY EXISTENCE", NodeExistsConstraints(NewSyntax)),
+        ("NODE PROPERTY EXIST", NodeExistsConstraints(NewSyntax)),
+        ("NODE EXISTENCE", NodeExistsConstraints(NewSyntax)),
+        ("NODE EXIST", NodeExistsConstraints(OldValidSyntax)),
+        ("NODE EXISTS", NodeExistsConstraints(DeprecatedSyntax)),
+
+        ("RELATIONSHIP PROPERTY EXISTENCE", RelExistsConstraints(NewSyntax)),
+        ("RELATIONSHIP PROPERTY EXIST", RelExistsConstraints(NewSyntax)),
+        ("RELATIONSHIP EXISTENCE", RelExistsConstraints(NewSyntax)),
+        ("RELATIONSHIP EXIST", RelExistsConstraints(OldValidSyntax)),
+        ("RELATIONSHIP EXISTS", RelExistsConstraints(DeprecatedSyntax)),
+
+        ("REL PROPERTY EXISTENCE", RelExistsConstraints(NewSyntax)),
+        ("REL PROPERTY EXIST", RelExistsConstraints(NewSyntax)),
+        ("REL EXISTENCE", RelExistsConstraints(NewSyntax)),
+        ("REL EXIST", RelExistsConstraints(NewSyntax)),
       ).foreach {
-        case (output, verbose) =>
+        case (constraintTypeKeyword, constraintType) =>
 
-          test(s"SHOW $constraintKeyword$output") {
-            yields(ast.ShowConstraints(constraintType = AllConstraints, verbose = verbose))
+          test(s"SHOW $constraintTypeKeyword $constraintKeyword") {
+            yields(ast.ShowConstraints(constraintType, verbose = false))
           }
 
-          test(s"SHOW ALL $constraintKeyword$output") {
-            yields(ast.ShowConstraints(constraintType = AllConstraints, verbose = verbose))
+          test(s"USE db SHOW $constraintTypeKeyword $constraintKeyword") {
+            yields(ast.ShowConstraints(constraintType, verbose = false, Some(use(varFor("db")))))
           }
 
-          test(s"SHOW UNIQUE $constraintKeyword$output") {
-            yields(ast.ShowConstraints(constraintType = UniqueConstraints, verbose = verbose))
+          test(s"SHOW $constraintTypeKeyword $constraintKeyword BRIEF") {
+            yields(ast.ShowConstraints(constraintType, verbose = false))
           }
 
-          test(s"SHOW EXIST $constraintKeyword$output") {
-            yields(ast.ShowConstraints(constraintType = ExistsConstraints, verbose = verbose))
+          test(s"SHOW $constraintTypeKeyword $constraintKeyword BRIEF OUTPUT") {
+            yields(ast.ShowConstraints(constraintType, verbose = false))
           }
 
-          test(s"SHOW EXISTS $constraintKeyword$output") {
-            yields(ast.ShowConstraints(constraintType = ExistsConstraints, verbose = verbose))
+          test(s"SHOW $constraintTypeKeyword $constraintKeyword VERBOSE") {
+            yields(ast.ShowConstraints(constraintType, verbose = true))
           }
 
-          test(s"SHOW NODE EXIST $constraintKeyword$output") {
-            yields(ast.ShowConstraints(constraintType = NodeExistsConstraints, verbose = verbose))
+          test(s"SHOW $constraintTypeKeyword $constraintKeyword VERBOSE OUTPUT") {
+            yields(ast.ShowConstraints(constraintType, verbose = true))
           }
 
-          test(s"SHOW NODE EXISTS $constraintKeyword$output") {
-            yields(ast.ShowConstraints(constraintType = NodeExistsConstraints, verbose = verbose))
-          }
-
-          test(s"SHOW RELATIONSHIP EXIST $constraintKeyword$output") {
-            yields(ast.ShowConstraints(constraintType = RelExistsConstraints, verbose = verbose))
-          }
-
-          test(s"SHOW RELATIONSHIP EXISTS $constraintKeyword$output") {
-            yields(ast.ShowConstraints(constraintType = RelExistsConstraints, verbose = verbose))
-          }
-
-          test(s"SHOW NODE KEY $constraintKeyword$output") {
-            yields(ast.ShowConstraints(constraintType = NodeKeyConstraints, verbose = verbose))
-          }
       }
   }
 
@@ -297,6 +307,10 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
   }
 
   test("SHOW RELATIONSHIPS EXIST CONSTRAINTS") {
+    failsToParse
+  }
+
+  test("SHOW REL EXISTS CONSTRAINTS") {
     failsToParse
   }
 

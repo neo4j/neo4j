@@ -260,22 +260,38 @@ case object UniqueConstraints extends ShowConstraintType {
   override val prettyPrint: String = "UNIQUE"
 }
 
-case object ExistsConstraints extends ShowConstraintType {
+case class ExistsConstraints(syntax: ExistenceConstraintSyntax) extends ShowConstraintType {
   override val output: String = "PROPERTY_EXISTENCE"
-  override val prettyPrint: String = "EXISTS"
+  override val prettyPrint: String = syntax.keyword
 }
 
-case object NodeExistsConstraints extends ShowConstraintType {
+case class NodeExistsConstraints(syntax: ExistenceConstraintSyntax = NewSyntax) extends ShowConstraintType {
   override val output: String = "NODE_PROPERTY_EXISTENCE"
-  override val prettyPrint: String = "NODE EXISTS"
+  override val prettyPrint: String = s"NODE ${syntax.keyword}"
 }
 
-case object RelExistsConstraints extends ShowConstraintType {
+case class RelExistsConstraints(syntax: ExistenceConstraintSyntax = NewSyntax) extends ShowConstraintType {
   override val output: String = "RELATIONSHIP_PROPERTY_EXISTENCE"
-  override val prettyPrint: String = "RELATIONSHIP EXISTS"
+  override val prettyPrint: String = s"RELATIONSHIP ${syntax.keyword}"
 }
 
 case object NodeKeyConstraints extends ShowConstraintType {
   override val output: String = "NODE_KEY"
   override val prettyPrint: String = "NODE KEY"
+}
+
+sealed trait ExistenceConstraintSyntax {
+  val keyword: String
+}
+
+case object DeprecatedSyntax extends ExistenceConstraintSyntax {
+  override val keyword: String = "EXISTS"
+}
+
+case object OldValidSyntax extends ExistenceConstraintSyntax {
+  override val keyword: String = "EXIST"
+}
+
+case object NewSyntax extends ExistenceConstraintSyntax {
+  override val keyword: String = "EXISTENCE"
 }

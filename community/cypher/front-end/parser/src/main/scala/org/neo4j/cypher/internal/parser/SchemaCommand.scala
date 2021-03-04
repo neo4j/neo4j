@@ -198,13 +198,27 @@ trait SchemaCommand extends Parser
   private def ConstraintType: Rule1[ast.ShowConstraintType] = rule("type of constraints") {
     keyword("UNIQUE") ~~~> (_ => ast.UniqueConstraints) |
     keyword("NODE KEY") ~~~> (_ => ast.NodeKeyConstraints) |
-    keyword("NODE") ~~ ExistsKeyword ~~~> (_ => ast.NodeExistsConstraints) |
-    keyword("RELATIONSHIP") ~~ ExistsKeyword ~~~> (_ => ast.RelExistsConstraints) |
-    ExistsKeyword ~~~> (_ => ast.ExistsConstraints) |
+    keyword("NODE") ~~ ExistencePart ~~> (ecs => ast.NodeExistsConstraints(ecs)) |
+    keyword("RELATIONSHIP") ~~ ExistencePart ~~> (ecs => ast.RelExistsConstraints(ecs)) |
+    keyword("REL") ~~ RelExistencePart ~~~> (_ => ast.RelExistsConstraints(ast.NewSyntax)) |
+    ExistencePart ~~> (ecs => ast.ExistsConstraints(ecs)) |
     optional(keyword("ALL")) ~~~> (_ => ast.AllConstraints)
   }
 
-  private def ExistsKeyword: Rule0 = keyword("EXISTS") | keyword("EXIST")
+  private def ExistencePart: Rule1[ast.ExistenceConstraintSyntax] = rule {
+    keyword("PROPERTY EXISTENCE") ~~~> (_ => ast.NewSyntax) |
+    keyword("PROPERTY EXIST") ~~~> (_ => ast.NewSyntax) |
+    keyword("EXISTENCE") ~~~> (_ => ast.NewSyntax) |
+    keyword("EXISTS") ~~~> (_ => ast.DeprecatedSyntax) |
+    keyword("EXIST") ~~~> (_ => ast.OldValidSyntax)
+  }
+
+  private def RelExistencePart: Rule0 = rule {
+    keyword("PROPERTY EXISTENCE") |
+    keyword("PROPERTY EXIST") |
+    keyword("EXISTENCE") |
+    keyword("EXIST")
+  }
 
   private def NodeKeyConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ keyword("IS NODE KEY")

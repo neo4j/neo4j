@@ -214,6 +214,15 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
+    void deprecatedShowExistenceConstraintSyntax()
+    {
+        // Note: Show constraints was introduced in Neo4j 4.2
+        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW EXISTS CONSTRAINTS", containsItem( deprecatedShowExistenceConstraintSyntax ) );
+        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW NODE EXISTS CONSTRAINTS", containsItem( deprecatedShowExistenceConstraintSyntax ) );
+        assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW RELATIONSHIP EXISTS CONSTRAINTS", containsItem( deprecatedShowExistenceConstraintSyntax ) );
+    }
+
+    @Test
     void deprecatedCoercionListToBoolean()
     {
         assertNotificationsInSupportedVersions( "EXPLAIN RETURN NOT []", containsItem( deprecatedCoercionListToBoolean ) );
@@ -411,6 +420,9 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
 
     private final Matcher<Notification> deprecatedShowSchemaSyntax =
             deprecation( "The `BRIEF` and `VERBOSE` keywords for `SHOW INDEXES` are deprecated, please omit `BRIEF` and use `YIELD *` instead of `VERBOSE`" );
+
+    private final Matcher<Notification> deprecatedShowExistenceConstraintSyntax =
+            deprecation( "The `EXISTS` keyword for `SHOW CONSTRAINTS` are deprecated, please use `EXIST` instead" );
 
     private final Matcher<Notification> deprecatedCoercionListToBoolean =
             deprecation( "Coercion of list to boolean is deprecated. Please consider using `NOT isEmpty(...)` instead." );

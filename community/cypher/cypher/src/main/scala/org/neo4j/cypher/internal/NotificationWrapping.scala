@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSy
 import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
+import org.neo4j.cypher.internal.util.DeprecatedShowExistenceConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedShowSchemaSyntax
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.InputPosition
@@ -119,6 +120,8 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedShowSchemaSyntax(pos) =>
       NotificationCode.DEPRECATED_SHOW_SCHEMA_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedShowExistenceConstraintSyntax(pos) =>
+      NotificationCode.DEPRECATED_SHOW_EXISTENCE_CONSTRAINT_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedPropertyExistenceSyntax(pos) =>
       NotificationCode.DEPRECATED_PROPERTY_EXISTENCE_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedDefaultDatabaseSyntax(pos) =>

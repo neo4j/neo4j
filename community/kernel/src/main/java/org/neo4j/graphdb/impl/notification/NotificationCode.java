@@ -129,6 +129,11 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The `BRIEF` and `VERBOSE` keywords for `SHOW INDEXES` are deprecated, please omit `BRIEF` and use `YIELD *` instead of `VERBOSE`"
     ),
+    DEPRECATED_SHOW_EXISTENCE_CONSTRAINT_SYNTAX(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The `EXISTS` keyword for `SHOW CONSTRAINTS` are deprecated, please use `EXIST` instead"
+    ),
     DEPRECATED_PROPERTY_EXISTENCE_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
