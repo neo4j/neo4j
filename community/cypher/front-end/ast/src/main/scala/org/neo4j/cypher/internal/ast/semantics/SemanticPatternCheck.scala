@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext
-import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.Construct
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.Match
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.name
 import org.neo4j.cypher.internal.expressions.PatternElement
@@ -52,7 +51,6 @@ import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTPath
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
-import org.neo4j.cypher.internal.util.symbols.CypherType
 
 object SemanticPatternCheck extends SemanticAnalysisTooling {
 
@@ -74,9 +72,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
       case x: EveryPath =>
         (x.element, ctx) match {
-          case (n: NodePattern, SemanticContext.Construct) =>
-            n.variable.fold(SemanticCheckResult.success)(implicitVariable(_, CTNode)) chain
-              declareVariables(ctx, n)
           case (_: NodePattern, SemanticContext.Match) =>
             declareVariables(ctx, x.element)
           case (n: NodePattern, _) =>
@@ -204,8 +199,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           error(s"Parentheses are required to identify nodes in patterns, i.e. (${x.id.name})", x.position)
 
       case x: NodePattern =>
-        checkBaseVariable(ctx, x.baseNode, CTNode) chain
-          checkNodeProperties(ctx, x.properties) chain
+        checkNodeProperties(ctx, x.properties) chain
           checkValidLabels(x.labels, x.position)
 
     }
@@ -213,7 +207,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   def check(ctx: SemanticContext, x: RelationshipPattern): SemanticCheck = {
     def checkNotUndirectedWhenCreating: SemanticCheck = {
       ctx match {
-        case SemanticContext.Create | SemanticContext.Construct if x.direction == SemanticDirection.BOTH =>
+        case SemanticContext.Create if x.direction == SemanticDirection.BOTH =>
           error(s"Only directed relationships are supported in ${name(ctx)}", x.position)
         case _ =>
           SemanticCheckResult.success
@@ -223,9 +217,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     def checkNoVarLengthWhenUpdating: SemanticCheck =
       when(!x.isSingleLength) {
         ctx match {
-          case SemanticContext.Merge |
-               SemanticContext.Create |
-               SemanticContext.Construct =>
+          case SemanticContext.Merge | SemanticContext.Create =>
             error(s"Variable length relationships cannot be used in ${name(ctx)}", x.position)
           case _ =>
             None
@@ -237,7 +229,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         expectType(CTMap.covariant, x.properties)
 
     def checkForLegacyTypeSeparator: SemanticCheck = x match {
-      case RelationshipPattern(variable, _, length, properties, _, true, _) if (variable.isDefined && !variableIsGenerated(variable.get)) || length.isDefined || properties.isDefined =>
+      case RelationshipPattern(variable, _, length, properties, _, true) if (variable.isDefined && !variableIsGenerated(variable.get)) || length.isDefined || properties.isDefined =>
         error(
           """The semantics of using colon in the separation of alternative relationship types in conjunction with
             |the use of variable binding, inlined property predicates, or variable length is no longer supported.
@@ -252,8 +244,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       checkProperties chain
       checkValidPropertyKeyNamesInPattern(x.properties) chain
       checkValidRelTypes(x.types, x.position) chain
-      checkNotUndirectedWhenCreating chain
-      checkBaseVariable(ctx, x.baseRel, CTRelationship)
+      checkNotUndirectedWhenCreating
   }
 
   def variableIsGenerated(variable: LogicalVariable): Boolean = !AllNameGenerators.isNamed(variable.name)
@@ -286,10 +277,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         ctx match {
           case SemanticContext.Match =>
             implicitVariable(variable, possibleType)
-          // In case of construct the variable could either be defined outside or may be defined once inside a new.
-          // This can only be checked on construct level, thus we use implicit semantics here.
-          case SemanticContext.Construct =>
-            implicitVariable(variable, possibleType)
           case SemanticContext.Expression =>
             ensureDefined(variable) chain
               expectType(possibleType.covariant, variable)
@@ -321,16 +308,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       checkValidPropertyKeyNamesInPattern(properties) chain
       SemanticExpressionCheck.simple(properties) chain
       expectType(CTMap.covariant, properties)
-
-  def checkBaseVariable(ctx: SemanticContext, maybeBaseVar: Option[LogicalVariable], expectedType: CypherType): SemanticCheck =
-    maybeBaseVar.fold(SemanticCheckResult.success) { variable =>
-      requireFeatureSupport(s"COPY OF", SemanticFeature.MultipleGraphs, variable.position) chain (
-        ctx match {
-          case Construct => SemanticCheckResult.success
-          case _ => error("COPY OF is only allowed in NEW CLAUSES", variable.position)
-        }
-        ) chain implicitVariable(variable, expectedType)
-    }
 
   def checkValidPropertyKeyNamesInReturnItems(returnItems: ReturnItems, position: InputPosition): SemanticCheck = {
     val propertyKeys = returnItems.items.collect { case item => item.expression.findByAllClass[Property]map(prop => prop.propertyKey) }.flatten
@@ -374,8 +351,6 @@ object checkNoParamMapsWhenMatching {
       SemanticError("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
     case (Some(e: Parameter), SemanticContext.Merge) =>
       SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
-    case (Some(e: Parameter), SemanticContext.Construct) =>
-      SemanticError("Parameter maps cannot be used in GRAPH OF patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
     case _ =>
       None
   }

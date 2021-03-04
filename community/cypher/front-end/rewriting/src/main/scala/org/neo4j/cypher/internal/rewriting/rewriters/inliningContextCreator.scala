@@ -50,11 +50,11 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
           TraverseChildren(context.spoilVariable(sortItem.expression.asInstanceOf[Variable]))
 
       // Do not inline pattern variables, unless they are clean aliases of previous variables
-      case NodePattern(Some(variable), _, _, _) =>
+      case NodePattern(Some(variable), _, _) =>
         context =>
           TraverseChildren(spoilVariableIfNotAliased(variable, context))
 
-      case RelationshipPattern(Some(variable), _, _, _, _, _, _) =>
+      case RelationshipPattern(Some(variable), _, _, _, _, _) =>
         context =>
           TraverseChildren(spoilVariableIfNotAliased(variable, context))
     }

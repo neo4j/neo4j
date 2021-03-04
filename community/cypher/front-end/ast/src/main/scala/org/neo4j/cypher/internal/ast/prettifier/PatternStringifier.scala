@@ -47,10 +47,9 @@ case class PatternStringifier(expr: ExpressionStringifier) {
 
   def apply(nodePattern: NodePattern): String = {
     val name = nodePattern.variable.map(expr(_)).getOrElse("")
-    val base = nodePattern.baseNode.map(expr(_)).map(" COPY OF " + _).getOrElse("")
     val labels = if (nodePattern.labels.isEmpty) "" else
       nodePattern.labels.map(expr(_)).mkString(":", ":", "")
-    val e = props(s"$name$base$labels", nodePattern.properties)
+    val e = props(s"$name$labels", nodePattern.properties)
     s"($e)"
   }
 
@@ -70,14 +69,13 @@ case class PatternStringifier(expr: ExpressionStringifier) {
     else
       relationship.types.map(expr(_)).mkString(":", "|", "")
     val name = relationship.variable.map(expr(_)).getOrElse("")
-    val base = relationship.baseRel.map(expr(_)).map(" COPY OF " + _).getOrElse("")
     val length = relationship.length match {
       case None              => ""
       case Some(None)        => "*"
       case Some(Some(range)) => apply(range)
 
     }
-    val info = props(s"$name$base$types$length", relationship.properties)
+    val info = props(s"$name$types$length", relationship.properties)
     if (info == "")
       s"$lArrow--$rArrow"
     else

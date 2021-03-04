@@ -106,7 +106,7 @@ object Deprecations {
         )
 
       // var-length binding
-      case p@RelationshipPattern(Some(variable), _, Some(_), _, _, _, _) =>
+      case p@RelationshipPattern(Some(variable), _, Some(_), _, _, _) =>
         Deprecation(
           () => p,
           () => Some(DeprecatedVarLengthBindingNotification(p.position, variable.name))
@@ -283,7 +283,7 @@ object Deprecations {
         )
 
       // legacy type separator
-      case p@RelationshipPattern(variable, _, length, properties, _, true, _) if variable.isDefined || length.isDefined || properties.isDefined =>
+      case p@RelationshipPattern(variable, _, length, properties, _, true) if variable.isDefined || length.isDefined || properties.isDefined =>
         Deprecation(
           () => p.copy(legacyTypeSeparator = false)(p.position),
           () => Some(DeprecatedRelTypeSeparatorNotification(p.position))

@@ -28,14 +28,11 @@ object Pattern {
     case object Create extends SemanticContext
     case object Expression extends SemanticContext
 
-    case object Construct extends SemanticContext
-
     def name(ctx: SemanticContext): String = ctx match {
       case Match => "MATCH"
       case Merge => "MERGE"
       case Create => "CREATE"
       case Expression => "expression"
-      case Construct => "Construct"
     }
   }
 }
@@ -102,7 +99,7 @@ object RelationshipChain {
    */
   def findDuplicateRelationships(treeNode: ASTNode): Seq[LogicalVariable] = {
     val duplicates = treeNode.fold(Map[String, List[LogicalVariable]]().withDefaultValue(Nil)) {
-      case RelationshipChain(_, RelationshipPattern(Some(rel), _, None, _, _, _,_), _) =>
+      case RelationshipChain(_, RelationshipPattern(Some(rel), _, None, _, _, _), _) =>
         map =>
           map.updated(rel.name, rel :: map(rel.name))
       case _ =>
@@ -149,8 +146,7 @@ class InvalidNodePattern(
 
 case class NodePattern(variable: Option[LogicalVariable],
                        labels: Seq[LabelName],
-                       properties: Option[Expression],
-                       baseNode: Option[LogicalVariable] = None)(val position: InputPosition)
+                       properties: Option[Expression])(val position: InputPosition)
   extends PatternElement {
 
   override def allVariables: Set[LogicalVariable] = variable.toSet
@@ -165,8 +161,7 @@ case class RelationshipPattern(
                                 length: Option[Option[Range]],
                                 properties: Option[Expression],
                                 direction: SemanticDirection,
-                                legacyTypeSeparator: Boolean = false,
-                                baseRel: Option[LogicalVariable] = None)(val position: InputPosition) extends ASTNode {
+                                legacyTypeSeparator: Boolean = false)(val position: InputPosition) extends ASTNode {
 
   def isSingleLength: Boolean = length.isEmpty
 

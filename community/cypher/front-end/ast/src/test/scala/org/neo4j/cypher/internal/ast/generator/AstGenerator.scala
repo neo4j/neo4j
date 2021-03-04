@@ -799,8 +799,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     variable <- option(_variable)
     labels <- zeroOrMore(_labelName)
     properties <- option(oneOf(_map, _parameter))
-    baseNode <- option(_variable)
-  } yield NodePattern(variable, labels, properties, baseNode)(pos)
+  } yield NodePattern(variable, labels, properties)(pos)
 
   def _range: Gen[Range] = for {
     lower <- option(_unsignedDecIntLit)
@@ -820,8 +819,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     length <- option(option(_range))
     properties <- option(oneOf(_map, _parameter))
     direction <- _semanticDirection
-    baseRel <- option(_variable)
-  } yield RelationshipPattern(variable, types, length, properties, direction, legacyTypeSeparator = false, baseRel)(pos)
+  } yield RelationshipPattern(variable, types, length, properties, direction, legacyTypeSeparator = false)(pos)
 
   def _relationshipChain: Gen[RelationshipChain] = for {
     element <- _patternElement

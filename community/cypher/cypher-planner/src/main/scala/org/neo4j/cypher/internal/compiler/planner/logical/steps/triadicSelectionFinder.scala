@@ -157,9 +157,9 @@ object triadicSelectionFinder extends SelectionCandidateGenerator {
     case PatternExpression(
     RelationshipsPattern(
     RelationshipChain(
-    NodePattern(Some(Variable(predicateFrom)), List(), None, _),
-    RelationshipPattern(Some(rel), predicateTypes, None, None, predicateDir, _, _),
-    NodePattern(Some(Variable(predicateTo)), List(), None, _))))
+    NodePattern(Some(Variable(predicateFrom)), List(), None),
+    RelationshipPattern(Some(rel), predicateTypes, None, None, predicateDir, _),
+    NodePattern(Some(Variable(predicateTo)), List(), None))))
       if predicateFrom == from && predicateTo == to && predicateTypes == types && predicateDir == dir && !pattern.dependencies.contains(rel) => true
     case _ => false
   }

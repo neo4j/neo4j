@@ -23,8 +23,7 @@ import org.parboiled.scala.EMPTY
 import org.parboiled.scala.Parser
 import org.parboiled.scala.ReductionRule1
 import org.parboiled.scala.Rule1
-import org.parboiled.scala.Rule2
-import org.parboiled.scala.Rule5
+import org.parboiled.scala.Rule4
 import org.parboiled.scala.group
 
 /*
@@ -79,23 +78,22 @@ trait Patterns extends Parser
       | LeftArrowHead ~~ Dash ~~ RelationshipDetail ~~ Dash ~ push(SemanticDirection.INCOMING)
       | Dash ~~ RelationshipDetail ~~ Dash ~~ RightArrowHead ~ push(SemanticDirection.OUTGOING)
       | Dash ~~ RelationshipDetail ~~ Dash ~ push(SemanticDirection.BOTH)
-    ) ~~>> ((variable, base, relTypes, range, props, dir) => expressions.RelationshipPattern(variable, relTypes.types, range,
-      props, dir, relTypes.legacySeparator, base))
+    ) ~~>> ((variable, relTypes, range, props, dir) => expressions.RelationshipPattern(variable, relTypes.types, range,
+      props, dir, relTypes.legacySeparator))
   }
 
-  private def RelationshipDetail: Rule5[
-      Option[expressions.Variable],
+  private def RelationshipDetail: Rule4[
       Option[expressions.Variable],
       MaybeLegacyRelTypes,
       Option[Option[expressions.Range]],
       Option[expressions.Expression]] = rule("[") {
     (
         "[" ~~
-          MaybeVariableWithBase ~~
+          MaybeVariable ~~
           RelationshipTypes ~~ MaybeVariableLength ~
           MaybeProperties ~~
         "]"
-      | EMPTY ~ push(None) ~ push(None) ~ push(MaybeLegacyRelTypes()) ~ push(None) ~ push(None)
+      | EMPTY ~ push(None) ~ push(MaybeLegacyRelTypes()) ~ push(None) ~ push(None)
     )
   }
 
@@ -120,12 +118,12 @@ trait Patterns extends Parser
   )
 
   private def NodePattern: Rule1[expressions.NodePattern] = rule("a node pattern") (
-    group("(" ~~ MaybeVariableWithBase ~ MaybeNodeLabels ~ MaybeProperties ~~ ")") ~~>> { (v, base, labels, props) => expressions.NodePattern(v, labels, props, base)}
+    group("(" ~~ MaybeVariable ~ MaybeNodeLabels ~ MaybeProperties ~~ ")") ~~>> { (v, labels, props) => expressions.NodePattern(v, labels, props)}
     | group(Variable ~ MaybeNodeLabels ~ MaybeProperties)  ~~>> (expressions.InvalidNodePattern(_, _, _)) // Here to give nice error messages
   )
 
-  private def MaybeVariableWithBase: Rule2[Option[expressions.Variable], Option[expressions.Variable]] = rule("a variable") {
-    optional(!keyword("COPY OF") ~ Variable) ~~ optional(keyword("COPY OF") ~~ Variable)
+  private def MaybeVariable: Rule1[Option[expressions.Variable]] = rule("a variable") {
+    optional(Variable)
   }
 
   private def MaybeNodeLabels: Rule1[Seq[expressions.LabelName]] = rule("node labels") (

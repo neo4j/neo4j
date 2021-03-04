@@ -117,7 +117,7 @@ case object getDegreeRewriter extends Rewriter {
 object FunctionOfPattern {
   def unapply(arg: Any): Option[(FunctionInvocation, LogicalVariable, Seq[RelTypeName], SemanticDirection)] = arg match {
     //(a)-[]->()
-    case func@FunctionInvocation(_, _, _, IndexedSeq(pe@PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _), RelationshipPattern(Some(rel), types, None, None, dir, _, _), NodePattern(Some(otherNode), List(), None, _))))))
+    case func@FunctionInvocation(_, _, _, IndexedSeq(pe@PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(Some(rel), types, None, None, dir, _), NodePattern(Some(otherNode), List(), None))))))
     =>
       val peDeps = pe.dependencies
       if (peDeps.contains(node) && !peDeps.contains(rel) && !peDeps.contains(otherNode)) {
