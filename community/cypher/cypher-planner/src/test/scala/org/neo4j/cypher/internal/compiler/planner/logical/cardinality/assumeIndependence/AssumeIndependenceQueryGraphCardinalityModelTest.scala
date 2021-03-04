@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ABCDECardi
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.PatternRelationshipMultiplierCalculator.uniquenessSelectivityForNRels
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.Projection
@@ -384,6 +385,16 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFunSuite wi
     expectCardinality(A)
     expectPlanCardinality({
       case Aggregation(_, _, _) => true
+    }, A)
+  }
+
+  test("MATCH (a:A) CALL { CREATE (b:Label) WITH b CALL { RETURN 5 AS literal } RETURN * }") {
+    expectCardinality(A)
+    expectPlanCardinality({
+      case Create(_, _, _) => true
+    }, A)
+    expectPlanCardinality({
+      case Projection(_, _) => true
     }, A)
   }
 

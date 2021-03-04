@@ -139,7 +139,7 @@ class ExhaustiveLimitPlanningIntegrationTest
       .build()
   }
 
-  test("should plan exhaustive limit for create on RHS of cartesian product") {
+  test("should plan exhaustive limit for create in subquery") {
     // given
     val config = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -165,9 +165,7 @@ class ExhaustiveLimitPlanningIntegrationTest
     plan shouldEqual config.planBuilder()
       .produceResults("m")
       .exhaustiveLimit(3)
-      .cartesianProduct()
-      .|.create(createNode("m", "M"))
-      .|.argument()
+      .create(createNode("m", "M"))
       .nodeByLabelScan("n", "N")
       .build()
   }
@@ -261,7 +259,7 @@ class ExhaustiveLimitPlanningIntegrationTest
       .build()
   }
 
-  test("should plan exhaustive limit for create on RHS of cartesian product before SKIP + LIMIT") {
+  test("should plan exhaustive limit for create in subquery before SKIP + LIMIT") {
     // given
     val config = plannerBuilder()
       .setAllNodesCardinality(100)
@@ -288,9 +286,7 @@ class ExhaustiveLimitPlanningIntegrationTest
       .produceResults("m")
       .skip(10)
       .exhaustiveLimit(add(literalInt(3), literalInt(10)))
-      .cartesianProduct()
-      .|.create(createNode("m", "M"))
-      .|.argument()
+      .create(createNode("m", "M"))
       .nodeByLabelScan("n", "N")
       .build()
   }

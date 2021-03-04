@@ -462,3 +462,23 @@ Feature: SubqueryAcceptance
       | <(:N)> | 0 |
       | <(:N)> | 0 |
     And no side effects
+
+  Scenario: Side-effects in uncorrelated subquery
+    And having executed:
+      """
+      CREATE (:Label), (:Label), (:Label)
+      """
+    When executing query:
+      """
+      MATCH (x)
+      CALL {
+        CREATE (y:Label)
+        RETURN *
+      }
+      RETURN count(*) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      | 3     |
+    And the side effects should be:
+      | +nodes  | 3 |

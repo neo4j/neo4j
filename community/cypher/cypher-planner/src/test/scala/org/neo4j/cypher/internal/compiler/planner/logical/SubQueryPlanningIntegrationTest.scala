@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -495,6 +496,78 @@ class SubQueryPlanningIntegrationTest extends CypherFunSuite with LogicalPlannin
         .|.argument("r")
         .expand("(m)<-[r:REL]-(n)")
         .nodeByLabelScan("m", "M")
+        .build()
+    )
+  }
+
+  test("should plan uncorrelated subquery with updates with Apply (which gets unnested)") {
+    val query =
+      """MATCH (x)
+        |CALL {
+        |  CREATE (y:Label)
+        |  RETURN *
+        |}
+        |RETURN count(*) AS count
+        |""".stripMargin
+
+    planFor(query, stripProduceResults = false)._2 should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .create(createNode("y", "Label"))
+        .allNodeScan("x")
+        .build()
+    )
+  }
+
+  test("should plan nested uncorrelated subqueries with updates with Apply") {
+    val query =
+      """MATCH (x)
+        |CALL {
+        |  CALL {
+        |    CREATE (y:Label)
+        |    RETURN *
+        |  }
+        |  RETURN *
+        |}
+        |RETURN count(*) AS count
+        |""".stripMargin
+
+    planFor(query, stripProduceResults = false)._2 should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .create(createNode("y", "Label"))
+        .allNodeScan("x")
+        .build()
+    )
+  }
+
+  test("should plan nested uncorrelated subqueries with updates in outer subquery with Apply / CartesianProduct") {
+    val query =
+      """MATCH (x)
+        |CALL {
+        |  CREATE (y:Label)
+        |  WITH y
+        |  CALL {
+        |    RETURN 5 as literal
+        |  }
+        |  RETURN *
+        |}
+        |RETURN count(*) AS count
+        |""".stripMargin
+
+    planFor(query, stripProduceResults = false)._2 should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .apply()
+        .|.cartesianProduct()
+        .|.|.projection("5 AS literal")
+        .|.|.argument()
+        .|.create(createNode("y", "Label"))
+        .|.argument()
+        .allNodeScan("x")
         .build()
     )
   }

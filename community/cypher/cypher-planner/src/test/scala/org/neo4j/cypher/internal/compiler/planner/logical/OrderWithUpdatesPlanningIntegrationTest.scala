@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.logical.plans.Apply
-import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
@@ -198,7 +197,7 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
   test("Subquery (uncorrelated) with update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "CALL {MATCH (x) SET x.prop = 1 RETURN 'foo'}",
-      {case _:CartesianProduct  => true}
+      {case _:Apply  => true}
     )
   }
 

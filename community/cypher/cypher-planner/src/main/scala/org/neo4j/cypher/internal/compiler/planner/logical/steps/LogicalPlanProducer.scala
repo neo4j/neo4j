@@ -338,7 +338,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solvedRight = solveds.get(right.id)
     val solved = solvedLeft.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CallSubqueryHorizon(solvedRight, correlated)))
 
-    val plan = if (!correlated) {
+    val plan = if (!correlated && solvedRight.readOnly) {
       CartesianProduct(left, right)
     } else {
       Apply(left, right)
