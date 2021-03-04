@@ -63,7 +63,6 @@ import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
 import org.neo4j.cypher.internal.ast.Foreach
-import org.neo4j.cypher.internal.ast.FromGraph
 import org.neo4j.cypher.internal.ast.FunctionAllQualifier
 import org.neo4j.cypher.internal.ast.FunctionQualifier
 import org.neo4j.cypher.internal.ast.GrantPrivilege
@@ -493,7 +492,6 @@ case class Prettifier(
 
     def dispatch(clause: Clause): String = clause match {
       case u: UseGraph          => asString(u)
-      case f: FromGraph         => asString(f)
       case e: Return            => asString(e)
       case m: Match             => asString(m)
       case c: SubQuery          => asString(c)
@@ -520,9 +518,6 @@ case class Prettifier(
 
     def asString(u: UseGraph): String =
       s"${INDENT}USE ${expr(u.expression)}"
-
-    def asString(f: FromGraph): String =
-      s"${INDENT}FROM ${expr(f.expression)}"
 
     def asString(m: Match): String = {
       val o = if (m.optional) "OPTIONAL " else ""

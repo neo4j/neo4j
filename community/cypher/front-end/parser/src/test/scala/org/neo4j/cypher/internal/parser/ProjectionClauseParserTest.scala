@@ -57,8 +57,6 @@ class ProjectionClauseParserTest
     yields(ast.Return(ast.ReturnItems(includeExisting = true, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos)))
   }
 
-  // TODO: Test valid RETURN GRAPH
-
   test("RETURN ") {
     failsToParse
   }
@@ -66,5 +64,4 @@ class ProjectionClauseParserTest
   test("RETURN GRAPH *") {
     failsToParse
   }
-
 }

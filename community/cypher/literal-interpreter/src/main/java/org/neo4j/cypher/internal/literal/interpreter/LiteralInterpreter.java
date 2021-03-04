@@ -101,12 +101,6 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL fromClause( NULL p, Object e )
-    {
-        throw new UnsupportedOperationException( "fromClause is not a literal" );
-    }
-
-    @Override
     public NULL useClause( NULL p, Object e )
     {
         throw new UnsupportedOperationException( "useClause is not a literal" );
@@ -116,12 +110,6 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     public NULL newReturnClause( NULL p, boolean distinct, boolean returnAll, List<NULL> nulls, List<NULL> order, Object skip, Object limit )
     {
         throw new UnsupportedOperationException( "newReturnClause is not a literal" );
-    }
-
-    @Override
-    public NULL newReturnGraphClause( NULL p )
-    {
-        throw new UnsupportedOperationException( "newReturnGraphClause is not a literal" );
     }
 
     @Override

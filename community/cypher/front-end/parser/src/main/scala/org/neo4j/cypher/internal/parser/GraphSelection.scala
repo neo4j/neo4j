@@ -24,10 +24,6 @@ import org.parboiled.scala.group
 trait GraphSelection extends Parser
                      with Expressions
                      with Base {
-  def FromGraph: Rule1[ast.FromGraph] = rule("FROM GRAPH") {
-    group(keyword("FROM") ~~ optional(keyword("GRAPH"))) ~~ Expression ~~>> (ast.FromGraph(_))
-  }
-
   def UseGraph: Rule1[ast.UseGraph] = rule("USE GRAPH") {
     group(keyword("USE") ~~ optional(keyword("GRAPH"))) ~~ Expression ~~>> (ast.UseGraph(_))
   }

@@ -101,12 +101,7 @@ trait Clauses extends Parser
     group(keyword("UNWIND") ~~ Expression ~~ keyword("AS") ~~ Variable) ~~>> (ast.Unwind(_, _))
   )
 
-  def Return: Rule1[ast.Clause] = rule("RETURN")(
-    group(keyword("RETURN GRAPH")) ~ push(ast.ReturnGraph(None)(_))
-      | ReturnWithoutGraph
-  )
-
-  def ReturnWithoutGraph: Rule1[ast.Return] = rule("RETURN")(
+  def Return: Rule1[ast.Return] = rule("RETURN")(
     group(keyword("RETURN DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _))
       | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
   )

@@ -443,9 +443,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       yields.map(vs => ProcedureResult(vs.toIndexedSeq.map(ProcedureResultItem(_)(pos)))(pos))
     )(pos)
 
-  def from(e: Expression): FromGraph =
-    FromGraph(e)(pos)
-
   def use(e: Expression): UseGraph =
     UseGraph(e)(pos)
 

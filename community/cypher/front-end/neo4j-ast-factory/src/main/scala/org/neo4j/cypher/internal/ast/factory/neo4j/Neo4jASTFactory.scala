@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import java.util
+import java.util.stream.Collectors
+
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
@@ -38,7 +41,6 @@ import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
 import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.Foreach
-import org.neo4j.cypher.internal.ast.FromGraph
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.IfExistsDo
@@ -195,8 +197,6 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-import java.util
-import java.util.stream.Collectors
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.util.Either
 
@@ -262,9 +262,6 @@ class Neo4jASTFactory(query: String)
       SingleQuery(loadCsv +: queryBody.asScala)(p)
     )(p)
 
-  override def fromClause(p: InputPosition,
-                          e: Expression): Clause = FromGraph(e)(p)
-
   override def useClause(p: InputPosition,
                          e: Expression): UseGraph = UseGraph(e)(p)
 
@@ -281,10 +278,6 @@ class Neo4jASTFactory(query: String)
       if (order.isEmpty) None else Some(OrderBy(order.asScala.toList)(p)),
       Option(skip).map(e => Skip(e)(p)),
       Option(limit).map(e => Limit(e)(p)))(p)
-  }
-
-  override def newReturnGraphClause(p: InputPosition): Return = {
-    throw new UnsupportedOperationException("The `RETURN GRAPH` clause is not available in this implementation of Cypher due to lack of support for multiple graphs.")
   }
 
   override def newReturnItem(p: InputPosition, e: Expression, v: Variable): ReturnItem = AliasedReturnItem(e, v)(p)

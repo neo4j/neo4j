@@ -93,8 +93,6 @@ public interface ASTFactory<STATEMENT,
 
     QUERY periodicCommitQuery( POS p, String batchSize, CLAUSE loadCsv, List<CLAUSE> queryBody );
 
-    CLAUSE fromClause( POS p, EXPRESSION e );
-
     USE_GRAPH useClause( POS p, EXPRESSION e );
 
     RETURN_CLAUSE newReturnClause( POS p, boolean distinct,
@@ -103,8 +101,6 @@ public interface ASTFactory<STATEMENT,
                                    List<ORDER_ITEM> order,
                                    EXPRESSION skip,
                                    EXPRESSION limit );
-
-    RETURN_CLAUSE newReturnGraphClause( POS p );
 
     RETURN_ITEM newReturnItem( POS p, EXPRESSION e, VARIABLE v );
 

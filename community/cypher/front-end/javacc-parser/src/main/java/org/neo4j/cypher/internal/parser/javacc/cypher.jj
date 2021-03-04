@@ -1164,8 +1164,7 @@ CLAUSE Clause() :
 {CLAUSE x = null;}
 {
   (
-    x=FromClause()
-  | x=UseClause()
+    x=UseClause()
   | x=ReturnClause()
   | x=CreateClause() // because create index/constraint
   | x=DeleteClause()
@@ -1183,17 +1182,7 @@ CLAUSE Clause() :
   { return x; }
 }
 
-// FROM & USE
-
-CLAUSE FromClause() :
-{
-  Token t;
-  EXPRESSION e;
-}
-{
-  t=<FROM> ( LOOKAHEAD(2) <GRAPH> )? e=Expression()
-  { return astFactory.fromClause(pos(t), e); }
-}
+// USE
 
 USE_CLAUSE UseClause() :
 {
@@ -1207,20 +1196,7 @@ USE_CLAUSE UseClause() :
 
 // RETURN
 
-CLAUSE ReturnClause() :
-{
-  Token t;
-  CLAUSE clause;
-}
-{
-  t=<RETURN>
-  (
-    LOOKAHEAD(2) t=<GRAPH> { return astFactory.newReturnGraphClause(pos(t)); }
-  | clause=ReturnBody(t) { return clause; }
-  )
-}
-
-RETURN_CLAUSE ReturnWithoutGraphClause() :
+RETURN_CLAUSE ReturnClause() :
 {
   Token t;
   RETURN_CLAUSE clause = null;
@@ -2564,7 +2540,7 @@ ADMINISTRATION_COMMAND ShowRoles(Token start, USE_CLAUSE useClause, boolean show
 {
     <ROLES>
     (<WITH> <USERS> { withUsers = true; })?
-     ( ( yield = YieldClause() (returnClause = ReturnWithoutGraphClause())? )
+     ( ( yield = YieldClause() (returnClause = ReturnClause())? )
        | (where = Where()) )?
     {
         return astFactory.useGraph(astFactory.showRoles( pos(start), withUsers, showAll, yield, returnClause, where ), useClause);
@@ -2580,7 +2556,7 @@ ADMINISTRATION_COMMAND ShowDatabase(Token start, USE_CLAUSE useClause):
 }
 {
    scope = DatabaseScope()
-        ( ( yield = YieldClause() (returnClause = ReturnWithoutGraphClause())? )
+        ( ( yield = YieldClause() (returnClause = ReturnClause())? )
           | (where = Where()) )?
    {
         return astFactory.useGraph(astFactory.showDatabase(pos(start), scope, yield, returnClause, where), useClause);

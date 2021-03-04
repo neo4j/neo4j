@@ -25,29 +25,13 @@ import org.parboiled.scala.Rule1
 class MultipleGraphClausesParsingTest
   extends ParserAstTest[ast.Clause]
     with Query
-    with Expressions
     with AstConstructionTestSupport {
 
   implicit val parser: Rule1[ast.Clause] = Clause
 
   val fooBarGraph = expressions.Property(expressions.Variable("foo")(pos), expressions.PropertyKeyName("bar")(pos))(pos)
 
-  test("RETURN GRAPH") {
-    yields(ast.ReturnGraph(None))
-  }
-
-  // TODO: Parsing ambiguity; is it a graph name 'union' or no graph name and a UNION clause?
-  ignore("RETURN GRAPH union") {
-    yields(ast.ReturnGraph(Some(ast.CatalogName("union"))))
-  }
-
-  // TODO: Causes parser to fail with its unhelpful error message
-  ignore("FROM graph") {
-    yields(ast.FromGraph(expressions.Variable("graph")(pos)))
-  }
-
   val keywords: Seq[(String, expressions.Expression => ast.GraphSelection)] = Seq(
-    "FROM" -> (ast.FromGraph(_)(pos)),
     "USE" -> (ast.UseGraph(_)(pos))
   )
 

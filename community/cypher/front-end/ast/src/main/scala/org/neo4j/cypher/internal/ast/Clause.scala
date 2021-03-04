@@ -138,12 +138,6 @@ case class InputDataStream(variables: Seq[Variable])(val position: InputPosition
     variables.foldSemanticCheck(v => declareVariable(v, types(v)))
 }
 
-sealed trait MultipleGraphClause extends Clause with SemanticAnalysisTooling {
-
-  override def semanticCheck: SemanticCheck =
-    requireFeatureSupport(s"The `$name` clause", SemanticFeature.MultipleGraphs, position)
-}
-
 sealed trait GraphSelection extends Clause with SemanticAnalysisTooling {
 
   def expression: Expression
@@ -177,14 +171,6 @@ sealed trait GraphSelection extends Clause with SemanticAnalysisTooling {
 
   def graphReference: Option[GraphReference] =
     GraphReference.from(expression)
-}
-
-final case class FromGraph(expression: Expression)(val position: InputPosition) extends GraphSelection {
-  override def name = "FROM GRAPH"
-
-  override def semanticCheck: SemanticCheck =
-    requireFeatureSupport(s"The `$name` clause", SemanticFeature.FromGraphSelector, position) chain
-      super.semanticCheck
 }
 
 final case class UseGraph(expression: Expression)(val position: InputPosition) extends GraphSelection {
@@ -261,14 +247,6 @@ trait SingleRelTypeCheck {
       }
     } else success
   }
-}
-
-final case class ReturnGraph(graphName: Option[CatalogName])(val position: InputPosition) extends MultipleGraphClause {
-
-  override def name = "RETURN GRAPH"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck
 }
 
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {

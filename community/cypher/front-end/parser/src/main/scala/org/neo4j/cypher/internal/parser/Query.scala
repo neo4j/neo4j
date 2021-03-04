@@ -52,8 +52,7 @@ trait Query extends Parser
   }
 
   def Clause: Rule1[ast.Clause] = (
-    FromGraph
-      | UseGraph
+    UseGraph
       | LoadCSV
       | Start
       | Match

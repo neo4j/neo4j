@@ -1095,17 +1095,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     expression <- _expression
   } yield UseGraph(expression)(pos)
 
-  def _from: Gen[FromGraph] = for {
-    expression <- _expression
-  } yield FromGraph(expression)(pos)
-
   def _subQuery: Gen[SubQuery] = for {
     part <- _queryPart
   } yield SubQuery(part)(pos)
 
   def _clause: Gen[Clause] = oneOf(
     lzy(_use),
-    lzy(_from),
     lzy(_with),
     lzy(_return),
     lzy(_match),
