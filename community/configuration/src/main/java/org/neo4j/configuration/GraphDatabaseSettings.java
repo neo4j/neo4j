@@ -846,7 +846,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                     .dynamic().build();
 
     @Description( "Limit the amount of memory that a single transaction can consume, in bytes (or kilobytes with the 'k' " +
-            "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited' if dbms.mode=SINGLE, otherwise '2 GB'." )
+                  "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'largest possible value'. When `dbms.mode=SINGLE` this is 'unlimited'. " +
+                  "When `dbms.mode=CORE` or `dbms.mode=READ_REPLICA` this is '2G'." )
     public static final Setting<Long> memory_transaction_max_size =
             newBuilder( "dbms.memory.transaction.max_size", BYTES, 0L )
                     .addConstraint( any( min( mebiBytes( 1 ) ), is( 0L ) ) )
