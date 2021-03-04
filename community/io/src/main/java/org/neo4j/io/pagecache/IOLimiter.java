@@ -65,7 +65,7 @@ public interface IOLimiter
      * @param recentlyCompletedIOs The number of IOs completed since the last call to this method.
      * @param flushable A {@link Flushable} instance that can flush any relevant dirty system buffers, to help smooth
      * out the IO load on the storage device.
-     * @param flushes // TODO:
+     * @param flushes A {@link FlushEventOpportunity} event that describes ongoing io represented by flushable instance.
      * @return A new stamp to pass into the next call to this method.
      */
     long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes );

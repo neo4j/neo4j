@@ -85,6 +85,10 @@ public interface FlushEventOpportunity
      */
     void throttle( long millis );
 
+    /**
+     * Report number of completed io operations by this flush event
+     * @param completedIOs number of completed io operations
+     */
     void reportIO( int completedIOs );
 
     /**
