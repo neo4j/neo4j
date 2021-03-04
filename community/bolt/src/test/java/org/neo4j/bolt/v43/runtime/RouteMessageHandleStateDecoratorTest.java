@@ -37,6 +37,8 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.MutableConnectionState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
+import org.neo4j.bolt.v4.runtime.FailedState;
+import org.neo4j.bolt.v4.runtime.ReadyState;
 import org.neo4j.bolt.v43.messaging.request.RouteMessage;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValueBuilder;
@@ -71,14 +73,20 @@ class RouteMessageHandleStateDecoratorTest
     @Test
     void showThrowANullPointerExceptionWhenItsDecoratingAnNullPointer()
     {
-        assertThrows( NullPointerException.class, () -> RouteMessageHandleStateDecorator.decorate( null ) );
+        assertThrows( NullPointerException.class, () -> RouteMessageHandleStateDecorator.decorate( null, null ) );
+    }
+
+    @Test
+    void showThrowANullPointerExceptionWhenProvidingNullFailedState()
+    {
+        assertThrows( NullPointerException.class, () -> RouteMessageHandleStateDecorator.decorate( new ReadyState(), null ) );
     }
 
     @Test
     void shouldApplyMethodCallThroughTheOriginalState()
     {
         var state = mockStateWithName();
-        var decoratedState = RouteMessageHandleStateDecorator.decorate( state );
+        var decoratedState = RouteMessageHandleStateDecorator.decorate( state, mock( FailedState.class ) );
 
         decoratedState.apply( it -> assertEquals( MOCKED_STATE_NAME, it.name() ) );
 
@@ -89,7 +97,7 @@ class RouteMessageHandleStateDecoratorTest
     void shouldNotChangeTheOriginalStateName()
     {
         var state = mockStateWithName();
-        var decoratedState = RouteMessageHandleStateDecorator.decorate( state );
+        var decoratedState = RouteMessageHandleStateDecorator.decorate( state, mock( FailedState.class ) );
 
         assertEquals( state.name(), decoratedState.name() );
     }
@@ -98,7 +106,7 @@ class RouteMessageHandleStateDecoratorTest
     void shouldRedirectTheProcessToTheOriginalStateWhenItReceivesANonRouteMessage() throws Exception
     {
         var state = mock( BoltStateMachineState.class );
-        var decoratedState = RouteMessageHandleStateDecorator.decorate( state );
+        var decoratedState = RouteMessageHandleStateDecorator.decorate( state, mock( FailedState.class ) );
         var requestMessage = mock( RequestMessage.class );
         var context = mock( StateMachineContext.class );
 
@@ -113,7 +121,7 @@ class RouteMessageHandleStateDecoratorTest
     void shouldReturnTheNextStateWhenItReceivesANonRouteMessage( BoltStateMachineState nextState ) throws Exception
     {
         var state = mock( BoltStateMachineState.class );
-        var decoratedState = RouteMessageHandleStateDecorator.decorate( state );
+        var decoratedState = RouteMessageHandleStateDecorator.decorate( state, mock( FailedState.class ) );
         var requestMessage = mock( RequestMessage.class );
         var context = mock( StateMachineContext.class );
         doReturn( nextState ).when( state ).process( requestMessage, context );
@@ -125,7 +133,7 @@ class RouteMessageHandleStateDecoratorTest
     void shouldReturnThisWhenTheNextStateIsTheWrappedState() throws Exception
     {
         var state = mock( BoltStateMachineState.class );
-        var decoratedState = RouteMessageHandleStateDecorator.decorate( state );
+        var decoratedState = RouteMessageHandleStateDecorator.decorate( state, mock( FailedState.class ) );
         var requestMessage = mock( RequestMessage.class );
         var context = mock( StateMachineContext.class );
         doReturn( state ).when( state ).process( requestMessage, context );
@@ -138,7 +146,7 @@ class RouteMessageHandleStateDecoratorTest
     void shouldThrowTheOriginalExceptionWhenItReceivesANonRouteMessage( Exception exception ) throws Exception
     {
         var state = mock( BoltStateMachineState.class );
-        var decoratedState = RouteMessageHandleStateDecorator.decorate( state );
+        var decoratedState = RouteMessageHandleStateDecorator.decorate( state, mock( FailedState.class ) );
         var requestMessage = mock( RequestMessage.class );
         var context = mock( StateMachineContext.class );
         doThrow( exception ).when( state ).process( requestMessage, context );
@@ -153,8 +161,9 @@ class RouteMessageHandleStateDecoratorTest
     {
         var routingMessage = new RouteMessage( new MapValueBuilder().build(), "databaseName" );
         var state = mock( BoltStateMachineState.class );
+        var failedState = mock( FailedState.class );
         var routingTableGetter = mock( RoutingTableGetter.class );
-        var decoratedState = RouteMessageHandleStateDecorator.decorate( state, routingTableGetter );
+        var decoratedState = RouteMessageHandleStateDecorator.decorate( state, failedState, routingTableGetter );
         var context = mock( StateMachineContext.class );
         var connectionState = mockMutableConnectionState( context );
         var statementProcessor = mockStatementProcessor( routingMessage, context );
@@ -171,16 +180,17 @@ class RouteMessageHandleStateDecoratorTest
     {
         var routingMessage = new RouteMessage( new MapValueBuilder().build(), "databaseName" );
         var state = mock( BoltStateMachineState.class );
+        var failedState = mock( FailedState.class );
         var routingTableGetter = mock( RoutingTableGetter.class );
-        var decoratedState = RouteMessageHandleStateDecorator.decorate( state, routingTableGetter );
+        var decoratedState = RouteMessageHandleStateDecorator.decorate( state, failedState, routingTableGetter );
         var context = mock( StateMachineContext.class );
         var statementProcessor = mockStatementProcessor( routingMessage, context );
         var runtimeException = mockCompletedRuntimeException( routingMessage, routingTableGetter, statementProcessor );
 
         var nextState = decoratedState.process( routingMessage, context );
 
-        assertEquals( decoratedState, nextState );
-        verify( context ).handleFailure( runtimeException, true );
+        assertEquals( failedState, nextState );
+        verify( context ).handleFailure( runtimeException, false );
     }
 
     @Test
@@ -188,16 +198,17 @@ class RouteMessageHandleStateDecoratorTest
     {
         var routingMessage = new RouteMessage( new MapValueBuilder().build(), "databaseName" );
         var state = mock( BoltStateMachineState.class );
+        var failedState = mock( FailedState.class );
         var routingTableGetter = mock( RoutingTableGetter.class );
-        var decoratedState = RouteMessageHandleStateDecorator.decorate( state, routingTableGetter );
+        var decoratedState = RouteMessageHandleStateDecorator.decorate( state, failedState, routingTableGetter );
         var context = mock( StateMachineContext.class );
         var statementProcessor = mockStatementProcessor( routingMessage, context );
         var runtimeException = mockRuntimeException( routingMessage, routingTableGetter, statementProcessor );
 
         var nextState = decoratedState.process( routingMessage, context );
 
-        assertEquals( decoratedState, nextState );
-        verify( context ).handleFailure( runtimeException, true );
+        assertEquals( failedState, nextState );
+        verify( context ).handleFailure( runtimeException, false );
     }
 
     private RuntimeException mockRuntimeException( RouteMessage routingMessage, RoutingTableGetter routingTableGetter, StatementProcessor statementProcessor )

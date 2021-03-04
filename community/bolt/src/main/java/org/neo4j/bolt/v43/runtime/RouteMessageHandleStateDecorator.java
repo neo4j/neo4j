@@ -57,26 +57,33 @@ public class RouteMessageHandleStateDecorator<T extends BoltStateMachineState> i
 {
     private static final String ROUTING_TABLE_KEY = "rt";
     private final T state;
+    private final BoltStateMachineState failedState;
     private final RoutingTableGetter routingTableGetter;
 
-    private RouteMessageHandleStateDecorator( T state, RoutingTableGetter routingTableGetter )
+    private RouteMessageHandleStateDecorator( T state, BoltStateMachineState failedState, RoutingTableGetter routingTableGetter )
     {
         this.state = state;
+        this.failedState = failedState;
         this.routingTableGetter = routingTableGetter;
     }
 
-    public static <T extends BoltStateMachineState> RouteMessageHandleStateDecorator<T> decorate( T state )
+    public static <T extends BoltStateMachineState> RouteMessageHandleStateDecorator<T> decorate( T state, BoltStateMachineState failedState )
     {
-        return decorate( state, new ProcedureRoutingTableGetter() );
+        return decorate( state, failedState, new ProcedureRoutingTableGetter() );
     }
 
-    public static <T extends BoltStateMachineState> RouteMessageHandleStateDecorator<T> decorate( T state, RoutingTableGetter routingTableGetter )
+    public static <T extends BoltStateMachineState> RouteMessageHandleStateDecorator<T> decorate( T state, BoltStateMachineState failedState,
+                                                                                                  RoutingTableGetter routingTableGetter )
     {
         if ( state == null )
         {
             throw new NullPointerException( "State should not be null" );
         }
-        return new RouteMessageHandleStateDecorator<>( state, routingTableGetter );
+        else if ( failedState == null )
+        {
+            throw new NullPointerException( "Failed State should not be null" );
+        }
+        return new RouteMessageHandleStateDecorator<>( state, failedState, routingTableGetter );
     }
 
     public void apply( Consumer<T> consumer )
@@ -89,13 +96,12 @@ public class RouteMessageHandleStateDecorator<T extends BoltStateMachineState> i
     {
         if ( message instanceof RouteMessage )
         {
-            handleRouteMessage( (RouteMessage) message, context );
-            return this;
+            return handleRouteMessage( (RouteMessage) message, context );
         }
         return redirectToWrappedState( message, context );
     }
 
-    private void handleRouteMessage( RouteMessage message, StateMachineContext context ) throws BoltConnectionFatality
+    private BoltStateMachineState handleRouteMessage( RouteMessage message, StateMachineContext context ) throws BoltConnectionFatality
     {
         try
         {
@@ -103,14 +109,17 @@ public class RouteMessageHandleStateDecorator<T extends BoltStateMachineState> i
             routingTableGetter.get( statementProcessor, message.getRequestContext(), message.getDatabaseName() )
                               .thenAccept( routingTable -> context.connectionState().onMetadata( ROUTING_TABLE_KEY, routingTable ) )
                               .join();
+            return this;
         }
         catch ( CompletionException e )
         {
-            context.handleFailure( e.getCause(), true );
+            context.handleFailure( e.getCause(), false );
+            return failedState;
         }
         catch ( Throwable e )
         {
-            context.handleFailure( e, true );
+            context.handleFailure( e, false );
+            return failedState;
         }
     }
 

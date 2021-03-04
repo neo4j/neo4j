@@ -45,6 +45,7 @@ import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
+import org.neo4j.bolt.v3.messaging.request.ResetMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v4.messaging.BeginMessage;
 import org.neo4j.bolt.v4.messaging.PullMessage;
@@ -56,6 +57,7 @@ import org.neo4j.bolt.v43.messaging.request.RouteMessage;
 import org.neo4j.configuration.Config;
 import org.neo4j.fabric.FabricDatabaseManager;
 import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -69,6 +71,7 @@ import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.neo4j.bolt.testing.MessageConditions.msgFailure;
 import static org.neo4j.bolt.testing.MessageConditions.msgRecord;
 import static org.neo4j.bolt.testing.MessageConditions.msgSuccess;
 import static org.neo4j.bolt.testing.MessageConditions.serialize;
@@ -141,6 +144,36 @@ public class BoltV43TransportIT
                                         .satisfies( rt -> assertRoutingTableHasCorrectShape( (Map<?,?>) rt ) );
                             } )
         ) );
+    }
+
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldReturnFailureIfRoutingTableFailedToReturn( Class<? extends TransportConnection> connectionClass )
+            throws Exception
+    {
+        init( connectionClass );
+
+        negotiateBoltV43();
+
+        connection.send( util.chunk( new RouteMessage(
+                new MapValueBuilder().build(), "DOESNT_EXIST!" ) ) );
+
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgFailure()
+        ) );
+
+        connection.send( util.chunk( ResetMessage.INSTANCE ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
+
+        connection.send( util.chunk( new RouteMessage( new MapValueBuilder().build(), null ) ) );
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgSuccess( metadata ->
+                            {
+                                assertThat( metadata.containsKey( "rt" ) ).isTrue();
+                                assertThat( metadata.get( "rt" ) )
+                                        .isInstanceOf( Map.class )
+                                        .satisfies( rt -> assertRoutingTableHasCorrectShape( (Map<?,?>) rt ) );
+                            } ) ) );
     }
 
     private void assertRoutingTableHasCorrectShape( Map<?,?> routingTable )

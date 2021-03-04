@@ -48,10 +48,10 @@ public class BoltStateMachineV43 extends AbstractBoltStateMachine
     protected States buildStates()
     {
         var connected = new ConnectedState(); //v4.1
-        var ready = RouteMessageHandleStateDecorator.decorate( new ReadyState() ); // v4
         var autoCommitState = new AutoCommitState(); // v4
         var inTransaction = new InTransactionState(); // v4
         var failed = new FailedState(); // v4
+        var ready = RouteMessageHandleStateDecorator.decorate( new ReadyState(), failed ); // v4
         var interrupted = new InterruptedState(); // v3
 
         connected.setReadyState( ready );
