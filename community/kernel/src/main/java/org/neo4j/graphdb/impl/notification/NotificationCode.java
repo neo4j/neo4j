@@ -158,8 +158,13 @@ public enum NotificationCode
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
             "A pattern expression should only be used in order to test the existence of a pattern. " +
-            "It should therefore only be used in contexts that evaluate to a Boolean, e.g. inside the function exists() or in a WHERE-clause. " +
+            "It should therefore only be used in contexts that evaluate to a boolean, e.g. inside the function exists() or in a WHERE-clause. " +
             "All other uses are deprecated."
+    ),
+    DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "Coercion of list to boolean is deprecated. Please consider using `NOT isEmpty(...)` instead."
     ),
     EAGER_LOAD_CSV(
         SeverityLevel.WARNING,

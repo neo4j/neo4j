@@ -208,6 +208,25 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
         assertNotificationsInVersions4_2and4_3( "EXPLAIN SHOW INDEXES VERBOSE OUTPUT", containsItem( deprecatedShowSchemaSyntax ) );
     }
 
+    @Test
+    void deprecatedCoercionListToBoolean()
+    {
+        assertNotificationsInSupportedVersions( "EXPLAIN RETURN NOT []", containsItem( deprecatedCoercionListToBoolean ) );
+        assertNotificationsInSupportedVersions( "EXPLAIN RETURN NOT [1]", containsItem( deprecatedCoercionListToBoolean ) );
+        assertNotificationsInSupportedVersions( "EXPLAIN RETURN NOT ['a']", containsItem( deprecatedCoercionListToBoolean ) );
+        assertNotificationsInSupportedVersions( "EXPLAIN RETURN ['a'] OR []", containsItem( deprecatedCoercionListToBoolean ));
+        assertNotificationsInSupportedVersions( "EXPLAIN RETURN True OR []", containsItem( deprecatedCoercionListToBoolean ));
+        assertNotificationsInSupportedVersions( "EXPLAIN RETURN NOT (True OR [])", containsItem( deprecatedCoercionListToBoolean ));
+        assertNotificationsInSupportedVersions( "EXPLAIN RETURN ['a'] AND []", containsItem( deprecatedCoercionListToBoolean ));
+        assertNotificationsInSupportedVersions( "EXPLAIN RETURN True AND []", containsItem( deprecatedCoercionListToBoolean ));
+        assertNotificationsInSupportedVersions( "EXPLAIN RETURN NOT (True AND [])", containsItem( deprecatedCoercionListToBoolean ));
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (n) WHERE [] RETURN True", containsItem( deprecatedCoercionListToBoolean ));
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (n) WHERE range(0, 10) RETURN True", containsItem( deprecatedCoercionListToBoolean ));
+        assertNotificationsInSupportedVersions( "EXPLAIN MATCH (n) WHERE range(0, 10) RETURN range(0, 10)", containsItem( deprecatedCoercionListToBoolean ));
+
+        assertNotificationsInSupportedVersions( "EXPLAIN RETURN NOT true", containsNoItem( deprecatedCoercionListToBoolean ) );
+    }
+
     // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
 
     @Test
@@ -382,11 +401,14 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
 
     private final Matcher<Notification> deprecatedUseOfPatternExpression =
             deprecation( "A pattern expression should only be used in order to test the existence of a pattern. " +
-                         "It should therefore only be used in contexts that evaluate to a Boolean, e.g. inside the function exists() or in a WHERE-clause. " +
+                         "It should therefore only be used in contexts that evaluate to a boolean, e.g. inside the function exists() or in a WHERE-clause. " +
                          "All other uses are deprecated." );
 
     private final Matcher<Notification> deprecatedShowSchemaSyntax =
             deprecation( "The `BRIEF` and `VERBOSE` keywords for `SHOW INDEXES` are deprecated, please omit `BRIEF` and use `YIELD *` instead of `VERBOSE`" );
+
+    private final Matcher<Notification> deprecatedCoercionListToBoolean =
+            deprecation( "Coercion of list to boolean is deprecated. Please consider using `NOT isEmpty(...)` instead." );
 
     private static Matcher<Notification> deprecation( String message )
     {

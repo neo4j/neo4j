@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotification
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
 import org.neo4j.cypher.internal.util.CartesianProductNotification
+import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCreatePropertyExistenceConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDefaultDatabaseSyntax
@@ -144,6 +145,8 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_HEX_LITERAL_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedPatternExpressionOutsideExistsSyntax(pos) =>
       NotificationCode.DEPRECATED_USE_OF_PATTERN_EXPRESSION.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedCoercionOfListToBoolean(pos) =>
+      NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN.notification(pos.withOffset(offset).asInputPosition)
     case SubqueryVariableShadowing(pos, varName)             =>
       NotificationCode.SUBQUERY_VARIABLE_SHADOWING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.shadowingVariable(varName))
     case MissingAliasNotification(pos) =>

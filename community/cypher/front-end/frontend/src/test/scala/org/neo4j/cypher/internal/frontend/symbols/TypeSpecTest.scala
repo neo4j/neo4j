@@ -72,6 +72,22 @@ class TypeSpecTest extends CypherFunSuite {
     CTNumber.covariant containsAny CTString should equal(false)
   }
 
+  test("containsAll") {
+    TypeSpec.all containsAll TypeSpec.all should equal(true)
+    CTNumber.covariant containsAll CTNumber.covariant should equal(true)
+    TypeSpec.all containsAll CTNumber.covariant should equal(true)
+    CTNumber.covariant containsAll TypeSpec.all should equal(false)
+    CTBoolean.covariant containsAll TypeSpec.union(CTNumber, CTBoolean) should equal(false)
+    CTBoolean.covariant containsAll TypeSpec.union(CTBoolean, CTBoolean) should equal(true)
+    CTNumber.covariant containsAll TypeSpec.union(CTInteger, CTFloat) should equal(true)
+
+    CTList(CTAny).covariant containsAll CTList(CTAny).covariant should equal(true)
+    CTList(CTAny).covariant containsAll CTList(CTNumber) should equal(true)
+    CTList(CTAny).covariant containsAll CTList(CTAny) should equal(true)
+    CTList(CTAny).covariant containsAll CTList(CTList(CTString)) should equal(true)
+    CTList(CTAny).covariant containsAll CTAny should equal(false)
+  }
+
   test("should union") {
     CTNumber.covariant | CTString.covariant should equal(CTNumber | CTFloat | CTInteger | CTString)
     CTNumber.covariant | CTBoolean should equal(CTNumber | CTFloat | CTInteger | CTBoolean)

@@ -220,4 +220,8 @@ class TypeRangeTest extends CypherFunSuite {
     TypeRange(CTInteger, None).without(CTString) should equal(Some(TypeRange(CTInteger, None)))
     TypeRange(CTAny, CTNumber).without(CTString) should equal(Some(TypeRange(CTAny, CTNumber)))
   }
+
+  test("constrain") {
+    TypeRange(CTAny, None).constrain(CTInteger) should equal(Some(TypeRange(CTInteger, None)))
+  }
 }

@@ -83,6 +83,11 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
     that.ranges.exists(r2 => (r1 constrain r2.lower).isDefined)
   }
 
+  /**
+   * All of the ranges in the given type spec are contained in this TypeSpec. That is, it is a complete sub-set.
+   */
+  def containsAll(that: TypeSpec): Boolean = this.intersect(that) equals that
+
   def union(that: TypeSpec): TypeSpec = TypeSpec(ranges ++ that.ranges)
   def |(that: TypeSpec): TypeSpec = union(that)
 

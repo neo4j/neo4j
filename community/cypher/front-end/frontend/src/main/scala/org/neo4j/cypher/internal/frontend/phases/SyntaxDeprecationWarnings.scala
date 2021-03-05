@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -26,18 +27,18 @@ import org.neo4j.cypher.internal.util.InternalNotification
  */
 case class SyntaxDeprecationWarnings(deprecations: Deprecations) extends VisitorPhase[BaseContext, BaseState] {
   override def visit(state: BaseState, context: BaseContext): Unit = {
-    val warnings = findDeprecations(state.statement())
+    val warnings = findDeprecations(state.statement(), state.maybeSemanticTable)
 
     warnings.foreach(context.notificationLogger.log)
   }
 
-  private def findDeprecations(statement: Statement): Set[InternalNotification] = {
+  private def findDeprecations(statement: Statement, semanticTable: Option[SemanticTable]): Set[InternalNotification] = {
 
     val foundWithoutContext = statement.fold(Set.empty[InternalNotification])(
       deprecations.find.andThen(deprecation => acc => acc ++ deprecation.generateNotification())
     )
 
-    val foundWithContext = deprecations.findWithContext(statement).map(_.generateNotification()).collect{case Some(n) => n}
+    val foundWithContext = deprecations.findWithContext(statement, semanticTable).map(_.generateNotification()).collect{case Some(n) => n}
 
     foundWithoutContext ++ foundWithContext
   }
