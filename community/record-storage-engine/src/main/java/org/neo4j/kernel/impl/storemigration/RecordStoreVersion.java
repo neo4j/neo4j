@@ -75,4 +75,21 @@ public class RecordStoreVersion implements StoreVersion
         }
         return RecordFormatSelector.isStoreAndConfigFormatsCompatible( format, ((RecordStoreVersion) otherVersion).format );
     }
+
+    @Override
+    public boolean isCompatibleWithIncludingMinorMigration( StoreVersion otherVersion )
+    {
+        if ( !(otherVersion instanceof RecordStoreVersion) )
+        {
+            return false;
+        }
+        RecordFormats otherFormat = ((RecordStoreVersion) otherVersion).format;
+        if ( format == null || otherFormat == null )
+        {
+            //If either format is unknown, we interpret that as compatible.
+            // The usage here is in a Cluster, where the local store in non-existing and a full store copy will follow.
+            return true;
+        }
+        return RecordFormatSelector.isStoreFormatsCompatibleIncludingMinorUpgradable( this.format, otherFormat );
+    }
 }

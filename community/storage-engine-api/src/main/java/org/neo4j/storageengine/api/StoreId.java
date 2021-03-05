@@ -119,6 +119,22 @@ public final class StoreId
         return creationTime == storeId.creationTime && randomId == storeId.randomId;
     }
 
+    public boolean compatibleIncludingMinorUpgrade( StorageEngineFactory storageEngineFactory, StoreId otherStoreId )
+    {
+        if ( !equalsIgnoringUpdate( otherStoreId ) )
+        {
+            return false; //Different store, not compatible
+        }
+        if ( getStoreVersion() == otherStoreId.getStoreVersion() )
+        {
+            return true; //Same store, same version, compatible
+        }
+        //Same store, different version, check compatibility
+        StoreVersion storeVersion = storageEngineFactory.versionInformation( getStoreVersion() );
+        StoreVersion otherStoreVersion = storageEngineFactory.versionInformation( otherStoreId.getStoreVersion() );
+        return storeVersion.isCompatibleWithIncludingMinorMigration( otherStoreVersion );
+    }
+
     @Override
     public int hashCode()
     {

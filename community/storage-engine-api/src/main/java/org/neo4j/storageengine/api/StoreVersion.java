@@ -41,4 +41,6 @@ public interface StoreVersion
     Optional<StoreVersion> successor();
 
     boolean isCompatibleWith( StoreVersion otherVersion );
+
+    boolean isCompatibleWithIncludingMinorMigration( StoreVersion otherVersion );
 }

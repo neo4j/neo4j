@@ -86,14 +86,18 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         // Obsolete field was used to store first graph property, keep it to avoid conflicts and migrations
         FIRST_GRAPH_PROPERTY( 5, "First property record containing graph properties" ),
         LAST_CONSTRAINT_TRANSACTION( 6, "Last committed transaction containing constraint changes" ),
+        @Deprecated() //Will stop being updated in the future since it no longer serves any functionality.
         UPGRADE_TRANSACTION_ID( 7, "Transaction id most recent upgrade was performed at" ),
+        @Deprecated() //Will stop being updated in the future since it no longer serves any functionality.
         UPGRADE_TIME( 8, "Time of last upgrade" ),
         LAST_TRANSACTION_CHECKSUM( 9, "Checksum of last committed transaction" ),
+        @Deprecated() //Will stop being updated in the future since it no longer serves any functionality.
         UPGRADE_TRANSACTION_CHECKSUM( 10, "Checksum of transaction id the most recent upgrade was performed at" ),
         LAST_CLOSED_TRANSACTION_LOG_VERSION( 11, "Log version where the last transaction commit entry has been written into" ),
         LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET( 12, "Byte offset in the log file where the last transaction commit entry " +
                                                      "has been written into" ),
         LAST_TRANSACTION_COMMIT_TIMESTAMP( 13, "Commit time timestamp for last committed transaction" ),
+        @Deprecated() //Will stop being updated in the future since it no longer serves any functionality.
         UPGRADE_TRANSACTION_COMMIT_TIMESTAMP( 14, "Commit timestamp of transaction the most recent upgrade was performed at" ),
         LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP( 15, "Timestamp of last attempt to perform a recovery on the store with missing files." ),
         EXTERNAL_STORE_UUID_MOST_SIGN_BITS( 16, "Database identifier exposed as external store identity. " +
