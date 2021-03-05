@@ -130,7 +130,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     // The important thing for this test is "RETURN u.id" instead of "RETURN u".
     // Like this the scoping is challenged to propagate `u` from the previous scope into the pattern expression
 
-    val patternComprehensionExpressionKeyString = "size(PatternComprehension(None,RelationshipsPattern(RelationshipChain(NodePattern(Some(Variable(u)),List(),None,None),RelationshipPattern(Some(Variable(r)),List(RelTypeName(FOLLOWS)),None,None,OUTGOING,false,None),NodePattern(Some(Variable(u2)),List(LabelName(User)),None,None))),None,Property(Variable(u2),PropertyKeyName(id))))"
+    val patternComprehensionExpressionKeyString = "size(PatternComprehension(None,RelationshipsPattern(RelationshipChain(NodePattern(Some(Variable(u)),List(),None),RelationshipPattern(Some(Variable(r)),List(RelTypeName(FOLLOWS)),None,None,OUTGOING,false),NodePattern(Some(Variable(u2)),List(LabelName(User)),None))),None,Property(Variable(u2),PropertyKeyName(id))))"
 
     val plan = planFor("MATCH (u:User) RETURN u.id ORDER BY size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])", deduplicateNames = false)._2
 
