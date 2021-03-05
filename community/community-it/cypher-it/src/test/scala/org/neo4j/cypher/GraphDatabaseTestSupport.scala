@@ -73,14 +73,27 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   def logProvider: LogProvider = NullLogProvider.getInstance()
 
+  /**
+   * @return Some(url, databaseName) to load an existing database instead of creating an impermanent test database
+   */
+  def externalDatabase: Option[(String, String)] = None
+
   override protected def initTest() {
     super.initTest()
     startGraphDatabase()
   }
 
-  protected def startGraphDatabase(config: Map[Setting[_], Object] = databaseConfig()): Unit = {
-    managementService = graphDatabaseFactory(Files.createTempDirectory("test").getParent.toFile).impermanent().setConfig(config.asJava).setInternalLogProvider(logProvider).build()
-    graphOps = managementService.database(DEFAULT_DATABASE_NAME)
+  protected def startGraphDatabase(config: Map[Setting[_], Object] = databaseConfig(),
+                                   maybeExternalDatabase: Option[(String, String)] = externalDatabase): Unit = {
+    maybeExternalDatabase match {
+      case Some((url, databaseName)) =>
+        managementService = graphDatabaseFactory(new File(url)).setConfig(config.asJava).setInternalLogProvider(logProvider).build()
+        graphOps = managementService.database(databaseName)
+      case _ =>
+        managementService = graphDatabaseFactory(Files.createTempDirectory("test").getParent.toFile).impermanent()
+          .setConfig(config.asJava).setInternalLogProvider(logProvider).build()
+        graphOps = managementService.database(DEFAULT_DATABASE_NAME)
+    }
     graph = new GraphDatabaseCypherService(graphOps)
     onNewGraphDatabase()
   }
