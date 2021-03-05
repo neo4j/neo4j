@@ -108,7 +108,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile dbHits of node index seek with IN predicate") {
     val nodes = given {
-      index("Language", "difficulty")
+      nodeIndex("Language", "difficulty")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("difficulty" -> i)
       }, "Language")
@@ -133,7 +133,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile dbHits of node index seek with IN predicate on composite index") {
     val nodes = given {
-      index("Language", "difficulty", "usefulness")
+      nodeIndex("Language", "difficulty", "usefulness")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("difficulty" -> i, "usefulness" -> i)
       }, "Language")
