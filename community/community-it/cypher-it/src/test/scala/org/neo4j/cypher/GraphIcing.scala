@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import java.util.concurrent.TimeUnit
-
 import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.Direction
@@ -43,6 +42,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
 import org.neo4j.kernel.impl.util.ValueUtils
 
+import java.util.UUID
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 trait GraphIcing {
@@ -121,6 +121,17 @@ trait GraphIcing {
       withTx( tx => {
         tx.execute(s"CREATE INDEX FOR (n:$label) ON (${properties.map(p => s"n.`$p`").mkString(",")})")
       })
+
+      withTx( tx => {
+        tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      } )
+
+      getIndex(label, properties)
+    }
+
+    def createIndexWithProvider(label: String, provider: String, properties: String*): IndexDefinition = {
+      val query = s"CALL db.createIndex('some-index-${UUID.randomUUID().toString}', ['$label'], ${properties.mkString("['","','","']")}, '$provider')"
+      graph.executeTransactionally(query)
 
       withTx( tx => {
         tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
