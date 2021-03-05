@@ -89,6 +89,7 @@ import org.neo4j.token.api.TokenHolder;
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
@@ -107,6 +108,12 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public StoreVersion versionInformation( String storeVersion )
     {
         return new RecordStoreVersion( RecordFormatSelector.selectForVersion( storeVersion ) );
+    }
+
+    @Override
+    public StoreVersion versionInformation( long storeVersion )
+    {
+        return versionInformation( versionLongToString( storeVersion ) );
     }
 
     @Override

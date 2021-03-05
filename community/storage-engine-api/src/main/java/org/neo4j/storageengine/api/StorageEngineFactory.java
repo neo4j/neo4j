@@ -64,6 +64,8 @@ public interface StorageEngineFactory
 
     StoreVersion versionInformation( String storeVersion );
 
+    StoreVersion versionInformation( long storeVersion );
+
     /**
      * Returns a {@link StoreMigrationParticipant} which will be able to participate in a store migration.
      * @return StoreMigrationParticipant for migration.

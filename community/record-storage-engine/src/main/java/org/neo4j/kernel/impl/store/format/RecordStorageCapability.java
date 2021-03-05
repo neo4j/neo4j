@@ -79,7 +79,7 @@ public enum RecordStorageCapability implements Capability
     GBPTREE_ID_FILES( false, CapabilityType.STORE ),
     GBPTREE_COUNTS_STORE( CapabilityType.STORE ),
 
-    KERNEL_VERSION( CapabilityType.STORE ),
+    KERNEL_VERSION( true, CapabilityType.STORE ),
 
     /**
      * Degrees for dense nodes can be stored in a group degrees store which has support for atomic non-blocking updates.
