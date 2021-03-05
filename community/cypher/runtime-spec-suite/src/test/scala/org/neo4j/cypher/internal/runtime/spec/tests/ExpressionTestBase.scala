@@ -267,6 +267,63 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     runtimeResult should beColumns("hasProp").withRows(singleColumn((0 until size).map(_ % 2 == 0)))
   }
 
+  test("should handle relationship property exists - fuseable with expand") {
+    val size = 100
+    given {
+      val (_, rels) = circleGraph(size, "Label")
+      var i = 0
+      rels.foreach { r =>
+        if (i % 2 == 0) {
+          r.setProperty("prop", i)
+        }
+        i += 1
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("hasProp")
+      .projection("exists(r.prop) AS hasProp")
+      .expandAll("(n)-[r]->(m)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("hasProp").withRows(singleColumn((0 until size).map(_ % 2 == 0)))
+  }
+
+  test("should handle relationship property exists - separate pipeline") {
+    val size = 100
+    given {
+      val (_, rels) = circleGraph(size, "Label")
+      var i = 0
+      rels.foreach { r =>
+        if (i % 2 == 0) {
+          r.setProperty("prop", i)
+        }
+        i += 1
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("hasProp")
+      .apply()
+      .|.projection("exists(r.prop) AS hasProp")
+      .|.argument("r")
+      .nonFuseable()
+      .expandAll("(n)-[r]->(m)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("hasProp").withRows(singleColumn((0 until size).map(_ % 2 == 0)))
+  }
+
   test("should return null if node property is not there") {
     // given
     val size = 100
