@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestingRewriter
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestingRewriter
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
@@ -65,11 +63,16 @@ object Eagerness {
     if (nodeOrRelLeaves.isEmpty)
       false // the query did not start with a read, possibly CREATE () ...
     else {
+      // In the following we determine if there are any stably solved predicates that we can leave out of the eagerness analysis.
+      // The reasoning is as follows:
+      // Cursors used for leaf operators iterate over a stable snapshot of the transaction state from the moment the cursor is initialized.
+      // That means the very first leaf of the whole LogicalPlan can be considered stable; all other leaf cursors might get initialized multiple times.
+      // The reads from predicates that are solved by that first leaf do not need to be protected against seeing conflicting writes from later in the query.
 
+      // If we're in a subquery, the first leaf of that subquery is not actually the first leaf of the whole LogicalPlan.
       val (maybeStableLeaf, unstableLeaves) = if (context.isInSubquery) (None, nodeOrRelLeaves) else (nodeOrRelLeaves.headOption, nodeOrRelLeaves.tail)
 
-      // The first leaf node is always reading through a stable iterator.
-      // Collect all predicates solved by that leaf and exclude them from the eagerness analysis.
+      // Collect all predicates solved by the first leaf and exclude them from the eagerness analysis.
       val stablySolvedPredicates: Set[Predicate] = maybeStableLeaf.map { p =>
           context.planningAttributes.solveds(p.id).asSinglePlannerQuery.queryGraph.selections.predicates
       }.getOrElse(Set.empty[Predicate])
