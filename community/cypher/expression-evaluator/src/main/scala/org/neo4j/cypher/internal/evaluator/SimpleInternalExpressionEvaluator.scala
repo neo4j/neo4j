@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.runtime.createParameterArray
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.NullExpressionConversionLogger
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
@@ -101,7 +102,7 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 }
 
 object SimpleInternalExpressionEvaluator {
-  private val CONVERTERS = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
+  private val CONVERTERS = new ExpressionConverters(NullExpressionConversionLogger, CommunityExpressionConverter(TokenContext.EMPTY))
 
   object ExpressionParser extends Expressions {
     private val parser: Rule1[Expression] = WS ~ Expression ~~ EOI

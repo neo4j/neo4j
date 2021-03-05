@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
 import org.neo4j.cypher.internal
+import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
@@ -44,6 +46,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predica
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ManySeekArgs
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SeekArgs
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SingleSeekArg
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Many
 import org.neo4j.cypher.internal.util.One
 import org.neo4j.cypher.internal.util.Zero
@@ -53,18 +56,31 @@ import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.Direction
 
 trait ExpressionConverter {
-  def toCommandExpression(id: Id, expression: internal.expressions.Expression, self: ExpressionConverters): Option[commands.expressions.Expression]
-  def toCommandProjection(id: Id, projections: Map[String, internal.expressions.Expression], self: ExpressionConverters): Option[CommandProjection]
-  def toGroupingExpression(id: Id, groupings: Map[String, internal.expressions.Expression], orderToLeverage: Seq[internal.expressions.Expression], self: ExpressionConverters): Option[GroupingExpression]
+  def toCommandExpression(id: Id, expression: internal.expressions.Expression, self: ExpressionConverters, logger: ExpressionConversionLogger): Option[commands.expressions.Expression]
+  def toCommandProjection(id: Id, projections: Map[String, internal.expressions.Expression], self: ExpressionConverters, logger: ExpressionConversionLogger): Option[CommandProjection]
+  def toGroupingExpression(id: Id, groupings: Map[String, internal.expressions.Expression], orderToLeverage: Seq[internal.expressions.Expression], self: ExpressionConverters, logger: ExpressionConversionLogger): Option[GroupingExpression]
 }
 
-class ExpressionConverters(converters: ExpressionConverter*) {
+trait ExpressionConversionLogger {
+  def failedToConvertExpression(expression: internal.expressions.Expression)
+  def failedToConvertProjection(projection: Map[String, expressions.Expression])
+  def warnings: Set[InternalNotification]
+}
+
+object NullExpressionConversionLogger extends ExpressionConversionLogger {
+  override def failedToConvertExpression(expression: internal.expressions.Expression): Unit = {}
+  override def failedToConvertProjection(projection: Map[String, Expression]): Unit = {}
+  override def warnings: Set[InternalNotification] = Set.empty
+
+}
+
+class ExpressionConverters(logger: ExpressionConversionLogger, converters: ExpressionConverter*) {
 
   self =>
 
   def toCommandExpression(id: Id, expression: internal.expressions.Expression): commands.expressions.Expression = {
     converters foreach { c: ExpressionConverter =>
-      c.toCommandExpression(id, expression, this) match {
+      c.toCommandExpression(id, expression, this, logger) match {
         case Some(x) => return x
         case None =>
       }
@@ -75,7 +91,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
 
   def toCommandProjection(id: Id, projections: Map[String, internal.expressions.Expression]): CommandProjection = {
     converters foreach { c: ExpressionConverter =>
-      c.toCommandProjection(id, projections, this) match {
+      c.toCommandProjection(id, projections, this, logger) match {
         case Some(x) => return x
         case None =>
       }
@@ -86,7 +102,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
 
   def toGroupingExpression(id: Id, groupings: Map[String, internal.expressions.Expression], orderToLeverage: Seq[internal.expressions.Expression]): GroupingExpression = {
     converters foreach { c: ExpressionConverter =>
-      c.toGroupingExpression(id, groupings, orderToLeverage, this) match {
+      c.toGroupingExpression(id, groupings, orderToLeverage, this, logger) match {
         case Some(x) => return x
         case None =>
       }
