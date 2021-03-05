@@ -288,7 +288,7 @@ public final class CursorUtils
      * @param prop The id of the property to find
      * @return <code>true</code> if relationship has property otherwise <code>false</code>
      */
-    public static Boolean relationshipHasProperty(
+    public static boolean relationshipHasProperty(
             Read read,
             RelationshipScanCursor relationshipCursor,
             long relationship,

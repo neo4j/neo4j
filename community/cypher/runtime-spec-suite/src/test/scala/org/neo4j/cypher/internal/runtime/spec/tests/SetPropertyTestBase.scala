@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.InvalidArgumentException
+import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.collection.Iterables
 
@@ -487,5 +488,32 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     val property = Iterables.single(tx.getAllPropertyKeys)
     runtimeResult should beColumns("p").withSingleRow(100).withStatistics(propertiesSet = 1)
     property shouldBe "prop"
+  }
+
+  test("should remove relationship property with eager") {
+    // given CREATE (a), (b), (a)-[:X {num: 42}]->(b)
+    given {
+      val a = runtimeTestSupport.tx.createNode(Label.label("START"))
+      val b = runtimeTestSupport.tx.createNode(Label.label("START"))
+      val r = a.createRelationshipTo(b, RelationshipType.withName("X"))
+      r.setProperty("num", 42)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("still_there")
+      .projection("exists(r.num) AS still_there")
+      .eager()
+      .setRelationshipProperty("r", "num", "NULL")
+      .expandAll("(n)-[r]->(m)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("still_there")
+      .withSingleRow(false)
+      .withStatistics(propertiesSet = 1)
   }
 }
