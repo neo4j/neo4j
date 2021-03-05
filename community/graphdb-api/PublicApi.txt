@@ -307,6 +307,8 @@ org.neo4j.graphdb.config.Setting<T>::name() java.lang.String public abstract
 org.neo4j.graphdb.event.DatabaseEventContext public abstract interface
 org.neo4j.graphdb.event.DatabaseEventContext::getDatabaseName() java.lang.String public abstract
 org.neo4j.graphdb.event.DatabaseEventListener public abstract interface
+org.neo4j.graphdb.event.DatabaseEventListener::databaseCreate(org.neo4j.graphdb.event.DatabaseEventContext) void public default
+org.neo4j.graphdb.event.DatabaseEventListener::databaseDrop(org.neo4j.graphdb.event.DatabaseEventContext) void public default
 org.neo4j.graphdb.event.DatabaseEventListener::databasePanic(org.neo4j.graphdb.event.DatabaseEventContext) void public abstract
 org.neo4j.graphdb.event.DatabaseEventListener::databaseShutdown(org.neo4j.graphdb.event.DatabaseEventContext) void public abstract
 org.neo4j.graphdb.event.DatabaseEventListener::databaseStart(org.neo4j.graphdb.event.DatabaseEventContext) void public abstract

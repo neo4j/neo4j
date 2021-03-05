@@ -250,6 +250,8 @@ public class GlobalModule
         {
             databaseEventListeners.registerDatabaseEventListener( databaseListener );
         }
+        globalDependencies.satisfyDependencies( databaseEventListeners );
+
         transactionEventListeners = new GlobalTransactionEventListeners();
         globalDependencies.satisfyDependency( transactionEventListeners );
 

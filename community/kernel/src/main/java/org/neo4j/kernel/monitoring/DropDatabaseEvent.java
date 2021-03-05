@@ -17,35 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.event;
+package org.neo4j.kernel.monitoring;
 
-/**
- * Adapter for event listener interface for database lifecycle events.
- */
-public class DatabaseEventListenerAdapter implements DatabaseEventListener
+import org.neo4j.graphdb.event.DatabaseEventContext;
+import org.neo4j.kernel.database.NamedDatabaseId;
+
+public final class DropDatabaseEvent implements DatabaseEventContext
 {
+    private final NamedDatabaseId databaseId;
 
-    @Override
-    public void databaseStart( DatabaseEventContext eventContext )
+    public DropDatabaseEvent( NamedDatabaseId databaseId )
     {
-        // empty
+        this.databaseId = databaseId;
     }
 
     @Override
-    public void databaseShutdown( DatabaseEventContext eventContext )
+    public String getDatabaseName()
     {
-        // empty
+        return databaseId.name();
     }
 
-    @Override
-    public void databasePanic( DatabaseEventContext eventContext )
+    public NamedDatabaseId getDatabaseId()
     {
-        // empty
-    }
-
-    @Override
-    public void databaseDrop( DatabaseEventContext eventContext )
-    {
-        // empty
+        return databaseId;
     }
 }

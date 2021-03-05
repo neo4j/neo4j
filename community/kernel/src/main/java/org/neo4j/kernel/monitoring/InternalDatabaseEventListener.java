@@ -45,4 +45,17 @@ public interface InternalDatabaseEventListener
      * @param panicDatabaseEvent context of the event, can be used to get metadata.
      */
     void databasePanic( PanicDatabaseEvent panicDatabaseEvent );
+
+    /**
+     * This method is invoked when a new database is created. This is called before {@link #databaseStart(StartDatabaseEvent)}.
+     * @param createDatabaseEvent context of the event, can be used to get metadata.
+     */
+    void databaseCreate( CreateDatabaseEvent createDatabaseEvent );
+
+    /**
+     * This method is invoked after the database is dropped. This is intended to be used when cleaning up database specific files after the database
+     * is deleted by the user.
+     * @param dropDatabaseEvent context of the event, can be used to get metadata.
+     */
+    void databaseDrop( DropDatabaseEvent dropDatabaseEvent );
 }

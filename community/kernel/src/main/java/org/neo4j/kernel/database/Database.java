@@ -379,6 +379,8 @@ public class Database extends LifecycleAdapter
 
             databaseDependencies.satisfyDependency( new DatabaseMemoryTrackers( otherDatabaseMemoryTracker ) );
 
+            eventListeners.databaseCreate( namedDatabaseId );
+
             initialized = true;
         }
         catch ( Throwable e )
@@ -923,6 +925,7 @@ public class Database extends LifecycleAdapter
             stop();
         }
         deleteDatabaseFiles( List.of( databaseLayout.databaseDirectory(), databaseLayout.getTransactionLogsDirectory() ) );
+        eventListeners.databaseDrop( namedDatabaseId );
     }
 
     public synchronized void truncate() throws IOException

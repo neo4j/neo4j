@@ -92,6 +92,20 @@ public class DatabaseEventListeners
         notifyEventListeners( handler -> handler.databaseShutdown( event ), internalDatabaseEventListeners );
     }
 
+    public void databaseCreate( NamedDatabaseId databaseId )
+    {
+        var event = new CreateDatabaseEvent( databaseId );
+        notifyEventListeners( handler -> handler.databaseCreate( event ), databaseEventListeners );
+        notifyEventListeners( handler -> handler.databaseCreate( event ), internalDatabaseEventListeners );
+    }
+
+    public void databaseDrop( NamedDatabaseId databaseId )
+    {
+        var event = new DropDatabaseEvent( databaseId );
+        notifyEventListeners( handler -> handler.databaseDrop( event ), databaseEventListeners );
+        notifyEventListeners( handler -> handler.databaseDrop( event ), internalDatabaseEventListeners );
+    }
+
     void databasePanic( NamedDatabaseId databaseId, Throwable causeOfPanic )
     {
         var event = new PanicDatabaseEvent( databaseId, causeOfPanic );
