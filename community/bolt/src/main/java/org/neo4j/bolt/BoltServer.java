@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt;
 
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.handler.ssl.SslContext;
@@ -56,6 +57,7 @@ import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
+import org.neo4j.buffer.CentralBufferMangerHolder;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -98,6 +100,7 @@ public class BoltServer extends LifecycleAdapter
     private final AuthManager loopbackAuthManager;
     private final MemoryPools memoryPools;
     private final DefaultDatabaseResolver defaultDatabaseResolver;
+    private final CentralBufferMangerHolder centralBufferMangerHolder;
 
     // edition specific dependencies are resolved dynamically
     private final DependencyResolver dependencyResolver;
@@ -109,7 +112,7 @@ public class BoltServer extends LifecycleAdapter
                        DatabaseIdRepository databaseIdRepository, Config config, SystemNanoClock clock,
                        Monitors monitors, LogService logService, DependencyResolver dependencyResolver,
                        AuthManager externalAuthManager, AuthManager internalAuthManager, AuthManager loopbackAuthManager, MemoryPools memoryPools,
-                       DefaultDatabaseResolver defaultDatabaseResolver )
+                       DefaultDatabaseResolver defaultDatabaseResolver, CentralBufferMangerHolder centralBufferMangerHolder )
     {
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.jobScheduler = jobScheduler;
@@ -126,6 +129,7 @@ public class BoltServer extends LifecycleAdapter
         this.loopbackAuthManager = loopbackAuthManager;
         this.memoryPools = memoryPools;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
+        this.centralBufferMangerHolder = centralBufferMangerHolder;
     }
 
     @Override
@@ -158,6 +162,8 @@ public class BoltServer extends LifecycleAdapter
             enableOcspStapling();
         }
 
+        ByteBufAllocator bufferAllocator = getBufferAllocator();
+
         if ( config.get( BoltConnector.enabled ) )
         {
             jobScheduler.setThreadFactory( Group.BOLT_NETWORK_IO, NettyThreadFactory::new );
@@ -168,8 +174,8 @@ public class BoltServer extends LifecycleAdapter
             if ( config.get( GraphDatabaseSettings.routing_enabled ) && isNotReadReplica )
             {
                 nettyServer = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
-                                               createExternalProtocolInitializer( externalBoltProtocolFactory, throttleGroup, log ),
-                                               createInternalProtocolInitializer( internalBoltProtocolFactory, throttleGroup ),
+                                               createExternalProtocolInitializer( externalBoltProtocolFactory, throttleGroup, log, bufferAllocator ),
+                                               createInternalProtocolInitializer( internalBoltProtocolFactory, throttleGroup, bufferAllocator ),
                                                loopbackProtocolInitializer,
                                                connectorPortRegister,
                                                logService, config );
@@ -177,15 +183,12 @@ public class BoltServer extends LifecycleAdapter
             else
             {
                 nettyServer = new NettyServer( jobScheduler.threadFactory( Group.BOLT_NETWORK_IO ),
-                                               createExternalProtocolInitializer( externalBoltProtocolFactory, throttleGroup, log ),
+                                               createExternalProtocolInitializer( externalBoltProtocolFactory, throttleGroup, log, bufferAllocator ),
                                                loopbackProtocolInitializer,
                                                connectorPortRegister,
                                                logService, config );
             }
 
-            var boltMemoryPool = new BoltNettyMemoryPool( memoryPools, NETTY_BUF_ALLOCATOR.metric() );
-
-            life.add( new BoltMemoryPoolLifeCycleAdapter( boltMemoryPool ) );
             life.add( nettyServer );
             log.info( "Bolt server loaded" );
         }
@@ -217,7 +220,9 @@ public class BoltServer extends LifecycleAdapter
         return new DefaultBoltConnectionFactory( schedulerProvider, config, logService, clock, monitors );
     }
 
-    private ProtocolInitializer createInternalProtocolInitializer( BoltProtocolFactory boltProtocolFactory, TransportThrottleGroup throttleGroup )
+    private ProtocolInitializer createInternalProtocolInitializer( BoltProtocolFactory boltProtocolFactory,
+                                                                   TransportThrottleGroup throttleGroup,
+                                                                   ByteBufAllocator bufferAllocator )
 
     {
         SslContext sslCtx = null;
@@ -255,7 +260,7 @@ public class BoltServer extends LifecycleAdapter
         long maxMessageSize = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes );
 
         return new SocketTransport( BoltConnector.NAME, internalListenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
-                                    throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, BoltServer.NETTY_BUF_ALLOCATOR );
+                throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, bufferAllocator );
     }
 
     private ProtocolInitializer createLoopbackProtocolInitializer( BoltProtocolFactory boltProtocolFactory, TransportThrottleGroup throttleGroup )
@@ -303,7 +308,9 @@ public class BoltServer extends LifecycleAdapter
     }
 
     private ProtocolInitializer createExternalProtocolInitializer( BoltProtocolFactory boltProtocolFactory,
-                                                                   TransportThrottleGroup throttleGroup, Log log )
+                                                                   TransportThrottleGroup throttleGroup,
+                                                                   Log log,
+                                                                   ByteBufAllocator bufferAllocator )
     {
         SslContext sslCtx;
         boolean requireEncryption;
@@ -343,7 +350,22 @@ public class BoltServer extends LifecycleAdapter
         long maxMessageSize = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes );
 
         return new SocketTransport( BoltConnector.NAME, listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
-                                    throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, BoltServer.NETTY_BUF_ALLOCATOR );
+                                    throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, bufferAllocator );
+    }
+
+    private ByteBufAllocator getBufferAllocator()
+    {
+        // check if there is a Netty buffer allocator managed centrally
+        // such allocator has also memory management done centrally
+        if ( centralBufferMangerHolder.getNettyBufferAllocator() != null )
+        {
+            return centralBufferMangerHolder.getNettyBufferAllocator();
+        }
+
+        var boltMemoryPool = new BoltNettyMemoryPool( memoryPools, NETTY_BUF_ALLOCATOR.metric() );
+
+        life.add( new BoltMemoryPoolLifeCycleAdapter( boltMemoryPool ) );
+        return NETTY_BUF_ALLOCATOR;
     }
 
     private static SslContext createSslContext( SslPolicyLoader sslPolicyFactory )

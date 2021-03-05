@@ -341,6 +341,7 @@ public class DatabaseManagementServiceFactory
                                edition.getConnectionTracker(), databaseIdRepository, globalModule.getGlobalConfig(), globalModule.getGlobalClock(),
                                globalModule.getGlobalMonitors(), globalModule.getLogService(), globalModule.getGlobalDependencies(),
                                edition.getBoltAuthManager( globalModule.getGlobalDependencies() ), edition.getBoltInClusterAuthManager(),
-                               edition.getBoltLoopbackAuthManager(), globalModule.getMemoryPools(), edition.getDefaultDatabaseResolver() );
+                               edition.getBoltLoopbackAuthManager(), globalModule.getMemoryPools(), edition.getDefaultDatabaseResolver(),
+                               globalModule.getCentralBufferMangerHolder() );
     }
 }
