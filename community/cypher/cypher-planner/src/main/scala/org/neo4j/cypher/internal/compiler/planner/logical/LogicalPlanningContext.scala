@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
@@ -76,6 +77,9 @@ case class LogicalPlanningContext(planContext: PlanContext,
 
   def withUpdatedLabelInfo(plan: LogicalPlan): LogicalPlanningContext =
     copy(input = input.withUpdatedLabelInfo(plan, planningAttributes.solveds))
+
+  def withFusedLabelInfo(newLabelInfo: LabelInfo): LogicalPlanningContext =
+    copy(input = input.withFusedLabelInfo(newLabelInfo))
 
   def withAddedLeafPlanUpdater(newUpdater: LeafPlanUpdater): LogicalPlanningContext = {
     copy(leafPlanUpdater = ChainedUpdater(leafPlanUpdater, newUpdater))

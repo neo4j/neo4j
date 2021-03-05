@@ -69,7 +69,7 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       table.put(register(registry, mQg), sorted = false, mPlan)
       val goal = register(registry, nQg, mQg)
 
-      val step = NestedIndexJoinComponentConnector(singleComponentPlanner).solverStep(GoalBitAllocation(2, 0, Seq.empty), fullQg, order, kit)
+      val step = NestedIndexJoinComponentConnector(singleComponentPlanner).solverStep(GoalBitAllocation(2, 0, Seq.empty), fullQg, order, kit, ctx)
       val plans = step(registry, goal, table, ctx).toSeq
       plans should contain theSameElementsAs Seq(
         Apply(mPlan, nodeIndexSeek("n:N(prop = ???)", CanGetValue, paramExpr = Some(mProp), argumentIds = Set("m"), labelId = 0)),
@@ -129,7 +129,7 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
 
       val goal = Goal(BitSet(noId, mpId))
 
-      val step = NestedIndexJoinComponentConnector(singleComponentPlanner).solverStep(GoalBitAllocation(4, 0, Seq.empty), fullQg, order, kit)
+      val step = NestedIndexJoinComponentConnector(singleComponentPlanner).solverStep(GoalBitAllocation(4, 0, Seq.empty), fullQg, order, kit, ctx)
       val plans = step(registry, goal, table, ctx).toSeq
       plans should be(empty)
     }
@@ -165,7 +165,7 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       table.put(register(registry, mQg), sorted = false, mPlan)
       val goal = register(registry, nQg, mQg)
 
-      val step = NestedIndexJoinComponentConnector(singleComponentPlanner).solverStep(GoalBitAllocation(2, 0, Seq.empty), fullQg, order, kit)
+      val step = NestedIndexJoinComponentConnector(singleComponentPlanner).solverStep(GoalBitAllocation(2, 0, Seq.empty), fullQg, order, kit, ctx)
       val plans = step(registry, goal, table, ctx).toSeq
       plans should contain theSameElementsAs Seq(
         Apply(mPlan, nodeIndexSeek("n:N(prop = ???)", CanGetValue, paramExpr = Some(mProp), argumentIds = Set("m"), labelId = 0)),

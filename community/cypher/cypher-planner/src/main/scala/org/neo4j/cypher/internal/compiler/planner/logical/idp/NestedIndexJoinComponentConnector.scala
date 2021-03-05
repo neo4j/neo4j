@@ -34,7 +34,8 @@ case class NestedIndexJoinComponentConnector(singleComponentPlanner: SingleCompo
   override def solverStep(goalBitAllocation: GoalBitAllocation,
                           queryGraph: QueryGraph,
                           interestingOrderConfig: InterestingOrderConfig,
-                          kit: QueryPlannerKit): ComponentConnectorSolverStep = {
+                          kit: QueryPlannerKit,
+                          context: LogicalPlanningContext): ComponentConnectorSolverStep = {
     val predicatesWithDependencies: Array[(Expression, Array[String])] =
       queryGraph.selections.flatPredicates
                 .map(pred => (pred, pred.dependencies.map(_.name).toArray))

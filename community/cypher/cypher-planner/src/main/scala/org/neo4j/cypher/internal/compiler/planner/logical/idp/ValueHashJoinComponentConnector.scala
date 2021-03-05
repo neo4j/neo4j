@@ -32,7 +32,8 @@ case object ValueHashJoinComponentConnector
   override def solverStep(goalBitAllocation: GoalBitAllocation,
                           queryGraph: QueryGraph,
                           interestingOrderConfig: InterestingOrderConfig,
-                          kit: QueryPlannerKit): ComponentConnectorSolverStep = {
+                          kit: QueryPlannerKit,
+                          context: LogicalPlanningContext): ComponentConnectorSolverStep = {
     val predicates = joinPredicateCandidates(queryGraph.selections.flatPredicates)
 
     if (predicates.isEmpty) {

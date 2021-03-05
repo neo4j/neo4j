@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.OptionalSolver
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
@@ -31,7 +32,17 @@ case object OptionalMatchConnector
   override def solverStep(goalBitAllocation: GoalBitAllocation,
                           queryGraph: QueryGraph,
                           interestingOrderConfig: InterestingOrderConfig,
-                          kit: QueryPlannerKit): ComponentConnectorSolverStep =
+                          kit: QueryPlannerKit,
+                          context: LogicalPlanningContext): ComponentConnectorSolverStep = {
+
+    // A map from each OPTIONAL MATCH QueryGraph to solvers that can connect the plan for that optional match
+    // to the current LHS plan.
+    val optionalSolvers: Map[QueryGraph, Seq[OptionalSolver.Solver]] = queryGraph.optionalMatches.map { optionalQG =>
+      optionalQG -> context.config.optionalSolvers.map { getSolver =>
+        getSolver.solver(optionalQG, queryGraph, interestingOrderConfig, context)
+      }
+    }.toMap
+
     (registry: IdRegistry[QueryGraph], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext) => {
       val optionalsGoal = goalBitAllocation.optionalMatchesGoal(goal)
       for {
@@ -41,8 +52,9 @@ case object OptionalMatchConnector
         leftPlan <- table(leftGoal).iterator
         canPlan = optionalQg.argumentIds subsetOf leftPlan.availableSymbols
         if canPlan
-        optionalSolver <- context.config.optionalSolvers
-        plan <- optionalSolver(optionalQg, leftPlan, interestingOrderConfig, context)
+        optionalSolver <- optionalSolvers(optionalQg)
+        plan <- optionalSolver.connect(leftPlan)
       } yield plan
     }
+  }
 }

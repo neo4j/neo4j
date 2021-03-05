@@ -59,6 +59,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
       patternRelationships = Set(r1Rel),
       argumentIds = Set(aNode)
     )
+    val enclosingQg = QueryGraph(optionalMatches = IndexedSeq(optionalQg))
 
     val factory = newMockedMetricsFactory
 
@@ -74,7 +75,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config, ExecutionModel.default),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
-    val plans = outerHashJoin(optionalQg, left, InterestingOrderConfig.empty, context).toSeq
+    val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
 
     plans should contain theSameElementsAs Seq(
       LeftOuterHashJoin(Set(aNode), left, innerPlan),
@@ -91,6 +92,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
       hints = theHint,
       argumentIds = Set(aNode)
     )
+    val enclosingQg = QueryGraph(optionalMatches = IndexedSeq(optionalQg))
 
     val factory = newMockedMetricsFactory
     when(factory.newCostModel(config, ExecutionModel.default)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders, _: CostModelMonitor) => plan match {
@@ -105,7 +107,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config, ExecutionModel.default),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, Set(aNode))
-    val plans = outerHashJoin(optionalQg, left, InterestingOrderConfig.empty, context).toSeq
+    val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
 
     plans should contain theSameElementsAs Seq(
       LeftOuterHashJoin(Set(aNode), left, innerPlan),
@@ -125,6 +127,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
       patternRelationships = Set(r1Rel),
       argumentIds = Set(aNode)
     )
+    val enclosingQg = QueryGraph(optionalMatches = IndexedSeq(optionalQg))
 
     val factory = newMockedMetricsFactory
     when(factory.newCostModel(config, ExecutionModel.default)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: SemanticTable, _: Cardinalities, _: ProvidedOrders, _: CostModelMonitor) => plan match {
@@ -141,7 +144,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
       strategy = newMockedStrategyWithSortedPlan(unorderedPlan, orderedPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
     val io = InterestingOrderConfig(InterestingOrder.required(RequiredOrderCandidate.asc(varFor(bNode))))
-    val plans = outerHashJoin(optionalQg, left, io, context).toSeq
+    val plans = outerHashJoin.solver(optionalQg, enclosingQg, io, context).connect(left).toSeq
 
     plans should contain theSameElementsAs Seq(
       LeftOuterHashJoin(Set(aNode), left, unorderedPlan),

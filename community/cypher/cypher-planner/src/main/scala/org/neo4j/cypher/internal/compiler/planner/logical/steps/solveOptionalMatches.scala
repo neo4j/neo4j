@@ -29,14 +29,43 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 trait OptionalSolver {
-  def apply(qg: QueryGraph, lp: LogicalPlan, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Iterator[LogicalPlan]
+  /**
+   * Return a Solver for an OPTIONAL MATCH.
+   *
+   * @param optionalQg             the query graph of the OPTIONAL MATCH
+   * @param enclosingQg            the query graph enclosing the `optionalQg`
+   * @param interestingOrderConfig the InterestingOrderConfig
+   * @param context                the LogicalPlanningContext
+   * @return a Solver that given a plan for the `enclosingQg` and any so far connected components or other OPTIONAL MATCHES
+   *         returns an Iterator of plan candidates solving the OPTIONAL MATCH.
+   */
+  def solver(optionalQg: QueryGraph,
+            enclosingQg: QueryGraph,
+            interestingOrderConfig: InterestingOrderConfig,
+            context: LogicalPlanningContext): OptionalSolver.Solver
 }
 
+object OptionalSolver {
+  trait Solver {
+    /**
+     * Solve an OPTIONAL MATCH.
+     *
+     * @param lp the plan for `enclosingQg` and any so far connected components or other OPTIONAL MATCHES
+     * @return an Iterator of plan candidates solving the OPTIONAL MATCH.
+     */
+    def connect(lp: LogicalPlan): Iterator[LogicalPlan]
+  }
+}
+
+
 case object applyOptional extends OptionalSolver {
-  override def apply(optionalQg: QueryGraph, lhs: LogicalPlan, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Iterator[LogicalPlan] = {
-    val innerContext: LogicalPlanningContext = context.withUpdatedLabelInfo(lhs)
+  override def solver(optionalQg: QueryGraph,
+                     enclosingQg: QueryGraph,
+                     interestingOrderConfig: InterestingOrderConfig,
+                     context: LogicalPlanningContext): OptionalSolver.Solver = {
+    val innerContext: LogicalPlanningContext = context.withFusedLabelInfo(enclosingQg.selections.labelInfo)
     val inner = context.strategy.plan(optionalQg, interestingOrderConfig, innerContext)
-    inner.allResults.map { inner =>
+    (lhs: LogicalPlan) => inner.allResults.map { inner =>
       val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext)
       val applied = context.logicalPlanProducer.planApply(lhs, rhs, context)
 
@@ -48,13 +77,13 @@ case object applyOptional extends OptionalSolver {
 }
 
 case object outerHashJoin extends OptionalSolver {
-  override def apply(optionalQg: QueryGraph, side1Plan: LogicalPlan, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def solver(optionalQg: QueryGraph,
+                     enclosingQg: QueryGraph,
+                     interestingOrderConfig: InterestingOrderConfig,
+                     context: LogicalPlanningContext): OptionalSolver.Solver = {
     val joinNodes = optionalQg.argumentIds
 
-    if (joinNodes.nonEmpty &&
-      joinNodes.forall(side1Plan.availableSymbols) &&
-      joinNodes.forall(optionalQg.patternNodes)) {
-
+    if (joinNodes.nonEmpty && joinNodes.forall(optionalQg.patternNodes)) {
       val solvedHints = optionalQg.joinHints.filter { hint =>
         val hintVariables = hint.variables.map(_.name).toSet
         hintVariables.subsetOf(joinNodes)
@@ -63,14 +92,18 @@ case object outerHashJoin extends OptionalSolver {
 
       val BestResults(side2Plan, side2SortedPlan) = context.strategy.plan(rhsQG, interestingOrderConfig, context)
 
-      Iterator(
-        leftOuterJoin(context, joinNodes, side1Plan, side2Plan, solvedHints),
-        rightOuterJoin(context, joinNodes, side1Plan, side2Plan, solvedHints)
-      ) ++ side2SortedPlan.map(leftOuterJoin(context, joinNodes, side1Plan, _, solvedHints))
-      // For the rightOuterJoin, we do not need to consider side2SortedPlan,
-      // since that ordering will get destroyed by the join anyway.
+      (side1Plan: LogicalPlan) => {
+        if (joinNodes.forall(side1Plan.availableSymbols)) {
+          Iterator(
+            leftOuterJoin(context, joinNodes, side1Plan, side2Plan, solvedHints),
+            rightOuterJoin(context, joinNodes, side1Plan, side2Plan, solvedHints)
+          ) ++ side2SortedPlan.map(leftOuterJoin(context, joinNodes, side1Plan, _, solvedHints))
+        } else {
+          Iterator.empty
+        }
+      }
     } else {
-      Iterator.empty
+      (_: LogicalPlan) => Iterator.empty
     }
   }
 

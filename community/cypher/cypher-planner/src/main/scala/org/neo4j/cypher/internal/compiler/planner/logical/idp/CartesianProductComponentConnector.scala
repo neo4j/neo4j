@@ -31,7 +31,8 @@ case object CartesianProductComponentConnector
   override def solverStep(goalBitAllocation: GoalBitAllocation,
                           queryGraph: QueryGraph,
                           interestingOrderConfig: InterestingOrderConfig,
-                          kit: QueryPlannerKit): ComponentConnectorSolverStep =
+                          kit: QueryPlannerKit,
+                          context: LogicalPlanningContext): ComponentConnectorSolverStep =
     (_: IdRegistry[QueryGraph], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext) => {
       for {
         (leftGoal, rightGoal) <- goal.coveringSplits

@@ -47,10 +47,9 @@ class CartesianProductComponentConnectorTest extends CypherFunSuite with Logical
       table.put(register(registry, mQg), sorted = false, mPlan)
       val goal = register(registry, nQg, mQg)
 
-      val step = CartesianProductComponentConnector.solverStep(GoalBitAllocation(2, 0, Seq.empty), fullQg, order, kit)
+      val step = CartesianProductComponentConnector.solverStep(GoalBitAllocation(2, 0, Seq.empty), fullQg, order, kit, ctx)
       val plans = step(registry, goal, table, ctx).toSeq
       plans should contain theSameElementsAs (Seq(CartesianProduct(nPlan, mPlan), CartesianProduct(mPlan, nPlan)))
-
     }
   }
 

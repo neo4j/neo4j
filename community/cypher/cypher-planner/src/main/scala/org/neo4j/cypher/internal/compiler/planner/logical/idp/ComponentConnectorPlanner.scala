@@ -87,11 +87,11 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
     val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrderConfig)
     val (goalBitAllocation, initialTodo) = GoalBitAllocation.create(components.map(_.queryGraph), queryGraph)
 
-    val joinSolverSteps = joinConnectors.map(_.solverStep(goalBitAllocation, queryGraph, interestingOrderConfig, kit))
+    val joinSolverSteps = joinConnectors.map(_.solverStep(goalBitAllocation, queryGraph, interestingOrderConfig, kit, context))
     val composedJoinSolverStep = IDPQueryGraphSolver.composeSolverSteps(queryGraph, interestingOrderConfig, kit, context, joinSolverSteps)
-    val cpSolverStep = cpConnector.solverStep(goalBitAllocation, queryGraph, interestingOrderConfig, kit)
+    val cpSolverStep = cpConnector.solverStep(goalBitAllocation, queryGraph, interestingOrderConfig, kit, context)
     val composedCPSolverStep = IDPQueryGraphSolver.selectingAndSortingSolverStep(queryGraph, interestingOrderConfig, kit, context, cpSolverStep)
-    val omSolverStep = omConnector.solverStep(goalBitAllocation, queryGraph, interestingOrderConfig, kit)
+    val omSolverStep = omConnector.solverStep(goalBitAllocation, queryGraph, interestingOrderConfig, kit, context)
     val composedOmSolverStep = IDPQueryGraphSolver.selectingAndSortingSolverStep(queryGraph, interestingOrderConfig, kit, context, omSolverStep)
 
     // Only even generate CP plans if no joins are available, since joins will always be better.
@@ -152,7 +152,8 @@ trait ComponentConnector {
   def solverStep(goalBitAllocation: GoalBitAllocation,
                  queryGraph: QueryGraph,
                  interestingOrderConfig: InterestingOrderConfig,
-                 kit: QueryPlannerKit): ComponentConnectorSolverStep
+                 kit: QueryPlannerKit,
+                 context: LogicalPlanningContext): ComponentConnectorSolverStep
 }
 
 object GoalBitAllocation {
