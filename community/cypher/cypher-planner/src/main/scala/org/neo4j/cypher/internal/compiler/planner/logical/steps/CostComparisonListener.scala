@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import java.util.concurrent.atomic.AtomicLong
-
 import org.neo4j.cypher.internal.compiler.planner.logical.CostModelMonitor
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -29,6 +27,7 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.attribution.Id
 
+import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable
 import scala.io.AnsiColor
 
@@ -101,7 +100,7 @@ object SystemOutCostLogger extends CostComparisonListener {
       if (cardinality > effectiveCardinality) cyan_background(".") else "."
     }
 
-    val plansInOrder = input.toIndexedSeq.sorted(inputOrdering).map(projector)
+    val plansInOrder = input.toIndexedSeq.distinct.sorted(inputOrdering).map(projector)
 
     // Update cost and effective cardinality for each subplan
     plansInOrder.foreach(
