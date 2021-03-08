@@ -61,8 +61,8 @@ abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupp
         lockManager = suite.createLockManager( customConfig, clock );
         client = lockManager.newClient();
         client2 = lockManager.newClient();
-        client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults() );
-        client2.initialize( NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, Config.defaults() );
+        client.initialize( NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, customConfig );
+        client2.initialize( NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, customConfig );
     }
 
     @AfterEach
