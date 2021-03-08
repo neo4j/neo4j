@@ -75,6 +75,48 @@ class normalizeExistsPatternExpressionsTest extends CypherFunSuite with AstConst
     "MATCH (n) WHERE NOT 0<size((n)--(m)) RETURN n",
     "MATCH (n) WHERE NOT EXISTS((n)--(m)) RETURN n")
 
+  testRewrite(
+    "MATCH (n) RETURN size((n)--(m)) > 0 AS b",
+    "MATCH (n) RETURN exists((n)--(m)) AS b")
+
+  testRewrite(
+    "MATCH (n) WITH size((n)--(m)) > 0 AS b RETURN b",
+    "MATCH (n) WITH exists((n)--(m)) AS b RETURN b")
+
+  testRewrite(
+    "MATCH (f) WITH collect(f) AS friends RETURN [f IN friends WHERE (f)-[:WORKS_AT]->(:ComedyClub)] AS r",
+    "MATCH (f) WITH collect(f) AS friends RETURN [f IN friends WHERE exists((f)-[:WORKS_AT]->(:ComedyClub))] AS r"
+  )
+
+  testRewrite(
+    "RETURN [(x)-[]->(y) WHERE NOT (y)-[]->(x) | id(x)] AS ids",
+    "RETURN [(x)-[]->(y) WHERE NOT exists((y)-[]->(x)) | id(x)] AS ids")
+
+  testRewrite(
+    "RETURN all(x IN [1,2,3] WHERE ()--()) AS y",
+    "RETURN all(x IN [1,2,3] WHERE exists(()--())) AS y")
+
+  testRewrite(
+    "RETURN any(x IN [1,2,3] WHERE ()--()) AS y",
+    "RETURN any(x IN [1,2,3] WHERE exists(()--())) AS y"
+  )
+
+  testRewrite(
+    "RETURN none(x IN [1,2,3] WHERE ()--()) AS y",
+    "RETURN none(x IN [1,2,3] WHERE exists(()--())) AS y")
+
+  testRewrite(
+    "RETURN single(x IN [1,2,3] WHERE ()--()) AS y",
+    "RETURN single(x IN [1,2,3] WHERE exists(()--())) AS y")
+
+  testRewrite(
+    "MATCH (n) WHERE EXISTS {MATCH ()--() WHERE ()--()--()} RETURN n",
+    "MATCH (n) WHERE EXISTS {MATCH ()--() WHERE exists(()--()--())} RETURN n")
+
+  testRewrite(
+    "MATCH (n) WHERE ALL (n in[1, 2, 3] WHERE NOT ()<-[]-()) RETURN *",
+    "MATCH (n) WHERE ALL (n in[1, 2, 3] WHERE NOT exists(()<-[]-())) RETURN *")
+
   testNoRewrite("RETURN (n)--(m)")
 
   testNoRewrite("RETURN [(n)--(m) | n.prop]")

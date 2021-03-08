@@ -134,10 +134,13 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     void deprecatedPatternExpressionSyntax()
     {
-        // deprecated
         assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a) RETURN (a)--()",
                                                 containsItem( deprecatedUseOfPatternExpression ) );
         assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a) WHERE ANY (x IN (a)--() WHERE 1=1) RETURN a",
+                                                containsItem( deprecatedUseOfPatternExpression ) );
+        assertNotificationsInSupportedVersions( "EXPLAIN RETURN NOT ()--()",
+                                                containsItem( deprecatedUseOfPatternExpression ) );
+        assertNotificationsInSupportedVersions( "EXPLAIN RETURN ()--() OR ()--()--()",
                                                 containsItem( deprecatedUseOfPatternExpression ) );
     }
 
@@ -154,6 +157,8 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
         assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a) WHERE (a)--() RETURN a",
                                                 containsNoItem( deprecatedUseOfPatternExpression ) );
         assertNotificationsInSupportedVersions( "EXPLAIN MATCH (a) RETURN [p=(a)--(b) | p]",
+                                                containsNoItem( deprecatedUseOfPatternExpression ) );
+        assertNotificationsInSupportedVersions( "EXPLAIN RETURN NOT exists(()--())",
                                                 containsNoItem( deprecatedUseOfPatternExpression ) );
     }
 
