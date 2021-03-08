@@ -62,10 +62,9 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.scalatest.FunSuite
-import org.scalatest.Matchers
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CardinalityCalculatorTest extends FunSuite with Matchers with AstConstructionTestSupport {
+class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val defaultSourceCardinality = Cardinality(123)
 
