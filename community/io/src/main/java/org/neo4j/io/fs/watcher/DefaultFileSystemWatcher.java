@@ -23,6 +23,7 @@ import com.sun.nio.file.SensitivityWatchEventModifier;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
@@ -30,7 +31,9 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.io.fs.watcher.resource.WatchedFile;
@@ -49,6 +52,7 @@ public class DefaultFileSystemWatcher implements FileWatcher
             new WatchEvent.Kind[]{StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY};
     private final WatchService watchService;
     private final List<FileWatchEventListener> listeners = new CopyOnWriteArrayList<>();
+    private final Map<Path,SharedWatchedFile> watchedFiles = new ConcurrentHashMap<>();
     private volatile boolean watch;
 
     public DefaultFileSystemWatcher( WatchService watchService )
@@ -64,8 +68,23 @@ public class DefaultFileSystemWatcher implements FileWatcher
             throw new IllegalArgumentException( format( "File `%s` is not a directory. Only directories can be " +
                     "registered to be monitored.", path.toAbsolutePath().normalize() ) );
         }
-        WatchKey watchKey = path.register( watchService, OBSERVED_EVENTS, SensitivityWatchEventModifier.HIGH );
-        return new WatchedFile( watchKey, path );
+        SharedWatchedFile watchedFile;
+        do
+        {
+            watchedFile = watchedFiles.computeIfAbsent( path.toAbsolutePath(), key ->
+            {
+                try
+                {
+                    return new SharedWatchedFile( key.register( watchService, OBSERVED_EVENTS, SensitivityWatchEventModifier.HIGH ), key,
+                            () -> watchedFiles.remove( key ) );
+                }
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
+                }
+            } );
+        } while ( !watchedFile.share() );
+        return watchedFile;
     }
 
     @Override
@@ -147,5 +166,38 @@ public class DefaultFileSystemWatcher implements FileWatcher
     private static String getContext( WatchEvent<?> watchEvent )
     {
         return Objects.toString( watchEvent.context(), StringUtils.EMPTY );
+    }
+
+    private static class SharedWatchedFile extends WatchedFile
+    {
+        private final Runnable closeAction;
+        private int refCount;
+        private boolean closed;
+
+        private SharedWatchedFile( WatchKey watchKey, Path path, Runnable closeAction )
+        {
+            super( watchKey, path );
+            this.closeAction = closeAction;
+        }
+
+        @Override
+        public synchronized void close()
+        {
+            if ( refCount-- == 0 )
+            {
+                super.close();
+                closeAction.run();
+                closed = true;
+            }
+        }
+
+        synchronized boolean share()
+        {
+            if ( !closed )
+            {
+                refCount++;
+            }
+            return !closed;
+        }
     }
 }

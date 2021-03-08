@@ -20,6 +20,8 @@
 package org.neo4j.io.fs.watcher;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -33,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.io.fs.watcher.resource.WatchedResource;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -40,6 +43,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -47,6 +51,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.test.assertion.Assert.assertEventually;
+import static org.neo4j.test.conditions.Conditions.TRUE;
 
 @TestDirectoryExtension
 class DefaultFileSystemWatcherTest
@@ -62,6 +68,51 @@ class DefaultFileSystemWatcherTest
 
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> watcher.watch( Path.of( "notADirectory" ) ) );
         assertThat( exception.getMessage() ).contains( "Only directories can be registered to be monitored." );
+    }
+
+    @Test
+    @DisabledOnOs( OS.WINDOWS )
+    void shouldHandleMultipleSubscribersToSameFile() throws Exception
+    {
+        try ( OtherThreadExecutor executor = new OtherThreadExecutor( "watcher" );
+                DefaultFileSystemWatcher watcher = new DefaultFileSystemWatcher( FileSystems.getDefault().newWatchService() ) )
+        {
+            //Given
+            AssertableFileEventListener listener = new AssertableFileEventListener();
+            watcher.addFileWatchEventListener( listener );
+
+            Path foo = testDirectory.createFile( "foo" );
+            Path bar = testDirectory.createFile( "bar" );
+
+            executor.executeDontWait( () ->
+            {
+                try
+                {
+                    watcher.startWatching();
+                }
+                catch ( Exception ignored )
+                { //Expected
+                }
+                return null;
+            } );
+
+            watcher.watch( testDirectory.homePath() ).close();
+            WatchedResource firstWatch = watcher.watch( testDirectory.homePath() );
+            WatchedResource secondWatch = watcher.watch( testDirectory.homePath() );
+            executor.waitUntilWaiting( location -> location.isAt( DefaultFileSystemWatcher.class, "startWatching" ) );
+
+            //When
+            testDirectory.getFileSystem().delete( foo );
+            //Then
+            assertEventually( "Foo deleted", () -> listener.containsDeleted( "foo" ), TRUE, 30, SECONDS );
+
+            //When
+            firstWatch.close(); //Closing the first should still allow the second to observe deletions
+            testDirectory.getFileSystem().delete( bar );
+            assertEventually( "Bar deleted", () -> listener.containsDeleted( "bar" ), TRUE, 30, SECONDS );
+
+            secondWatch.close();
+        }
     }
 
     @Test
@@ -281,29 +332,34 @@ class DefaultFileSystemWatcherTest
         private final List<String> modifiedFileNames = new ArrayList<>();
 
         @Override
-        public void fileDeleted( WatchKey key, String fileName )
+        public synchronized void fileDeleted( WatchKey key, String fileName )
         {
             deletedFileNames.add( fileName );
         }
 
         @Override
-        public void fileModified( WatchKey key, String fileName )
+        public synchronized void fileModified( WatchKey key, String fileName )
         {
             modifiedFileNames.add( fileName );
         }
 
-        void assertNoEvents()
+        synchronized void assertNoEvents()
         {
             assertThat( deletedFileNames ).as( "Should not have any deletion events" ).isEmpty();
             assertThat( modifiedFileNames ).as( "Should not have any modification events" ).isEmpty();
         }
 
-        void assertDeleted( String fileName )
+        synchronized void assertDeleted( String fileName )
         {
             assertThat( deletedFileNames ).as( "Was expected to find notification about deletion." ).contains( fileName );
         }
 
-        void assertModified( String fileName )
+        synchronized boolean containsDeleted( String fileName )
+        {
+            return deletedFileNames.contains( fileName );
+        }
+
+        synchronized void assertModified( String fileName )
         {
             assertThat( modifiedFileNames ).as( "Was expected to find notification about modification." ).contains( fileName );
         }
