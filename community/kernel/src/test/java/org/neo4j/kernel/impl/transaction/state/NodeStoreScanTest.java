@@ -38,6 +38,7 @@ import java.util.function.IntPredicate;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan;
@@ -115,6 +116,21 @@ class NodeStoreScanTest
         shouldScanOverRelevantNodes( randomLabels(), key -> key == ageKeyId );
     }
 
+    @Test
+    void shouldSeeZeroProgressBeforeRunStarted()
+    {
+        // given
+        NodeStoreScan<RuntimeException> scan =
+                new NodeStoreScan<>( Config.defaults(), cursors, locks, t -> false, p -> false, allPossibleLabelIds, k -> true, false, jobScheduler,
+                        NULL, INSTANCE );
+
+        // when
+        PopulationProgress progressBeforeStarted = scan.getProgress();
+
+        // then
+        assertThat( progressBeforeStarted.getCompleted() ).isZero();
+    }
+
     private void shouldScanOverRelevantNodes( int[] labelFilter, IntPredicate propertyKeyFilter )
     {
         // given
@@ -165,6 +181,8 @@ class NodeStoreScanTest
         NodeStoreScan<RuntimeException> scan =
                 new NodeStoreScan<>( Config.defaults(), cursors, locks, tokenVisitor, propertyVisitor, labelFilter, propertyKeyFilter, false, jobScheduler,
                         NULL, INSTANCE );
+        assertThat( scan.getProgress().getCompleted() ).isZero();
+
         scan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         // then

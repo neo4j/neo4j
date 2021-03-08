@@ -124,9 +124,10 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     @Override
     public PopulationProgress getProgress()
     {
-        if ( totalCount > 0 )
+        StoreScanStage<FAILURE,CURSOR> observedStage = stage;
+        if ( totalCount > 0 || observedStage == null )
         {
-            return PopulationProgress.single( stage.numberOfIteratedEntities(), totalCount );
+            return PopulationProgress.single( observedStage != null ? observedStage.numberOfIteratedEntities() : 0, totalCount );
         }
 
         // nothing to do 100% completed
