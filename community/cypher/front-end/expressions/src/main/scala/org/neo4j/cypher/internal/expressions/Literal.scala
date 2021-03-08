@@ -155,7 +155,7 @@ trait SensitiveLiteral {
   val position: InputPosition
 
   /**
-   * Number of characters of the literal
+   * Number of characters of the literal including quotes
    */
   def literalLength: Option[Int]
 }
