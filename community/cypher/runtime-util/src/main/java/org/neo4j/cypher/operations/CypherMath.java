@@ -81,7 +81,7 @@ public final class CypherMath
         boolean lhsIsListValue = lhs instanceof ListValue;
         if ( lhsIsListValue && rhs instanceof ListValue )
         {
-            return VirtualValues.concat( (ListValue) lhs, (ListValue) rhs );
+            return ((ListValue) lhs).add( (ListValue) rhs );
         }
         else if ( lhsIsListValue )
         {

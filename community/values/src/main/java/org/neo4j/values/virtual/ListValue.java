@@ -496,6 +496,16 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             }
             return CONCAT_LIST_SHALLOW_SIZE + s;
         }
+
+        @Override
+        public ListValue add( ListValue value )
+        {
+            var newSize = lists.length + 1;
+            var newArray = new ListValue[newSize];
+            System.arraycopy( lists, 0, newArray, 0, lists.length );
+            newArray[lists.length] = value;
+            return new ConcatList( newArray);
+        }
     }
 
     private static final long APPEND_LIST_SHALLOW_SIZE = shallowSizeOfInstance( AppendList.class );
@@ -851,6 +861,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     public ListValue prepend( AnyValue value )
     {
         return new PrependList( this, value );
+    }
+
+    public ListValue add( ListValue value )
+    {
+        return new ConcatList( new ListValue[]{this, value} );
     }
 
     public ListValue distinct()
