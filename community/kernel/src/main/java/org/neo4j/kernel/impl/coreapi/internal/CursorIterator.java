@@ -46,7 +46,6 @@ public class CursorIterator<CURSOR extends Cursor, E extends Entity> extends Pre
         {
             return toReferenceFunction.applyAsLong( cursor );
         }
-        close();
         return NO_ID;
     }
 

@@ -19,58 +19,42 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
-import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
+import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.helpers.collection.Iterators.addToCollection;
+import static org.neo4j.internal.helpers.collection.Iterators.count;
 
+@ImpermanentDbmsExtension
 class NodeManagerTest
 {
-    private GraphDatabaseAPI db;
-    private DatabaseManagementService managementService;
-
-    @BeforeEach
-    void init()
-    {
-        managementService = new TestDatabaseManagementServiceBuilder().impermanent().build();
-        db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-    }
-
-    @AfterEach
-    void stop()
-    {
-        managementService.shutdown();
-    }
+    @Inject
+    GraphDatabaseService db;
 
     @Test
     void getAllNodesIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
     {
         // GIVEN
+        try ( var tx = db.beginTx() )
         {
-            Transaction tx = db.beginTx();
             tx.createNode();
             tx.createNode();
             tx.commit();
         }
 
         // WHEN iterator is started
-        try ( Transaction transaction = db.beginTx() )
+        try ( var tx = db.beginTx() )
         {
-            Iterator<Node> allNodes = transaction.getAllNodes().iterator();
+            Iterator<Node> allNodes = tx.getAllNodes().iterator();
             allNodes.next();
 
             // and WHEN another node is then added
@@ -84,7 +68,7 @@ class NodeManagerTest
             thread.join();
 
             // THEN the new node is picked up by the iterator
-            assertThat( addToCollection( allNodes, new ArrayList<>() ).size() ).isEqualTo( 2 );
+            assertThat( count( allNodes ) ).isEqualTo( 2 );
         }
     }
 
@@ -92,27 +76,31 @@ class NodeManagerTest
     void getAllRelationshipsIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
     {
         // GIVEN
-        Transaction tx = db.beginTx();
-        createRelationshipAssumingTxWith( tx, "key", 1 );
-        createRelationshipAssumingTxWith( tx, "key", 2 );
-        tx.commit();
+        try ( var tx = db.beginTx() )
+        {
+            createRelationshipAssumingTxWith( tx, "key", 1 );
+            createRelationshipAssumingTxWith( tx, "key", 2 );
+            tx.commit();
+        }
 
         // WHEN
-        tx = db.beginTx();
-        Iterator<Relationship> allRelationships = tx.getAllRelationships().iterator();
-
-        Thread thread = new Thread( () ->
+        try ( var tx = db.beginTx() )
         {
-            Transaction newTx = db.beginTx();
-            createRelationshipAssumingTxWith( newTx, "key", 3 );
-            newTx.commit();
-        } );
-        thread.start();
-        thread.join();
+            Iterator<Relationship> allRelationships = tx.getAllRelationships().iterator();
+            allRelationships.next();
 
-        // THEN
-        assertThat( addToCollection( allRelationships, new ArrayList<>() ).size() ).isEqualTo( 3 );
-        tx.commit();
+            Thread thread = new Thread( () ->
+            {
+                Transaction newTx = db.beginTx();
+                createRelationshipAssumingTxWith( newTx, "key", 3 );
+                newTx.commit();
+            } );
+            thread.start();
+            thread.join();
+
+            // THEN
+            assertThat( count( allRelationships ) ).isEqualTo( 2 );
+        }
     }
 
     private void createRelationshipAssumingTxWith( Transaction transaction, String key, Object value )

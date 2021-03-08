@@ -62,11 +62,7 @@ public abstract class PropertyFilteringIterator<T extends Entity, TOKEN_CURSOR e
         {
             return entityReference( entityTokenCursor );
         }
-        else
-        {
-            close();
-            return NO_ID;
-        }
+        return NO_ID;
     }
 
     @Override

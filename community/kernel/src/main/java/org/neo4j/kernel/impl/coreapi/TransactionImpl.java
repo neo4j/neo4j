@@ -50,7 +50,6 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -456,28 +455,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         {
             NodeCursor cursor = ktx.cursors().allocateNodeCursor( ktx.pageCursorTracer() );
             ktx.dataRead().allNodesScan( cursor );
-            return new PrefetchingResourceIterator<>()
-            {
-                @Override
-                protected Node fetchNextOrNull()
-                {
-                    if ( cursor.next() )
-                    {
-                        return newNodeEntity( cursor.nodeReference() );
-                    }
-                    else
-                    {
-                        close();
-                        return null;
-                    }
-                }
-
-                @Override
-                public void close()
-                {
-                    cursor.close();
-                }
-            };
+            return new CursorIterator<>( cursor, NodeCursor::nodeReference, this::newNodeEntity );
         };
     }
 
@@ -585,29 +563,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         {
             RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor( ktx.pageCursorTracer() );
             ktx.dataRead().allRelationshipsScan( cursor );
-            return new PrefetchingResourceIterator<>()
-            {
-                @Override
-                protected Relationship fetchNextOrNull()
-                {
-                    if ( cursor.next() )
-                    {
-                        return newRelationshipEntity( cursor.relationshipReference(), cursor.sourceNodeReference(), cursor.type(),
-                                cursor.targetNodeReference() );
-                    }
-                    else
-                    {
-                        close();
-                        return null;
-                    }
-                }
-
-                @Override
-                public void close()
-                {
-                    cursor.close();
-                }
-            };
+            return new CursorIterator<>( cursor, RelationshipScanCursor::relationshipReference, this::newRelationshipEntity );
         };
     }
 

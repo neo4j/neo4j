@@ -19,47 +19,31 @@
  */
 package org.neo4j.kernel.impl.coreapi.internal;
 
-import java.util.NoSuchElementException;
-
 import org.neo4j.graphdb.Entity;
-import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 
-abstract class PrefetchingEntityResourceIterator<T extends Entity> implements ResourceIterator<T>
+abstract class PrefetchingEntityResourceIterator<T extends Entity> extends PrefetchingResourceIterator<T>
 {
     private final EntityFactory<T> entityFactory;
-    private long next;
     private boolean closed;
 
-    private static final long NOT_INITIALIZED = -2L;
     protected static final long NO_ID = -1L;
 
     PrefetchingEntityResourceIterator( EntityFactory<T> entityFactory )
     {
         this.entityFactory = entityFactory;
-        this.next = NOT_INITIALIZED;
     }
 
     @Override
-    public boolean hasNext()
+    protected T fetchNextOrNull()
     {
-        if ( next == NOT_INITIALIZED )
+        var id = fetchNext();
+        if ( id != NO_ID )
         {
-            next = fetchNext();
+            return entityFactory.make( id );
         }
-        return next != NO_ID;
-    }
-
-    @Override
-    public T next()
-    {
-        if ( !hasNext() )
-        {
-            close();
-            throw new NoSuchElementException();
-        }
-        T entity = entityFactory.make( next );
-        next = fetchNext();
-        return entity;
+        close();
+        return null;
     }
 
     @Override
@@ -67,7 +51,6 @@ abstract class PrefetchingEntityResourceIterator<T extends Entity> implements Re
     {
         if ( !closed )
         {
-            next = NO_ID;
             closeResources();
             closed = true;
         }

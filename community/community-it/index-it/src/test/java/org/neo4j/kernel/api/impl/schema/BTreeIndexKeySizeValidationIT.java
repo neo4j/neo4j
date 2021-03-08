@@ -35,7 +35,6 @@ import java.util.stream.Stream;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
@@ -345,17 +344,19 @@ public class BTreeIndexKeySizeValidationIT
             {
                 values.put( propKeys[propKey], propValues[propKey] );
             }
-            ResourceIterator<Node> nodes = tx.findNodes( LABEL_ONE, values );
-            if ( ableToWrite )
+            try ( var nodes = tx.findNodes( LABEL_ONE, values ) )
             {
-                assertTrue( nodes.hasNext() );
-                Node node = nodes.next();
-                assertNotNull( node );
-                assertEquals( expectedNodeId, node.getId(), "node id" );
-            }
-            else
-            {
-                assertFalse( nodes.hasNext() );
+                if ( ableToWrite )
+                {
+                    assertTrue( nodes.hasNext() );
+                    Node node = nodes.next();
+                    assertNotNull( node );
+                    assertEquals( expectedNodeId, node.getId(), "node id" );
+                }
+                else
+                {
+                    assertFalse( nodes.hasNext() );
+                }
             }
             tx.commit();
         }

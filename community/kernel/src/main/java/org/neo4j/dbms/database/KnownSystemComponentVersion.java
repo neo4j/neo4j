@@ -134,15 +134,17 @@ public abstract class KnownSystemComponentVersion
 
     private Node findOrCreateVersionNode( Transaction tx )
     {
-        ResourceIterator<Node> nodes = tx.findNodes( versionLabel );
-        if ( nodes.hasNext() )
+        try ( ResourceIterator<Node> nodes = tx.findNodes( versionLabel ) )
         {
-            Node node = nodes.next();
             if ( nodes.hasNext() )
             {
-                throw new IllegalStateException( "More than one Version node exists" );
+                Node node = nodes.next();
+                if ( nodes.hasNext() )
+                {
+                    throw new IllegalStateException( "More than one Version node exists" );
+                }
+                return node;
             }
-            return node;
         }
         return tx.createNode( versionLabel );
     }
