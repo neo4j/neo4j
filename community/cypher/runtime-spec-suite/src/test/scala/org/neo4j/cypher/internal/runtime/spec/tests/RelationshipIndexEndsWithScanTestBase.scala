@@ -329,4 +329,56 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
                         r2 <- rels.filter(_.getProperty("text").asInstanceOf[String].endsWith("2"))} yield Seq.fill(4)(Array(r1, r2))
     runtimeResult should beColumns("r1", "r2").withRows(expected.flatten)
   }
+
+  test("aggregation and limit on top of directed scan") {
+    // given
+    given {
+      relationshipIndex("R", "text")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, _) => r.setProperty("text", "value")
+      }
+      rels
+    }
+    val limit = sizeHint / 10
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(*) AS c"))
+      .limit(limit)
+      .relationshipIndexOperator("(x)-[r:R(text ENDS WITH 'ue')]->(y)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("c").withRows(singleRow(limit))
+  }
+
+  test("aggregation and limit on top of undirected scan") {
+    // given
+    given {
+      relationshipIndex("R", "text")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, _) => r.setProperty("text", "value")
+      }
+      rels
+    }
+    val limit = sizeHint / 10
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(*) AS c"))
+      .limit(limit)
+      .relationshipIndexOperator("(x)-[r:R(text ENDS WITH 'ue')]->(y)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("c").withRows(singleRow(limit))
+  }
 }

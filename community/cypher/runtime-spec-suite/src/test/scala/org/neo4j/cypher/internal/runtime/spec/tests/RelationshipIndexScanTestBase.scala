@@ -332,4 +332,60 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
                         r2 <- rels.filter(_.hasProperty("prop"))} yield Seq.fill(4)(Array(r1, r2))
     runtimeResult should beColumns("r1", "r2").withRows(expected.flatten)
   }
+
+  test("aggregation and limit on top of directed scan") {
+    // given
+    given {
+      relationshipIndex("R", "prop")
+      circleGraph(5)//these doesn't have prop
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
+        case _ =>
+      }
+      rels
+    }
+    val limit = sizeHint / 10
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(*) AS c"))
+      .limit(limit)
+      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("c").withRows(singleRow(limit))
+  }
+
+  test("aggregation and limit on top of undirected scan") {
+    // given
+    given {
+      relationshipIndex("R", "prop")
+      circleGraph(5)//these doesn't have prop
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
+        case _ =>
+      }
+      rels
+    }
+    val limit = sizeHint / 10
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(*) AS c"))
+      .limit(limit)
+      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("c").withRows(singleRow(limit))
+  }
 }
