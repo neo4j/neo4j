@@ -49,7 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -132,38 +131,14 @@ class RecordRelationshipScanCursorTest
         }
 
         // when
-        assertSeesRelationships( expected, ANY_RELATIONSHIP_TYPE );
+        assertSeesRelationships( expected );
     }
 
-    @Test
-    void shouldScanAllInUseRelationshipsOfCertainType()
-    {
-        // given
-        RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-        int count = 100;
-        relationshipStore.setHighId( count );
-        Set<Long> expected = new HashSet<>();
-        int theType = 1;
-        for ( long id = 0; id < count; id++ )
-        {
-            boolean inUse = random.nextBoolean();
-            int type = random.nextInt( 3 );
-            createRelationshipRecord( id, type, relationshipStore, inUse );
-            if ( inUse && type == theType )
-            {
-                expected.add( id );
-            }
-        }
-
-        // when
-        assertSeesRelationships( expected, theType );
-    }
-
-    private void assertSeesRelationships( Set<Long> expected, int type )
+    private void assertSeesRelationships( Set<Long> expected )
     {
         try ( RecordRelationshipScanCursor cursor = createRelationshipCursor() )
         {
-            cursor.scan( type );
+            cursor.scan();
             while ( cursor.next() )
             {
                 // then

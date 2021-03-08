@@ -33,7 +33,6 @@ import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRelationshipScanCursor,DefaultRelationshipScanCursor>
         implements RelationshipScanCursor
 {
-    private int type;
     private long single;
     private LongIterator addedRelationships;
     private final DefaultNodeCursor securityNodeCursor;
@@ -46,10 +45,9 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         this.securityNodeCursor = securityNodeCursor;
     }
 
-    void scan( int type, Read read )
+    void scan( Read read )
     {
-        storeCursor.scan( type );
-        this.type = type;
+        storeCursor.scan();
         this.single = NO_ID;
         init( read );
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
@@ -59,7 +57,6 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
     {
         this.read = read;
         this.single = NO_ID;
-        this.type = -1;
         this.currentAddedInTx = NO_ID;
         this.addedRelationships = addedRelationships;
         this.hasChanges = hasChanges;
@@ -71,7 +68,6 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
     void single( long reference, Read read )
     {
         storeCursor.single( reference );
-        type = -1;
         this.single = reference;
         init( read );
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
@@ -164,7 +160,6 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         {
             return "RelationshipScanCursor[id=" + storeCursor.entityReference() +
                     ", open state with: single=" + single +
-                    ", type=" + type +
                     ", " + storeCursor + "]";
         }
     }

@@ -292,7 +292,7 @@ abstract class Read implements TxStateHolder,
     public final void allRelationshipsScan( RelationshipScanCursor cursor )
     {
         ktx.assertOpen();
-        ((DefaultRelationshipScanCursor) cursor).scan( -1/*include all labels*/, this );
+        ((DefaultRelationshipScanCursor) cursor).scan( this );
     }
 
     @Override
@@ -300,13 +300,6 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
         return new RelationshipCursorScan( storageReader.allRelationshipScan(), this, cursorTracer );
-    }
-
-    @Override
-    public final void relationshipTypeScan( int type, RelationshipScanCursor cursor )
-    {
-        ktx.assertOpen();
-        ((DefaultRelationshipScanCursor) cursor).scan( type, this );
     }
 
     @Override

@@ -28,6 +28,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
@@ -35,7 +36,9 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
+import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -51,7 +54,6 @@ import org.neo4j.internal.kernel.api.security.AdminAccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -85,7 +87,9 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
+import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.singleOrNull;
+import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
@@ -274,7 +278,7 @@ public class AllStoreHolder extends Read
         {
             return storageReader.countsForRelationship( startLabelId, typeId, endLabelId, cursorTracer );
         }
-        else if ( mode.disallowsTraverseRelType( typeId ) ||
+        if ( mode.disallowsTraverseRelType( typeId ) ||
                   mode.disallowsTraverseLabel( startLabelId ) ||
                   mode.disallowsTraverseLabel( endLabelId ) )
         {
@@ -282,40 +286,52 @@ public class AllStoreHolder extends Read
             // so the count will be 0.
             return 0;
         }
+
         // token index scan can only scan for single relationship type
-        else if ( relationshipTypeScanStoreEnabled() && typeId != TokenRead.ANY_RELATIONSHIP_TYPE )
+        if ( scanStoreAsTokenIndexEnabled() && typeId != TokenRead.ANY_RELATIONSHIP_TYPE )
         {
-            long count = 0;
-            try ( DefaultRelationshipTypeIndexCursor relationshipsWithType = cursors.allocateRelationshipTypeIndexCursor( cursorTracer );
-                  DefaultRelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor( cursorTracer );
-                  DefaultNodeCursor sourceNode = cursors.allocateNodeCursor( cursorTracer );
-                  DefaultNodeCursor targetNode = cursors.allocateNodeCursor( cursorTracer ) )
+            try
             {
-                this.relationshipTypeScan( typeId, relationshipsWithType, IndexOrder.NONE );
-                while ( relationshipsWithType.next() )
+                var index = findUsableTokenIndex( EntityType.RELATIONSHIP );
+                if ( index != IndexDescriptor.NO_INDEX )
                 {
-                    relationshipsWithType.relationship( relationship );
-                    count += countRelationshipsWithEndLabels( relationship, sourceNode, targetNode, startLabelId, endLabelId );
+                    long count = 0;
+                    try ( DefaultRelationshipTypeIndexCursor relationshipsWithType = cursors.allocateRelationshipTypeIndexCursor( cursorTracer );
+                          DefaultRelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor( cursorTracer );
+                          DefaultNodeCursor sourceNode = cursors.allocateNodeCursor( cursorTracer );
+                          DefaultNodeCursor targetNode = cursors.allocateNodeCursor( cursorTracer ) )
+                    {
+                        var session = tokenReadSession( index );
+                        this.relationshipTypeScan( session, relationshipsWithType, unconstrained(), new TokenPredicate( typeId ) );
+                        while ( relationshipsWithType.next() )
+                        {
+                            relationshipsWithType.relationship( relationship );
+                            count += countRelationshipsWithEndLabels( relationship, sourceNode, targetNode, startLabelId, endLabelId );
+                        }
+                    }
+                    return count - countsForRelationshipInTxState( startLabelId, typeId, endLabelId );
                 }
             }
-            return count - countsForRelationshipInTxState( startLabelId, typeId, endLabelId );
-        }
-        else
-        {
-            long count;
-            try ( DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor( cursorTracer );
-                    DefaultNodeCursor sourceNode = cursors.allocateFullAccessNodeCursor( cursorTracer );
-                    DefaultNodeCursor targetNode = cursors.allocateFullAccessNodeCursor( cursorTracer ) )
+            catch ( KernelException ignored )
             {
-                // this is actually all relationship scan with filtering by type
-                this.relationshipTypeScan( typeId, rels );
-                count = countRelationshipsWithEndLabels( rels, sourceNode, targetNode, startLabelId, endLabelId );
+                // ignore, fallback to allRelationshipsScan
             }
-            return count - countsForRelationshipInTxState( startLabelId, typeId, endLabelId );
         }
+
+        long count;
+        try ( DefaultRelationshipScanCursor rels = cursors.allocateRelationshipScanCursor( cursorTracer );
+                DefaultNodeCursor sourceNode = cursors.allocateFullAccessNodeCursor( cursorTracer );
+                DefaultNodeCursor targetNode = cursors.allocateFullAccessNodeCursor( cursorTracer ) )
+        {
+            this.allRelationshipsScan( rels );
+            Predicate<RelationshipScanCursor> predicate = typeId == TokenRead.ANY_RELATIONSHIP_TYPE ? alwaysTrue() : CursorPredicates.hasType( typeId );
+            var filteredCursor = new FilteringRelationshipScanCursorWrapper( rels, predicate );
+            count = countRelationshipsWithEndLabels( filteredCursor, sourceNode, targetNode, startLabelId, endLabelId );
+        }
+        return count - countsForRelationshipInTxState( startLabelId, typeId, endLabelId );
     }
 
-    private static long countRelationshipsWithEndLabels( DefaultRelationshipScanCursor relationship, DefaultNodeCursor sourceNode, DefaultNodeCursor targetNode,
+    private static long countRelationshipsWithEndLabels( RelationshipScanCursor relationship, DefaultNodeCursor sourceNode, DefaultNodeCursor targetNode,
             int startLabelId, int endLabelId )
     {
         long internalCount = 0;
@@ -324,7 +340,7 @@ public class AllStoreHolder extends Read
             relationship.source( sourceNode );
             relationship.target( targetNode );
             if ( sourceNode.next() && (startLabelId == TokenRead.ANY_LABEL || sourceNode.hasLabel( startLabelId )) &&
-                    targetNode.next() && (endLabelId == TokenRead.ANY_LABEL || targetNode.hasLabel( endLabelId )) )
+                 targetNode.next() && (endLabelId == TokenRead.ANY_LABEL || targetNode.hasLabel( endLabelId )) )
             {
                 internalCount++;
             }
@@ -356,6 +372,21 @@ public class AllStoreHolder extends Read
             }
         }
         return count;
+    }
+
+    IndexDescriptor findUsableTokenIndex( EntityType entityType ) throws IndexNotFoundKernelException
+    {
+        var descriptor = SchemaDescriptor.forAllEntityTokens( entityType );
+        var indexes = index( descriptor );
+        if ( indexes.hasNext() )
+        {
+            IndexDescriptor index = indexes.next();
+            if ( indexGetState( index ) == InternalIndexState.ONLINE )
+            {
+                return index;
+            }
+        }
+        return IndexDescriptor.NO_INDEX;
     }
 
     @Override

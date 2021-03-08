@@ -31,7 +31,6 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 public class RecordRelationshipScanCursor extends RecordRelationshipCursor implements StorageRelationshipScanCursor
 {
-    private int filterType;
     private long next;
     private long highMark;
     private long nextStoreReference;
@@ -47,12 +46,6 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
     @Override
     public void scan()
     {
-        scan( -1 );
-    }
-
-    @Override
-    public void scan( int type )
-    {
         if ( getId() != NO_ID )
         {
             resetState();
@@ -62,7 +55,6 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
             pageCursor = relationshipPage( 0 );
         }
         this.next = 0;
-        this.filterType = type;
         this.highMark = relationshipHighMark();
         this.nextStoreReference = NO_ID;
         this.open = true;
@@ -80,7 +72,6 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
             pageCursor = relationshipPage( reference );
         }
         this.next = reference >= 0 ? reference : NO_ID;
-        this.filterType = -1;
         this.highMark = NO_ID;
         this.nextStoreReference = NO_ID;
         this.open = true;
@@ -96,7 +87,6 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
         this.batched = true;
         this.open = true;
         this.nextStoreReference = NO_ID;
-        this.filterType = -1;
 
         return ((RecordRelationshipScan) scan).scanBatch( sizeHint , this);
     }
@@ -163,18 +153,13 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
                     if ( next > highMark )
                     {
                         next = NO_ID;
-                        return isWantedTypeAndInUse();
+                        return inUse();
                     }
                 }
             }
         }
-        while ( !isWantedTypeAndInUse() );
+        while ( !inUse() );
         return true;
-    }
-
-    private boolean isWantedTypeAndInUse()
-    {
-        return (filterType == -1 || type() == filterType) && inUse();
     }
 
     @Override
@@ -203,8 +188,8 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
         }
         else
         {
-            return "RelationshipScanCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next + ", type=" + filterType +
-                    ", underlying record=" + super.toString() + "]";
+            return "RelationshipScanCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next +
+                   ", underlying record=" + super.toString() + "]";
         }
     }
 

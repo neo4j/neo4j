@@ -30,7 +30,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
@@ -1257,7 +1256,7 @@ public class Operations implements Write, SchemaWrite
     {
         if ( allStoreHolder.scanStoreAsTokenIndexEnabled() )
         {
-            IndexDescriptor index = findUsableTokenIndex( NODE );
+            IndexDescriptor index = allStoreHolder.findUsableTokenIndex( NODE );
             if ( index != IndexDescriptor.NO_INDEX )
             {
                 try ( var cursor = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
@@ -1287,21 +1286,6 @@ public class Operations implements Write, SchemaWrite
         }
     }
 
-    private IndexDescriptor findUsableTokenIndex( EntityType entityType ) throws IndexNotFoundKernelException
-    {
-        var descriptor = SchemaDescriptor.forAllEntityTokens( entityType );
-        var indexes = allStoreHolder.index( descriptor );
-        if ( indexes.hasNext() )
-        {
-            IndexDescriptor index = indexes.next();
-            if ( allStoreHolder.indexGetState( index ) == InternalIndexState.ONLINE )
-            {
-                return index;
-            }
-        }
-        return IndexDescriptor.NO_INDEX;
-    }
-
     @Override
     public ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor schema, String name ) throws KernelException
     {
@@ -1319,7 +1303,7 @@ public class Operations implements Write, SchemaWrite
     {
         if ( allStoreHolder.scanStoreAsTokenIndexEnabled() )
         {
-            IndexDescriptor index = findUsableTokenIndex( NODE );
+            IndexDescriptor index = allStoreHolder.findUsableTokenIndex( NODE );
             if ( index != IndexDescriptor.NO_INDEX )
             {
                 try ( var cursor = cursors.allocateFullAccessNodeLabelIndexCursor( cursorTracer ) )
@@ -1367,7 +1351,7 @@ public class Operations implements Write, SchemaWrite
     {
         if ( allStoreHolder.scanStoreAsTokenIndexEnabled() )
         {
-            var index = findUsableTokenIndex( RELATIONSHIP );
+            var index = allStoreHolder.findUsableTokenIndex( RELATIONSHIP );
             if ( index != IndexDescriptor.NO_INDEX )
             {
                 try ( var fullAccessIndexCursor = cursors.allocateFullAccessRelationshipTypeIndexCursor();

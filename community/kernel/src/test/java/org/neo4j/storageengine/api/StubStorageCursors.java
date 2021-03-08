@@ -568,12 +568,6 @@ public class StubStorageCursors implements StorageReader
         @Override
         public void scan()
         {
-            scan( -1 );
-        }
-
-        @Override
-        public void scan( int type )
-        {
             iterator = relationshipData.keySet().iterator();
             next = NO_ID;
         }

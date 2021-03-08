@@ -320,8 +320,6 @@ public interface Read
 
     Scan<RelationshipScanCursor> allRelationshipsScan();
 
-    void relationshipTypeScan( int type, RelationshipScanCursor cursor );
-
     /**
      * Scan all relationships of a type.
      *

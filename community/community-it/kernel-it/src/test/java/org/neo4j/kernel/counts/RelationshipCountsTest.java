@@ -229,6 +229,36 @@ class RelationshipCountsTest
     }
 
     @Test
+    void shouldCountRelationshipsByTypeWithTxState()
+    {
+        // given
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.createNode().createRelationshipTo( tx.createNode(), withName( "FOO" ) );
+            tx.createNode().createRelationshipTo( tx.createNode(), withName( "FOO" ) );
+            tx.createNode().createRelationshipTo( tx.createNode(), withName( "BAR" ) );
+            tx.createNode().createRelationshipTo( tx.createNode(), withName( "BAR" ) );
+            tx.createNode().createRelationshipTo( tx.createNode(), withName( "BAR" ) );
+            tx.createNode().createRelationshipTo( tx.createNode(), withName( "BAZ" ) );
+
+            // when
+            long total = countsForRelationship( tx, null, null, null );
+            long foo = countsForRelationship( tx, null, withName( "FOO" ), null );
+            long bar = countsForRelationship( tx, null, withName( "BAR" ), null );
+            long baz = countsForRelationship( tx, null, withName( "BAZ" ), null );
+            long qux = countsForRelationship( tx, null, withName( "QUX" ), null );
+
+            // then
+            assertEquals( 2, foo );
+            assertEquals( 3, bar );
+            assertEquals( 1, baz );
+            assertEquals( 0, qux );
+            assertEquals( 6, total );
+            tx.commit();
+        }
+    }
+
+    @Test
     void shouldUpdateRelationshipWithLabelCountsWhenDeletingNodeWithRelationship()
     {
         // given
