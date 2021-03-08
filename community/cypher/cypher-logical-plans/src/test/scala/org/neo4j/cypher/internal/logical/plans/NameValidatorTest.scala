@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InvalidArgumentException
-import org.scalatest.{FunSuite, Matchers}
 
-class NameValidatorTest extends FunSuite with Matchers {
+class NameValidatorTest extends CypherFunSuite {
 
   // username tests
 

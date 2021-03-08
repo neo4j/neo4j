@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.evaluator
 
 import java.lang.Math.{PI, sin}
-
+import org.junit.runner.RunWith
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D
 import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
@@ -28,7 +28,9 @@ import org.neo4j.values.storable.Values.{intValue, pointValue, stringValue}
 import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.{list, map}
 import org.scalatest._
+import org.scalatest.junit.JUnitRunner
 
+@RunWith(classOf[JUnitRunner])
 class SimpleInternalExpressionEvaluatorTest extends FunSuiteLike with Matchers {
 
   test("parse literals") {
