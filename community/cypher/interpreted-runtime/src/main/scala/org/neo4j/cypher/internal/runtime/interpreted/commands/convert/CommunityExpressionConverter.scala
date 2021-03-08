@@ -131,27 +131,17 @@ import org.neo4j.values.storable.Values.intValue
 
 case class CommunityExpressionConverter(tokenContext: TokenContext) extends ExpressionConverter {
 
-  override def toCommandProjection(id: Id,
-                                   projections: Map[String, Expression],
-                                   self: ExpressionConverters,
-                                   logger: ExpressionConversionLogger): Option[CommandProjection] = {
-    val projected = for ((k,Some(v)) <- projections.mapValues(e => toCommandExpression(id, e, self, logger))) yield (k,v)
+  override def toCommandProjection(id: Id, projections: Map[String, Expression], self: ExpressionConverters): Option[CommandProjection] = {
+    val projected = for ((k,Some(v)) <- projections.mapValues(e => toCommandExpression(id, e, self))) yield (k,v)
     if (projected.size < projections.size) None else Some(InterpretedCommandProjection(projected))
   }
 
 
-  override def toGroupingExpression(id: Id,
-                                    groupings: Map[String, Expression],
-                                    orderToLeverage: Seq[Expression],
-                                    self: ExpressionConverters,
-                                    logger: ExpressionConversionLogger): Option[GroupingExpression] = {
+  override def toGroupingExpression(id: Id, groupings: Map[String, Expression], orderToLeverage: Seq[Expression], self: ExpressionConverters): Option[GroupingExpression] = {
     throw new IllegalStateException("CommunityExpressionConverter cannot create grouping expressions")
   }
 
-  override def toCommandExpression(id: Id,
-                                   expression: internal.expressions.Expression,
-                                   self: ExpressionConverters,
-                                   logger: ExpressionConversionLogger): Option[commands.expressions.Expression] = {
+  override def toCommandExpression(id: Id, expression: Expression, self: ExpressionConverters): Option[commands.expressions.Expression] = {
     val result = expression match {
       case _: internal.expressions.Null => commands.expressions.Null()
       case _: internal.expressions.True => predicates.True()

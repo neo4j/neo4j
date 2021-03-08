@@ -56,9 +56,9 @@ import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.Direction
 
 trait ExpressionConverter {
-  def toCommandExpression(id: Id, expression: internal.expressions.Expression, self: ExpressionConverters, logger: ExpressionConversionLogger): Option[commands.expressions.Expression]
-  def toCommandProjection(id: Id, projections: Map[String, internal.expressions.Expression], self: ExpressionConverters, logger: ExpressionConversionLogger): Option[CommandProjection]
-  def toGroupingExpression(id: Id, groupings: Map[String, internal.expressions.Expression], orderToLeverage: Seq[internal.expressions.Expression], self: ExpressionConverters, logger: ExpressionConversionLogger): Option[GroupingExpression]
+  def toCommandExpression(id: Id, expression: Expression, self: ExpressionConverters): Option[commands.expressions.Expression]
+  def toCommandProjection(id: Id, projections: Map[String, Expression], self: ExpressionConverters): Option[CommandProjection]
+  def toGroupingExpression(id: Id, groupings: Map[String, Expression], orderToLeverage: Seq[Expression], self: ExpressionConverters): Option[GroupingExpression]
 }
 
 trait ExpressionConversionLogger {
@@ -74,13 +74,13 @@ object NullExpressionConversionLogger extends ExpressionConversionLogger {
 
 }
 
-class ExpressionConverters(logger: ExpressionConversionLogger, converters: ExpressionConverter*) {
+class ExpressionConverters(converters: ExpressionConverter*) {
 
   self =>
 
   def toCommandExpression(id: Id, expression: internal.expressions.Expression): commands.expressions.Expression = {
     converters foreach { c: ExpressionConverter =>
-      c.toCommandExpression(id, expression, this, logger) match {
+      c.toCommandExpression(id, expression, this) match {
         case Some(x) => return x
         case None =>
       }
@@ -91,7 +91,7 @@ class ExpressionConverters(logger: ExpressionConversionLogger, converters: Expre
 
   def toCommandProjection(id: Id, projections: Map[String, internal.expressions.Expression]): CommandProjection = {
     converters foreach { c: ExpressionConverter =>
-      c.toCommandProjection(id, projections, this, logger) match {
+      c.toCommandProjection(id, projections, this) match {
         case Some(x) => return x
         case None =>
       }
@@ -102,7 +102,7 @@ class ExpressionConverters(logger: ExpressionConversionLogger, converters: Expre
 
   def toGroupingExpression(id: Id, groupings: Map[String, internal.expressions.Expression], orderToLeverage: Seq[internal.expressions.Expression]): GroupingExpression = {
     converters foreach { c: ExpressionConverter =>
-      c.toGroupingExpression(id, groupings, orderToLeverage, this, logger) match {
+      c.toGroupingExpression(id, groupings, orderToLeverage, this) match {
         case Some(x) => return x
         case None =>
       }

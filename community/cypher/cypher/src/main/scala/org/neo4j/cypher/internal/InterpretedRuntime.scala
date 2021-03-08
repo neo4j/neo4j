@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.InterpretedPipeMapper
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.NullExpressionConversionLogger
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NestedPipeExpressions
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeTreeBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.profiler.InterpretedProfileInformation
@@ -56,7 +55,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     val Result(logicalPlan, nExpressionSlots, availableExpressionVars) = expressionVariableAllocation.allocate(query.logicalPlan)
     val (withSlottedParameters, parameterMapping) = slottedParameters(logicalPlan)
 
-    val converters = new ExpressionConverters(NullExpressionConversionLogger, CommunityExpressionConverter(context.tokenContext))
+    val converters = new ExpressionConverters(CommunityExpressionConverter(context.tokenContext))
     val queryIndexRegistrator = new QueryIndexRegistrator(context.schemaRead)
     val pipeMapper = InterpretedPipeMapper(query.readOnly, converters, context.tokenContext, queryIndexRegistrator)(query.semanticTable)
     val pipeTreeBuilder = PipeTreeBuilder(pipeMapper)

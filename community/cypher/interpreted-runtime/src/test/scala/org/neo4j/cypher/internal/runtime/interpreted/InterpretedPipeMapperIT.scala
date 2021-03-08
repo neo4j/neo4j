@@ -48,7 +48,6 @@ import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.NullExpressionConversionLogger
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken.Resolved
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AllNodesScanPipe
@@ -87,7 +86,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
       "existing3" -> RelTypeId(3)))
 
   val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  val converters = new ExpressionConverters(NullExpressionConversionLogger, CommunityExpressionConverter(TokenContext.EMPTY))
+  val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
   private val pipeMapper =
     InterpretedPipeMapper(readOnly = true, converters, planContext, mock[QueryIndexRegistrator])(semanticTable)
 

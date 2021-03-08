@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PathExpressionConversionTest extends CypherFunSuite {
 
-  val converters = new ExpressionConverters(NullExpressionConversionLogger, CommunityExpressionConverter(TokenContext.EMPTY))
+  val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
 
   val pos = DummyPosition(0)
 

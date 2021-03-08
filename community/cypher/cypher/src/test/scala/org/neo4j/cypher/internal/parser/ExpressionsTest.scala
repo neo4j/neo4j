@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.NullExpressionConversionLogger
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
@@ -130,6 +129,6 @@ class ExpressionsTest extends ParserTest[internal.expressions.Expression, comman
 
   }
 
-  private val converters = new ExpressionConverters(NullExpressionConversionLogger, CommunityExpressionConverter(TokenContext.EMPTY))
+  private val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
   def convert(astNode: internal.expressions.Expression): commands.expressions.Expression = converters.toCommandExpression(Id.INVALID_ID, astNode)
 }
