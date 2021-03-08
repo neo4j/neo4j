@@ -48,10 +48,9 @@ import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.scalatest.FunSuite
-import org.scalatest.Matchers
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class CardinalityCalculatorTest extends FunSuite with Matchers {
+class CardinalityCalculatorTest extends CypherFunSuite {
 
   private val pos = InputPosition.NONE
 
