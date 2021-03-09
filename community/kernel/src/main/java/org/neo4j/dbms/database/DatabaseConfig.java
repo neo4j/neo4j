@@ -51,7 +51,7 @@ public class DatabaseConfig extends Config implements Lifecycle
         this.globalConfig = globalConfig;
         overriddenSettings = !namedDatabaseId.isSystemDatabase() ? null : Map.of(
                 read_only, FALSE,
-                record_format, record_format.defaultValue(),
+                record_format, "", //Latest version of the format family it is currently on. Needs to work in rolling upgrade.
                 allow_upgrade, TRUE
         );
     }
