@@ -108,7 +108,7 @@ public class OffHeapMemoryAllocator implements MemoryAllocator
             {
                 return newDirectByteBuffer( block.addr, toIntExact( block.size ) );
             }
-            catch ( Exception e )
+            catch ( Throwable e )
             {
                 throw new RuntimeException( e );
             }

@@ -19,7 +19,9 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.neo4j.internal.unsafe.UnsafeUtil;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
 import org.neo4j.util.concurrent.BinaryLatch;
@@ -47,9 +49,8 @@ final class LatchMap
 
     static final int DEFAULT_FAULT_LOCK_STRIPING = 128;
     static final int faultLockStriping = FeatureToggles.getInteger( LatchMap.class, "faultLockStriping", DEFAULT_FAULT_LOCK_STRIPING );
-    private static final int latchesArrayBase = UnsafeUtil.arrayBaseOffset( Latch[].class );
-    private static final int latchesArrayScale = UnsafeUtil.arrayIndexScale( Latch[].class );
 
+    private static final VarHandle LATCHES_ARRAY = MethodHandles.arrayElementVarHandle( Latch[].class );
     private final Latch[] latches;
     private final long faultLockMask;
 
@@ -60,24 +61,19 @@ final class LatchMap
         faultLockMask = size - 1;
     }
 
-    private long offset( int index )
-    {
-        return UnsafeUtil.arrayOffset( index, latchesArrayBase, latchesArrayScale );
-    }
-
     private void setLatch( int index, BinaryLatch newValue )
     {
-        UnsafeUtil.putObjectVolatile( latches, offset( index ), newValue );
+        LATCHES_ARRAY.setVolatile( latches, index, newValue );
     }
 
     private boolean compareAndSetLatch( int index, Latch expected, Latch update )
     {
-        return UnsafeUtil.compareAndSwapObject( latches, offset( index ), expected, update );
+        return LATCHES_ARRAY.compareAndSet( latches, index, expected, update );
     }
 
     private Latch getLatch( int index )
     {
-        return (Latch) UnsafeUtil.getObjectVolatile( latches, offset( index ) );
+        return (Latch) LATCHES_ARRAY.getVolatile( latches, index );
     }
 
     /**

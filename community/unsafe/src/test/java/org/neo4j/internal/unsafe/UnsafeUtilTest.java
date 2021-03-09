@@ -37,53 +37,25 @@ import static org.neo4j.internal.unsafe.UnsafeUtil.arrayBaseOffset;
 import static org.neo4j.internal.unsafe.UnsafeUtil.arrayIndexScale;
 import static org.neo4j.internal.unsafe.UnsafeUtil.arrayOffset;
 import static org.neo4j.internal.unsafe.UnsafeUtil.assertHasUnsafe;
-import static org.neo4j.internal.unsafe.UnsafeUtil.compareAndSetMaxLong;
 import static org.neo4j.internal.unsafe.UnsafeUtil.compareAndSwapLong;
-import static org.neo4j.internal.unsafe.UnsafeUtil.compareAndSwapObject;
 import static org.neo4j.internal.unsafe.UnsafeUtil.free;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getAndAddInt;
 import static org.neo4j.internal.unsafe.UnsafeUtil.getAndSetLong;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getAndSetObject;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getBoolean;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getBooleanVolatile;
 import static org.neo4j.internal.unsafe.UnsafeUtil.getByte;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getByteVolatile;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getChar;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getCharVolatile;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getDouble;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getDoubleVolatile;
 import static org.neo4j.internal.unsafe.UnsafeUtil.getFieldOffset;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getFloat;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getFloatVolatile;
 import static org.neo4j.internal.unsafe.UnsafeUtil.getInt;
 import static org.neo4j.internal.unsafe.UnsafeUtil.getIntVolatile;
 import static org.neo4j.internal.unsafe.UnsafeUtil.getLong;
 import static org.neo4j.internal.unsafe.UnsafeUtil.getLongVolatile;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getObject;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getObjectVolatile;
 import static org.neo4j.internal.unsafe.UnsafeUtil.getShort;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getShortVolatile;
 import static org.neo4j.internal.unsafe.UnsafeUtil.initDirectByteBuffer;
 import static org.neo4j.internal.unsafe.UnsafeUtil.newDirectByteBuffer;
 import static org.neo4j.internal.unsafe.UnsafeUtil.pageSize;
-import static org.neo4j.internal.unsafe.UnsafeUtil.putBoolean;
-import static org.neo4j.internal.unsafe.UnsafeUtil.putBooleanVolatile;
 import static org.neo4j.internal.unsafe.UnsafeUtil.putByte;
-import static org.neo4j.internal.unsafe.UnsafeUtil.putByteVolatile;
-import static org.neo4j.internal.unsafe.UnsafeUtil.putChar;
-import static org.neo4j.internal.unsafe.UnsafeUtil.putCharVolatile;
-import static org.neo4j.internal.unsafe.UnsafeUtil.putDouble;
-import static org.neo4j.internal.unsafe.UnsafeUtil.putDoubleVolatile;
-import static org.neo4j.internal.unsafe.UnsafeUtil.putFloat;
-import static org.neo4j.internal.unsafe.UnsafeUtil.putFloatVolatile;
 import static org.neo4j.internal.unsafe.UnsafeUtil.putInt;
 import static org.neo4j.internal.unsafe.UnsafeUtil.putIntVolatile;
 import static org.neo4j.internal.unsafe.UnsafeUtil.putLong;
 import static org.neo4j.internal.unsafe.UnsafeUtil.putLongVolatile;
-import static org.neo4j.internal.unsafe.UnsafeUtil.putObject;
-import static org.neo4j.internal.unsafe.UnsafeUtil.putObjectVolatile;
 import static org.neo4j.internal.unsafe.UnsafeUtil.putShort;
-import static org.neo4j.internal.unsafe.UnsafeUtil.putShortVolatile;
 import static org.neo4j.internal.unsafe.UnsafeUtil.setMemory;
 
 class UnsafeUtilTest
@@ -148,19 +120,6 @@ class UnsafeUtilTest
     {
         Obj obj;
 
-        long aBooleanOffset = getFieldOffset( Obj.class, "aBoolean" );
-        obj = new Obj();
-        putBoolean( obj, aBooleanOffset, true );
-        assertThat( obj.aBoolean ).isEqualTo( true );
-        assertThat( getBoolean( obj, aBooleanOffset ) ).isEqualTo( true );
-        obj.aBoolean = false;
-        assertThat( obj ).isEqualTo( new Obj() );
-        putBooleanVolatile( obj, aBooleanOffset, true );
-        assertThat( obj.aBoolean ).isEqualTo( true );
-        assertThat( getBooleanVolatile( obj, aBooleanOffset ) ).isEqualTo( true );
-        obj.aBoolean = false;
-        assertThat( obj ).isEqualTo( new Obj() );
-
         long aByteOffset = getFieldOffset( Obj.class, "aByte" );
         obj = new Obj();
         putByte( obj, aByteOffset, (byte) 1 );
@@ -168,103 +127,13 @@ class UnsafeUtilTest
         assertThat( getByte( obj, aByteOffset ) ).isEqualTo( (byte) 1 );
         obj.aByte = 0;
         assertThat( obj ).isEqualTo( new Obj() );
-        putByteVolatile( obj, aByteOffset, (byte) 2 );
-        assertThat( obj.aByte ).isEqualTo( (byte) 2 );
-        assertThat( getByteVolatile( obj, aByteOffset ) ).isEqualTo( (byte) 2 );
-        obj.aByte = 0;
-        assertThat( obj ).isEqualTo( new Obj() );
-
-        long aShortOffset = getFieldOffset( Obj.class, "aShort" );
-        obj = new Obj();
-        putShort( obj, aShortOffset, (byte) 1 );
-        assertThat( obj.aShort ).isEqualTo( (short) 1 );
-        assertThat( getShort( obj, aShortOffset ) ).isEqualTo( (short) 1 );
-        obj.aShort = 0;
-        assertThat( obj ).isEqualTo( new Obj() );
-        putShortVolatile( obj, aShortOffset, (short) 2 );
-        assertThat( obj.aShort ).isEqualTo( (short) 2 );
-        assertThat( getShortVolatile( obj, aShortOffset ) ).isEqualTo( (short) 2 );
-        obj.aShort = 0;
-        assertThat( obj ).isEqualTo( new Obj() );
-
-        long aFloatOffset = getFieldOffset( Obj.class, "aFloat" );
-        obj = new Obj();
-        putFloat( obj, aFloatOffset, 1 );
-        assertThat( obj.aFloat ).isEqualTo( (float) 1 );
-        assertThat( getFloat( obj, aFloatOffset ) ).isEqualTo( (float) 1 );
-        obj.aFloat = 0;
-        assertThat( obj ).isEqualTo( new Obj() );
-        putFloatVolatile( obj, aFloatOffset, 2 );
-        assertThat( obj.aFloat ).isEqualTo( (float) 2 );
-        assertThat( getFloatVolatile( obj, aFloatOffset ) ).isEqualTo( (float) 2 );
-        obj.aFloat = 0;
-        assertThat( obj ).isEqualTo( new Obj() );
-
-        long aCharOffset = getFieldOffset( Obj.class, "aChar" );
-        obj = new Obj();
-        putChar( obj, aCharOffset, '1' );
-        assertThat( obj.aChar ).isEqualTo( '1' );
-        assertThat( getChar( obj, aCharOffset ) ).isEqualTo( '1' );
-        obj.aChar = 0;
-        assertThat( obj ).isEqualTo( new Obj() );
-        putCharVolatile( obj, aCharOffset, '2' );
-        assertThat( obj.aChar ).isEqualTo( '2' );
-        assertThat( getCharVolatile( obj, aCharOffset ) ).isEqualTo( '2' );
-        obj.aChar = 0;
-        assertThat( obj ).isEqualTo( new Obj() );
 
         long anIntOffset = getFieldOffset( Obj.class, "anInt" );
         obj = new Obj();
-        putInt( obj, anIntOffset, 1 );
-        assertThat( obj.anInt ).isEqualTo( 1 );
-        assertThat( getInt( obj, anIntOffset ) ).isEqualTo( 1 );
-        obj.anInt = 0;
-        assertThat( obj ).isEqualTo( new Obj() );
         putIntVolatile( obj, anIntOffset, 2 );
         assertThat( obj.anInt ).isEqualTo( 2 );
         assertThat( getIntVolatile( obj, anIntOffset ) ).isEqualTo( 2 );
         obj.anInt = 0;
-        assertThat( obj ).isEqualTo( new Obj() );
-
-        long aLongOffset = getFieldOffset( Obj.class, "aLong" );
-        obj = new Obj();
-        putLong( obj, aLongOffset, 1 );
-        assertThat( obj.aLong ).isEqualTo( 1L );
-        assertThat( getLong( obj, aLongOffset ) ).isEqualTo( 1L );
-        obj.aLong = 0;
-        assertThat( obj ).isEqualTo( new Obj() );
-        putLongVolatile( obj, aLongOffset, 2 );
-        assertThat( obj.aLong ).isEqualTo( 2L );
-        assertThat( getLongVolatile( obj, aLongOffset ) ).isEqualTo( 2L );
-        obj.aLong = 0;
-        assertThat( obj ).isEqualTo( new Obj() );
-
-        long aDoubleOffset = getFieldOffset( Obj.class, "aDouble" );
-        obj = new Obj();
-        putDouble( obj, aDoubleOffset, 1 );
-        assertThat( obj.aDouble ).isEqualTo( 1 );
-        assertThat( getDouble( obj, aDoubleOffset ) ).isEqualTo( 1 );
-        obj.aDouble = 0;
-        assertThat( obj ).isEqualTo( new Obj() );
-        putDoubleVolatile( obj, aDoubleOffset, 2 );
-        assertThat( obj.aDouble ).isEqualTo( 2 );
-        assertThat( getDoubleVolatile( obj, aDoubleOffset ) ).isEqualTo( 2 );
-        obj.aDouble = 0;
-        assertThat( obj ).isEqualTo( new Obj() );
-
-        long objectOffset = getFieldOffset( Obj.class, "object" );
-        obj = new Obj();
-        Object a = new Object();
-        Object b = new Object();
-        putObject( obj, objectOffset, a );
-        assertThat( obj.object ).isEqualTo( a );
-        assertThat( getObject( obj, objectOffset ) ).isEqualTo( a );
-        obj.object = null;
-        assertThat( obj ).isEqualTo( new Obj() );
-        putObjectVolatile( obj, objectOffset, b );
-        assertThat( obj.object ).isEqualTo( b );
-        assertThat( getObjectVolatile( obj, objectOffset ) ).isEqualTo( b );
-        obj.object = null;
         assertThat( obj ).isEqualTo( new Obj() );
     }
 
@@ -281,50 +150,15 @@ class UnsafeUtilTest
             setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getByte( address ) ).isEqualTo( (byte) 0 );
 
-            putByteVolatile( address, (byte) 1 );
-            assertThat( getByteVolatile( address ) ).isEqualTo( (byte) 1 );
-            setMemory( address, sizeInBytes, (byte) 0 );
-            assertThat( getByteVolatile( address ) ).isEqualTo( (byte) 0 );
-
             putShort( address, (short) 1 );
             assertThat( getShort( address ) ).isEqualTo( (short) 1 );
             setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getShort( address ) ).isEqualTo( (short) 0 );
 
-            putShortVolatile( address, (short) 1 );
-            assertThat( getShortVolatile( address ) ).isEqualTo( (short) 1 );
-            setMemory( address, sizeInBytes, (byte) 0 );
-            assertThat( getShortVolatile( address ) ).isEqualTo( (short) 0 );
-
-            putFloat( address, 1 );
-            assertThat( getFloat( address ) ).isEqualTo( (float) 1 );
-            setMemory( address, sizeInBytes, (byte) 0 );
-            assertThat( getFloat( address ) ).isEqualTo( (float) 0 );
-
-            putFloatVolatile( address, 1 );
-            assertThat( getFloatVolatile( address ) ).isEqualTo( (float) 1 );
-            setMemory( address, sizeInBytes, (byte) 0 );
-            assertThat( getFloatVolatile( address ) ).isEqualTo( (float) 0 );
-
-            putChar( address, '1' );
-            assertThat( getChar( address ) ).isEqualTo( '1' );
-            setMemory( address, sizeInBytes, (byte) 0 );
-            assertThat( getChar( address ) ).isEqualTo( (char) 0 );
-
-            putCharVolatile( address, '1' );
-            assertThat( getCharVolatile( address ) ).isEqualTo( '1' );
-            setMemory( address, sizeInBytes, (byte) 0 );
-            assertThat( getCharVolatile( address ) ).isEqualTo( (char) 0 );
-
             putInt( address, 1 );
             assertThat( getInt( address ) ).isEqualTo( 1 );
             setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getInt( address ) ).isEqualTo( 0 );
-
-            putIntVolatile( address, 1 );
-            assertThat( getIntVolatile( address ) ).isEqualTo( 1 );
-            setMemory( address, sizeInBytes, (byte) 0 );
-            assertThat( getIntVolatile( address ) ).isEqualTo( 0 );
 
             putLong( address, 1 );
             assertThat( getLong( address ) ).isEqualTo( 1L );
@@ -335,33 +169,11 @@ class UnsafeUtilTest
             assertThat( getLongVolatile( address ) ).isEqualTo( 1L );
             setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getLongVolatile( address ) ).isEqualTo( 0L );
-
-            putDouble( address, 1 );
-            assertThat( getDouble( address ) ).isEqualTo( 1 );
-            setMemory( address, sizeInBytes, (byte) 0 );
-            assertThat( getDouble( address ) ).isEqualTo( 0 );
-
-            putDoubleVolatile( address, 1 );
-            assertThat( getDoubleVolatile( address ) ).isEqualTo( 1 );
-            setMemory( address, sizeInBytes, (byte) 0 );
-            assertThat( getDoubleVolatile( address ) ).isEqualTo( 0 );
         }
         finally
         {
             free( address, sizeInBytes, tracker );
         }
-    }
-
-    @Test
-    void getAndAddIntOfField()
-    {
-        Obj obj = new Obj();
-        long anIntOffset = getFieldOffset( Obj.class, "anInt" );
-        assertThat( getAndAddInt( obj, anIntOffset, 3 ) ).isEqualTo( 0 );
-        assertThat( getAndAddInt( obj, anIntOffset, 2 ) ).isEqualTo( 3 );
-        assertThat( obj.anInt ).isEqualTo( 5 );
-        obj.anInt = 0;
-        assertThat( obj ).isEqualTo( new Obj() );
     }
 
     @Test
@@ -376,27 +188,6 @@ class UnsafeUtilTest
     }
 
     @Test
-    void compareAndSwapObjectField()
-    {
-        Obj obj = new Obj();
-        long objectOffset = getFieldOffset( Obj.class, "object" );
-        assertTrue( compareAndSwapObject( obj, objectOffset, null, obj ) );
-        assertFalse( compareAndSwapObject( obj, objectOffset, null, obj ) );
-        assertTrue( compareAndSwapObject( obj, objectOffset, obj, null ) );
-        assertThat( obj ).isEqualTo( new Obj() );
-    }
-
-    @Test
-    void getAndSetObjectField()
-    {
-        Obj obj = new Obj();
-        long objectOffset = getFieldOffset( Obj.class, "object" );
-        assertThat( getAndSetObject( obj, objectOffset, obj ) ).isNull();
-        assertThat( getAndSetObject( obj, objectOffset, null ) ).isSameAs( obj );
-        assertThat( obj ).isEqualTo( new Obj() );
-    }
-
-    @Test
     void getAndSetLongField()
     {
         Obj obj = new Obj();
@@ -406,33 +197,11 @@ class UnsafeUtilTest
     }
 
     @Test
-    void compareAndSetMaxLongField()
-    {
-        Obj obj = new Obj();
-        long offset = getFieldOffset( Obj.class, "aLong" );
-        assertThat( getAndSetLong( obj, offset, 42L ) ).isEqualTo( 0L );
-
-        compareAndSetMaxLong( obj, offset, 5 );
-        assertEquals( 42, getLong( obj, offset ) );
-
-        compareAndSetMaxLong( obj, offset, 105 );
-        assertEquals( 105, getLong( obj, offset ) );
-    }
-
-    @Test
     void unsafeArrayElementAccess()
     {
         int len = 3;
         int scale;
         int base;
-
-        boolean[] booleans = new boolean[len];
-        scale = arrayIndexScale( booleans.getClass() );
-        base = arrayBaseOffset( booleans.getClass() );
-        putBoolean( booleans, arrayOffset( 1, base, scale ), true );
-        assertThat( booleans[0] ).isEqualTo( false );
-        assertThat( booleans[1] ).isEqualTo( true );
-        assertThat( booleans[2] ).isEqualTo( false );
 
         byte[] bytes = new byte[len];
         scale = arrayIndexScale( bytes.getClass() );
@@ -441,66 +210,10 @@ class UnsafeUtilTest
         assertThat( bytes[0] ).isEqualTo( (byte) 0 );
         assertThat( bytes[1] ).isEqualTo( (byte) -1 );
         assertThat( bytes[2] ).isEqualTo( (byte) 0 );
-
-        short[] shorts = new short[len];
-        scale = arrayIndexScale( shorts.getClass() );
-        base = arrayBaseOffset( shorts.getClass() );
-        putShort( shorts, arrayOffset( 1, base, scale ), (short) -1 );
-        assertThat( shorts[0] ).isEqualTo( (short) 0 );
-        assertThat( shorts[1] ).isEqualTo( (short) -1 );
-        assertThat( shorts[2] ).isEqualTo( (short) 0 );
-
-        float[] floats = new float[len];
-        scale = arrayIndexScale( floats.getClass() );
-        base = arrayBaseOffset( floats.getClass() );
-        putFloat( floats, arrayOffset( 1, base, scale ), -1 );
-        assertThat( floats[0] ).isEqualTo( (float) 0 );
-        assertThat( floats[1] ).isEqualTo( (float) -1 );
-        assertThat( floats[2] ).isEqualTo( (float) 0 );
-
-        char[] chars = new char[len];
-        scale = arrayIndexScale( chars.getClass() );
-        base = arrayBaseOffset( chars.getClass() );
-        putChar( chars, arrayOffset( 1, base, scale ), (char) -1 );
-        assertThat( chars[0] ).isEqualTo( (char) 0 );
-        assertThat( chars[1] ).isEqualTo( (char) -1 );
-        assertThat( chars[2] ).isEqualTo( (char) 0 );
-
-        int[] ints = new int[len];
-        scale = arrayIndexScale( ints.getClass() );
-        base = arrayBaseOffset( ints.getClass() );
-        putInt( ints, arrayOffset( 1, base, scale ), -1 );
-        assertThat( ints[0] ).isEqualTo( 0 );
-        assertThat( ints[1] ).isEqualTo( -1 );
-        assertThat( ints[2] ).isEqualTo( 0 );
-
-        long[] longs = new long[len];
-        scale = arrayIndexScale( longs.getClass() );
-        base = arrayBaseOffset( longs.getClass() );
-        putLong( longs, arrayOffset( 1, base, scale ), -1 );
-        assertThat( longs[0] ).isEqualTo( 0L );
-        assertThat( longs[1] ).isEqualTo( -1L );
-        assertThat( longs[2] ).isEqualTo( 0L );
-
-        double[] doubles = new double[len];
-        scale = arrayIndexScale( doubles.getClass() );
-        base = arrayBaseOffset( doubles.getClass() );
-        putDouble( doubles, arrayOffset( 1, base, scale ), -1 );
-        assertThat( doubles[0] ).isEqualTo( 0 );
-        assertThat( doubles[1] ).isEqualTo( -1 );
-        assertThat( doubles[2] ).isEqualTo( 0 );
-
-        Object[] objects = new Object[len];
-        scale = arrayIndexScale( objects.getClass() );
-        base = arrayBaseOffset( objects.getClass() );
-        putObject( objects, arrayOffset( 1, base, scale ), objects );
-        assertThat( objects[0] ).isNull();
-        assertThat( objects[1] ).isSameAs( objects );
-        assertThat( objects[2] ).isNull();
     }
 
     @Test
-    void directByteBufferCreationAndInitialisation() throws Exception
+    void directByteBufferCreationAndInitialisation() throws Throwable
     {
         int sizeInBytes = 313;
         var tracker = new LocalMemoryTracker();

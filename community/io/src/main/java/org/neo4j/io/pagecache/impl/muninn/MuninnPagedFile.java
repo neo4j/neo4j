@@ -21,6 +21,8 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -58,7 +60,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     private static final int translationTableChunkArrayBase = UnsafeUtil.arrayBaseOffset( int[].class );
     private static final int translationTableChunkArrayScale = UnsafeUtil.arrayIndexScale( int[].class );
 
-    private static final long headerStateOffset = UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "headerState" );
     private static final int headerStateRefCountShift = 48;
     private static final int headerStateRefCountMax = 0x7FFF;
     private static final long headerStateRefCountMask = 0x7FFF_0000_0000_0000L;
@@ -86,8 +87,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     private volatile Exception closeStackTrace;
 
     // max modifier transaction id among evicted pages for this file
-    private static final long evictedTransactionIdOffset = UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "highestEvictedTransactionId" );
-    @SuppressWarnings( "unused" ) // accessed using unsafe
+    @SuppressWarnings( "unused" ) // accessed with VarHandle
     private volatile long highestEvictedTransactionId;
 
     /**
@@ -104,7 +104,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * MRRRRRRR RRRRRRRR IIIIIIII IIIIIIII IIIIIIII IIIIIIII IIIIIIII IIIIIIII
      * 1        2        3        4        5        6        7        8        byte
      */
-    @SuppressWarnings( "unused" ) // Accessed via Unsafe
+    @SuppressWarnings( "unused" ) // accessed with VarHandle
     private volatile long headerState;
 
     /**
@@ -661,7 +661,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
 
     private long getHeaderState()
     {
-        return UnsafeUtil.getLongVolatile( this, headerStateOffset );
+        return (long) HEADER_STATE.getVolatile( this );
     }
 
     private static long refCountOf( long state )
@@ -674,11 +674,11 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         if ( lastPageIdFromFile < 0 )
         {
             // MIN_VALUE only has the sign bit raised, and the rest of the bits are zeros.
-            UnsafeUtil.putLongVolatile( this, headerStateOffset, Long.MIN_VALUE );
+            HEADER_STATE.setVolatile( this, Long.MIN_VALUE );
         }
         else
         {
-            UnsafeUtil.putLongVolatile( this, headerStateOffset, lastPageIdFromFile );
+            HEADER_STATE.setVolatile( this, lastPageIdFromFile );
         }
     }
 
@@ -696,8 +696,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             update = newLastPageId + (current & headerStateRefCountMask);
             lastPageId = current & headerStateLastPageIdMask;
         }
-        while ( lastPageId < newLastPageId
-                && !UnsafeUtil.compareAndSwapLong( this, headerStateOffset, current, update ) );
+        while ( lastPageId < newLastPageId && !HEADER_STATE.weakCompareAndSet( this, current, update ) );
     }
 
     /**
@@ -719,7 +718,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             }
             update = (current & headerStateLastPageIdMask) + (count << headerStateRefCountShift);
         }
-        while ( !UnsafeUtil.compareAndSwapLong( this, headerStateOffset, current, update ) );
+        while ( !HEADER_STATE.weakCompareAndSet( this, current, update ) );
     }
 
     /**
@@ -742,7 +741,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             }
             update = (current & headerStateLastPageIdMask) + (count << headerStateRefCountShift);
         }
-        while ( !UnsafeUtil.compareAndSwapLong( this, headerStateOffset, current, update ) );
+        while ( !HEADER_STATE.weakCompareAndSet( this, current, update ) );
         return count == 0;
     }
 
@@ -801,12 +800,20 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
 
     private void setHighestEvictedTransactionId( long modifiedTransactionId )
     {
-        UnsafeUtil.compareAndSetMaxLong( this, evictedTransactionIdOffset, modifiedTransactionId );
+        long current;
+        do
+        {
+            current = (long) HIGHEST_EVICTED_TRANSACTION_ID.getVolatile( this );
+            if ( current >= modifiedTransactionId )
+            {
+                return;
+            }
+        } while ( !HIGHEST_EVICTED_TRANSACTION_ID.weakCompareAndSet( this, current, modifiedTransactionId ) );
     }
 
     long getHighestEvictedTransactionId()
     {
-        return UnsafeUtil.getLongVolatile( this, evictedTransactionIdOffset );
+        return (long) HIGHEST_EVICTED_TRANSACTION_ID.getVolatile( this );
     }
 
     /**
@@ -871,5 +878,21 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     {
         int index = (int) (filePageId & translationTableChunkSizeMask);
         return UnsafeUtil.arrayOffset( index, translationTableChunkArrayBase, translationTableChunkArrayScale );
+    }
+
+    private static final VarHandle HEADER_STATE;
+    private static final VarHandle HIGHEST_EVICTED_TRANSACTION_ID;
+    static
+    {
+        try
+        {
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            HEADER_STATE = l.findVarHandle( MuninnPagedFile.class, "headerState", long.class );
+            HIGHEST_EVICTED_TRANSACTION_ID = l.findVarHandle( MuninnPagedFile.class, "highestEvictedTransactionId", long.class );
+        }
+        catch ( ReflectiveOperationException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
     }
 }

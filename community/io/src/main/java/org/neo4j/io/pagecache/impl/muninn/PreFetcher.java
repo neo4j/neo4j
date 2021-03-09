@@ -40,7 +40,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
  * The given page cursor is being "weakly" observed from a background pre-fetcher thread, as it is progressing through its scan, and the pre-fetcher tries
  * to touch pages ahead of the scanning cursor in order to move page fault overhead from the scanning thread to the pre-fetching thread.
  *
- * The pre-fetcher relies on {@link UnsafeUtil#putOrderedLong(Object, long, long) ordered stores} of the "current page id" from the scanner thread,
+ * The pre-fetcher relies on {@code ordered stores} of the "current page id" from the scanner thread,
  * and on {@link UnsafeUtil#getLongVolatile(long) volatile loads} in the pre-fetcher thread, in order to observe the progress of the scanner without placing
  * too much synchronisation overhead on the scanner. Because this does not form a "synchronises-with" edge in Java Memory Model palace, we say that the
  * scanning cursor is being "weakly" observed. Ordered stores have compiler barriers, but no CPU or cache coherence barriers beyond plain stores.

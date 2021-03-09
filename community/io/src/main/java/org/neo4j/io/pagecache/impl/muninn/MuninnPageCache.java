@@ -23,6 +23,8 @@ import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -141,10 +143,6 @@ public class MuninnPageCache implements PageCache
     private static final IOException oomException = new IOException(
             "OutOfMemoryError encountered in the page cache background eviction thread" );
 
-    // The field offset to unsafely access the freelist field.
-    private static final long freelistOffset =
-            UnsafeUtil.getFieldOffset( MuninnPageCache.class, "freelist" );
-
     // This is used as a poison-pill signal in the freelist, to inform any
     // page faulting thread that it is now no longer possible to queue up and
     // wait for more pages to be evicted, because the page cache has been shut
@@ -185,7 +183,7 @@ public class MuninnPageCache implements PageCache
     // to start its work. From that point on, the field will operate as a concurrent stack of FreePage objects. The
     // eviction thread pushes newly freed FreePage objects onto the stack, and page faulting threads pops FreePage
     // objects from the stack. The FreePage objects are single-use, to avoid running into the ABA-problem.
-    @SuppressWarnings( "unused" ) // This field is accessed via Unsafe.
+    @SuppressWarnings( "unused" ) // This field is accessed via VarHandle.
     private volatile Object freelist;
 
     // Linked list of mappings - guarded by synchronized(this)
@@ -976,18 +974,17 @@ public class MuninnPageCache implements PageCache
 
     private Object getFreelistHead()
     {
-        return UnsafeUtil.getObjectVolatile( this, freelistOffset );
+        return FREE_LIST.getVolatile( this );
     }
 
     private boolean compareAndSetFreelistHead( Object expected, Object update )
     {
-        return UnsafeUtil.compareAndSwapObject(
-                this, freelistOffset, expected, update );
+        return FREE_LIST.compareAndSet( this, expected, update );
     }
 
     private void setFreelistHead( Object newFreelistHead )
     {
-        UnsafeUtil.putObjectVolatile( this, freelistOffset, newFreelistHead );
+        FREE_LIST.setVolatile( this, newFreelistHead );
     }
 
     /**
@@ -1183,5 +1180,19 @@ public class MuninnPageCache implements PageCache
         var fileName = pagedFile.swapper.path().getFileName();
         var monitoringParams = systemJob( pagedFile.databaseName, "Pre-fetching of file '" + fileName + "'" );
         cursor.preFetcher = scheduler.schedule( Group.PAGE_CACHE_PRE_FETCHER, monitoringParams, preFetcher );
+    }
+
+    private static final VarHandle FREE_LIST;
+    static
+    {
+        try
+        {
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            FREE_LIST = l.findVarHandle( MuninnPageCache.class, "freelist", Object.class );
+        }
+        catch ( ReflectiveOperationException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
     }
 }

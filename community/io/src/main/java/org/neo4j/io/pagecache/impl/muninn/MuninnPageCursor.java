@@ -20,6 +20,8 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -54,7 +56,6 @@ public abstract class MuninnPageCursor extends PageCursor
 
     private static final int BYTE_ARRAY_BASE_OFFSET = UnsafeUtil.arrayBaseOffset( byte[].class );
     private static final int BYTE_ARRAY_INDEX_SCALE = UnsafeUtil.arrayIndexScale( byte[].class );
-    private static final long CURRENT_PAGE_ID = UnsafeUtil.getFieldOffset( MuninnPageCursor.class, "currentPageId" );
 
     // Size of the respective primitive types in bytes.
     private static final int SIZE_OF_BYTE = Byte.BYTES;
@@ -74,7 +75,7 @@ public abstract class MuninnPageCursor extends PageCursor
     protected boolean eagerFlush;
     protected boolean noFault;
     protected boolean noGrow;
-    @SuppressWarnings( "unused" ) // This field is accessed via Unsafe.
+    @SuppressWarnings( "unused" ) // This field is accessed via VarHandle.
     private long currentPageId;
     protected long nextPageId;
     protected MuninnPageCursor linkedCursor;
@@ -124,12 +125,12 @@ public abstract class MuninnPageCursor extends PageCursor
 
     long loadVolatileCurrentPageId()
     {
-        return UnsafeUtil.getLongVolatile( this, CURRENT_PAGE_ID );
+        return (long) CURRENT_PAGE_ID.getVolatile( this );
     }
 
     void storeCurrentPageId( long pageId )
     {
-        UnsafeUtil.putOrderedLong( this, CURRENT_PAGE_ID, pageId );
+        CURRENT_PAGE_ID.setRelease( this, pageId );
     }
 
     @Override
@@ -873,7 +874,7 @@ public abstract class MuninnPageCursor extends PageCursor
     @Override
     public int copyTo( int sourceOffset, ByteBuffer buf )
     {
-        if ( buf.getClass() == UnsafeUtil.directByteBufferClass && buf.isDirect() && !buf.isReadOnly() )
+        if ( buf.getClass() == UnsafeUtil.DIRECT_BYTE_BUFFER_CLASS && buf.isDirect() && !buf.isReadOnly() )
         {
             // We expect that the mutable direct byte buffer is implemented with a class that is distinct from the
             // non-mutable (read-only) and non-direct (on-heap) byte buffers. By comparing class object instances,
@@ -1113,5 +1114,19 @@ public abstract class MuninnPageCursor extends PageCursor
         long pageRef = pinnedPageRef;
         Preconditions.checkState( pageRef != 0, "Cursor is closed." );
         return pagedFile.getLastModifiedTxId( pageRef );
+    }
+
+    private static final VarHandle CURRENT_PAGE_ID;
+    static
+    {
+        try
+        {
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            CURRENT_PAGE_ID = l.findVarHandle( MuninnPageCursor.class, "currentPageId", long.class );
+        }
+        catch ( ReflectiveOperationException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
     }
 }

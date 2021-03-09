@@ -23,6 +23,8 @@ import com.sun.nio.file.ExtendedOpenOption;
 import org.apache.commons.lang3.SystemUtils;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileLock;
@@ -58,7 +60,6 @@ import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
 public class SingleFilePageSwapper implements PageSwapper
 {
     private static final boolean PREALLOCATE_MAPPED_FILES = FeatureToggles.flag( SingleFilePageSwapper.class, "PREALLOCATE_MAPPED_FILES", true );
-    private static final long FILE_SIZE_OFFSET = UnsafeUtil.getFieldOffset( SingleFilePageSwapper.class, "fileSize" );
     private static final ThreadLocal<ByteBuffer> PROXY_CACHE = new ThreadLocal<>();
 
     private static ByteBuffer proxy( long buffer, int bufferLength ) throws IOException
@@ -79,7 +80,7 @@ public class SingleFilePageSwapper implements PageSwapper
         {
             buf = UnsafeUtil.newDirectByteBuffer( buffer, bufferLength );
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             throw new IOException( e );
         }
@@ -168,18 +169,17 @@ public class SingleFilePageSwapper implements PageSwapper
         {
             currentFileSize = getCurrentFileSize();
         }
-        while ( currentFileSize < newFileSize && !UnsafeUtil.compareAndSwapLong(
-                this, FILE_SIZE_OFFSET, currentFileSize, newFileSize ) );
+        while ( currentFileSize < newFileSize && !FILE_SIZE.weakCompareAndSet( this, currentFileSize, newFileSize ) );
     }
 
     private long getCurrentFileSize()
     {
-        return UnsafeUtil.getLongVolatile( this, FILE_SIZE_OFFSET );
+        return (long) FILE_SIZE.getVolatile( this );
     }
 
     private void setCurrentFileSize( long size )
     {
-        UnsafeUtil.putLongVolatile( this, FILE_SIZE_OFFSET, size );
+        FILE_SIZE.setVolatile( this, size );
     }
 
     private void acquireLock() throws IOException
@@ -482,7 +482,7 @@ public class SingleFilePageSwapper implements PageSwapper
             {
                 buffers[i] = UnsafeUtil.newDirectByteBuffer( bufferAddresses[i], bufferLengths[i] );
             }
-            catch ( Exception e )
+            catch ( Throwable e )
             {
                 throw new RuntimeException( "Failed to wrap pointer in ByteBuffer.", e );
             }
@@ -782,6 +782,20 @@ public class SingleFilePageSwapper implements PageSwapper
                 throw initialException;
             }
 
+        }
+    }
+
+    private static final VarHandle FILE_SIZE;
+    static
+    {
+        try
+        {
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            FILE_SIZE = l.findVarHandle( SingleFilePageSwapper.class, "fileSize", long.class );
+        }
+        catch ( ReflectiveOperationException e )
+        {
+            throw new ExceptionInInitializerError( e );
         }
     }
 }

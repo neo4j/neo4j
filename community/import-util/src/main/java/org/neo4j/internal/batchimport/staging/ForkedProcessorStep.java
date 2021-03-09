@@ -19,19 +19,19 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.StampedLock;
 
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
-import org.neo4j.internal.unsafe.UnsafeUtil;
 
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
 import static java.lang.String.format;
 import static java.lang.System.nanoTime;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getFieldOffset;
 
 /**
  * Executes batches by multiple threads. Each threads only processes its own part, e.g. based on node id,
@@ -43,9 +43,6 @@ import static org.neo4j.internal.unsafe.UnsafeUtil.getFieldOffset;
  */
 public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
 {
-    private final long COMPLETED_PROCESSORS_OFFSET = getFieldOffset( Unit.class, "completedProcessors" );
-    private final long PROCESSING_TIME_OFFSET = getFieldOffset( Unit.class, "processingTime" );
-
     private final Object[] forkedProcessors;
     private volatile int numberOfForkedProcessors;
     private final AtomicReference<Unit> head;
@@ -203,8 +200,8 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
 
         void processorDone( long time )
         {
-            UnsafeUtil.getAndAddLong( this, PROCESSING_TIME_OFFSET, time );
-            int prevCompletedProcessors = UnsafeUtil.getAndAddInt( this, COMPLETED_PROCESSORS_OFFSET, 1 );
+            PROCESSING_TIME.getAndAdd( this, time );
+            int prevCompletedProcessors = (int) COMPLETED_PROCESSORS.getAndAdd( this, 1 );
             assert prevCompletedProcessors < processors : prevCompletedProcessors + " vs " + processors + " for " + ticket;
         }
 
@@ -325,5 +322,21 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     {
         Arrays.fill( forkedProcessors, null );
         super.close();
+    }
+
+    private static final VarHandle COMPLETED_PROCESSORS;
+    private static final VarHandle PROCESSING_TIME;
+    static
+    {
+        try
+        {
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            COMPLETED_PROCESSORS = l.findVarHandle( ForkedProcessorStep.Unit.class, "completedProcessors", int.class );
+            PROCESSING_TIME = l.findVarHandle( ForkedProcessorStep.Unit.class, "processingTime", long.class );
+        }
+        catch ( ReflectiveOperationException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
     }
 }

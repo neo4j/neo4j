@@ -23,10 +23,13 @@ import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import sun.misc.Unsafe;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
+import java.lang.invoke.MethodType;
+import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.AccessController;
@@ -76,14 +79,14 @@ public final class UnsafeUtil
     private static final FreeTrace[] freeTraces = CHECK_NATIVE_ACCESS ? new FreeTrace[4096] : null;
     private static final AtomicLong freeCounter = new AtomicLong();
 
-    public static final Class<?> directByteBufferClass;
-    private static final Constructor<?> directByteBufferCtor;
-    private static final long directByteBufferMarkOffset;
-    private static final long directByteBufferPositionOffset;
-    private static final long directByteBufferLimitOffset;
-    private static final long directByteBufferCapacityOffset;
-    private static final long directByteBufferAddressOffset;
-    private static final long directByteBufferAttachmentOffset;
+    public static final Class<?> DIRECT_BYTE_BUFFER_CLASS;
+    private static final VarHandle DIRECT_BYTE_BUFFER_MARK;
+    private static final VarHandle DIRECT_BYTE_BUFFER_POSITION;
+    private static final VarHandle DIRECT_BYTE_BUFFER_LIMIT;
+    private static final VarHandle DIRECT_BYTE_BUFFER_CAPACITY;
+    private static final VarHandle DIRECT_BYTE_BUFFER_ADDRESS;
+    private static final VarHandle DIRECT_BYTE_BUFFER_ATTACHMENT;
+    private static final MethodHandle DIRECT_BYTE_BUFFER_CONSTRUCTOR;
 
     private static final int pageSize;
 
@@ -94,27 +97,28 @@ public final class UnsafeUtil
     {
         unsafe = getUnsafe();
 
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
-
         Class<?> dbbClass = null;
-        Constructor<?> ctor = null;
-        long dbbMarkOffset = 0;
-        long dbbPositionOffset = 0;
-        long dbbLimitOffset = 0;
-        long dbbCapacityOffset = 0;
-        long dbbAddressOffset = 0;
-        long dbbAttachmentOffset = 0;
+        VarHandle dbbMark = null;
+        VarHandle dbbPosition = null;
+        VarHandle dbbLimit = null;
+        VarHandle dbbCapacity = null;
+        VarHandle dbbAddress = null;
+        VarHandle dbbAttachment = null;
+        MethodHandle dbbCtor = null;
         int ps = 4096;
         try
         {
+            MethodHandles.Lookup bufferLookup = MethodHandles.privateLookupIn( Buffer.class, MethodHandles.lookup() );
+            dbbMark = bufferLookup.findVarHandle( Buffer.class, "mark", int.class );
+            dbbPosition = bufferLookup.findVarHandle( Buffer.class, "position", int.class );
+            dbbLimit = bufferLookup.findVarHandle( Buffer.class, "limit", int.class );
+            dbbCapacity = bufferLookup.findVarHandle( Buffer.class, "capacity", int.class );
+            dbbAddress = bufferLookup.findVarHandle( Buffer.class, "address", long.class );
+
             dbbClass = Class.forName( "java.nio.DirectByteBuffer" );
-            Class<?> bufferClass = Class.forName( "java.nio.Buffer" );
-            dbbMarkOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "mark" ) );
-            dbbPositionOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "position" ) );
-            dbbLimitOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "limit" ) );
-            dbbCapacityOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "capacity" ) );
-            dbbAddressOffset = unsafe.objectFieldOffset( bufferClass.getDeclaredField( "address" ) );
-            dbbAttachmentOffset = unsafe.objectFieldOffset( dbbClass.getDeclaredField( "att" ) );
+            MethodHandles.Lookup directByteBufferLookup = MethodHandles.privateLookupIn( dbbClass, MethodHandles.lookup() );
+            dbbAttachment = directByteBufferLookup.findVarHandle( dbbClass, "att", Object.class );
+
             ps = unsafe.pageSize();
         }
         catch ( Throwable e )
@@ -125,22 +129,22 @@ public final class UnsafeUtil
             }
             try
             {
-                ctor = dbbClass.getConstructor( Long.TYPE, Integer.TYPE );
-                ctor.setAccessible( true );
+                MethodHandles.Lookup directByteBufferLookup = MethodHandles.privateLookupIn( dbbClass, MethodHandles.lookup() );
+                dbbCtor = directByteBufferLookup.findConstructor( dbbClass, MethodType.methodType( void.class, long.class, int.class ) );
             }
-            catch ( NoSuchMethodException e1 )
+            catch ( Throwable e1 )
             {
                 throw new LinkageError( "Cannot find JNI constructor for java.nio.DirectByteBuffer", e1 );
             }
         }
-        directByteBufferClass = dbbClass;
-        directByteBufferCtor = ctor;
-        directByteBufferMarkOffset = dbbMarkOffset;
-        directByteBufferPositionOffset = dbbPositionOffset;
-        directByteBufferLimitOffset = dbbLimitOffset;
-        directByteBufferCapacityOffset = dbbCapacityOffset;
-        directByteBufferAddressOffset = dbbAddressOffset;
-        directByteBufferAttachmentOffset = dbbAttachmentOffset;
+        DIRECT_BYTE_BUFFER_CLASS = dbbClass;
+        DIRECT_BYTE_BUFFER_MARK = dbbMark;
+        DIRECT_BYTE_BUFFER_POSITION = dbbPosition;
+        DIRECT_BYTE_BUFFER_LIMIT = dbbLimit;
+        DIRECT_BYTE_BUFFER_CAPACITY = dbbCapacity;
+        DIRECT_BYTE_BUFFER_ADDRESS = dbbAddress;
+        DIRECT_BYTE_BUFFER_ATTACHMENT = dbbAttachment;
+        DIRECT_BYTE_BUFFER_CONSTRUCTOR = dbbCtor;
         pageSize = ps;
 
         // See java.nio.Bits.unaligned() and its uses.
@@ -269,16 +273,6 @@ public final class UnsafeUtil
     }
 
     /**
-     * Atomically add the given delta to the int field, and return its previous value.
-     * <p>
-     * This has the memory visibility semantics of a volatile read followed by a volatile write.
-     */
-    public static int getAndAddInt( Object obj, long offset, int delta )
-    {
-        return unsafe.getAndAddInt( obj, offset, delta );
-    }
-
-    /**
      * Atomically add the given delta to the long field, and return its previous value.
      * <p>
      * This has the memory visibility semantics of a volatile read followed by a volatile write.
@@ -286,30 +280,6 @@ public final class UnsafeUtil
     public static long getAndAddLong( Object obj, long offset, long delta )
     {
         return unsafe.getAndAddLong( obj, offset, delta );
-    }
-
-    /**
-     * Orders loads before the fence, with loads and stores after the fence.
-     */
-    public static void loadFence()
-    {
-        unsafe.loadFence();
-    }
-
-    /**
-     * Orders stores before the fence, with loads and stores after the fence.
-     */
-    public static void storeFence()
-    {
-        unsafe.storeFence();
-    }
-
-    /**
-     * Orders loads and stores before the fence, with loads and stores after the fence.
-     */
-    public static void fullFence()
-    {
-        unsafe.fullFence();
     }
 
     /**
@@ -323,36 +293,6 @@ public final class UnsafeUtil
             Object obj, long offset, long expected, long update )
     {
         return unsafe.compareAndSwapLong( obj, offset, expected, update );
-    }
-
-    /**
-     * Atomically compare the current value of the given int field with the expected value, and if they are the
-     * equal, set the field to the updated value and return true. Otherwise return false.
-     * <p>
-     * If this method returns true, then it has the memory visibility semantics of a volatile read followed by a
-     * volatile write.
-     */
-    public static boolean compareAndSwapInt(
-            Object obj, long offset, int expected, int update )
-    {
-        return unsafe.compareAndSwapInt( obj, offset, expected, update );
-    }
-
-    /**
-     * Same as compareAndSwapLong, but for object references.
-     */
-    public static boolean compareAndSwapObject(
-            Object obj, long offset, Object expected, Object update )
-    {
-        return unsafe.compareAndSwapObject( obj, offset, expected, update );
-    }
-
-    /**
-     * Atomically return the current object reference value, and exchange it with the given new reference value.
-     */
-    public static Object getAndSetObject( Object obj, long offset, Object newValue )
-    {
-        return unsafe.getAndSetObject( obj, offset, newValue );
     }
 
     /**
@@ -393,7 +333,7 @@ public final class UnsafeUtil
             setMemory( addr, size, (byte) 0 );
             return newDirectByteBuffer( addr, size );
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
             throw new RuntimeException( e );
         }
@@ -413,11 +353,11 @@ public final class UnsafeUtil
         }
 
         // Nerf the byte buffer, causing all future accesses to get out-of-bounds.
-        unsafe.putInt( byteBuffer, directByteBufferMarkOffset, -1 );
-        unsafe.putInt( byteBuffer, directByteBufferPositionOffset, 0 );
-        unsafe.putInt( byteBuffer, directByteBufferLimitOffset, 0 );
-        unsafe.putInt( byteBuffer, directByteBufferCapacityOffset, 0 );
-        unsafe.putLong( byteBuffer, directByteBufferAddressOffset, 0 );
+        DIRECT_BYTE_BUFFER_MARK.set( byteBuffer, -1 );
+        DIRECT_BYTE_BUFFER_POSITION.set( byteBuffer, 0 );
+        DIRECT_BYTE_BUFFER_LIMIT.set( byteBuffer, 0 );
+        DIRECT_BYTE_BUFFER_CAPACITY.set( byteBuffer, 0 );
+        DIRECT_BYTE_BUFFER_ADDRESS.set( byteBuffer, 0L );
 
         // Free the buffer.
         free( addr, bytes, memoryTracker );
@@ -436,8 +376,7 @@ public final class UnsafeUtil
         {
             throw new IllegalArgumentException( "The submitted buffer is not a direct one:" + byteBuffer );
         }
-        Object att = unsafe.getObject( byteBuffer, directByteBufferAttachmentOffset );
-        return (ByteBuffer) att;
+        return (ByteBuffer) DIRECT_BYTE_BUFFER_ATTACHMENT.get( byteBuffer );
     }
 
     /**
@@ -588,26 +527,6 @@ public final class UnsafeUtil
         return pageSize;
     }
 
-    public static void putBoolean( Object obj, long offset, boolean value )
-    {
-        unsafe.putBoolean( obj, offset, value );
-    }
-
-    public static boolean getBoolean( Object obj, long offset )
-    {
-        return unsafe.getBoolean( obj, offset );
-    }
-
-    public static void putBooleanVolatile( Object obj, long offset, boolean value )
-    {
-        unsafe.putBooleanVolatile( obj, offset, value );
-    }
-
-    public static boolean getBooleanVolatile( Object obj, long offset )
-    {
-        return unsafe.getBooleanVolatile( obj, offset );
-    }
-
     public static void putByte( long address, byte value )
     {
         checkAccess( address, Byte.BYTES );
@@ -620,18 +539,6 @@ public final class UnsafeUtil
         return unsafe.getByte( address );
     }
 
-    public static void putByteVolatile( long address, byte value )
-    {
-        checkAccess( address, Byte.BYTES );
-        unsafe.putByteVolatile( null, address, value );
-    }
-
-    public static byte getByteVolatile( long address )
-    {
-        checkAccess( address, Byte.BYTES );
-        return unsafe.getByteVolatile( null, address );
-    }
-
     public static void putByte( Object obj, long offset, byte value )
     {
         unsafe.putByte( obj, offset, value );
@@ -640,16 +547,6 @@ public final class UnsafeUtil
     public static byte getByte( Object obj, long offset )
     {
         return unsafe.getByte( obj, offset );
-    }
-
-    public static byte getByteVolatile( Object obj, long offset )
-    {
-        return unsafe.getByteVolatile( obj, offset );
-    }
-
-    public static void putByteVolatile( Object obj, long offset, byte value )
-    {
-        unsafe.putByteVolatile( obj, offset, value );
     }
 
     public static void putShort( long address, short value )
@@ -664,126 +561,6 @@ public final class UnsafeUtil
         return unsafe.getShort( address );
     }
 
-    public static void putShortVolatile( long address, short value )
-    {
-        checkAccess( address, Short.BYTES );
-        unsafe.putShortVolatile( null, address, value );
-    }
-
-    public static short getShortVolatile( long address )
-    {
-        checkAccess( address, Short.BYTES );
-        return unsafe.getShortVolatile( null, address );
-    }
-
-    public static void putShort( Object obj, long offset, short value )
-    {
-        unsafe.putShort( obj, offset, value );
-    }
-
-    public static short getShort( Object obj, long offset )
-    {
-        return unsafe.getShort( obj, offset );
-    }
-
-    public static void putShortVolatile( Object obj, long offset, short value )
-    {
-        unsafe.putShortVolatile( obj, offset, value );
-    }
-
-    public static short getShortVolatile( Object obj, long offset )
-    {
-        return unsafe.getShortVolatile( obj, offset );
-    }
-
-    public static void putFloat( long address, float value )
-    {
-        checkAccess( address, Float.BYTES );
-        unsafe.putFloat( address, value );
-    }
-
-    public static float getFloat( long address )
-    {
-        checkAccess( address, Float.BYTES );
-        return unsafe.getFloat( address );
-    }
-
-    public static void putFloatVolatile( long address, float value )
-    {
-        checkAccess( address, Float.BYTES );
-        unsafe.putFloatVolatile( null, address, value );
-    }
-
-    public static float getFloatVolatile( long address )
-    {
-        checkAccess( address, Float.BYTES );
-        return unsafe.getFloatVolatile( null, address );
-    }
-
-    public static void putFloat( Object obj, long offset, float value )
-    {
-        unsafe.putFloat( obj, offset, value );
-    }
-
-    public static float getFloat( Object obj, long offset )
-    {
-        return unsafe.getFloat( obj, offset );
-    }
-
-    public static void putFloatVolatile( Object obj, long offset, float value )
-    {
-        unsafe.putFloatVolatile( obj, offset, value );
-    }
-
-    public static float getFloatVolatile( Object obj, long offset )
-    {
-        return unsafe.getFloatVolatile( obj, offset );
-    }
-
-    public static void putChar( long address, char value )
-    {
-        checkAccess( address, Character.BYTES );
-        unsafe.putChar( address, value );
-    }
-
-    public static char getChar( long address )
-    {
-        checkAccess( address, Character.BYTES );
-        return unsafe.getChar( address );
-    }
-
-    public static void putCharVolatile( long address, char value )
-    {
-        checkAccess( address, Character.BYTES );
-        unsafe.putCharVolatile( null, address, value );
-    }
-
-    public static char getCharVolatile( long address )
-    {
-        checkAccess( address, Character.BYTES );
-        return unsafe.getCharVolatile( null, address );
-    }
-
-    public static void putChar( Object obj, long offset, char value )
-    {
-        unsafe.putChar( obj, offset, value );
-    }
-
-    public static char getChar( Object obj, long offset )
-    {
-        return unsafe.getChar( obj, offset );
-    }
-
-    public static void putCharVolatile( Object obj, long offset, char value )
-    {
-        unsafe.putCharVolatile( obj, offset, value );
-    }
-
-    public static char getCharVolatile( Object obj, long offset )
-    {
-        return unsafe.getCharVolatile( obj, offset );
-    }
-
     public static void putInt( long address, int value )
     {
         checkAccess( address, Integer.BYTES );
@@ -794,28 +571,6 @@ public final class UnsafeUtil
     {
         checkAccess( address, Integer.BYTES );
         return unsafe.getInt( address );
-    }
-
-    public static void putIntVolatile( long address, int value )
-    {
-        checkAccess( address, Integer.BYTES );
-        unsafe.putIntVolatile( null, address, value );
-    }
-
-    public static int getIntVolatile( long address )
-    {
-        checkAccess( address, Integer.BYTES );
-        return unsafe.getIntVolatile( null, address );
-    }
-
-    public static void putInt( Object obj, long offset, int value )
-    {
-        unsafe.putInt( obj, offset, value );
-    }
-
-    public static int getInt( Object obj, long offset )
-    {
-        return unsafe.getInt( obj, offset );
     }
 
     public static void putIntVolatile( Object obj, long offset, int value )
@@ -852,93 +607,9 @@ public final class UnsafeUtil
         return unsafe.getLong( address );
     }
 
-    public static void putLong( Object obj, long offset, long value )
-    {
-        unsafe.putLong( obj, offset, value );
-    }
-
-    public static long getLong( Object obj, long offset )
-    {
-        return unsafe.getLong( obj, offset );
-    }
-
-    public static void putLongVolatile( Object obj, long offset, long value )
-    {
-        unsafe.putLongVolatile( obj, offset, value );
-    }
-
-    public static void putOrderedLong( Object obj, long offset, long value )
-    {
-        unsafe.putOrderedLong( obj, offset, value );
-    }
-
     public static long getLongVolatile( Object obj, long offset )
     {
         return unsafe.getLongVolatile( obj, offset );
-    }
-
-    public static void putDouble( long address, double value )
-    {
-        checkAccess( address, Double.BYTES );
-        unsafe.putDouble( address, value );
-    }
-
-    public static double getDouble( long address )
-    {
-        checkAccess( address, Double.BYTES );
-        return unsafe.getDouble( address );
-    }
-
-    public static void putDoubleVolatile( long address, double value )
-    {
-        checkAccess( address, Double.BYTES );
-        unsafe.putDoubleVolatile( null, address, value );
-    }
-
-    public static double getDoubleVolatile( long address )
-    {
-        checkAccess( address, Double.BYTES );
-        return unsafe.getDoubleVolatile( null, address );
-    }
-
-    public static void putDouble( Object obj, long offset, double value )
-    {
-        unsafe.putDouble( obj, offset, value );
-    }
-
-    public static double getDouble( Object obj, long offset )
-    {
-        return unsafe.getDouble( obj, offset );
-    }
-
-    public static void putDoubleVolatile( Object obj, long offset, double value )
-    {
-        unsafe.putDoubleVolatile( obj, offset, value );
-    }
-
-    public static double getDoubleVolatile( Object obj, long offset )
-    {
-        return unsafe.getDoubleVolatile( obj, offset );
-    }
-
-    public static void putObject( Object obj, long offset, Object value )
-    {
-        unsafe.putObject( obj, offset, value );
-    }
-
-    public static Object getObject( Object obj, long offset )
-    {
-        return unsafe.getObject( obj, offset );
-    }
-
-    public static Object getObjectVolatile( Object obj, long offset )
-    {
-        return unsafe.getObjectVolatile( obj, offset );
-    }
-
-    public static void putObjectVolatile( Object obj, long offset, Object value )
-    {
-        unsafe.putObjectVolatile( obj, offset, value );
     }
 
     public static int arrayBaseOffset( Class<?> klass )
@@ -994,18 +665,18 @@ public final class UnsafeUtil
      * <p>
      * The ByteBuffer does NOT create a Cleaner, or otherwise register the pointer for freeing.
      */
-    public static ByteBuffer newDirectByteBuffer( long addr, int cap ) throws Exception
+    public static ByteBuffer newDirectByteBuffer( long addr, int cap ) throws Throwable
     {
         checkAccess( addr, cap );
-        if ( directByteBufferCtor == null )
+        if ( DIRECT_BYTE_BUFFER_CONSTRUCTOR == null )
         {
             // Simulate the JNI NewDirectByteBuffer(void*, long) invocation.
-            ByteBuffer dbb = (ByteBuffer) unsafe.allocateInstance( directByteBufferClass );
+            ByteBuffer dbb = (ByteBuffer) unsafe.allocateInstance( DIRECT_BYTE_BUFFER_CLASS );
             initDirectByteBuffer( dbb, addr, cap );
             return dbb;
         }
         // Reflection based fallback code.
-        return (ByteBuffer) directByteBufferCtor.newInstance( addr, cap );
+        return (ByteBuffer) DIRECT_BYTE_BUFFER_CONSTRUCTOR.invokeExact( addr, cap );
     }
 
     /**
@@ -1015,11 +686,11 @@ public final class UnsafeUtil
     {
         checkAccess( addr, cap );
         dbb.order( ByteOrder.BIG_ENDIAN );
-        unsafe.putInt( dbb, directByteBufferMarkOffset, -1 );
-        unsafe.putInt( dbb, directByteBufferPositionOffset, 0 );
-        unsafe.putInt( dbb, directByteBufferLimitOffset, cap );
-        unsafe.putInt( dbb, directByteBufferCapacityOffset, cap );
-        unsafe.putLong( dbb, directByteBufferAddressOffset, addr );
+        DIRECT_BYTE_BUFFER_MARK.set( dbb, -1 );
+        DIRECT_BYTE_BUFFER_POSITION.set( dbb, 0 );
+        DIRECT_BYTE_BUFFER_LIMIT.set( dbb, cap );
+        DIRECT_BYTE_BUFFER_CAPACITY.set( dbb, cap );
+        DIRECT_BYTE_BUFFER_ADDRESS.set( dbb, addr );
     }
 
     /**
@@ -1032,7 +703,7 @@ public final class UnsafeUtil
      */
     public static long getDirectByteBufferAddress( ByteBuffer dbb )
     {
-        return unsafe.getLong( dbb, directByteBufferAddressOffset );
+        return (long) DIRECT_BYTE_BUFFER_ADDRESS.get( dbb );
     }
 
     /**

@@ -19,15 +19,15 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.util.VisibleForTesting;
 
 class GBPTreeLock
 {
-    private static final long stateOffset = UnsafeUtil.getFieldOffset( GBPTreeLock.class, "state" );
     private static final long writerLockBit = 0x00000000_00000001L;
     private static final long cleanerLockBit = 0x00000000_00000002L;
     private volatile long state;
@@ -76,15 +76,15 @@ class GBPTreeLock
         long newState;
         do
         {
-            currentState = state;
+            currentState = (long) STATE.getVolatile( this );
             while ( !canLock( currentState, targetLockBit ) )
             {
                 // sleep
                 sleep();
-                currentState = state;
+                currentState = (long) STATE.getVolatile( this );
             }
             newState = currentState | targetLockBit;
-        } while ( !UnsafeUtil.compareAndSwapLong( this, stateOffset, currentState, newState ) );
+        } while ( !STATE.weakCompareAndSet( this, currentState, newState ) );
     }
 
     private void doUnlock( long targetLockBit )
@@ -93,14 +93,14 @@ class GBPTreeLock
         long newState;
         do
         {
-            currentState = state;
+            currentState = (long) STATE.getVolatile( this );
             if ( !canUnlock( currentState, targetLockBit) )
             {
                 throw new IllegalStateException( "Can not unlock lock that is already locked" );
             }
             newState = currentState & ~targetLockBit;
         }
-        while ( !UnsafeUtil.compareAndSwapLong( this, stateOffset, currentState, newState ) );
+        while ( !STATE.weakCompareAndSet( this, currentState, newState ) );
     }
 
     private boolean canLock( long state, long targetLockBit )
@@ -124,6 +124,20 @@ class GBPTreeLock
     @VisibleForTesting
     void forceUnlock()
     {
-        state = 0;
+        STATE.setVolatile( this, 0 );
+    }
+
+    private static final VarHandle STATE;
+    static
+    {
+        try
+        {
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            STATE = l.findVarHandle( GBPTreeLock.class, "state", long.class );
+        }
+        catch ( ReflectiveOperationException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
     }
 }

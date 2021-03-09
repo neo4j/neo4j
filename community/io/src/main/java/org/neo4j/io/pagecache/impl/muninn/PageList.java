@@ -20,6 +20,7 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
+import java.lang.invoke.VarHandle;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.mem.MemoryAllocator;
@@ -130,7 +131,7 @@ class PageList
         {
             clearMemoryFast( baseAddress, pageCount, memcpyChunkSize, metaDataEntriesPerChunk );
         }
-        UnsafeUtil.fullFence(); // Guarantee the visibility of the cleared memory.
+        VarHandle.fullFence(); // Guarantee the visibility of the cleared memory.
     }
 
     private void clearMemorySimple( long baseAddress, long pageCount )

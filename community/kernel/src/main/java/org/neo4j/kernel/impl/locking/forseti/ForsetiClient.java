@@ -23,6 +23,7 @@ import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.map.primitive.LongIntMap;
 
+import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -39,7 +40,6 @@ import org.neo4j.collection.trackable.HeapTrackingLongIntHashMap;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
@@ -936,7 +936,7 @@ public class ForsetiClient implements Locks.Client
         {
             // Force the operations below to happen after the reads we do for deadlock
             // detection in the lines above, as a way to cut down on false-positive deadlocks
-            UnsafeUtil.loadFence();
+            VarHandle.acquireFence();
 
             // Create message before we clear the wait-list, to lower the chance of the message being insane
             String message = this + " can't acquire " + lock + " on " + type + "(" + resourceId +

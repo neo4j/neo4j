@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -132,8 +134,6 @@ class ConcurrentSparseLongBitSet
 
     private static class Range
     {
-        private static final long STATUS_OFFSET = UnsafeUtil.getFieldOffset( Range.class, "status" );
-        private static final long LOCKSTAMP_OFFSET = UnsafeUtil.getFieldOffset( Range.class, "lockStamp" );
         private static final int STATUS_UNLOCKED = 0;
         private static final int STATUS_LOCKED = 1;
         private static final int STATUS_CLOSED = 2;
@@ -163,39 +163,34 @@ class ConcurrentSparseLongBitSet
          */
         private boolean lock()
         {
-            boolean locked = UnsafeUtil.compareAndSwapInt( this, STATUS_OFFSET, STATUS_UNLOCKED, STATUS_LOCKED );
+            boolean locked = STATUS.compareAndSet( this, STATUS_UNLOCKED, STATUS_LOCKED );
             if ( locked )
             {
-                UnsafeUtil.getAndAddLong( this, LOCKSTAMP_OFFSET, 1 );
+                LOCK_STAMP.getAndAdd( this, 1L );
             }
             return locked;
         }
 
         private void unlock()
         {
-            boolean unlocked = UnsafeUtil.compareAndSwapInt( this, STATUS_OFFSET, STATUS_LOCKED, STATUS_UNLOCKED );
+            boolean unlocked = STATUS.compareAndSet( this, STATUS_LOCKED, STATUS_UNLOCKED );
             assert unlocked;
         }
 
         private void close()
         {
-            boolean closed = UnsafeUtil.compareAndSwapInt( this, STATUS_OFFSET, STATUS_LOCKED, STATUS_CLOSED );
+            boolean closed = STATUS.compareAndSet( this, STATUS_LOCKED, STATUS_CLOSED );
             assert closed;
         }
 
         private long getLong( int arrayIndex )
         {
-            return UnsafeUtil.getLongVolatile( bits, offset( arrayIndex ) );
+            return (long) BITS_ARRAY.getVolatile( bits, arrayIndex );
         }
 
         private void setLong( int arrayIndex, long value )
         {
-            UnsafeUtil.putLongVolatile( bits, offset( arrayIndex ), value );
-        }
-
-        private int offset( int arrayIndex )
-        {
-            return UnsafeUtil.arrayOffset( arrayIndex, longArrayBase, longArrayScale );
+            BITS_ARRAY.setVolatile( bits, arrayIndex, value );
         }
 
         /**
@@ -263,12 +258,30 @@ class ConcurrentSparseLongBitSet
 
         long getLockStamp()
         {
-            return UnsafeUtil.getLongVolatile( this, LOCKSTAMP_OFFSET );
+            return (long) LOCK_STAMP.getVolatile( this );
         }
 
         boolean isUnlocked()
         {
-            return UnsafeUtil.getIntVolatile( this, STATUS_OFFSET ) == STATUS_UNLOCKED;
+            return (int) STATUS.getVolatile( this ) == STATUS_UNLOCKED;
+        }
+
+        private static final VarHandle STATUS;
+        private static final VarHandle LOCK_STAMP;
+        private static final VarHandle BITS_ARRAY;
+        static
+        {
+            try
+            {
+                MethodHandles.Lookup l = MethodHandles.lookup();
+                STATUS = l.findVarHandle( Range.class, "status", int.class );
+                LOCK_STAMP = l.findVarHandle( Range.class, "lockStamp", long.class );
+                BITS_ARRAY = MethodHandles.arrayElementVarHandle( long[].class );
+            }
+            catch ( ReflectiveOperationException e )
+            {
+                throw new ExceptionInInitializerError( e );
+            }
         }
     }
 }
