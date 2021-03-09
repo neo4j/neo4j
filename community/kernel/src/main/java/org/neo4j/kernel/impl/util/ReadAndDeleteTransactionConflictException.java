@@ -43,6 +43,11 @@ public class ReadAndDeleteTransactionConflictException extends RuntimeException 
         this.deletedInThisTransaction = deletedInThisTransaction;
     }
 
+    public boolean wasDeletedInThisTransaction()
+    {
+        return deletedInThisTransaction;
+    }
+
     @Override
     public Status status()
     {
