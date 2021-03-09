@@ -69,14 +69,15 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
                 l = labels();
                 p = properties();
             }
-            catch ( NotFoundException e )
+            catch ( ReadAndDeleteTransactionConflictException e )
             {
+                if ( !e.wasDeletedInThisTransaction() )
+                {
+                    throw e;
+                }
+                // If it isn't a transient error then the node was deleted in the current transaction and we should write an 'empty' node.
                 l = Values.stringArray();
                 p = VirtualValues.EMPTY_MAP;
-            }
-            catch ( StoreFailureException e )
-            {
-                throw new ReadAndDeleteTransactionConflictException( NodeEntity.isDeletedInCurrentTransaction( node ), e );
             }
 
             if ( id() < 0 )
@@ -95,7 +96,7 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
             labels( nodeCursor );
             properties( nodeCursor, propertyCursor );
         }
-        catch ( NotFoundException | StoreFailureException e )
+        catch ( ReadAndDeleteTransactionConflictException e )
         {
             // best effort, cannot do more
         }
@@ -111,20 +112,27 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
         TextArray l = labels;
         if ( l == null )
         {
-            synchronized ( this )
+            try
             {
-                l = labels;
-                if ( l == null )
+                synchronized ( this )
                 {
-                    List<String> ls = new ArrayList<>();
-                    // No DBHits for Virtual node hacks.
-                    var nodeLabels = node instanceof NodeEntity ? ((NodeEntity) node).getLabels( nodeCursor ) : node.getLabels();
-                    for ( Label label : nodeLabels )
+                    l = labels;
+                    if ( l == null )
                     {
-                        ls.add( label.name() );
+                        List<String> ls = new ArrayList<>();
+                        // No DBHits for Virtual node hacks.
+                        var nodeLabels = node instanceof NodeEntity ? ((NodeEntity) node).getLabels( nodeCursor ) : node.getLabels();
+                        for ( Label label : nodeLabels )
+                        {
+                            ls.add( label.name() );
+                        }
+                        l = labels = Values.stringArray( ls.toArray( new String[0] ) );
                     }
-                    l = labels = Values.stringArray( ls.toArray( new String[0] ) );
                 }
+            }
+            catch ( NotFoundException | IllegalStateException | StoreFailureException e )
+            {
+                throw new ReadAndDeleteTransactionConflictException( NodeEntity.isDeletedInCurrentTransaction( node ), e );
             }
         }
         return l;
@@ -136,18 +144,25 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
         TextArray l = labels;
         if ( l == null )
         {
-            synchronized ( this )
+            try
             {
-                l = labels;
-                if ( l == null )
+                synchronized ( this )
                 {
-                    List<String> ls = new ArrayList<>();
-                    for ( Label label : node.getLabels() )
+                    l = labels;
+                    if ( l == null )
                     {
-                        ls.add( label.name() );
+                        List<String> ls = new ArrayList<>();
+                        for ( Label label : node.getLabels() )
+                        {
+                            ls.add( label.name() );
+                        }
+                        l = labels = Values.stringArray( ls.toArray( new String[0] ) );
                     }
-                    l = labels = Values.stringArray( ls.toArray( new String[0] ) );
                 }
+            }
+            catch ( NotFoundException | IllegalStateException | StoreFailureException e )
+            {
+                throw new ReadAndDeleteTransactionConflictException( NodeEntity.isDeletedInCurrentTransaction( node ), e );
             }
         }
         return l;
@@ -159,13 +174,20 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
         MapValue m = properties;
         if ( m == null )
         {
-            synchronized ( this )
+            try
             {
-                m = properties;
-                if ( m == null )
+                synchronized ( this )
                 {
-                    m = properties = ValueUtils.asMapValue( node.getAllProperties() );
+                    m = properties;
+                    if ( m == null )
+                    {
+                        m = properties = ValueUtils.asMapValue( node.getAllProperties() );
+                    }
                 }
+            }
+            catch ( NotFoundException | IllegalStateException | StoreFailureException e )
+            {
+                throw new ReadAndDeleteTransactionConflictException( NodeEntity.isDeletedInCurrentTransaction( node ), e );
             }
         }
         return m;
@@ -176,16 +198,23 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
         MapValue m = properties;
         if ( m == null )
         {
-            synchronized ( this )
+            try
             {
-                m = properties;
-                if ( m == null )
+                synchronized ( this )
                 {
-                    // No DBHits for Virtual node hacks.
-                    var nodeProperties = node instanceof NodeEntity ?
-                                         ((NodeEntity) node).getAllProperties( nodeCursor, propertyCursor ) : node.getAllProperties();
-                    m = properties = ValueUtils.asMapValue( nodeProperties );
+                    m = properties;
+                    if ( m == null )
+                    {
+                        // No DBHits for Virtual node hacks.
+                        var nodeProperties = node instanceof NodeEntity ?
+                                             ((NodeEntity) node).getAllProperties( nodeCursor, propertyCursor ) : node.getAllProperties();
+                        m = properties = ValueUtils.asMapValue( nodeProperties );
+                    }
                 }
+            }
+            catch ( NotFoundException | IllegalStateException | StoreFailureException e )
+            {
+                throw new ReadAndDeleteTransactionConflictException( NodeEntity.isDeletedInCurrentTransaction( node ), e );
             }
         }
         return m;
