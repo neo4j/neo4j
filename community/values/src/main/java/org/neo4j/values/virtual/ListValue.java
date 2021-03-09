@@ -498,13 +498,13 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public ListValue add( ListValue value )
+        public ListValue appendAll( ListValue value )
         {
             var newSize = lists.length + 1;
             var newArray = new ListValue[newSize];
             System.arraycopy( lists, 0, newArray, 0, lists.length );
             newArray[lists.length] = value;
-            return new ConcatList( newArray);
+            return new ConcatList( newArray );
         }
     }
 
@@ -863,7 +863,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         return new PrependList( this, value );
     }
 
-    public ListValue add( ListValue value )
+    public ListValue appendAll( ListValue value )
     {
         return new ConcatList( new ListValue[]{this, value} );
     }
