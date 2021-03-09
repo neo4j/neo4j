@@ -291,8 +291,6 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory between left outer hash joins") {
-    assume(runtimeUsed != Pipelined) // Pipelined does not yet support outer hash join
-
     val nNodes = sizeHint
 
     val n = nodeGraph(nNodes/2)
