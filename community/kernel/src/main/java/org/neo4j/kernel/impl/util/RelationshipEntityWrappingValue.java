@@ -70,13 +70,14 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
         {
             p = properties();
         }
-        catch ( NotFoundException e )
+        catch ( ReadAndDeleteTransactionConflictException e )
         {
+            if ( !e.wasDeletedInThisTransaction() )
+            {
+                throw e;
+            }
+            // If it isn't a transient error then the relationship was deleted in the current transaction and we should write an 'empty' relationship.
             p = VirtualValues.EMPTY_MAP;
-        }
-        catch ( IllegalStateException e )
-        {
-            throw new ReadAndDeleteTransactionConflictException( RelationshipEntity.isDeletedInCurrentTransaction( relationship ), e );
         }
 
         if ( id() < 0 )
@@ -130,7 +131,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
             startNode();
             endNode();
         }
-        catch ( NotFoundException e )
+        catch ( NotFoundException | ReadAndDeleteTransactionConflictException e )
         {
             // best effort, cannot do more
         }
@@ -203,13 +204,20 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
         TextValue t = type;
         if ( t == null )
         {
-            synchronized ( this )
+            try
             {
-                t = type;
-                if ( t == null )
+                synchronized ( this )
                 {
-                    t = type = Values.stringValue( relationship.getType().name() );
+                    t = type;
+                    if ( t == null )
+                    {
+                        t = type = Values.stringValue( relationship.getType().name() );
+                    }
                 }
+            }
+            catch ( IllegalStateException e )
+            {
+                throw new ReadAndDeleteTransactionConflictException( RelationshipEntity.isDeletedInCurrentTransaction( relationship ), e );
             }
         }
         return t;
@@ -221,13 +229,20 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
         MapValue m = properties;
         if ( m == null )
         {
-            synchronized ( this )
+            try
             {
-                m = properties;
-                if ( m == null )
+                synchronized ( this )
                 {
-                    m = properties = ValueUtils.asMapValue( relationship.getAllProperties() );
+                    m = properties;
+                    if ( m == null )
+                    {
+                        m = properties = ValueUtils.asMapValue( relationship.getAllProperties() );
+                    }
                 }
+            }
+            catch ( NotFoundException | IllegalStateException e )
+            {
+                throw new ReadAndDeleteTransactionConflictException( RelationshipEntity.isDeletedInCurrentTransaction( relationship ), e );
             }
         }
         return m;
