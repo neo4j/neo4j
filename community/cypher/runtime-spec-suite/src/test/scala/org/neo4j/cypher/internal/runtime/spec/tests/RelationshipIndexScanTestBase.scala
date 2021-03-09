@@ -388,4 +388,124 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("c").withRows(singleRow(limit))
   }
+
+  test("limit and directed scan on the RHS of an apply") {
+    // given
+    given {
+      relationshipIndex("R", "prop")
+      circleGraph(5)//these doesn't have prop
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 10 == 0 => r.setProperty("prop", "value")
+        case _ =>
+      }
+    }
+    val limit = 10
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("value")
+      .apply()
+      .|.projection("r.prop AS value")
+      .|.limit(limit)
+      .|.relationshipIndexOperator("(x)-[r:R(prop)]->(y)", argumentIds = Set("i"))
+      .input(variables = Seq("i"))
+      .build()
+
+    val input = (1 to 100).map(i => Array[Any](i))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    //then
+    runtimeResult should beColumns("value").withRows(rowCount(limit * 100 ))
+  }
+
+  test("limit and undirected scan on the RHS of an apply") {
+    // given
+    given {
+      relationshipIndex("R", "prop")
+      circleGraph(5)//these doesn't have prop
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 10 == 0 => r.setProperty("prop", "value")
+        case _ =>
+      }
+    }
+    val limit = 10
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("value")
+      .apply()
+      .|.projection("r.prop AS value")
+      .|.limit(limit)
+      .|.relationshipIndexOperator("(x)-[r:R(prop)]-(y)", argumentIds = Set("i"))
+      .input(variables = Seq("i"))
+      .build()
+
+    val input = (1 to 100).map(i => Array[Any](i))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    //then
+    runtimeResult should beColumns("value").withRows(rowCount(limit * 100 ))
+  }
+
+  test("limit on top of apply with directed scan on the RHS of an apply") {
+    // given
+    given {
+      relationshipIndex("R", "prop")
+      circleGraph(5)//these doesn't have prop
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 10 == 0 => r.setProperty("prop", "value")
+        case _ =>
+      }
+    }
+    val limit = 10
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("value")
+      .limit(limit)
+      .apply()
+      .|.projection("r.prop AS value")
+      .|.relationshipIndexOperator("(x)-[r:R(prop)]->(y)", argumentIds = Set("i"))
+      .input(variables = Seq("i"))
+      .build()
+
+    val input = (1 to 100).map(i => Array[Any](i))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    //then
+    runtimeResult should beColumns("value").withRows(rowCount(limit))
+  }
+
+  test("limit on top of apply with undirected scan on the RHS of an apply") {
+    // given
+    given {
+      relationshipIndex("R", "prop")
+      circleGraph(5)//these doesn't have prop
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 10 == 0 => r.setProperty("prop", "value")
+        case _ =>
+      }
+    }
+    val limit = 10
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("value")
+      .limit(limit)
+      .apply()
+      .|.projection("r.prop AS value")
+      .|.relationshipIndexOperator("(x)-[r:R(prop)]-(y)", argumentIds = Set("i"))
+      .input(variables = Seq("i"))
+      .build()
+
+    val input = (1 to 100).map(i => Array[Any](i))
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input:_*))
+
+    //then
+    runtimeResult should beColumns("value").withRows(rowCount(limit))
+  }
 }
