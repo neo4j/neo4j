@@ -41,11 +41,11 @@ class Neo4jASTExceptionFactory(inner: CypherExceptionFactory) extends ASTExcepti
       new StringBuilder("Invalid input '")
         .append(got)
         .append("':")
-        .append(" expected ").append(
+        .append(" expected").append(
           if (exp.size == 1)
-            exp.head
+            " " + exp.head
           else if (exp.size < 5)
-            exp.init.mkString(", ") + " or " + exp.last
+            " " + exp.init.mkString(", ") + " or " + exp.last
           else
             System.lineSeparator() + exp.map("  " + _).mkString(System.lineSeparator())
         ).result()

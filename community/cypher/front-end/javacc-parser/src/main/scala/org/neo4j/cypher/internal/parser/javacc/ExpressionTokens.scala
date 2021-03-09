@@ -35,17 +35,17 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNSIGNED_OCTAL_IN
 object ExpressionTokens {
 
   val tokens = Set(
+    DECIMAL_DOUBLE,
+    IDENTIFIER,
+    LBRACKET,
+    LCURLY,
+    LPAREN,
     MINUS,
     PLUS,
-    UNSIGNED_DECIMAL_INTEGER,
-    UNSIGNED_OCTAL_INTEGER,
-    DECIMAL_DOUBLE,
-    UNSIGNED_HEX_INTEGER,
-    LCURLY,
-    LBRACKET,
-    LPAREN,
     STRING_LITERAL1,
     STRING_LITERAL2,
-    IDENTIFIER
+    UNSIGNED_DECIMAL_INTEGER,
+    UNSIGNED_HEX_INTEGER,
+    UNSIGNED_OCTAL_INTEGER,
   )
 }

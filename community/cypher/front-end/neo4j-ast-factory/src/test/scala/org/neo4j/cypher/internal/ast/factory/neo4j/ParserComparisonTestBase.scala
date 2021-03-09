@@ -35,6 +35,15 @@ import scala.util.Try
 abstract class ParserComparisonTestBase() extends Assertions with Matchers {
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
 
+  private def fixLineSeparator(message: String): String = {
+    // This is needed because current version of scala seems to produce \n from multi line strings
+    // This produces a problem with windows line endings \r\n
+    if(message.contains(System.lineSeparator()))
+      message
+    else
+      message.replaceAll("\n", System.lineSeparator())
+  }
+
   /**
    * Tests that JavaCC parser produces SyntaxException.
    */
@@ -42,7 +51,7 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
     val exception = the[OpenCypherExceptionFactory.SyntaxException] thrownBy {
       JavaCCParser.parse(query, exceptionFactory)
     }
-    exception.getMessage shouldBe expectedMessage
+    exception.getMessage shouldBe fixLineSeparator(expectedMessage)
   }
 
   /**
@@ -52,7 +61,7 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
     val exception = the[OpenCypherExceptionFactory.SyntaxException] thrownBy {
       JavaCCParser.parse(query, exceptionFactory)
     }
-    exception.getMessage should startWith(expectedMessage)
+    exception.getMessage should startWith(fixLineSeparator(expectedMessage))
   }
 
   /**

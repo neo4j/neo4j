@@ -76,6 +76,8 @@ public class Cypher<STATEMENT,
                     MAP_PROJECTION_ITEM,
                     USE_CLAUSE extends CLAUSE,
                     ADMINISTRATION_COMMAND extends STATEMENT,
+                    DATABASE_SCOPE,
+                    WAIT_CLAUSE,
                     YIELD,
                     POS> {
 
@@ -103,6 +105,8 @@ public class Cypher<STATEMENT,
                USE_CLAUSE,
                ADMINISTRATION_COMMAND,
                YIELD,
+               DATABASE_SCOPE,
+               WAIT_CLAUSE,
                POS> astFactory;
 
     public Cypher(ASTFactory<STATEMENT,
@@ -128,6 +132,8 @@ public class Cypher<STATEMENT,
                              USE_CLAUSE,
                              ADMINISTRATION_COMMAND,
                              YIELD,
+                             DATABASE_SCOPE,
+                             WAIT_CLAUSE,
                              POS> astFactory,
                   ASTExceptionFactory exceptionFactory,
                   CharStream stream) {
@@ -244,119 +250,136 @@ MORE : { < ESCAPED_SYMBOLIC_NAME_OPEN: "`" > : ESC_SYMB_NAME }
 <ESC_SYMB_NAME> MORE: { "``" { image.delete(image.length()-2, image.length()); image.append("`"); } }
 <ESC_SYMB_NAME> TOKEN: { <ESCAPED_SYMBOLIC_NAME: "`"> {matchedToken.image = image.substring(1, image.length()-1); } : DEFAULT }
 
-
+/**
+* add new tokens to SymbolicNameString() if they should be accepted as an identifier as well
+* add new tokens to IdentifierTokens.tokens for correct filtering of identifier tokens
+*/
 TOKEN [IGNORE_CASE] :
 {
-  <TRUE: "true">
-| <FALSE: "false">
-| <NULL: "null">
-| < RETURN: "RETURN" >
-| < CREATE: "CREATE" >
-| < DELETE: "DELETE" >
-| < SET: "SET" >
-| < REMOVE: "REMOVE" >
-| < DETACH: "DETACH" >
-| < MATCH: "MATCH" >
-| < WITH: "WITH" >
-| < UNWIND: "UNWIND" >
-| < USE: "USE" >
-| < GRAPH: "GRAPH" >
-| < CALL: "CALL" >
-| < YIELD: "YIELD" >
-| < LOAD: "LOAD" >
-| < CSV: "CSV" >
-| < PERIODIC: "PERIODIC" >
-| < COMMIT: "COMMIT" >
-| < HEADERS: "HEADERS" >
-| < FROM: "FROM" >
-| < FIELDTERMINATOR: "FIELDTERMINATOR" >
-| < FOREACH: "FOREACH" >
-| < WHERE: "WHERE" >
-| < DISTINCT: "DISTINCT" >
-| < MERGE: "MERGE" >
-| < OPTIONAL: "OPTIONAL" >
-| < USING: "USING" >
-| < ORDER: "ORDER" >
-| < BY: "BY" >
-| < DESC: "DESC" ("ENDING")? >
-| < ASC: "ASC" ("ENDING")? >
-| < SKIPROWS: "SKIP" >
-| < LIMITROWS: "LIMIT" >
-| < UNION: "UNION" >
-| < DROP: "DROP" >
-| < INDEX: "INDEX" >
-| < SEEK: "SEEK" >
-| < SCAN: "SCAN" >
-| < JOIN: "JOIN" >
-| < CONSTRAINT: "CONSTRAINT" >
-| < ASSERT: "ASSERT" >
-| < IS: "IS" >
-| < NODE: "NODE" >
-| < KEY: "KEY" >
-| < UNIQUE: "UNIQUE" >
-| < ON: "ON" >
-| < AS: "AS" >
-| < OR: "OR" >
-| < XOR: "XOR" >
-| < AND: "AND" >
-| < NOT: "NOT" >
-| < EQ: "=" >
-| < NEQ: "!=" >
-| < NEQ2: "<>" >
-| < LE: "<=" >
-| < GE: ">=" >
-| < LT: "<" >
-| < GT: ">" >
-| < REGEQ: "=~" >
-| < EQUIV: "~" >
-| < STARTS: "STARTS" >
-| < ENDS: "ENDS" >
-| < CONTAINS: "CONTAINS" >
-| < IN: "IN" >
-| < COUNT: "count" >
-| < FILTER: "FILTER" >
-| < EXTRACT: "EXTRACT" >
-| < REDUCE: "REDUCE" >
-| < EXISTS: "EXISTS" >
-| < ALL: "ALL" >
-| < ANY: "ANY" >
-| < NONE: "NONE" >
-| < SINGLE: "SINGLE" >
-| < CASE: "CASE" >
-| < ELSE: "ELSE" >
-| < WHEN: "WHEN" >
-| < THEN: "THEN" >
-| < END: "END" >
-| < SHORTEST_PATH: "shortestPath" >
-| < ALL_SHORTEST_PATH: "allShortestPaths" >
-| < PLUS: "+" >
-| < MINUS: "-" >
-| < TIMES: "*" >
-| < DIVIDE: "/" >
-| < MODULO: "%" >
-| < POW: "^" >
-| < DOT: "." >
-| < DOTDOT: ".." >
-| < LPAREN: "(" >
-| < RPAREN: ")" >
-| < LBRACKET: "[" >
-| < RBRACKET: "]" >
-| < LCURLY: "{" >
-| < RCURLY: "}" >
-| < BAR: "|" >
-| < CATALOG: "CATALOG">
-| < SHOW: "SHOW">
-| < POPULATED: "POPULATED">
-| < ROLES: "ROLES">
-| < ROLE: "ROLE">
-| < USERS: "USERS">
-| < REPLACE: "REPLACE" >
-| < GRANT: "GRANT">
-| < REVOKE: "REVOKE">
-| < IF: "IF" >
-| < COPY: "COPY" >
-| < OF: "OF" >
-| < TO: "TO" >
+    < ALL_SHORTEST_PATH: "allShortestPaths" >
+    | < ALL: "ALL" >
+    | < AND: "AND" >
+    | < ANY: "ANY" >
+    | < AS: "AS" >
+    | < ASC: "ASC" ("ENDING")? >
+    | < ASSERT: "ASSERT" >
+    | < BAR: "|" >
+    | < BY: "BY" >
+    | < CALL: "CALL" >
+    | < CASE: "CASE" >
+    | < CATALOG: "CATALOG">
+    | < COMMIT: "COMMIT" >
+    | < CONSTRAINT: "CONSTRAINT" >
+    | < CONTAINS: "CONTAINS" >
+    | < COPY: "COPY" >
+    | < COUNT: "count" >
+    | < CREATE: "CREATE" >
+    | < CSV: "CSV" >
+    | < DATA: "DATA">
+    | < DATABASE: "DATABASE">
+    | < DATABASES: "DATABASES">
+    | < DBMS: "DBMS">
+    | < DEFAULT_TOKEN: "DEFAULT">
+    | < DELETE: "DELETE" >
+    | < DESC: "DESC" ("ENDING")? >
+    | < DESTROY: "DESTROY">
+    | < DETACH: "DETACH" >
+    | < DISTINCT: "DISTINCT" >
+    | < DIVIDE: "/" >
+    | < DOT: "." >
+    | < DOTDOT: ".." >
+    | < DROP: "DROP" >
+    | < DUMP: "DUMP">
+    | < ELSE: "ELSE" >
+    | < END: "END" >
+    | < ENDS: "ENDS" >
+    | < EQ: "=" >
+    | < EQUIV: "~" >
+    | < EXISTS: "EXISTS" >
+    | < EXTRACT: "EXTRACT" >
+    | < FALSE: "false">
+    | < FIELDTERMINATOR: "FIELDTERMINATOR" >
+    | < FILTER: "FILTER" >
+    | < FOREACH: "FOREACH" >
+    | < FROM: "FROM" >
+    | < GE: ">=" >
+    | < GRANT: "GRANT">
+    | < GRAPH: "GRAPH" >
+    | < GT: ">" >
+    | < HEADERS: "HEADERS" >
+    | < IF: "IF" >
+    | < IN: "IN" >
+    | < INDEX: "INDEX" >
+    | < IS: "IS" >
+    | < JOIN: "JOIN" >
+    | < KEY: "KEY" >
+    | < LBRACKET: "[" >
+    | < LCURLY: "{" >
+    | < LE: "<=" >
+    | < LIMITROWS: "LIMIT" >
+    | < LOAD: "LOAD" >
+    | < LPAREN: "(" >
+    | < LT: "<" >
+    | < MATCH: "MATCH" >
+    | < MERGE: "MERGE" >
+    | < MINUS: "-" >
+    | < MODULO: "%" >
+    | < NEQ: "!=" >
+    | < NEQ2: "<>" >
+    | < NODE: "NODE" >
+    | < NONE: "NONE" >
+    | < NOT: "NOT" >
+    | < NOWAIT: "NOWAIT">
+    | < NULL: "null">
+    | < OF: "OF" >
+    | < ON: "ON" >
+    | < OPTIONAL: "OPTIONAL" >
+    | < OR: "OR" >
+    | < ORDER: "ORDER" >
+    | < PERIODIC: "PERIODIC" >
+    | < PLUS: "+" >
+    | < POPULATED: "POPULATED">
+    | < POW: "^" >
+    | < RBRACKET: "]" >
+    | < RCURLY: "}" >
+    | < REDUCE: "REDUCE" >
+    | < REGEQ: "=~" >
+    | < REMOVE: "REMOVE" >
+    | < REPLACE: "REPLACE" >
+    | < RETURN: "RETURN" >
+    | < REVOKE: "REVOKE">
+    | < ROLE: "ROLE">
+    | < ROLES: "ROLES">
+    | < RPAREN: ")" >
+    | < SCAN: "SCAN" >
+    | < SEC: "SEC">
+    | < SECOND: "SECOND">
+    | < SECONDS: "SECONDS">
+    | < SEEK: "SEEK" >
+    | < SET: "SET" >
+    | < SHORTEST_PATH: "shortestPath" >
+    | < SHOW: "SHOW">
+    | < SINGLE: "SINGLE" >
+    | < SKIPROWS: "SKIP" >
+    | < START: "START">
+    | < STARTS: "STARTS" >
+    | < STOP: "STOP">
+    | < THEN: "THEN" >
+    | < TIMES: "*" >
+    | < TO: "TO" >
+    | < TRUE: "true">
+    | < UNION: "UNION" >
+    | < UNIQUE: "UNIQUE" >
+    | < UNWIND: "UNWIND" >
+    | < USE: "USE" >
+    | < USERS: "USERS">
+    | < USING: "USING" >
+    | < WAIT: "WAIT">
+    | < WHEN: "WHEN" >
+    | < WHERE: "WHERE" >
+    | < WITH: "WITH" >
+    | < XOR: "XOR" >
+    | < YIELD: "YIELD" >
 }
 
 /* IDENTIFIERS */
@@ -2381,15 +2404,18 @@ List<String> SymbolicNameList1() :
 
 STATEMENT CreateAdministrationCommand(USE_CLAUSE useClause):
 {
-    ADMINISTRATION_COMMAND s;
+    Token start;
+    boolean replace = false;
+    ADMINISTRATION_COMMAND command;
 }
 {
     (<CATALOG>)?
-    (
-        s = CreateRole()
+    start=<CREATE> (<OR> <REPLACE> { replace = true; })? (
+        command=CreateRole(start, replace)
+        | command=CreateDatabase(start, replace)
     )
     {
-        return astFactory.useGraph( s, useClause );
+        return astFactory.useGraph( command, useClause );
     }
 }
 
@@ -2400,33 +2426,84 @@ STATEMENT AdministrationCommand(USE_CLAUSE useClause):
 {
     (<CATALOG>)?
     (
-        s = ShowRoles()
-        | s = DropRole()
+        s = ShowCommand()
+        | s = DropCommand()
         | s = GrantRole()
         | s = RevokeRole()
+        | s = StartDatabase()
+        | s = StopDatabase()
     )
     {
         return astFactory.useGraph( s, useClause );
     }
 }
 
-ADMINISTRATION_COMMAND ShowRoles():
+
+ADMINISTRATION_COMMAND ShowCommand():
 {
     Token start;
-    boolean withUsers = false;
-    boolean showAll = true;
-    YIELD yield = null;
-    RETURN_CLAUSE returnClause = null;
-    EXPRESSION where = null;
+    ADMINISTRATION_COMMAND command;
 }
 {
-    start = <SHOW> ((<POPULATED> { showAll = false; }) | <ALL>)? <ROLES>
+    start=<SHOW> (
+        command=ShowRoles(start)
+        | command=ShowDatabase(start)
+    )
+    {
+        return command;
+    }
+}
+
+ADMINISTRATION_COMMAND ShowRoles(Token start):
+{
+  boolean withUsers = false;
+  boolean showAll = true;
+  YIELD yield = null;
+  RETURN_CLAUSE returnClause = null;
+  EXPRESSION where = null;
+}
+{
+    ((<POPULATED> { showAll = false; }) | <ALL>)? <ROLES>
     (<WITH> <USERS> { withUsers = true; })?
      ( ( yield = YieldClause() (returnClause = ReturnWithoutGraphClause())? )
        | (where = Where()) )?
     {
         return astFactory.showRoles( pos(start), withUsers, showAll, yield, returnClause, where );
     }
+}
+
+ADMINISTRATION_COMMAND ShowDatabase(Token start):
+{
+    DATABASE_SCOPE scope;
+    YIELD yield = null;
+    RETURN_CLAUSE returnClause = null;
+    EXPRESSION where = null;
+}
+{
+   scope = DatabaseScope()
+        ( ( yield = YieldClause() (returnClause = ReturnWithoutGraphClause())? )
+          | (where = Where()) )?
+   {
+        return astFactory.showDatabase(pos(start), scope, yield, returnClause, where);
+   }
+}
+
+DATABASE_SCOPE DatabaseScope():
+{
+  Token start = null;
+  Either<String, PARAMETER> name = null;
+  boolean isDefault = false;
+}
+{
+
+  (
+        start=<DATABASE> name=SymbolicDatabaseNameStringOrParameter()
+      | start=<DATABASES>
+      | start=<DEFAULT_TOKEN> <DATABASE> { isDefault = true; }
+  )
+  {
+    return astFactory.databaseScope(pos(start), name, isDefault);
+  }
 }
 
 YIELD YieldClause():
@@ -2453,16 +2530,14 @@ YIELD YieldClause():
     }
 }
 
-ADMINISTRATION_COMMAND CreateRole():
+ADMINISTRATION_COMMAND CreateRole(Token start, boolean replace):
 {
-    Token start;
     Either<String, PARAMETER> roleName = null;
     Either<String, PARAMETER>  sourceRoleName = null;
-    boolean replace = false;
     boolean ifNotExists = false;
 }
 {
-    start=<CREATE> (<OR> <REPLACE> { replace = true; })? <ROLE>
+    <ROLE>
     roleName=SymbolicNameOrStringParameter()
     (<IF> <NOT> <EXISTS> { ifNotExists = true; })?
     (<AS> <COPY> <OF> sourceRoleName=SymbolicNameOrStringParameter())?
@@ -2471,18 +2546,85 @@ ADMINISTRATION_COMMAND CreateRole():
     }
 }
 
-ADMINISTRATION_COMMAND DropRole():
+ADMINISTRATION_COMMAND CreateDatabase(Token start, boolean replace):
+{
+    Either<String, PARAMETER> databaseName = null;
+    boolean ifNotExists = false;
+    WAIT_CLAUSE wait = astFactory.wait(false, -1);
+}
+{
+    <DATABASE>
+    databaseName=SymbolicDatabaseNameStringOrParameter()
+    (<IF> <NOT> <EXISTS> { ifNotExists = true; })?
+    (wait = WaitClause())?
+    {
+       return astFactory.createDatabase( pos(start), replace, databaseName, ifNotExists, wait );
+    }
+}
+
+WAIT_CLAUSE WaitClause():
+{
+ Token number = null;
+ boolean wait = false;
+}
+{
+    (
+        <WAIT> { wait = true; } (number=<UNSIGNED_DECIMAL_INTEGER> (<SEC> | <SECOND> | <SECONDS>)? )?
+        | <NOWAIT>
+    )
+    {
+        if (number != null) {
+            return astFactory.wait(wait, Long.parseLong(number.image));
+        }
+        return astFactory.wait(wait, -1) ;
+    }
+}
+
+ADMINISTRATION_COMMAND DropCommand():
 {
     Token start;
+    ADMINISTRATION_COMMAND c;
+}
+{
+    start=<DROP>
+    (
+        c =DropRole(start)
+        | c = DropDatabase(start)
+    )
+    {
+        return c;
+    }
+}
+
+ADMINISTRATION_COMMAND DropRole(Token start):
+{
     Either<String, PARAMETER> roleName = null;
     boolean ifExists = false;
 }
 {
-    start=<DROP> <ROLE>
+    <ROLE>
     roleName=SymbolicNameOrStringParameter()
     (<IF> <EXISTS> {ifExists = true;})?
     {
         return astFactory.dropRole( pos(start), roleName, ifExists );
+    }
+}
+
+ADMINISTRATION_COMMAND DropDatabase(Token start):
+{
+    Either<String, PARAMETER> databaseName = null;
+    boolean ifExists = false;
+    WAIT_CLAUSE wait = astFactory.wait(false, -1);
+    boolean dumpData = false;
+}
+{
+    <DATABASE>
+    databaseName=SymbolicDatabaseNameStringOrParameter()
+    (<IF> <EXISTS> {ifExists = true;})?
+    ((<DUMP> { dumpData = true; } | <DESTROY>) <DATA>)?
+    (wait = WaitClause())?
+    {
+        return astFactory.dropDatabase( pos(start), databaseName, ifExists, dumpData, wait );
     }
 }
 
@@ -2512,6 +2654,32 @@ ADMINISTRATION_COMMAND RevokeRole():
     }
 }
 
+ADMINISTRATION_COMMAND StartDatabase():
+{
+    Token start;
+    Either<String, PARAMETER> databaseName;
+    WAIT_CLAUSE wait = astFactory.wait(false, -1);
+}
+{
+    start=<START> <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter() (wait=WaitClause())?
+    {
+      return astFactory.startDatabase(pos(start), databaseName, wait);
+    }
+}
+
+ADMINISTRATION_COMMAND StopDatabase():
+{
+    Token start;
+    Either<String, PARAMETER> databaseName;
+    WAIT_CLAUSE wait = astFactory.wait(false, -1);
+}
+{
+    start=<STOP> <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter() (wait=WaitClause())?
+    {
+      return astFactory.stopDatabase(pos(start), databaseName, wait);
+    }
+}
+
 List<Either<String, PARAMETER>> SymbolicNamerOrStringParameterList() :
 {
     Either<String, PARAMETER> entry;
@@ -2534,97 +2702,126 @@ Either<String, PARAMETER> SymbolicNameOrStringParameter():
    | parameter=StringParameter() { return new Right<String, PARAMETER>(parameter); }
 }
 
+Either<String, PARAMETER> SymbolicDatabaseNameStringOrParameter():
+{
+   Token nameToken;
+   StringBuilder nameBuilder;
+   PARAMETER parameter;
+}
+{
+   nameToken=SymbolicNameString() { nameBuilder =new StringBuilder(nameToken.image); }
+   (<DOT> nameToken=SymbolicNameString() { nameBuilder.append("."); nameBuilder.append(nameToken.image);})* { return new Left<String, PARAMETER>(nameBuilder.toString()); }
+   | parameter=StringParameter() { return new Right<String, PARAMETER>(parameter); }
+}
+
 Token SymbolicNameString() :
 {Token t;}
 {
   (
+
     t=<IDENTIFIER>
-  | t=<ESCAPED_SYMBOLIC_NAME>
-  | t=<RETURN>
-  | t=<CREATE>
-  | t=<DELETE>
-  | t=<SET>
-  | t=<REMOVE>
-  | t=<DETACH>
-  | t=<MATCH>
-  | t=<WITH>
-  | t=<UNWIND>
-  | t=<USE>
-  | t=<GRAPH>
-  | t=<CALL>
-  | t=<YIELD>
-  | t=<LOAD>
-  | t=<CSV>
-  | t=<PERIODIC>
-  | t=<COMMIT>
-  | t=<HEADERS>
-  | t=<FROM>
-  | t=<FIELDTERMINATOR>
-  | t=<FOREACH>
-  | t=<WHERE>
-  | t=<DISTINCT>
-  | t=<MERGE>
-  | t=<OPTIONAL>
-  | t=<USING>
-  | t=<ORDER>
-  | t=<BY>
-  | t=<DESC>
-  | t=<ASC>
-  | t=<SKIPROWS>
-  | t=<LIMITROWS>
-  | t=<UNION>
-  | t=<DROP>
-  | t=<INDEX>
-  | t=<SEEK>
-  | t=<SCAN>
-  | t=<JOIN>
-  | t=<CONSTRAINT>
-  | t=<ASSERT>
-  | t=<IS>
-  | t=<NODE>
-  | t=<KEY>
-  | t=<UNIQUE>
-  | t=<ON>
-  | t=<AS>
-  | t=<OR>
-  | t=<XOR>
-  | t=<AND>
-  | t=<NOT>
-  | t=<STARTS>
-  | t=<ENDS>
-  | t=<CONTAINS>
-  | t=<IN>
-  | t=<COUNT>
-  | t=<FILTER>
-  | t=<EXTRACT>
-  | t=<REDUCE>
-  | t=<EXISTS>
-  | t=<ALL>
-  | t=<ANY>
-  | t=<NONE>
-  | t=<SINGLE>
-  | t=<CASE>
-  | t=<ELSE>
-  | t=<WHEN>
-  | t=<THEN>
-  | t=<END>
-  | t=<SHORTEST_PATH>
-  | t=<ALL_SHORTEST_PATH>
-  | t=<NULL>
-  | t=<TRUE>
-  | t=<FALSE>
-  | t=<CATALOG>
-  | t=<SHOW>
-  | t=<POPULATED>
-  | t=<ROLES>
-  | t=<ROLE>
-  | t=<USERS>
-  | t=<REPLACE>
-  | t=<GRANT>
-  | t=<REVOKE>
-  | t=<IF>
-  | t=<COPY>
-  | t=<OF>
-  | t=<TO>
+    | t=<ESCAPED_SYMBOLIC_NAME>
+
+    //list of allowed keywords
+    | t=<ALL_SHORTEST_PATH>
+    | t=<ALL>
+    | t=<AND>
+    | t=<ANY>
+    | t=<AS>
+    | t=<ASC>
+    | t=<ASSERT>
+    | t=<BY>
+    | t=<CALL>
+    | t=<CASE>
+    | t=<CATALOG>
+    | t=<COMMIT>
+    | t=<CONSTRAINT>
+    | t=<CONTAINS>
+    | t=<COPY>
+    | t=<COUNT>
+    | t=<CREATE>
+    | t=<CSV>
+    | t=<DATA>
+    | t=<DATABASE>
+    | t=<DATABASES>
+    | t=<DBMS>
+    | t=<DEFAULT_TOKEN>
+    | t=<DELETE>
+    | t=<DESC>
+    | t=<DESTROY>
+    | t=<DETACH>
+    | t=<DISTINCT>
+    | t=<DROP>
+    | t=<DUMP>
+    | t=<ELSE>
+    | t=<END>
+    | t=<ENDS>
+    | t=<EXISTS>
+    | t=<EXTRACT>
+    | t=<FALSE>
+    | t=<FIELDTERMINATOR>
+    | t=<FILTER>
+    | t=<FOREACH>
+    | t=<FROM>
+    | t=<GRANT>
+    | t=<GRAPH>
+    | t=<HEADERS>
+    | t=<IF>
+    | t=<IN>
+    | t=<INDEX>
+    | t=<IS>
+    | t=<JOIN>
+    | t=<KEY>
+    | t=<LIMITROWS>
+    | t=<LOAD>
+    | t=<MATCH>
+    | t=<MERGE>
+    | t=<NODE>
+    | t=<NONE>
+    | t=<NOT>
+    | t=<NOWAIT>
+    | t=<NULL>
+    | t=<OF>
+    | t=<ON>
+    | t=<OPTIONAL>
+    | t=<OR>
+    | t=<ORDER>
+    | t=<PERIODIC>
+    | t=<POPULATED>
+    | t=<REDUCE>
+    | t=<REMOVE>
+    | t=<REPLACE>
+    | t=<RETURN>
+    | t=<REVOKE>
+    | t=<ROLE>
+    | t=<ROLES>
+    | t=<SCAN>
+    | t=<SEC>
+    | t=<SECOND>
+    | t=<SECONDS>
+    | t=<SEEK>
+    | t=<SET>
+    | t=<SHORTEST_PATH>
+    | t=<SHOW>
+    | t=<SINGLE>
+    | t=<SKIPROWS>
+    | t=<START>
+    | t=<STARTS>
+    | t=<STOP>
+    | t=<THEN>
+    | t=<TO>
+    | t=<TRUE>
+    | t=<UNION>
+    | t=<UNIQUE>
+    | t=<UNWIND>
+    | t=<USE>
+    | t=<USERS>
+    | t=<USING>
+    | t=<WAIT>
+    | t=<WHEN>
+    | t=<WHERE>
+    | t=<WITH>
+    | t=<XOR>
+    | t=<YIELD>
   ) { return t; }
 }

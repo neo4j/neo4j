@@ -22,24 +22,36 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.AllDatabasesScope
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateRole
+import org.neo4j.cypher.internal.ast.DatabaseScope
+import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DescSortItem
+import org.neo4j.cypher.internal.ast.DestroyData
+import org.neo4j.cypher.internal.ast.DropDatabase
+import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
 import org.neo4j.cypher.internal.ast.DropRole
+import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FromGraph
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
+import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
+import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
+import org.neo4j.cypher.internal.ast.NamedDatabaseScope
+import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OrderBy
@@ -63,12 +75,16 @@ import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetItem
 import org.neo4j.cypher.internal.ast.SetLabelItem
 import org.neo4j.cypher.internal.ast.SetPropertyItem
+import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.SortItem
+import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.SubQuery
+import org.neo4j.cypher.internal.ast.TimeoutAfter
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
@@ -78,6 +94,7 @@ import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
+import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.Yield
@@ -205,6 +222,8 @@ class Neo4jASTFactory(query: String)
     UseGraph,
     AdministrationCommand,
     Yield,
+    DatabaseScope,
+    WaitUntilComplete,
     InputPosition] {
 
   override def newSingleQuery(clauses: util.List[Clause]): Query = {
@@ -781,23 +800,34 @@ class Neo4jASTFactory(query: String)
                           roleName: Either[String, Parameter],
                           from: Either[String, Parameter],
                           ifNotExists: Boolean): CreateRole = {
+    CreateRole(roleName, Option(from), ifExistsDo(replace, ifNotExists))(p)
+  }
 
-    val ifExistsDo =
-      if (ifNotExists) {
-        if (replace) {
-          IfExistsInvalidSyntax
-        } else {
-          IfExistsDoNothing
-        }
-      } else {
-        if (replace) {
-          IfExistsReplace
-        } else {
-          IfExistsThrowError
-        }
-      }
+  override def createDatabase(p: InputPosition,
+                              replace: Boolean,
+                              databaseName: Either[String, Parameter],
+                              ifNotExists: Boolean,
+                              wait: WaitUntilComplete): CreateDatabase = {
+    CreateDatabase(databaseName, ifExistsDo(replace, ifNotExists), wait)(p)
+  }
 
-    CreateRole(roleName, Option(from), ifExistsDo)(p)
+  private def ifExistsDo(replace: Boolean, ifNotExists: Boolean): IfExistsDo = {
+    (replace, ifNotExists) match {
+      case (true, true) => IfExistsInvalidSyntax
+      case (true, false) => IfExistsReplace
+      case (false, true) => IfExistsDoNothing
+      case (false, false) => IfExistsThrowError
+    }
+  }
+
+  override def wait(wait: Boolean, seconds: Long): WaitUntilComplete = {
+    if (!wait) {
+      NoWait
+    } else if (seconds > 0) {
+      TimeoutAfter(seconds)
+    } else {
+      IndefiniteWait
+    }
   }
 
   override def dropRole(p: InputPosition, roleName: Either[String, Parameter], ifExists: Boolean): DropRole = {
@@ -818,6 +848,40 @@ class Neo4jASTFactory(query: String)
       None
     }
     ShowRoles(WithUsers, showAll, yieldOrWhere)(p)
+  }
+
+  def dropDatabase(p:InputPosition, databaseName: Either[String, Parameter], ifExists: Boolean, dumpData: Boolean, wait: WaitUntilComplete): DropDatabase = {
+    val action: DropDatabaseAdditionalAction = if (dumpData) {
+      DumpData
+    } else {
+      DestroyData
+    }
+
+    DropDatabase(databaseName, ifExists, action, wait)(p)
+  }
+
+  override def showDatabase(p: InputPosition,
+                            scope: DatabaseScope,
+                            yieldExpr: Yield,
+                            returnWithoutGraph: Return,
+                            where: Expression): ShowDatabase = {
+    if (yieldExpr != null) {
+      ShowDatabase(scope, Some(Left((yieldExpr, Option(returnWithoutGraph)))))(p)
+    } else {
+      ShowDatabase(scope, Option(where).map(e => Right(Where(e)(e.position))))(p)
+    }
+  }
+
+  override def databaseScope(p: InputPosition,
+                             databaseName: Either[String, Parameter],
+                             isDefault: Boolean): DatabaseScope = {
+    if (databaseName != null) {
+      NamedDatabaseScope(databaseName)(p)
+    } else if (isDefault) {
+      DefaultDatabaseScope()(p)
+    } else {
+      AllDatabasesScope()(p)
+    }
   }
 
   override def yieldClause(p: InputPosition,
@@ -848,6 +912,18 @@ class Neo4jASTFactory(query: String)
                            roles: util.List[Either[String, Parameter]],
                            users: util.List[Either[String, Parameter]]): RevokeRolesFromUsers = {
     RevokeRolesFromUsers(roles.asScala, users.asScala)(p)
+  }
+
+  override def startDatabase(p: InputPosition,
+                             databaseName: Either[String, Parameter],
+                             wait: WaitUntilComplete): StartDatabase = {
+    StartDatabase(databaseName, wait)(p)
+  }
+
+  override def stopDatabase(p: InputPosition,
+                             databaseName: Either[String, Parameter],
+                             wait: WaitUntilComplete): StopDatabase = {
+    StopDatabase(databaseName, wait)(p)
   }
 
   override def inputPosition(offset: Int, line: Int, column: Int): InputPosition = InputPosition(offset, line, column)

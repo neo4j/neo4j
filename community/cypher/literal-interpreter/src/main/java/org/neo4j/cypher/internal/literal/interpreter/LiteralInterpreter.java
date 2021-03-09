@@ -71,6 +71,8 @@ public class LiteralInterpreter implements ASTFactory<NULL,
         NULL,
         NULL,
         NULL,
+        NULL,
+        NULL,
         NULL>
 {
 
@@ -346,12 +348,6 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL yieldClause( NULL p, boolean returnAll, List<NULL> nulls, List<NULL> orderBy, Object skip, Object limit, Object where )
-    {
-        throw new UnsupportedOperationException( "yieldClause is not a literal" );
-    }
-
-    @Override
     public NULL grantRoles( NULL p, List<Either<String,Object>> roles, List<Either<String,Object>> users )
     {
         throw new UnsupportedOperationException( "grantRoles is not a literal" );
@@ -360,7 +356,55 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     @Override
     public NULL revokeRoles( NULL p, List<Either<String,Object>> roles, List<Either<String,Object>> users )
     {
-        throw new UnsupportedOperationException( "grantRoles is not a literal" );
+        throw new UnsupportedOperationException( "revokeRoles is not a literal" );
+    }
+
+    @Override
+    public NULL showDatabase( NULL p, NULL aNull, NULL yieldExpr, NULL returnWithoutGraph, Object where )
+    {
+        throw new UnsupportedOperationException( "showDatabase is not a literal" );
+    }
+
+    @Override
+    public NULL createDatabase( NULL p, boolean replace, Either<String,Object> databaseName, boolean ifNotExists, NULL aNull )
+    {
+        throw new UnsupportedOperationException( "createDatabase is not a literal" );
+    }
+
+    @Override
+    public NULL dropDatabase( NULL p, Either<String,Object> databaseName, boolean ifExists, boolean dumpData, NULL wait )
+    {
+        throw new UnsupportedOperationException( "dropDatabase is not a literal" );
+    }
+
+    @Override
+    public NULL startDatabase( NULL p, Either<String,Object> databaseName, NULL wait )
+    {
+        throw new UnsupportedOperationException( "startDatabase is not a literal" );
+    }
+
+    @Override
+    public NULL stopDatabase( NULL p, Either<String,Object> databaseName, NULL wait )
+    {
+        throw new UnsupportedOperationException( "stopDatabase is not a literal" );
+    }
+
+    @Override
+    public NULL databaseScope( NULL p, Either<String,Object> name, boolean isDefault )
+    {
+        throw new UnsupportedOperationException( "databaseScope is not a literal" );
+    }
+
+    @Override
+    public NULL wait( boolean wait, long seconds )
+    {
+        throw new UnsupportedOperationException( "wait is not a literal" );
+    }
+
+    @Override
+    public NULL yieldClause( NULL p, boolean returnAll, List<NULL> nulls, List<NULL> orderBy, Object skip, Object limit, Object where )
+    {
+        throw new UnsupportedOperationException( "yieldClause is not a literal" );
     }
 
     @Override

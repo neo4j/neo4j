@@ -39,7 +39,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   test("noReturnColumns") {
     expectError(
       "match (s) where id(s) = 0 return",
-      "Invalid input '': expected \"GRAPH\", \"*\" or an expression (line 1, column 33 (offset: 32))"
+      "Invalid input '': expected \"*\", \"GRAPH\" or an expression (line 1, column 33 (offset: 32))"
     )
   }
 

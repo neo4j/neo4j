@@ -60,6 +60,8 @@ public interface ASTFactory<STATEMENT,
         USE_GRAPH extends CLAUSE,
         ADMINISTRATION_COMMAND extends STATEMENT,
         YIELD,
+        DATABASE_SCOPE,
+        WAIT_CLAUSE,
         POS>
         extends ASTExpressionFactory<EXPRESSION,PARAMETER,PATTERN,VARIABLE,PROPERTY,MAP_PROJECTION_ITEM,POS>
 {
@@ -222,4 +224,18 @@ public interface ASTFactory<STATEMENT,
     ADMINISTRATION_COMMAND grantRoles( POS p, List<Either<String,PARAMETER>> roles, List<Either<String,PARAMETER>> users );
 
     ADMINISTRATION_COMMAND revokeRoles( POS p, List<Either<String,PARAMETER>> roles, List<Either<String,PARAMETER>> users );
+
+    ADMINISTRATION_COMMAND createDatabase( POS p, boolean replace, Either<String,PARAMETER> databaseName, boolean ifNotExists, WAIT_CLAUSE waitClause );
+
+    ADMINISTRATION_COMMAND dropDatabase( POS p, Either<String,PARAMETER> databaseName, boolean ifExists, boolean dumpData, WAIT_CLAUSE wait );
+
+    ADMINISTRATION_COMMAND showDatabase( POS p, DATABASE_SCOPE scope, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, EXPRESSION where );
+
+    ADMINISTRATION_COMMAND startDatabase( POS p, Either<String,PARAMETER> databaseName, WAIT_CLAUSE wait );
+
+    ADMINISTRATION_COMMAND stopDatabase( POS p, Either<String,PARAMETER> databaseName, WAIT_CLAUSE wait );
+
+    DATABASE_SCOPE databaseScope( POS p, Either<String,PARAMETER> databaseName, boolean isDefault );
+
+    WAIT_CLAUSE wait( boolean wait, long seconds );
 }

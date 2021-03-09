@@ -24,7 +24,7 @@ import scala.collection.JavaConverters
 object ParseExceptions extends RuntimeException {
 
   def expected(expectedTokenSequences: Array[Array[Int]], tokenImage: Array[String]): java.util.List[String] = {
-    JavaConverters.seqAsJavaList(processExpectedList(expectedTokenSequences.toSeq.flatten, tokenImage))
+    JavaConverters.seqAsJavaList(processExpectedList(expectedTokenSequences.toSeq.flatten, tokenImage).sorted)
   }
 
   def processExpectedList(expected: Seq[Int], tokenImage: Array[String]): Seq[String] = {
