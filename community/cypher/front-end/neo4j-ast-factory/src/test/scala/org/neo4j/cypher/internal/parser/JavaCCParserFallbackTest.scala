@@ -34,7 +34,8 @@ class JavaCCParserFallbackTest extends CypherFunSuite {
       "DROP ROLE cheeseRoll",
       "CREATE DATABASE store WAIT",
       "SHOW INDEX WHERE name = 'GRANT'",
-      "MATCH (n:Label) WHERE n.cypher = 'SHOW INDEXES' and n.access = 'DENY' RETURN n"
+      "MATCH (n:Label) WHERE n.cypher = 'SHOW INDEXES' and n.access = 'DENY' RETURN n",
+      "CREATE(n:Catalog)"
     ).foreach(t => {
       withClue(t) { JavaCCParser.shouldFallBack(t) shouldBe true }
     })

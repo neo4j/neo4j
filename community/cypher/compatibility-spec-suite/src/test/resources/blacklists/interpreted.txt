@@ -34,3 +34,13 @@ Feature "Map4 - Field existence check": Scenario "`exists()` with literal maps":
 
 //TCK needs to be updated, toInteger is valid for Boolean
 Feature "TypeConversion2 - To Integer": Scenario "`toInteger()` failing on invalid arguments": Example "0"
+
+
+// JavaCC fails invalid hex string during parsing, while parboiled defers failing until semantic checking
+Feature "Literals3 - Hexadecimal integer": Scenario "Fail on an hexadecimal literal containing a upper case invalid alphanumeric character"
+Feature "Literals3 - Hexadecimal integer": Scenario "Fail on an incomplete hexadecimal integer"
+Feature "Literals3 - Hexadecimal integer": Scenario "Fail on an hexadecimal literal containing a lower case invalid alphanumeric character"
+
+// Failing with M16 TCK - require investigation
+Feature "Literals2 - Decimal integer": Scenario "Fail on an integer containing a alphabetic character"
+Feature "Literals7 - List": Scenario "Fail on a nested list with non-matching brackets"

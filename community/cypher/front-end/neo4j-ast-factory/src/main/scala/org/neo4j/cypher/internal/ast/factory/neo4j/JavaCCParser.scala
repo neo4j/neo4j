@@ -41,7 +41,7 @@ case object JavaCCParser {
     "ALTER",
     "USER",
     "REVOKE",
-    "~")
+    "CATALOG")
 
   def shouldFallBack(errorMsg: String): Boolean = {
     val upper = errorMsg.toUpperCase()
