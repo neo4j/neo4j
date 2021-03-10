@@ -80,6 +80,11 @@ public class NonInteractiveShellRunner implements ShellRunner
         }
 
         int exitCode = EXIT_SUCCESS;
+
+        if(statements.size()==0) {
+            exitCode = EXIT_FAILURE;
+            logger.printError("Cypher file does not contain valid queries.");
+        }
         for ( String statement : statements )
         {
             try
