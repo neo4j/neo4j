@@ -68,23 +68,9 @@ public class DefaultFileSystemWatcher implements FileWatcher
             throw new IllegalArgumentException( format( "File `%s` is not a directory. Only directories can be " +
                     "registered to be monitored.", path.toAbsolutePath().normalize() ) );
         }
-        SharedWatchedFile watchedFile;
-        do
-        {
-            watchedFile = watchedFiles.computeIfAbsent( path.toAbsolutePath(), key ->
-            {
-                try
-                {
-                    return new SharedWatchedFile( key.register( watchService, OBSERVED_EVENTS, SensitivityWatchEventModifier.HIGH ), key,
-                            () -> watchedFiles.remove( key ) );
-                }
-                catch ( IOException e )
-                {
-                    throw new UncheckedIOException( e );
-                }
-            } );
-        } while ( !watchedFile.share() );
-        return watchedFile;
+        return watchedFiles.compute( path.toAbsolutePath(), ( key, watchedFile ) ->
+                watchedFile != null && watchedFile.share() ? watchedFile
+                                                           : new SharedWatchedFile( uncheckedRegister( key ), key, () -> watchedFiles.remove( key ) ) );
     }
 
     @Override
@@ -163,6 +149,18 @@ public class DefaultFileSystemWatcher implements FileWatcher
         }
     }
 
+    private WatchKey uncheckedRegister( Path path )
+    {
+        try
+        {
+            return path.register( watchService, OBSERVED_EVENTS, SensitivityWatchEventModifier.HIGH );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
     private static String getContext( WatchEvent<?> watchEvent )
     {
         return Objects.toString( watchEvent.context(), StringUtils.EMPTY );
@@ -171,7 +169,7 @@ public class DefaultFileSystemWatcher implements FileWatcher
     private static class SharedWatchedFile extends WatchedFile
     {
         private final Runnable closeAction;
-        private int refCount;
+        private int refCount = 1;
         private boolean closed;
 
         private SharedWatchedFile( WatchKey watchKey, Path path, Runnable closeAction )
@@ -183,7 +181,7 @@ public class DefaultFileSystemWatcher implements FileWatcher
         @Override
         public synchronized void close()
         {
-            if ( refCount-- == 0 )
+            if ( --refCount == 0 )
             {
                 super.close();
                 closeAction.run();

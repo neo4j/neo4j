@@ -96,9 +96,12 @@ class DefaultFileSystemWatcherTest
                 return null;
             } );
 
-            watcher.watch( testDirectory.homePath() ).close();
             WatchedResource firstWatch = watcher.watch( testDirectory.homePath() );
+            firstWatch.close();
+            assertThat( firstWatch.getWatchKey().isValid() ).isFalse();
+
             WatchedResource secondWatch = watcher.watch( testDirectory.homePath() );
+            WatchedResource thirdWatch = watcher.watch( testDirectory.homePath() );
             executor.waitUntilWaiting( location -> location.isAt( DefaultFileSystemWatcher.class, "startWatching" ) );
 
             //When
@@ -107,11 +110,13 @@ class DefaultFileSystemWatcherTest
             assertEventually( "Foo deleted", () -> listener.containsDeleted( "foo" ), TRUE, 30, SECONDS );
 
             //When
-            firstWatch.close(); //Closing the first should still allow the second to observe deletions
+            secondWatch.close(); //Closing the first should still allow the second to observe deletions
+            assertThat( thirdWatch.getWatchKey().isValid() ).isTrue();
             testDirectory.getFileSystem().delete( bar );
             assertEventually( "Bar deleted", () -> listener.containsDeleted( "bar" ), TRUE, 30, SECONDS );
 
-            secondWatch.close();
+            thirdWatch.close();
+            assertThat( thirdWatch.getWatchKey().isValid() ).isFalse();
         }
     }
 
