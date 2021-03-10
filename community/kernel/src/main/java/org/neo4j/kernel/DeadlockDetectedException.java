@@ -29,26 +29,6 @@ public class DeadlockDetectedException extends TransientTransactionFailureExcept
 {
     public DeadlockDetectedException( String message )
     {
-        super( message, null );
-    }
-
-    public DeadlockDetectedException( String message, Throwable cause )
-    {
-        super( "Don't panic.\n" +
-                "\n" +
-                "A deadlock scenario has been detected and avoided. This means that two or more transactions, which were " +
-                "holding locks, were wanting to await locks held by one another, which would have resulted in a deadlock " +
-                "between these transactions. This exception was thrown instead of ending up in that deadlock.\n" +
-                "\n" +
-                "See the deadlock section in the Neo4j Java developer reference for how to avoid this: " +
-                "https://neo4j.com/docs/java-reference/current/#transactions-deadlocks\n" +
-                "\n" +
-                "Details: '" + message + "'.", cause );
-    }
-
-    @Override
-    public Status status()
-    {
-        return Status.Transaction.DeadlockDetected;
+        super( Status.Transaction.DeadlockDetected, message );
     }
 }
