@@ -105,6 +105,8 @@ object Function {
     ToBoolean,
     ToFloat,
     ToInteger,
+    ToIntegerList,
+    ToIntegerOrNull,
     ToLower,
     ToString,
     ToUpper,

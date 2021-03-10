@@ -31,3 +31,6 @@ Feature "Map4 - Field existence check": Scenario "`exists()` with literal maps":
 Feature "Map4 - Field existence check": Scenario "`exists()` with literal maps": Example "4"
 Feature "Map4 - Field existence check": Scenario "`exists()` with literal maps": Example "5"
 Feature "Map4 - Field existence check": Scenario "`exists()` with literal maps": Example "6"
+
+//TCK needs to be updated, toInteger is valid for Boolean
+Feature "TypeConversion2 - To Integer": Scenario "`toInteger()` failing on invalid arguments": Example "0"

@@ -17,49 +17,45 @@
 package org.neo4j.cypher.internal.ast.semantics.functions
 
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTDate
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.symbols.CTNumber
+import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-class ToIntegerTest extends FunctionTestBase("toInteger")  {
+class ToIntegerListTest extends FunctionTestBase("toIntegerList")  {
 
   test("shouldAcceptCorrectTypes") {
-    testValidTypes(CTString)(CTInteger)
-    testValidTypes(CTFloat)(CTInteger)
-    testValidTypes(CTInteger)(CTInteger)
-    testValidTypes(CTNumber.covariant)(CTInteger)
-    testValidTypes(CTAny.covariant)(CTInteger)
-    testValidTypes(CTBoolean)(CTInteger)
-  }
-
-  // Currently we coerce CTList to boolean. This is going away and when it does we should reinstate this test
-  ignore("shouldFailTypeCheckForIncompatibleListArgument") {
-    testInvalidApplication(CTList(CTAny).covariant)(
-      "Type mismatch: expected Boolean, Float, Integer, Number or String but was List<T>"
-    )
+    testValidTypes(CTList(CTAny))(CTList(CTInteger))
+    testValidTypes(CTList(CTString))(CTList(CTInteger))
+    testValidTypes(CTList(CTFloat))(CTList(CTInteger))
+    testValidTypes(CTList(CTInteger))(CTList(CTInteger))
+    testValidTypes(CTList(CTPoint))(CTList(CTInteger))
   }
 
   test("shouldFailTypeCheckForIncompatibleArguments") {
     testInvalidApplication(CTNode)(
-      "Type mismatch: expected Boolean, Float, Integer, Number or String but was Node"
+      "Type mismatch: expected List<T> but was Node"
     )
 
     testInvalidApplication(CTDate)(
-      "Type mismatch: expected Boolean, Float, Integer, Number or String but was Date"
+      "Type mismatch: expected List<T> but was Date"
+    )
+
+    testInvalidApplication(CTString)(
+      "Type mismatch: expected List<T> but was String"
     )
   }
 
+
   test("shouldFailIfWrongNumberOfArguments") {
     testInvalidApplication()(
-      "Insufficient parameters for function 'toInteger'"
+      "Insufficient parameters for function 'toIntegerList'"
     )
     testInvalidApplication(CTString, CTString)(
-      "Too many parameters for function 'toInteger'"
+      "Too many parameters for function 'toIntegerList'"
     )
   }
 }

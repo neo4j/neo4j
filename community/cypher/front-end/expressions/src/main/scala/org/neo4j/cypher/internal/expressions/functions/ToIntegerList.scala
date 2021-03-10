@@ -17,17 +17,16 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
-import org.neo4j.cypher.internal.util.symbols.CTNumber
-import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CTList
 
-case object ToInteger extends Function {
-  override def name = "toInteger"
+case object ToIntegerList extends Function {
+  override def name = "toIntegerList"
 
   override val signatures = Vector(
-    TypeSignature(this, CTString, CTInteger, "Converts a string value to an integer value.", Category.SCALAR),
-    TypeSignature(this, CTNumber, CTInteger, "Converts a floating point value to an integer value.", Category.SCALAR),
-    TypeSignature(this, CTBoolean, CTInteger, "Converts a boolean to an integer value. TRUE is defined to be 1 and FALSE is defined to be 0.", Category.SCALAR)
+    TypeSignature(this, CTList(CTAny), CTList(CTInteger),
+      "Converts a list of values to a list of integer values. If any values are not convertible to integer they will be null in the list returned.",
+      Category.SCALAR)
   )
 }

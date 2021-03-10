@@ -22,11 +22,12 @@ import org.neo4j.cypher.internal.util.symbols.CTDate
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
-import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNumber
+import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-class ToIntegerTest extends FunctionTestBase("toInteger")  {
+class ToIntegerOrNullTest extends FunctionTestBase("toIntegerOrNull")  {
 
   test("shouldAcceptCorrectTypes") {
     testValidTypes(CTString)(CTInteger)
@@ -35,31 +36,17 @@ class ToIntegerTest extends FunctionTestBase("toInteger")  {
     testValidTypes(CTNumber.covariant)(CTInteger)
     testValidTypes(CTAny.covariant)(CTInteger)
     testValidTypes(CTBoolean)(CTInteger)
-  }
-
-  // Currently we coerce CTList to boolean. This is going away and when it does we should reinstate this test
-  ignore("shouldFailTypeCheckForIncompatibleListArgument") {
-    testInvalidApplication(CTList(CTAny).covariant)(
-      "Type mismatch: expected Boolean, Float, Integer, Number or String but was List<T>"
-    )
-  }
-
-  test("shouldFailTypeCheckForIncompatibleArguments") {
-    testInvalidApplication(CTNode)(
-      "Type mismatch: expected Boolean, Float, Integer, Number or String but was Node"
-    )
-
-    testInvalidApplication(CTDate)(
-      "Type mismatch: expected Boolean, Float, Integer, Number or String but was Date"
-    )
+    testValidTypes(CTMap)(CTInteger)
+    testValidTypes(CTDate)(CTInteger)
+    testValidTypes(CTPoint)(CTInteger)
   }
 
   test("shouldFailIfWrongNumberOfArguments") {
     testInvalidApplication()(
-      "Insufficient parameters for function 'toInteger'"
+      "Insufficient parameters for function 'toIntegerOrNull'"
     )
-    testInvalidApplication(CTString, CTString)(
-      "Too many parameters for function 'toInteger'"
+    testInvalidApplication(CTString, CTMap)(
+      "Too many parameters for function 'toIntegerOrNull'"
     )
   }
 }

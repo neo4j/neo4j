@@ -22,6 +22,7 @@ package org.neo4j.cypher.operations;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -50,6 +51,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.NodeValue;
@@ -1214,10 +1216,60 @@ public final class CypherFunctions
         {
             return stringToLongValue( (TextValue) in );
         }
+        else if ( in instanceof BooleanValue )
+        {
+            if ( ((BooleanValue) in).booleanValue() )
+            {
+                return longValue( 1L );
+            }
+            else
+            {
+                return longValue( 0L );
+            }
+        }
         else
         {
-            throw new ParameterWrongTypeException( "Expected a String or Number, got: " + in, null );
+            throw new ParameterWrongTypeException( String.format( "Expected a String, Number or Boolean, got: '%s' in function: ToInteger", in ), null );
         }
+    }
+
+    public static Value toIntegerOrNull( AnyValue in )
+    {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( in instanceof NumberValue || in instanceof BooleanValue )
+        {
+            return toInteger( in );
+        }
+        else if ( in instanceof TextValue )
+        {
+            try
+            {
+                return stringToLongValue( (TextValue) in);
+            }
+            catch ( CypherTypeException e )
+            {
+                return NO_VALUE;
+            }
+        }
+        else
+        {
+            return NO_VALUE;
+        }
+    }
+
+    public static AnyValue toIntegerList( AnyValue in )
+    {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( !(in instanceof ListValue) )
+        {
+            throw new ParameterWrongTypeException( String.format("Expected a List, got: %s in function: ToIntegerList",in), null );
+        }
+
+        ListValue lv = (ListValue) in;
+
+        return Arrays.stream( lv.asArray() )
+                     .map( entry -> entry == NO_VALUE ? NO_VALUE : toIntegerOrNull( entry ) )
+                     .collect( ListValueBuilder.collector() );
     }
 
     public static TextValue toString( AnyValue in )

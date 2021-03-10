@@ -17,17 +17,13 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
-import org.neo4j.cypher.internal.util.symbols.CTNumber
-import org.neo4j.cypher.internal.util.symbols.CTString
 
-case object ToInteger extends Function {
-  override def name = "toInteger"
+case object ToIntegerOrNull extends Function {
+  override def name = "toIntegerOrNull"
 
   override val signatures = Vector(
-    TypeSignature(this, CTString, CTInteger, "Converts a string value to an integer value.", Category.SCALAR),
-    TypeSignature(this, CTNumber, CTInteger, "Converts a floating point value to an integer value.", Category.SCALAR),
-    TypeSignature(this, CTBoolean, CTInteger, "Converts a boolean to an integer value. TRUE is defined to be 1 and FALSE is defined to be 0.", Category.SCALAR)
+    TypeSignature(this, CTAny, CTInteger, "Converts a value to an integer value, or null if the value cannot be converted.", Category.SCALAR)
   )
 }

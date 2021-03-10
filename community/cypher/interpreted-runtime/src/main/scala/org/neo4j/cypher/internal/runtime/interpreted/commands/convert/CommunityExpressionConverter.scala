@@ -94,6 +94,8 @@ import org.neo4j.cypher.internal.expressions.functions.Tan
 import org.neo4j.cypher.internal.expressions.functions.ToBoolean
 import org.neo4j.cypher.internal.expressions.functions.ToFloat
 import org.neo4j.cypher.internal.expressions.functions.ToInteger
+import org.neo4j.cypher.internal.expressions.functions.ToIntegerList
+import org.neo4j.cypher.internal.expressions.functions.ToIntegerOrNull
 import org.neo4j.cypher.internal.expressions.functions.ToLower
 import org.neo4j.cypher.internal.expressions.functions.ToString
 import org.neo4j.cypher.internal.expressions.functions.ToUpper
@@ -501,6 +503,8 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case ToBoolean => commands.expressions.ToBooleanFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToFloat => commands.expressions.ToFloatFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToInteger => commands.expressions.ToIntegerFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case ToIntegerList => commands.expressions.ToIntegerListFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case ToIntegerOrNull => commands.expressions.ToIntegerOrNullFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToLower => commands.expressions.ToLowerFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToString => commands.expressions.ToStringFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToUpper => commands.expressions.ToUpperFunction(self.toCommandExpression(id, invocation.arguments.head))
