@@ -173,6 +173,21 @@ class ShowSchemaCommandParserTest
       failsToParse
     }
 
+  test("SHOW INDEXES YIELD * WITH * MATCH (n) RETURN n") {
+    // Can't parse WITH after SHOW
+    failsToParse
+  }
+
+  test("UNWIND range(1,10) as b SHOW INDEXES YIELD * RETURN *") {
+    // Can't parse SHOW after UNWIND
+    failsToParse
+  }
+
+  test("SHOW INDEXES WITH name, type RETURN *") {
+    // Can't parse WITH after SHOW
+    failsToParse
+  }
+
   // Show constraints
 
   Seq("CONSTRAINT", "CONSTRAINTS").foreach {

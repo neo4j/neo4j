@@ -75,10 +75,10 @@ public class Cypher<STATEMENT,
                     PROPERTY extends EXPRESSION,
                     MAP_PROJECTION_ITEM,
                     USE_CLAUSE extends CLAUSE,
+                    YIELD extends CLAUSE,
                     ADMINISTRATION_COMMAND extends STATEMENT,
                     DATABASE_SCOPE,
                     WAIT_CLAUSE,
-                    YIELD,
                     POS> {
 
     ASTExceptionFactory exceptionFactory;
@@ -264,6 +264,8 @@ TOKEN [IGNORE_CASE] :
     | < ASC: "ASC" ("ENDING")? >
     | < ASSERT: "ASSERT" >
     | < BAR: "|" >
+    | < BRIEF: "BRIEF" >
+    | < BTREE: "BTREE" >
     | < BY: "BY" >
     | < CALL: "CALL" >
     | < CASE: "CASE" >
@@ -310,6 +312,7 @@ TOKEN [IGNORE_CASE] :
     | < IF: "IF" >
     | < IN: "IN" >
     | < INDEX: "INDEX" >
+    | < INDEXES: "INDEXES" >
     | < IS: "IS" >
     | < JOIN: "JOIN" >
     | < KEY: "KEY" >
@@ -336,6 +339,7 @@ TOKEN [IGNORE_CASE] :
     | < OPTIONAL: "OPTIONAL" >
     | < OR: "OR" >
     | < ORDER: "ORDER" >
+    | < OUTPUT: "OUTPUT" >
     | < PERIODIC: "PERIODIC" >
     | < PLUS: "+" >
     | < POPULATED: "POPULATED">
@@ -374,6 +378,7 @@ TOKEN [IGNORE_CASE] :
     | < USE: "USE" >
     | < USERS: "USERS">
     | < USING: "USING" >
+    | < VERBOSE: "VERBOSE" >
     | < WAIT: "WAIT">
     | < WHEN: "WHEN" >
     | < WHERE: "WHERE" >
@@ -1086,7 +1091,9 @@ STATEMENT SingleQueryOrAdministrationCommand(USE_CLAUSE useClause):
 }
 {
     (
-        LOOKAHEAD(2) statement=CreateAdministrationCommand(useClause)
+        LOOKAHEAD(2) statement=CreateAdministrationCommand(useClause) // CREATE admin thing vs CREATE graph thing
+        | statement=ShowCommand(useClause)
+        | <CATALOG> (statement=AdministrationCommand(useClause) | statement=ShowAdministrationCommand(useClause))
         | statement=AdministrationCommand(useClause)
         | query=SingleQuery(useClause) ( query=Union(query) )*
     )
@@ -2402,7 +2409,118 @@ List<String> SymbolicNameList1() :
   }
 }
 
-STATEMENT CreateAdministrationCommand(USE_CLAUSE useClause):
+// SHOW commands
+
+STATEMENT ShowCommand(USE_CLAUSE useClause) :
+{
+  Token start = null;
+  STATEMENT statement = null;
+}
+{
+  start = <SHOW>
+  ( <ALL> statement = ShowAllCommand(start, useClause)
+    | <POPULATED> statement = ShowRoles(start, useClause, false)
+    | <BTREE> statement = ShowIndexes(start, useClause, false)
+    | statement = ShowRoles(start, useClause, true)
+    | statement = ShowIndexes(start, useClause, true)
+    | statement = ShowDatabase(start, useClause)
+  ) { return statement; }
+}
+
+
+STATEMENT ShowAllCommand(Token start, USE_CLAUSE useClause) :
+{
+
+  STATEMENT statement = null;
+}
+{
+    (statement = ShowRoles(start, useClause, true)
+    | statement = ShowIndexes(start, useClause, true))
+    {
+        return statement;
+    }
+}
+
+YIELD YieldClause():
+{
+    Token start;
+    boolean returnAll = false;
+    RETURN_ITEM item;
+    List<RETURN_ITEM> returnItems = new ArrayList<>();
+    List<ORDER_ITEM> orders = new ArrayList<>();
+    EXPRESSION skip = null;
+    EXPRESSION limit = null;
+    EXPRESSION where = null;
+}
+{
+    start=<YIELD>
+    ( <TIMES> { returnAll = true; }  |
+    ( item=ReturnItem() { returnItems.add(item); } ("," item=ReturnItem() { returnItems.add(item); } )*))
+    ( orders=Order() )?
+    ( <SKIPROWS> skip=SignedIntegerLiteral() )?
+    ( <LIMITROWS> limit=SignedIntegerLiteral() )?
+    ( where = Where() ) ?
+    {
+        return astFactory.yieldClause(pos(start), returnAll, returnItems, orders, skip, limit, where);
+    }
+}
+
+STATEMENT ShowIndexes(Token start, USE_CLAUSE useClause, boolean all):
+{
+  CLAUSE x;
+  List<CLAUSE> y = new ArrayList<>();
+  List<CLAUSE> clauses = new ArrayList<>();
+    if (useClause != null) {
+        clauses.add(useClause);
+    }
+}
+{
+    y=ShowIndexesClause(start, all) { clauses.addAll( y ); }  ( x=ReturnClause() { clauses.add(x); } )?
+            { return astFactory.newSingleQuery(clauses); }
+}
+
+List<CLAUSE> ShowIndexesClause(Token start, boolean all):
+{
+    boolean brief = false;
+    boolean verbose = false;
+    EXPRESSION where = null;
+    YIELD yieldClause = null;
+}
+{
+    (<INDEX>|<INDEXES>)
+    ( ( ( <BRIEF> { brief = true; } | <VERBOSE> { verbose = true; }) (<OUTPUT>)? ) | yieldClause = YieldClause() | where = Where() )?
+    {
+        if ( yieldClause != null )
+        {
+            return List.of( astFactory.showIndexClause(pos(start), all, brief, verbose, where, true), yieldClause );
+        }
+        else
+        {
+            return List.of( astFactory.showIndexClause(pos(start), all, brief, verbose, where, false) );
+        }
+    }
+}
+
+// Administration Commands
+
+ADMINISTRATION_COMMAND ShowAdministrationCommand(USE_CLAUSE useClause):
+{
+    Token show = null;
+    ADMINISTRATION_COMMAND s;
+    boolean showAll = true;
+}
+{
+    show = <SHOW>
+    (
+       ((<POPULATED> { showAll = false; }) | <ALL>)? s = ShowRoles(show, useClause, showAll)
+       | s = ShowDatabase(show, useClause)
+    )
+    {
+        return s;
+    }
+}
+
+ADMINISTRATION_COMMAND CreateAdministrationCommand(USE_CLAUSE useClause):
 {
     Token start;
     boolean replace = false;
@@ -2419,15 +2537,13 @@ STATEMENT CreateAdministrationCommand(USE_CLAUSE useClause):
     }
 }
 
-STATEMENT AdministrationCommand(USE_CLAUSE useClause):
+ADMINISTRATION_COMMAND AdministrationCommand(USE_CLAUSE useClause):
 {
     ADMINISTRATION_COMMAND s;
 }
 {
-    (<CATALOG>)?
     (
-        s = ShowCommand()
-        | s = DropCommand()
+        s = DropCommand()
         | s = GrantRole()
         | s = RevokeRole()
         | s = StartDatabase()
@@ -2438,41 +2554,24 @@ STATEMENT AdministrationCommand(USE_CLAUSE useClause):
     }
 }
 
-
-ADMINISTRATION_COMMAND ShowCommand():
+ADMINISTRATION_COMMAND ShowRoles(Token start, USE_CLAUSE useClause, boolean showAll):
 {
-    Token start;
-    ADMINISTRATION_COMMAND command;
+    boolean withUsers = false;
+    YIELD yield = null;
+    RETURN_CLAUSE returnClause = null;
+    EXPRESSION where = null;
 }
 {
-    start=<SHOW> (
-        command=ShowRoles(start)
-        | command=ShowDatabase(start)
-    )
-    {
-        return command;
-    }
-}
-
-ADMINISTRATION_COMMAND ShowRoles(Token start):
-{
-  boolean withUsers = false;
-  boolean showAll = true;
-  YIELD yield = null;
-  RETURN_CLAUSE returnClause = null;
-  EXPRESSION where = null;
-}
-{
-    ((<POPULATED> { showAll = false; }) | <ALL>)? <ROLES>
+    <ROLES>
     (<WITH> <USERS> { withUsers = true; })?
      ( ( yield = YieldClause() (returnClause = ReturnWithoutGraphClause())? )
        | (where = Where()) )?
     {
-        return astFactory.showRoles( pos(start), withUsers, showAll, yield, returnClause, where );
+        return astFactory.useGraph(astFactory.showRoles( pos(start), withUsers, showAll, yield, returnClause, where ), useClause);
     }
 }
 
-ADMINISTRATION_COMMAND ShowDatabase(Token start):
+ADMINISTRATION_COMMAND ShowDatabase(Token start, USE_CLAUSE useClause):
 {
     DATABASE_SCOPE scope;
     YIELD yield = null;
@@ -2484,7 +2583,7 @@ ADMINISTRATION_COMMAND ShowDatabase(Token start):
         ( ( yield = YieldClause() (returnClause = ReturnWithoutGraphClause())? )
           | (where = Where()) )?
    {
-        return astFactory.showDatabase(pos(start), scope, yield, returnClause, where);
+        return astFactory.useGraph(astFactory.showDatabase(pos(start), scope, yield, returnClause, where), useClause);
    }
 }
 
@@ -2504,30 +2603,6 @@ DATABASE_SCOPE DatabaseScope():
   {
     return astFactory.databaseScope(pos(start), name, isDefault);
   }
-}
-
-YIELD YieldClause():
-{
-    Token start;
-    boolean returnAll = false;
-    RETURN_ITEM item;
-    List<RETURN_ITEM> returnItems = new ArrayList<>();
-    List<ORDER_ITEM> orders = new ArrayList<>();
-    EXPRESSION skip = null;
-    EXPRESSION limit = null;
-    EXPRESSION where = null;
-}
-{
-    start=<YIELD>
-    ( <TIMES> { returnAll = true; }  |
-    ( item=ReturnItem() { returnItems.add(item); } ("," item=ReturnItem() { returnItems.add(item); } )*))?
-    ( orders=Order() )?
-    ( <SKIPROWS> skip=SignedIntegerLiteral() )?
-    ( <LIMITROWS> limit=SignedIntegerLiteral() )?
-    ( where = Where() ) ?
-    {
-        return astFactory.yieldClause(pos(start), returnAll, returnItems, orders, skip, limit, where);
-    }
 }
 
 ADMINISTRATION_COMMAND CreateRole(Token start, boolean replace):
@@ -2730,6 +2805,8 @@ Token SymbolicNameString() :
     | t=<AS>
     | t=<ASC>
     | t=<ASSERT>
+    | t=<BRIEF>
+    | t=<BTREE>
     | t=<BY>
     | t=<CALL>
     | t=<CASE>
@@ -2769,6 +2846,7 @@ Token SymbolicNameString() :
     | t=<IF>
     | t=<IN>
     | t=<INDEX>
+    | t=<INDEXES>
     | t=<IS>
     | t=<JOIN>
     | t=<KEY>
@@ -2786,6 +2864,7 @@ Token SymbolicNameString() :
     | t=<OPTIONAL>
     | t=<OR>
     | t=<ORDER>
+    | t=<OUTPUT>
     | t=<PERIODIC>
     | t=<POPULATED>
     | t=<REDUCE>
@@ -2817,6 +2896,7 @@ Token SymbolicNameString() :
     | t=<USE>
     | t=<USERS>
     | t=<USING>
+    | t=<VERBOSE>
     | t=<WAIT>
     | t=<WHEN>
     | t=<WHERE>

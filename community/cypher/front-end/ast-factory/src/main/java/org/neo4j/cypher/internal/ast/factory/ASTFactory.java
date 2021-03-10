@@ -59,7 +59,7 @@ public interface ASTFactory<STATEMENT,
         MAP_PROJECTION_ITEM,
         USE_GRAPH extends CLAUSE,
         ADMINISTRATION_COMMAND extends STATEMENT,
-        YIELD,
+        YIELD extends CLAUSE,
         DATABASE_SCOPE,
         WAIT_CLAUSE,
         POS>
@@ -204,6 +204,17 @@ public interface ASTFactory<STATEMENT,
 
     CLAUSE subqueryClause( POS p, QUERY subquery );
 
+    // Show Command Clauses
+    YIELD yieldClause( POS p,
+                       boolean returnAll,
+                       List<RETURN_ITEM> returnItems,
+                       List<ORDER_ITEM> orderBy,
+                       EXPRESSION skip,
+                       EXPRESSION limit,
+                       EXPRESSION where );
+
+    CLAUSE showIndexClause( POS p, boolean all, boolean brief, boolean verbose, EXPRESSION where, boolean hasYield );
+
     //Role Administration Commands
     ADMINISTRATION_COMMAND useGraph( ADMINISTRATION_COMMAND command, USE_GRAPH useGraph );
 
@@ -212,14 +223,6 @@ public interface ASTFactory<STATEMENT,
     ADMINISTRATION_COMMAND dropRole( POS p, Either<String, PARAMETER> roleName, boolean ifExists );
 
     ADMINISTRATION_COMMAND showRoles( POS p, boolean withUsers, boolean showAll, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, EXPRESSION where );
-
-    YIELD yieldClause( POS p,
-                       boolean returnAll,
-                       List<RETURN_ITEM> returnItems,
-                       List<ORDER_ITEM> orderBy,
-                       EXPRESSION skip,
-                       EXPRESSION limit,
-                       EXPRESSION where );
 
     ADMINISTRATION_COMMAND grantRoles( POS p, List<Either<String,PARAMETER>> roles, List<Either<String,PARAMETER>> users );
 

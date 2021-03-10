@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ANY
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.AS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASC
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSERT
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.BRIEF
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.BTREE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.BY
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CALL
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CASE
@@ -66,6 +68,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.HEADERS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.IF
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.IN
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.INDEX
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.INDEXES
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.IS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.JOIN
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.KEY
@@ -83,6 +86,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ON
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.OPTIONAL
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.OR
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ORDER
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.OUTPUT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PERIODIC
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.POPULATED
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REDUCE
@@ -114,6 +118,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNWIND
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.USE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.USERS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.USING
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.VERBOSE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.WAIT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.WHEN
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.WHERE
@@ -133,6 +138,8 @@ object IdentifierTokens {
     AS,
     ASC,
     ASSERT,
+    BRIEF,
+    BTREE,
     BY,
     CALL,
     CASE,
@@ -172,6 +179,7 @@ object IdentifierTokens {
     IF,
     IN,
     INDEX,
+    INDEXES,
     IS,
     JOIN,
     KEY,
@@ -189,6 +197,7 @@ object IdentifierTokens {
     OPTIONAL,
     OR,
     ORDER,
+    OUTPUT,
     PERIODIC,
     POPULATED,
     REDUCE,
@@ -220,6 +229,7 @@ object IdentifierTokens {
     USE,
     USERS,
     USING,
+    VERBOSE,
     WAIT,
     WHEN,
     WHERE,

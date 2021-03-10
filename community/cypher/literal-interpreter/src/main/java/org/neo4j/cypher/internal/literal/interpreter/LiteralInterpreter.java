@@ -348,6 +348,18 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
+    public NULL yieldClause( NULL p, boolean returnAll, List<NULL> nulls, List<NULL> orderBy, Object skip, Object limit, Object where )
+    {
+        throw new UnsupportedOperationException( "yieldClause is not a literal" );
+    }
+
+    @Override
+    public NULL showIndexClause( NULL p, boolean all, boolean brief, boolean verbose, Object where, boolean hasYield )
+    {
+        throw new UnsupportedOperationException( "showIndexClause is not a literal" );
+    }
+
+    @Override
     public NULL grantRoles( NULL p, List<Either<String,Object>> roles, List<Either<String,Object>> users )
     {
         throw new UnsupportedOperationException( "grantRoles is not a literal" );
@@ -399,12 +411,6 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     public NULL wait( boolean wait, long seconds )
     {
         throw new UnsupportedOperationException( "wait is not a literal" );
-    }
-
-    @Override
-    public NULL yieldClause( NULL p, boolean returnAll, List<NULL> nulls, List<NULL> orderBy, Object skip, Object limit, Object where )
-    {
-        throw new UnsupportedOperationException( "yieldClause is not a literal" );
     }
 
     @Override

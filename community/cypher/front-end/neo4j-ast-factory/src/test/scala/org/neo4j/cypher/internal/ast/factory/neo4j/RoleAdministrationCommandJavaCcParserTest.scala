@@ -84,6 +84,16 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertSameAST(testName)
   }
 
+  test("CATALOG CATALOG SHOW ROLES") {
+    val exceptionMessage =
+      s"""Invalid input 'CATALOG': expected
+         |  "DROP"
+         |  "SHOW"
+         |  "GRANT"
+         |  "REVOKE"
+         |  "ROLES" (line 1, column 9 (offset: 8))""".stripMargin
+  }
+
   test("CATALOG SHOW ROLE") {
     val exceptionMessage =
       s"""Invalid input 'ROLE': expected
@@ -98,7 +108,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   }
 
   test("SHOW ALL ROLE") {
-    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 10 (offset: 9))")
+    assertJavaCCException(testName, """Invalid input 'ROLE': expected "INDEX", "INDEXES" or "ROLES" (line 1, column 10 (offset: 9))""")
   }
 
   test("SHOW POPULATED ROLE") {
@@ -109,9 +119,12 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     val exceptionMessage =
       s"""Invalid input 'ROLE': expected
          |  "ALL"
+         |  "BTREE"
          |  "DATABASE"
          |  "DATABASES"
          |  "DEFAULT"
+         |  "INDEX"
+         |  "INDEXES"
          |  "POPULATED"
          |  "ROLES" (line 1, column 6 (offset: 5))""".stripMargin
 
@@ -122,9 +135,12 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     val exceptionMessage =
       s"""Invalid input 'ROLE': expected
          |  "ALL"
+         |  "BTREE"
          |  "DATABASE"
          |  "DATABASES"
          |  "DEFAULT"
+         |  "INDEX"
+         |  "INDEXES"
          |  "POPULATED"
          |  "ROLES" (line 1, column 6 (offset: 5))""".stripMargin
 
@@ -139,9 +155,12 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     val exceptionMessage =
       s"""Invalid input 'ROLE': expected
          |  "ALL"
+         |  "BTREE"
          |  "DATABASE"
          |  "DATABASES"
          |  "DEFAULT"
+         |  "INDEX"
+         |  "INDEXES"
          |  "POPULATED"
          |  "ROLES" (line 1, column 6 (offset: 5))""".stripMargin
 
@@ -149,7 +168,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   }
 
   test("SHOW ALL ROLE WITH USERS") {
-    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 10 (offset: 9))")
+    assertJavaCCException(testName, """Invalid input 'ROLE': expected "INDEX", "INDEXES" or "ROLES" (line 1, column 10 (offset: 9))""")
   }
 
   test("SHOW ALL ROLES WITH USER") {
@@ -157,7 +176,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   }
 
   test("SHOW ALL ROLE WITH USER") {
-    assertJavaCCException(testName, "Invalid input 'ROLE': expected \"ROLES\" (line 1, column 10 (offset: 9))")
+    assertJavaCCException(testName, """Invalid input 'ROLE': expected "INDEX", "INDEXES" or "ROLES" (line 1, column 10 (offset: 9))""")
   }
 
   test("YIELD a, b, c WHERE a = b") {

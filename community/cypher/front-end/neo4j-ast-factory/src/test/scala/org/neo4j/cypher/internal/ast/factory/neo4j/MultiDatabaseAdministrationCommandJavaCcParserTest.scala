@@ -36,6 +36,10 @@ class MultiDatabaseAdministrationCommandJavaCcParserTest extends ParserCompariso
       assertSameAST(testName)
     }
 
+    test(s"USE SYSTEM SHOW $dbType") {
+      assertSameAST(testName)
+    }
+
     test(s"SHOW $dbType WHERE access = 'GRANTED'") {
       assertSameAST(testName)
     }

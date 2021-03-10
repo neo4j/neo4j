@@ -76,6 +76,7 @@ import org.neo4j.cypher.internal.ast.SetItem
 import org.neo4j.cypher.internal.ast.SetLabelItem
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.ShowDatabase
+import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
@@ -795,6 +796,37 @@ class Neo4jASTFactory(query: String)
     command.withGraph(Option(graph))
   }
 
+  // Show Commands
+
+  override def yieldClause(p: InputPosition,
+                           returnAll: Boolean,
+                           returnItemList: util.List[ReturnItem],
+                           order: util.List[SortItem],
+                           skip: Expression,
+                           limit: Expression,
+                           where: Expression): Yield = {
+
+    val returnItems = ReturnItems(returnAll, returnItemList.asScala.toList)(p)
+
+    Yield(returnItems,
+      Option(order.asScala.toList).filter(_.nonEmpty).map(OrderBy(_)(p)),
+      Option(skip).map(Skip(_)(p)),
+      Option(limit).map(Limit(_)(p)),
+      Option(where).map(e => Where(e)(e.position))
+    )(p)
+  }
+
+  override def showIndexClause(p: InputPosition,
+                               all: Boolean,
+                               brief: Boolean,
+                               verbose: Boolean,
+                               where: Expression,
+                               hasYield: Boolean): Clause = {
+    ShowIndexesClause(all, brief, verbose, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
+  }
+
+  // Administration Commands
+
   override def createRole(p: InputPosition,
                           replace: Boolean,
                           roleName: Either[String, Parameter],
@@ -882,24 +914,6 @@ class Neo4jASTFactory(query: String)
     } else {
       AllDatabasesScope()(p)
     }
-  }
-
-  override def yieldClause(p: InputPosition,
-                           returnAll: Boolean,
-                           returnItemList: util.List[ReturnItem],
-                           order: util.List[SortItem],
-                           skip: Expression,
-                           limit: Expression,
-                           where: Expression): Yield = {
-
-    val returnItems = ReturnItems(returnAll, returnItemList.asScala.toList)(p)
-
-    Yield(returnItems,
-      Option(order.asScala.toList).filter(_.nonEmpty).map(OrderBy(_)(p)),
-      Option(skip).map(Skip(_)(p)),
-      Option(limit).map(Limit(_)(p)),
-      Option(where).map(e => Where(e)(e.position))
-    )(p)
   }
 
   override def grantRoles(p: InputPosition,
