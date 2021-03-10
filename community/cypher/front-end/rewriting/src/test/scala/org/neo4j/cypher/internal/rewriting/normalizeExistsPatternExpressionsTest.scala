@@ -144,7 +144,7 @@ class normalizeExistsPatternExpressionsTest extends CypherFunSuite with AstConst
     val expected = parser.parse(expectedQuery, OpenCypherExceptionFactory(None))
 
     val checkResult = original.semanticCheck(SemanticState.clean)
-    val rewriter = inSequence(normalizeExistsPatternExpressions(checkResult.state), simplifyPredicates)
+    val rewriter = inSequence(normalizeExistsPatternExpressions(checkResult.state), simplifyPredicates(checkResult.state))
 
     val result = original.rewrite(rewriter)
     assert(result === expected)

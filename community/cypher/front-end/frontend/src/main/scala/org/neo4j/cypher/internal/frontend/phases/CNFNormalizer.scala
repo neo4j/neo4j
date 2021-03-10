@@ -17,6 +17,8 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
@@ -35,16 +37,22 @@ case object BooleanPredicatesInCNF extends StepSequencer.Condition
 /**
  * Normalize boolean predicates into conjunctive normal form.
  */
-case object CNFNormalizer extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
+case object CNFNormalizer extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step with PlanPipelineTransformerFactory {
+  override def phase: CompilationPhase = CompilationPhase.AST_REWRITE
 
-  override def instance(context: BaseContext): Rewriter = {
+  override def process(from: BaseState, context: BaseContext): BaseState = {
+    val rewritten = from.statement().endoRewrite(instance(from.semantics(), context))
+    from.withStatement(rewritten)
+  }
+
+  def instance(state: SemanticState, context: BaseContext): Rewriter = {
     implicit val monitor: AstRewritingMonitor = context.monitors.newMonitor[AstRewritingMonitor]()
     inSequence(
       deMorganRewriter(),
       distributeLawsRewriter(),
       normalizeInequalities,
       flattenBooleanOperators,
-      simplifyPredicates,
+      simplifyPredicates(state),
       // Redone here since CNF normalization might introduce negated inequalities (which this removes)
       normalizeSargablePredicates
     )

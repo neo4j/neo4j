@@ -20,6 +20,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
@@ -124,7 +125,7 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
     val monitors = mock[Monitors]
     astRewritingMonitor = mock[AstRewritingMonitor]
     when(monitors.newMonitor[AstRewritingMonitor]()).thenReturn(astRewritingMonitor)
-    rewriter = CNFNormalizer.instance(new TestContext(monitors))
+    rewriter = CNFNormalizer.instance(SemanticState.clean, new TestContext(monitors))
   }
 }
 
