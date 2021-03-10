@@ -100,6 +100,8 @@ public interface LogFile extends RotatableFile
 
     long getHighestLogVersion();
 
+    long getCurrentLogVersion();
+
     long getLowestLogVersion();
 
     LogHeader extractHeader( long version ) throws IOException;

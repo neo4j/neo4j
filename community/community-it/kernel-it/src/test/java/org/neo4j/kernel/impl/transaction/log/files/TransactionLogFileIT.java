@@ -19,19 +19,30 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Clock;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
+import org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.logging.NullLog;
 import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -40,6 +51,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.monitoring.PanicEventGenerator.NO_OP;
 
 @DbmsExtension
 @ExtendWith( LifeExtension.class )
@@ -79,6 +92,41 @@ class TransactionLogFileIT
         assertThat( cacheTracer.pins() ).isEqualTo( 5 );
         assertThat( cacheTracer.unpins() ).isEqualTo( 5 );
         assertThat( cacheTracer.hits() ).isEqualTo( 5 );
+    }
+
+    @Test
+    void doNotScanDirectoryOnRotate() throws IOException
+    {
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogVersionRepository( logVersionRepository )
+                .withStoreId( StoreId.UNKNOWN )
+                .build();
+        life.add( logFiles );
+        life.start();
+
+        MutableLong rotationObservedVersion = new MutableLong();
+        LogRotation logRotation = FileLogRotation.transactionLogRotation( logFiles, Clock.systemUTC(), new DatabaseHealth( NO_OP, NullLog.getInstance() ),
+                new LogRotationMonitorAdapter()
+                {
+                    @Override
+                    public void startRotation( long currentLogVersion )
+                    {
+                        rotationObservedVersion.setValue( currentLogVersion );
+                    }
+                } );
+
+        Path logsDirectory = databaseLayout.getTransactionLogsDirectory();
+
+        for ( int i = 0; i < 6; i++ )
+        {
+            FileUtils.deleteDirectory( logsDirectory );
+            Files.createDirectory( logsDirectory );
+            logRotation.rotateLogFile( LogAppendEvent.NULL );
+        }
+
+        assertEquals( 5, rotationObservedVersion.getValue() );
+        assertEquals( 6, logFiles.getLogFile().getCurrentLogVersion() );
     }
 
     @Test

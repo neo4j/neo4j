@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.api.LogVersionRepository;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
@@ -58,6 +59,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     private final TransactionLogFilesContext context;
     private final Log log;
     private final long rotationsSize;
+    private LogVersionRepository logVersionRepository;
 
     public CheckpointLogFile( LogFiles logFiles, TransactionLogFilesContext context )
     {
@@ -77,6 +79,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     public void start() throws Exception
     {
         checkpointAppender.start();
+        logVersionRepository = context.getLogVersionRepository();
     }
 
     @Override
@@ -205,6 +208,10 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     @Override
     public long getCurrentDetachedLogVersion() throws IOException
     {
+        if ( logVersionRepository != null )
+        {
+            return logVersionRepository.getCheckpointLogVersion();
+        }
         var versionVisitor = new RangeLogVersionVisitor();
         fileHelper.accept( versionVisitor );
         return versionVisitor.getHighestVersion();

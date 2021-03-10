@@ -54,6 +54,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -197,7 +198,8 @@ class CorruptedLogsTruncatorTest
         // 6 transaction log files and a checkpoint file
         assertEquals( 7, logFiles.logFiles().length );
         assertEquals( byteOffset, Files.size( highestCorrectLogFile ) );
-        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */ , Files.size( checkpointFile.getCurrentFile() ) );
+        assertThat( checkpointFile.getDetachedCheckpointFiles() ).hasSize( 1 );
+        assertEquals( CURRENT_FORMAT_LOG_HEADER_SIZE + 192 /* one checkpoint */ , Files.size( checkpointFile.getDetachedCheckpointFiles()[0] ) );
 
         Path corruptedLogsDirectory = databaseDirectory.resolve( CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
         assertTrue( Files.exists( corruptedLogsDirectory ) );

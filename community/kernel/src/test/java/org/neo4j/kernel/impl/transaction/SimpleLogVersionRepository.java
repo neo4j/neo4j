@@ -36,7 +36,7 @@ public class SimpleLogVersionRepository implements LogVersionRepository
 
     public SimpleLogVersionRepository( long initialLogVersion )
     {
-        this( initialLogVersion, INITIAL_LOG_VERSION );
+        this( initialLogVersion, initialLogVersion );
     }
 
     public SimpleLogVersionRepository( long initialLogVersion, long initialCheckpointLogVersion )

@@ -303,6 +303,16 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
+    public long getCurrentLogVersion()
+    {
+        if ( logVersionRepository != null )
+        {
+            return logVersionRepository.getCurrentLogVersion();
+        }
+        return getHighestLogVersion();
+    }
+
+    @Override
     public long getHighestLogVersion()
     {
         RangeLogVersionVisitor visitor = new RangeLogVersionVisitor();

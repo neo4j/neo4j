@@ -47,7 +47,7 @@ public class FileLogRotation implements LogRotation
     private final RotatableFile rotatableFile;
     private long lastRotationCompleted;
     private final LongSupplier lastTransactionIdSupplier;
-    private final LongSupplier fileVersionSupplier;
+    private final LongSupplier currentFileVersionSupplier;
 
     public static LogRotation checkpointLogRotation( CheckpointLogFile checkpointLogFile, LogFile logFile, Clock clock, Health databaseHealth,
             LogRotationMonitor monitor )
@@ -59,18 +59,18 @@ public class FileLogRotation implements LogRotation
     public static LogRotation transactionLogRotation( LogFiles logFiles, Clock clock, Health databaseHealth, LogRotationMonitor monitor )
     {
         return new FileLogRotation( logFiles.getLogFile(), clock, databaseHealth, monitor,
-                () -> logFiles.getLogFile().getLogFileInformation().committingEntryId(), logFiles.getLogFile()::getHighestLogVersion );
+                () -> logFiles.getLogFile().getLogFileInformation().committingEntryId(), logFiles.getLogFile()::getCurrentLogVersion );
     }
 
     private FileLogRotation( RotatableFile rotatableFile, Clock clock, Health databaseHealth, LogRotationMonitor monitor,
-            LongSupplier lastTransactionIdSupplier, LongSupplier fileVersionSupplier )
+            LongSupplier lastTransactionIdSupplier, LongSupplier currentFileVersionSupplier )
     {
         this.clock = clock;
         this.monitor = monitor;
         this.databaseHealth = databaseHealth;
         this.rotatableFile = rotatableFile;
         this.lastTransactionIdSupplier = lastTransactionIdSupplier;
-        this.fileVersionSupplier = fileVersionSupplier;
+        this.currentFileVersionSupplier = currentFileVersionSupplier;
     }
 
     @Override
@@ -108,7 +108,7 @@ public class FileLogRotation implements LogRotation
     {
         try ( LogRotateEvent rotateEvent = logRotateEvents.beginLogRotate() )
         {
-            long currentVersion = fileVersionSupplier.getAsLong();
+            long currentVersion = currentFileVersionSupplier.getAsLong();
             /*
              * In order to rotate the log file safely we need to assert that the kernel is still
              * at full health. In case of a panic this rotation will be aborted, which is the safest alternative.
