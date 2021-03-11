@@ -22,11 +22,20 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
@@ -123,5 +132,27 @@ class TransactionLogFileInformationTest
 
         long firstCommittedTxId = info.getFirstExistingEntryId();
         assertEquals( -1, firstCommittedTxId );
+    }
+
+    @Test
+    void doNotReadAgainPreviouslyObserverLogTransactionTime() throws IOException
+    {
+        var logEntryReader = mock( LogEntryReader.class );
+        var readableLogChannel = mock( ReadableLogChannel.class );
+        when( logEntryReader.readLogEntry( readableLogChannel ) ).thenReturn( new LogEntryStart( 1, 1, 1, new byte[]{}, LogPosition.UNSPECIFIED ) );
+        when( context.getLogEntryReader() ).thenReturn( logEntryReader );
+        var fileInfo = new TransactionLogFileInformation( logFiles, logHeaderCache, context );
+
+        var expectedHeader = new LogHeader( (byte) 1, 2, 3, 4 );
+        when( logFile.extractHeader( anyLong() ) ).thenReturn( expectedHeader );
+        when( logFile.getReader( any() ) ).thenReturn( readableLogChannel );
+
+        fileInfo.getFirstStartRecordTimestamp( 1 );
+        fileInfo.getFirstStartRecordTimestamp( 1 );
+        fileInfo.getFirstStartRecordTimestamp( 1 );
+        fileInfo.getFirstStartRecordTimestamp( 1 );
+        fileInfo.getFirstStartRecordTimestamp( 1 );
+
+        verify( logFile, times( 1 ) ).getReader( any() );
     }
 }

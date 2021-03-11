@@ -61,7 +61,7 @@ public class TransactionLogFilesHelper
 
     public Path getLogFileForVersion( long version )
     {
-        return Path.of( logBaseName.toAbsolutePath().toString() + VERSION_SUFFIX + version );
+        return Path.of( logBaseName.toAbsolutePath() + VERSION_SUFFIX + version );
     }
 
     public long getLogVersion( Path historyLogFile )
