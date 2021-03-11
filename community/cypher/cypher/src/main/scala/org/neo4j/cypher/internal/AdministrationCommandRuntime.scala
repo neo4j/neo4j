@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.ast.HomeDatabaseAction
+import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
+import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.NameValidator
@@ -181,12 +184,15 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                             password: expressions.Expression,
                                             requirePasswordChange: Boolean,
                                             suspended: Boolean,
-                                            defaultDatabase: Option[Either[String, Parameter]] = None)
+                                            defaultDatabase: Option[HomeDatabaseAction] = None)
                                            (sourcePlan: Option[ExecutionPlan],
                                             normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
     val passwordChangeRequiredKey = internalKey("passwordChangeRequired")
     val suspendedKey = internalKey("suspended")
-    val homeDatabaseFields = defaultDatabase.map(d => getNameFields("homeDatabase", d))
+    val homeDatabaseFields = defaultDatabase.map {
+      case RemoveHomeDatabaseAction    => NameFields(s"${internalPrefix}homeDatabase", Values.NO_VALUE, IdentityConverter)
+      case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name)
+    }
     val userNameFields = getNameFields("username", userName)
     val credentials = getPasswordExpression(password, isEncryptedPassword)
     val homeDatabaseCypher = homeDatabaseFields.map(ddf => s", homeDatabase: $$`${ddf.nameKey}`").getOrElse("")
@@ -231,11 +237,14 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                            password: Option[expressions.Expression],
                                            requirePasswordChange: Option[Boolean],
                                            suspended: Option[Boolean],
-                                           defaultDatabase: Option[Either[String, Parameter]] = None)
+                                           defaultDatabase: Option[HomeDatabaseAction] = None)
                                           (sourcePlan: Option[ExecutionPlan],
                                            normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
     val userNameFields = getNameFields("username", userName)
-    val homeDatabaseFields = defaultDatabase.map(d => getNameFields("homeDatabase", d))
+    val homeDatabaseFields = defaultDatabase.map {
+      case RemoveHomeDatabaseAction    => NameFields(s"${internalPrefix}homeDatabase", Values.NO_VALUE, IdentityConverter)
+      case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name)
+    }
     val maybePw = password.map(p => getPasswordExpression(p, isEncryptedPassword.getOrElse(false)))
     val params = Seq(
       maybePw -> "credentials",

@@ -244,7 +244,11 @@ final case class SetOwnPassword(newPassword: Expression, currentPassword: Expres
       SemanticState.recordCurrentScope(this)
 }
 
-final case class UserOptions(requirePasswordChange: Option[Boolean], suspended: Option[Boolean], homeDatabase: Option[Either[String, Parameter]])
+sealed trait HomeDatabaseAction
+case object RemoveHomeDatabaseAction extends HomeDatabaseAction
+final case class SetHomeDatabaseAction(name: Either[String, Parameter]) extends HomeDatabaseAction
+
+final case class UserOptions(requirePasswordChange: Option[Boolean], suspended: Option[Boolean], homeDatabase: Option[HomeDatabaseAction])
 
 final case class ShowRoles(withUsers: Boolean, showAll: Boolean, override val yieldOrWhere: YieldOrWhere, override val defaultColumnSet: List[ShowColumn])(val position: InputPosition) extends ReadAdministrationCommand {
 

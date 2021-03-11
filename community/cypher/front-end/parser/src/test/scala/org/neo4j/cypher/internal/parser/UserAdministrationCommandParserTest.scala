@@ -276,31 +276,31 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CREATE USER foo SET password 'password' SET HOME DATABASE db1") {
-    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(Left("db1"))), ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(Left("db1")))), ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET password 'password' SET HOME DATABASE $db") {
-    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(paramDb)), ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(paramDb))), ast.IfExistsThrowError))
   }
 
   test("CREATE OR REPLACE USER foo SET password 'password' SET HOME DATABASE db1") {
-    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(Left("db1"))), ast.IfExistsReplace))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(Left("db1")))), ast.IfExistsReplace))
   }
 
   test("CREATE USER foo IF NOT EXISTS SET password 'password' SET HOME DATABASE db1") {
-    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(Left("db1"))), ast.IfExistsDoNothing))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(Left("db1")))), ast.IfExistsDoNothing))
   }
 
   test("CREATE USER foo SET password 'password' SET PASSWORD CHANGE NOT REQUIRED SET HOME DAtabase $db") {
-    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(false), None, Some(paramDb)), ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(false), None, Some(ast.SetHomeDatabaseAction(paramDb))), ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET password 'password' SET HOME DATABASE `#dfkfop!`") {
-    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(Left("#dfkfop!"))), ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(Left("#dfkfop!")))), ast.IfExistsThrowError))
   }
 
   test("CREATE USER foo SET password 'password' SET HOME DATABASE null") {
-    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(Left("null"))), ast.IfExistsThrowError))
+    yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), None, Some(ast.SetHomeDatabaseAction(Left("null")))), ast.IfExistsThrowError))
   }
 
   Seq(
@@ -309,7 +309,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   ).foreach {
     case (first: String, second: String, third: String) =>
       test(s"CREATE USER foo SET password 'password' $first $second $third") {
-        yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), Some(false), Some(Left("db1"))), ast.IfExistsThrowError))
+        yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(Left("db1")))), ast.IfExistsThrowError))
       }
   }
 
@@ -317,7 +317,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   .permutations.foreach {
     clauses =>
       test(s"CREATE USER foo SET password 'password' ${clauses.mkString(" ")}") {
-        yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), Some(false), Some(Left("db1"))), ast.IfExistsThrowError))
+        yields(ast.CreateUser(literalFoo, isEncryptedPassword = false, password, ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(Left("db1")))), ast.IfExistsThrowError))
       }
   }
 
@@ -629,31 +629,31 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("ALTER USER foo SET HOME DATABASE db1") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(Left("db1"))), ifExists = false))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(Left("db1")))), ifExists = false))
   }
 
   test("ALTER USER foo SET HOME DATABASE $db") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(paramDb)), ifExists = false))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(paramDb))), ifExists = false))
   }
 
   test("ALTER USER foo SET HOME DATABASE null") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(Left("null"))), ifExists = false))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(Left("null")))), ifExists = false))
   }
 
   test("ALTER USER foo SET PASSWORD CHANGE REQUIRED SET HOME DATABASE db1") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(requirePasswordChange = Some(true), suspended = None, Some(Left("db1"))), ifExists = false))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(requirePasswordChange = Some(true), suspended = None, Some(ast.SetHomeDatabaseAction(Left("db1")))), ifExists = false))
   }
 
   test("ALTER USER foo SET password 'password' SET HOME DATABASE db1") {
-    yields(ast.AlterUser(literalFoo, Some(false), Some(password), ast.UserOptions(None, None, Some(Left("db1"))), ifExists = false))
+    yields(ast.AlterUser(literalFoo, Some(false), Some(password), ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(Left("db1")))), ifExists = false))
   }
 
   test("ALTER USER foo SET password 'password' SET PASSWORD CHANGE NOT REQUIRED SET HOME DAtabase $db") {
-    yields(ast.AlterUser(literalFoo, Some(false), Some(password), ast.UserOptions(requirePasswordChange = Some(false), None, Some(paramDb)), ifExists = false))
+    yields(ast.AlterUser(literalFoo, Some(false), Some(password), ast.UserOptions(requirePasswordChange = Some(false), None, Some(ast.SetHomeDatabaseAction(paramDb))), ifExists = false))
   }
 
   test("ALTER USER foo SET HOME DATABASE `#dfkfop!`") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(Left("#dfkfop!"))), ifExists = false))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(Left("#dfkfop!")))), ifExists = false))
   }
 
   test("ALTER user command finds password literal at correct offset") {
@@ -679,16 +679,16 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
   ).permutations.foreach {
     clauses =>
       test(s"ALTER USER foo ${clauses.mkString(" ")}") {
-        yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(Some(true), Some(false), Some(Left("db1"))), ifExists = false))
+        yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(Some(true), Some(false), Some(ast.SetHomeDatabaseAction(Left("db1")))), ifExists = false))
       }
   }
 
   test("ALTER USER foo REMOVE HOME DATABASE") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(Left(null))), ifExists = false))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(ast.RemoveHomeDatabaseAction)), ifExists = false))
   }
 
   test("ALTER USER foo IF EXISTS REMOVE HOME DATABASE") {
-    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(Left(null))), ifExists = true))
+    yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(ast.RemoveHomeDatabaseAction)), ifExists = true))
   }
 
   test("ALTER USER foo") {

@@ -112,7 +112,7 @@ trait AdministrationCommand extends Parser
     // ALTER USER username [IF EXISTS] [{SET PASSWORD CHANGE [NOT] REQUIRED} | {SET STATUS SUSPENDED|ACTIVE} | {SET HOME DATABASE name}]+
     group(AlterUserStart ~~ UserOptionsWithSetPart) ~~>> ((userName, ifExists, userOptions) => ast.AlterUser(userName, None, None, userOptions, ifExists)) |
     // ALTER USER username [IF EXISTS] REMOVE HOME DATABASE
-    group(AlterUserStart ~~ keyword("REMOVE HOME DATABASE")) ~~>> ((userName, ifExists) => ast.AlterUser(userName, None, None, ast.UserOptions(None, None, Some(Left(null))), ifExists))
+    group(AlterUserStart ~~ keyword("REMOVE HOME DATABASE")) ~~>> ((userName, ifExists) => ast.AlterUser(userName, None, None, ast.UserOptions(None, None, Some(ast.RemoveHomeDatabaseAction)), ifExists))
   }
 
   def AlterUserStart: Rule2[Either[String, Parameter], Boolean] = {
@@ -175,8 +175,8 @@ trait AdministrationCommand extends Parser
     keyword("SET STATUS SUSPENDED") ~>>> (_ => _ => true) |
     keyword("SET STATUS ACTIVE") ~>>> (_ => _ => false)
 
-  def SetHomeDatabase: Rule1[Either[String, Parameter]] =
-    keyword("SET HOME DATABASE") ~~ SymbolicDatabaseNameOrStringParameter
+  def SetHomeDatabase: Rule1[ast.SetHomeDatabaseAction] =
+    keyword("SET HOME DATABASE") ~~ SymbolicDatabaseNameOrStringParameter ~~>> (name => _ => ast.SetHomeDatabaseAction(name))
 
   // Role management commands
 
