@@ -659,6 +659,17 @@ public class GraphDatabaseSettings implements SettingsDeclaration
         OFF, INFO, VERBOSE
     }
 
+    @Description( "Log transaction ID for the executed queries being logged" )
+    public static final Setting<Boolean> log_queries_transaction_id =
+            newBuilder( "dbms.logs.query.transaction_id.enabled", BOOL, false ).dynamic().build();
+
+    @Description( "Log executed transactions.\n" +
+                  "Log entries are by default written to the file _query.log_ located in the Logs directory. " +
+                  "For location of the Logs directory, see <<file-locations>>. " +
+                  "This feature is available in the Neo4j Enterprise Edition." )
+    public static final Setting<Boolean> log_transactions =
+            newBuilder( "dbms.logs.query.transactions.enabled", BOOL, false ).dynamic().build();
+
     @Description( "Send user logs to the process stdout. " +
             "If this is disabled then logs will instead be sent to the file _neo4j.log_ located in the logs directory." )
     public static final Setting<Boolean> store_user_log_to_stdout = newBuilder( "dbms.logs.user.stdout_enabled", BOOL, true ).build();

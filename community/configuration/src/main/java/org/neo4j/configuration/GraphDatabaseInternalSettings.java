@@ -432,19 +432,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.logs.query.heap_dump_enabled", BOOL, false ).dynamic().build();
 
     @Internal
-    @Description( "Log transaction ID for the executed queries being logged" )
-    public static final Setting<Boolean> log_queries_transaction_id_enabled =
-            newBuilder( "unsupported.dbms.logs.query.transaction_id_enabled", BOOL, false ).dynamic().build();
-
-    @Internal
-    @Description( "Log executed transactions.\n" +
-                  "Log entries are by default written to the file _query.log_ located in the Logs directory. " +
-                  "For location of the Logs directory, see <<file-locations>>. " +
-                  "This feature is available in the Neo4j Enterprise Edition." )
-    public static final Setting<Boolean> log_transactions =
-            newBuilder( "unsupported.dbms.logs.transactions.enabled", BOOL, false ).dynamic().build();
-
-    @Internal
     @Description( "Specifies number of operations that batch inserter will try to group into one batch before " +
             "flushing data into underlying storage." )
     public static final Setting<Integer> batch_inserter_batch_size =
