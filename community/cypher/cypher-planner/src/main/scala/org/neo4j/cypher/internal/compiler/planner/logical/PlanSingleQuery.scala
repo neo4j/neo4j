@@ -19,106 +19,71 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
-import org.neo4j.cypher.internal.compiler.planner.logical.PlanSingleQuery.addAggregatedPropertiesToContext
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.countStorePlanner
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
-import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.attribution.Attributes
 
-import scala.annotation.tailrec
+import scala.language.implicitConversions
 
 /*
 This coordinates PlannerQuery planning and delegates work to the classes that do the actual planning of
 QueryGraphs and EventHorizons
  */
-case class PlanSingleQuery(planMatch: MatchPlanner = planMatch,
-                           planEventHorizon: EventHorizonPlanner = PlanEventHorizon,
-                           planWithTail: TailPlanner = PlanWithTail(),
-                           planUpdates:UpdatesPlanner = PlanUpdates)
+case class PlanSingleQuery(planHead: HeadPlanner = PlanHead(),
+                           planWithTail: TailPlanner = PlanWithTail())
   extends SingleQueryPlanner {
 
-  override def apply(in: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
-    val limitSelectivities = LimitSelectivity.forAllParts(in, context)
+  private type StepResult = (BestPlans, LogicalPlanningContext)
 
-    val updatedContext =
-      addAggregatedPropertiesToContext(in, context)
-        .withLimitSelectivity(limitSelectivities.head)
+  override def apply(query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
+    // to enable for-comprehension syntax
+    implicit def stepResult2Some(t: StepResult): Some[StepResult] = Some(t)
 
-    val plans = countStorePlanner(in, updatedContext) match {
-      case Some(plan) =>
-        BestResults(plan, None)
-      case None =>
-        val matchPlans = planMatch(in, updatedContext)
-        // We take all plans solving the MATCH part. This could be two, if we have a required order.
-        val plansWithInput: BestResults[LogicalPlan] = matchPlans.map(planUpdatesAndInput(_, in, updatedContext))
+    val limitSelectivities = LimitSelectivity.forAllParts(query, context)
 
-        planEventHorizon.planHorizon(in, plansWithInput, None, updatedContext)
-      }
-
-    val contextForTail = updatedContext.withUpdatedLabelInfo(plans.bestResult) // cardinality should be the same for all plans, let's use the first one
-    val (plan, _) = planWithTail(plans, in, contextForTail, limitSelectivities)
-    plan
-  }
-
-  /**
-   * Plan updates, query input, and horizon for all of them.
-   * Horizon planning will ensure that any ORDER BY clause is solved, so in the end we have up to two plans that are comparable.
-   */
-  private def planUpdatesAndInput(matchPlan: LogicalPlan, in: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
-    val planWithUpdates = planUpdates(in, matchPlan, firstPlannerQuery = true, context)
-
-    in.queryInput match {
-      case Some(variables) =>
-        val inputPlan = context.logicalPlanProducer.planInput(variables, context)
-        context.logicalPlanProducer.planInputApply(inputPlan, planWithUpdates, variables, context)
-      case None => planWithUpdates
-    }
-  }
-}
-
-object PlanSingleQuery {
-  /*
-   * Extract all properties over which aggregation is performed, where we potentially could use a NodeIndexScan.
-   */
-  def addAggregatedPropertiesToContext(currentQuery: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlanningContext = {
-
-    // The renamings map is used to keep track of any projections changing the name of the property,
-    // as in MATCH (n:Label) WITH n.prop1 AS prop RETURN count(prop)
-    @tailrec
-    def rec(currentQuery: SinglePlannerQuery, context: LogicalPlanningContext, renamings: Map[String, Expression]): LogicalPlanningContext = {
-      // If the graph is mutated between the MATCH and the aggregation, an index scan might lead to the wrong number of mutations
-      if (currentQuery.queryGraph.mutatingPatterns.nonEmpty) return context
-
-      currentQuery.horizon match {
-        case aggr: AggregatingQueryProjection =>
-          if (aggr.groupingExpressions.isEmpty) // needed here to not enter next case
-            AggregationHelper.extractProperties(aggr.aggregationExpressions, renamings) match {
-              case properties: Set[(String, String)] if properties.nonEmpty => context.withAggregationProperties(properties)
-              case _ => context
-            }
-          else context
-        case proj: QueryProjection =>
-          currentQuery.tail match {
-            case Some(tail) =>
-              rec(tail, context, renamings ++ proj.projections)
-            case _ => context
-          }
-        case _ =>
-          currentQuery.tail match {
-            case Some(tail) => rec(tail, context, renamings)
-            case _ => context
-          }
-      }
+    val Some(bestPlan) = for {
+      (plans, context) <- planHead(query, context.withLimitSelectivity(limitSelectivities.head))
+      (plans, context) <- planRemainingParts(plans, query, context, limitSelectivities)
+      (plans, context) <- unnestEager(plans, context)
+      pickBest = context.config.pickBestCandidate(context)
+      bestPlan <- pickBest(plans.allResults.toIterable, s"best finalized plan for ${query.queryGraph}")
+    } yield {
+      bestPlan
     }
 
-    rec(currentQuery, context, Map.empty)
+    bestPlan
+  }
+
+  private def planRemainingParts(plans: BestPlans,
+                                 query: SinglePlannerQuery,
+                                 context: LogicalPlanningContext,
+                                 limitSelectivities: List[Selectivity]): StepResult = {
+    val remainingPartsWithExtras = {
+      val allParts = query.allPlannerQueries
+      assert(allParts.length == limitSelectivities.length, "We should have limit selectivities for all query parts.")
+      (allParts.tail, limitSelectivities.tail, allParts.map(_.interestingOrder)).zipped
+    }
+
+    remainingPartsWithExtras.foldLeft((plans, context)) {
+      case ((plans, context), (queryPart, limitSelectivity, previousInterestingOrder)) =>
+        planWithTail(plans, queryPart, previousInterestingOrder, context.withLimitSelectivity(limitSelectivity))
+    }
+  }
+
+  private def unnestEager(plans: BestPlans, context: LogicalPlanningContext): StepResult = {
+    val unnest = Eagerness.unnestEager(
+      context.planningAttributes.solveds,
+      context.planningAttributes.cardinalities,
+      context.planningAttributes.providedOrders,
+      Attributes(context.idGen)
+    )
+
+    val unnestedPlans = plans.map(_.endoRewrite(unnest))
+    (unnestedPlans, context)
   }
 }
 
@@ -133,11 +98,15 @@ trait EventHorizonPlanner {
                   context: LogicalPlanningContext): BestResults[LogicalPlan]
 }
 
+trait HeadPlanner {
+  def apply(headQuery: SinglePlannerQuery, context: LogicalPlanningContext): (BestPlans, LogicalPlanningContext)
+}
+
 trait TailPlanner {
   def apply(lhsPlans: BestPlans,
-            in: SinglePlannerQuery,
-            context: LogicalPlanningContext,
-            limitSelectivities: List[Selectivity]): (LogicalPlan, LogicalPlanningContext)
+            tailQuery: SinglePlannerQuery,
+            previousInterestingOrder: InterestingOrder,
+            context: LogicalPlanningContext): (BestPlans, LogicalPlanningContext)
 }
 
 trait UpdatesPlanner {

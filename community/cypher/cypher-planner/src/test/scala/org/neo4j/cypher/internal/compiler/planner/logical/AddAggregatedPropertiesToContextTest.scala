@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.planner.logical.PlanSingleQuery.addAggregatedPropertiesToContext
+import org.neo4j.cypher.internal.compiler.planner.logical.PlanHead.addAggregatedPropertiesToContext
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class AddAggregatedPropertiesToContextTest extends CypherFunSuite with LogicalPlanningTestSupport {
