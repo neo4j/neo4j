@@ -30,13 +30,28 @@ class GBPTreeLock
 {
     private static final long writerLockBit = 0x00000000_00000001L;
     private static final long cleanerLockBit = 0x00000000_00000002L;
-    private volatile long state;
+    @SuppressWarnings( "unused" ) // accessed via VarHandle
+    private long state;
+    private static final VarHandle STATE;
+
+    static
+    {
+        try
+        {
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            STATE = l.findVarHandle( GBPTreeLock.class, "state", long.class );
+        }
+        catch ( ReflectiveOperationException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
+    }
 
     // Used for testing
     GBPTreeLock copy()
     {
         GBPTreeLock copy = new GBPTreeLock();
-        copy.state = state;
+        STATE.setVolatile( copy, (long) STATE.getVolatile( this ) );
         return copy;
     }
 
@@ -125,19 +140,5 @@ class GBPTreeLock
     void forceUnlock()
     {
         STATE.setVolatile( this, 0 );
-    }
-
-    private static final VarHandle STATE;
-    static
-    {
-        try
-        {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            STATE = l.findVarHandle( GBPTreeLock.class, "state", long.class );
-        }
-        catch ( ReflectiveOperationException e )
-        {
-            throw new ExceptionInInitializerError( e );
-        }
     }
 }

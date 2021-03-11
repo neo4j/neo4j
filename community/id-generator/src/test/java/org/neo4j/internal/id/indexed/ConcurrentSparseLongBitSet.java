@@ -24,8 +24,6 @@ import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.internal.unsafe.UnsafeUtil;
-
 import static java.lang.Integer.max;
 import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
@@ -37,9 +35,6 @@ import static org.neo4j.util.Preconditions.requirePowerOfTwo;
  */
 class ConcurrentSparseLongBitSet
 {
-    private static final int longArrayBase = UnsafeUtil.arrayBaseOffset( long[].class );
-    private static final int longArrayScale = UnsafeUtil.arrayIndexScale( long[].class );
-
     private final ConcurrentHashMap<Long,Range> ranges = new ConcurrentHashMap<>();
     private final int idsPerEntry;
     private final int longsPerRange;
@@ -142,13 +137,35 @@ class ConcurrentSparseLongBitSet
          * Accessed via unsafe so is effectively volatile and is updated atomically
          */
         private final long[] bits;
+        private static final VarHandle BITS_ARRAY;
+
         private final int longs;
 
         /**
          * 0=unlocked, 1=locked, 2=empty and dead.
          */
+        @SuppressWarnings( "unused" ) // accessed via VarHandle
         private int status;
+        private static final VarHandle STATUS;
+
+        @SuppressWarnings( "unused" ) // accessed via VarHandle
         private long lockStamp;
+        private static final VarHandle LOCK_STAMP;
+
+        static
+        {
+            try
+            {
+                MethodHandles.Lookup l = MethodHandles.lookup();
+                STATUS = l.findVarHandle( Range.class, "status", int.class );
+                LOCK_STAMP = l.findVarHandle( Range.class, "lockStamp", long.class );
+                BITS_ARRAY = MethodHandles.arrayElementVarHandle( long[].class );
+            }
+            catch ( ReflectiveOperationException e )
+            {
+                throw new ExceptionInInitializerError( e );
+            }
+        }
 
         private Range( int longs )
         {
@@ -264,24 +281,6 @@ class ConcurrentSparseLongBitSet
         boolean isUnlocked()
         {
             return (int) STATUS.getVolatile( this ) == STATUS_UNLOCKED;
-        }
-
-        private static final VarHandle STATUS;
-        private static final VarHandle LOCK_STAMP;
-        private static final VarHandle BITS_ARRAY;
-        static
-        {
-            try
-            {
-                MethodHandles.Lookup l = MethodHandles.lookup();
-                STATUS = l.findVarHandle( Range.class, "status", int.class );
-                LOCK_STAMP = l.findVarHandle( Range.class, "lockStamp", long.class );
-                BITS_ARRAY = MethodHandles.arrayElementVarHandle( long[].class );
-            }
-            catch ( ReflectiveOperationException e )
-            {
-                throw new ExceptionInInitializerError( e );
-            }
         }
     }
 }

@@ -23,8 +23,9 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 
 import org.neo4j.util.FeatureToggles;
-import org.neo4j.util.Preconditions;
 import org.neo4j.util.concurrent.BinaryLatch;
+
+import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 /**
  * The LatchMap is used by the {@link MuninnPagedFile} to coordinate concurrent page faults, and ensure that no two
@@ -36,13 +37,19 @@ final class LatchMap
 {
     static final class Latch extends BinaryLatch
     {
-        private LatchMap latchMap;
-        private int index;
+        private final LatchMap latchMap;
+        private final int index;
+
+        Latch( LatchMap latchMap, int index )
+        {
+            this.latchMap = latchMap;
+            this.index = index;
+        }
 
         @Override
         public void release()
         {
-            latchMap.setLatch( index, null );
+            latchMap.releaseLatch( index );
             super.release();
         }
     }
@@ -50,25 +57,25 @@ final class LatchMap
     static final int DEFAULT_FAULT_LOCK_STRIPING = 128;
     static final int faultLockStriping = FeatureToggles.getInteger( LatchMap.class, "faultLockStriping", DEFAULT_FAULT_LOCK_STRIPING );
 
-    private static final VarHandle LATCHES_ARRAY = MethodHandles.arrayElementVarHandle( Latch[].class );
     private final Latch[] latches;
+    private static final VarHandle LATCHES_ARRAY = MethodHandles.arrayElementVarHandle( Latch[].class );
     private final long faultLockMask;
 
     LatchMap( int size )
     {
-        Preconditions.checkArgument( Integer.bitCount( size ) == 1, "Fault lock stripe count must be a power of 2, was %d", size );
+        requirePowerOfTwo( size );
         latches = new Latch[size];
         faultLockMask = size - 1;
     }
 
-    private void setLatch( int index, BinaryLatch newValue )
+    private void releaseLatch( int index )
     {
-        LATCHES_ARRAY.setVolatile( latches, index, newValue );
+        LATCHES_ARRAY.setVolatile( latches, index, (BinaryLatch) null );
     }
 
-    private boolean compareAndSetLatch( int index, Latch expected, Latch update )
+    private boolean tryInsertLatch( int index, Latch latch )
     {
-        return LATCHES_ARRAY.compareAndSet( latches, index, expected, update );
+        return LATCHES_ARRAY.compareAndSet( latches, index, (Latch) null, latch );
     }
 
     private Latch getLatch( int index )
@@ -91,11 +98,9 @@ final class LatchMap
         Latch latch = getLatch( index );
         while ( latch == null )
         {
-            latch = new Latch();
-            if ( compareAndSetLatch( index, null, latch ) )
+            latch = new Latch( this, index );
+            if ( tryInsertLatch( index, latch ) )
             {
-                latch.latchMap = this;
-                latch.index = index;
                 return latch;
             }
             latch = getLatch( index );
@@ -106,14 +111,6 @@ final class LatchMap
 
     private int index( long identifier )
     {
-        return (int) (mix( identifier ) & faultLockMask);
-    }
-
-    private long mix( long identifier )
-    {
-        identifier ^= identifier << 21;
-        identifier ^= identifier >>> 35;
-        identifier ^= identifier << 4;
-        return identifier;
+        return (int) (identifier & faultLockMask);
     }
 }

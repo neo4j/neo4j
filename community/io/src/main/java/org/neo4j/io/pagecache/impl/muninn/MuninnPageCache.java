@@ -183,8 +183,9 @@ public class MuninnPageCache implements PageCache
     // to start its work. From that point on, the field will operate as a concurrent stack of FreePage objects. The
     // eviction thread pushes newly freed FreePage objects onto the stack, and page faulting threads pops FreePage
     // objects from the stack. The FreePage objects are single-use, to avoid running into the ABA-problem.
-    @SuppressWarnings( "unused" ) // This field is accessed via VarHandle.
+    @SuppressWarnings( "unused" ) // accessed via VarHandle.
     private volatile Object freelist;
+    private static final VarHandle FREE_LIST;
 
     // Linked list of mappings - guarded by synchronized(this)
     private volatile FileMapping mappedFiles;
@@ -208,6 +209,19 @@ public class MuninnPageCache implements PageCache
 
     // 'true' (the default) if we should print any exceptions we get when unmapping a file.
     private boolean printExceptionsOnClose;
+
+    static
+    {
+        try
+        {
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            FREE_LIST = l.findVarHandle( MuninnPageCache.class, "freelist", Object.class );
+        }
+        catch ( ReflectiveOperationException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
+    }
 
     /**
      * Compute the amount of memory needed for a page cache with the given number of 8 KiB pages.
@@ -1180,19 +1194,5 @@ public class MuninnPageCache implements PageCache
         var fileName = pagedFile.swapper.path().getFileName();
         var monitoringParams = systemJob( pagedFile.databaseName, "Pre-fetching of file '" + fileName + "'" );
         cursor.preFetcher = scheduler.schedule( Group.PAGE_CACHE_PRE_FETCHER, monitoringParams, preFetcher );
-    }
-
-    private static final VarHandle FREE_LIST;
-    static
-    {
-        try
-        {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            FREE_LIST = l.findVarHandle( MuninnPageCache.class, "freelist", Object.class );
-        }
-        catch ( ReflectiveOperationException e )
-        {
-            throw new ExceptionInInitializerError( e );
-        }
     }
 }

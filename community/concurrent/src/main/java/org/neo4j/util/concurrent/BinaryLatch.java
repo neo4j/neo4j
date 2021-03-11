@@ -52,8 +52,22 @@ public class BinaryLatch
     private static final byte waiterStateSuccessor = 1;
     private static final byte waiterStateReleased = 2;
 
-    @SuppressWarnings( "unused" )
-    private volatile Node stack; // written to via unsafe
+    @SuppressWarnings( "unused" ) // accessed via VarHandle
+    private Node stack;
+    private static final VarHandle STACK;
+
+    static
+    {
+        try
+        {
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            STACK = l.findVarHandle( BinaryLatch.class, "stack", Node.class );
+        }
+        catch ( ReflectiveOperationException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
+    }
 
     /**
      * Release the latch, thereby unblocking all current and future calls to {@link #await()}.
@@ -91,7 +105,7 @@ public class BinaryLatch
     public void await()
     {
         // Put in a local variable to avoid volatile reads we don't need.
-        Node state = stack;
+        Node state = (Node) STACK.getVolatile( this );
         if ( state != released )
         {
             // The latch hasn't obviously already been released, so we want to add a waiter to the stack. Trouble is,
@@ -149,7 +163,7 @@ public class BinaryLatch
 
         // Otherwise we have to go through the entire stack and look for the 'released' sentinel, since we might be
         // racing with the 'state == released' branch in await.
-        Node state = stack;
+        Node state = (Node) STACK.getVolatile( this );
         do
         {
             if ( state == released )
@@ -197,20 +211,6 @@ public class BinaryLatch
             }
             while ( next == null );
             waiters = next;
-        }
-    }
-
-    private static final VarHandle STACK;
-    static
-    {
-        try
-        {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            STACK = l.findVarHandle( BinaryLatch.class, "stack", Node.class );
-        }
-        catch ( ReflectiveOperationException e )
-        {
-            throw new ExceptionInInitializerError( e );
         }
     }
 }

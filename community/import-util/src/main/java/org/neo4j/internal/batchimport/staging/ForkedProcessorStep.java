@@ -54,6 +54,23 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     private volatile Thread receiverThread;
     private final StampedLock stripingLock;
 
+    private static final VarHandle COMPLETED_PROCESSORS;
+    private static final VarHandle PROCESSING_TIME;
+
+    static
+    {
+        try
+        {
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            COMPLETED_PROCESSORS = l.findVarHandle( ForkedProcessorStep.Unit.class, "completedProcessors", int.class );
+            PROCESSING_TIME = l.findVarHandle( ForkedProcessorStep.Unit.class, "processingTime", long.class );
+        }
+        catch ( ReflectiveOperationException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
+    }
+
     protected ForkedProcessorStep( StageControl control, String name, Configuration config, StatsProvider... statsProviders )
     {
         super( control, name, config, statsProviders );
@@ -322,21 +339,5 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     {
         Arrays.fill( forkedProcessors, null );
         super.close();
-    }
-
-    private static final VarHandle COMPLETED_PROCESSORS;
-    private static final VarHandle PROCESSING_TIME;
-    static
-    {
-        try
-        {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            COMPLETED_PROCESSORS = l.findVarHandle( ForkedProcessorStep.Unit.class, "completedProcessors", int.class );
-            PROCESSING_TIME = l.findVarHandle( ForkedProcessorStep.Unit.class, "processingTime", long.class );
-        }
-        catch ( ReflectiveOperationException e )
-        {
-            throw new ExceptionInInitializerError( e );
-        }
     }
 }

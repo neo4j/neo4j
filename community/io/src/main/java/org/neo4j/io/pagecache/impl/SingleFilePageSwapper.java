@@ -100,8 +100,22 @@ public class SingleFilePageSwapper implements PageSwapper
     // Guarded by synchronized(this). See tryReopen() and close().
     private boolean closed;
 
-    @SuppressWarnings( "unused" ) // Accessed through unsafe
+    @SuppressWarnings( "unused" ) // accessed via VarHandle
     private volatile long fileSize;
+    private static final VarHandle FILE_SIZE;
+
+    static
+    {
+        try
+        {
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            FILE_SIZE = l.findVarHandle( SingleFilePageSwapper.class, "fileSize", long.class );
+        }
+        catch ( ReflectiveOperationException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
+    }
 
     SingleFilePageSwapper( Path path, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean useDirectIO ) throws IOException
     {
@@ -782,20 +796,6 @@ public class SingleFilePageSwapper implements PageSwapper
                 throw initialException;
             }
 
-        }
-    }
-
-    private static final VarHandle FILE_SIZE;
-    static
-    {
-        try
-        {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            FILE_SIZE = l.findVarHandle( SingleFilePageSwapper.class, "fileSize", long.class );
-        }
-        catch ( ReflectiveOperationException e )
-        {
-            throw new ExceptionInInitializerError( e );
         }
     }
 }

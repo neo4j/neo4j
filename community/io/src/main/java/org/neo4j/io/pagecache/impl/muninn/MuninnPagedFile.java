@@ -89,6 +89,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     // max modifier transaction id among evicted pages for this file
     @SuppressWarnings( "unused" ) // accessed with VarHandle
     private volatile long highestEvictedTransactionId;
+    private static final VarHandle HIGHEST_EVICTED_TRANSACTION_ID;
 
     /**
      * The header state includes both the reference count of the PagedFile – 15 bits – and the ID of the last page in
@@ -106,6 +107,21 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      */
     @SuppressWarnings( "unused" ) // accessed with VarHandle
     private volatile long headerState;
+    private static final VarHandle HEADER_STATE;
+
+    static
+    {
+        try
+        {
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            HEADER_STATE = l.findVarHandle( MuninnPagedFile.class, "headerState", long.class );
+            HIGHEST_EVICTED_TRANSACTION_ID = l.findVarHandle( MuninnPagedFile.class, "highestEvictedTransactionId", long.class );
+        }
+        catch ( ReflectiveOperationException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
+    }
 
     /**
      * Create muninn page file
@@ -878,21 +894,5 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     {
         int index = (int) (filePageId & translationTableChunkSizeMask);
         return UnsafeUtil.arrayOffset( index, translationTableChunkArrayBase, translationTableChunkArrayScale );
-    }
-
-    private static final VarHandle HEADER_STATE;
-    private static final VarHandle HIGHEST_EVICTED_TRANSACTION_ID;
-    static
-    {
-        try
-        {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            HEADER_STATE = l.findVarHandle( MuninnPagedFile.class, "headerState", long.class );
-            HIGHEST_EVICTED_TRANSACTION_ID = l.findVarHandle( MuninnPagedFile.class, "highestEvictedTransactionId", long.class );
-        }
-        catch ( ReflectiveOperationException e )
-        {
-            throw new ExceptionInInitializerError( e );
-        }
     }
 }

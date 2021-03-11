@@ -75,8 +75,9 @@ public abstract class MuninnPageCursor extends PageCursor
     protected boolean eagerFlush;
     protected boolean noFault;
     protected boolean noGrow;
-    @SuppressWarnings( "unused" ) // This field is accessed via VarHandle.
+    @SuppressWarnings( "unused" ) // accessed via VarHandle.
     private long currentPageId;
+    private static final VarHandle CURRENT_PAGE_ID;
     protected long nextPageId;
     protected MuninnPageCursor linkedCursor;
     protected JobHandle<?> preFetcher;
@@ -91,6 +92,19 @@ public abstract class MuninnPageCursor extends PageCursor
     // CursorExceptionWithPreciseStackTrace with the message and stack trace pointing more or less directly at the
     // offending code.
     private Object cursorException;
+
+    static
+    {
+        try
+        {
+            MethodHandles.Lookup l = MethodHandles.lookup();
+            CURRENT_PAGE_ID = l.findVarHandle( MuninnPageCursor.class, "currentPageId", long.class );
+        }
+        catch ( ReflectiveOperationException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
+    }
 
     MuninnPageCursor( long victimPage, PageCursorTracer tracer, VersionContextSupplier versionContextSupplier )
     {
@@ -1114,19 +1128,5 @@ public abstract class MuninnPageCursor extends PageCursor
         long pageRef = pinnedPageRef;
         Preconditions.checkState( pageRef != 0, "Cursor is closed." );
         return pagedFile.getLastModifiedTxId( pageRef );
-    }
-
-    private static final VarHandle CURRENT_PAGE_ID;
-    static
-    {
-        try
-        {
-            MethodHandles.Lookup l = MethodHandles.lookup();
-            CURRENT_PAGE_ID = l.findVarHandle( MuninnPageCursor.class, "currentPageId", long.class );
-        }
-        catch ( ReflectiveOperationException e )
-        {
-            throw new ExceptionInInitializerError( e );
-        }
     }
 }
