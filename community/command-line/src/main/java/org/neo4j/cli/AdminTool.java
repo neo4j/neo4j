@@ -75,8 +75,8 @@ public final class AdminTool
         PrintWriter out = new PrintWriter( ctx.out(), true );
         final var cmd = new CommandLine( new AdminTool() )
                 .setOut( out )
-            .setErr( new PrintWriter( ctx.err(), true ) )
-            .setUsageHelpWidth( 120 )
+                .setErr( new PrintWriter( ctx.err(), true ) )
+                .setUsageHelpWidth( 120 )
                 .setCaseInsensitiveEnumValuesAllowed( true );
         registerCommands( cmd, ctx, Services.loadAll( CommandProvider.class ) );
 
