@@ -22,11 +22,11 @@ package org.neo4j.kernel.monitoring;
 import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-public final class StartDatabaseEvent implements DatabaseEventContext
+public class DefaultDatabaseEvent implements DatabaseEventContext
 {
     private final NamedDatabaseId databaseId;
 
-    public StartDatabaseEvent( NamedDatabaseId databaseId )
+    public DefaultDatabaseEvent( NamedDatabaseId databaseId )
     {
         this.databaseId = databaseId;
     }

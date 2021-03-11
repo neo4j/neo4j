@@ -19,29 +19,16 @@
  */
 package org.neo4j.kernel.monitoring;
 
-import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
-public final class PanicDatabaseEvent implements DatabaseEventContext
+public final class PanicDatabaseEvent extends DefaultDatabaseEvent
 {
-    private final NamedDatabaseId databaseId;
     private final Throwable causeOfPanic;
 
     public PanicDatabaseEvent( NamedDatabaseId databaseId, Throwable causeOfPanic )
     {
-        this.databaseId = databaseId;
+        super( databaseId );
         this.causeOfPanic = causeOfPanic;
-    }
-
-    @Override
-    public String getDatabaseName()
-    {
-        return databaseId.name();
-    }
-
-    public NamedDatabaseId getDatabaseId()
-    {
-        return databaseId;
     }
 
     public Throwable getCauseOfPanic()

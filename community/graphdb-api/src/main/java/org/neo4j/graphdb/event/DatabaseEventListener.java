@@ -47,7 +47,8 @@ public interface DatabaseEventListener
     void databasePanic( DatabaseEventContext eventContext );
 
     /**
-     * This method is invoked when a new database is created. This is called before {@link #databaseStart(DatabaseEventContext)}.
+     * This method is invoked when a new database is created. This is called before {@link #databaseStart(DatabaseEventContext)} and before any database
+     * components are available.
      * @param eventContext context of the event, can be used to get metadata.
      *
      * @since 4.3

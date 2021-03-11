@@ -33,22 +33,11 @@ import org.neo4j.logging.Log;
 public class DatabaseEventListeners
 {
     private final List<DatabaseEventListener> databaseEventListeners = new CopyOnWriteArrayList<>();
-    private final List<InternalDatabaseEventListener> internalDatabaseEventListeners = new CopyOnWriteArrayList<>();
     private final Log log;
 
     public DatabaseEventListeners( Log log )
     {
         this.log = log;
-    }
-
-    public void registerDatabaseEventListener( InternalDatabaseEventListener listener )
-    {
-        addListener( listener, internalDatabaseEventListeners );
-    }
-
-    public void unregisterDatabaseEventListener( InternalDatabaseEventListener listener )
-    {
-        removeListener( listener, internalDatabaseEventListeners );
     }
 
     public void registerDatabaseEventListener( DatabaseEventListener listener )
@@ -80,37 +69,32 @@ public class DatabaseEventListeners
 
     public void databaseStart( NamedDatabaseId databaseId )
     {
-        var event = new StartDatabaseEvent( databaseId );
+        var event = new DefaultDatabaseEvent( databaseId );
         notifyEventListeners( handler -> handler.databaseStart( event ), databaseEventListeners );
-        notifyEventListeners( handler -> handler.databaseStart( event ), internalDatabaseEventListeners );
     }
 
     public void databaseShutdown( NamedDatabaseId databaseId )
     {
-        var event = new StopDatabaseEvent( databaseId );
+        var event = new DefaultDatabaseEvent( databaseId );
         notifyEventListeners( handler -> handler.databaseShutdown( event ), databaseEventListeners );
-        notifyEventListeners( handler -> handler.databaseShutdown( event ), internalDatabaseEventListeners );
     }
 
     public void databaseCreate( NamedDatabaseId databaseId )
     {
-        var event = new CreateDatabaseEvent( databaseId );
+        var event = new DefaultDatabaseEvent( databaseId );
         notifyEventListeners( handler -> handler.databaseCreate( event ), databaseEventListeners );
-        notifyEventListeners( handler -> handler.databaseCreate( event ), internalDatabaseEventListeners );
     }
 
     public void databaseDrop( NamedDatabaseId databaseId )
     {
-        var event = new DropDatabaseEvent( databaseId );
+        var event = new DefaultDatabaseEvent( databaseId );
         notifyEventListeners( handler -> handler.databaseDrop( event ), databaseEventListeners );
-        notifyEventListeners( handler -> handler.databaseDrop( event ), internalDatabaseEventListeners );
     }
 
     void databasePanic( NamedDatabaseId databaseId, Throwable causeOfPanic )
     {
         var event = new PanicDatabaseEvent( databaseId, causeOfPanic );
         notifyEventListeners( handler -> handler.databasePanic( event ), databaseEventListeners );
-        notifyEventListeners( handler -> handler.databasePanic( event ), internalDatabaseEventListeners );
     }
 
     private <T> void notifyEventListeners( Consumer<T> consumer, List<T> listeners )

@@ -24,7 +24,6 @@ package org.neo4j.graphdb.event;
  */
 public class DatabaseEventListenerAdapter implements DatabaseEventListener
 {
-
     @Override
     public void databaseStart( DatabaseEventContext eventContext )
     {
@@ -39,6 +38,12 @@ public class DatabaseEventListenerAdapter implements DatabaseEventListener
 
     @Override
     public void databasePanic( DatabaseEventContext eventContext )
+    {
+        // empty
+    }
+
+    @Override
+    public void databaseCreate( DatabaseEventContext eventContext )
     {
         // empty
     }
