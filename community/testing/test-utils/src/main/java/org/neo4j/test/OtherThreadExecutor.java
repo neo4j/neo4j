@@ -38,8 +38,8 @@ import static java.lang.String.format;
 import static java.lang.System.nanoTime;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Executes commands in another thread. Very useful for writing
@@ -89,7 +89,7 @@ public class OtherThreadExecutor implements ThreadFactory, Closeable
 
     public OtherThreadExecutor( String name )
     {
-        this( name, 10, SECONDS );
+        this( name, 1, MINUTES );
     }
 
     public OtherThreadExecutor( String name, long timeout, TimeUnit unit )

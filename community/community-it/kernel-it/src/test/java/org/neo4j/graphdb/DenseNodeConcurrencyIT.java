@@ -700,22 +700,29 @@ class DenseNodeConcurrencyIT
         try ( OtherThreadExecutor t2 = new OtherThreadExecutor( "T2" ) )
         {
             Barrier.Control barrier = new Barrier.Control();
-            Future<Object> t2Future = t2.executeDontWait( command( () ->
+            Future<Object> t2Future = null;
+            try
             {
+                t2Future = t2.executeDontWait( command( () ->
+                {
+                    try ( Transaction tx = database.beginTx() )
+                    {
+                        tx1.accept( tx );
+                        ((TransactionImpl) tx).commit( barrier::reached );
+                    }
+                } ) );
+                barrier.await();
                 try ( Transaction tx = database.beginTx() )
                 {
-                    tx1.accept( tx );
-                    ((TransactionImpl) tx).commit( barrier::reached );
+                    tx2.accept( tx );
+                    tx.commit();
                 }
-            } ) );
-            barrier.await();
-            try ( Transaction tx = database.beginTx() )
-            {
-                tx2.accept( tx );
-                tx.commit();
             }
-            barrier.release();
-            t2Future.get();
+            finally
+            {
+                barrier.release();
+                waitFor( t2Future );
+            }
         }
     }
 
@@ -731,28 +738,44 @@ class DenseNodeConcurrencyIT
                 OtherThreadExecutor t3 = new OtherThreadExecutor( "T3" ) )
         {
             Barrier.Control barrier = new Barrier.Control();
-            Future<Object> t2Future = t2.executeDontWait( command( () ->
+            Future<Object> t2Future = null;
+            Future<Object> t3Future = null;
+            try
             {
-                try ( Transaction tx = database.beginTx() )
+                t2Future = t2.executeDontWait( command( () ->
                 {
-                    tx1.accept( tx );
-                    tx.createNode(); //ensure we upgrade to a write transaction to reach the barrier
-                    ((TransactionImpl) tx).commit( barrier::reached );
-                }
-            } ) );
-            barrier.await();
-            Future<Object> t3Future = t3.executeDontWait( command( () ->
+                    try ( Transaction tx = database.beginTx() )
+                    {
+                        tx1.accept( tx );
+                        tx.createNode(); //ensure we upgrade to a write transaction to reach the barrier
+                        ((TransactionImpl) tx).commit( barrier::reached );
+                    }
+                } ) );
+                barrier.await();
+                t3Future = t3.executeDontWait( command( () ->
+                {
+                    try ( Transaction tx = database.beginTx() )
+                    {
+                        tx2.accept( tx );
+                        tx.commit();
+                    }
+                } ) );
+                t3.waitUntilWaiting( waitDetailsPredicate );
+            }
+            finally
             {
-                try ( Transaction tx = database.beginTx() )
-                {
-                    tx2.accept( tx );
-                    tx.commit();
-                }
-            } ) );
-            t3.waitUntilWaiting( waitDetailsPredicate );
-            barrier.release();
-            t2Future.get();
-            t3Future.get();
+                barrier.release();
+                waitFor( t2Future );
+                waitFor( t3Future );
+            }
+        }
+    }
+
+    private static void waitFor( Future<?> future ) throws ExecutionException, InterruptedException
+    {
+        if ( future != null )
+        {
+            future.get();
         }
     }
 
