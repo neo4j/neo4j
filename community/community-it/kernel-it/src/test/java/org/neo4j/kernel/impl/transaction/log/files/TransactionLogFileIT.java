@@ -21,10 +21,11 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 
@@ -95,6 +96,7 @@ class TransactionLogFileIT
     }
 
     @Test
+    @EnabledOnOs( OS.LINUX )
     void doNotScanDirectoryOnRotate() throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
@@ -116,12 +118,12 @@ class TransactionLogFileIT
                     }
                 } );
 
-        Path logsDirectory = databaseLayout.getTransactionLogsDirectory();
-
         for ( int i = 0; i < 6; i++ )
         {
-            FileUtils.deleteDirectory( logsDirectory );
-            Files.createDirectory( logsDirectory );
+            for ( Path path : logFiles.logFiles() )
+            {
+                FileUtils.deleteFile( path );
+            }
             logRotation.rotateLogFile( LogAppendEvent.NULL );
         }
 
