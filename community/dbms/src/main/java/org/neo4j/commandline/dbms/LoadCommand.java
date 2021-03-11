@@ -120,6 +120,7 @@ public class LoadCommand extends AbstractCommand
 
         DatabaseLayout databaseLayout = Neo4jLayout.of( config ).databaseLayout( database.name() );
         ctx.fs().mkdirs( databaseLayout.databaseDirectory() );
+        ctx.fs().mkdirs( databaseLayout.getNeo4jLayout().transactionLogsRootDirectory() );
         try ( Closeable ignore = LockChecker.checkDatabaseLock( databaseLayout ) )
         {
             deleteIfNecessary( databaseLayout, force );
