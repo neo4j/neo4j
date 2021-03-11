@@ -85,8 +85,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
-import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
 import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store;
@@ -188,8 +188,11 @@ class RecoveryIT
         var tracers = new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, pageCacheTracer );
         recoverDatabase( tracers );
 
-        assertThat( pageCacheTracer.pins() ).isEqualTo( pageCacheTracer.unpins() );
-        assertThat( pageCacheTracer.hits() + pageCacheTracer.faults() ).isEqualTo( pageCacheTracer.pins() );
+        long pins = pageCacheTracer.pins();
+        assertThat( pins ).isGreaterThan( 0 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( pins );
+        assertThat( pageCacheTracer.hits() ).isGreaterThan( 0 ).isLessThanOrEqualTo( pins );
+        assertThat( pageCacheTracer.faults() ).isGreaterThan( 0 ).isLessThanOrEqualTo( pins );
 
         GraphDatabaseService recoveredDatabase = createDatabase();
         try ( Transaction tx = recoveredDatabase.beginTx() )
