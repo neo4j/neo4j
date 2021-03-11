@@ -64,6 +64,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -238,9 +239,37 @@ public class ProcedureJarLoaderTest
         ProcedureJarLoader jarloader = new ProcedureJarLoader( procedureCompiler(), logProvider.getLog( ProcedureJarLoader.class ) );
 
         // when
-        assertThrows( ZipException.class, () -> jarloader.loadProceduresFromDir( parentDir( theJar ) ) );
+        assertThatThrownBy( () -> jarloader.loadProceduresFromDir( parentDir( theJar ) ) )
+                .isInstanceOf( ZipException.class )
+                .hasMessageContaining( String.format( "Some jar procedure files (%s) are invalid, see log for details.",
+                        Path.of( theJar.toURI() ).getFileName().toString() ) );
         assertThat( logProvider ).containsMessages(
                 format( "Plugin jar file: %s corrupted.", Path.of( theJar.toURI() ) ) );
+    }
+
+    @Test
+    void shouldLogHelpfullyWhenMultiplePluginJarsAreCorrupt() throws Exception
+    {
+        // given
+        URL jarOne = createJarFor( ClassWithOneProcedure.class, ClassWithAnotherProcedure.class, ClassWithNoProcedureAtAll.class );
+        URL jarTwo = createJarFor( ClassWithOneProcedure.class, ClassWithAnotherProcedure.class, ClassWithNoProcedureAtAll.class );
+        corruptJar( jarOne );
+        corruptJar( jarTwo );
+
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
+
+        ProcedureJarLoader jarloader = new ProcedureJarLoader( procedureCompiler(), logProvider.getLog( ProcedureJarLoader.class ) );
+
+        // when
+        assertThatThrownBy( () -> jarloader.loadProceduresFromDir( testDirectory.homePath() ) )
+                .isInstanceOf( ZipException.class )
+                .hasMessageContaining( "Some jar procedure files (" )
+                .hasMessageContaining( ") are invalid, see log for details." )
+                .hasMessageContaining( Path.of( jarOne.toURI() ).getFileName().toString() )
+                .hasMessageContaining( Path.of( jarTwo.toURI() ).getFileName().toString() );
+        assertThat( logProvider ).containsMessages(
+                format( "Plugin jar file: %s corrupted.", Path.of( jarOne.toURI() ) ),
+                format( "Plugin jar file: %s corrupted.", Path.of( jarTwo.toURI() ) ));
     }
 
     @Test

@@ -64,19 +64,22 @@ class ProcedureJarLoader
         }
 
         List<Path> jarFiles = new ArrayList<>();
-        boolean error = false;
+        List<String> failedJarFiles = new ArrayList<>();
         try ( DirectoryStream<Path> list = Files.newDirectoryStream( root, "*.jar" ) )
         {
             for ( Path path : list )
             {
-                error |= isInvalidJarFile( path );
+                if ( isInvalidJarFile( path ) )
+                {
+                    failedJarFiles.add( path.getFileName().toString() );
+                }
                 jarFiles.add( path );
             }
         }
 
-        if ( error )
+        if ( !failedJarFiles.isEmpty() )
         {
-            throw new ZipException( "Some jar procedure files are invalid, see log for details." );
+            throw new ZipException( String.format( "Some jar procedure files (%s) are invalid, see log for details.", String.join( ", ", failedJarFiles ) ) );
         }
 
         if ( jarFiles.size() == 0 )
