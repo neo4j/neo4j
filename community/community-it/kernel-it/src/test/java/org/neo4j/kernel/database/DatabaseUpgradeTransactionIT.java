@@ -198,8 +198,19 @@ class DatabaseUpgradeTransactionIT
         } );
         race.addContestant( throwing( () ->
         {
-            Thread.sleep( ThreadLocalRandom.current().nextInt( 0, 1_000 ) );
-            dbms.database( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ).executeTransactionally( "CALL dbms.upgrade()" );
+            while ( true )
+            {
+                try
+                {
+                    Thread.sleep( ThreadLocalRandom.current().nextInt( 0, 1_000 ) );
+                    dbms.database( GraphDatabaseSettings.SYSTEM_DATABASE_NAME ).executeTransactionally( "CALL dbms.upgrade()" );
+                    return;
+                }
+                catch ( DeadlockDetectedException de )
+                {
+                    //retry
+                }
+            }
         } ), 1 );
         race.addContestants( max( Runtime.getRuntime().availableProcessors() - 1, 2 ), throwing( () -> {
             while ( true )
