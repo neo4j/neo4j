@@ -2399,6 +2399,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                         {
                             tx.schema().awaitIndexesOnline( 20, TimeUnit.MINUTES );
                         }
+                        catch ( DeadlockDetectedException de )
+                        {
+                            // retry
+                        }
                         catch ( Exception e )
                         {
                             stop.set( true );
