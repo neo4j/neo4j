@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -35,7 +36,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with LogicalPlanningIntegrationTestSupport {
 
   test("Should build plans containing expand for single relationship pattern") {
     planFor("MATCH (a)-[r]->(b) RETURN r")._2 should equal(
@@ -132,5 +133,28 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
           "b", SemanticDirection.INCOMING, Seq.empty, "a", "r"
         )
     )
+  }
+
+  test("should plan typed expand with not-inlined type predicate") {
+    val query =
+      """MATCH (a)-[r]->(b)
+        |WHERE r:REL
+        |RETURN a, b, r""".stripMargin
+
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:REL]->()", 10)
+      .build()
+
+    val plan = cfg
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = cfg.subPlanBuilder()
+      .expand("(a)-[r:REL]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    plan shouldEqual expectedPlan
   }
 }

@@ -20,8 +20,14 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.PlannerQueryBuilder.inlineRelationshipTypePredicates
 import org.neo4j.cypher.internal.compiler.helpers.ListSupport
+import org.neo4j.cypher.internal.expressions.HasTypes
+import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
+import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -151,7 +157,8 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
     val withFixedOptionalMatchArgumentIds = fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
     val withFixedMergeArgumentIds = fixArgumentIdsOnMerge(withFixedOptionalMatchArgumentIds)
     val groupedInequalities = groupInequalities(withFixedMergeArgumentIds)
-    groupedInequalities
+    val withInlinedTypePredicates = inlineRelationshipTypePredicates(groupedInequalities)
+    withInlinedTypePredicates
   }
 }
 
@@ -160,4 +167,52 @@ object PlannerQueryBuilder {
     PlannerQueryBuilder(SinglePlannerQuery.empty, semanticTable)
   def apply(semanticTable: SemanticTable, argumentIds: Set[String]): PlannerQueryBuilder =
     PlannerQueryBuilder(RegularSinglePlannerQuery(queryGraph = QueryGraph(argumentIds = argumentIds)), semanticTable)
+
+  def inlineRelationshipTypePredicates(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
+    plannerQuery.amendQueryGraph { qg =>
+      val typePredicates: Map[String, (Predicate, Seq[RelTypeName])] = findRelationshipTypePredicatesPerSymbol(qg)
+
+      final case class Result(newPatternRelationships: Set[PatternRelationship], inlinedPredicates: Set[Predicate])
+
+      val result = qg.patternRelationships.foldLeft(Result(qg.patternRelationships, Set.empty)) {
+        case (resultSoFar@Result(newPatternRelationships, inlinedPredicates), rel) =>
+          if (rel.types.nonEmpty) resultSoFar
+          else {
+            typePredicates.get(rel.name).fold(resultSoFar) { case (pred, types) =>
+              Result(newPatternRelationships - rel + rel.copy(types = types), inlinedPredicates + pred)
+            }
+          }
+      }
+
+      qg.copy(
+        patternRelationships = result.newPatternRelationships,
+        selections = qg.selections.copy(predicates = qg.selections.predicates -- result.inlinedPredicates)
+      )
+    }.updateTail(inlineRelationshipTypePredicates)
+  }
+
+  private def findRelationshipTypePredicatesPerSymbol(qg: QueryGraph): Map[String, (Predicate, Seq[RelTypeName])] = {
+    qg.selections.predicates.foldLeft(Map.empty[String, (Predicate, Seq[RelTypeName])]) {
+      // WHERE r:REL
+      case (acc, pred@Predicate(_, HasTypes(Variable(name), relTypes))) =>
+        acc + (name -> (pred, relTypes))
+
+      // WHERE r:REL OR r:OTHER_REL
+      case (acc, pred@Predicate(_, Ors(HasTypes(Variable(name), headRelTypes) +: exprs))) =>
+        val tailRelTypesOnTheSameVariable = exprs.collect {
+          case HasTypes(Variable(`name`), relTypes) => relTypes
+        }
+
+        // all predicates must refer to the same variable to be equivalent to [r:A|B|C]
+        if (tailRelTypesOnTheSameVariable.length == exprs.length) {
+          val oredRelTypes = (headRelTypes +: tailRelTypesOnTheSameVariable).flatten
+          acc + (name -> (pred, oredRelTypes))
+        } else {
+          acc
+        }
+
+      case (acc, _) =>
+        acc
+    }
+  }
 }

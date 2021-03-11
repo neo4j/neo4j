@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.expressions.CountStar
@@ -83,7 +85,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 
-class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
+class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp with LogicalPlanningIntegrationTestSupport {
 
   test("should plan index seek by prefix for simple prefix search based on STARTS WITH with prefix") {
     (new given {
@@ -867,5 +869,44 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       knownLabels = Set("A", "B", "C")
     }
     testAndAssertExpandOrder(config)
+  }
+
+  private val relationshipTypeScanConfig: StatisticsBackedLogicalPlanningConfiguration = plannerBuilder()
+    .setAllNodesCardinality(100)
+    .setRelationshipCardinality("()-[:REL]->()", 10)
+    .enableRelationshipTypeScanStore()
+    .build()
+
+  test("should plan relationship type scan with inlined type predicate") {
+    val query =
+      """MATCH (a)-[r:REL]->(b)
+        |RETURN a, b, r""".stripMargin
+
+    val plan = relationshipTypeScanConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = relationshipTypeScanConfig.subPlanBuilder()
+      .relationshipTypeScan("(a)-[r:REL]->(b)")
+      .build()
+
+    plan shouldEqual expectedPlan
+  }
+
+  test("should plan relationship type scan with not-inlined type predicate") {
+    val query =
+      """MATCH (a)-[r]->(b)
+        |WHERE r:REL
+        |RETURN a, b, r""".stripMargin
+
+    val plan = relationshipTypeScanConfig
+      .plan(query)
+      .stripProduceResults
+
+    val expectedPlan = relationshipTypeScanConfig.subPlanBuilder()
+      .relationshipTypeScan("(a)-[r:REL]->(b)")
+      .build()
+
+    plan shouldEqual expectedPlan
   }
 }

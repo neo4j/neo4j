@@ -74,6 +74,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
                       debug: CypherDebugOptions = CypherDebugOptions(Set.empty),
                       connectComponentsPlanner: Boolean = true,
                       executionModel: ExecutionModel = ExecutionModel.default,
+                      relationshipTypeScanStoreEnabled: Boolean = false,
                     )
   case class Cardinalities(
                             allNodes: Option[Double] = None,
@@ -233,6 +234,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     this.copy(options = options.copy(executionModel = executionModel))
   }
 
+  def enableRelationshipTypeScanStore(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(options = options.copy(relationshipTypeScanStoreEnabled = enable))
+  }
+
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
     cardinalities.allNodes.foreach(anc =>
@@ -342,6 +347,9 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def getOptRelTypeId(relType: String): Option[Int] =
         resolver.getOptRelTypeId(relType)
+
+      override def relationshipTypeScanStoreEnabled: Boolean =
+        options.relationshipTypeScanStoreEnabled
 
       private def newIndexDescriptor(indexDef: IndexDefinition): IndexDescriptor = {
         // Our fake index either can always or never return property values
