@@ -19,7 +19,6 @@
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <moduleName>org.neo4j.cypher.internal.compiler</moduleName>
-        <cypher-shell-java-driver.version>4.2.4</cypher-shell-java-driver.version>
     </properties>
 
     <scm>
@@ -136,7 +135,6 @@
         <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver</artifactId>
-            <version>${cypher-shell-java-driver.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
