@@ -204,11 +204,11 @@ public class CypherShellTransactionIntegrationTest extends CypherShellIntegratio
     {
         beginCommand.execute( "" );
         shell.execute( "CREATE (:TestPerson {name: \"Joe Smith\"})" );
-        assertThat( linePrinter.output(), containsString( "0 rows available after" ) );
+        assertThat( linePrinter.output(), containsString( "0 rows\n" ) );
 
         linePrinter.clear();
         shell.execute( "CREATE (:TestPerson {name: \"Jane Smith\"})" );
-        assertThat( linePrinter.output(), containsString( "0 rows available after" ) );
+        assertThat( linePrinter.output(), containsString( "0 rows\n" ) );
 
         linePrinter.clear();
         shell.execute( "MATCH (n:TestPerson) RETURN n ORDER BY n.name" );

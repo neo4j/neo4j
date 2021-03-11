@@ -270,7 +270,7 @@ public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTes
 
         //then
         String actual = linePrinter.output();
-        assertThat( actual, containsString( "3 rows available" ) );
+        assertThat( actual, containsString( "3 rows\n" ) );
     }
 
     @Test
@@ -291,6 +291,7 @@ public class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTes
                             "| 3   |%n" +
                             "+-----+%n" +
                             "%n" +
-                            "3 rows available after" ) ) );
+                            "3 rows%n" +
+                            "ready to start consuming query after" ) ) );
     }
 }
