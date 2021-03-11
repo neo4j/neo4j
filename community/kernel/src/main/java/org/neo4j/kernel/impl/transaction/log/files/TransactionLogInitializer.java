@@ -41,6 +41,7 @@ import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionMetaDataStore;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
@@ -50,6 +51,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
  */
 public class TransactionLogInitializer
 {
+    private static final String RESET_TRANSACTION_OFFSET_TAG = "ResetTransactionOffset";
     private final FileSystemAbstraction fs;
     private final TransactionMetaDataStore store;
 
@@ -84,6 +86,9 @@ public class TransactionLogInitializer
      */
     public void initializeEmptyLogFile( DatabaseLayout layout, File transactionLogsDirectory ) throws IOException
     {
+        // since we reset transaction log file, we can't trust old log file offset anymore from metadata store and we need to reset it before
+        // log files will be started since on start we will try position writer on the last known good location
+        store.resetLastClosedTransaction( store.getLastCommittedTransactionId(), store.getLastClosedTransactionId(), CURRENT_FORMAT_LOG_HEADER_SIZE, true );
         try ( LogFilesSpan span = buildLogFiles( layout, transactionLogsDirectory ) )
         {
             LogFiles logFiles = span.getLogFiles();
