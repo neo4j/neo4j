@@ -145,7 +145,7 @@ class TransactionLogFileInformationTest
 
         var expectedHeader = new LogHeader( (byte) 1, 2, 3, 4 );
         when( logFile.extractHeader( anyLong() ) ).thenReturn( expectedHeader );
-        when( logFile.getReader( any() ) ).thenReturn( readableLogChannel );
+        when( logFile.getRawReader( any() ) ).thenReturn( readableLogChannel );
 
         fileInfo.getFirstStartRecordTimestamp( 1 );
         fileInfo.getFirstStartRecordTimestamp( 1 );
@@ -153,6 +153,6 @@ class TransactionLogFileInformationTest
         fileInfo.getFirstStartRecordTimestamp( 1 );
         fileInfo.getFirstStartRecordTimestamp( 1 );
 
-        verify( logFile, times( 1 ) ).getReader( any() );
+        verify( logFile, times( 1 ) ).getRawReader( any() );
     }
 }
