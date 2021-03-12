@@ -50,6 +50,8 @@ object Eagerness {
   def readWriteConflictInHead(plan: LogicalPlan, plannerQuery: SinglePlannerQuery, context: LogicalPlanningContext): Boolean = {
     val nodeOrRelLeaves: Seq[LogicalLeafPlan] = plan.leaves.collect {
       case n: NodeLogicalLeafPlan => n
+      case d: DirectedRelationshipByIdSeek => d
+      case u: UndirectedRelationshipByIdSeek => u
     }
 
     if (nodeOrRelLeaves.isEmpty)
