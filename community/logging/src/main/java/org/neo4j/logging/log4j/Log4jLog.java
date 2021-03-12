@@ -49,6 +49,18 @@ public class Log4jLog extends AbstractLog
     }
 
     @Override
+    public void debug( Neo4jLogMessage message )
+    {
+        logger.debug( message );
+    }
+
+    @Override
+    public void debug( Neo4jMessageSupplier supplier )
+    {
+        logger.debug( supplier );
+    }
+
+    @Override
     public void debug( @Nonnull String message )
     {
         logger.debug( message );
@@ -73,6 +85,12 @@ public class Log4jLog extends AbstractLog
     }
 
     @Override
+    public void info( Neo4jMessageSupplier supplier )
+    {
+        logger.info( supplier );
+    }
+
+    @Override
     public void info( @Nonnull String message )
     {
         logger.info( message );
@@ -88,6 +106,18 @@ public class Log4jLog extends AbstractLog
     public void info( @Nonnull String format, @Nullable Object... arguments )
     {
         logger.printf( org.apache.logging.log4j.Level.INFO, format, arguments );
+    }
+
+    @Override
+    public void warn( Neo4jLogMessage message )
+    {
+        logger.warn( message );
+    }
+
+    @Override
+    public void warn( Neo4jMessageSupplier supplier )
+    {
+        logger.warn( supplier );
     }
 
     @Override
@@ -112,6 +142,12 @@ public class Log4jLog extends AbstractLog
     public void error( Neo4jLogMessage message )
     {
         logger.error( message );
+    }
+
+    @Override
+    public void error( Neo4jMessageSupplier supplier )
+    {
+        logger.error( supplier );
     }
 
     @Override

@@ -19,15 +19,10 @@
  */
 package org.neo4j.logging.log4j;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.io.ByteArrayOutputStream;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import org.neo4j.logging.Level;
 
@@ -35,25 +30,8 @@ import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.logging.log4j.LogConfigTest.DATE_PATTERN;
 
-class Log4jLogTest
+class Log4jLogTest extends Log4jLogTestBase
 {
-    private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-    private Log4jLog log;
-    private Neo4jLoggerContext context;
-
-    @BeforeEach
-    void setUp()
-    {
-        context = LogConfig.createBuilder( outContent, Level.DEBUG ).build();
-        log = new Log4jLog( context.getLogger( "className" ) );
-    }
-
-    @AfterEach
-    void tearDown()
-    {
-        context.close();
-    }
-
     @ParameterizedTest( name = "{1}" )
     @MethodSource( "logMethods" )
     void shouldWriteMessage( LogMethod logMethod, Level level )
@@ -82,110 +60,5 @@ class Log4jLogTest
         logMethod.log( log, "my %s message %d", "long", 1 );
 
         assertThat( outContent.toString() ).matches( format( DATE_PATTERN + " %-5s \\[className\\] my long message 1%n", level ) );
-    }
-
-    private interface LogMethod
-    {
-        void log( Log4jLog logger, String msg );
-
-        void log( Log4jLog logger, String msg, Throwable cause );
-
-        void log( Log4jLog logger, String format, Object... arguments );
-    }
-
-    private static Stream<Arguments> logMethods()
-    {
-        LogMethod debug = new LogMethod()
-        {
-            public void log( Log4jLog logger, String msg )
-            {
-                logger.debug( msg );
-            }
-
-            public void log( Log4jLog logger, String msg, Throwable cause )
-            {
-                logger.debug( msg, cause );
-            }
-
-            public void log( Log4jLog logger, String format, Object... arguments )
-            {
-                logger.debug( format, arguments );
-            }
-        };
-        LogMethod info = new LogMethod()
-        {
-            public void log( Log4jLog logger, String msg )
-            {
-                logger.info( msg );
-            }
-
-            public void log( Log4jLog logger, String msg, Throwable cause )
-            {
-                logger.info( msg, cause );
-            }
-
-            public void log( Log4jLog logger, String format, Object... arguments )
-            {
-                logger.info( format, arguments );
-            }
-        };
-        LogMethod warn = new LogMethod()
-        {
-            public void log( Log4jLog logger, String msg )
-            {
-                logger.warn( msg );
-            }
-
-            public void log( Log4jLog logger, String msg, Throwable cause )
-            {
-                logger.warn( msg, cause );
-            }
-
-            public void log( Log4jLog logger, String format, Object... arguments )
-            {
-                logger.warn( format, arguments );
-            }
-        };
-        LogMethod error = new LogMethod()
-        {
-            public void log( Log4jLog logger, String msg )
-            {
-                logger.error( msg );
-            }
-
-            public void log( Log4jLog logger, String msg, Throwable cause )
-            {
-                logger.error( msg, cause );
-            }
-
-            public void log( Log4jLog logger, String format, Object... arguments )
-            {
-                logger.error( format, arguments );
-            }
-        };
-
-        return Stream.of(
-                Arguments.of( debug, Level.DEBUG ),
-                Arguments.of( info, Level.INFO ),
-                Arguments.of( warn, Level.WARN ),
-                Arguments.of( error, Level.ERROR ) );
-    }
-
-    private static Throwable newThrowable( final String message )
-    {
-        return new Throwable()
-        {
-            @Override
-            public StackTraceElement[] getStackTrace()
-            {
-                return new StackTraceElement[]{};
-            }
-
-            @Override
-            public String getMessage()
-            {
-                return message;
-            }
-        };
     }
 }

@@ -29,9 +29,49 @@ public interface LogExtended extends Log
     /**
      * @param message The message to be written
      */
+    default void debug( Neo4jLogMessage message )
+    {
+        debug( message.toString() );
+    }
+
+    /**
+     * @param supplier The supplier of the message to be written
+     */
+    default void debug( Neo4jMessageSupplier supplier )
+    {
+        debug( supplier.get() );
+    }
+
+    /**
+     * @param message The message to be written
+     */
     default void info( Neo4jLogMessage message )
     {
         info( message.toString() );
+    }
+
+    /**
+     * @param supplier The supplier of the message to be written
+     */
+    default void info( Neo4jMessageSupplier supplier )
+    {
+        info( supplier.get() );
+    }
+
+    /**
+     * @param message The message to be written
+     */
+    default void warn( Neo4jLogMessage message )
+    {
+        warn( message.toString() );
+    }
+
+    /**
+     * @param supplier The supplier of the message to be written
+     */
+    default void warn( Neo4jMessageSupplier supplier )
+    {
+        warn( supplier.get() );
     }
 
     /**
@@ -40,6 +80,14 @@ public interface LogExtended extends Log
     default void error( Neo4jLogMessage message )
     {
         error( message.toString() );
+    }
+
+    /**
+     * @param supplier The supplier of the message to be written
+     */
+    default void error( Neo4jMessageSupplier supplier )
+    {
+        error( supplier.get() );
     }
 
     /**
