@@ -65,6 +65,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FROM
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.GRANT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.GRAPH
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.HEADERS
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.HOME
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.IF
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.IN
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.INDEX
@@ -176,6 +177,7 @@ object IdentifierTokens {
     GRANT,
     GRAPH,
     HEADERS,
+    HOME,
     IF,
     IN,
     INDEX,

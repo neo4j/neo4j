@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.FromGraph
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
+import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
@@ -904,13 +905,13 @@ class Neo4jASTFactory(query: String)
     }
   }
 
-  override def databaseScope(p: InputPosition,
-                             databaseName: Either[String, Parameter],
-                             isDefault: Boolean): DatabaseScope = {
+  override def databaseScope(p: InputPosition, databaseName: Either[String, Parameter], isDefault: Boolean, isHome: Boolean): DatabaseScope = {
     if (databaseName != null) {
       NamedDatabaseScope(databaseName)(p)
     } else if (isDefault) {
       DefaultDatabaseScope()(p)
+    } else if (isHome) {
+      HomeDatabaseScope()(p)
     } else {
       AllDatabasesScope()(p)
     }

@@ -101,6 +101,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "DATABASE"
          |  "DATABASES"
          |  "DEFAULT"
+         |  "HOME"
          |  "POPULATED"
          |  "ROLES" (line 1, column 14 (offset: 13))""".stripMargin
 
@@ -123,6 +124,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "DATABASE"
          |  "DATABASES"
          |  "DEFAULT"
+         |  "HOME"
          |  "INDEX"
          |  "INDEXES"
          |  "POPULATED"
@@ -139,6 +141,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "DATABASE"
          |  "DATABASES"
          |  "DEFAULT"
+         |  "HOME"
          |  "INDEX"
          |  "INDEXES"
          |  "POPULATED"
@@ -159,6 +162,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "DATABASE"
          |  "DATABASES"
          |  "DEFAULT"
+         |  "HOME"
          |  "INDEX"
          |  "INDEXES"
          |  "POPULATED"

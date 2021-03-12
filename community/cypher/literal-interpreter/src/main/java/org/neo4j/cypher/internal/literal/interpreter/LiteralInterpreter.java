@@ -402,7 +402,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL databaseScope( NULL p, Either<String,Object> name, boolean isDefault )
+    public NULL databaseScope( NULL p, Either<String,Object> name, boolean isDefault, boolean isHome )
     {
         throw new UnsupportedOperationException( "databaseScope is not a literal" );
     }

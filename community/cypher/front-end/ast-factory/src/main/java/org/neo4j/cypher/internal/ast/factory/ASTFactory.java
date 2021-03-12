@@ -238,7 +238,7 @@ public interface ASTFactory<STATEMENT,
 
     ADMINISTRATION_COMMAND stopDatabase( POS p, Either<String,PARAMETER> databaseName, WAIT_CLAUSE wait );
 
-    DATABASE_SCOPE databaseScope( POS p, Either<String,PARAMETER> databaseName, boolean isDefault );
+    DATABASE_SCOPE databaseScope( POS p, Either<String,PARAMETER> databaseName, boolean isDefault, boolean isHome );
 
     WAIT_CLAUSE wait( boolean wait, long seconds );
 }
