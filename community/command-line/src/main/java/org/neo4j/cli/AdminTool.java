@@ -30,13 +30,13 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
+import org.neo4j.internal.unsafe.IllegalAccessLoggerSuppressor;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.service.Services;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.neo4j.cli.AdminTool.VersionProvider;
-import static org.neo4j.internal.unsafe.UnsafeUtil.disableIllegalAccessLogger;
 import static picocli.CommandLine.IVersionProvider;
 
 @Command(
@@ -60,7 +60,7 @@ public final class AdminTool
 
     public static void main( String[] args )
     {
-        disableIllegalAccessLogger();
+        IllegalAccessLoggerSuppressor.suppress();
         final var homeDir = getDirOrExit( "NEO4J_HOME" );
         final var confDir = getDirOrExit( "NEO4J_CONF" );
         final var ctx = new ExecutionContext( homeDir, confDir );

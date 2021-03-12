@@ -20,9 +20,8 @@
 package org.neo4j.server;
 
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.internal.unsafe.IllegalAccessLoggerSuppressor;
 import org.neo4j.server.startup.EntryPoint;
-
-import static org.neo4j.internal.unsafe.UnsafeUtil.disableIllegalAccessLogger;
 
 @ServiceProvider
 public class CommunityEntryPoint implements EntryPoint
@@ -31,7 +30,7 @@ public class CommunityEntryPoint implements EntryPoint
 
     public static void main( String[] args )
     {
-        disableIllegalAccessLogger();
+        IllegalAccessLoggerSuppressor.suppress();
         int status = NeoBootstrapper.start( new CommunityBootstrapper(), args );
         if ( status != 0 )
         {

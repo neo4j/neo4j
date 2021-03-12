@@ -28,12 +28,9 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.security.AccessController;
-import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +54,6 @@ import static org.neo4j.util.FeatureToggles.flag;
  */
 public final class UnsafeUtil
 {
-    private static final boolean PRINT_REFLECTION_EXCEPTIONS = flag( UnsafeUtil.class, "printReflectionExceptions", false );
     /**
      * Whether or not to explicitly dirty the allocated memory. This is off by default.
      * The {@link UnsafeUtil#allocateMemory(long, MemoryTracker)} method is not guaranteed to allocate
@@ -95,7 +91,7 @@ public final class UnsafeUtil
 
     static
     {
-        unsafe = getUnsafe();
+        unsafe = UnsafeAccessor.getUnsafe();
 
         Class<?> dbbClass = null;
         VarHandle dbbMark = null;
@@ -181,60 +177,6 @@ public final class UnsafeUtil
 
     private UnsafeUtil()
     {
-    }
-
-    public static void disableIllegalAccessLogger()
-    {
-        try
-        {
-            Class<?> clazz = Class.forName( "jdk.internal.module.IllegalAccessLogger" );
-            Field logger = clazz.getDeclaredField( "logger" );
-            unsafe.putObjectVolatile( clazz, unsafe.staticFieldOffset( logger ), null );
-        }
-        catch ( Throwable t )
-        {
-            if ( PRINT_REFLECTION_EXCEPTIONS )
-            {
-                //noinspection CallToPrintStackTrace
-                t.printStackTrace();
-            }
-        }
-    }
-
-    private static Unsafe getUnsafe()
-    {
-        try
-        {
-            PrivilegedExceptionAction<Unsafe> getUnsafe = () ->
-            {
-                try
-                {
-                    return Unsafe.getUnsafe();
-                }
-                catch ( Exception e )
-                {
-                    Class<Unsafe> type = Unsafe.class;
-                    Field[] fields = type.getDeclaredFields();
-                    for ( Field field : fields )
-                    {
-                        if ( Modifier.isStatic( field.getModifiers() )
-                             && type.isAssignableFrom( field.getType() ) )
-                        {
-                            field.setAccessible( true );
-                            return type.cast( field.get( null ) );
-                        }
-                    }
-                    LinkageError error = new LinkageError( "No static field of type sun.misc.Unsafe" );
-                    error.addSuppressed( e );
-                    throw error;
-                }
-            };
-            return AccessController.doPrivileged( getUnsafe );
-        }
-        catch ( Exception e )
-        {
-            throw new LinkageError( "Cannot access sun.misc.Unsafe", e );
-        }
     }
 
     /**
