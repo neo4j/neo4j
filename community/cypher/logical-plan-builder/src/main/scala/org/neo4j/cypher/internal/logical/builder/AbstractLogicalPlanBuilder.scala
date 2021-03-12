@@ -493,6 +493,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
+  def projection(projectExpressions: Map[String, Expression]): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => Projection(lp, projectExpressions)(_)))
+    self
+  }
+
   def distinct(projectionStrings: String*): IMPL = {
     val projections = Parser.parseProjections(projectionStrings: _*)
     appendAtCurrentIndent(UnaryOperator(lp => Distinct(lp, projections)(_)))

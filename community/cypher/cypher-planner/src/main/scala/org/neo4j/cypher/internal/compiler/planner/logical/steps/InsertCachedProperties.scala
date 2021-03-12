@@ -40,6 +40,8 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
@@ -102,6 +104,10 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transf
         copy(properties = newProperties)
       }
 
+      def addProperties(additionalProperties: Map[Property, PropertyUsages]): Acc = {
+        copy(properties = properties ++ additionalProperties)
+      }
+
       def addPreviousNames(mappings: Map[String, String]): Acc = {
         val newRenamings = previousNames ++ mappings
 
@@ -140,32 +146,54 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transf
       }
     }
 
-    // In the first step we collect all property usages and renaming while going over the tree
-    val acc = logicalPlan.treeFold(Acc()) {
-      // Make sure to register any renaming of variables
-      case plan: ProjectingPlan => acc =>
-        val newRenamings = plan.projectExpressions.collect {
-          case (key, v: Variable) if key != v.name => (key, v.name)
-        }
-        TraverseChildren(acc.addPreviousNames(newRenamings))
+    // In the first step we collect all property usages and renaming while going over the tree)
+    def getAccProperties(logicalPlan: LogicalPlan): Acc = {
+      logicalPlan.treeFold(Acc()) {
 
-      // Find properties
-      case prop@Property(v: Variable, _) if isNode(v) => acc =>
-        TraverseChildren(acc.addNodeProperty(prop))
-      case prop@Property(v: Variable, _) if isRel(v) => acc =>
-        TraverseChildren(acc.addRelProperty(prop))
+        // Take on only consistent renaming across both unions and remember properties from both subtrees
+        case plan: Union => acc =>
+          val accLeft = getAccProperties(plan.left)
+          val accRight = getAccProperties(plan.right)
 
-      // Find index plans that can provide cached properties
-      case _: MultiNodeIndexSeek => acc =>
-        TraverseChildren(acc)
+          val mergedPreviousNames = accLeft.previousNames.filter(
+            entry =>
+              accRight.previousNames.get(entry._1) match {
+                case None => false
+                case Some(value) => value.equals(entry._2)
+              }
+          )
 
-      case indexPlan: IndexLeafPlan => acc =>
-        val newAcc = indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(acc) { (acc, indexedProp) =>
-          acc.addIndexNodeProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
-        }
-        TraverseChildren(newAcc)
+          val newAcc = acc.addPreviousNames(mergedPreviousNames)
+            .addProperties(accLeft.properties)
+            .addProperties(accRight.properties)
+          SkipChildren(newAcc)
+
+        // Make sure to register any renaming of variables
+        case plan: ProjectingPlan => acc =>
+          val newRenamings = plan.projectExpressions.collect {
+            case (key, v: Variable) if key != v.name => (key, v.name)
+          }
+          TraverseChildren(acc.addPreviousNames(newRenamings))
+
+        // Find properties
+        case prop@Property(v: Variable, _) if isNode(v) => acc =>
+          TraverseChildren(acc.addNodeProperty(prop))
+        case prop@Property(v: Variable, _) if isRel(v) => acc =>
+          TraverseChildren(acc.addRelProperty(prop))
+
+        // Find index plans that can provide cached properties
+        case _: MultiNodeIndexSeek => acc =>
+          TraverseChildren(acc)
+
+        case indexPlan: IndexLeafPlan => acc =>
+          val newAcc = indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(acc) { (acc, indexedProp) =>
+            acc.addIndexNodeProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
+          }
+          TraverseChildren(newAcc)
+      }
     }
 
+    val acc = getAccProperties(logicalPlan)
     var currentTypes = from.semanticTable().types
 
     // In the second step we rewrite both properties and index plans
