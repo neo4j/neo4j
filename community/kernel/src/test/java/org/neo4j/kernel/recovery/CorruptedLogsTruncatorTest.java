@@ -58,6 +58,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -80,12 +81,13 @@ class CorruptedLogsTruncatorTest
     private Path databaseDirectory;
     private LogFiles logFiles;
     private CorruptedLogsTruncator logPruner;
+    private SimpleLogVersionRepository logVersionRepository;
 
     @BeforeEach
     void setUp() throws Exception
     {
         databaseDirectory = testDirectory.homePath();
-        SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
+        logVersionRepository = new SimpleLogVersionRepository();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fs )
                 .withRotationThreshold( SINGLE_LOG_FILE_SIZE )
@@ -196,6 +198,7 @@ class CorruptedLogsTruncatorTest
         life.start();
 
         // 6 transaction log files and a checkpoint file
+        logVersionRepository.setCheckpointLogVersion( 0, NULL );
         assertEquals( 7, logFiles.logFiles().length );
         assertEquals( byteOffset, Files.size( highestCorrectLogFile ) );
         assertThat( checkpointFile.getDetachedCheckpointFiles() ).hasSize( 1 );

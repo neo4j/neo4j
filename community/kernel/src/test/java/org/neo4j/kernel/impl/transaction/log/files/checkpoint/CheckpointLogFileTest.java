@@ -67,7 +67,7 @@ class CheckpointLogFileTest
 
     private final long rotationThreshold = ByteUnit.kibiBytes( 1 );
     private final DatabaseHealth databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() );
-    private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository( 0L );
+    private final LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore( 2L, 0, BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
     private CheckpointFile checkpointFile;
 
