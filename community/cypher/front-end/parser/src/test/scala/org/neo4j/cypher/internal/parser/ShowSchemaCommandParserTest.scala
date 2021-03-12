@@ -215,38 +215,38 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
 
   // Show constraints
 
+  private val oldConstraintTypes = Seq(
+    ("", AllConstraints),
+    ("ALL", AllConstraints),
+    ("UNIQUE", UniqueConstraints),
+    ("NODE KEY", NodeKeyConstraints),
+    ("EXIST", ExistsConstraints(OldValidSyntax)),
+    ("EXISTS", ExistsConstraints(DeprecatedSyntax)),
+    ("NODE EXIST", NodeExistsConstraints(OldValidSyntax)),
+    ("NODE EXISTS", NodeExistsConstraints(DeprecatedSyntax)),
+    ("RELATIONSHIP EXIST", RelExistsConstraints(OldValidSyntax)),
+    ("RELATIONSHIP EXISTS", RelExistsConstraints(DeprecatedSyntax)),
+  )
+
+  private val newExistenceConstraintType = Seq(
+    ("PROPERTY EXISTENCE", ExistsConstraints(NewSyntax)),
+    ("PROPERTY EXIST", ExistsConstraints(NewSyntax)),
+    ("EXISTENCE", ExistsConstraints(NewSyntax)),
+    ("NODE PROPERTY EXISTENCE", NodeExistsConstraints(NewSyntax)),
+    ("NODE PROPERTY EXIST", NodeExistsConstraints(NewSyntax)),
+    ("NODE EXISTENCE", NodeExistsConstraints(NewSyntax)),
+    ("RELATIONSHIP PROPERTY EXISTENCE", RelExistsConstraints(NewSyntax)),
+    ("RELATIONSHIP PROPERTY EXIST", RelExistsConstraints(NewSyntax)),
+    ("RELATIONSHIP EXISTENCE", RelExistsConstraints(NewSyntax)),
+    ("REL PROPERTY EXISTENCE", RelExistsConstraints(NewSyntax)),
+    ("REL PROPERTY EXIST", RelExistsConstraints(NewSyntax)),
+    ("REL EXISTENCE", RelExistsConstraints(NewSyntax)),
+    ("REL EXIST", RelExistsConstraints(NewSyntax)),
+  )
+
   Seq("CONSTRAINT", "CONSTRAINTS").foreach {
     constraintKeyword =>
-
-      Seq(
-        ("", AllConstraints),
-        ("ALL", AllConstraints),
-        ("UNIQUE", UniqueConstraints),
-        ("NODE KEY", NodeKeyConstraints),
-
-        ("PROPERTY EXISTENCE", ExistsConstraints(NewSyntax)),
-        ("PROPERTY EXIST", ExistsConstraints(NewSyntax)),
-        ("EXISTENCE", ExistsConstraints(NewSyntax)),
-        ("EXIST", ExistsConstraints(OldValidSyntax)),
-        ("EXISTS", ExistsConstraints(DeprecatedSyntax)),
-
-        ("NODE PROPERTY EXISTENCE", NodeExistsConstraints(NewSyntax)),
-        ("NODE PROPERTY EXIST", NodeExistsConstraints(NewSyntax)),
-        ("NODE EXISTENCE", NodeExistsConstraints(NewSyntax)),
-        ("NODE EXIST", NodeExistsConstraints(OldValidSyntax)),
-        ("NODE EXISTS", NodeExistsConstraints(DeprecatedSyntax)),
-
-        ("RELATIONSHIP PROPERTY EXISTENCE", RelExistsConstraints(NewSyntax)),
-        ("RELATIONSHIP PROPERTY EXIST", RelExistsConstraints(NewSyntax)),
-        ("RELATIONSHIP EXISTENCE", RelExistsConstraints(NewSyntax)),
-        ("RELATIONSHIP EXIST", RelExistsConstraints(OldValidSyntax)),
-        ("RELATIONSHIP EXISTS", RelExistsConstraints(DeprecatedSyntax)),
-
-        ("REL PROPERTY EXISTENCE", RelExistsConstraints(NewSyntax)),
-        ("REL PROPERTY EXIST", RelExistsConstraints(NewSyntax)),
-        ("REL EXISTENCE", RelExistsConstraints(NewSyntax)),
-        ("REL EXIST", RelExistsConstraints(NewSyntax)),
-      ).foreach {
+      (oldConstraintTypes ++ newExistenceConstraintType).foreach {
         case (constraintTypeKeyword, constraintType) =>
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword") {
@@ -256,6 +256,11 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
           test(s"USE db SHOW $constraintTypeKeyword $constraintKeyword") {
             yields(ast.ShowConstraints(constraintType, verbose = false, Some(use(varFor("db")))))
           }
+
+      }
+
+      oldConstraintTypes.foreach {
+        case (constraintTypeKeyword, constraintType) =>
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword BRIEF") {
             yields(ast.ShowConstraints(constraintType, verbose = false))
@@ -272,7 +277,6 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
           test(s"SHOW $constraintTypeKeyword $constraintKeyword VERBOSE OUTPUT") {
             yields(ast.ShowConstraints(constraintType, verbose = true))
           }
-
       }
   }
 
@@ -324,6 +328,25 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
 
   test("SHOW CONSTRAINTS VERBOSE BRIEF OUTPUT") {
     failsToParse
+  }
+
+  newExistenceConstraintType.foreach {
+    case (constraintTypeKeyword, _) =>
+      test(s"SHOW $constraintTypeKeyword CONSTRAINTS BRIEF") {
+        failsToParse
+      }
+
+      test(s"SHOW $constraintTypeKeyword CONSTRAINT BRIEF OUTPUT") {
+        failsToParse
+      }
+
+      test(s"SHOW $constraintTypeKeyword CONSTRAINT VERBOSE") {
+        failsToParse
+      }
+
+      test(s"SHOW $constraintTypeKeyword CONSTRAINTS VERBOSE OUTPUT") {
+        failsToParse
+      }
   }
 
   // Show constraints filtering is not supported

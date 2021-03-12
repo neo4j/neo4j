@@ -1174,12 +1174,15 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     props <- oneOrMore(_variableProperty)
   } yield props
 
-  def _existenceSyntax: Gen[ExistenceConstraintSyntax] = oneOf(NewSyntax, DeprecatedSyntax, OldValidSyntax)
+  def _existenceSyntax: Gen[(ExistenceConstraintSyntax, Boolean)] = for {
+    verbose <- boolean
+    exists  <- oneOf((NewSyntax, false), (DeprecatedSyntax, verbose), (OldValidSyntax, verbose))
+  } yield exists
 
-  def _constraintType: Gen[ShowConstraintType] = for {
-    exists <- _existenceSyntax
-    types  <- oneOf(AllConstraints, UniqueConstraints, ExistsConstraints(exists), NodeExistsConstraints(exists), RelExistsConstraints(exists), NodeKeyConstraints)
-  } yield types
+  def _constraintType: Gen[(ShowConstraintType, Boolean)] = for {
+    (exists, verbose) <- _existenceSyntax
+    types             <- oneOf(AllConstraints, UniqueConstraints, ExistsConstraints(exists), NodeExistsConstraints(exists), RelExistsConstraints(exists), NodeKeyConstraints)
+  } yield (types, verbose)
 
   def _createIndex: Gen[CreateIndex] = for {
     variable   <- _variable
@@ -1267,9 +1270,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield DropConstraintOnName(name, ifExists, use)(pos)
 
   def _showConstraints: Gen[ShowConstraints] = for {
-    constraintType <- _constraintType
-    verbose <- boolean
-    use <- option(_use)
+    (constraintType, verbose) <- _constraintType
+    use                       <- option(_use)
   }  yield ShowConstraints(constraintType, verbose, use)(pos)
 
   def _indexCommand: Gen[Statement] = oneOf(_createIndex, _dropIndex, _indexCommandsOldSyntax, _showIndexes)

@@ -191,8 +191,24 @@ trait SchemaCommand extends Parser
   }
 
   private def ShowConstraints: Rule1[ast.ShowConstraints] = rule("SHOW CONSTRAINTS") {
-    keyword("SHOW") ~~ ConstraintType ~~ ConstraintKeyword ~~ optional(SchemaOutput) ~~>>
-      ((constraintType, verbose) => ast.ShowConstraints(constraintType, verbose.getOrElse(false)))
+    keyword("SHOW") ~~ OldConstraintType ~~ ConstraintKeyword ~~ SchemaOutput ~~>>
+      ((constraintType, verbose) => ast.ShowConstraints(constraintType, verbose)) |
+    keyword("SHOW") ~~ ConstraintType ~~ ConstraintKeyword ~~>>
+      (constraintType => ast.ShowConstraints(constraintType, verbose = false))
+  }
+
+  private def OldConstraintType: Rule1[ast.ShowConstraintType] = rule("old type of constraints") {
+    keyword("UNIQUE") ~~~> (_ => ast.UniqueConstraints) |
+    keyword("NODE KEY") ~~~> (_ => ast.NodeKeyConstraints) |
+    keyword("NODE") ~~ OldExistencePart ~~> (ecs => ast.NodeExistsConstraints(ecs)) |
+    keyword("RELATIONSHIP") ~~ OldExistencePart ~~> (ecs => ast.RelExistsConstraints(ecs)) |
+    OldExistencePart ~~> (ecs => ast.ExistsConstraints(ecs)) |
+    optional(keyword("ALL")) ~~~> (_ => ast.AllConstraints)
+  }
+
+  private def OldExistencePart: Rule1[ast.ExistenceConstraintSyntax] = rule {
+    keyword("EXISTS") ~~~> (_ => ast.DeprecatedSyntax) |
+    keyword("EXIST") ~~~> (_ => ast.OldValidSyntax)
   }
 
   private def ConstraintType: Rule1[ast.ShowConstraintType] = rule("type of constraints") {
