@@ -29,7 +29,7 @@ import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.booleanValue
-import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualNodeValue
 
 abstract class CheckDegree(node: Expression, typ: Option[KeyToken], direction: SemanticDirection, maxDegree: Expression) extends NullInNullOutExpression(node) {
   protected val getDegree: (Int, QueryState, Long) => Long = typ match {
@@ -42,7 +42,7 @@ abstract class CheckDegree(node: Expression, typ: Option[KeyToken], direction: S
 
   protected def computePredicate(state: QueryState, node: Long, max: Int): Boolean
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = value match {
-    case n: NodeValue => maxDegree.apply(ctx, state) match {
+    case n: VirtualNodeValue => maxDegree.apply(ctx, state) match {
       case x if x eq NO_VALUE => NO_VALUE
       case e => booleanValue(computePredicate(state, n.id(), asPrimitiveInt(e)))
     }

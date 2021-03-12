@@ -981,6 +981,20 @@ public final class CypherFunctions
         }
     }
 
+    @CalledFromGeneratedCode
+    public static boolean hasType( AnyValue entity, int typeToken, DbAccess access, RelationshipScanCursor relCursor )
+    {
+        assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( entity instanceof VirtualRelationshipValue )
+        {
+            return access.isTypeSetOnRelationship( typeToken, ((VirtualRelationshipValue) entity).id(), relCursor );
+        }
+        else
+        {
+            throw new ParameterWrongTypeException( "Expected a Relationship, got: " + entity, null );
+        }
+    }
+
     public static ListValue nodes( AnyValue in )
     {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
@@ -1558,6 +1572,19 @@ public final class CypherFunctions
     public static int asInt( AnyValue value )
     {
         return (int) asLong( value );
+    }
+
+    public static long nodeId( AnyValue value )
+    {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( value instanceof VirtualNodeValue )
+        {
+            return ((VirtualNodeValue) value).id();
+        }
+        else
+        {
+            throw new CypherTypeException( "Expected VirtualNodeValue got " + value.getClass().getName() );
+        }
     }
 
     private static CypherTypeException needsNumbers( String method )
