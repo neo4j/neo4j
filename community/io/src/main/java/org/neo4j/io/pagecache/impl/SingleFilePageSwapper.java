@@ -40,6 +40,7 @@ import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -90,6 +91,7 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private final FileSystemAbstraction fs;
     private final Path path;
+    private final IOController ioController;
     private final int filePageSize;
     private final Set<OpenOption> openOptions;
     private volatile PageEvictionCallback onEviction;
@@ -117,10 +119,12 @@ public class SingleFilePageSwapper implements PageSwapper
         }
     }
 
-    SingleFilePageSwapper( Path path, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean useDirectIO ) throws IOException
+    SingleFilePageSwapper( Path path, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean useDirectIO,
+            IOController ioController ) throws IOException
     {
         this.fs = fs;
         this.path = path;
+        this.ioController = ioController;
 
         var options = new ArrayList<>( WRITE_OPTIONS );
         if ( useDirectIO )

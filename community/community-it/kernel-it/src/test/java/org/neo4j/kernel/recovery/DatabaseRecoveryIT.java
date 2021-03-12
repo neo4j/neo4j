@@ -63,7 +63,6 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -128,6 +127,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 @Neo4jLayoutExtension
@@ -471,9 +471,9 @@ class DatabaseRecoveryIT
         try (
                 ThreadPoolJobScheduler jobScheduler = new ThreadPoolJobScheduler();
                 PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), PageCacheTracer.NULL, NullLog.getInstance(), contextSupplier,
-                        jobScheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
+                        jobScheduler, Clocks.nanoClock(), new MemoryPools(), DISABLED ).getOrCreatePageCache();
                 PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL, NullLog.getInstance(), contextSupplier,
-                        jobScheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
+                        jobScheduler, Clocks.nanoClock(), new MemoryPools(), DISABLED ).getOrCreatePageCache();
                 NeoStores store1 = new StoreFactory( databaseLayout, defaults(),
                         new DefaultIdGeneratorFactory( fs1, immediate(), databaseLayout.getDatabaseName() ),
                         pageCache1, fs1, logProvider, PageCacheTracer.NULL ).openAllNeoStores();
@@ -517,7 +517,7 @@ class DatabaseRecoveryIT
     private static void flush( GraphDatabaseService db ) throws IOException
     {
         var forceOperation = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointerImpl.ForceOperation.class );
-        forceOperation.flushAndForce( IOController.DISABLED, PageCursorTracer.NULL );
+        forceOperation.flushAndForce( DISABLED, PageCursorTracer.NULL );
     }
 
     private static void checkPoint( GraphDatabaseService db ) throws IOException

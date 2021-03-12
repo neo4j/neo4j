@@ -59,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.ByteUnit.KibiByte;
+import static org.neo4j.io.pagecache.IOController.DISABLED;
 
 @TestDirectoryExtension
 public abstract class PageSwapperTest
@@ -1111,7 +1112,7 @@ public abstract class PageSwapperTest
             boolean createIfNotExist,
             boolean useDirectIO ) throws IOException
     {
-        PageSwapper swapper = factory.createPageSwapper( path, filePageSize, callback, createIfNotExist, useDirectIO );
+        PageSwapper swapper = factory.createPageSwapper( path, filePageSize, callback, createIfNotExist, useDirectIO, DISABLED );
         openedSwappers.add( swapper );
         return swapper;
     }

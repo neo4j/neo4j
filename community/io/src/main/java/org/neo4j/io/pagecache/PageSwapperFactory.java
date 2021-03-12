@@ -51,6 +51,7 @@ public interface PageSwapperFactory
      * exception.
      * @param useDirectIO When true, direct io open open will gonna be used for underlying channel.
      * Option supported only on Linux with certain limitations.
+     * @param ioController controller to report swapper io's
      * @return A working PageSwapper instance for the given file.
      * @throws IOException If the PageSwapper could not be created, for
      * instance if the underlying file could not be opened, or the given file does not exist and createIfNotExist is
@@ -61,5 +62,7 @@ public interface PageSwapperFactory
             int filePageSize,
             PageEvictionCallback onEviction,
             boolean createIfNotExist,
-            boolean useDirectIO ) throws IOException;
+            boolean useDirectIO,
+            IOController ioController ) throws IOException;
+
 }

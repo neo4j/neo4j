@@ -24,6 +24,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
@@ -48,12 +49,13 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
             int filePageSize,
             PageEvictionCallback onEviction,
             boolean createIfNotExist,
-            boolean useDirectIO ) throws IOException
+            boolean useDirectIO,
+            IOController ioController ) throws IOException
     {
         if ( !createIfNotExist && !fs.fileExists( file ) )
         {
             throw new NoSuchFileException( file.toString(), null, "Cannot map non-existing file" );
         }
-        return new SingleFilePageSwapper( file, fs, filePageSize, onEviction, useDirectIO );
+        return new SingleFilePageSwapper( file, fs, filePageSize, onEviction, useDirectIO, ioController );
     }
 }

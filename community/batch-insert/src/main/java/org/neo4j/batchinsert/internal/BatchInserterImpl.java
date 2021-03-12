@@ -92,7 +92,6 @@ import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -202,6 +201,7 @@ import static org.neo4j.internal.recordstorage.RelationshipModifier.DEFAULT_EXTE
 import static org.neo4j.internal.schema.IndexType.fromPublicApi;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForRelType;
+import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
@@ -286,7 +286,7 @@ public class BatchInserterImpl implements BatchInserter
             locker = tryLockStore( fileSystem, databaseLayout );
             ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, pageCacheTracer, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(),
-                    new MemoryPools( config.get( memory_tracking ) ) );
+                    new MemoryPools( config.get( memory_tracking ) ), DISABLED );
             pageCache = pageCacheFactory.getOrCreatePageCache();
             life.add( new PageCacheLifecycle( pageCache ) );
 
@@ -620,7 +620,7 @@ public class BatchInserterImpl implements BatchInserter
                     // In this scenario this is OK
                 }
             }
-            indexingService.forceAll( IOController.DISABLED, cursorTracer );
+            indexingService.forceAll( DISABLED, cursorTracer );
         }
         catch ( InterruptedException e )
         {
@@ -654,7 +654,7 @@ public class BatchInserterImpl implements BatchInserter
                 initialCountsBuilder, false, cacheTracer, NO_MONITOR, databaseLayout.getDatabaseName() ) )
         {
             countsStore.start( PageCursorTracer.NULL, memoryTracker );
-            countsStore.checkpoint( IOController.DISABLED, PageCursorTracer.NULL );
+            countsStore.checkpoint( DISABLED, PageCursorTracer.NULL );
         }
     }
 
@@ -1140,7 +1140,7 @@ public class BatchInserterImpl implements BatchInserter
             RelationshipTypeScanStore relationshipTypeIndex = buildRelationshipTypeIndex();
             repopulateAllIndexes( labelIndex, relationshipTypeIndex );
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
-            neoStores.flush( IOController.DISABLED, cursorTracer );
+            neoStores.flush( DISABLED, cursorTracer );
             recordAccess.close();
             createEmptyTransactionLog();
         }

@@ -25,6 +25,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.os.OsBeanUtil;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
@@ -55,6 +56,7 @@ public class ConfiguringPageCacheFactory
     private final JobScheduler scheduler;
     private final SystemNanoClock clock;
     private final MemoryPools memoryPools;
+    private final IOController ioController;
 
     /**
      * Construct configuring page cache factory
@@ -65,9 +67,12 @@ public class ConfiguringPageCacheFactory
      * @param versionContextSupplier cursor context factory
      * @param scheduler job scheduler to execute page cache jobs
      * @param clock the clock source used by the page cache.
+     * @param memoryPools database memory pools to register page cache specific instance
+     * @param ioController io controller to control page cache io over different areas
      */
     public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer, Log log,
-            VersionContextSupplier versionContextSupplier, JobScheduler scheduler, SystemNanoClock clock, MemoryPools memoryPools )
+            VersionContextSupplier versionContextSupplier, JobScheduler scheduler, SystemNanoClock clock, MemoryPools memoryPools,
+            IOController ioController )
     {
         this.fs = fs;
         this.versionContextSupplier = versionContextSupplier;
@@ -77,6 +82,7 @@ public class ConfiguringPageCacheFactory
         this.scheduler = scheduler;
         this.clock = clock;
         this.memoryPools = memoryPools;
+        this.ioController = ioController;
     }
 
     public synchronized PageCache getOrCreatePageCache()
@@ -101,6 +107,7 @@ public class ConfiguringPageCacheFactory
                 .bufferFactory( bufferFactory )
                 .clock( clock )
                 .pageCacheTracer( pageCacheTracer )
+                .ioController(ioController)
                 .versionContextSupplier( versionContextSupplier );
         return new MuninnPageCache( swapperFactory, scheduler, configuration );
     }

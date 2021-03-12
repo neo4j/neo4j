@@ -136,11 +136,12 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * @param truncateExisting should truncate file if it exists
      * @param databaseName an optional name of the database this file belongs to. This option associates the mapped file with a database.
      * This information is currently used only for monitoring purposes.
+     * @param ioController io controller to report page file io operations
      * @throws IOException If the {@link PageSwapper} could not be created.
      */
     MuninnPagedFile( Path path, MuninnPageCache pageCache, int filePageSize, PageSwapperFactory swapperFactory, PageCacheTracer pageCacheTracer,
             VersionContextSupplier versionContextSupplier, boolean createIfNotExists, boolean truncateExisting, boolean useDirectIo, String databaseName,
-            int faultLockStriping ) throws IOException
+            int faultLockStriping, IOController ioController ) throws IOException
     {
         super( pageCache.pages );
         this.pageCache = pageCache;
@@ -168,7 +169,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         // filled with UNMAPPED_TTE values, and then finally assigns the new outer array to the translationTable field
         // and releases the resize lock.
         PageEvictionCallback onEviction = this::evictPage;
-        swapper = swapperFactory.createPageSwapper( path, filePageSize, onEviction, createIfNotExists, useDirectIo );
+        swapper = swapperFactory.createPageSwapper( path, filePageSize, onEviction, createIfNotExists, useDirectIo, ioController );
         if ( truncateExisting )
         {
             swapper.truncate();

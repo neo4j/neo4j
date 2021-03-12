@@ -118,9 +118,9 @@ class DatabaseShutdownTest
                     {
                         @Override
                         protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers,
-                                JobScheduler jobScheduler, SystemNanoClock clock, MemoryPools memoryPools )
+                                JobScheduler jobScheduler, SystemNanoClock clock, MemoryPools memoryPools, IOController ioController )
                         {
-                            PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, jobScheduler, clock, memoryPools );
+                            PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, jobScheduler, clock, memoryPools, ioController );
                             return new DelegatingPageCache( pageCache )
                             {
                                 @Override

@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.DelegatingPageSwapper;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
@@ -150,10 +151,10 @@ class MuninnPageCursorTest
         return new PageSwapperFactory()
         {
             @Override
-            public PageSwapper createPageSwapper( Path path, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean useDirectIO )
-                    throws IOException
+            public PageSwapper createPageSwapper( Path path, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean useDirectIO,
+                    IOController ioController ) throws IOException
             {
-                PageSwapper actualSwapper = actual.createPageSwapper( path, filePageSize, onEviction, createIfNotExist, useDirectIO );
+                PageSwapper actualSwapper = actual.createPageSwapper( path, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController );
                 return new DelegatingPageSwapper( actualSwapper )
                 {
                     @Override

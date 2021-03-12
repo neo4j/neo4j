@@ -474,7 +474,7 @@ public final class Recovery
     {
         ConfiguringPageCacheFactory pageCacheFactory =
                 new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, NullLog.getInstance(),
-                        EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(), new MemoryPools() );
+                        EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(), new MemoryPools(), IOController.DISABLED );
         return pageCacheFactory.getOrCreatePageCache();
     }
 

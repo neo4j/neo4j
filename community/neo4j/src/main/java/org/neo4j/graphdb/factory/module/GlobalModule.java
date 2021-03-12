@@ -36,14 +36,15 @@ import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.internal.collector.RecentQueryBuffer;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
-import org.neo4j.io.bufferpool.impl.NeoByteBufferPool;
 import org.neo4j.io.bufferpool.impl.NeoBufferPoolConfigOverride;
+import org.neo4j.io.bufferpool.impl.NeoByteBufferPool;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.GuardVersionContextSupplier;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
@@ -223,8 +224,9 @@ public class GlobalModule
 
         collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );
 
+        //TODO:
         pageCache = tryResolveOrCreate( PageCache.class,
-                () -> createPageCache( fileSystem, globalConfig, logService, tracers, jobScheduler, globalClock, memoryPools ) );
+                () -> createPageCache( fileSystem, globalConfig, logService, tracers, jobScheduler, globalClock, memoryPools, null ) );
 
         globalLife.add( new PageCacheLifecycle( pageCache ) );
 
@@ -374,11 +376,11 @@ public class GlobalModule
     }
 
     protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers, JobScheduler jobScheduler,
-            SystemNanoClock clock, MemoryPools memoryPools )
+            SystemNanoClock clock, MemoryPools memoryPools, IOController ioController )
     {
         Log pageCacheLog = logging.getInternalLog( PageCache.class );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fileSystem, config, tracers.getPageCacheTracer(), pageCacheLog,
-                GuardVersionContextSupplier.INSTANCE, jobScheduler, clock, memoryPools );
+                GuardVersionContextSupplier.INSTANCE, jobScheduler, clock, memoryPools, ioController );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         if ( config.get( GraphDatabaseInternalSettings.dump_configuration ) )

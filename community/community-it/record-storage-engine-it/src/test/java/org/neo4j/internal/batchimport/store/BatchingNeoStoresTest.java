@@ -47,7 +47,6 @@ import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -112,6 +111,7 @@ import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStores;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
+import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store;
 import static org.neo4j.kernel.impl.index.schema.TokenScanStore.toggledRelationshipTypeScanStore;
@@ -297,7 +297,7 @@ class BatchingNeoStoresTest
                 DEFAULT_DATABASE_NAME ) )
         {
             countsStore.start( NULL, INSTANCE );
-            countsStore.checkpoint( IOController.DISABLED, NULL );
+            countsStore.checkpoint( DISABLED, NULL );
         }
 
         // when
@@ -363,7 +363,7 @@ class BatchingNeoStoresTest
         NullLog nullLog = NullLog.getInstance();
         try ( JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
               PageCache pageCache = new ConfiguringPageCacheFactory( fileSystem, Config.defaults(), PageCacheTracer.NULL, nullLog,
-                        EmptyVersionContextSupplier.EMPTY, scheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
+                        EmptyVersionContextSupplier.EMPTY, scheduler, Clocks.nanoClock(), new MemoryPools(), DISABLED ).getOrCreatePageCache();
               Lifespan life = new Lifespan() )
         {
             // TODO this little dance with TokenHolders is really annoying and must be solved with a better abstraction
@@ -428,7 +428,7 @@ class BatchingNeoStoresTest
             txState.nodeDoCreate( node2 );
             txState.relationshipDoCreate( commandCreationContext.reserveRelationship(), relTypeId, node1, node2 );
             apply( txState, commandCreationContext, storageEngine );
-            neoStores.flush( IOController.DISABLED, NULL );
+            neoStores.flush( DISABLED, NULL );
         }
     }
 
