@@ -740,7 +740,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     @Description( "Log query plan description table, useful for debugging purposes" )
     @DocumentedDefaultValue( "false" )
-    public static final Setting<Boolean> log_queries_plan =
+    public static final Setting<Boolean> log_queries_query_plan =
             newBuilder( "dbms.logs.query.plan_description_enabled", BOOL, false ).dynamic().build();
 
     // Security settings
