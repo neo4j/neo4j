@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -27,6 +28,7 @@ import java.nio.file.Path;
 
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
@@ -40,6 +42,8 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -97,6 +101,25 @@ class ReadAheadLogChannelTest
     }
 
     @Test
+    void rawReadAheadChannelOpensRawChannelOnNext() throws IOException
+    {
+        Path path = file( 0 );
+        directory.createFile( path.getFileName().toString() );
+        var storeChannel = fileSystem.read( path );
+        var versionedStoreChannel =
+                new PhysicalLogVersionedStoreChannel( storeChannel, -1 , (byte) -1, path, nativeChannelAccessor );
+        var capturingLogVersionBridge = new RawCapturingLogVersionBridge();
+        assertThrows( ReadPastEndException.class, () ->
+        {
+            try ( ReadAheadLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, capturingLogVersionBridge, INSTANCE, true ) )
+            {
+                channel.get();
+            }
+        } );
+        assertTrue( capturingLogVersionBridge.isRaw() );
+    }
+
+    @Test
     void shouldReadFromMultipleChannels() throws Exception
     {
         // GIVEN
@@ -125,7 +148,7 @@ class ReadAheadLogChannelTest
             private boolean returned;
 
             @Override
-            public LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
+            public LogVersionedStoreChannel next( LogVersionedStoreChannel channel, boolean raw ) throws IOException
             {
                 if ( !returned )
                 {
@@ -160,5 +183,22 @@ class ReadAheadLogChannelTest
     private Path file( int index )
     {
         return directory.homePath().resolve( "" + index );
+    }
+
+    private static class RawCapturingLogVersionBridge implements LogVersionBridge
+    {
+        private final MutableBoolean rawWitness = new MutableBoolean( false );
+
+        @Override
+        public LogVersionedStoreChannel next( LogVersionedStoreChannel channel, boolean raw ) throws IOException
+        {
+            rawWitness.setValue( raw );
+            return channel;
+        }
+
+        public boolean isRaw()
+        {
+            return rawWitness.booleanValue();
+        }
     }
 }

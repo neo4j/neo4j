@@ -33,24 +33,31 @@ import org.neo4j.memory.MemoryTracker;
 public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChannel> implements ReadableLogChannel
 {
     private final LogVersionBridge bridge;
+    private final boolean raw;
 
     public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, MemoryTracker memoryTracker )
     {
-        this( startingChannel, LogVersionBridge.NO_MORE_CHANNELS, new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, memoryTracker ) );
+        this( startingChannel, LogVersionBridge.NO_MORE_CHANNELS, new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, memoryTracker ), false );
     }
 
     public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, MemoryTracker memoryTracker )
     {
-        this( startingChannel, bridge, new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, memoryTracker ) );
+        this( startingChannel, bridge, new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, memoryTracker ), false );
+    }
+
+    public ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, MemoryTracker memoryTracker, boolean raw )
+    {
+        this( startingChannel, bridge, new NativeScopedBuffer( DEFAULT_READ_AHEAD_SIZE, memoryTracker ), raw );
     }
 
     /**
      * This constructor is private to ensure that the given buffer always comes form one of our own constructors.
      */
-    private ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, ScopedBuffer scopedBuffer )
+    private ReadAheadLogChannel( LogVersionedStoreChannel startingChannel, LogVersionBridge bridge, ScopedBuffer scopedBuffer, boolean raw )
     {
         super( startingChannel, scopedBuffer );
         this.bridge = bridge;
+        this.raw = raw;
     }
 
     @Override
@@ -81,7 +88,7 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
     @Override
     protected LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
     {
-        return bridge.next( channel );
+        return bridge.next( channel, raw );
     }
 
     @Override

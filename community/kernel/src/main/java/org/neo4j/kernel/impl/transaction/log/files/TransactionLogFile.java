@@ -140,7 +140,13 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     @Override
     public PhysicalLogVersionedStoreChannel openForVersion( long version ) throws IOException
     {
-        return channelAllocator.openLogChannel( version );
+        return openForVersion( version, false );
+    }
+
+    @Override
+    public PhysicalLogVersionedStoreChannel openForVersion( long version, boolean raw ) throws IOException
+    {
+        return channelAllocator.openLogChannel( version, raw );
     }
 
     /**
@@ -200,11 +206,22 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
+    public ReadableLogChannel getRawReader( LogPosition position ) throws IOException
+    {
+        return getReader( position, readerLogVersionBridge, true );
+    }
+
+    @Override
     public ReadableLogChannel getReader( LogPosition position, LogVersionBridge logVersionBridge ) throws IOException
     {
-        PhysicalLogVersionedStoreChannel logChannel = openForVersion( position.getLogVersion() );
+        return getReader( position, logVersionBridge, false );
+    }
+
+    private ReadableLogChannel getReader( LogPosition position, LogVersionBridge logVersionBridge, boolean raw ) throws IOException
+    {
+        PhysicalLogVersionedStoreChannel logChannel = openForVersion( position.getLogVersion(), raw );
         logChannel.position( position.getByteOffset() );
-        return new ReadAheadLogChannel( logChannel, logVersionBridge, memoryTracker );
+        return new ReadAheadLogChannel( logChannel, logVersionBridge, memoryTracker, raw );
     }
 
     @Override

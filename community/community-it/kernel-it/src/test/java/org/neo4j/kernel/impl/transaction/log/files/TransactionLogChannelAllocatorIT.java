@@ -35,6 +35,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
@@ -42,10 +43,10 @@ import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
@@ -55,7 +56,10 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
 class TransactionLogChannelAllocatorIT
@@ -73,6 +77,44 @@ class TransactionLogChannelAllocatorIT
     {
         fileHelper = new TransactionLogFilesHelper( fileSystem, testDirectory.homePath() );
         fileAllocator = createLogFileAllocator();
+    }
+
+    @Test
+    void rawChannelDoesNotTryToAdviseOnFileContent() throws IOException
+    {
+        Path path = fileHelper.getLogFileForVersion( 1 );
+        try ( var storeChannel = fileSystem.write( path ) )
+        {
+            writeLogHeader( storeChannel, new LogHeader( CURRENT_LOG_FORMAT_VERSION, 1, 1, 1 ), INSTANCE );
+        }
+
+        var logHeaderCache = new LogHeaderCache( 10 );
+        var logFileContext = createLogFileContext();
+        var nativeChannelAccessor = new AdviseCountingChannelNativeAccessor();
+        var channelAllocator = new TransactionLogChannelAllocator( logFileContext, fileHelper, logHeaderCache, nativeChannelAccessor );
+        try ( var channel = channelAllocator.openLogChannel( 1, true ) )
+        {
+            assertEquals( 0, nativeChannelAccessor.getCallCounter() );
+        }
+    }
+
+    @Test
+    void defaultChannelTryToAdviseOnFileContent() throws IOException
+    {
+        Path path = fileHelper.getLogFileForVersion( 1 );
+        try ( StoreChannel storeChannel = fileSystem.write( path ) )
+        {
+            writeLogHeader( storeChannel, new LogHeader( CURRENT_LOG_FORMAT_VERSION, 1, 1, 1 ), INSTANCE );
+        }
+
+        var logHeaderCache = new LogHeaderCache( 10 );
+        var logFileContext = createLogFileContext();
+        var nativeChannelAccessor = new AdviseCountingChannelNativeAccessor();
+        var channelAllocator = new TransactionLogChannelAllocator( logFileContext, fileHelper, logHeaderCache, nativeChannelAccessor );
+        try ( var channel = channelAllocator.openLogChannel( 1 ) )
+        {
+            assertEquals( 1, nativeChannelAccessor.getCallCounter() );
+        }
     }
 
     @Test
@@ -120,8 +162,24 @@ class TransactionLogChannelAllocatorIT
                 new VersionAwareLogEntryReader( new TestCommandReaderFactory() ), () -> 1L,
                 () -> 1L, () -> new LogPosition( 0, 1 ),
                 SimpleLogVersionRepository::new, fileSystem, NullLogProvider.getInstance(), DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN,
-                NativeAccessProvider.getNativeAccess(), EmptyMemoryTracker.INSTANCE, new Monitors(), true,
+                NativeAccessProvider.getNativeAccess(), INSTANCE, new Monitors(), true,
                 new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() ), () -> KernelVersion.LATEST,
                 Clock.systemUTC(), Config.defaults() );
+    }
+
+    private static class AdviseCountingChannelNativeAccessor extends ChannelNativeAccessor.EmptyChannelNativeAccessor
+    {
+        private long callCounter;
+
+        @Override
+        public void adviseSequentialAccessAndKeepInCache( StoreChannel storeChannel, long version )
+        {
+            callCounter++;
+        }
+
+        public long getCallCounter()
+        {
+            return callCounter;
+        }
     }
 }

@@ -124,7 +124,7 @@ public class TransactionLogFileInformation implements LogFileInformation
             }
             var logFile = logFiles.getLogFile();
             LogPosition position = logFile.extractHeader( version ).getStartPosition();
-            try ( ReadableLogChannel channel = logFile.getReader( position ) )
+            try ( ReadableLogChannel channel = logFile.getRawReader( position ) )
             {
                 LogEntry entry;
                 while ( (entry = logEntryReader.readLogEntry( channel )) != null )

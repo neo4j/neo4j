@@ -87,6 +87,11 @@ public class TransactionLogChannelAllocator
 
     public PhysicalLogVersionedStoreChannel openLogChannel( long version ) throws IOException
     {
+        return openLogChannel( version, false );
+    }
+
+    public PhysicalLogVersionedStoreChannel openLogChannel( long version, boolean raw ) throws IOException
+    {
         Path fileToOpen = fileHelper.getLogFileForVersion( version );
 
         if ( !fileSystem.fileExists( fileToOpen ) )
@@ -109,8 +114,11 @@ public class TransactionLogChannelAllocator
                                     header != null ? header.toString() : "null header." ) );
                 }
                 var versionedStoreChannel = new PhysicalLogVersionedStoreChannel( rawChannel, version, header.getLogFormatVersion(),
-                        fileToOpen, nativeChannelAccessor );
-                nativeChannelAccessor.adviseSequentialAccessAndKeepInCache( rawChannel, version );
+                        fileToOpen, nativeChannelAccessor, raw );
+                if ( !raw )
+                {
+                    nativeChannelAccessor.adviseSequentialAccessAndKeepInCache( rawChannel, version );
+                }
                 return versionedStoreChannel;
             }
         }

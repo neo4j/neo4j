@@ -255,7 +255,7 @@ class TestLogPruning
         return aggregateLogData( version ->
         {
             int counter = 0;
-            LogVersionBridge bridge = channel -> channel;
+            LogVersionBridge bridge = LogVersionBridge.NO_MORE_CHANNELS;
             LogVersionedStoreChannel versionedStoreChannel = files.getLogFile().openForVersion( version );
             try ( ReadableLogChannel channel = new ReadAheadLogChannel( versionedStoreChannel, bridge, INSTANCE ) )
             {

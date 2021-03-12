@@ -61,6 +61,18 @@ public interface LogFile extends RotatableFile
 
     /**
      * Opens a {@link ReadableLogChannel reader} at the desired {@link LogPosition}, capable of reading log entries
+     * from that position and onwards, through physical log versions.
+     * In comparison with alternative {{@link #getReader(LogPosition)}} reader acquired as result of this call will not gonna
+     * perform any calls to pre-load, offload file and potentially some other optimisations.
+     *
+     * @param position {@link LogPosition} to position the returned reader at.
+     * @return {@link ReadableChannel} capable of reading log data, starting from {@link LogPosition position}.
+     * @throws IOException on I/O error.
+     */
+    ReadableLogChannel getRawReader( LogPosition position ) throws IOException;
+
+    /**
+     * Opens a {@link ReadableLogChannel reader} at the desired {@link LogPosition}, capable of reading log entries
      * from that position and onwards, with the given {@link LogVersionBridge}.
      *
      * @param position {@link LogPosition} to position the returned reader at.
@@ -75,6 +87,8 @@ public interface LogFile extends RotatableFile
     TransactionLogFileInformation getLogFileInformation();
 
     PhysicalLogVersionedStoreChannel openForVersion( long version ) throws IOException;
+
+    PhysicalLogVersionedStoreChannel openForVersion( long version, boolean raw ) throws IOException;
 
     PhysicalLogVersionedStoreChannel createLogChannelForVersion( long versionUsed, LongSupplier lastCommittedTransactionId ) throws IOException;
 

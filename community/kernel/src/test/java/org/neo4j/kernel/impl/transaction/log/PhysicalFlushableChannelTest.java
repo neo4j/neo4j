@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
@@ -56,6 +57,18 @@ class PhysicalFlushableChannelTest
     @Inject
     private TestDirectory directory;
     private final LogFileChannelNativeAccessor nativeChannelAccessor = mock( LogFileChannelNativeAccessor.class );
+
+    @Test
+    void rawChannelDoesNotEvictDataOnClose() throws IOException
+    {
+        var rawPath = directory.homePath().resolve( "fileRaw" );
+        var storeChannel = fileSystem.write( rawPath );
+        try ( var versionedStoreChannel = new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, rawPath, nativeChannelAccessor, true ) )
+        {
+            // empty
+        }
+        verifyNoInteractions( nativeChannelAccessor );
+    }
 
     @Test
     void shouldBeAbleToWriteSmallNumberOfBytes() throws IOException

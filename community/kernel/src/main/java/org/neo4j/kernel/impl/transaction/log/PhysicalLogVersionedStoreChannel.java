@@ -27,16 +27,23 @@ import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor;
 
-public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel implements LogVersionedStoreChannel
+public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<StoreChannel> implements LogVersionedStoreChannel
 {
     private final long version;
     private final byte formatVersion;
     private long position;
     private final Path path;
     private final ChannelNativeAccessor nativeChannelAccessor;
+    private final boolean raw;
 
     public PhysicalLogVersionedStoreChannel( StoreChannel delegateChannel, long version, byte formatVersion, Path path,
             ChannelNativeAccessor nativeChannelAccessor ) throws IOException
+    {
+        this( delegateChannel, version, formatVersion, path, nativeChannelAccessor, false );
+    }
+
+    public PhysicalLogVersionedStoreChannel( StoreChannel delegateChannel, long version, byte formatVersion, Path path,
+            ChannelNativeAccessor nativeChannelAccessor, boolean raw ) throws IOException
     {
         super( delegateChannel );
         this.version = version;
@@ -44,6 +51,7 @@ public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel imp
         this.position = delegateChannel.position();
         this.path = path;
         this.nativeChannelAccessor = nativeChannelAccessor;
+        this.raw = raw;
     }
 
     public Path getPath()
@@ -107,7 +115,10 @@ public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel imp
     @Override
     public void close() throws IOException
     {
-        nativeChannelAccessor.evictFromSystemCache( this, version );
+        if ( !raw )
+        {
+            nativeChannelAccessor.evictFromSystemCache( this, version );
+        }
         super.close();
     }
 

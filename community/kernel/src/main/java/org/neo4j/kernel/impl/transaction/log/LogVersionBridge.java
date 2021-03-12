@@ -29,16 +29,17 @@ import org.neo4j.io.fs.StoreChannel;
 @FunctionalInterface
 public interface LogVersionBridge
 {
-    LogVersionBridge NO_MORE_CHANNELS = channel -> channel;
+    LogVersionBridge NO_MORE_CHANNELS = ( channel, raw ) -> channel;
 
     /**
      * Provides the next channel, given the current channel and version.
      * Returning the same value as was passed in means that no bridging was needed or that the end was reached.
      *
      * @param channel {@link StoreChannel} to advance from.
+     * @param raw flag to specify if raw channel should open.
      * @return the next {@link StoreChannel} having advanced on from the given channel, or {@code channel}
      * if no bridging needed or end was reached.
      * @throws IOException on error opening next version channel.
      */
-    LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException;
+    LogVersionedStoreChannel next( LogVersionedStoreChannel channel, boolean raw ) throws IOException;
 }

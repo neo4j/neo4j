@@ -39,12 +39,12 @@ public class ReaderLogVersionBridge implements LogVersionBridge
     }
 
     @Override
-    public LogVersionedStoreChannel next( LogVersionedStoreChannel channel ) throws IOException
+    public LogVersionedStoreChannel next( LogVersionedStoreChannel channel, boolean raw ) throws IOException
     {
         PhysicalLogVersionedStoreChannel nextChannel;
         try
         {
-            nextChannel = logFile.openForVersion( channel.getVersion() + 1 );
+            nextChannel = logFile.openForVersion( channel.getVersion() + 1, raw );
         }
         catch ( NoSuchFileException | IncompleteLogHeaderException e )
         {

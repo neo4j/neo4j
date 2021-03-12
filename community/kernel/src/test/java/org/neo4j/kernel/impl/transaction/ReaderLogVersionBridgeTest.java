@@ -111,7 +111,7 @@ class ReaderLogVersionBridgeTest
         } );
 
         // when
-        final LogVersionedStoreChannel result = bridge.next( channel );
+        final LogVersionedStoreChannel result = bridge.next( channel, false );
 
         // then
         PhysicalLogVersionedStoreChannel expected = new PhysicalLogVersionedStoreChannel( newStoreChannel, version + 1,
@@ -130,7 +130,7 @@ class ReaderLogVersionBridgeTest
         when( fs.read( any( Path.class ) ) ).thenThrow( new NoSuchFileException( "mock" ) );
 
         // when
-        final LogVersionedStoreChannel result = bridge.next( channel );
+        final LogVersionedStoreChannel result = bridge.next( channel, false );
 
         // then
         assertEquals( channel, result );
@@ -150,7 +150,7 @@ class ReaderLogVersionBridgeTest
         when( fs.read( any( Path.class ) ) ).thenReturn( nextVersionWithIncompleteHeader );
 
         // when
-        final LogVersionedStoreChannel result = bridge.next( channel );
+        final LogVersionedStoreChannel result = bridge.next( channel, false );
 
         // then
         assertEquals( channel, result );
