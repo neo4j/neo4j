@@ -25,7 +25,7 @@ import org.neo4j.graphdb.factory.module.edition.StandaloneEditionModule;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -39,7 +39,7 @@ import org.neo4j.token.TokenHolders;
 public class StandaloneDatabaseComponents implements EditionDatabaseComponents
 {
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
-    private final IOLimiter ioLimiter;
+    private final IOController ioController;
     private final ConstraintSemantics constraintSemantics;
     private final CommitProcessFactory commitProcessFactory;
     private final TokenHolders tokenHolders;
@@ -54,7 +54,7 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     {
         this.commitProcessFactory = editionModule.getCommitProcessFactory();
         this.constraintSemantics = editionModule.getConstraintSemantics();
-        this.ioLimiter = editionModule.getIoLimiter();
+        this.ioController = editionModule.getIoLimiter();
         this.watcherServiceFactory = editionModule.getWatcherServiceFactory();
         this.idContext = editionModule.getIdContextFactory().createIdContext( namedDatabaseId );
         this.tokenHolders = editionModule.getTokenHoldersProvider().apply( namedDatabaseId );
@@ -84,9 +84,9 @@ public class StandaloneDatabaseComponents implements EditionDatabaseComponents
     }
 
     @Override
-    public IOLimiter getIoLimiter()
+    public IOController getIoLimiter()
     {
-        return ioLimiter;
+        return ioController;
     }
 
     @Override

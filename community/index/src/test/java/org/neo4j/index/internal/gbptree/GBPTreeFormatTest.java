@@ -32,7 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.FormatCompatibilityVerifier;
 import org.neo4j.test.rule.PageCacheConfig;
@@ -150,7 +150,7 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
                     put( writer, key );
                 }
             }
-            tree.checkpoint( IOLimiter.UNLIMITED, NULL );
+            tree.checkpoint( IOController.DISABLED, NULL );
         }
     }
 

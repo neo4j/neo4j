@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
-import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
+import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
@@ -70,7 +70,7 @@ class IndexedIdGeneratorRecoverabilityTest
             assertEquals( 1, freelist.getHighId() );
             freelist.nextId( NULL );
             assertEquals( 2, freelist.getHighId() );
-            freelist.checkpoint( UNLIMITED, NULL );
+            freelist.checkpoint( DISABLED, NULL );
         }
         try ( IdGenerator freelist = instantiateFreelist() )
         {
@@ -105,7 +105,7 @@ class IndexedIdGeneratorRecoverabilityTest
             id1 = freelist.nextId( NULL );
             id2 = freelist.nextId( NULL );
             markUsed( freelist, id1, id2 );
-            freelist.checkpoint( UNLIMITED, NULL );
+            freelist.checkpoint( DISABLED, NULL );
             markDeleted( freelist, id1, id2 );
             pageCache.flushAndForce();
             snapshot = fs.snapshot();
@@ -135,7 +135,7 @@ class IndexedIdGeneratorRecoverabilityTest
         // Create the freelist
         try ( IdGenerator freelist = instantiateFreelist() )
         {
-            freelist.checkpoint( UNLIMITED, NULL );
+            freelist.checkpoint( DISABLED, NULL );
         }
 
         final long id1;
@@ -146,7 +146,7 @@ class IndexedIdGeneratorRecoverabilityTest
             id2 = freelist.nextId( NULL );
             markUsed( freelist, id1, id2 );
             markDeleted( freelist, id1, id2 );
-            freelist.checkpoint( UNLIMITED, NULL );
+            freelist.checkpoint( DISABLED, NULL );
         }
 
         try ( IdGenerator freelist = instantiateFreelist() )
@@ -163,7 +163,7 @@ class IndexedIdGeneratorRecoverabilityTest
         // Create the freelist
         try ( IdGenerator freelist = instantiateFreelist() )
         {
-            freelist.checkpoint( UNLIMITED, NULL );
+            freelist.checkpoint( DISABLED, NULL );
         }
 
         final long id1;
@@ -177,7 +177,7 @@ class IndexedIdGeneratorRecoverabilityTest
             markUsed( freelist, id1, id2, id3 );
             markDeleted( freelist, id1, id2 ); // <-- Don't delete id3
             // Intentionally don't mark the ids as reusable
-            freelist.checkpoint( UNLIMITED, NULL );
+            freelist.checkpoint( DISABLED, NULL );
         }
 
         try ( IdGenerator freelist = instantiateFreelist() )
@@ -217,7 +217,7 @@ class IndexedIdGeneratorRecoverabilityTest
             markDeleted( freelist, id, neighbourId );
             // Neo4j does this on recovery, setHighId and checkpoint
             freelist.setHighId( neighbourId + 1 );
-            freelist.checkpoint( UNLIMITED, NULL ); // mostly to get the generation persisted
+            freelist.checkpoint( DISABLED, NULL ); // mostly to get the generation persisted
 
             // Normal operations
             freelist.start( NO_FREE_IDS, NULL );

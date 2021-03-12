@@ -34,7 +34,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -89,7 +89,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final Monitors parentMonitors;
     private final Tracers tracers;
     private final GlobalProcedures globalProcedures;
-    private final IOLimiter ioLimiter;
+    private final IOController ioController;
     private final LongFunction<DatabaseAvailabilityGuard> databaseAvailabilityGuardFactory;
     private final SystemNanoClock clock;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
@@ -142,7 +142,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.constraintSemantics = editionComponents.getConstraintSemantics();
         this.tracers = globalModule.getTracers();
         this.globalProcedures = globalProcedures;
-        this.ioLimiter = editionComponents.getIoLimiter();
+        this.ioController = editionComponents.getIoLimiter();
         this.clock = globalModule.getGlobalClock();
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         this.dbmsInfo = globalModule.getDbmsInfo();
@@ -279,9 +279,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public IOLimiter getIoLimiter()
+    public IOController getIoLimiter()
     {
-        return ioLimiter;
+        return ioController;
     }
 
     @Override

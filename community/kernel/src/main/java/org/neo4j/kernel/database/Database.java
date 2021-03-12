@@ -63,7 +63,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -220,7 +220,7 @@ public class Database extends LifecycleAdapter
     private final CommitProcessFactory commitProcessFactory;
     private final ConstraintSemantics constraintSemantics;
     private final GlobalProcedures globalProcedures;
-    private final IOLimiter ioLimiter;
+    private final IOController ioController;
     private final SystemNanoClock clock;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
@@ -293,7 +293,7 @@ public class Database extends LifecycleAdapter
         this.constraintSemantics = context.getConstraintSemantics();
         this.parentMonitors = context.getMonitors();
         this.globalProcedures = context.getGlobalProcedures();
-        this.ioLimiter = context.getIoLimiter();
+        this.ioController = context.getIoLimiter();
         this.clock = context.getClock();
         this.eventListeners = context.getDatabaseEventListeners();
         this.accessCapabilityFactory = context.getAccessCapabilityFactory();
@@ -830,10 +830,10 @@ public class Database extends LifecycleAdapter
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
         final CheckPointerImpl checkPointer =
                 new CheckPointerImpl( metadataProvider, threshold, forceOperation, logPruning, checkpointAppender, databaseHealth, logProvider,
-                        tracers, ioLimiter, storeCopyCheckPointMutex, clock );
+                        tracers, ioController, storeCopyCheckPointMutex, clock );
 
         long recurringPeriod = threshold.checkFrequencyMillis();
-        CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioLimiter, scheduler,
+        CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioController, scheduler,
                 recurringPeriod, databaseHealth, namedDatabaseId.name() );
 
         life.add( checkPointer );

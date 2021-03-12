@@ -35,7 +35,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.Kernel;
@@ -146,7 +146,7 @@ class ManyPropertyKeysIT
             record.setNameId( (int) Iterables.first( nameRecords ).getId() );
             store.updateRecord( record, NULL );
         }
-        neoStores.flush( IOLimiter.UNLIMITED, cursorTracer );
+        neoStores.flush( IOController.DISABLED, cursorTracer );
         neoStores.close();
 
         return database();

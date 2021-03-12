@@ -40,7 +40,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.mem.MemoryAllocator;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageSwapperFactory;
@@ -683,11 +683,11 @@ public class MuninnPageCache implements PageCache
     @Override
     public void flushAndForce() throws IOException
     {
-        flushAndForce( IOLimiter.UNLIMITED );
+        flushAndForce( IOController.DISABLED );
     }
 
     @Override
-    public void flushAndForce( IOLimiter limiter ) throws IOException
+    public void flushAndForce( IOController limiter ) throws IOException
     {
         if ( limiter == null )
         {
@@ -697,7 +697,7 @@ public class MuninnPageCache implements PageCache
 
         try ( MajorFlushEvent ignored = pageCacheTracer.beginCacheFlush() )
         {
-            if ( limiter.isLimited() )
+            if ( limiter.isEnabled() )
             {
                 flushAllPages( files, limiter );
             }
@@ -709,7 +709,7 @@ public class MuninnPageCache implements PageCache
         clearEvictorException();
     }
 
-    private void flushAllPages( List<PagedFile> files, IOLimiter limiter ) throws IOException
+    private void flushAllPages( List<PagedFile> files, IOController limiter ) throws IOException
     {
         for ( PagedFile file : files )
         {
@@ -717,7 +717,7 @@ public class MuninnPageCache implements PageCache
         }
     }
 
-    private void flushAllPagesParallel( List<PagedFile> files, IOLimiter limiter ) throws IOException
+    private void flushAllPagesParallel( List<PagedFile> files, IOController limiter ) throws IOException
     {
         List<JobHandle<?>> flushes = new ArrayList<>( files.size() );
 
@@ -753,7 +753,7 @@ public class MuninnPageCache implements PageCache
         }
     }
 
-    private void flushFile( MuninnPagedFile muninnPagedFile, IOLimiter limiter ) throws IOException
+    private void flushFile( MuninnPagedFile muninnPagedFile, IOController limiter ) throws IOException
     {
         try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( muninnPagedFile.swapper );
               var buffer = bufferFactory.createBuffer() )

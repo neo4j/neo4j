@@ -29,7 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -164,13 +164,13 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
 
     private void flushTreeAndMarkAs( byte state, PageCursorTracer cursorTracer )
     {
-        index.checkpoint( IOLimiter.UNLIMITED, pageCursor -> pageCursor.putByte( state ), cursorTracer );
+        index.checkpoint( IOController.DISABLED, pageCursor -> pageCursor.putByte( state ), cursorTracer );
     }
 
     private void markTreeAsFailed( PageCursorTracer cursorTracer )
     {
         Preconditions.checkState( failureBytes != null, "markAsFailed hasn't been called, populator not actually failed?" );
-        index.checkpoint( IOLimiter.UNLIMITED, new FailureHeaderWriter( failureBytes, FAILED ), cursorTracer );
+        index.checkpoint( IOController.DISABLED, new FailureHeaderWriter( failureBytes, FAILED ), cursorTracer );
     }
 
     @Override

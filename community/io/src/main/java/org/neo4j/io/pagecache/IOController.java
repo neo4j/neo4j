@@ -25,18 +25,18 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 
 /**
- * IOLimiter instances can be passed to the {@link PageCache#flushAndForce(IOLimiter)} and
- * {@link PagedFile#flushAndForce(IOLimiter)} methods, which will invoke the
+ * IOController instances can be passed to the {@link PageCache#flushAndForce(IOController)} and
+ * {@link PagedFile#flushAndForce(IOController)} methods, which will invoke the
  * {@link #maybeLimitIO(long, int, Flushable, FlushEventOpportunity)} method on regular intervals.
  * <p/>
- * This allows the limiter to measure the rate of IO, and inject sleeps, pauses or flushes into the process.
+ * This allows the controller to measure the rate of IO, and inject sleeps, pauses or flushes into the process.
  * The flushes are in this case referring to the underlying hardware.
  * <p/>
  * Normally, flushing a channel will just copy the dirty buffers into the OS page cache, but flushing is in this case
- * implying that the OS pages are cleared as well. In other words, the IOPSLimiter can make sure that the operating
+ * implying that the OS pages are cleared as well. In other words, the IOController can make sure that the operating
  * system does not pile up too much IO work in its page cache, by flushing those caches as well on regular intervals.
  */
-public interface IOLimiter
+public interface IOController
 {
     /**
      * The value of the initial stamp; that is, what should be passed as the {@code previousStamp} to
@@ -71,51 +71,51 @@ public interface IOLimiter
     long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes );
 
     /**
-     * Temporarily disable the IOLimiter, to allow IO to proceed at full speed.
-     * This call <strong>MUST</strong> be paired with a subsequent {@link #enableLimit()} call.
+     * Temporarily disable the IOController, to allow IO to proceed at full speed.
+     * This call <strong>MUST</strong> be paired with a subsequent {@link #enable()} call.
      * This method is thread-safe and reentrant. Multiple concurrent calls will "stack", and IO limitations will be
      * enabled again once the last overlapping limit-disabling period ends with the "last" call to
-     * {@link #enableLimit()}. This is conceptually similar to how a reentrant read-lock works.
+     * {@link #enable()}. This is conceptually similar to how a reentrant read-lock works.
      *
      * Thus, the typical usage pattern is with a {@code try-finally} clause, like this:
      *
      * <pre><code>
-     *     limiter.disableLimit();
+     *     controller.disable();
      *     try
      *     {
      *         // ... do work that needs maximum IO performance ...
      *     }
      *     finally
      *     {
-     *         limiter.enableLimit();
+     *         controller.enable();
      *     }
      * </code></pre>
      */
-    default void disableLimit()
+    default void disable()
     {
         // By default this method does nothing, assuming the implementation always has no or fixed limits.
     }
 
     /**
-     * Re-enable the IOLimiter, after having disabled it with {@link #disableLimit()}.
+     * Re-enable the IOController, after having disabled it with {@link #disable()}.
      *
-     * @see #disableLimit() for how to use this method.
+     * @see #disable() for how to use this method.
      */
-    default void enableLimit()
+    default void enable()
     {
-        // Same as for disableLimit().
+        // Same as for disable().
     }
 
     /**
-     * An IOPSLimiter implementation that does not restrict the rate of IO. Use this implementation if you want the
+     * An IOController implementation that does not do anything. Use this implementation if you want the
      * flush to go as fast as possible.
      */
-    IOLimiter UNLIMITED = ( previousStamp, recentlyCompletedIOs, flushable, flushes ) -> previousStamp;
+    IOController DISABLED = ( previousStamp, recentlyCompletedIOs, flushable, flushes ) -> previousStamp;
 
     /**
-     * @return {@code true} if IO is currently limited
+     * @return {@code true} if controller is currently enabled
      */
-    default boolean isLimited()
+    default boolean isEnabled()
     {
         return false;
     }

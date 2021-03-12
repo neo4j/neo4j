@@ -23,7 +23,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.neo4j.annotations.documented.ReporterFactory;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.util.VisibleForTesting;
@@ -58,7 +58,7 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
     long getNumberOfIdsInUse();
     long getDefragCount();
 
-    void checkpoint( IOLimiter ioLimiter, PageCursorTracer cursorTracer );
+    void checkpoint( IOController ioController, PageCursorTracer cursorTracer );
 
     /**
      * Does some maintenance. This operation isn't critical for the functionality of an IdGenerator, but may make it perform better.
@@ -169,9 +169,9 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public void checkpoint( IOLimiter ioLimiter, PageCursorTracer cursorTracer )
+        public void checkpoint( IOController ioController, PageCursorTracer cursorTracer )
         {
-            delegate.checkpoint( ioLimiter, cursorTracer );
+            delegate.checkpoint( ioController, cursorTracer );
         }
 
         @Override

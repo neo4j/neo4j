@@ -49,7 +49,7 @@ import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
@@ -133,7 +133,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
         constraintSemantics = createSchemaRuleVerifier();
 
-        ioLimiter = IOLimiter.UNLIMITED;
+        ioController = IOController.DISABLED;
 
         connectionTracker = globalDependencies.satisfyDependency( createConnectionTracker() );
         globalAvailabilityGuard = globalModule.getGlobalAvailabilityGuard();

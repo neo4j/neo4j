@@ -30,7 +30,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -75,9 +75,9 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     }
 
     @Override
-    public void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer )
+    public void force( IOController ioController, PageCursorTracer cursorTracer )
     {
-        instanceSelector.forAll( accessor -> accessor.force( ioLimiter, cursorTracer ) );
+        instanceSelector.forAll( accessor -> accessor.force( ioController, cursorTracer ) );
     }
 
     @Override

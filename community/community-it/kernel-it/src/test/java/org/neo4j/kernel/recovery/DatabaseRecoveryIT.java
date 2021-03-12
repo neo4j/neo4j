@@ -63,7 +63,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -517,7 +517,7 @@ class DatabaseRecoveryIT
     private static void flush( GraphDatabaseService db ) throws IOException
     {
         var forceOperation = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointerImpl.ForceOperation.class );
-        forceOperation.flushAndForce( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
+        forceOperation.flushAndForce( IOController.DISABLED, PageCursorTracer.NULL );
     }
 
     private static void checkPoint( GraphDatabaseService db ) throws IOException

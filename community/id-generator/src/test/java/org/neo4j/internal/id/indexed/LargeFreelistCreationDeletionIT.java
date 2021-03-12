@@ -30,7 +30,7 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdType;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
@@ -120,7 +120,7 @@ class LargeFreelistCreationDeletionIT
                 }
 
                 // Checkpoint
-                freelist.checkpoint( IOLimiter.UNLIMITED, NULL );
+                freelist.checkpoint( IOController.DISABLED, NULL );
                 System.out.println( freelist.getHighId() );
             }
         }

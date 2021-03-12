@@ -29,7 +29,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -149,7 +149,7 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<GenericKey,
                     nodeId++;
                 }
             }
-            gbpTree.checkpoint( IOLimiter.UNLIMITED, NULL );
+            gbpTree.checkpoint( IOController.DISABLED, NULL );
         }
     }
 

@@ -47,7 +47,7 @@ import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -297,7 +297,7 @@ class BatchingNeoStoresTest
                 DEFAULT_DATABASE_NAME ) )
         {
             countsStore.start( NULL, INSTANCE );
-            countsStore.checkpoint( IOLimiter.UNLIMITED, NULL );
+            countsStore.checkpoint( IOController.DISABLED, NULL );
         }
 
         // when
@@ -428,7 +428,7 @@ class BatchingNeoStoresTest
             txState.nodeDoCreate( node2 );
             txState.relationshipDoCreate( commandCreationContext.reserveRelationship(), relTypeId, node1, node2 );
             apply( txState, commandCreationContext, storageEngine );
-            neoStores.flush( IOLimiter.UNLIMITED, NULL );
+            neoStores.flush( IOController.DISABLED, NULL );
         }
     }
 

@@ -55,7 +55,7 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -197,7 +197,7 @@ public class TokenScanStoreTest
     void forceShouldNotForceWriterOnReadOnlyScanStore() throws IOException
     {
         createAndStartReadOnly();
-        store.force( IOLimiter.UNLIMITED, NULL );
+        store.force( IOController.DISABLED, NULL );
     }
 
     @Test

@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -450,7 +450,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                     writer.remove( layout.key( i ) );
                 }
             }
-            index.checkpoint( IOLimiter.UNLIMITED, NULL );
+            index.checkpoint( IOController.DISABLED, NULL );
         }
 
         // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.
@@ -488,7 +488,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                     keyCount++;
                 }
             }
-            index.checkpoint( IOLimiter.UNLIMITED, NULL );
+            index.checkpoint( IOController.DISABLED, NULL );
         }
 
         // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.
@@ -524,7 +524,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                     keyCount++;
                 }
             }
-            index.checkpoint( IOLimiter.UNLIMITED, NULL );
+            index.checkpoint( IOController.DISABLED, NULL );
         }
 
         // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.
@@ -563,7 +563,7 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
                     keyCount++;
                 }
             }
-            index.checkpoint( IOLimiter.UNLIMITED, NULL );
+            index.checkpoint( IOController.DISABLED, NULL );
         }
 
         // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.

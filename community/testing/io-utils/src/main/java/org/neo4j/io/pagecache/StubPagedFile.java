@@ -76,7 +76,7 @@ public class StubPagedFile implements PagedFile
     }
 
     @Override
-    public void flushAndForce( IOLimiter limiter )
+    public void flushAndForce( IOController limiter )
     {
     }
 

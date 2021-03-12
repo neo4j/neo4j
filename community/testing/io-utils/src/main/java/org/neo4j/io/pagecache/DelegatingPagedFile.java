@@ -94,7 +94,7 @@ public class DelegatingPagedFile implements PagedFile
     }
 
     @Override
-    public void flushAndForce( IOLimiter limiter ) throws IOException
+    public void flushAndForce( IOController limiter ) throws IOException
     {
         delegate.flushAndForce( limiter );
     }

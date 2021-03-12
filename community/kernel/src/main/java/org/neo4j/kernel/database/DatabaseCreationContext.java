@@ -31,7 +31,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -102,7 +102,7 @@ public interface DatabaseCreationContext
 
     GlobalProcedures getGlobalProcedures();
 
-    IOLimiter getIoLimiter();
+    IOController getIoLimiter();
 
     LongFunction<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory();
 

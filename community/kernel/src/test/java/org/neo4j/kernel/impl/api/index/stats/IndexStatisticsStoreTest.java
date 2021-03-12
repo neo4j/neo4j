@@ -36,7 +36,7 @@ import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFactory;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
+import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.test.Race.throwing;
 
 @EphemeralPageCacheExtension
@@ -110,7 +110,7 @@ class IndexStatisticsStoreTest
             {
                 store.replaceStats( i, new IndexSample() );
             }
-            store.checkpoint( UNLIMITED, PageCursorTracer.NULL );
+            store.checkpoint( DISABLED, PageCursorTracer.NULL );
             store.consistencyCheck( noopReporterFactory(), cursorTracer );
 
             assertThat( cursorTracer.pins() ).isEqualTo( 16 );
@@ -151,7 +151,7 @@ class IndexStatisticsStoreTest
                 store.replaceStats( i, new IndexSample() );
             }
 
-            store.checkpoint( UNLIMITED, cursorTracer );
+            store.checkpoint( DISABLED, cursorTracer );
             assertThat( cursorTracer.pins() ).isEqualTo( 43 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 43 );
             assertThat( cursorTracer.hits() ).isEqualTo( 35 );
@@ -208,7 +208,7 @@ class IndexStatisticsStoreTest
 
     private void restartStore() throws IOException
     {
-        store.checkpoint( UNLIMITED, PageCursorTracer.NULL );
+        store.checkpoint( DISABLED, PageCursorTracer.NULL );
         lifeSupport.shutdown();
         lifeSupport = new LifeSupport();
         store = openStore( pageCacheTracer, "stats" );
@@ -248,7 +248,7 @@ class IndexStatisticsStoreTest
             for ( int i = 0; i < 20; i++ )
             {
                 Thread.sleep( 5 );
-                store.checkpoint( UNLIMITED, PageCursorTracer.NULL );
+                store.checkpoint( DISABLED, PageCursorTracer.NULL );
             }
             checkpointDone.set( true );
         } ) );
@@ -318,7 +318,7 @@ class IndexStatisticsStoreTest
             {
                 randomAction( store );
             }
-            store.checkpoint( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
+            store.checkpoint( IOController.DISABLED, PageCursorTracer.NULL );
         }
         finally
         {
@@ -332,7 +332,7 @@ class IndexStatisticsStoreTest
         switch ( randomRule.nextInt( 5 ) )
         {
         case 0:
-            store.checkpoint( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
+            store.checkpoint( IOController.DISABLED, PageCursorTracer.NULL );
             break;
         case 1:
             store.indexSample( indexId );

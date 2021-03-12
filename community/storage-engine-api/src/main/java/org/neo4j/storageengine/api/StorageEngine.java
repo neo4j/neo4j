@@ -26,7 +26,7 @@ import java.util.List;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -130,11 +130,11 @@ public interface StorageEngine extends Lifecycle
      * Flushes and forces all changes down to underlying storage. This is a blocking call and when it returns
      * all changes applied to this storage engine will be durable.
      *
-     * @param limiter The {@link IOLimiter} used to moderate the rate of IO caused by the flush process.
+     * @param limiter The {@link IOController} used to moderate the rate of IO caused by the flush process.
      * @param cursorTracer underlying page cursor tracer
      * @throws IOException on I/O error.
      */
-    void flushAndForce( IOLimiter limiter, PageCursorTracer cursorTracer ) throws IOException;
+    void flushAndForce( IOController limiter, PageCursorTracer cursorTracer ) throws IOException;
 
     /**
      * Dump diagnostics about the storage.

@@ -43,7 +43,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -390,7 +390,7 @@ class CountsComputerTest
             try ( GBPTreeCountsStore countsStore = createCountsStore( countsComputer ) )
             {
                 countsStore.start( NULL, INSTANCE );
-                countsStore.checkpoint( IOLimiter.UNLIMITED, NULL );
+                countsStore.checkpoint( IOController.DISABLED, NULL );
             }
             catch ( IOException e )
             {

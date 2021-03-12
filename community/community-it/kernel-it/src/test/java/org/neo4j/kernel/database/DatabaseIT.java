@@ -37,7 +37,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -387,7 +387,7 @@ class DatabaseIT
         }
 
         @Override
-        public void flushAndForce( IOLimiter limiter ) throws IOException
+        public void flushAndForce( IOController limiter ) throws IOException
         {
             flushes.incrementAndGet();
             super.flushAndForce( limiter );
@@ -430,7 +430,7 @@ class DatabaseIT
         }
 
         @Override
-        public void flushAndForce( IOLimiter limiter ) throws IOException
+        public void flushAndForce( IOController limiter ) throws IOException
         {
             flushCounter.incrementAndGet();
             super.flushAndForce( limiter );

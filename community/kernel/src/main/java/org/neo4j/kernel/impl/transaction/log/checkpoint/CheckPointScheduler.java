@@ -24,7 +24,7 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.Predicates;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.monitoring.Health;
 import org.neo4j.scheduler.Group;
@@ -45,7 +45,7 @@ public class CheckPointScheduler extends LifecycleAdapter
             FeatureToggles.getInteger( CheckPointScheduler.class, "failure_tolerance", 10 );
 
     private final CheckPointer checkPointer;
-    private final IOLimiter ioLimiter;
+    private final IOController ioController;
     private final JobScheduler scheduler;
     private final long recurringPeriodMillis;
     private final Health health;
@@ -114,11 +114,11 @@ public class CheckPointScheduler extends LifecycleAdapter
     private volatile boolean checkPointing;
     private final BooleanSupplier checkPointingCondition = () -> !checkPointing;
 
-    public CheckPointScheduler( CheckPointer checkPointer, IOLimiter ioLimiter, JobScheduler scheduler, long recurringPeriodMillis,
+    public CheckPointScheduler( CheckPointer checkPointer, IOController ioController, JobScheduler scheduler, long recurringPeriodMillis,
             Health health, String databaseName )
     {
         this.checkPointer = checkPointer;
-        this.ioLimiter = ioLimiter;
+        this.ioController = ioController;
         this.scheduler = scheduler;
         this.recurringPeriodMillis = recurringPeriodMillis;
         this.health = health;
@@ -144,14 +144,14 @@ public class CheckPointScheduler extends LifecycleAdapter
 
     private void waitOngoingCheckpointCompletion()
     {
-        ioLimiter.disableLimit();
+        ioController.disable();
         try
         {
             Predicates.awaitForever( checkPointingCondition, 100, MILLISECONDS );
         }
         finally
         {
-            ioLimiter.enableLimit();
+            ioController.enable();
         }
     }
 

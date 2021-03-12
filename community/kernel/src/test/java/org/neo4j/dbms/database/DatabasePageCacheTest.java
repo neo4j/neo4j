@@ -30,7 +30,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.test.extension.Inject;
@@ -207,7 +207,7 @@ class DatabasePageCacheTest
             anotherDatabaseCache.map( mapFile3, PAGE_SIZE, DATABASE_NAME );
             anotherDatabaseCache.map( mapFile4, PAGE_SIZE, DATABASE_NAME );
 
-            databasePageCache.flushAndForce( IOLimiter.UNLIMITED);
+            databasePageCache.flushAndForce( IOController.DISABLED );
 
             List<PagedFile> pagedFiles = pagedFileMapper.getPagedFiles();
             PagedFile originalPagedFile1 = findPagedFile( pagedFiles, mapFile1 );
@@ -215,10 +215,10 @@ class DatabasePageCacheTest
             PagedFile originalPagedFile3 = findPagedFile( pagedFiles, mapFile3 );
             PagedFile originalPagedFile4 = findPagedFile( pagedFiles, mapFile4 );
 
-            verify( originalPagedFile1 ).flushAndForce( IOLimiter.UNLIMITED );
-            verify( originalPagedFile2 ).flushAndForce( IOLimiter.UNLIMITED );
-            verify( originalPagedFile3, never() ).flushAndForce( IOLimiter.UNLIMITED );
-            verify( originalPagedFile4, never() ).flushAndForce( IOLimiter.UNLIMITED );
+            verify( originalPagedFile1 ).flushAndForce( IOController.DISABLED );
+            verify( originalPagedFile2 ).flushAndForce( IOController.DISABLED );
+            verify( originalPagedFile3, never() ).flushAndForce( IOController.DISABLED );
+            verify( originalPagedFile4, never() ).flushAndForce( IOController.DISABLED );
         }
     }
 

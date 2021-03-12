@@ -48,7 +48,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -73,7 +73,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
  *
  * Updates that are {@link #updater(long, PageCursorTracer) applied} are relative values (e.g. +10 or -5) and counts are read as their absolute values.
  * Multiple transactions can update counts concurrently where counts are CAS:ed to minimize contention.
- * Updates between {@link #checkpoint(IOLimiter, PageCursorTracer) checkpoints} are kept in an internal {@link CountsChanges} map and only written
+ * Updates between {@link #checkpoint(IOController, PageCursorTracer) checkpoints} are kept in an internal {@link CountsChanges} map and only written
  * as part of a checkpoint. Checkpoint has a very short critical section where it switches over to a new {@link CountsChanges} instance
  * and also snapshots data about which transactions have applied before letting updaters continue to make changes while the checkpointing thread
  * writes the changes to the backing tree concurrently.
@@ -247,7 +247,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     }
 
     @Override
-    public void checkpoint( IOLimiter ioLimiter, PageCursorTracer cursorTracer ) throws IOException
+    public void checkpoint( IOController ioController, PageCursorTracer cursorTracer ) throws IOException
     {
         if ( readOnly )
         {
@@ -282,7 +282,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         updateTxIdInformationInTree( txIdSnapshot, cursorTracer );
 
         // Good, check-point all these changes
-        tree.checkpoint( ioLimiter, new CountsHeader( txIdSnapshot.highestGapFree()[0] ), cursorTracer );
+        tree.checkpoint( ioController, new CountsHeader( txIdSnapshot.highestGapFree()[0] ), cursorTracer );
     }
 
     private void writeCountsChanges( CountsChanges changes, PageCursorTracer cursorTracer ) throws IOException

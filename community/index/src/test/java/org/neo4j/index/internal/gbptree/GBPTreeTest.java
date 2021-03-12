@@ -66,7 +66,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -102,7 +102,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.fs.FileUtils.blockSize;
-import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
+import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -409,7 +409,7 @@ class GBPTreeTest
         BiConsumer<GBPTree<MutableLong,MutableLong>,byte[]> beforeClose = ( index, expected ) ->
         {
             ThrowingRunnable throwingRunnable = () ->
-                    index.checkpoint( UNLIMITED, cursor -> cursor.putBytes( expected ), NULL );
+                    index.checkpoint( DISABLED, cursor -> cursor.putBytes( expected ), NULL );
             ThrowingRunnable.throwing( throwingRunnable ).run();
         };
         verifyHeaderDataAfterClose( beforeClose );
@@ -422,12 +422,12 @@ class GBPTreeTest
         {
             ThrowingRunnable throwingRunnable = () ->
             {
-                index.checkpoint( UNLIMITED, cursor -> cursor.putBytes( expected ), NULL );
+                index.checkpoint( DISABLED, cursor -> cursor.putBytes( expected ), NULL );
                 insert( index, 0, 1 );
 
                 // WHEN
                 // Should carry over header data
-                index.checkpoint( UNLIMITED, NULL );
+                index.checkpoint( DISABLED, NULL );
             };
             ThrowingRunnable.throwing( throwingRunnable ).run();
         };
@@ -441,7 +441,7 @@ class GBPTreeTest
         {
             ThrowingRunnable throwingRunnable = () ->
             {
-                index.checkpoint( UNLIMITED, cursor -> cursor.putBytes( expected ), NULL );
+                index.checkpoint( DISABLED, cursor -> cursor.putBytes( expected ), NULL );
                 insert( index, 0, 1 );
 
                 // No checkpoint
@@ -458,9 +458,9 @@ class GBPTreeTest
         {
             ThrowingRunnable throwingRunnable = () ->
             {
-                index.checkpoint( UNLIMITED, cursor -> cursor.putBytes( expected ), NULL );
+                index.checkpoint( DISABLED, cursor -> cursor.putBytes( expected ), NULL );
                 random.nextBytes( expected );
-                index.checkpoint( UNLIMITED, cursor -> cursor.putBytes( expected ), NULL );
+                index.checkpoint( DISABLED, cursor -> cursor.putBytes( expected ), NULL );
             };
             ThrowingRunnable.throwing( throwingRunnable ).run();
         };
@@ -571,7 +571,7 @@ class GBPTreeTest
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes( "failed".getBytes() );
         try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).with( RecoveryCleanupWorkCollector.ignore() ).build() )
         {
-            index.checkpoint( UNLIMITED, headerWriter, NULL );
+            index.checkpoint( DISABLED, headerWriter, NULL );
         }
 
         verifyHeader( pageCache, "failed".getBytes() );
@@ -732,7 +732,7 @@ class GBPTreeTest
 
             // WHEN
             monitor.enabled = true;
-            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED, NULL ) ) );
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( DISABLED, NULL ) ) );
             monitor.barrier.awaitUninterruptibly();
             // now we're in the smack middle of a checkpoint
             Future<?> writerClose = executor.submit( throwing( () -> index.writer( NULL ).close() ) );
@@ -763,7 +763,7 @@ class GBPTreeTest
                 }
             } ) );
             barrier.awaitUninterruptibly();
-            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED, NULL ) ) );
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( DISABLED, NULL ) ) );
             shouldWait( checkpoint );
 
             // THEN
@@ -857,7 +857,7 @@ class GBPTreeTest
             {
                 writer.put( new MutableLong( 1L ), new MutableLong( 2L ) );
             }
-            index.checkpoint( UNLIMITED, NULL );
+            index.checkpoint( DISABLED, NULL );
         }
         assertCleanOnStartup( true );
     }
@@ -894,7 +894,7 @@ class GBPTreeTest
             monitor.barrier.awaitUninterruptibly();
 
             // THEN
-            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED, NULL ) ) );
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( DISABLED, NULL ) ) );
             shouldWait( checkpoint );
 
             monitor.barrier.release();
@@ -918,7 +918,7 @@ class GBPTreeTest
             monitor.barrier.awaitUninterruptibly();
 
             // THEN
-            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( UNLIMITED, NULL ) ) );
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( DISABLED, NULL ) ) );
             shouldWait( checkpoint );
 
             monitor.barrier.release();
@@ -1052,7 +1052,7 @@ class GBPTreeTest
     @Test
     void checkpointMustRecognizeFailedCleaning() throws Exception
     {
-        mustRecognizeFailedCleaning( index -> index.checkpoint( IOLimiter.UNLIMITED, NULL ) );
+        mustRecognizeFailedCleaning( index -> index.checkpoint( IOController.DISABLED, NULL ) );
     }
 
     private void mustRecognizeFailedCleaning( ThrowingConsumer<GBPTree<MutableLong,MutableLong>,IOException> operation ) throws Exception
@@ -1122,7 +1122,7 @@ class GBPTreeTest
             {
                 writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
             }
-            index.checkpoint( UNLIMITED, NULL );
+            index.checkpoint( DISABLED, NULL );
             assertEquals( 1, checkpointCounter.count() );
         }
 
@@ -1140,7 +1140,7 @@ class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> index = index().with( checkpointCounter ).build() )
         {
             checkpointCounter.reset();
-            index.checkpoint( UNLIMITED, NULL );
+            index.checkpoint( DISABLED, NULL );
 
             // THEN
             assertEquals( 1, checkpointCounter.count() );
@@ -1182,7 +1182,7 @@ class GBPTreeTest
             insert( index, key, value );
 
             // WHEN
-            index.checkpoint( UNLIMITED, NULL );
+            index.checkpoint( DISABLED, NULL );
         }
 
         // THEN
@@ -1259,7 +1259,7 @@ class GBPTreeTest
         {
             insert( index, 0, 1 );
 
-            index.checkpoint( UNLIMITED, NULL );
+            index.checkpoint( DISABLED, NULL );
         }
 
         // WHEN
@@ -1344,7 +1344,7 @@ class GBPTreeTest
         {
             insert( index, 0, 1 );
 
-            index.checkpoint( UNLIMITED, NULL );
+            index.checkpoint( DISABLED, NULL );
         }
 
         // WHEN
@@ -1664,7 +1664,7 @@ class GBPTreeTest
                 {
                     insert( tree, random.nextLong(), random.nextLong() );
                 }
-                tree.checkpoint( UNLIMITED, NULL );
+                tree.checkpoint( DISABLED, NULL );
             }
         }
         byte[] before = fileContent( indexFile );
@@ -1907,7 +1907,7 @@ class GBPTreeTest
                     }
 
                     @Override
-                    public void flushAndForce( IOLimiter limiter ) throws IOException
+                    public void flushAndForce( IOController limiter ) throws IOException
                     {
                         maybeThrow();
                         super.flushAndForce( limiter );

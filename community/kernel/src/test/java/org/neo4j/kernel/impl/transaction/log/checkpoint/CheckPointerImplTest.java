@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -89,7 +89,7 @@ class CheckPointerImplTest
     private final CheckpointAppender appender = mock( CheckpointAppender.class );
     private final Health health = mock( DatabaseHealth.class );
     private final DatabaseTracer tracer = mock( DatabaseTracer.class, RETURNS_MOCKS );
-    private IOLimiter limiter = mock( IOLimiter.class );
+    private IOController limiter = mock( IOController.class );
 
     private final long initialTransactionId = 2L;
     private final long transactionId = 42L;
@@ -327,7 +327,7 @@ class CheckPointerImplTest
     @Test
     void mustUseIoLimiterFromFlushing() throws Throwable
     {
-        limiter = new IOLimiter()
+        limiter = new IOController()
         {
             @Override
             public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
@@ -336,7 +336,7 @@ class CheckPointerImplTest
             }
 
             @Override
-            public boolean isLimited()
+            public boolean isEnabled()
             {
                 return true;
             }
@@ -368,7 +368,7 @@ class CheckPointerImplTest
     void mustFlushAsFastAsPossibleDuringForceCheckPoint() throws Exception
     {
         AtomicBoolean doneDisablingLimits = new AtomicBoolean();
-        limiter = new IOLimiter()
+        limiter = new IOController()
         {
             @Override
             public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
@@ -377,13 +377,13 @@ class CheckPointerImplTest
             }
 
             @Override
-            public void enableLimit()
+            public void enable()
             {
                 doneDisablingLimits.set( true );
             }
 
             @Override
-            public boolean isLimited()
+            public boolean isEnabled()
             {
                 return doneDisablingLimits.get();
             }
@@ -399,7 +399,7 @@ class CheckPointerImplTest
     {
 
         AtomicBoolean doneDisablingLimits = new AtomicBoolean();
-        limiter = new IOLimiter()
+        limiter = new IOController()
         {
             @Override
             public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
@@ -408,13 +408,13 @@ class CheckPointerImplTest
             }
 
             @Override
-            public void enableLimit()
+            public void enable()
             {
                 doneDisablingLimits.set( true );
             }
 
             @Override
-            public boolean isLimited()
+            public boolean isEnabled()
             {
                 return doneDisablingLimits.get();
             }
@@ -474,7 +474,7 @@ class CheckPointerImplTest
         BinaryLatch backgroundCheckPointStartedLatch = new BinaryLatch();
         BinaryLatch forceCheckPointStartLatch = new BinaryLatch();
 
-        limiter = new IOLimiter()
+        limiter = new IOController()
         {
             @Override
             public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
@@ -483,20 +483,20 @@ class CheckPointerImplTest
             }
 
             @Override
-            public void disableLimit()
+            public void disable()
             {
                 limitDisableCounter.getAndIncrement();
                 forceCheckPointStartLatch.release();
             }
 
             @Override
-            public void enableLimit()
+            public void enable()
             {
                 limitDisableCounter.getAndDecrement();
             }
 
             @Override
-            public boolean isLimited()
+            public boolean isEnabled()
             {
                 return limitDisableCounter.get() != 0;
             }

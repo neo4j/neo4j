@@ -28,7 +28,7 @@ import java.nio.file.Files;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
@@ -85,7 +85,7 @@ class LabelScanStoreStartupIT
         createTestNode();
         long[] labels = readNodesForLabel( labelScanStore );
         assertEquals( 1, labels.length, "Label scan store see 1 label for node" );
-        labelScanStore.force( IOLimiter.UNLIMITED, NULL );
+        labelScanStore.force( IOController.DISABLED, NULL );
         labelScanStore.shutdown();
         workCollector.shutdown();
 

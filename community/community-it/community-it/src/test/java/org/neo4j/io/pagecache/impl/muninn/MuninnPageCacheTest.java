@@ -45,7 +45,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.DelegatingPageSwapper;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCacheTest;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
@@ -1314,7 +1314,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 }
             }
 
-            pageCache.flushAndForce( IOLimiter.UNLIMITED );
+            pageCache.flushAndForce( IOController.DISABLED );
 
             IOUtils.closeAll( mappedPagedFiles );
         } );

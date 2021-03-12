@@ -60,7 +60,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -739,7 +739,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         indexMapRef.getIndexProxy( indexId ).validate();
     }
 
-    public void forceAll( IOLimiter limiter, PageCursorTracer cursorTracer ) throws IOException
+    public void forceAll( IOController limiter, PageCursorTracer cursorTracer ) throws IOException
     {
         indexStatisticsStore.checkpoint( limiter, cursorTracer );
         indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "force", proxy -> proxy.force( limiter, cursorTracer ) ) );

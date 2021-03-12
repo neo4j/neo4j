@@ -38,7 +38,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -233,7 +233,7 @@ public class NeoStores implements AutoCloseable
         }
     }
 
-    public void flush( IOLimiter limiter, PageCursorTracer cursorTracer ) throws IOException
+    public void flush( IOController limiter, PageCursorTracer cursorTracer ) throws IOException
     {
         // The thing about flush here is that it won't invoke flush on each individual store and this is because calling
         // the flushAndForce method on the MuninnPageCache has the opportunity to flush things in parallel, something that

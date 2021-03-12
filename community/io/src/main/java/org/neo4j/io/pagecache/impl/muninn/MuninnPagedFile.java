@@ -27,7 +27,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -297,11 +297,11 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     @Override
     public void flushAndForce() throws IOException
     {
-        flushAndForce( IOLimiter.UNLIMITED );
+        flushAndForce( IOController.DISABLED );
     }
 
     @Override
-    public void flushAndForce( IOLimiter limiter ) throws IOException
+    public void flushAndForce( IOController limiter ) throws IOException
     {
         if ( limiter == null )
         {
@@ -328,7 +328,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper );
               var buffer = bufferFactory.createBuffer() )
         {
-            flushAndForceInternal( flushEvent.flushEventOpportunity(), true, IOLimiter.UNLIMITED, buffer );
+            flushAndForceInternal( flushEvent.flushEventOpportunity(), true, IOController.DISABLED, buffer );
         }
         pageCache.clearEvictorException();
     }
@@ -380,7 +380,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         }
     }
 
-    void flushAndForceInternal( FlushEventOpportunity flushes, boolean forClosing, IOLimiter limiter, NativeIOBuffer ioBuffer )
+    void flushAndForceInternal( FlushEventOpportunity flushes, boolean forClosing, IOController limiter, NativeIOBuffer ioBuffer )
             throws IOException
     {
         try
@@ -403,7 +403,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         }
     }
 
-    private void doFlushAndForceInternal( FlushEventOpportunity flushes, boolean forClosing, IOLimiter limiter, NativeIOBuffer ioBuffer )
+    private void doFlushAndForceInternal( FlushEventOpportunity flushes, boolean forClosing, IOController limiter, NativeIOBuffer ioBuffer )
             throws IOException
     {
         // TODO it'd be awesome if, on Linux, we'd call sync_file_range(2) instead of fsync
@@ -412,7 +412,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         long[] bufferAddresses = new long[translationTableChunkSize];
         int[] bufferLengths = new int[translationTableChunkSize];
         long filePageId = -1; // Start at -1 because we increment at the *start* of the chunk-loop iteration.
-        long limiterStamp = IOLimiter.INITIAL_STAMP;
+        long limiterStamp = IOController.INITIAL_STAMP;
         int[][] tt = this.translationTable;
         boolean useTemporaryBuffer = ioBuffer.isEnabled();
 

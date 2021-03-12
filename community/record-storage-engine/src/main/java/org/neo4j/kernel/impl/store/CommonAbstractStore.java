@@ -43,7 +43,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -711,7 +711,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         try
         {
             pagedFile.flushAndForce();
-            idGenerator.checkpoint( IOLimiter.UNLIMITED, cursorTracer );
+            idGenerator.checkpoint( IOController.DISABLED, cursorTracer );
         }
         catch ( IOException e )
         {

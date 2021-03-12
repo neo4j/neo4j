@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.memory.MemoryTracker;
@@ -59,7 +59,7 @@ public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess
     @Override
     public void close() throws IOException
     {
-        neoStores.flush( IOLimiter.UNLIMITED, cursorTracer );
+        neoStores.flush( IOController.DISABLED, cursorTracer );
         neoStores.close();
     }
 }

@@ -32,7 +32,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexValueValidator;
@@ -78,10 +78,10 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
     }
 
     @Override
-    public void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer )
+    public void force( IOController ioController, PageCursorTracer cursorTracer )
     {
         // This accessor needs to use the header writer here because coordinate reference systems may have changed since last checkpoint.
-        tree.checkpoint( ioLimiter, headerWriter, cursorTracer );
+        tree.checkpoint( ioController, headerWriter, cursorTracer );
     }
 
     @Override

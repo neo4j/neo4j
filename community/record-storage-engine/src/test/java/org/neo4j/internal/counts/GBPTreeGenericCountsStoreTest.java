@@ -78,7 +78,7 @@ import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
 import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.EMPTY_REBUILD;
-import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
+import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
@@ -208,7 +208,7 @@ class GBPTreeGenericCountsStoreTest
             updater.increment( relationshipKey( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2 ), 2 ); // now at 5
         }
 
-        countsStore.checkpoint( UNLIMITED, NULL );
+        countsStore.checkpoint( DISABLED, NULL );
 
         // when/then
         assertEquals( 15, countsStore.read( nodeKey( LABEL_ID_1 ), NULL ) );
@@ -275,7 +275,7 @@ class GBPTreeGenericCountsStoreTest
             race.addContestant( throwing( () ->
             {
                 long checkpointTxId = lastClosedTxId.getHighestGapFreeNumber();
-                countsStore.checkpoint( UNLIMITED, NULL );
+                countsStore.checkpoint( DISABLED, NULL );
                 lastCheckPointedTxId.set( checkpointTxId );
                 Thread.sleep( ThreadLocalRandom.current().nextInt( roundTimeMillis / 5 ) );
             } ) );
@@ -385,7 +385,7 @@ class GBPTreeGenericCountsStoreTest
         // given
         int labelId = 123;
         incrementNodeCount( BASE_TX_ID + 1, labelId, 4 );
-        countsStore.checkpoint( UNLIMITED, NULL );
+        countsStore.checkpoint( DISABLED, NULL );
         incrementNodeCount( BASE_TX_ID + 2, labelId, -2 );
         closeCountsStore();
         deleteCountsStore();
@@ -426,7 +426,7 @@ class GBPTreeGenericCountsStoreTest
         try ( OtherThreadExecutor checkpointer = new OtherThreadExecutor( "Checkpointer", 1, MINUTES ) )
         {
             // when
-            Future<Object> checkpoint = checkpointer.executeDontWait( command( () -> countsStore.checkpoint( UNLIMITED, NULL ) ) );
+            Future<Object> checkpoint = checkpointer.executeDontWait( command( () -> countsStore.checkpoint( DISABLED, NULL ) ) );
             checkpointer.waitUntilWaiting();
 
             // and when closing one of the updaters it should still wait
@@ -451,7 +451,7 @@ class GBPTreeGenericCountsStoreTest
               OtherThreadExecutor applier = new OtherThreadExecutor( "Applier", 1, MINUTES ) )
         {
             // when
-            Future<Object> checkpoint = checkpointer.executeDontWait( command( () -> countsStore.checkpoint( UNLIMITED, NULL ) ) );
+            Future<Object> checkpoint = checkpointer.executeDontWait( command( () -> countsStore.checkpoint( DISABLED, NULL ) ) );
             checkpointer.waitUntilWaiting();
 
             // and when trying to open another applier it must wait
@@ -494,7 +494,7 @@ class GBPTreeGenericCountsStoreTest
     void shouldFailApplyInReadOnlyMode() throws IOException
     {
         // given
-        countsStore.checkpoint( UNLIMITED, NULL );
+        countsStore.checkpoint( DISABLED, NULL );
         closeCountsStore();
         instantiateCountsStore( EMPTY_REBUILD, true, NO_MONITOR );
         countsStore.start( NULL, INSTANCE );
@@ -507,13 +507,13 @@ class GBPTreeGenericCountsStoreTest
     void shouldNotCheckpointInReadOnlyMode() throws IOException
     {
         // given
-        countsStore.checkpoint( UNLIMITED, NULL );
+        countsStore.checkpoint( DISABLED, NULL );
         closeCountsStore();
         instantiateCountsStore( EMPTY_REBUILD, true, NO_MONITOR );
         countsStore.start( NULL, INSTANCE );
 
         // then it's fine to call checkpoint, because no changes can actually be made on a read-only counts store anyway
-        countsStore.checkpoint( UNLIMITED, NULL );
+        countsStore.checkpoint( DISABLED, NULL );
     }
 
     @Test
@@ -529,7 +529,7 @@ class GBPTreeGenericCountsStoreTest
 
         // when
         Race race = new Race();
-        race.addContestant( throwing( () -> countsStore.checkpoint( UNLIMITED, NULL ) ), 1 );
+        race.addContestant( throwing( () -> countsStore.checkpoint( DISABLED, NULL ) ), 1 );
         race.addContestants( 10, throwing( () ->
         {
             assertEquals( 10, countsStore.read( nodeKey( LABEL_ID_1 ), NULL ) );
@@ -678,7 +678,7 @@ class GBPTreeGenericCountsStoreTest
 
     private void checkpointAndRestartCountsStore() throws Exception
     {
-        countsStore.checkpoint( UNLIMITED, NULL );
+        countsStore.checkpoint( DISABLED, NULL );
         closeCountsStore();
         openCountsStore();
     }

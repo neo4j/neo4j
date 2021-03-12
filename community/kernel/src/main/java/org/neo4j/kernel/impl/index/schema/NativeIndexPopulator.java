@@ -28,7 +28,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -205,7 +205,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
 
     void flushTreeAndMarkAs( byte state, PageCursorTracer cursorTracer )
     {
-        tree.checkpoint( IOLimiter.UNLIMITED, new NativeIndexHeaderWriter( state ), cursorTracer );
+        tree.checkpoint( IOController.DISABLED, new NativeIndexHeaderWriter( state ), cursorTracer );
     }
 
     IndexSample buildNonUniqueIndexSample( PageCursorTracer cursorTracer )
@@ -216,7 +216,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private void markTreeAsFailed( PageCursorTracer cursorTracer )
     {
         Preconditions.checkState( failureBytes != null, "markAsFailed hasn't been called, populator not actually failed?" );
-        tree.checkpoint( IOLimiter.UNLIMITED, new FailureHeaderWriter( failureBytes ), cursorTracer );
+        tree.checkpoint( IOController.DISABLED, new FailureHeaderWriter( failureBytes ), cursorTracer );
     }
 
     private void processUpdates( Iterable<? extends IndexEntryUpdate<?>> indexEntryUpdates, ConflictDetectingValueMerger<KEY,VALUE,Value[]> conflictDetector,

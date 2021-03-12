@@ -46,7 +46,7 @@ import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -77,7 +77,7 @@ import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
  * </li>
  * </ul>
  * <p>
- * {@link #force(IOLimiter, PageCursorTracer)} is vital for allowing this store to be recoverable, and must be called
+ * {@link #force(IOController, PageCursorTracer)} is vital for allowing this store to be recoverable, and must be called
  * whenever Neo4j performs a checkpoint.
  * <p>
  * This store is backed by a single store file, "neostore.labelscanstore.db" for {@link LabelScanStore}.
@@ -304,10 +304,10 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
      * is recoverable from this point, given that the same transactions which will be applied after this point
      * and non-clean shutdown will be applied again on next startup.
      *
-     * @param limiter {@link IOLimiter}.
+     * @param limiter {@link IOController}.
      */
     @Override
-    public void force( IOLimiter limiter, PageCursorTracer cursorTracer )
+    public void force( IOController limiter, PageCursorTracer cursorTracer )
     {
         index.checkpoint( limiter, cursorTracer );
         writeMonitor.force();
@@ -487,7 +487,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
                 numberOfEntities = fullStoreChangeStream.applyTo( writer, cacheTracer, memoryTracker );
             }
 
-            index.checkpoint( IOLimiter.UNLIMITED, writeClean, cursorTracer );
+            index.checkpoint( IOController.DISABLED, writeClean, cursorTracer );
 
             monitor.rebuilt( numberOfEntities );
             needsRebuild = false;

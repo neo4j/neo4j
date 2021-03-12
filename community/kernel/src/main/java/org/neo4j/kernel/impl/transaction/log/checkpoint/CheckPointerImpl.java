@@ -24,7 +24,7 @@ import java.time.Clock;
 import java.util.function.BooleanSupplier;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -51,7 +51,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final ForceOperation forceOperation;
     private final LogPruning logPruning;
     private final Health databaseHealth;
-    private final IOLimiter ioLimiter;
+    private final IOController ioController;
     private final Log msgLog;
     private final DatabaseTracers tracers;
     private final StoreCopyCheckPointMutex mutex;
@@ -68,7 +68,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             Health databaseHealth,
             LogProvider logProvider,
             DatabaseTracers tracers,
-            IOLimiter ioLimiter,
+            IOController ioController,
             StoreCopyCheckPointMutex mutex,
             Clock clock )
     {
@@ -78,7 +78,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         this.forceOperation = forceOperation;
         this.logPruning = logPruning;
         this.databaseHealth = databaseHealth;
-        this.ioLimiter = ioLimiter;
+        this.ioController = ioController;
         this.msgLog = logProvider.getLog( CheckPointerImpl.class );
         this.tracers = tracers;
         this.mutex = mutex;
@@ -94,14 +94,14 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public long forceCheckPoint( TriggerInfo info ) throws IOException
     {
-        ioLimiter.disableLimit();
+        ioController.disable();
         try ( Resource lock = mutex.checkPoint() )
         {
             return doCheckPoint( info );
         }
         finally
         {
-            ioLimiter.enableLimit();
+            ioController.enable();
         }
     }
 
@@ -120,7 +120,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public long tryCheckPoint( TriggerInfo info, BooleanSupplier timeout ) throws IOException
     {
-        ioLimiter.disableLimit();
+        ioController.disable();
         try
         {
             Resource lockAttempt = mutex.tryCheckPoint();
@@ -150,7 +150,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         }
         finally
         {
-            ioLimiter.enableLimit();
+            ioController.enable();
         }
     }
 
@@ -191,7 +191,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              */
             msgLog.info( checkpointReason + " checkpoint started..." );
             Stopwatch startTime = Stopwatch.start();
-            forceOperation.flushAndForce( ioLimiter, cursorTracer );
+            forceOperation.flushAndForce( ioController, cursorTracer );
             /*
              * Check kernel health before going to write the next check point.  In case of a panic this check point
              * will be aborted, which is the safest alternative so that the next recovery will have a chance to
@@ -231,6 +231,6 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @FunctionalInterface
     public interface ForceOperation
     {
-        void flushAndForce( IOLimiter ioLimiter, PageCursorTracer cursorTracer ) throws IOException;
+        void flushAndForce( IOController ioController, PageCursorTracer cursorTracer ) throws IOException;
     }
 }

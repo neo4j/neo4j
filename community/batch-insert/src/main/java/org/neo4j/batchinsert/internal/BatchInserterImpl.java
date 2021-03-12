@@ -92,7 +92,7 @@ import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -620,7 +620,7 @@ public class BatchInserterImpl implements BatchInserter
                     // In this scenario this is OK
                 }
             }
-            indexingService.forceAll( IOLimiter.UNLIMITED, cursorTracer );
+            indexingService.forceAll( IOController.DISABLED, cursorTracer );
         }
         catch ( InterruptedException e )
         {
@@ -654,7 +654,7 @@ public class BatchInserterImpl implements BatchInserter
                 initialCountsBuilder, false, cacheTracer, NO_MONITOR, databaseLayout.getDatabaseName() ) )
         {
             countsStore.start( PageCursorTracer.NULL, memoryTracker );
-            countsStore.checkpoint( IOLimiter.UNLIMITED, PageCursorTracer.NULL );
+            countsStore.checkpoint( IOController.DISABLED, PageCursorTracer.NULL );
         }
     }
 
@@ -1140,7 +1140,7 @@ public class BatchInserterImpl implements BatchInserter
             RelationshipTypeScanStore relationshipTypeIndex = buildRelationshipTypeIndex();
             repopulateAllIndexes( labelIndex, relationshipTypeIndex );
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
-            neoStores.flush( IOLimiter.UNLIMITED, cursorTracer );
+            neoStores.flush( IOController.DISABLED, cursorTracer );
             recordAccess.close();
             createEmptyTransactionLog();
         }

@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -83,7 +83,7 @@ public interface IndexProxy extends MinimalIndexAccessor
 
     PopulationProgress getIndexPopulationProgress();
 
-    void force( IOLimiter ioLimiter, PageCursorTracer cursorTracer ) throws IOException;
+    void force( IOController ioController, PageCursorTracer cursorTracer ) throws IOException;
 
     void refresh() throws IOException;
 

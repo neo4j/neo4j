@@ -57,7 +57,7 @@ import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -508,7 +508,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void flushAndForce( IOLimiter limiter, PageCursorTracer cursorTracer ) throws IOException
+    public void flushAndForce( IOController limiter, PageCursorTracer cursorTracer ) throws IOException
     {
         countsStore.checkpoint( limiter, cursorTracer );
         groupDegreesStore.checkpoint( limiter, cursorTracer );
