@@ -189,8 +189,11 @@ public final class LogConfig
         case INFO:
             return Level.INFO;
         case DEBUG:
-        default:
             return Level.DEBUG;
+        case NONE:
+            return Level.OFF;
+        default:
+            throw new IllegalArgumentException( "Unknown Log level: " + level );
         }
     }
 
