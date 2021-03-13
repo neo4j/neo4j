@@ -45,6 +45,12 @@ public interface IOController
     long INITIAL_STAMP = 0;
 
     /**
+     * An IOController implementation that does not do anything. Use this implementation if you want the
+     * flush to go as fast as possible.
+     */
+    IOController DISABLED = ( previousStamp, recentlyCompletedIOs, flushable, flushes ) -> previousStamp;
+
+    /**
      * Invoked at regular intervals during flushing of the {@link PageCache} or {@link PagedFile}s.
      * <p/>
      * For the first call in a flush, the {@code previousStamp} should have the {@link #INITIAL_STAMP} value.
@@ -105,12 +111,6 @@ public interface IOController
     {
         // Same as for disable().
     }
-
-    /**
-     * An IOController implementation that does not do anything. Use this implementation if you want the
-     * flush to go as fast as possible.
-     */
-    IOController DISABLED = ( previousStamp, recentlyCompletedIOs, flushable, flushes ) -> previousStamp;
 
     /**
      * @return {@code true} if controller is currently enabled

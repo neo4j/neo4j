@@ -56,6 +56,7 @@ import org.neo4j.kernel.extension.context.GlobalExtensionContext;
 import org.neo4j.kernel.impl.cache.VmPauseMonitorComponent;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.security.URLAccessRules;
@@ -91,6 +92,7 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
@@ -224,9 +226,9 @@ public class GlobalModule
 
         collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );
 
-        //TODO:
+        IOController ioController = loadIOController( globalConfig, globalClock );
         pageCache = tryResolveOrCreate( PageCache.class,
-                () -> createPageCache( fileSystem, globalConfig, logService, tracers, jobScheduler, globalClock, memoryPools, null ) );
+                () -> createPageCache( fileSystem, globalConfig, logService, tracers, jobScheduler, globalClock, memoryPools, ioController ) );
 
         globalLife.add( new PageCacheLifecycle( pageCache ) );
 
@@ -434,6 +436,12 @@ public class GlobalModule
         globalLife.add( bufferPool );
         var nettyAllocator = new NettyMemoryManagerWrapper( bufferPool );
         return new CentralBufferMangerHolder( nettyAllocator, bufferPool );
+    }
+
+    private static IOController loadIOController( Config globalConfig, SystemNanoClock clock )
+    {
+        return Services.loadByPriority( IOControllerService.class ).orElseThrow(
+                () -> new IllegalStateException( "IOControllerService not found." ) ).createIOController( globalConfig, clock );
     }
 
     public FileWatcher getFileWatcher()
