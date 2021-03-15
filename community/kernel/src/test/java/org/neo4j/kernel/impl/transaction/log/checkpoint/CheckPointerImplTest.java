@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import org.junit.jupiter.api.Test;
 
-import java.io.Flushable;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
@@ -37,8 +36,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.io.pagecache.EmptyIOController;
 import org.neo4j.io.pagecache.IOController;
-import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -327,20 +326,8 @@ class CheckPointerImplTest
     @Test
     void mustUseIoLimiterFromFlushing() throws Throwable
     {
-        limiter = new IOController()
+        limiter = new EmptyIOController()
         {
-            @Override
-            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
-            {
-                return 42;
-            }
-
-            @Override
-            public void reportIO( int completedIOs )
-            {
-                //empty
-            }
-
             @Override
             public boolean isEnabled()
             {
@@ -374,20 +361,8 @@ class CheckPointerImplTest
     void mustFlushAsFastAsPossibleDuringForceCheckPoint() throws Exception
     {
         AtomicBoolean doneDisablingLimits = new AtomicBoolean();
-        limiter = new IOController()
+        limiter = new EmptyIOController()
         {
-            @Override
-            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
-            {
-                return 0;
-            }
-
-            @Override
-            public void reportIO( int completedIOs )
-            {
-                //empty
-            }
-
             @Override
             public void enable()
             {
@@ -411,20 +386,8 @@ class CheckPointerImplTest
     {
 
         AtomicBoolean doneDisablingLimits = new AtomicBoolean();
-        limiter = new IOController()
+        limiter = new EmptyIOController()
         {
-            @Override
-            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
-            {
-                return 0;
-            }
-
-            @Override
-            public void reportIO( int completedIOs )
-            {
-                //empty
-            }
-
             @Override
             public void enable()
             {
@@ -492,20 +455,8 @@ class CheckPointerImplTest
         BinaryLatch backgroundCheckPointStartedLatch = new BinaryLatch();
         BinaryLatch forceCheckPointStartLatch = new BinaryLatch();
 
-        limiter = new IOController()
+        limiter = new EmptyIOController()
         {
-            @Override
-            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
-            {
-                return 0;
-            }
-
-            @Override
-            public void reportIO( int completedIOs )
-            {
-                //empty
-            }
-
             @Override
             public void disable()
             {

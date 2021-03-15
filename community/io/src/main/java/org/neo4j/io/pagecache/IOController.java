@@ -39,30 +39,12 @@ import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
  */
 public interface IOController
 {
-    /**
-     * The value of the initial stamp; that is, what should be passed as the {@code previousStamp} to
-     * {@link #maybeLimitIO(long, int, Flushable, FlushEventOpportunity)} on the first call in a flush.
-     */
-    long INITIAL_STAMP = 0;
 
     /**
      * An IOController implementation that does not do anything. Use this implementation if you want the
      * flush to go as fast as possible.
      */
-    IOController DISABLED = new IOController()
-    {
-        @Override
-        public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
-        {
-            return previousStamp;
-        }
-
-        @Override
-        public void reportIO( int completedIOs )
-        {
-            // nothing to report
-        }
-    };
+    IOController DISABLED = new EmptyIOController();
 
     /**
      * Invoked at regular intervals during flushing of the {@link PageCache} or {@link PagedFile}s.
@@ -80,15 +62,13 @@ public interface IOController
      * {@link InterruptedException}, however. Those should be dealt with by catching them and re-interrupting the
      * current thread, or by wrapping them in {@link IOException}s.
      *
-     * @param previousStamp The stamp from the previous call to this method, or {@link #INITIAL_STAMP} if this is the
-     * first call to this method for the given flush.
      * @param recentlyCompletedIOs The number of IOs completed since the last call to this method.
      * @param flushable A {@link Flushable} instance that can flush any relevant dirty system buffers, to help smooth
      * out the IO load on the storage device.
      * @param flushes A {@link FlushEventOpportunity} event that describes ongoing io represented by flushable instance.
      * @return A new stamp to pass into the next call to this method.
      */
-    long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes );
+    void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes );
 
     /**
      * Temporarily disable the IOController, to allow IO to proceed at full speed.

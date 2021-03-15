@@ -23,7 +23,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.io.Flushable;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -36,8 +35,8 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.io.pagecache.EmptyIOController;
 import org.neo4j.io.pagecache.IOController;
-import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.scheduler.Group;
@@ -377,26 +376,14 @@ class CheckPointSchedulerTest
         }
     }
 
-    private static class CheckableIOController implements IOController
+    private static class CheckableIOController extends EmptyIOController
     {
         private volatile boolean limitEnabled;
-
-        @Override
-        public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
-        {
-            return 0;
-        }
 
         @Override
         public void disable()
         {
             limitEnabled = false;
-        }
-
-        @Override
-        public void reportIO( int completedIOs )
-        {
-            // empty
         }
 
         @Override
