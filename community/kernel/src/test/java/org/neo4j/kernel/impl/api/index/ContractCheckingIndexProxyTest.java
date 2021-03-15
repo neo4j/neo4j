@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -165,7 +164,7 @@ class ContractCheckingIndexProxyTest
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        outer.force( IOController.DISABLED, NULL );
+        outer.force( NULL );
         verifyNoMoreInteractions( inner );
     }
 
@@ -180,7 +179,7 @@ class ContractCheckingIndexProxyTest
         outer.start();
         outer.close( NULL );
 
-        outer.force( IOController.DISABLED, NULL );
+        outer.force( NULL );
         verify( inner ).start();
         verify( inner ).close( any() );
         verifyNoMoreInteractions( inner );
@@ -298,7 +297,7 @@ class ContractCheckingIndexProxyTest
         final IndexProxy inner = new IndexProxyAdapter()
         {
             @Override
-            public void force( IOController ioLimiter, PageCursorTracer cursorTracer )
+            public void force( PageCursorTracer cursorTracer )
             {
                 try
                 {
@@ -316,7 +315,7 @@ class ContractCheckingIndexProxyTest
         actionThreadReference.set( actionThread );
 
         outer.start();
-        Thread thread = runInSeparateThread( () -> outer.force( IOController.DISABLED, NULL ) );
+        Thread thread = runInSeparateThread( () -> outer.force( NULL ) );
 
         ThreadTestUtils.awaitThreadState( actionThread, TEST_TIMEOUT, Thread.State.TIMED_WAITING );
         latch.countDown();

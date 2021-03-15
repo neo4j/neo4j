@@ -36,7 +36,6 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -147,14 +146,14 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         }
     }
 
-    public void checkpoint( IOController ioController, PageCursorTracer cursorTracer ) throws IOException
+    public void checkpoint( PageCursorTracer cursorTracer ) throws IOException
     {
         if ( !readOnly )
         {
             // There's an assumption that there will never be concurrent calls to checkpoint. This is guarded outside.
             clearTree( cursorTracer );
             writeCacheContentsIntoTree( cursorTracer );
-            tree.checkpoint( ioController, cursorTracer );
+            tree.checkpoint( cursorTracer );
         }
     }
 

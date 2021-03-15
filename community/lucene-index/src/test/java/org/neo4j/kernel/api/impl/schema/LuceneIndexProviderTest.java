@@ -30,7 +30,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -113,7 +112,7 @@ class LuceneIndexProviderTest
                 new DirectoryFactory.InMemoryDirectoryFactory(), fileSystem, graphDbDir );
 
         // We assert that 'force' does not throw an exception
-        getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).force( IOController.DISABLED, NULL );
+        getIndexAccessor( readOnlyConfig, readOnlyIndexProvider ).force( NULL );
     }
 
     private void createEmptySchemaIndex( DirectoryFactory directoryFactory ) throws IOException

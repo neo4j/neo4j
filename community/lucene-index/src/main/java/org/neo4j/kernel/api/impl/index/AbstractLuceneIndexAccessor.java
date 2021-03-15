@@ -30,7 +30,6 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexReaderAcquisitionException;
@@ -77,7 +76,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
     }
 
     @Override
-    public void force( IOController ioController, PageCursorTracer cursorTracer )
+    public void force( PageCursorTracer cursorTracer )
     {
         try
         {

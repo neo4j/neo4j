@@ -131,14 +131,14 @@ class DatabaseShutdownTest
                                     return new DelegatingPagedFile( pagedFile )
                                     {
                                         @Override
-                                        public void flushAndForce( IOController limiter ) throws IOException
+                                        public void flushAndForce() throws IOException
                                         {
                                             if ( failFlush )
                                             {
                                                 // this is simulating a failing check pointing on shutdown
                                                 throw new IOException( "Boom!" );
                                             }
-                                            super.flushAndForce( limiter );
+                                            super.flushAndForce();
                                         }
                                     };
                                 }

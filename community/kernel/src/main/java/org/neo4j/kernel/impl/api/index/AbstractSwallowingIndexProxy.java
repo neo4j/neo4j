@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.index;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
@@ -65,7 +64,7 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void force( IOController ioController, PageCursorTracer cursorTracer )
+    public void force( PageCursorTracer cursorTracer )
     {
     }
 

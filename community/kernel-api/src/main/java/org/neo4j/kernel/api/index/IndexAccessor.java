@@ -29,7 +29,6 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.io.IOUtils;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -64,11 +63,10 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      * rotating the logical log. After completion of this call there cannot be any essential state that
      * hasn't been forced to disk.
      *
-     * @param ioController The {@link IOController} to use for implementations living on top of {@link org.neo4j.io.pagecache.PageCache}.
      * @param cursorTracer underlying page cursor tracer
      * @throws UncheckedIOException if there was a problem forcing the state to persistent storage.
      */
-    void force( IOController ioController, PageCursorTracer cursorTracer );
+    void force( PageCursorTracer cursorTracer );
 
     /**
      * Refreshes this index, so that {@link #newValueReader() readers} created after completion of this call
@@ -210,7 +208,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public void force( IOController ioController, PageCursorTracer cursorTracer )
+        public void force( PageCursorTracer cursorTracer )
         {
         }
 
@@ -300,9 +298,9 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public void force( IOController ioController, PageCursorTracer cursorTracer )
+        public void force( PageCursorTracer cursorTracer )
         {
-            delegate.force( ioController, cursorTracer );
+            delegate.force( cursorTracer );
         }
 
         @Override

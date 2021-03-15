@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
@@ -282,7 +281,7 @@ abstract class GBPTreeLargeDynamicKeysITBase
                     writerAction.accept( writer, entry );
                 }
             }
-            tree.checkpoint( IOController.DISABLED, NULL );
+            tree.checkpoint( NULL );
         }
     }
 

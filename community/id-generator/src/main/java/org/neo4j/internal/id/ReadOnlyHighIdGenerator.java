@@ -20,7 +20,6 @@
 package org.neo4j.internal.id;
 
 import org.neo4j.annotations.documented.ReporterFactory;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
@@ -91,7 +90,7 @@ class ReadOnlyHighIdGenerator implements IdGenerator
     }
 
     @Override
-    public void checkpoint( IOController ioController, PageCursorTracer cursorTracer )
+    public void checkpoint( PageCursorTracer cursorTracer )
     {
         // no-op
     }

@@ -22,7 +22,6 @@ package org.neo4j.counts;
 import java.io.IOException;
 
 import org.neo4j.annotations.documented.ReporterFactory;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
 
@@ -61,7 +60,7 @@ public interface CountsStore extends CountsStorage, CountsAccessor
         }
 
         @Override
-        public void checkpoint( IOController ioController, PageCursorTracer cursorTracer ) throws IOException
+        public void checkpoint( PageCursorTracer cursorTracer ) throws IOException
         {   // no-op
         }
 

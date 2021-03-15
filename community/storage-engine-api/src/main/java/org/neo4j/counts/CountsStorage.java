@@ -21,7 +21,6 @@ package org.neo4j.counts;
 
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.memory.MemoryTracker;
@@ -44,9 +43,8 @@ public interface CountsStorage extends AutoCloseable, ConsistencyCheckable
     /**
      * Checkpoints changes made up until this point so that they are available even after next restart.
      *
-     * @param ioController for limiting I/O during checkpoint.
      * @param cursorTracer for tracing page cache access.
      * @throws IOException on I/O error.
      */
-    void checkpoint( IOController ioController, PageCursorTracer cursorTracer ) throws IOException;
+    void checkpoint( PageCursorTracer cursorTracer ) throws IOException;
 }

@@ -63,7 +63,6 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -1221,15 +1220,15 @@ class IndexingServiceTest
                 return indexMap;
             } );
             throw new RuntimeException( "Index deleted." );
-        } ).when( deletedIndexProxy ).force( any( IOController.class ), any( PageCursorTracer.class ) );
+        } ).when( deletedIndexProxy ).force( any( PageCursorTracer.class ) );
 
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
 
-        indexingService.forceAll( IOController.DISABLED, NULL );
-        verify( validIndex1 ).force( IOController.DISABLED, NULL );
-        verify( validIndex2 ).force( IOController.DISABLED, NULL );
-        verify( validIndex3 ).force( IOController.DISABLED, NULL );
-        verify( validIndex4 ).force( IOController.DISABLED, NULL );
+        indexingService.forceAll( NULL );
+        verify( validIndex1 ).force( NULL );
+        verify( validIndex2 ).force( NULL );
+        verify( validIndex3 ).force( NULL );
+        verify( validIndex4 ).force( NULL );
     }
 
     @Test
@@ -1238,7 +1237,7 @@ class IndexingServiceTest
         IndexMapReference indexMapReference = new IndexMapReference();
         IndexProxy strangeIndexProxy = createIndexProxyMock( 1 );
         doThrow( new UncheckedIOException( new IOException( "Can't force" ) ) ).when( strangeIndexProxy )
-                .force( any( IOController.class ), any( PageCursorTracer.class ) );
+                .force( any( PageCursorTracer.class ) );
         indexMapReference.modify( indexMap ->
         {
             IndexProxy validIndex = createIndexProxyMock( 0 );
@@ -1253,7 +1252,7 @@ class IndexingServiceTest
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
 
         var e = assertThrows( UnderlyingStorageException.class,
-                () -> indexingService.forceAll( IOController.DISABLED, NULL ) );
+                () -> indexingService.forceAll( NULL ) );
         assertThat( e.getMessage() ).startsWith( "Unable to force" );
     }
 

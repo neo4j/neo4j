@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -41,8 +40,6 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.DelegatingPageCache;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.store.IdUpdateListener;
@@ -150,27 +147,6 @@ class RecordStorageEngineTest
             exception = exception.getCause();
         }
         assertThat( exception ).isEqualTo( applicationError );
-    }
-
-    @Test
-    void mustFlushStoresWithGivenIOLimiter() throws IOException
-    {
-        IOController limiter = IOController.DISABLED;
-        AtomicReference<IOController> observedLimiter = new AtomicReference<>();
-        PageCache pageCache2 = new DelegatingPageCache( pageCache )
-        {
-            @Override
-            public void flushAndForce( IOController limiter ) throws IOException
-            {
-                super.flushAndForce( limiter );
-                observedLimiter.set( limiter );
-            }
-        };
-
-        RecordStorageEngine engine = storageEngineRule.getWith( fs, pageCache2, databaseLayout ).build();
-        engine.flushAndForce( limiter, NULL );
-
-        assertThat( observedLimiter.get() ).isSameAs( limiter );
     }
 
     @Test

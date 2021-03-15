@@ -70,7 +70,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -529,7 +528,7 @@ public class FullCheckIntegrationTest
                     // There is already another node (created in generateInitialData()) that has this value
                     updater.process( IndexEntryUpdate.add( 42, indexRule.schema(), values( indexRule ) ) );
                 }
-                accessor.force( IOController.DISABLED, NULL );
+                accessor.force( NULL );
             }
         }
 

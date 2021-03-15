@@ -44,7 +44,6 @@ import java.util.function.Supplier;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.CursorException;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -75,8 +74,8 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
  * this to provide correct reading when concurrently {@link #writer(PageCursorTracer)}  modifying}
  * the tree.
  * <p>
- * Generation is incremented on {@link #checkpoint(IOController, PageCursorTracer)} check-pointing}.
- * Generation awareness allows for recovery from last {@link #checkpoint(IOController, PageCursorTracer)}, provided the same updates
+ * Generation is incremented on {@link #checkpoint( PageCursorTracer)} check-pointing}.
+ * Generation awareness allows for recovery from last {@link #checkpoint( PageCursorTracer)}, provided the same updates
  * will be replayed onto the index since that point in time.
  * <p>
  * Changes to tree nodes are made so that stable nodes (i.e. nodes that have survived at least one checkpoint)
@@ -107,8 +106,8 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
  * {@link GBPTree} is designed to be able to handle non-clean shutdown / crash, but needs external help
  * in order to do so.
  * {@link #writer(PageCursorTracer)}  Writes} happen to the tree and are made durable and
- * safe on next call to {@link #checkpoint(IOController, PageCursorTracer)}. Writes which happens after the last
- * {@link #checkpoint(IOController, PageCursorTracer)} are not safe if there's a {@link #close()} or JVM crash in between, i.e:
+ * safe on next call to {@link #checkpoint( PageCursorTracer)}. Writes which happens after the last
+ * {@link #checkpoint( PageCursorTracer)} are not safe if there's a {@link #close()} or JVM crash in between, i.e:
  *
  * <pre>
  * w: write
@@ -273,7 +272,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
 
         /**
-         * Called when a {@link GBPTree#checkpoint(IOController, PageCursorTracer)} has been completed, but right before
+         * Called when a {@link GBPTree#checkpoint( PageCursorTracer)} has been completed, but right before
          * {@link GBPTree#writer(PageCursorTracer)} writers} are re-enabled.
          */
         void checkpointCompleted();
@@ -386,8 +385,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
     /**
      * Tells whether or not there have been made changes (using {@link #writer(PageCursorTracer)}) to this tree
-     * since last call to {@link #checkpoint(IOController, PageCursorTracer)}. This variable is set when calling {@link #writer(PageCursorTracer)}
-     * and cleared inside {@link #checkpoint(IOController, PageCursorTracer)}.
+     * since last call to {@link #checkpoint( PageCursorTracer)}. This variable is set when calling {@link #writer(PageCursorTracer)}
+     * and cleared inside {@link #checkpoint( PageCursorTracer)}.
      */
     private volatile boolean changesSinceLastCheckpoint;
 
@@ -424,9 +423,9 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * Both stable and unstable generation are unsigned ints, i.e. 32 bits each.
      *
      * <ul>
-     * <li>stable generation, generation which has survived the last {@link #checkpoint(IOController, PageCursorTracer)}</li>
+     * <li>stable generation, generation which has survived the last {@link #checkpoint( PageCursorTracer)}</li>
      * <li>unstable generation, current generation under evolution. This generation will be the
-     * {@link Generation#stableGeneration(long)} after the next {@link #checkpoint(IOController, PageCursorTracer)}</li>
+     * {@link Generation#stableGeneration(long)} after the next {@link #checkpoint( PageCursorTracer)}</li>
      * </ul>
      */
     private volatile long generation;
@@ -564,7 +563,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * @param layout {@link Layout} to use in the tree, this must match the existing layout
      * we're just opening the index
      * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
-     * @param headerReader reads header data, previously written using {@link #checkpoint(IOController, Consumer, PageCursorTracer)}
+     * @param headerReader reads header data, previously written using {@link #checkpoint( Consumer, PageCursorTracer)}
      * or {@link #close()}
      * @param headerWriter writes header data if indexFile is created as a result of this call.
      * @param recoveryCleanupWorkCollector collects recovery cleanup jobs for execution after recovery.
@@ -687,7 +686,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         changesSinceLastCheckpoint = true;
 
         // Checkpoint to make the created root node stable. Forcing tree state also piggy-backs on this.
-        checkpoint( IOController.DISABLED, headerWriter, cursorTracer );
+        checkpoint( headerWriter, cursorTracer );
         clean = true;
     }
 
@@ -779,7 +778,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      *
      * @param pageCache {@link PageCache} to use to map index file
      * @param indexFile {@link Path} containing the actual index
-     * @param headerReader reads header data, previously written using {@link #checkpoint(IOController, Consumer, PageCursorTracer)}
+     * @param headerReader reads header data, previously written using {@link #checkpoint( Consumer, PageCursorTracer)}
      * or {@link #close()}
      * @param databaseName name of the database index file belongs to.
      * @throws IOException On page cache error
@@ -1198,16 +1197,15 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * Header writer is expected to leave consumed {@link PageCursor} at end of written header for calculation of
      * header size.
      *
-     * @param ioController for controlling I/O usage.
      * @param headerWriter hook for writing header data, must leave cursor at end of written header.
      * @param cursorTracer underlying page cursor tracer
      * @throws UncheckedIOException on error flushing to storage.
      */
-    public void checkpoint( IOController ioController, Consumer<PageCursor> headerWriter, PageCursorTracer cursorTracer )
+    public void checkpoint( Consumer<PageCursor> headerWriter, PageCursorTracer cursorTracer )
     {
         try
         {
-            checkpoint( ioController, replace( headerWriter ), cursorTracer );
+            checkpoint( replace( headerWriter ), cursorTracer );
         }
         catch ( IOException e )
         {
@@ -1216,19 +1214,18 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     }
 
     /**
-     * Performs a {@link #checkpoint(IOController, Consumer, PageCursorTracer)}  check point}, keeping any header information
+     * Performs a {@link #checkpoint( Consumer, PageCursorTracer)}  check point}, keeping any header information
      * written in previous check point.
      *
-     * @param ioController for controlling I/O usage.
      * @param cursorTracer underlying page cursor tracer
      * @throws UncheckedIOException on error flushing to storage.
-     * @see #checkpoint(IOController, Header.Writer, PageCursorTracer)
+     * @see #checkpoint( Header.Writer, PageCursorTracer)
      */
-    public void checkpoint( IOController ioController, PageCursorTracer cursorTracer )
+    public void checkpoint( PageCursorTracer cursorTracer )
     {
         try
         {
-            checkpoint( ioController, CARRY_OVER_PREVIOUS_HEADER, cursorTracer );
+            checkpoint( CARRY_OVER_PREVIOUS_HEADER, cursorTracer );
         }
         catch ( IOException e )
         {
@@ -1236,7 +1233,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
     }
 
-    private void checkpoint( IOController ioController, Header.Writer headerWriter, PageCursorTracer cursorTracer ) throws IOException
+    private void checkpoint( Header.Writer headerWriter, PageCursorTracer cursorTracer ) throws IOException
     {
         if ( readOnly )
         {
@@ -1244,7 +1241,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
         // Flush dirty pages of the tree, do this before acquiring the lock so that writers won't be
         // blocked while we do this
-        pagedFile.flushAndForce( ioController );
+        pagedFile.flushAndForce();
 
         // Block writers, or if there's a current writer then wait for it to complete and then block
         // From this point and till the lock is released we know that the tree won't change.
@@ -1299,7 +1296,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     /**
      * Closes this tree and its associated resources.
      * <p>
-     * NOTE: No {@link #checkpoint(IOController, PageCursorTracer)} checkpoint} is performed.
+     * NOTE: No {@link #checkpoint( PageCursorTracer)} checkpoint} is performed.
      * @throws IOException on error closing resources.
      */
     @Override

@@ -79,6 +79,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     final int swapperId;
     private final CursorFactory cursorFactory;
     final String databaseName;
+    private final IOController ioController;
 
     private volatile boolean deleteOnClose;
 
@@ -151,6 +152,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         this.pageFaultLatches = new LatchMap( faultLockStriping );
         this.bufferFactory = pageCache.getBufferFactory();
         this.databaseName = requireNonNull( databaseName );
+        this.ioController = requireNonNull( ioController );
 
         // The translation table is an array of arrays of integers that are either UNMAPPED_TTE, or the id of a page in
         // the page list. The table only grows the outer array, and all the inner "chunks" all stay the same size. This
@@ -298,20 +300,10 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     @Override
     public void flushAndForce() throws IOException
     {
-        flushAndForce( IOController.DISABLED );
-    }
-
-    @Override
-    public void flushAndForce( IOController limiter ) throws IOException
-    {
-        if ( limiter == null )
-        {
-            throw new IllegalArgumentException( "IOPSLimiter cannot be null" );
-        }
         try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper );
               var buffer = bufferFactory.createBuffer() )
         {
-            flushAndForceInternal( flushEvent.flushEventOpportunity(), false, limiter, buffer );
+            flushAndForceInternal( flushEvent.flushEventOpportunity(), false, ioController, buffer );
         }
         pageCache.clearEvictorException();
     }

@@ -697,27 +697,17 @@ public class MuninnPageCache implements PageCache
     @Override
     public void flushAndForce() throws IOException
     {
-        flushAndForce( IOController.DISABLED );
-    }
-
-    @Override
-    public void flushAndForce( IOController limiter ) throws IOException
-    {
-        if ( limiter == null )
-        {
-            throw new IllegalArgumentException( "IOLimiter cannot be null" );
-        }
         List<PagedFile> files = listExistingMappings();
 
         try ( MajorFlushEvent ignored = pageCacheTracer.beginCacheFlush() )
         {
-            if ( limiter.isEnabled() )
+            if ( ioController.isEnabled() )
             {
-                flushAllPages( files, limiter );
+                flushAllPages( files, ioController );
             }
             else
             {
-                flushAllPagesParallel( files, limiter );
+                flushAllPagesParallel( files, ioController );
             }
         }
         clearEvictorException();

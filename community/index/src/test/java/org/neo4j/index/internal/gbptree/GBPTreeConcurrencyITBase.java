@@ -49,7 +49,6 @@ import java.util.stream.LongStream;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -621,7 +620,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             {
                 try
                 {
-                    index.checkpoint( IOController.DISABLED, NULL );
+                    index.checkpoint( NULL );
                     // Sleep a little in between checkpoints
                     MILLISECONDS.sleep( 20L );
                 }

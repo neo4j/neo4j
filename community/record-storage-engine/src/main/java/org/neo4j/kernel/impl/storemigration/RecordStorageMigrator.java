@@ -80,7 +80,6 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -286,7 +285,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         false, cacheTracer, GBPTreeCountsStore.NO_MONITOR, migrationLayout.getDatabaseName() ) )
         {
             countsStore.start( cursorTracer, memoryTracker );
-            countsStore.checkpoint( IOController.DISABLED, cursorTracer );
+            countsStore.checkpoint( cursorTracer );
         }
     }
 
@@ -744,7 +743,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
                 migrateSchemaRules( srcTokenHolders, srcAccess, dstAccess, cursorTracer );
 
-                dstStore.flush( IOController.DISABLED, cursorTracer );
+                dstStore.flush( cursorTracer );
             }
         }
     }

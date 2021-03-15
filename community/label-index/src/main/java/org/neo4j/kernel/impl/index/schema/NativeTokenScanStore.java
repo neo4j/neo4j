@@ -304,12 +304,11 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
      * is recoverable from this point, given that the same transactions which will be applied after this point
      * and non-clean shutdown will be applied again on next startup.
      *
-     * @param limiter {@link IOController}.
      */
     @Override
-    public void force( IOController limiter, PageCursorTracer cursorTracer )
+    public void force( PageCursorTracer cursorTracer )
     {
-        index.checkpoint( limiter, cursorTracer );
+        index.checkpoint( cursorTracer );
         writeMonitor.force();
     }
 
@@ -487,7 +486,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
                 numberOfEntities = fullStoreChangeStream.applyTo( writer, cacheTracer, memoryTracker );
             }
 
-            index.checkpoint( IOController.DISABLED, writeClean, cursorTracer );
+            index.checkpoint( writeClean, cursorTracer );
 
             monitor.rebuilt( numberOfEntities );
             needsRebuild = false;

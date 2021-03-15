@@ -191,7 +191,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              */
             msgLog.info( checkpointReason + " checkpoint started..." );
             Stopwatch startTime = Stopwatch.start();
-            forceOperation.flushAndForce( ioController, cursorTracer );
+            forceOperation.flushAndForce( cursorTracer );
             /*
              * Check kernel health before going to write the next check point.  In case of a panic this check point
              * will be aborted, which is the safest alternative so that the next recovery will have a chance to
@@ -231,6 +231,6 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @FunctionalInterface
     public interface ForceOperation
     {
-        void flushAndForce( IOController ioController, PageCursorTracer cursorTracer ) throws IOException;
+        void flushAndForce( PageCursorTracer cursorTracer ) throws IOException;
     }
 }

@@ -33,7 +33,6 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -265,7 +264,7 @@ class LabelScanStoreIT
         {
             writer.write( EntityTokenUpdate.tokenChanges( nodeId, noLabels, singleLabel ) );
         }
-        store.force( IOController.DISABLED, NULL );
+        store.force( NULL );
         store.shutdown();
 
         // Verify exists
@@ -283,7 +282,7 @@ class LabelScanStoreIT
         {
             writer.write( EntityTokenUpdate.tokenChanges( nodeId, singleLabel, noLabels ) );
         }
-        store.force( IOController.DISABLED, NULL );
+        store.force( NULL );
         store.shutdown();
 
         // Verify don't exists

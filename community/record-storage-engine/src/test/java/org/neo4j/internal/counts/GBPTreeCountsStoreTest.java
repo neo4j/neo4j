@@ -47,7 +47,6 @@ import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.keyToString;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
-import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
@@ -100,7 +99,7 @@ class GBPTreeCountsStoreTest
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 2 ); // now at 5
         }
 
-        countsStore.checkpoint( DISABLED, NULL );
+        countsStore.checkpoint( NULL );
 
         // when/then
         assertEquals( 15, countsStore.nodeCount( LABEL_ID_1, NULL ) );
@@ -174,7 +173,7 @@ class GBPTreeCountsStoreTest
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 3 );
             updater.incrementRelationshipCount( LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, 7 );
         }
-        countsStore.checkpoint( DISABLED, NULL );
+        countsStore.checkpoint( NULL );
         closeCountsStore();
 
         // when
@@ -199,7 +198,7 @@ class GBPTreeCountsStoreTest
 
     private void checkpointAndRestartCountsStore() throws Exception
     {
-        countsStore.checkpoint( DISABLED, NULL );
+        countsStore.checkpoint( NULL );
         closeCountsStore();
         openCountsStore();
     }

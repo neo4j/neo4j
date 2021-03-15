@@ -159,14 +159,6 @@ public interface PageCache extends AutoCloseable
     void flushAndForce() throws IOException;
 
     /**
-     * Flush all dirty pages, but limit the rate of IO as advised by the given IOPSLimiter.
-     *
-     * @param limiter The {@link IOController} that determines if pauses or sleeps should be injected into the flushing
-     * process to keep the IO rate down.
-     */
-    void flushAndForce( IOController limiter ) throws IOException;
-
-    /**
      * Close the page cache to prevent any future mapping of files.
      * This also releases any internal resources, including the {@link PageSwapperFactory} through its
      * {@link PageSwapperFactory#close() close} method.

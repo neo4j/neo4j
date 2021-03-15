@@ -89,12 +89,6 @@ public class DelegatingPageCache implements PageCache
     }
 
     @Override
-    public void flushAndForce( IOController limiter ) throws IOException
-    {
-        delegate.flushAndForce( limiter );
-    }
-
-    @Override
     public void flushAndForce() throws IOException
     {
         delegate.flushAndForce();

@@ -52,7 +52,6 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -443,13 +442,13 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
     {
         if ( random.nextBoolean() )
         {
-            accessor.force( IOController.DISABLED, NULL );
+            accessor.force( NULL );
         }
     }
 
     private void forceAndCloseAccessor()
     {
-        accessor.force( IOController.DISABLED, NULL );
+        accessor.force( NULL );
         accessor.close();
     }
 

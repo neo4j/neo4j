@@ -28,7 +28,6 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -122,7 +121,7 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
      *      * @param cursorTracer underlying page cursor events tracer.@param cursorTracer underlying page cursor events tracer.
      * @throws IOException if there was a problem forcing the state to persistent storage.
      */
-    void force( IOController limiter, PageCursorTracer cursorTracer ) throws IOException;
+    void force( PageCursorTracer cursorTracer ) throws IOException;
 
     /**
      * Acquire a reader for all {@link EntityTokenRange entity token} ranges.

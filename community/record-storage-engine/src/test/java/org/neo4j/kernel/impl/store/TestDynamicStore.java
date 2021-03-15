@@ -38,7 +38,6 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -174,7 +173,7 @@ class TestDynamicStore
             }
             if ( rIndex > (1.0f - closeIndex) || rIndex < closeIndex )
             {
-                neoStores.flush( IOController.DISABLED, NULL );
+                neoStores.flush( NULL );
                 neoStores.close();
                 store = createDynamicArrayStore();
             }

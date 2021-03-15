@@ -90,7 +90,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.IDS_PER_ENTRY;
-import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.Race.throwing;
 
@@ -467,7 +466,7 @@ class IndexedIdGeneratorTest
         // given
         long highId = idGenerator.getHighId();
         idGenerator.start( NO_FREE_IDS, NULL );
-        idGenerator.checkpoint( DISABLED, NULL );
+        idGenerator.checkpoint( NULL );
         stop();
 
         // when
@@ -577,7 +576,7 @@ class IndexedIdGeneratorTest
 
         long reusedId = idGenerator.nextId( NULL );
         verify( monitor ).allocatedFromReused( reusedId );
-        idGenerator.checkpoint( DISABLED, NULL );
+        idGenerator.checkpoint( NULL );
         // two times, one in start and one now in checkpoint
         verify( monitor, times( 2 ) ).checkpoint( anyLong(), anyLong() );
         idGenerator.clearCache( NULL );
@@ -732,7 +731,7 @@ class IndexedIdGeneratorTest
             assertThat( cursorTracer.unpins() ).isZero();
             assertThat( cursorTracer.hits() ).isZero();
 
-            idGenerator.checkpoint( DISABLED, cursorTracer );
+            idGenerator.checkpoint( cursorTracer );
 
             // 2 state pages involved into checkpoint (twice)
             assertThat( cursorTracer.pins() ).isEqualTo( 4 );
@@ -766,7 +765,7 @@ class IndexedIdGeneratorTest
         try ( var prepareIndexWithoutRebuild = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false,
                 Config.defaults(), DEFAULT_DATABASE_NAME, NULL ) )
         {
-            prepareIndexWithoutRebuild.checkpoint( DISABLED, NULL );
+            prepareIndexWithoutRebuild.checkpoint( NULL );
         }
         try ( var idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, false, Config.defaults(),
                 DEFAULT_DATABASE_NAME, NULL ) )
@@ -940,7 +939,7 @@ class IndexedIdGeneratorTest
 
     private void restart() throws IOException
     {
-        idGenerator.checkpoint( DISABLED, NULL );
+        idGenerator.checkpoint( NULL );
         stop();
         open();
         idGenerator.start( NO_FREE_IDS, NULL );

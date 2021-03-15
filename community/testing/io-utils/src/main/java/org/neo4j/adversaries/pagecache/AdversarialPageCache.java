@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.neo4j.adversaries.Adversary;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
@@ -98,13 +97,6 @@ public class AdversarialPageCache implements PageCache
     {
         adversary.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class );
         delegate.flushAndForce();
-    }
-
-    @Override
-    public void flushAndForce( IOController limiter ) throws IOException
-    {
-        adversary.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class );
-        delegate.flushAndForce( limiter );
     }
 
     @Override

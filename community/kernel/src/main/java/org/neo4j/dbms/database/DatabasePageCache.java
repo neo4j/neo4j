@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -93,15 +92,6 @@ public class DatabasePageCache implements PageCache
         for ( PagedFile pagedFile : databasePagedFiles )
         {
             pagedFile.flushAndForce();
-        }
-    }
-
-    @Override
-    public void flushAndForce( IOController limiter ) throws IOException
-    {
-        for ( PagedFile pagedFile : databasePagedFiles )
-        {
-            pagedFile.flushAndForce( limiter );
         }
     }
 
@@ -183,12 +173,6 @@ public class DatabasePageCache implements PageCache
         public void flushAndForce() throws IOException
         {
             delegate.flushAndForce();
-        }
-
-        @Override
-        public void flushAndForce( IOController limiter ) throws IOException
-        {
-            delegate.flushAndForce( limiter );
         }
 
         @Override

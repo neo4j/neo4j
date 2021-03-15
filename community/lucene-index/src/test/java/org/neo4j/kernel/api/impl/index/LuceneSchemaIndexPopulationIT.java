@@ -33,7 +33,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
@@ -97,7 +96,7 @@ class LuceneSchemaIndexPopulationIT
             try ( LuceneIndexAccessor indexAccessor = new LuceneIndexAccessor( uniqueIndex, descriptor, SIMPLE_TOKEN_LOOKUP ) )
             {
                 generateUpdates( indexAccessor, affectedNodes );
-                indexAccessor.force( IOController.DISABLED, NULL );
+                indexAccessor.force( NULL );
 
                 // now index is online and should contain updates data
                 assertTrue( uniqueIndex.isOnline() );

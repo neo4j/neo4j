@@ -49,7 +49,6 @@ import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.EMPTY_REBUILD;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.degreeKey;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.keyToString;
-import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
@@ -104,7 +103,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest
             updater.increment( GROUP_ID_1, INCOMING, 2 ); // now at 5
         }
 
-        countsStore.checkpoint( DISABLED, NULL );
+        countsStore.checkpoint( NULL );
 
         // when/then
         assertEquals( 15, countsStore.degree( GROUP_ID_1, OUTGOING, NULL ) );
@@ -179,7 +178,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest
             updater.increment( GROUP_ID_1, INCOMING, 3 );
             updater.increment( GROUP_ID_2, LOOP, 7 );
         }
-        countsStore.checkpoint( DISABLED, NULL );
+        countsStore.checkpoint( NULL );
         closeCountsStore();
 
         // when
@@ -204,7 +203,7 @@ class GBPTreeRelationshipGroupDegreesStoreTest
 
     private void checkpointAndRestartCountsStore() throws Exception
     {
-        countsStore.checkpoint( DISABLED, NULL );
+        countsStore.checkpoint( NULL );
         closeCountsStore();
         openCountsStore();
     }

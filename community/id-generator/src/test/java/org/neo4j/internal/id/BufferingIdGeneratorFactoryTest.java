@@ -38,7 +38,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdController.ConditionSnapshot;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
@@ -113,12 +112,12 @@ class BufferingIdGeneratorFactoryTest
         verifyNoMoreInteractions( actual.markers[STRING_BLOCK.ordinal()] );
 
         // after some maintenance and transaction still not closed
-        idGenerator.checkpoint( IOController.DISABLED, NULL );
+        idGenerator.checkpoint( NULL );
         verifyNoMoreInteractions( actual.markers[STRING_BLOCK.ordinal()] );
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
-        idGenerator.checkpoint( IOController.DISABLED, NULL );
+        idGenerator.checkpoint( NULL );
 
         // THEN
         verify( actual.markers[STRING_BLOCK.ordinal()] ).markFree( 7 );

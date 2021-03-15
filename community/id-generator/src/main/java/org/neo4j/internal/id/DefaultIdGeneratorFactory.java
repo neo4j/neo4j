@@ -38,7 +38,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static org.neo4j.internal.id.indexed.LoggingIndexedIdGeneratorMonitor.defaultIdMonitor;
-import static org.neo4j.io.pagecache.IOController.DISABLED;
 
 public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 {
@@ -116,7 +115,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
         IndexedIdGenerator generator =
                 new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, () -> highId, maxId, readOnly,
                         config, cursorTracer, defaultIdMonitor( fs, fileName, config ), databaseName, openOptions );
-        generator.checkpoint( DISABLED, cursorTracer );
+        generator.checkpoint( cursorTracer );
         generators.put( idType, generator );
         return generator;
     }

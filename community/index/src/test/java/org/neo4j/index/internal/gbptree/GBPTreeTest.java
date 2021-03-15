@@ -66,13 +66,13 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -102,7 +102,6 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.fs.FileUtils.blockSize;
-import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -409,7 +408,7 @@ class GBPTreeTest
         BiConsumer<GBPTree<MutableLong,MutableLong>,byte[]> beforeClose = ( index, expected ) ->
         {
             ThrowingRunnable throwingRunnable = () ->
-                    index.checkpoint( DISABLED, cursor -> cursor.putBytes( expected ), NULL );
+                    index.checkpoint( cursor -> cursor.putBytes( expected ), NULL );
             ThrowingRunnable.throwing( throwingRunnable ).run();
         };
         verifyHeaderDataAfterClose( beforeClose );
@@ -422,12 +421,12 @@ class GBPTreeTest
         {
             ThrowingRunnable throwingRunnable = () ->
             {
-                index.checkpoint( DISABLED, cursor -> cursor.putBytes( expected ), NULL );
+                index.checkpoint( cursor -> cursor.putBytes( expected ), NULL );
                 insert( index, 0, 1 );
 
                 // WHEN
                 // Should carry over header data
-                index.checkpoint( DISABLED, NULL );
+                index.checkpoint( NULL );
             };
             ThrowingRunnable.throwing( throwingRunnable ).run();
         };
@@ -441,7 +440,7 @@ class GBPTreeTest
         {
             ThrowingRunnable throwingRunnable = () ->
             {
-                index.checkpoint( DISABLED, cursor -> cursor.putBytes( expected ), NULL );
+                index.checkpoint( cursor -> cursor.putBytes( expected ), NULL );
                 insert( index, 0, 1 );
 
                 // No checkpoint
@@ -458,9 +457,9 @@ class GBPTreeTest
         {
             ThrowingRunnable throwingRunnable = () ->
             {
-                index.checkpoint( DISABLED, cursor -> cursor.putBytes( expected ), NULL );
+                index.checkpoint( cursor -> cursor.putBytes( expected ), NULL );
                 random.nextBytes( expected );
-                index.checkpoint( DISABLED, cursor -> cursor.putBytes( expected ), NULL );
+                index.checkpoint( cursor -> cursor.putBytes( expected ), NULL );
             };
             ThrowingRunnable.throwing( throwingRunnable ).run();
         };
@@ -571,7 +570,7 @@ class GBPTreeTest
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes( "failed".getBytes() );
         try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).with( RecoveryCleanupWorkCollector.ignore() ).build() )
         {
-            index.checkpoint( DISABLED, headerWriter, NULL );
+            index.checkpoint( headerWriter, NULL );
         }
 
         verifyHeader( pageCache, "failed".getBytes() );
@@ -732,7 +731,7 @@ class GBPTreeTest
 
             // WHEN
             monitor.enabled = true;
-            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( DISABLED, NULL ) ) );
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( NULL ) ) );
             monitor.barrier.awaitUninterruptibly();
             // now we're in the smack middle of a checkpoint
             Future<?> writerClose = executor.submit( throwing( () -> index.writer( NULL ).close() ) );
@@ -763,7 +762,7 @@ class GBPTreeTest
                 }
             } ) );
             barrier.awaitUninterruptibly();
-            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( DISABLED, NULL ) ) );
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( NULL ) ) );
             shouldWait( checkpoint );
 
             // THEN
@@ -857,7 +856,7 @@ class GBPTreeTest
             {
                 writer.put( new MutableLong( 1L ), new MutableLong( 2L ) );
             }
-            index.checkpoint( DISABLED, NULL );
+            index.checkpoint( NULL );
         }
         assertCleanOnStartup( true );
     }
@@ -894,7 +893,7 @@ class GBPTreeTest
             monitor.barrier.awaitUninterruptibly();
 
             // THEN
-            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( DISABLED, NULL ) ) );
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( NULL ) ) );
             shouldWait( checkpoint );
 
             monitor.barrier.release();
@@ -918,7 +917,7 @@ class GBPTreeTest
             monitor.barrier.awaitUninterruptibly();
 
             // THEN
-            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( DISABLED, NULL ) ) );
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( NULL ) ) );
             shouldWait( checkpoint );
 
             monitor.barrier.release();
@@ -1052,7 +1051,7 @@ class GBPTreeTest
     @Test
     void checkpointMustRecognizeFailedCleaning() throws Exception
     {
-        mustRecognizeFailedCleaning( index -> index.checkpoint( IOController.DISABLED, NULL ) );
+        mustRecognizeFailedCleaning( index -> index.checkpoint( NULL ) );
     }
 
     private void mustRecognizeFailedCleaning( ThrowingConsumer<GBPTree<MutableLong,MutableLong>,IOException> operation ) throws Exception
@@ -1122,7 +1121,7 @@ class GBPTreeTest
             {
                 writer.put( new MutableLong( 0 ), new MutableLong( 1 ) );
             }
-            index.checkpoint( DISABLED, NULL );
+            index.checkpoint( NULL );
             assertEquals( 1, checkpointCounter.count() );
         }
 
@@ -1140,7 +1139,7 @@ class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> index = index().with( checkpointCounter ).build() )
         {
             checkpointCounter.reset();
-            index.checkpoint( DISABLED, NULL );
+            index.checkpoint( NULL );
 
             // THEN
             assertEquals( 1, checkpointCounter.count() );
@@ -1182,7 +1181,7 @@ class GBPTreeTest
             insert( index, key, value );
 
             // WHEN
-            index.checkpoint( DISABLED, NULL );
+            index.checkpoint( NULL );
         }
 
         // THEN
@@ -1259,7 +1258,7 @@ class GBPTreeTest
         {
             insert( index, 0, 1 );
 
-            index.checkpoint( DISABLED, NULL );
+            index.checkpoint( NULL );
         }
 
         // WHEN
@@ -1344,7 +1343,7 @@ class GBPTreeTest
         {
             insert( index, 0, 1 );
 
-            index.checkpoint( DISABLED, NULL );
+            index.checkpoint(  NULL );
         }
 
         // WHEN
@@ -1664,7 +1663,7 @@ class GBPTreeTest
                 {
                     insert( tree, random.nextLong(), random.nextLong() );
                 }
-                tree.checkpoint( DISABLED, NULL );
+                tree.checkpoint( NULL );
             }
         }
         byte[] before = fileContent( indexFile );
@@ -1674,12 +1673,17 @@ class GBPTreeTest
             UnsupportedOperationException e = assertThrows( UnsupportedOperationException.class, () -> tree.writer( NULL ) );
             assertThat( e.getMessage() ).contains( "GBPTree was opened in read only mode and can not finish operation: " );
 
-            MutableBoolean ioLimitChecked = new MutableBoolean();
-            tree.checkpoint( ( previousStamp, recentlyCompletedIOs, flushable, flushes ) -> {
-                ioLimitChecked.setTrue();
-                return 0;
-            }, NULL );
-            assertFalse( ioLimitChecked.getValue(), "Expected checkpoint to be a no-op in read only mode." );
+            MutableBoolean pagePinned = new MutableBoolean();
+            tree.checkpoint( new DefaultPageCursorTracer( PageCacheTracer.NULL, "Test" )
+            {
+                @Override
+                public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
+                {
+                    pagePinned.setTrue();
+                    return super.beginPin( writeLock, filePageId, swapper );
+                }
+            } );
+            assertFalse( pagePinned.getValue(), "Expected checkpoint to be a no-op in read only mode." );
         }
         byte[] after = fileContent( indexFile );
         assertArrayEquals( before, after, "Expected file content to be identical before and after opening GBPTree in read only mode." );
@@ -1904,13 +1908,6 @@ class GBPTreeTest
                     {
                         maybeThrow();
                         return super.io( pageId, pf_flags, tracer );
-                    }
-
-                    @Override
-                    public void flushAndForce( IOController limiter ) throws IOException
-                    {
-                        maybeThrow();
-                        super.flushAndForce( limiter );
                     }
 
                     private void maybeThrow() throws IOException

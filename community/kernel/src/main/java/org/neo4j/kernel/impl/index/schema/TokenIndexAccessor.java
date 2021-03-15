@@ -29,7 +29,6 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -67,9 +66,9 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
     }
 
     @Override
-    public void force( IOController ioController, PageCursorTracer cursorTracer )
+    public void force( PageCursorTracer cursorTracer )
     {
-        index.checkpoint( ioController, cursorTracer );
+        index.checkpoint( cursorTracer );
         writeMonitor.force();
     }
 

@@ -155,18 +155,9 @@ public interface PagedFile extends AutoCloseable
     Path path();
 
     /**
-     * Flush all dirty pages into the file channel, and force the file channel to disk.
+     * Flush all dirty pages into the file channel, and force the file channel to disk. IO will limited by the specific io controller used by mapped file.
      */
     void flushAndForce() throws IOException;
-
-    /**
-     * Flush all dirty pages into the file channel, and force the file channel to disk, but limit the rate of IO as
-     * advised by the given IOPSLimiter.
-     *
-     * @param limiter The {@link IOController} that determines if pauses or sleeps should be injected into the flushing
-     * process to keep the IO rate down.
-     */
-    void flushAndForce( IOController limiter ) throws IOException;
 
     /**
      * Get the file-page-id of the last page in the file.

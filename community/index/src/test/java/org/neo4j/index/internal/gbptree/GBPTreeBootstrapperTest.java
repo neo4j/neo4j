@@ -33,7 +33,6 @@ import java.util.stream.Stream;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -101,7 +100,7 @@ class GBPTreeBootstrapperTest
 
         try ( GBPTree<MutableLong,MutableLong> tree = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
-            tree.checkpoint( IOController.DISABLED, PageCursorTracer.NULL );
+            tree.checkpoint( PageCursorTracer.NULL );
         }
         ZipUtils.zip( dir.getFileSystem(), storeFile, zipFile );
         fail( String.format( "Zip file created with store. Copy to correct resource using:%nmv \"%s\" \"%s\"",

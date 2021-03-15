@@ -76,11 +76,6 @@ public class StubPagedFile implements PagedFile
     }
 
     @Override
-    public void flushAndForce( IOController limiter )
-    {
-    }
-
-    @Override
     public long getLastPageId()
     {
         return lastPageId;

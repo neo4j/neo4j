@@ -297,7 +297,7 @@ class BatchingNeoStoresTest
                 DEFAULT_DATABASE_NAME ) )
         {
             countsStore.start( NULL, INSTANCE );
-            countsStore.checkpoint( DISABLED, NULL );
+            countsStore.checkpoint( NULL );
         }
 
         // when
@@ -428,7 +428,7 @@ class BatchingNeoStoresTest
             txState.nodeDoCreate( node2 );
             txState.relationshipDoCreate( commandCreationContext.reserveRelationship(), relTypeId, node1, node2 );
             apply( txState, commandCreationContext, storageEngine );
-            neoStores.flush( DISABLED, NULL );
+            neoStores.flush( NULL );
         }
     }
 

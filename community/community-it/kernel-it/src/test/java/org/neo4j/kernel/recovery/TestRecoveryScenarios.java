@@ -38,7 +38,6 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -270,7 +269,7 @@ class TestRecoveryScenarios
                     @Override
                     void flush( GraphDatabaseAPI db ) throws IOException
                     {
-                        db.getDependencyResolver().resolveDependency( CheckPointerImpl.ForceOperation.class ).flushAndForce( IOController.DISABLED, NULL );
+                        db.getDependencyResolver().resolveDependency( CheckPointerImpl.ForceOperation.class ).flushAndForce( NULL );
                     }
                 },
         FLUSH_PAGE_CACHE

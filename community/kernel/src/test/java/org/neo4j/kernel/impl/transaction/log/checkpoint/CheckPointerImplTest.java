@@ -132,7 +132,7 @@ class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( forceOperation ).flushAndForce( limiter, NULL );
+        verify( forceOperation ).flushAndForce( NULL );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), any( String.class ) );
         verify( threshold ).initialize( initialTransactionId );
@@ -158,7 +158,7 @@ class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( forceOperation ).flushAndForce( limiter, NULL );
+        verify( forceOperation ).flushAndForce( NULL );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), any( String.class ) );
         verify( threshold ).initialize( initialTransactionId );
@@ -183,7 +183,7 @@ class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( forceOperation ).flushAndForce( limiter, NULL );
+        verify( forceOperation ).flushAndForce( NULL );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), any( String.class ) );
         verify( threshold ).initialize( initialTransactionId );
@@ -208,7 +208,7 @@ class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( forceOperation ).flushAndForce( limiter, NULL );
+        verify( forceOperation ).flushAndForce( NULL );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), any( String.class ) );
         verify( threshold ).initialize( initialTransactionId );
@@ -348,7 +348,7 @@ class CheckPointerImplTest
         checkPointing.start();
         checkPointing.checkPointIfNeeded( INFO );
 
-        verify( forceOperation ).flushAndForce( limiter, NULL );
+        verify( forceOperation ).flushAndForce( NULL );
     }
 
     @Test
@@ -438,7 +438,7 @@ class CheckPointerImplTest
             arriveFlushAndForce.release();
             finishFlushAndForce.await();
             return null;
-        } ).when( forceOperation ).flushAndForce( limiter, NULL );
+        } ).when( forceOperation ).flushAndForce( NULL );
 
         Thread forceCheckPointThread = new Thread( () ->
         {
@@ -512,7 +512,7 @@ class CheckPointerImplTest
             long newValue = limitDisableCounter.get();
             observedRushCount.set( newValue );
             return null;
-        } ).when( forceOperation ).flushAndForce( limiter, NULL );
+        } ).when( forceOperation ).flushAndForce( NULL );
 
         Future<Object> forceCheckPointer = forkFuture( () ->
         {

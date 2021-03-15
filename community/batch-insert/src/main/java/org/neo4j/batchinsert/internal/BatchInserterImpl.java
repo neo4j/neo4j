@@ -620,7 +620,7 @@ public class BatchInserterImpl implements BatchInserter
                     // In this scenario this is OK
                 }
             }
-            indexingService.forceAll( DISABLED, cursorTracer );
+            indexingService.forceAll( cursorTracer );
         }
         catch ( InterruptedException e )
         {
@@ -654,7 +654,7 @@ public class BatchInserterImpl implements BatchInserter
                 initialCountsBuilder, false, cacheTracer, NO_MONITOR, databaseLayout.getDatabaseName() ) )
         {
             countsStore.start( PageCursorTracer.NULL, memoryTracker );
-            countsStore.checkpoint( DISABLED, PageCursorTracer.NULL );
+            countsStore.checkpoint( PageCursorTracer.NULL );
         }
     }
 
@@ -1140,7 +1140,7 @@ public class BatchInserterImpl implements BatchInserter
             RelationshipTypeScanStore relationshipTypeIndex = buildRelationshipTypeIndex();
             repopulateAllIndexes( labelIndex, relationshipTypeIndex );
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
-            neoStores.flush( DISABLED, cursorTracer );
+            neoStores.flush( cursorTracer );
             recordAccess.close();
             createEmptyTransactionLog();
         }

@@ -32,7 +32,6 @@ import org.neo4j.internal.recordstorage.FlatRelationshipModifications;
 import org.neo4j.internal.recordstorage.FlatRelationshipModifications.RelationshipData;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -87,7 +86,7 @@ class DegreesRebuildFromStoreTest
             storageEngine.relationshipGroupDegreesStore().accept(
                     ( groupId, direction, degree ) -> expectedDegrees.put( combinedKeyOnGroupAndDirection( groupId, direction ), degree ), NULL );
             assertThat( expectedDegrees.isEmpty() ).isFalse();
-            storageEngine.flushAndForce( IOController.DISABLED, NULL );
+            storageEngine.flushAndForce( NULL );
         }
 
         // when

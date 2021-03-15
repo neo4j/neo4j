@@ -22,7 +22,6 @@ package org.neo4j.internal.id;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 class BufferingIdGenerator extends IdGenerator.Delegate
@@ -98,11 +97,11 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     }
 
     @Override
-    public void checkpoint( IOController ioController, PageCursorTracer cursorTracer )
+    public void checkpoint( PageCursorTracer cursorTracer )
     {
         // Flush buffered data to consumer
         buffer.maintenance( cursorTracer );
-        super.checkpoint( ioController, cursorTracer );
+        super.checkpoint( cursorTracer );
     }
 
     @Override

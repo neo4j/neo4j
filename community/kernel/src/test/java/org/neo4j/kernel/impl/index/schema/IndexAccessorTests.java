@@ -28,7 +28,6 @@ import java.nio.file.Path;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -107,7 +106,7 @@ abstract class IndexAccessorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> ex
         {
             accessor = createAccessor( pageCache );
             long baseline = tracer.flushes();
-            accessor.force( IOController.DISABLED, NULL );
+            accessor.force( NULL );
             long preDrop = tracer.flushes();
             assertThat( preDrop ).isGreaterThan( baseline );
 

@@ -45,7 +45,6 @@ import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexValueCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -589,7 +588,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         processAll( data );
 
         // when
-        accessor.force( IOController.DISABLED, NULL );
+        accessor.force( NULL );
         accessor.close();
 
         // then
@@ -1012,7 +1011,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
 
     private void forceAndCloseAccessor()
     {
-        accessor.force( IOController.DISABLED, NULL );
+        accessor.force( NULL );
         closeAccessor();
     }
 

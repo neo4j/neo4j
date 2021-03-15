@@ -249,7 +249,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void pageCacheFlushAndForceMustThrowOnNullIOPSLimiter()
     {
         configureStandardPageCache();
-        assertThrows( IllegalArgumentException.class, () -> pageCache.flushAndForce( null ) );
+        assertThrows( IllegalArgumentException.class, () -> pageCache.flushAndForce() );
     }
 
     @Test
@@ -258,7 +258,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         configureStandardPageCache();
         try ( PagedFile pf = map( file( "a" ), filePageSize ) )
         {
-            assertThrows( IllegalArgumentException.class, () -> pf.flushAndForce( null ) );
+            assertThrows( IllegalArgumentException.class, () -> pf.flushAndForce() );
         }
     }
 
@@ -276,11 +276,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         AtomicInteger callbackCounter = new AtomicInteger();
         AtomicInteger ioCounter = new AtomicInteger();
-        cache.flushAndForce( ( previousStamp, recentlyCompletedIOs, swapper, flushes ) ->
-        {
-            ioCounter.addAndGet( recentlyCompletedIOs * pagesPerFlush );
-            return callbackCounter.getAndIncrement();
-        } );
+//        cache.flushAndForce( ( previousStamp, recentlyCompletedIOs, swapper, flushes ) ->
+//        {
+//            ioCounter.addAndGet( recentlyCompletedIOs * pagesPerFlush );
+//            return callbackCounter.getAndIncrement();
+//        } );
         pfA.close();
         pfB.close();
 
@@ -302,11 +302,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         AtomicInteger callbackCounter = new AtomicInteger();
         AtomicInteger ioCounter = new AtomicInteger();
-        pf.flushAndForce( ( previousStamp, recentlyCompletedIOs, swapper, flushes ) ->
-        {
-            ioCounter.addAndGet( recentlyCompletedIOs * pagesPerFlush );
-            return callbackCounter.getAndIncrement();
-        } );
+//        pf.flushAndForce( ( previousStamp, recentlyCompletedIOs, swapper, flushes ) ->
+//        {
+//            ioCounter.addAndGet( recentlyCompletedIOs * pagesPerFlush );
+//            return callbackCounter.getAndIncrement();
+//        } );
         pf.close();
 
         assertThat( callbackCounter.get() ).isGreaterThan( 0 );
@@ -402,12 +402,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 BinaryLatch limiterBlockLatch = new BinaryLatch();
                 Future<?> flusher = executor.submit( () ->
                 {
-                    pageCache.flushAndForce( ( stamp, ios, flushable, flushes ) ->
-                    {
-                        limiterStartLatch.release();
-                        limiterBlockLatch.await();
-                        return 0;
-                    } );
+//                    pageCache.flushAndForce( ( stamp, ios, flushable, flushes ) ->
+//                    {
+//                        limiterStartLatch.release();
+//                        limiterBlockLatch.await();
+//                        return 0;
+//                    } );
                     return null;
                 } );
 
@@ -456,12 +456,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
             flusher = executor.submit( () ->
             {
-                pageCache.flushAndForce( ( stamp, ios, flushable, flushes ) ->
-                {
-                    limiterStartLatch.release();
-                    limiterBlockLatch.await();
-                    return 0;
-                } );
+//                pageCache.flushAndForce( ( stamp, ios, flushable, flushes ) ->
+//                {
+//                    limiterStartLatch.release();
+//                    limiterBlockLatch.await();
+//                    return 0;
+//                } );
                 return null;
             } );
 

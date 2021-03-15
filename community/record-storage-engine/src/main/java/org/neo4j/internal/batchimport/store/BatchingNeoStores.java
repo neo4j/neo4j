@@ -83,7 +83,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.IOUtils.uncheckedConsumer;
 import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
-import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.kernel.impl.index.schema.FullStoreChangeStream.EMPTY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
@@ -398,7 +397,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                 RecoveryCleanupWorkCollector.immediate(), builder, false, cacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseName ) )
         {
             countsStore.start( cursorTracer, memoryTracker );
-            countsStore.checkpoint( DISABLED, cursorTracer );
+            countsStore.checkpoint( cursorTracer );
         }
         catch ( IOException e )
         {
@@ -527,19 +526,19 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         }
         if ( neoStores != null )
         {
-            neoStores.flush( DISABLED, cursorTracer );
+            neoStores.flush( cursorTracer );
         }
         if ( temporaryNeoStores != null )
         {
-            temporaryNeoStores.flush( DISABLED, cursorTracer );
+            temporaryNeoStores.flush( cursorTracer );
         }
         if ( labelScanStore != null )
         {
-            labelScanStore.force( DISABLED, cursorTracer );
+            labelScanStore.force( cursorTracer );
         }
         if ( relationshipTypeScanStore != null )
         {
-            relationshipTypeScanStore.force( DISABLED, cursorTracer );
+            relationshipTypeScanStore.force( cursorTracer );
         }
     }
 

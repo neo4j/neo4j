@@ -83,12 +83,6 @@ public class ExternallyManagedPageCache implements PageCache
     }
 
     @Override
-    public void flushAndForce( IOController limiter ) throws IOException
-    {
-        delegate.flushAndForce( limiter );
-    }
-
-    @Override
     public int pageSize()
     {
         return delegate.pageSize();

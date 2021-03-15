@@ -517,7 +517,7 @@ class DatabaseRecoveryIT
     private static void flush( GraphDatabaseService db ) throws IOException
     {
         var forceOperation = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointerImpl.ForceOperation.class );
-        forceOperation.flushAndForce( DISABLED, PageCursorTracer.NULL );
+        forceOperation.flushAndForce( PageCursorTracer.NULL );
     }
 
     private static void checkPoint( GraphDatabaseService db ) throws IOException

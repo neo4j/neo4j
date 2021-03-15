@@ -63,7 +63,6 @@ import static java.lang.Math.toIntExact;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.PERSISTENT;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
@@ -249,10 +248,10 @@ public class LuceneIndexAccessorIT
             }
             if ( random.nextInt( 100 ) == 0 )
             {
-                index.force( DISABLED, NULL );
+                index.force( NULL );
             }
         }
-        index.force( DISABLED, NULL );
+        index.force( NULL );
         return liveEntityIds;
     }
 

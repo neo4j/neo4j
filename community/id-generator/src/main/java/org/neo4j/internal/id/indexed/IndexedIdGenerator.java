@@ -48,7 +48,6 @@ import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -562,7 +561,7 @@ public class IndexedIdGenerator implements IdGenerator
                 highestWrittenId.set( highestId );
             }
             // We can checkpoint here since the free ids we read are committed
-            checkpoint( IOController.DISABLED, cursorTracer );
+            checkpoint( cursorTracer );
             atLeastOneIdOnFreelist.set( true );
         }
 
@@ -574,9 +573,9 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     @Override
-    public void checkpoint( IOController ioController, PageCursorTracer cursorTracer )
+    public void checkpoint( PageCursorTracer cursorTracer )
     {
-        tree.checkpoint( ioController, new HeaderWriter( highId::get, highestWrittenId::get, generation, idsPerEntry ), cursorTracer );
+        tree.checkpoint( new HeaderWriter( highId::get, highestWrittenId::get, generation, idsPerEntry ), cursorTracer );
         monitor.checkpoint( highestWrittenId.get(), highId.get() );
     }
 

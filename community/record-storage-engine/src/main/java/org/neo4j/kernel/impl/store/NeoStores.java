@@ -38,7 +38,6 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -233,7 +232,7 @@ public class NeoStores implements AutoCloseable
         }
     }
 
-    public void flush( IOController limiter, PageCursorTracer cursorTracer ) throws IOException
+    public void flush( PageCursorTracer cursorTracer ) throws IOException
     {
         // The thing about flush here is that it won't invoke flush on each individual store and this is because calling
         // the flushAndForce method on the MuninnPageCache has the opportunity to flush things in parallel, something that
@@ -244,8 +243,8 @@ public class NeoStores implements AutoCloseable
         // it's weird I know. The most stable and secure thing we can do is to invoke this on the IdGenerator instances
         // that our stores reference.
 
-        pageCache.flushAndForce( limiter );
-        visitStores( store -> store.getIdGenerator().checkpoint( limiter, cursorTracer ) );
+        pageCache.flushAndForce();
+        visitStores( store -> store.getIdGenerator().checkpoint( cursorTracer ) );
     }
 
     private CommonAbstractStore openStore( StoreType type, PageCursorTracer cursorTracer )

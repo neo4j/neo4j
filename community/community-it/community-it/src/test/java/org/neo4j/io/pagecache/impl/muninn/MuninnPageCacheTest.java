@@ -1314,7 +1314,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 }
             }
 
-            pageCache.flushAndForce( IOController.DISABLED );
+            pageCache.flushAndForce();
 
             IOUtils.closeAll( mappedPagedFiles );
         } );

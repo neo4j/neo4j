@@ -33,7 +33,6 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
@@ -102,7 +101,7 @@ public class EmptyingTokenScanStore implements TokenScanStore
     }
 
     @Override
-    public void force( IOController limiter, PageCursorTracer cursorTracer )
+    public void force( PageCursorTracer cursorTracer )
     {   // no-op
     }
 

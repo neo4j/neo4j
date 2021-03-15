@@ -92,10 +92,4 @@ public class DelegatingPagedFile implements PagedFile
     {
         return delegate.getDatabaseName();
     }
-
-    @Override
-    public void flushAndForce( IOController limiter ) throws IOException
-    {
-        delegate.flushAndForce( limiter );
-    }
 }

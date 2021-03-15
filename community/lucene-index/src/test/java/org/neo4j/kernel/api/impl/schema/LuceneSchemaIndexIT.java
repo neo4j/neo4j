@@ -41,7 +41,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.LuceneAllDocumentsReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -92,7 +91,7 @@ class LuceneSchemaIndexIT
         try ( LuceneIndexAccessor indexAccessor = createDefaultIndexAccessor() )
         {
             generateUpdates( indexAccessor, 32 );
-            indexAccessor.force( IOController.DISABLED, NULL );
+            indexAccessor.force( NULL );
 
             // When & Then
             List<String> singlePartitionFileTemplates = Arrays.asList( ".cfe", ".cfs", ".si", "segments_1" );

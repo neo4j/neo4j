@@ -33,7 +33,6 @@ import java.util.Random;
 import java.util.TreeMap;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -159,7 +158,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
                     }
                 }
 
-                index.checkpoint( IOController.DISABLED, NULL );
+                index.checkpoint( NULL );
                 randomlyModifyIndex( index, data, random.random(), (double) round / totalNumberOfRounds );
             }
 
@@ -246,7 +245,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
             {
                 assertFalse( seek.next() );
             }
-            index.checkpoint( IOController.DISABLED, NULL );
+            index.checkpoint( NULL );
         }
     }
 
