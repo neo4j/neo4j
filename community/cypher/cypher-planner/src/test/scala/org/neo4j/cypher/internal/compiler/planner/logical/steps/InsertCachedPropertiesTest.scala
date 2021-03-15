@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
@@ -593,6 +594,98 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newTable.types(cachedNRelProp1) should be(initialTable.types(nProp1))
     newTable.types(cachedXProp) should be(initialTable.types(xProp))
   }
+
+  test("should not cache node property on renamed usages within union") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTNode, m -> CTNode, x -> CTNode)
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .produceResults("z")
+      .projection("m.prop as z")
+      .apply()
+      .|.union()
+      .|.|.projection("n as m")
+      .|.|.argument("n")
+      .|.projection("x as m")
+      .|.expand("(n)-->(m)")
+      .|.argument("n")
+      .filter("n.prop = 2")
+      .allNodeScan("n")
+      .build()
+
+    val (newPlan, newTable) = replace(plan, initialTable)
+    newPlan should be (plan)
+    newTable should be(initialTable)
+  }
+
+  test("should cache node property for properties with identical renaming across union") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTNode, m -> CTNode)
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .produceResults("z")
+      .projection("m.prop as z")
+      .apply()
+      .|.union()
+      .|.|.projection("n as m")
+      .|.|.argument("n")
+      .|.projection("n as m")
+      .|.argument("n")
+      .filter("n.prop = 2")
+      .allNodeScan("n")
+      .build()
+
+    val (newPlan, newTable) = replace(plan, initialTable)
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .produceResults("z")
+      .projection(Map("z" -> CachedProperty("n", m, prop, NODE_TYPE)(InputPosition.NONE)))
+      .apply()
+      .|.union()
+      .|.|.projection("n as m")
+      .|.|.argument("n")
+      .|.projection("n as m")
+      .|.argument("n")
+      .filter("cache[n.prop] = 2")
+      .allNodeScan("n")
+      .build()
+
+    newPlan should be(expectedPlan)
+    val initialType = initialTable.types(nProp1)
+    newTable.types(cachedNProp1) should be(initialType)
+  }
+
+  test("should cache node property in union branch") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTNode, m -> CTNode)
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .produceResults("z")
+      .projection("m.prop as z")
+      .apply()
+      .|.union()
+      .|.|.projection("n as m")
+      .|.|.filter("n.prop = 2")
+      .|.|.argument("n")
+      .|.projection("n as m")
+      .|.filter("n.prop = 3")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+
+    val (newPlan, newTable) = replace(plan, initialTable)
+    val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
+      .produceResults("z")
+      .projection(Map("z" -> CachedProperty("n", m, prop, NODE_TYPE)(InputPosition.NONE)))
+      .apply()
+      .|.union()
+      .|.|.projection("n as m")
+      .|.|.filter("cache[n.prop] = 2")
+      .|.|.argument("n")
+      .|.projection("n as m")
+      .|.filter("cache[n.prop] = 3")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+
+    newPlan should be(expectedPlan)
+    val initialType = initialTable.types(nProp1)
+    newTable.types(cachedNProp1) should be(initialType)
+  }
+
 
   private def replace(plan: LogicalPlan, initialTable: SemanticTable, readFromCursor: Boolean = false): (LogicalPlan, SemanticTable) = {
     val state = LogicalPlanState(InitialState("", None, IDPPlannerName)).withSemanticTable(initialTable).withMaybeLogicalPlan(Some(plan))

@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
+import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
@@ -143,6 +144,10 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
         withPreviousNames.copy(properties = renamedProperties)
       }
 
+      def addProperties(additionalProperties: Map[Property, PropertyUsages]): Acc = {
+        copy(properties = properties ++ additionalProperties)
+      }
+
       def variableWithOriginalName(variable: Variable): Variable = {
         var name = variable.name
         while (previousNames.contains(name)) {
@@ -158,39 +163,61 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean, readProperties
     }
 
     // In the first step we collect all property usages and renaming while going over the tree
-    val acc = logicalPlan.treeFold(Acc()) {
-      // Make sure to register any renaming of variables
-      case plan: ProjectingPlan => acc =>
-        val newRenamings = plan.projectExpressions.collect {
-          case (key, v: Variable) if key != v.name => (key, v.name)
-        }
-        (acc.addPreviousNames(newRenamings), Some(identity))
+    def getAccProperties(logicalPlan: LogicalPlan): Acc = {
+      logicalPlan.treeFold(Acc()) {
 
-      // Find properties
-      case prop@Property(v: Variable, _) if isNode(v) => acc =>
-        (acc.addNodeProperty(prop), Some(identity))
-      case prop@Property(v: Variable, _) if isRel(v) => acc =>
-        (acc.addRelProperty(prop), Some(identity))
+        // Take on only consistent renaming across both unions and remember properties from both subtrees
+        case plan: Union => acc =>
+          val accLeft = getAccProperties(plan.left)
+          val accRight = getAccProperties(plan.right)
 
-      // Find index plans that can provide cached properties
-      case _: MultiNodeIndexSeek => acc =>
-        (acc, Some(identity))
+          val mergedPreviousNames = accLeft.previousNames.filter(
+            entry =>
+              accRight.previousNames.get(entry._1) match {
+                case None => false
+                case Some(value) => value.equals(entry._2)
+              }
+          )
 
-      case indexPlan: IndexLeafPlan => acc =>
-        val newAcc = indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(acc) { (acc, indexedProp) =>
-          acc.addIndexNodeProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
-        }
-        (newAcc, Some(identity))
+          val newAcc = acc.addPreviousNames(mergedPreviousNames)
+            .addProperties(accLeft.properties)
+            .addProperties(accRight.properties)
+          (newAcc, None)
 
-      case expand: Expand if readPropertiesFromCursor => acc =>
-          val newAcc = acc.readsNode(expand.from).readsRelationship(expand.relName)
+        // Make sure to register any renaming of variables
+        case plan: ProjectingPlan => acc =>
+          val newRenamings = plan.projectExpressions.collect {
+            case (key, v: Variable) if key != v.name => (key, v.name)
+          }
+          (acc.addPreviousNames(newRenamings), Some(identity))
+
+        // Find properties
+        case prop@Property(v: Variable, _) if isNode(v) => acc =>
+          (acc.addNodeProperty(prop), Some(identity))
+        case prop@Property(v: Variable, _) if isRel(v) => acc =>
+          (acc.addRelProperty(prop), Some(identity))
+
+        // Find index plans that can provide cached properties
+        case _: MultiNodeIndexSeek => acc =>
+          (acc, Some(identity))
+
+        case indexPlan: IndexLeafPlan => acc =>
+          val newAcc = indexPlan.properties.filter(_.getValueFromIndex == CanGetValue).foldLeft(acc) { (acc, indexedProp) =>
+            acc.addIndexNodeProperty(property(indexPlan.idName, indexedProp.propertyKeyToken.name))
+          }
           (newAcc, Some(identity))
 
-      case expand: OptionalExpand if readPropertiesFromCursor => acc =>
-        val newAcc = acc.readsNode(expand.from).readsRelationship(expand.relName)
-        (newAcc, Some(identity))
+        case expand: Expand if readPropertiesFromCursor => acc =>
+            val newAcc = acc.readsNode(expand.from).readsRelationship(expand.relName)
+            (newAcc, Some(identity))
+
+        case expand: OptionalExpand if readPropertiesFromCursor => acc =>
+          val newAcc = acc.readsNode(expand.from).readsRelationship(expand.relName)
+          (newAcc, Some(identity))
+      }
     }
 
+    val acc = getAccProperties(logicalPlan)
     var currentTypes = from.semanticTable().types
 
     // In the second step we rewrite both properties as well as plans that will cache properties, i.e. index plans and expands
