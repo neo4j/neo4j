@@ -32,6 +32,7 @@ import static org.neo4j.lock.LockType.EXCLUSIVE;
 class ExclusiveLock implements ForsetiLockManager.Lock
 {
     private final ForsetiClient owner;
+    private volatile boolean released;
 
     ExclusiveLock( ForsetiClient owner )
     {
@@ -47,7 +48,7 @@ class ExclusiveLock implements ForsetiLockManager.Lock
     @Override
     public int detectDeadlock( int client )
     {
-        return owner.isWaitingFor( client ) ? owner.id() : -1;
+        return !this.released && owner.isWaitingFor( client ) ? owner.id() : -1;
     }
 
     @Override
@@ -75,10 +76,22 @@ class ExclusiveLock implements ForsetiLockManager.Lock
     }
 
     @Override
+    public boolean released()
+    {
+        return released;
+    }
+
+    @Override
     public String toString()
     {
         return "ExclusiveLock{" +
                "owner=" + owner +
                '}';
     }
+
+    void release()
+    {
+        released = true;
+    }
+
 }

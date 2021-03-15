@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.locking.forseti;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 
 import java.util.ArrayList;
@@ -31,20 +33,33 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockWaitStrategies;
 import org.neo4j.lock.ResourceType;
+import org.neo4j.lock.ResourceTypes;
 import org.neo4j.lock.WaitStrategy;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.test.Race;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.time.Clocks;
 import org.neo4j.util.concurrent.BinaryLatch;
 
+import static java.lang.Integer.max;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.neo4j.test.Race.throwing;
+
+@ExtendWith( RandomExtension.class )
 class ForsetiFalseDeadlockTest
 {
     private static final int TEST_RUNS = 10;
@@ -54,6 +69,9 @@ class ForsetiFalseDeadlockTest
         thread.setDaemon( true );
         return thread;
     } );
+
+    @Inject
+    RandomRule random;
 
     @AfterAll
     static void tearDown()
@@ -66,6 +84,36 @@ class ForsetiFalseDeadlockTest
     {
         ThrowingConsumer<Fixture> fixtureConsumer = fixture -> loopRunTest( fixture, TEST_RUNS );
         return DynamicTest.stream( fixtures(), Fixture::toString, fixtureConsumer );
+    }
+
+    @Test
+    void shouldManageToTakeSortedLocksWithoutFalseDeadlocks()
+    {
+        Config config = Config.defaults( GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks, true );
+        ForsetiLockManager manager = new ForsetiLockManager( config, Clocks.nanoClock(), ResourceTypes.values() );
+        AtomicInteger txCount = new AtomicInteger();
+        Race race = new Race().withEndCondition( () -> txCount.get() > 10000 );
+
+        race.addContestants( max( Runtime.getRuntime().availableProcessors(), 2 ), throwing( () -> {
+            try ( Locks.Client client = manager.newClient() )
+            {
+                int txId = txCount.incrementAndGet();
+                client.initialize( NoLeaseClient.INSTANCE, txId, EmptyMemoryTracker.INSTANCE, config );
+                long prevRel = random.nextInt( 10 );
+                long nextRel = random.nextInt( 10 );
+
+                //Lock two "relationships" always in order -> impossible to get a loop -> no deadlocks
+                long min = Math.min( prevRel, nextRel );
+                long max = Math.max( prevRel, nextRel );
+                client.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, min );
+                if ( prevRel != nextRel )
+                {
+                    client.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, max );
+                }
+                Thread.sleep( 1 );
+            }
+        } ) );
+        assertThatCode( () -> race.go( 1, TimeUnit.MINUTES ) ).doesNotThrowAnyException();
     }
 
     private static Iterator<Fixture> fixtures()

@@ -27,6 +27,7 @@ import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -130,11 +131,7 @@ public class ForsetiClient implements Locks.Client
     // closed and eventually will block other clients.
     private final LockClientStateHolder stateHolder = new LockClientStateHolder();
 
-    /**
-     * For exclusive locks, we only need a single re-usable one per client. We simply CAS this lock into whatever slots
-     * we want to hold in the global lock map.
-     */
-    private final ExclusiveLock myExclusiveLock = new ExclusiveLock( this );
+    private ExclusiveLock myExclusiveLock;
 
     private volatile boolean hasLocks;
 
@@ -183,6 +180,7 @@ public class ForsetiClient implements Locks.Client
         this.userTransactionId = transactionId;
         this.memoryTracker = requireNonNull( memoryTracker );
         this.lockAcquisitionTimeoutNano = config.get( GraphDatabaseSettings.lock_acquisition_timeout ).toNanos();
+        this.myExclusiveLock = new ExclusiveLock( this );
     }
 
     @Override
@@ -680,6 +678,7 @@ public class ForsetiClient implements Locks.Client
         userTransactionId = INVALID_TRANSACTION_ID;
         memoryTracker = null;
         clientPool.release( this );
+        myExclusiveLock.release(); // This exclusive locks are reused for all exclusive locks held by this client. Best we can do is to release it here
     }
 
     private void releaseAllLocks()
@@ -772,13 +771,13 @@ public class ForsetiClient implements Locks.Client
 
         ForsetiClient that = (ForsetiClient) o;
 
-        return clientId == that.clientId;
+        return clientId == that.clientId && userTransactionId == that.userTransactionId;
     }
 
     @Override
     public int hashCode()
     {
-        return clientId;
+        return Objects.hash( clientId, userTransactionId );
     }
 
     @Override
@@ -1010,7 +1009,7 @@ public class ForsetiClient implements Locks.Client
         for ( ForsetiClient owner : owners )
         {
             ForsetiLockManager.Lock waitingForLock = owner.waitingForLock;
-            if ( waitingForLock != null && !waitedUpon.contains( waitingForLock ) )
+            if ( waitingForLock != null && !waitingForLock.released() && !waitedUpon.contains( waitingForLock ) )
             {
                 nextWaitedUpon.add( waitingForLock );
             }

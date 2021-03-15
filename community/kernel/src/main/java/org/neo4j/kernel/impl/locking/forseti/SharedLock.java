@@ -251,6 +251,12 @@ class SharedLock implements ForsetiLockManager.Lock
     }
 
     @Override
+    public boolean released()
+    {
+        return refCount.get() == 0;
+    }
+
+    @Override
     public String toString()
     {
         // TODO we should only read out the refCount once, and build a deterministic string based on that

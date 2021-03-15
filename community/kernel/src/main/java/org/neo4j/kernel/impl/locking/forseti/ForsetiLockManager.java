@@ -152,6 +152,11 @@ public class ForsetiLockManager implements Locks
         LockType type();
 
         LongSet transactionIds();
+
+        /**
+         * Check if a lock is released or not
+         */
+        boolean released();
     }
 
     /**
