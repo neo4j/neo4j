@@ -20,7 +20,6 @@
 package org.neo4j.kernel.diagnostics.providers;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.management.CompilationMXBean;
 import java.lang.management.GarbageCollectorMXBean;
@@ -35,9 +34,7 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteOrder;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.ZoneId;
 import java.time.zone.ZoneRulesProvider;
 import java.util.ArrayList;
@@ -49,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
@@ -293,38 +289,6 @@ public enum SystemDiagnostics implements DiagnosticsProvider
         {
             NativeAccess nativeAccess = NativeAccessProvider.getNativeAccess();
             logger.log( "Native access details: " + nativeAccess.describe() );
-        }
-    },
-    CONTAINER( "Container heuristics" )
-    {
-        @Override
-        public void dump( DiagnosticsLogger logger )
-        {
-            logger.log( "Docker: " + isRunningInDocker() );
-            logger.log( "LXC: " + isRunningInLxc() );
-            logger.log( "Kubernetes: " + isRunningInKubernetes() );
-        }
-
-        private boolean isRunningInDocker()
-        {
-            try ( Stream<String> stream = Files.lines( Paths.get( "/proc/1/cgroup" ) ) )
-            {
-                return stream.anyMatch( line -> line.contains( "/docker" ) );
-            }
-            catch ( IOException e )
-            {
-                return false;
-            }
-        }
-
-        private boolean isRunningInLxc()
-        {
-            return "lxc".equals( System.getProperty( "container" ) );
-        }
-
-        private boolean isRunningInKubernetes()
-        {
-            return System.getProperty( "KUBERNETES_SERVICE_HOST" ) != null;
         }
     };
 

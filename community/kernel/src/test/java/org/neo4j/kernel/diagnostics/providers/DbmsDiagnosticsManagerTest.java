@@ -303,8 +303,7 @@ class DbmsDiagnosticsManagerTest
                                     "Java classpath",
                                     "Library path",
                                     "Network information",
-                                    "DBMS config",
-                                    "Container heuristics" );
+                                    "DBMS config" );
     }
 
     private void assertContainingAdditionalDiagnostics( DiagnosticsProvider diagnosticsProvider )
