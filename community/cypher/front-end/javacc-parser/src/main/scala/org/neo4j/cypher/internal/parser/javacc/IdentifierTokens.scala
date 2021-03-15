@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CATALOG
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CHANGE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.COMMIT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONSTRAINT
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONSTRAINTS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONTAINS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.COPY
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.COUNT
@@ -60,6 +61,8 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ENCRYPTED
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.END
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ENDS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ESCAPED_SYMBOLIC_NAME
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXIST
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXISTENCE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXISTS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXTRACT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FALSE
@@ -97,7 +100,10 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PASSWORD
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PERIODIC
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PLAINTEXT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.POPULATED
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PROPERTY
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REDUCE
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REL
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.RELATIONSHIP
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REMOVE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.RENAME
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REPLACE
@@ -162,6 +168,7 @@ object IdentifierTokens {
     CHANGE,
     COMMIT,
     CONSTRAINT,
+    CONSTRAINTS,
     CONTAINS,
     COPY,
     COUNT,
@@ -184,6 +191,8 @@ object IdentifierTokens {
     ENCRYPTED,
     END,
     ENDS,
+    EXIST,
+    EXISTENCE,
     EXISTS,
     EXTRACT,
     FALSE,
@@ -221,7 +230,10 @@ object IdentifierTokens {
     PERIODIC,
     PLAINTEXT,
     POPULATED,
+    PROPERTY,
     REDUCE,
+    REL,
+    RELATIONSHIP,
     REMOVE,
     RENAME,
     REPLACE,

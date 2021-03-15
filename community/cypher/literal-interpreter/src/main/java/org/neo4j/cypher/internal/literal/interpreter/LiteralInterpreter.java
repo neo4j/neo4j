@@ -31,6 +31,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.neo4j.cypher.internal.ast.ShowConstraintType;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.NULL;
 import org.neo4j.values.storable.DateTimeValue;
@@ -401,6 +402,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     public NULL showIndexClause( NULL p, boolean all, boolean brief, boolean verbose, Object where, boolean hasYield )
     {
         throw new UnsupportedOperationException( "showIndexClause is not a literal" );
+    }
+
+    @Override
+    public NULL showConstraintClause( NULL p, ShowConstraintType constraintType, boolean brief, boolean verbose, Object where, boolean hasYield )
+    {
+        throw new UnsupportedOperationException( "showConstraintClause is not a literal" );
     }
 
     @Override

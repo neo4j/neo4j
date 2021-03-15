@@ -23,6 +23,8 @@ import scala.util.Either;
 
 import java.util.List;
 
+import org.neo4j.cypher.internal.ast.ShowConstraintType;
+
 /**
  * Factory for constructing ASTs.
  * <p>
@@ -211,8 +213,9 @@ public interface ASTFactory<STATEMENT,
 
     CLAUSE showIndexClause( POS p, boolean all, boolean brief, boolean verbose, EXPRESSION where, boolean hasYield );
 
-    // Administration Commands
+    CLAUSE showConstraintClause( POS p, ShowConstraintType constraintType, boolean brief, boolean verbose, EXPRESSION where, boolean hasYield );
 
+    // Administration Commands
     ADMINISTRATION_COMMAND useGraph( ADMINISTRATION_COMMAND command, USE_GRAPH useGraph );
 
     // Role Administration Commands

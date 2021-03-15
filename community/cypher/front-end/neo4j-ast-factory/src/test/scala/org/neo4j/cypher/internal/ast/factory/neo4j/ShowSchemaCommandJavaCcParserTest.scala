@@ -19,8 +19,18 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.AllConstraints
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.DeprecatedSyntax
+import org.neo4j.cypher.internal.ast.ExistsConstraints
+import org.neo4j.cypher.internal.ast.NewSyntax
+import org.neo4j.cypher.internal.ast.NodeExistsConstraints
+import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.OldValidSyntax
+import org.neo4j.cypher.internal.ast.RelExistsConstraints
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
+import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.scalatest.FunSuiteLike
 
@@ -122,7 +132,13 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
   // Negative tests for show indexes
 
   test("SHOW ALL BTREE INDEXES") {
-    assertJavaCCException(testName, """Invalid input 'BTREE': expected "INDEX", "INDEXES" or "ROLES" (line 1, column 10 (offset: 9))""")
+    assertJavaCCException(testName,
+      """Invalid input 'BTREE': expected
+        |  "CONSTRAINT"
+        |  "CONSTRAINTS"
+        |  "INDEX"
+        |  "INDEXES"
+        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin)
   }
 
   test("SHOW INDEX OUTPUT") {
@@ -197,54 +213,347 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
   }
 
   test("SHOW NODE INDEXES") {
-    assertJavaCCException(testName,
-      """Invalid input 'NODE': expected
-        |  "ALL"
-        |  "BTREE"
-        |  "CURRENT"
-        |  "DATABASE"
-        |  "DATABASES"
-        |  "DEFAULT"
-        |  "HOME"
-        |  "INDEX"
-        |  "INDEXES"
-        |  "POPULATED"
-        |  "ROLES"
-        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)
+    assertSameAST(testName)
   }
 
   test("SHOW REL INDEXES") {
-    assertJavaCCException(testName,
-      """Invalid input 'REL': expected
-        |  "ALL"
-        |  "BTREE"
-        |  "CURRENT"
-        |  "DATABASE"
-        |  "DATABASES"
-        |  "DEFAULT"
-        |  "HOME"
-        |  "INDEX"
-        |  "INDEXES"
-        |  "POPULATED"
-        |  "ROLES"
-        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)
+    assertSameAST(testName)
   }
 
   test("SHOW RELATIONSHIP INDEXES") {
+    assertSameAST(testName)
+  }
+
+  // Show constraints
+
+  private val oldConstraintTypes = Seq(
+    ("", AllConstraints),
+    ("ALL", AllConstraints),
+    ("UNIQUE", UniqueConstraints),
+    ("NODE KEY", NodeKeyConstraints),
+    ("EXIST", ExistsConstraints(OldValidSyntax)),
+    ("EXISTS", ExistsConstraints(DeprecatedSyntax)),
+    ("NODE EXIST", NodeExistsConstraints(OldValidSyntax)),
+    ("NODE EXISTS", NodeExistsConstraints(DeprecatedSyntax)),
+    ("RELATIONSHIP EXIST", RelExistsConstraints(OldValidSyntax)),
+    ("RELATIONSHIP EXISTS", RelExistsConstraints(DeprecatedSyntax)),
+  )
+
+  private val newExistenceConstraintType = Seq(
+    ("PROPERTY EXISTENCE", ExistsConstraints(NewSyntax)),
+    ("PROPERTY EXIST", ExistsConstraints(NewSyntax)),
+    ("EXISTENCE", ExistsConstraints(NewSyntax)),
+    ("NODE PROPERTY EXISTENCE", NodeExistsConstraints(NewSyntax)),
+    ("NODE PROPERTY EXIST", NodeExistsConstraints(NewSyntax)),
+    ("NODE EXISTENCE", NodeExistsConstraints(NewSyntax)),
+    ("RELATIONSHIP PROPERTY EXISTENCE", RelExistsConstraints(NewSyntax)),
+    ("RELATIONSHIP PROPERTY EXIST", RelExistsConstraints(NewSyntax)),
+    ("RELATIONSHIP EXISTENCE", RelExistsConstraints(NewSyntax)),
+    ("REL PROPERTY EXISTENCE", RelExistsConstraints(NewSyntax)),
+    ("REL PROPERTY EXIST", RelExistsConstraints(NewSyntax)),
+    ("REL EXISTENCE", RelExistsConstraints(NewSyntax)),
+    ("REL EXIST", RelExistsConstraints(NewSyntax)),
+  )
+
+  Seq("CONSTRAINT", "CONSTRAINTS").foreach {
+    constraintKeyword =>
+      (oldConstraintTypes ++ newExistenceConstraintType).foreach {
+        case (constraintTypeKeyword, constraintType) =>
+
+          test(s"SHOW $constraintTypeKeyword $constraintKeyword") {
+            assertJavaCCAST(testName, query(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = false)(pos)))
+          }
+
+          test(s"USE db SHOW $constraintTypeKeyword $constraintKeyword") {
+            assertJavaCCAST(testName, query(use(varFor("db")), ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = false)(pos)))
+          }
+
+      }
+
+      // Brief/verbose output (deprecated)
+
+      oldConstraintTypes.foreach {
+        case (constraintTypeKeyword, constraintType) =>
+
+          test(s"SHOW $constraintTypeKeyword $constraintKeyword BRIEF") {
+            assertJavaCCAST(testName, query(ShowConstraintsClause(constraintType, brief = true, verbose = false, None, hasYield = false)(pos)))
+          }
+
+          test(s"SHOW $constraintTypeKeyword $constraintKeyword BRIEF OUTPUT") {
+            assertJavaCCAST(testName, query(ShowConstraintsClause(constraintType, brief = true, verbose = false, None, hasYield = false)(pos)))
+          }
+
+          test(s"SHOW $constraintTypeKeyword $constraintKeyword VERBOSE") {
+            assertJavaCCAST(testName, query(ShowConstraintsClause(constraintType, brief = false, verbose = true, None, hasYield = false)(pos)))
+          }
+
+          test(s"SHOW $constraintTypeKeyword $constraintKeyword VERBOSE OUTPUT") {
+            assertJavaCCAST(testName, query(ShowConstraintsClause(constraintType, brief = false, verbose = true, None, hasYield = false)(pos)))
+          }
+      }
+  }
+
+  // Show constraints filtering
+
+  test("SHOW CONSTRAINT WHERE entityType = 'RELATIONSHIP'") {
+    assertJavaCCAST(testName, query(ShowConstraintsClause(AllConstraints, brief = false, verbose = false, Some(where(equals(varFor("entityType"), literalString("RELATIONSHIP")))), hasYield = false)(pos)))
+  }
+
+  test("SHOW REL PROPERTY EXISTENCE CONSTRAINTS YIELD labelsOrTypes") {
+    assertJavaCCAST(testName, query(ShowConstraintsClause(RelExistsConstraints(NewSyntax), brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnItems(variableReturnItem("labelsOrTypes")))))
+  }
+
+  test("SHOW UNIQUE CONSTRAINTS YIELD *") {
+    assertJavaCCAST(testName, query(ShowConstraintsClause(UniqueConstraints, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnAllItems)))
+  }
+
+  test("USE db SHOW NODE KEY CONSTRAINTS YIELD name, properties AS pp WHERE size(pp) > 1 RETURN name") {
+    assertJavaCCAST(testName, query(
+      use(varFor("db")),
+      ShowConstraintsClause(NodeKeyConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
+      yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("properties", "pp")),
+        where = Some(where(greaterThan(function("size", varFor("pp")), literalInt(1))))),
+      return_(variableReturnItem("name"))
+    ))
+  }
+
+  test("SHOW EXISTENCE CONSTRAINTS YIELD name AS CONSTRAINT, type AS OUTPUT") {
+    assertJavaCCAST(testName, query(ShowConstraintsClause(ExistsConstraints(NewSyntax), brief = false, verbose = false, None, hasYield = true)(pos),
+      yieldClause(returnItems(aliasedReturnItem("name", "CONSTRAINT"), aliasedReturnItem("type", "OUTPUT")))))
+  }
+
+  test("SHOW NODE EXIST CONSTRAINTS WHERE name = 'GRANT'") {
+    assertJavaCCAST(testName, query(ShowConstraintsClause(NodeExistsConstraints(OldValidSyntax), brief = false, verbose = false,
+      Some(where(equals(varFor("name"), literalString("GRANT")))), hasYield = false)(pos)))
+  }
+
+  // Negative tests for show constraints
+
+  test("SHOW ALL EXISTS CONSTRAINTS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW UNIQUENESS CONSTRAINTS") {
     assertJavaCCException(testName,
-      """Invalid input 'RELATIONSHIP': expected
+      """Invalid input 'UNIQUENESS': expected
         |  "ALL"
         |  "BTREE"
+        |  "CONSTRAINT"
+        |  "CONSTRAINTS"
         |  "CURRENT"
         |  "DATABASE"
         |  "DATABASES"
         |  "DEFAULT"
+        |  "EXIST"
+        |  "EXISTENCE"
+        |  "EXISTS"
         |  "HOME"
         |  "INDEX"
         |  "INDEXES"
+        |  "NODE"
         |  "POPULATED"
+        |  "PROPERTY"
+        |  "REL"
+        |  "RELATIONSHIP"
         |  "ROLES"
+        |  "UNIQUE"
         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)
+  }
+
+  test("SHOW NODE CONSTRAINTS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW EXISTS NODE CONSTRAINTS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW NODES EXIST CONSTRAINTS") {
+    assertJavaCCException(testName,
+      """Invalid input 'NODES': expected
+        |  "ALL"
+        |  "BTREE"
+        |  "CONSTRAINT"
+        |  "CONSTRAINTS"
+        |  "CURRENT"
+        |  "DATABASE"
+        |  "DATABASES"
+        |  "DEFAULT"
+        |  "EXIST"
+        |  "EXISTENCE"
+        |  "EXISTS"
+        |  "HOME"
+        |  "INDEX"
+        |  "INDEXES"
+        |  "NODE"
+        |  "POPULATED"
+        |  "PROPERTY"
+        |  "REL"
+        |  "RELATIONSHIP"
+        |  "ROLES"
+        |  "UNIQUE"
+        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)
+  }
+
+  test("SHOW RELATIONSHIP CONSTRAINTS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW EXISTS RELATIONSHIP CONSTRAINTS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW RELATIONSHIPS EXIST CONSTRAINTS") {
+    assertJavaCCException(testName,
+      """Invalid input 'RELATIONSHIPS': expected
+        |  "ALL"
+        |  "BTREE"
+        |  "CONSTRAINT"
+        |  "CONSTRAINTS"
+        |  "CURRENT"
+        |  "DATABASE"
+        |  "DATABASES"
+        |  "DEFAULT"
+        |  "EXIST"
+        |  "EXISTENCE"
+        |  "EXISTS"
+        |  "HOME"
+        |  "INDEX"
+        |  "INDEXES"
+        |  "NODE"
+        |  "POPULATED"
+        |  "PROPERTY"
+        |  "REL"
+        |  "RELATIONSHIP"
+        |  "ROLES"
+        |  "UNIQUE"
+        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin)
+  }
+
+  test("SHOW REL EXISTS CONSTRAINTS") {
+    assertJavaCCException(testName, """Invalid input 'EXISTS': expected "EXIST", "EXISTENCE" or "PROPERTY" (line 1, column 10 (offset: 9))""")
+  }
+
+  test("SHOW KEY CONSTRAINTS") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW CONSTRAINTS OUTPUT") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW CONSTRAINTS VERBOSE BRIEF OUTPUT") {
+    assertSameAST(testName)
+  }
+
+  newExistenceConstraintType.foreach {
+    case (constraintTypeKeyword, _) =>
+      test(s"SHOW $constraintTypeKeyword CONSTRAINTS BRIEF") {
+        assertSameAST(testName)
+      }
+
+      test(s"SHOW $constraintTypeKeyword CONSTRAINT BRIEF OUTPUT") {
+        assertSameAST(testName)
+      }
+
+      test(s"SHOW $constraintTypeKeyword CONSTRAINT VERBOSE") {
+        assertSameAST(testName)
+      }
+
+      test(s"SHOW $constraintTypeKeyword CONSTRAINTS VERBOSE OUTPUT") {
+        assertSameAST(testName)
+      }
+  }
+
+  test("SHOW CONSTRAINT YIELD") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW CONSTRAINTS BRIEF YIELD *") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW CONSTRAINTS VERBOSE YIELD *") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW CONSTRAINTS BRIEF RETURN *") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW CONSTRAINTS VERBOSE RETURN *") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW CONSTRAINTS BRIEF WHERE entityType = 'NODE'") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW CONSTRAINTS VERBOSE WHERE entityType = 'NODE'") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW CONSTRAINTS YIELD * YIELD *") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW CONSTRAINTS WHERE entityType = 'NODE' YIELD *") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW CONSTRAINTS WHERE entityType = 'NODE' RETURN *") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW CONSTRAINTS YIELD a b RETURN *") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW CONSTRAINTS YIELD * WITH * MATCH (n) RETURN n") {
+    // Can't parse WITH after SHOW
+    assertJavaCCExceptionStart(testName, "Invalid input 'WITH': expected")
+  }
+
+  test("UNWIND range(1,10) as b SHOW CONSTRAINTS YIELD * RETURN *") {
+    // Can't parse SHOW after UNWIND
+    assertJavaCCExceptionStart(testName, "Invalid input 'SHOW': expected")
+  }
+
+  test("SHOW CONSTRAINTS WITH name, type RETURN *") {
+    // Can't parse WITH after SHOW
+    assertJavaCCExceptionStart(testName, "Invalid input 'WITH': expected")
+  }
+
+  test("SHOW EXISTS CONSTRAINT WHERE name = 'foo'") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW NODE EXISTS CONSTRAINT WHERE name = 'foo'") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW RELATIONSHIP EXISTS CONSTRAINT WHERE name = 'foo'") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW EXISTS CONSTRAINT YIELD *") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW NODE EXISTS CONSTRAINT YIELD *") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW RELATIONSHIP EXISTS CONSTRAINT YIELD name") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW EXISTS CONSTRAINT RETURN *") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW EXISTENCE CONSTRAINT RETURN *") {
+    assertSameAST(testName)
   }
 
 }

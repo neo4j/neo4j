@@ -111,7 +111,13 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   }
 
   test("SHOW ALL ROLE") {
-    assertJavaCCException(testName, """Invalid input 'ROLE': expected "INDEX", "INDEXES" or "ROLES" (line 1, column 10 (offset: 9))""")
+    assertJavaCCException(testName,
+      """Invalid input 'ROLE': expected
+        |  "CONSTRAINT"
+        |  "CONSTRAINTS"
+        |  "INDEX"
+        |  "INDEXES"
+        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin)
   }
 
   test("SHOW POPULATED ROLE") {
@@ -123,15 +129,25 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
       s"""Invalid input 'ROLE': expected
          |  "ALL"
          |  "BTREE"
+         |  "CONSTRAINT"
+         |  "CONSTRAINTS"
          |  "CURRENT"
          |  "DATABASE"
          |  "DATABASES"
          |  "DEFAULT"
+         |  "EXIST"
+         |  "EXISTENCE"
+         |  "EXISTS"
          |  "HOME"
          |  "INDEX"
          |  "INDEXES"
+         |  "NODE"
          |  "POPULATED"
+         |  "PROPERTY"
+         |  "REL"
+         |  "RELATIONSHIP"
          |  "ROLES"
+         |  "UNIQUE"
          |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
 
     assertJavaCCException(testName, exceptionMessage)
@@ -142,15 +158,25 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
       s"""Invalid input 'ROLE': expected
          |  "ALL"
          |  "BTREE"
+         |  "CONSTRAINT"
+         |  "CONSTRAINTS"
          |  "CURRENT"
          |  "DATABASE"
          |  "DATABASES"
          |  "DEFAULT"
+         |  "EXIST"
+         |  "EXISTENCE"
+         |  "EXISTS"
          |  "HOME"
          |  "INDEX"
          |  "INDEXES"
+         |  "NODE"
          |  "POPULATED"
+         |  "PROPERTY"
+         |  "REL"
+         |  "RELATIONSHIP"
          |  "ROLES"
+         |  "UNIQUE"
          |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
 
     assertJavaCCException(testName, exceptionMessage)
@@ -165,22 +191,38 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
       s"""Invalid input 'ROLE': expected
          |  "ALL"
          |  "BTREE"
+         |  "CONSTRAINT"
+         |  "CONSTRAINTS"
          |  "CURRENT"
          |  "DATABASE"
          |  "DATABASES"
          |  "DEFAULT"
+         |  "EXIST"
+         |  "EXISTENCE"
+         |  "EXISTS"
          |  "HOME"
          |  "INDEX"
          |  "INDEXES"
+         |  "NODE"
          |  "POPULATED"
+         |  "PROPERTY"
+         |  "REL"
+         |  "RELATIONSHIP"
          |  "ROLES"
+         |  "UNIQUE"
          |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
 
     assertJavaCCException(testName, exceptionMessage)
   }
 
   test("SHOW ALL ROLE WITH USERS") {
-    assertJavaCCException(testName, """Invalid input 'ROLE': expected "INDEX", "INDEXES" or "ROLES" (line 1, column 10 (offset: 9))""")
+    assertJavaCCException(testName,
+      """Invalid input 'ROLE': expected
+        |  "CONSTRAINT"
+        |  "CONSTRAINTS"
+        |  "INDEX"
+        |  "INDEXES"
+        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin)
   }
 
   test("SHOW ALL ROLES WITH USER") {
@@ -188,7 +230,13 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   }
 
   test("SHOW ALL ROLE WITH USER") {
-    assertJavaCCException(testName, """Invalid input 'ROLE': expected "INDEX", "INDEXES" or "ROLES" (line 1, column 10 (offset: 9))""")
+    assertJavaCCException(testName,
+      """Invalid input 'ROLE': expected
+        |  "CONSTRAINT"
+        |  "CONSTRAINTS"
+        |  "INDEX"
+        |  "INDEXES"
+        |  "ROLES" (line 1, column 10 (offset: 9))""".stripMargin)
   }
 
   test("YIELD a, b, c WHERE a = b") {

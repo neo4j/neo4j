@@ -117,6 +117,8 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.factory.ASTFactory
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.MergeActionType
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause
+import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -834,6 +836,15 @@ class Neo4jASTFactory(query: String)
                                where: Expression,
                                hasYield: Boolean): Clause = {
     ShowIndexesClause(all, brief, verbose, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
+  }
+
+  override def showConstraintClause(p: InputPosition,
+                                    constraintType: ShowConstraintType,
+                                    brief: Boolean,
+                                    verbose: Boolean,
+                                    where: Expression,
+                                    hasYield: Boolean): Clause = {
+    ShowConstraintsClause(constraintType, brief, verbose, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
   }
 
   // Administration Commands

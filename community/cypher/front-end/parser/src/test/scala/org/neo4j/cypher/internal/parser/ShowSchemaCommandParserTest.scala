@@ -398,6 +398,14 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
     failsToParse
   }
 
+  test("SHOW CONSTRAINTS BRIEF RETURN *") {
+    failsToParse
+  }
+
+  test("SHOW CONSTRAINTS VERBOSE RETURN *") {
+    failsToParse
+  }
+
   test("SHOW CONSTRAINTS BRIEF WHERE entityType = 'NODE'") {
     failsToParse
   }
@@ -411,6 +419,10 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
   }
 
   test("SHOW CONSTRAINTS WHERE entityType = 'NODE' YIELD *") {
+    failsToParse
+  }
+
+  test("SHOW CONSTRAINTS WHERE entityType = 'NODE' RETURN *") {
     failsToParse
   }
 
@@ -454,6 +466,14 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
   }
 
   test("SHOW RELATIONSHIP EXISTS CONSTRAINT YIELD name") {
+    failsToParse
+  }
+
+  test("SHOW EXISTS CONSTRAINT RETURN *") {
+    failsToParse
+  }
+
+  test("SHOW EXISTENCE CONSTRAINT RETURN *") {
     failsToParse
   }
 
