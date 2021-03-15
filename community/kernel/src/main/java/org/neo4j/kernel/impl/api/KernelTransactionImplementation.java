@@ -38,6 +38,7 @@ import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -721,6 +722,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if ( listenersState != null && listenersState.isFailed() )
             {
                 Throwable cause = listenersState.failure();
+                if ( cause instanceof TransientFailureException )
+                {
+                    throw (TransientFailureException) cause;
+                }
                 throw new TransactionFailureException( Status.Transaction.TransactionHookFailed, cause, cause.getMessage() );
             }
 

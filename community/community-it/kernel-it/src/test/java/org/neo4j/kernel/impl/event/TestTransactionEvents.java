@@ -49,6 +49,7 @@ import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.recordstorage.TestRelType;
+import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
@@ -60,6 +61,7 @@ import org.neo4j.test.extension.Inject;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -159,6 +161,45 @@ class TestTransactionEvents
         assertNull( listener.afterRollback );
 
         dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, listener );
+    }
+
+    @Test
+    void onlyTransientErrorsShouldBeRethrown()
+    {
+        //Given
+        DeadlockDetectedException transientException = new DeadlockDetectedException( "transient error" );
+        ExceptionThrowingEventListener transientThrowingListener = new ExceptionThrowingEventListener( transientException, null, null );
+        Exception otherException = new Exception( "other error" );
+        ExceptionThrowingEventListener exceptionThrowingListener = new ExceptionThrowingEventListener( otherException, null, null );
+
+        //When
+        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, transientThrowingListener );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.createNode().delete();
+            //Then
+            assertThatThrownBy( tx::commit ).isEqualTo( transientException );
+        }
+        finally
+        {
+            dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, transientThrowingListener );
+        }
+
+        //When
+        dbms.registerTransactionEventListener( DEFAULT_DATABASE_NAME, exceptionThrowingListener );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.createNode().delete();
+            //Then
+            assertThatThrownBy( tx::commit )
+                    .isNotEqualTo( otherException )
+                    .isInstanceOf( TransactionFailureException.class )
+                    .hasRootCause( otherException );
+        }
+        finally
+        {
+            dbms.unregisterTransactionEventListener( DEFAULT_DATABASE_NAME, exceptionThrowingListener );
+        }
     }
 
     @Test

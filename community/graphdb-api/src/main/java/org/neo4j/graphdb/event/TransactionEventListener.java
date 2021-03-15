@@ -24,6 +24,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransientFailureException;
 
 /**
  * An event handler interface for transaction events. Once it has been
@@ -52,8 +53,8 @@ import org.neo4j.graphdb.TransactionFailureException;
  * {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)} successfully.
  * <p>
  * If {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)} isn't executed successfully, but
- * instead throws an exception the transaction won't be committed and a
- * {@link TransactionFailureException} will (eventually) be thrown from
+ * instead throws an exception the transaction won't be committed. Transient errors of type {@link TransientFailureException} will (eventually) be rethrown.
+ * For all other errors a {@link TransactionFailureException} will (eventually) be thrown from
  * {@link Transaction#close()}. All handlers which at this point have had its
  * {@link #beforeCommit(TransactionData, Transaction, GraphDatabaseService)} method executed successfully will
  * receive a call to {@link #afterRollback(TransactionData, Object, GraphDatabaseService)}.
@@ -73,7 +74,7 @@ public interface TransactionEventListener<T>
      * is about to be committed.
      *
      * If this method throws an exception the transaction will be rolled back
-     * and a {@link TransactionFailureException} will be thrown from
+     * and a {@link TransactionFailureException} or a {@link TransientFailureException} will be thrown from
      * {@link Transaction#close()}.
      *
      * The transaction is still open when this method is invoked, making it
