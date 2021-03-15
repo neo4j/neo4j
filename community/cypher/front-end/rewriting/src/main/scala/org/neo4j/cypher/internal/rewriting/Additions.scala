@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
-import org.neo4j.cypher.internal.ast.ShowConstraints
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.Statement
@@ -120,8 +120,8 @@ object Additions {
       case s: ShowIndexesClause =>
         throw cypherExceptionFactory.syntaxException("SHOW INDEXES is not supported in this Cypher version.", s.position)
 
-      // SHOW [ALL|UNIQUE|NODE EXIST[S]|RELATIONSHIP EXIST[S]|EXIST[S]|NODE KEY] CONSTRAINT[S] [BRIEF|VERBOSE[OUTPUT]]
-      case s: ShowConstraints =>
+      // SHOW [ALL|UNIQUE|NODE EXIST[S]|RELATIONSHIP EXIST[S]|EXIST[S]|NODE KEY] CONSTRAINT[S] [BRIEF|VERBOSE|WHERE clause|YIELD clause]
+      case s: ShowConstraintsClause =>
         throw cypherExceptionFactory.syntaxException("SHOW CONSTRAINTS is not supported in this Cypher version.", s.position)
 
       // Administration commands against system database are not supported at all in CYPHER 3.5.
@@ -195,16 +195,19 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Relationship property indexes are not supported in this Cypher version.", c.position)
 
       // SHOW {[PROPERTY] EXISTENCE | PROPERTY EXIST[ENCE]} CONSTRAINTS
-      case c@ShowConstraints(ExistsConstraints(NewSyntax), _, _) =>
+      case c@ShowConstraintsClause(_, ExistsConstraints(NewSyntax), _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Using `PROPERTY` or `EXISTENCE` when listing property existence constraints is not supported in this Cypher version.", c.position)
 
       // SHOW {NODE [PROPERTY] EXISTENCE | NODE PROPERTY EXIST[ENCE]} CONSTRAINTS
-      case c@ShowConstraints(NodeExistsConstraints(NewSyntax), _, _) =>
+      case c@ShowConstraintsClause(_, NodeExistsConstraints(NewSyntax), _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Using `PROPERTY` or `EXISTENCE` when listing node property existence constraints is not supported in this Cypher version.", c.position)
 
       // SHOW {RELATIONSHIP [PROPERTY] EXISTENCE | RELATIONSHIP PROPERTY EXIST[ENCE] | REL [PROPERTY] EXIST[ENCE]} CONSTRAINTS
-      case c@ShowConstraints(RelExistsConstraints(NewSyntax), _, _) =>
+      case c@ShowConstraintsClause(_, RelExistsConstraints(NewSyntax), _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Using `REL`, `PROPERTY` or `EXISTENCE` when listing relationship property existence constraints is not supported in this Cypher version.", c.position)
+
+      case c: ShowConstraintsClause if c.where.isDefined || c.hasYield =>
+        throw cypherExceptionFactory.syntaxException("Using YIELD or WHERE to list constraints is not supported in this Cypher version.", c.position)
     }
   }
 

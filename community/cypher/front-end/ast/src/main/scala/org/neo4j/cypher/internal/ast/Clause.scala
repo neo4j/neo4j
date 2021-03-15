@@ -483,6 +483,33 @@ object ShowIndexesClause {
   }
 }
 
+case class ShowConstraintsClause(unfilteredColumns: DefaultOrAllShowColumns, constraintType: ShowConstraintType, brief: Boolean, verbose: Boolean, where: Option[Where], hasYield: Boolean)
+                            (val position: InputPosition) extends CommandClause {
+  override def name: String = "SHOW CONSTRAINTS"
+
+  override def moveWhereToYield: CommandClause = copy(where = None, hasYield = true)(position)
+}
+
+object ShowConstraintsClause {
+  def apply(constraintType: ShowConstraintType, brief: Boolean, verbose: Boolean, where: Option[Where], hasYield: Boolean)(position: InputPosition): ShowConstraintsClause = {
+    val briefCols = Set(
+      ShowColumn("id", CTInteger)(position),
+      ShowColumn("name")(position),
+      ShowColumn("type")(position),
+      ShowColumn("entityType")(position),
+      ShowColumn("labelsOrTypes", CTList(CTString))(position),
+      ShowColumn("properties", CTList(CTString))(position),
+      ShowColumn("ownedIndexId", CTInteger)(position)
+    )
+    val verboseCols = Set(
+      ShowColumn("options", CTMap)(position),
+      ShowColumn("createStatement")(position)
+    )
+
+    ShowConstraintsClause(DefaultOrAllShowColumns(hasYield | verbose, briefCols, verboseCols), constraintType, brief, verbose, where, hasYield)(position)
+  }
+}
+
 case class Merge(pattern: Pattern, actions: Seq[MergeAction], where: Option[Where] = None)(val position: InputPosition)
   extends UpdateClause with SingleRelTypeCheck {
 

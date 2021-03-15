@@ -31,18 +31,23 @@ import org.neo4j.cypher.internal.ast.ElementsAllQualifier
 import org.neo4j.cypher.internal.ast.ExecuteAdminProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
+import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.LabelQualifier
+import org.neo4j.cypher.internal.ast.NodeExistsConstraints
+import org.neo4j.cypher.internal.ast.NodeKeyConstraints
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.ReadAction
+import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUsersPrivileges
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.TraverseAction
+import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.WriteAction
@@ -766,8 +771,23 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("ShowConstraints") {
-    assertGood(attach(ShowConstraints(constraintType = AllConstraints, verbose = false, List.empty), 1.0),
-      planDescription(id, "ShowConstraints", NoChildren, Seq(), Set.empty))
+    assertGood(attach(ShowConstraints(constraintType = AllConstraints, verbose = false, Set.empty), 1.0),
+      planDescription(id, "ShowConstraints", NoChildren, Seq(details("allConstraints, defaultColumns")), Set.empty))
+
+    assertGood(attach(ShowConstraints(constraintType = UniqueConstraints, verbose = true, Set.empty), 1.0),
+      planDescription(id, "ShowConstraints", NoChildren, Seq(details("uniquenessConstraints, allColumns")), Set.empty))
+
+    assertGood(attach(ShowConstraints(constraintType = NodeKeyConstraints, verbose = false, Set.empty), 1.0),
+      planDescription(id, "ShowConstraints", NoChildren, Seq(details("nodeKeyConstraints, defaultColumns")), Set.empty))
+
+    assertGood(attach(ShowConstraints(constraintType = ExistsConstraints(ast.NewSyntax), verbose = true, Set.empty), 1.0),
+      planDescription(id, "ShowConstraints", NoChildren, Seq(details("existenceConstraints, allColumns")), Set.empty))
+
+    assertGood(attach(ShowConstraints(constraintType = NodeExistsConstraints(), verbose = false, Set.empty), 1.0),
+      planDescription(id, "ShowConstraints", NoChildren, Seq(details("nodeExistenceConstraints, defaultColumns")), Set.empty))
+
+    assertGood(attach(ShowConstraints(constraintType = RelExistsConstraints(), verbose = true, Set.empty), 1.0),
+      planDescription(id, "ShowConstraints", NoChildren, Seq(details("relationshipExistenceConstraints, allColumns")), Set.empty))
   }
 
   test("Aggregation") {

@@ -115,6 +115,7 @@ import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
@@ -146,6 +147,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowConstraintsCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AllNodesScanPipe
@@ -371,6 +373,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
           buildExpression(valueExpr), indexOrder)(id = id)
 
       case ShowIndexes(all, verbose, columns) => CommandPipe(ShowIndexesCommand(all, verbose, columns))(id)
+
+      case ShowConstraints(constraintType, verbose, columns) => CommandPipe(ShowConstraintsCommand(constraintType, verbose, columns))(id)
 
       // Currently used for testing only
       case MultiNodeIndexSeek(indexLeafPlans) =>

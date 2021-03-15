@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
 import org.neo4j.cypher.internal.ast.OldValidSyntax
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.UniqueConstraints
 
@@ -250,34 +251,70 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
         case (constraintTypeKeyword, constraintType) =>
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword") {
-            yields(ast.ShowConstraints(constraintType, None))
+            yields(_ => query(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = false)(pos)))
           }
 
           test(s"USE db SHOW $constraintTypeKeyword $constraintKeyword") {
-            yields(ast.ShowConstraints(constraintType, None, Some(use(varFor("db")))))
+            yields(_ => query(use(varFor("db")), ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = false)(pos)))
           }
 
       }
+
+      // Brief/verbose output (deprecated)
 
       oldConstraintTypes.foreach {
         case (constraintTypeKeyword, constraintType) =>
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword BRIEF") {
-            yields(ast.ShowConstraints(constraintType, Some(false)))
+            yields(_ => query(ShowConstraintsClause(constraintType, brief = true, verbose = false, None, hasYield = false)(pos)))
           }
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword BRIEF OUTPUT") {
-            yields(ast.ShowConstraints(constraintType, Some(false)))
+            yields(_ => query(ShowConstraintsClause(constraintType, brief = true, verbose = false, None, hasYield = false)(pos)))
           }
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword VERBOSE") {
-            yields(ast.ShowConstraints(constraintType, Some(true)))
+            yields(_ => query(ShowConstraintsClause(constraintType, brief = false, verbose = true, None, hasYield = false)(pos)))
           }
 
           test(s"SHOW $constraintTypeKeyword $constraintKeyword VERBOSE OUTPUT") {
-            yields(ast.ShowConstraints(constraintType, Some(true)))
+            yields(_ => query(ShowConstraintsClause(constraintType, brief = false, verbose = true, None, hasYield = false)(pos)))
           }
       }
+  }
+
+  // Show constraints filtering
+
+  test("SHOW CONSTRAINT WHERE entityType = 'RELATIONSHIP'") {
+    yields(_ => query(ShowConstraintsClause(AllConstraints, brief = false, verbose = false, Some(where(equals(varFor("entityType"), literalString("RELATIONSHIP")))), hasYield = false)(pos)))
+  }
+
+  test("SHOW REL PROPERTY EXISTENCE CONSTRAINTS YIELD labelsOrTypes") {
+    yields(_ => query(ShowConstraintsClause(RelExistsConstraints(NewSyntax), brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnItems(variableReturnItem("labelsOrTypes")))))
+  }
+
+  test("SHOW UNIQUE CONSTRAINTS YIELD *") {
+    yields(_ => query(ShowConstraintsClause(UniqueConstraints, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnAllItems)))
+  }
+
+  test("USE db SHOW NODE KEY CONSTRAINTS YIELD name, properties AS pp WHERE size(pp) > 1 RETURN name") {
+    yields(_ => query(
+      use(varFor("db")),
+      ShowConstraintsClause(NodeKeyConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
+      yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("properties", "pp")),
+        where = Some(where(greaterThan(function("size", varFor("pp")), literalInt(1))))),
+      return_(variableReturnItem("name"))
+    ))
+  }
+
+  test("SHOW EXISTENCE CONSTRAINTS YIELD name AS CONSTRAINT, type AS OUTPUT") {
+    yields(_ => query(ShowConstraintsClause(ExistsConstraints(NewSyntax), brief = false, verbose = false, None, hasYield = true)(pos),
+      yieldClause(returnItems(aliasedReturnItem("name", "CONSTRAINT"), aliasedReturnItem("type", "OUTPUT")))))
+  }
+
+  test("SHOW NODE EXIST CONSTRAINTS WHERE name = 'GRANT'") {
+    yields(_ => query(ShowConstraintsClause(NodeExistsConstraints(OldValidSyntax), brief = false, verbose = false,
+      Some(where(equals(varFor("name"), literalString("GRANT")))), hasYield = false)(pos)))
   }
 
   // Negative tests for show constraints
@@ -349,17 +386,74 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
       }
   }
 
-  // Show constraints filtering is not supported
-
-  test("SHOW CONSTRAINTS WHERE uniqueness = 'UNIQUE'") {
+  test("SHOW CONSTRAINT YIELD") {
     failsToParse
   }
 
-  test("SHOW ALL CONSTRAINTS YIELD populationPercent") {
+  test("SHOW CONSTRAINTS BRIEF YIELD *") {
     failsToParse
   }
 
-  test("SHOW EXISTS CONSTRAINTS VERBOSE YIELD *") {
+  test("SHOW CONSTRAINTS VERBOSE YIELD *") {
+    failsToParse
+  }
+
+  test("SHOW CONSTRAINTS BRIEF WHERE entityType = 'NODE'") {
+    failsToParse
+  }
+
+  test("SHOW CONSTRAINTS VERBOSE WHERE entityType = 'NODE'") {
+    failsToParse
+  }
+
+  test("SHOW CONSTRAINTS YIELD * YIELD *") {
+    failsToParse
+  }
+
+  test("SHOW CONSTRAINTS WHERE entityType = 'NODE' YIELD *") {
+    failsToParse
+  }
+
+  test("SHOW CONSTRAINTS YIELD a b RETURN *") {
+    failsToParse
+  }
+
+  test("SHOW CONSTRAINTS YIELD * WITH * MATCH (n) RETURN n") {
+    // Can't parse WITH after SHOW
+    failsToParse
+  }
+
+  test("UNWIND range(1,10) as b SHOW CONSTRAINTS YIELD * RETURN *") {
+    // Can't parse SHOW after UNWIND
+    failsToParse
+  }
+
+  test("SHOW CONSTRAINTS WITH name, type RETURN *") {
+    // Can't parse WITH after SHOW
+    failsToParse
+  }
+
+  test("SHOW EXISTS CONSTRAINT WHERE name = 'foo'") {
+    failsToParse
+  }
+
+  test("SHOW NODE EXISTS CONSTRAINT WHERE name = 'foo'") {
+    failsToParse
+  }
+
+  test("SHOW RELATIONSHIP EXISTS CONSTRAINT WHERE name = 'foo'") {
+    failsToParse
+  }
+
+  test("SHOW EXISTS CONSTRAINT YIELD *") {
+    failsToParse
+  }
+
+  test("SHOW NODE EXISTS CONSTRAINT YIELD *") {
+    failsToParse
+  }
+
+  test("SHOW RELATIONSHIP EXISTS CONSTRAINT YIELD name") {
     failsToParse
   }
 

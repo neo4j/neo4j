@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.ast.DeprecatedSyntax
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
-import org.neo4j.cypher.internal.ast.ShowConstraints
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
@@ -219,25 +219,25 @@ object Deprecations {
           () => Some(DeprecatedDefaultGraphSyntax(c.position))
         )
 
-      case c@ShowConstraints(ExistsConstraints(DeprecatedSyntax), _, _) =>
+      case c@ShowConstraintsClause(_, ExistsConstraints(DeprecatedSyntax), _, _, _, _) =>
         Deprecation(
           () => c,
           () => Some(DeprecatedShowExistenceConstraintSyntax(c.position))
         )
 
-      case c@ShowConstraints(NodeExistsConstraints(DeprecatedSyntax), _, _) =>
+      case c@ShowConstraintsClause(_, NodeExistsConstraints(DeprecatedSyntax), _, _, _, _) =>
         Deprecation(
           () => c,
           () => Some(DeprecatedShowExistenceConstraintSyntax(c.position))
         )
 
-      case c@ShowConstraints(RelExistsConstraints(DeprecatedSyntax), _, _) =>
+      case c@ShowConstraintsClause(_, RelExistsConstraints(DeprecatedSyntax), _, _, _, _) =>
         Deprecation(
           () => c,
           () => Some(DeprecatedShowExistenceConstraintSyntax(c.position))
         )
 
-      case s: ShowConstraints if s.verbose.isDefined =>
+      case s: ShowConstraintsClause if s.verbose || s.brief =>
         Deprecation(
           () => s,
           () => Some(DeprecatedShowSchemaSyntax(s.position))

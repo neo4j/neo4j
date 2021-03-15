@@ -19,32 +19,34 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.IndexInfo
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.Command.asEscapedString
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.Command.btreeConfigValueAsString
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.Command.colonStringJoiner
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.Command.configAsString
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.Command.escapeBackticks
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.Command.extractOptionsMap
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.Command.optionsAsString
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.Command.propStringJoiner
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.Command.relPropStringJoiner
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.createIndexStatement
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.Nonunique
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.Unique
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.createIndexStatement
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.escapeBackticks
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.extractOptionsMap
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
-import org.neo4j.values.storable.DoubleArray
-import org.neo4j.values.storable.IntValue
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.StringJoiner
-import org.neo4j.cypher.internal.ast.ShowColumn
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-
-import scala.collection.JavaConverters.mapAsScalaMapConverter
 import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.immutable.ListMap
 
@@ -128,17 +130,6 @@ object ShowIndexesCommand {
     override final val toString: String = "NONUNIQUE"
   }
 
-  // TODO many of these methods below will be shared with other Commands in a bright future
-
-  private def escapeBackticks(str: String): String = str.replaceAll("`", "``")
-
-  private def extractOptionsMap(providerName: String, indexConfig: IndexConfig): MapValue = {
-    val (configKeys, configValues) = indexConfig.asMap().asScala.toSeq.unzip
-    val optionKeys = Array("indexConfig", "indexProvider")
-    val optionValues = Array(VirtualValues.map(configKeys.toArray, configValues.toArray), Values.stringValue(providerName))
-    VirtualValues.map(optionKeys, optionValues)
-  }
-
   private def createIndexStatement(escapedName: String,
                                    indexType: IndexType,
                                    entityType: EntityType,
@@ -189,43 +180,11 @@ object ShowIndexesCommand {
     }
   }
 
-  private def asEscapedString(list: List[String], stringJoiner: StringJoiner): String = {
-    for (elem <- list) {
-      stringJoiner.add(s"`${escapeBackticks(elem)}`")
-    }
-    stringJoiner.toString
-  }
-
   private def asString(list: List[String], stringJoiner: StringJoiner): String = {
     for (elem <- list) {
       stringJoiner.add(s"'$elem'")
     }
     stringJoiner.toString
-  }
-
-  private def optionsAsString(providerString: String, configString: String): String = {
-    s"{indexConfig: $configString, indexProvider: '$providerString'}"
-  }
-
-  private def configAsString(indexConfig: IndexConfig, configValueAsString: Value => String): String = {
-    val configString: StringJoiner = configStringJoiner
-    val sortedIndexConfig = ListMap(indexConfig.asMap().asScala.toSeq.sortBy(_._1): _*)
-
-    sortedIndexConfig.foldLeft(configString) { (acc, entry) =>
-      val singleConfig: String = s"`${entry._1}`: ${configValueAsString(entry._2)}"
-      acc.add(singleConfig)
-    }
-    configString.toString
-  }
-
-  private def btreeConfigValueAsString(configValue: Value): String = {
-    configValue match {
-      case doubleArray: DoubleArray => java.util.Arrays.toString(doubleArray.asObjectCopy);
-      case intValue: IntValue => "" + intValue.value()
-      case booleanValue: BooleanValue => "" + booleanValue.booleanValue()
-      case stringValue: StringValue => "'" + stringValue.stringValue() + "'"
-      case _ => throw new IllegalArgumentException(s"Could not convert config value '$configValue' to config string.")
-    }
   }
 
   private def fullTextConfigValueAsString(configValue: Value): String = {
@@ -236,9 +195,5 @@ object ShowIndexesCommand {
     }
   }
 
-  private def colonStringJoiner = new StringJoiner(":",":", "")
-  private def propStringJoiner = new StringJoiner(", n.","n.", "")
-  private def relPropStringJoiner = new StringJoiner(", r.","r.", "")
   private def arrayStringJoiner = new StringJoiner(", ", "[", "]")
-  private def configStringJoiner = new StringJoiner(",", "{", "}")
 }

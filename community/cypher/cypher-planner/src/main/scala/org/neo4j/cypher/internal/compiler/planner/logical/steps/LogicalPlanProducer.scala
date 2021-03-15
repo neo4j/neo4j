@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.compiler.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper.coercePredicatesWithAnds
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
@@ -177,6 +178,7 @@ import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
@@ -949,6 +951,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val plan = clause match {
       case s: ShowIndexesClause =>
         ShowIndexes(s.all, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
+      case s: ShowConstraintsClause =>
+        ShowConstraints(s.constraintType, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
     }
 
     annotate(plan, solved, ProvidedOrder.empty, context)

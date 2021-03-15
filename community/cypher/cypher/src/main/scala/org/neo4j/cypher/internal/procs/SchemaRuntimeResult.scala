@@ -27,28 +27,13 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.memory.OptionalMemoryTracker
-import org.neo4j.values.AnyValue
 
 /**
- *Schema result, as produced by a schema read.
+ * Empty result, as produced by a schema write.
  */
-case class SchemaReadRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber, columnNames: Array[String], result: List[Map[String, AnyValue]])
-  extends EmptyQuerySubscription(subscriber) with RuntimeResult {
+case class SchemaRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber) extends EmptyQuerySubscription(subscriber) with RuntimeResult {
 
-  override def fieldNames(): Array[String] = columnNames
-
-  override def request(numberOfRecords: Long): Unit = {
-    subscriber.onResult(columnNames.length)
-
-    for (record <- result) {
-      subscriber.onRecord()
-      for (i <- columnNames.indices) {
-        subscriber.onField(i, record(columnNames(i)))
-      }
-      subscriber.onRecordCompleted()
-    }
-    subscriber.onResultCompleted(queryStatistics())
-  }
+  override def fieldNames(): Array[String] = Array.empty
 
   override def queryStatistics(): QueryStatistics = ctx.getOptStatistics.getOrElse(QueryStatistics())
 

@@ -38,23 +38,16 @@ sealed trait SchemaCommand extends Statement {
 
   override def returnColumns: List[LogicalVariable] = List.empty
 
-}
-
-sealed trait ReadSchemaCommand extends SchemaCommand {
-  override def containsUpdates: Boolean = false
-}
-// TODO: once show constraints are moved as well, ReadSchemaCommand can die and WriteSchemaCommand can be merged with SchemaCommand
-sealed trait WriteSchemaCommand extends SchemaCommand {
   override def containsUpdates: Boolean = true
 }
 
-case class CreateIndexOldSyntax(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteSchemaCommand {
+case class CreateIndexOldSyntax(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
 }
 
 abstract class CreateIndex(variable: Variable, properties: List[Property], ifExistsDo: IfExistsDo, options: Map[String, Expression])(val position: InputPosition)
-  extends WriteSchemaCommand with SemanticAnalysisTooling {
+  extends SchemaCommand with SemanticAnalysisTooling {
   override def semanticCheck: SemanticCheck = ifExistsDo match {
     case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create index: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
@@ -83,18 +76,18 @@ case class CreateRelationshipIndex(variable: Variable, relType: RelTypeName, pro
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 }
 
-case class DropIndex(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteSchemaCommand {
+case class DropIndex(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def property: PropertyKeyName = properties.head
   def semanticCheck = Seq()
 }
 
-case class DropIndexOnName(name: String, ifExists: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteSchemaCommand {
+case class DropIndexOnName(name: String, ifExists: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
 }
 
-trait PropertyConstraintCommand extends WriteSchemaCommand with SemanticAnalysisTooling {
+trait PropertyConstraintCommand extends SchemaCommand with SemanticAnalysisTooling {
   def variable: Variable
 
   def property: Property
@@ -109,7 +102,7 @@ trait PropertyConstraintCommand extends WriteSchemaCommand with SemanticAnalysis
       }
 }
 
-trait CompositePropertyConstraintCommand extends WriteSchemaCommand with SemanticAnalysisTooling {
+trait CompositePropertyConstraintCommand extends SchemaCommand with SemanticAnalysisTooling {
   def variable: Variable
 
   def properties: Seq[Property]
@@ -230,68 +223,7 @@ case class DropRelationshipPropertyExistenceConstraint(variable: Variable, relTy
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 }
 
-case class DropConstraintOnName(name: String, ifExists: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteSchemaCommand {
+case class DropConstraintOnName(name: String, ifExists: Boolean, useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
   override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
-}
-
-case class ShowConstraints(constraintType: ShowConstraintType, verbose: Option[Boolean], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends ReadSchemaCommand {
-  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
-  def semanticCheck = Seq()
-
-  private val briefColumnNames: List[String] = List("id", "name", "type", "entityType", "labelsOrTypes", "properties", "ownedIndexId")
-  val defaultColumnNames: List[String] = if (verbose.getOrElse(false)) briefColumnNames ++ List("options", "createStatement") else briefColumnNames
-
-  override def returnColumns: List[LogicalVariable] = defaultColumnNames.map(name => Variable(name)(position))
-}
-
-sealed trait ShowConstraintType {
-  val output: String
-  val prettyPrint: String
-}
-
-case object AllConstraints extends ShowConstraintType {
-  override val output: String = "ALL"
-  override val prettyPrint: String = "ALL"
-}
-
-case object UniqueConstraints extends ShowConstraintType {
-  override val output: String = "UNIQUENESS"
-  override val prettyPrint: String = "UNIQUE"
-}
-
-case class ExistsConstraints(syntax: ExistenceConstraintSyntax) extends ShowConstraintType {
-  override val output: String = "PROPERTY_EXISTENCE"
-  override val prettyPrint: String = syntax.keyword
-}
-
-case class NodeExistsConstraints(syntax: ExistenceConstraintSyntax = NewSyntax) extends ShowConstraintType {
-  override val output: String = "NODE_PROPERTY_EXISTENCE"
-  override val prettyPrint: String = s"NODE ${syntax.keyword}"
-}
-
-case class RelExistsConstraints(syntax: ExistenceConstraintSyntax = NewSyntax) extends ShowConstraintType {
-  override val output: String = "RELATIONSHIP_PROPERTY_EXISTENCE"
-  override val prettyPrint: String = s"RELATIONSHIP ${syntax.keyword}"
-}
-
-case object NodeKeyConstraints extends ShowConstraintType {
-  override val output: String = "NODE_KEY"
-  override val prettyPrint: String = "NODE KEY"
-}
-
-sealed trait ExistenceConstraintSyntax {
-  val keyword: String
-}
-
-case object DeprecatedSyntax extends ExistenceConstraintSyntax {
-  override val keyword: String = "EXISTS"
-}
-
-case object OldValidSyntax extends ExistenceConstraintSyntax {
-  override val keyword: String = "EXIST"
-}
-
-case object NewSyntax extends ExistenceConstraintSyntax {
-  override val keyword: String = "EXISTENCE"
 }

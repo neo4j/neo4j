@@ -424,8 +424,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         val constraintName = Details(pretty"CONSTRAINT ${asPrettyString(name)}")
         PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(constraintName), variables, withRawCardinalities)
 
-      case ShowConstraints(_, _, _) =>
-        PlanDescriptionImpl(id, "ShowConstraints", NoChildren, Seq(), variables, withRawCardinalities)
+      case ShowConstraints(constraintType, verbose, _) =>
+        val typeDescription = asPrettyString.raw(constraintType.description)
+        val colsDescription = if (verbose) pretty"allColumns" else pretty"defaultColumns"
+        PlanDescriptionImpl(id, "ShowConstraints", NoChildren, Seq(Details(pretty"$typeDescription, $colsDescription")), variables, withRawCardinalities)
 
       case SystemProcedureCall(procedureName, _, _, _, _) =>
         PlanDescriptionImpl(id, procedureName, NoChildren, Seq.empty, variables, withRawCardinalities)

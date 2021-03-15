@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.runtime.ExecutionMode
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
+import org.neo4j.cypher.internal.RuntimeName
+import org.neo4j.cypher.internal.SchemaRuntimeName
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
@@ -34,8 +36,12 @@ import org.neo4j.values.virtual.MapValue
  * @param name        A name of the schema write
  * @param schemaWrite The actual schema write to perform
  */
-case class SchemaWriteExecutionPlan(name: String, schemaWrite: QueryContext => SchemaWriteExecutionResult, source: Option[ExecutionPlan] = None)
-  extends SchemaCommandChainedExecutionPlan(source) {
+case class SchemaExecutionPlan(name: String, schemaWrite: QueryContext => SchemaExecutionResult, source: Option[ExecutionPlan] = None)
+  extends ChainedExecutionPlan[UpdateCountingQueryContext](source) {
+  override def createContext(originalCtx: QueryContext) = new UpdateCountingQueryContext(originalCtx)
+  override def querySubscriber(context: UpdateCountingQueryContext, qs : QuerySubscriber): QuerySubscriber = qs
+
+  override def runtimeName: RuntimeName = SchemaRuntimeName
 
   override def runSpecific(ctx: UpdateCountingQueryContext,
                    executionMode: ExecutionMode,
@@ -48,7 +54,7 @@ case class SchemaWriteExecutionPlan(name: String, schemaWrite: QueryContext => S
 
     if (schemaWrite(ctx) == SuccessResult) {
       ctx.transactionalContext.close()
-      val runtimeResult = SchemaWriteRuntimeResult(ctx, subscriber)
+      val runtimeResult = SchemaRuntimeResult(ctx, subscriber)
       runtimeResult
     } else {
       IgnoredRuntimeResult
@@ -56,7 +62,7 @@ case class SchemaWriteExecutionPlan(name: String, schemaWrite: QueryContext => S
   }
 }
 
-sealed trait SchemaWriteExecutionResult
+sealed trait SchemaExecutionResult
 
-case object SuccessResult extends SchemaWriteExecutionResult
-case object IgnoredResult extends SchemaWriteExecutionResult
+case object SuccessResult extends SchemaExecutionResult
+case object IgnoredResult extends SchemaExecutionResult

@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.ast.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
-import org.neo4j.cypher.internal.ast.ShowConstraints
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.expressions.Expression
@@ -133,10 +132,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       // DROP CONSTRAINT name [IF EXISTS]
       case DropConstraintOnName(name, ifExists, _) =>
         Some(plans.DropConstraintOnName(name, ifExists))
-
-      // SHOW [ALL|UNIQUE|NODE EXIST|RELATIONSHIP EXIST|EXIST|NODE KEY] CONSTRAINT[S] [BRIEF|VERBOSE[OUTPUT]]
-      case sc@ShowConstraints(constraintType, verbose, _) =>
-        Some(plans.ShowConstraints(constraintType, verbose.getOrElse(false), sc.defaultColumnNames))
         
       // CREATE INDEX ON :LABEL(prop)
       case CreateIndexOldSyntax(label, props, _) =>

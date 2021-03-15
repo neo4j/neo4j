@@ -29,5 +29,5 @@ trait Statement extends Parser
   with AdministrationCommand
   with Base {
 
-  def Statement: Rule1[ast.Statement] = ShowIndexes | AdministrationCommand | SchemaCommand | Query
+  def Statement: Rule1[ast.Statement] = ShowSchemaCommand | AdministrationCommand | SchemaCommand | Query
 }

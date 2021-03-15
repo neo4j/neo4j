@@ -563,6 +563,36 @@ class ParboiledPrettifierIT extends CypherFunSuite {
 
     "show node key CONSTRAINTS" ->
       "SHOW NODE KEY CONSTRAINTS",
+
+    "show constraints WHERE entityType = 'NODE'" ->
+      """SHOW ALL CONSTRAINTS
+        |  WHERE entityType = "NODE"""".stripMargin,
+
+    "show node KEY CONstraints WHERE entityType = 'NODE'" ->
+      """SHOW NODE KEY CONSTRAINTS
+        |  WHERE entityType = "NODE"""".stripMargin,
+
+    "show constraint  YIELD *" ->
+      """SHOW ALL CONSTRAINTS
+        |YIELD *""".stripMargin,
+
+    "show UNIQUE constraint  YIELD * Return DISTINCT type" ->
+      """SHOW UNIQUE CONSTRAINTS
+        |YIELD *
+        |RETURN DISTINCT type""".stripMargin,
+
+    "show existence constraint YIELD * where name = 'neo4j' Return *" ->
+      """SHOW EXISTENCE CONSTRAINTS
+        |YIELD *
+        |  WHERE name = "neo4j"
+        |RETURN *""".stripMargin,
+
+    "show constraint yield name order by name skip 1 limit 1" ->
+      """SHOW ALL CONSTRAINTS
+        |YIELD name
+        |  ORDER BY name ASCENDING
+        |  SKIP 1
+        |  LIMIT 1""".stripMargin,
   )
 
   def administrationTests(): Seq[(String, String)] = Seq[(String, String)](

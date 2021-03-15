@@ -110,14 +110,6 @@ abstract class AdministrationChainedExecutionPlan(source: Option[ExecutionPlan])
   override def runtimeName: RuntimeName = SystemCommandRuntimeName
 }
 
-abstract class SchemaCommandChainedExecutionPlan(source: Option[ExecutionPlan]) extends ChainedExecutionPlan[UpdateCountingQueryContext](source) {
-
-  override def createContext(originalCtx: QueryContext) = new UpdateCountingQueryContext(originalCtx)
-  override def querySubscriber(context: UpdateCountingQueryContext, qs : QuerySubscriber): QuerySubscriber = qs
-
-  override def runtimeName: RuntimeName = SchemaRuntimeName
-}
-
 case object IgnoredRuntimeResult extends RuntimeResult {
   import org.neo4j.cypher.internal.runtime.QueryStatistics
   override def fieldNames(): Array[String] = Array.empty

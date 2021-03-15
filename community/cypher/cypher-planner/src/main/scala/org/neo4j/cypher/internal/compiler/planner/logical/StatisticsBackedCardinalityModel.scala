@@ -112,7 +112,7 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     case _: ProcedureCallProjection =>
       cardinalityAndInput.copy(cardinality = Cardinality.max(cardinalityAndInput.cardinality * DEFAULT_MULTIPLIER, 1.0)) // At least 1 row
 
-    // Command - e.g. ShowIndexesCommand
+    // Show command - e.g. ShowIndexesCommand
     case _: CommandProjection =>
       cardinalityAndInput.copy(cardinality = Cardinality.max(cardinalityAndInput.cardinality * DEFAULT_MULTIPLIER, 1.0)) // At least 1 row
 

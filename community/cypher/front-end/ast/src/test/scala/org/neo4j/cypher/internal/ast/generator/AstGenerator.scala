@@ -193,8 +193,8 @@ import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.ShowConstraintAction
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowConstraintType
-import org.neo4j.cypher.internal.ast.ShowConstraints
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowIndexAction
@@ -1174,15 +1174,17 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     props <- oneOrMore(_variableProperty)
   } yield props
 
-  def _existenceSyntax: Gen[(ExistenceConstraintSyntax, Option[Boolean])] = for {
-    verbose <- option(boolean)
-    exists  <- oneOf((NewSyntax, None), (DeprecatedSyntax, verbose), (OldValidSyntax, verbose))
+  def _verboseYieldAndExistenceSyntax: Gen[(ExistenceConstraintSyntax, Option[Boolean], Option[Either[(ast.Yield, Option[ast.Return]), ast.Where]])] = for {
+    // New syntax don't allow BRIEF/VERBOSE, deprecated syntax don't allow YIELD/WHERE
+    verbose <- frequency(8 -> const(None), 2 -> some(boolean)) // option(boolean) but None more often than Some
+    yields  <- option(_eitherYieldOrWhere)
+    exists  <- oneOf((NewSyntax, None, yields), (DeprecatedSyntax, verbose, None), (OldValidSyntax, verbose, yields))
   } yield exists
 
-  def _constraintType: Gen[(ShowConstraintType, Option[Boolean])] = for {
-    (exists, verbose) <- _existenceSyntax
-    types             <- oneOf(AllConstraints, UniqueConstraints, ExistsConstraints(exists), NodeExistsConstraints(exists), RelExistsConstraints(exists), NodeKeyConstraints)
-  } yield (types, verbose)
+  def _constraintInfo: Gen[(ShowConstraintType, Option[Boolean], Option[Either[(ast.Yield, Option[ast.Return]), ast.Where]])] = for {
+    (exists, verbose, yields) <- _verboseYieldAndExistenceSyntax
+    types                     <- oneOf(AllConstraints, UniqueConstraints, ExistsConstraints(exists), NodeExistsConstraints(exists), RelExistsConstraints(exists), NodeKeyConstraints)
+  } yield (types, verbose, yields)
 
   def _createIndex: Gen[CreateIndex] = for {
     variable   <- _variable
@@ -1269,16 +1271,28 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     use      <- option(_use)
   } yield DropConstraintOnName(name, ifExists, use)(pos)
 
-  def _showConstraints: Gen[ShowConstraints] = for {
-    (constraintType, verbose) <- _constraintType
-    use                       <- option(_use)
-  }  yield ShowConstraints(constraintType, verbose, use)(pos)
+  def _showConstraints: Gen[Query] = for {
+    (constraintType, verbose, yields) <- _constraintInfo
+    use                               <- option(_use)
+  } yield {
+    val showClauses = (yields, verbose) match {
+      case (Some(Right(w)), _)           => Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, Some(w), hasYield = false)(pos))
+      case (Some(Left((y, Some(r)))), _) => Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = true)(pos), y, r)
+      case (Some(Left((y, None))), _)    => Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = true)(pos), y)
+      case (_, Some(v))                  => Seq(ShowConstraintsClause(constraintType, !v, v, None, hasYield = false)(pos))
+      case _                             => Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = false)(pos))
+    }
+    val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
+    Query(None, SingleQuery(fullClauses)(pos))(pos)
+  }
 
-  def _indexCommand: Gen[Statement] = oneOf(_createIndex, _dropIndex, _indexCommandsOldSyntax, _showIndexes)
+  def _indexCommand: Gen[SchemaCommand] = oneOf(_createIndex, _dropIndex, _indexCommandsOldSyntax)
 
-  def _constraintCommand: Gen[SchemaCommand] = oneOf(_createConstraint, _dropConstraint, _dropConstraintOldSyntax, _showConstraints)
+  def _constraintCommand: Gen[SchemaCommand] = oneOf(_createConstraint, _dropConstraint, _dropConstraintOldSyntax)
 
-  def _schemaCommand: Gen[Statement] = oneOf(_indexCommand, _constraintCommand)
+  def _showSchemaCommand: Gen[Query] = oneOf(_showIndexes, _showConstraints)
+
+  def _schemaCommand: Gen[Statement] = oneOf(_indexCommand, _constraintCommand, _showSchemaCommand)
 
   // Administration commands
   // ----------------------------------
