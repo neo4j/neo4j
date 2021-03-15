@@ -394,6 +394,12 @@ class CheckPointSchedulerTest
         }
 
         @Override
+        public void reportIO( int completedIOs )
+        {
+            // empty
+        }
+
+        @Override
         public void enable()
         {
             limitEnabled = true;

@@ -336,6 +336,12 @@ class CheckPointerImplTest
             }
 
             @Override
+            public void reportIO( int completedIOs )
+            {
+                //empty
+            }
+
+            @Override
             public boolean isEnabled()
             {
                 return true;
@@ -377,6 +383,12 @@ class CheckPointerImplTest
             }
 
             @Override
+            public void reportIO( int completedIOs )
+            {
+                //empty
+            }
+
+            @Override
             public void enable()
             {
                 doneDisablingLimits.set( true );
@@ -405,6 +417,12 @@ class CheckPointerImplTest
             public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
             {
                 return 0;
+            }
+
+            @Override
+            public void reportIO( int completedIOs )
+            {
+                //empty
             }
 
             @Override
@@ -480,6 +498,12 @@ class CheckPointerImplTest
             public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
             {
                 return 0;
+            }
+
+            @Override
+            public void reportIO( int completedIOs )
+            {
+                //empty
             }
 
             @Override

@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 
 /**
+ * TODO:// update
  * IOController instances can be passed to the {@link PageCache#flushAndForce(IOController)} and
  * {@link PagedFile#flushAndForce(IOController)} methods, which will invoke the
  * {@link #maybeLimitIO(long, int, Flushable, FlushEventOpportunity)} method on regular intervals.
@@ -48,7 +49,20 @@ public interface IOController
      * An IOController implementation that does not do anything. Use this implementation if you want the
      * flush to go as fast as possible.
      */
-    IOController DISABLED = ( previousStamp, recentlyCompletedIOs, flushable, flushes ) -> previousStamp;
+    IOController DISABLED = new IOController()
+    {
+        @Override
+        public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
+        {
+            return previousStamp;
+        }
+
+        @Override
+        public void reportIO( int completedIOs )
+        {
+            // nothing to report
+        }
+    };
 
     /**
      * Invoked at regular intervals during flushing of the {@link PageCache} or {@link PagedFile}s.
@@ -101,6 +115,13 @@ public interface IOController
     {
         // By default this method does nothing, assuming the implementation always has no or fixed limits.
     }
+
+    /**
+     * Report any external IO that could be taken into account during evaluation of limits, to inject pauses or sleeps.
+     *
+     * @param completedIOs - number of completed external IOs.
+     */
+    void reportIO( int completedIOs );
 
     /**
      * Re-enable the IOController, after having disabled it with {@link #disable()}.
