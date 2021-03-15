@@ -235,6 +235,7 @@ public class SingleFilePageSwapper implements PageSwapper
                 read = channel.read( bufferProxy, fileOffset + readTotal );
             }
             while ( read != -1 && (readTotal += read) < bufferSize );
+            ioController.reportIO( 1 );
 
             // Zero-fill the rest.
             int rest = bufferSize - readTotal;
@@ -265,6 +266,7 @@ public class SingleFilePageSwapper implements PageSwapper
         {
             ByteBuffer bufferProxy = proxy( bufferAddress, bufferLength );
             channel.writeAll( bufferProxy, fileOffset );
+            ioController.reportIO( 1 );
         }
         catch ( IOException e )
         {
