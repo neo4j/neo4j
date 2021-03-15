@@ -36,6 +36,6 @@ public class CommunityIOControllerService implements IOControllerService
     @Override
     public int getPriority()
     {
-        return 1;
+        return 1000;
     }
 }
