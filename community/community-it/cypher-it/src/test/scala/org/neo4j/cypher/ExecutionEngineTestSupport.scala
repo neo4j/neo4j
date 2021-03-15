@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result
 import org.neo4j.internal.schema.IndexDescriptor
+import org.neo4j.kernel.DeadlockDetectedException
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
@@ -50,6 +51,7 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.logging.LogProvider
 import org.neo4j.logging.NullLogProvider
 
+import scala.annotation.tailrec
 import scala.collection.JavaConverters.asJavaIterable
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.JavaConverters.mapAsJavaMap
@@ -148,6 +150,20 @@ trait ExecutionEngineHelper {
   def execute(q: String, params: Map[String, Any]): RewindableExecutionResult = {
     graph.withTx { tx =>
       execute(q, params, tx)
+    }
+  }
+
+  def executeWithRetry(q: String, params: (String, Any)*): RewindableExecutionResult = {
+    executeWithRetry(q, params.toMap)
+  }
+
+  @tailrec
+  final def executeWithRetry(q: String, params: Map[String, Any]): RewindableExecutionResult = {
+    try {
+      execute(q, params)
+    } catch {
+      case _: DeadlockDetectedException =>
+        executeWithRetry(q, params)
     }
   }
 

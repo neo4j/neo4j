@@ -36,7 +36,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     val threadNum = 2
     val threads: List[MyThread] = (0 until threadNum).map { ignored =>
       new MyThread(1, () => {
-        execute(s"MATCH (root) WHERE ID(root) = 0 DELETE root").toList
+        executeWithRetry(s"MATCH (root) WHERE ID(root) = 0 DELETE root").toList
       })
     }.toList
 
@@ -58,7 +58,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     val threadNum = 2
     val threads: List[MyThread] = (0 until threadNum).map { ignored =>
       new MyThread(1, () => {
-        execute(s"MATCH ()-[r:FRIEND]->() WHERE ID(r) = 0 DELETE r").toList
+        executeWithRetry(s"MATCH ()-[r:FRIEND]->() WHERE ID(r) = 0 DELETE r").toList
       })
     }.toList
 
@@ -79,11 +79,11 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     val concurrency = 30
     val threads: List[MyThread] = (0 until concurrency).map { ignored =>
       new MyThread(1, () => {
-        execute(s"MATCH ()-[r]->() WITH r DELETE r").toList
+        executeWithRetry(s"MATCH ()-[r]->() WITH r DELETE r").toList
       })
     }.toList ++ (0 until concurrency).map { ignored =>
       new MyThread(1, () => {
-        execute(s"MATCH (p1), (p2) WHERE id(p1) < id(p2) CREATE (p2)-[:T]->(p1)").toList
+        executeWithRetry(s"MATCH (p1), (p2) WHERE id(p1) < id(p2) CREATE (p2)-[:T]->(p1)").toList
       })
     }.toList
 
@@ -109,7 +109,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
     val threads: List[MyThread] = ids.map { id =>
       new MyThread(1, () => {
-        execute(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id DETACH DELETE b").toList
+        executeWithRetry(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id DETACH DELETE b").toList
       })
     }
 
@@ -144,13 +144,13 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
       val detachThreads =
         ids.map { id =>
           new MyThread(NUM_EXECUTIONS, () => {
-            execute(s"MATCH (root)-[:NAMED]->(b) WHERE ID(root) = $id DETACH DELETE b").toList
+            executeWithRetry(s"MATCH (root)-[:NAMED]->(b) WHERE ID(root) = $id DETACH DELETE b").toList
           })
         }
       val createThreads =
         ids.map { id =>
           new MyThread(NUM_EXECUTIONS, () => {
-            execute(s"MATCH (root), (b:Name) WHERE ID(root) = $id CREATE (root)-[:NAMED]->(b)").toList
+            executeWithRetry(s"MATCH (root), (b:Name) WHERE ID(root) = $id CREATE (root)-[:NAMED]->(b)").toList
           }, ignoreRollbackAndNodeNotFound)
         }
       new scala.util.Random(41).shuffle(detachThreads ++ createThreads)

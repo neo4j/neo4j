@@ -41,7 +41,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
         try {
           (1 to nodeCount) foreach {
             x =>
-              execute(q, "id" -> x)
+              executeWithRetry(q, "id" -> x)
           }
         }
         catch {
@@ -73,7 +73,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
       def run() {
         try {
           (0 until nodeCount) foreach {
-            x => execute("MERGE (a:Label {id:$id})", "id" -> x)
+            x => executeWithRetry("MERGE (a:Label {id:$id})", "id" -> x)
           }
         } catch {
           case e: Throwable => exceptionsThrown = exceptionsThrown :+ e
@@ -105,7 +105,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
       def run() {
         try {
           (0 until nodeCount) foreach {
-            x => execute("MERGE (a:Label {id:$id})", "id" -> x)
+            x => executeWithRetry("MERGE (a:Label {id:$id})", "id" -> x)
           }
         } catch {
           case e: Throwable => exceptionsThrown = exceptionsThrown :+ e
@@ -141,7 +141,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
       def run() {
         try {
           (0 until nodeCount) foreach {
-            x => execute(query, "id1" -> n1, "id2" -> n2)
+            x => executeWithRetry(query, "id1" -> n1, "id2" -> n2)
           }
         } catch {
           case e: Throwable => exceptionsThrown = exceptionsThrown :+ e
@@ -176,7 +176,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
       def run() {
         try {
           (0 until nodeCount) foreach {
-            x => execute(query, "id1" -> n1, "id2" -> n2)
+            x => executeWithRetry(query, "id1" -> n1, "id2" -> n2)
           }
         } catch {
           case e: Throwable => exceptionsThrown = exceptionsThrown :+ e
