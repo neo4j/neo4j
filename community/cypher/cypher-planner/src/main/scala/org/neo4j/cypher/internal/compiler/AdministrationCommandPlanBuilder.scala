@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
-import org.neo4j.cypher.internal.ast.AlterRole
-import org.neo4j.cypher.internal.ast.AlterRoleAction
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
@@ -54,6 +52,8 @@ import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
+import org.neo4j.cypher.internal.ast.RenameRole
+import org.neo4j.cypher.internal.ast.RenameRoleAction
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.RevokeBothType
 import org.neo4j.cypher.internal.ast.RevokeDenyType
@@ -215,10 +215,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             roleName, fromName, "DENIED"),
           prettifier.asString(c)))
 
-      // ALTER ROLE foo SET NAME bar
-      case c@AlterRole(fromRoleName, toRoleName) =>
-        val source = plans.AssertDbmsAdmin(AlterRoleAction)
-        Some(plans.LogSystemCommand(plans.AlterRole(source, fromRoleName, toRoleName), prettifier.asString(c)))
+      // RENAME ROLE foo TO bar
+      case c@RenameRole(fromRoleName, toRoleName) =>
+        val source = plans.AssertDbmsAdmin(RenameRoleAction)
+        Some(plans.LogSystemCommand(plans.RenameRole(source, fromRoleName, toRoleName), prettifier.asString(c)))
 
       // DROP ROLE foo [IF EXISTS]
       case c@DropRole(roleName, ifExists) =>

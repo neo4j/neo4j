@@ -48,7 +48,7 @@ trait AdministrationCommand extends Parser
   }
 
   def UserAndRoleAdministrationCommand: Rule1[ast.AdministrationCommand] = rule("Security role and user administration statement") {
-    optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | AlterRole | DropRole | ShowUsers | ShowCurrentUser | CreateUser | DropUser | AlterUser | SetOwnPassword)
+    optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | RenameRole | DropRole | ShowUsers | ShowCurrentUser | CreateUser | DropUser | AlterUser | SetOwnPassword)
   }
 
   def PrivilegeAdministrationCommand: Rule1[ast.AdministrationCommand] = rule("Security privilege administration statement") {
@@ -204,9 +204,8 @@ trait AdministrationCommand extends Parser
     group(keyword("CREATE ROLE") ~~ SymbolicNameOrStringParameter ~> (_ => ast.IfExistsThrowError))
   }
 
-  def AlterRole: Rule1[ast.AlterRole] = rule("ALTER ROLE") {
-    group(keyword("ALTER ROLE") ~~  SymbolicNameOrStringParameter ~~ keyword("SET NAME") ~~ SymbolicNameOrStringParameter) ~~>> ((fromRoleName, toRoleName)
-    => ast.AlterRole(fromRoleName, toRoleName))
+  def RenameRole: Rule1[ast.RenameRole] = rule("RENAME ROLE") {
+    group(keyword("RENAME ROLE") ~~  SymbolicNameOrStringParameter ~~ keyword("TO") ~~ SymbolicNameOrStringParameter) ~~>> (ast.RenameRole(_, _))
   }
 
   def DropRole: Rule1[ast.DropRole] = rule("DROP ROLE") {
@@ -331,7 +330,7 @@ trait AdministrationCommand extends Parser
 
   private def DbmsAction: Rule1[ast.AdminAction] = rule("dbms action") {
     keyword("CREATE ROLE") ~~~> (_ => ast.CreateRoleAction) |
-    keyword("ALTER ROLE") ~~~> (_ => ast.AlterRoleAction) |
+    keyword("RENAME ROLE") ~~~> (_ => ast.RenameRoleAction) |
     keyword("DROP ROLE") ~~~> (_ => ast.DropRoleAction) |
     keyword("ASSIGN ROLE") ~~~> (_ => ast.AssignRoleAction) |
     keyword("REMOVE ROLE") ~~~> (_ => ast.RemoveRoleAction) |

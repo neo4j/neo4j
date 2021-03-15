@@ -234,49 +234,53 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
-  // Altering role
+  // Renaming role
 
-  test("ALTER ROLE foo SET NAME bar") {
-    yields(ast.AlterRole(literalFoo, literalBar))
+  test("RENAME ROLE foo TO bar") {
+    yields(ast.RenameRole(literalFoo, literalBar))
   }
 
-  test("ALTER ROLE foo SET NAME $bar") {
-    yields(ast.AlterRole(literalFoo, param("bar")))
+  test("RENAME ROLE foo TO $bar") {
+    yields(ast.RenameRole(literalFoo, param("bar")))
   }
 
-  test("ALTER ROLE $foo SET NAME bar") {
-    yields(ast.AlterRole(param("foo"), literalBar))
+  test("RENAME ROLE $foo TO bar") {
+    yields(ast.RenameRole(param("foo"), literalBar))
   }
 
-  test("ALTER ROLE $foo SET NAME $bar") {
-    yields(ast.AlterRole(param("foo"), param("bar")))
+  test("RENAME ROLE $foo TO $bar") {
+    yields(ast.RenameRole(param("foo"), param("bar")))
   }
 
-  test("ALTER ROLE foo SET NAME ``") {
-    yields(ast.AlterRole(literalFoo, literalEmpty))
+  test("RENAME ROLE foo TO ``") {
+    yields(ast.RenameRole(literalFoo, literalEmpty))
   }
 
-  test("ALTER ROLE `` SET NAME bar") {
-    yields(ast.AlterRole(literalEmpty, literalBar))
+  test("RENAME ROLE `` TO bar") {
+    yields(ast.RenameRole(literalEmpty, literalBar))
   }
 
-  test("ALTER ROLE foo SET NAME") {
+  test("RENAME ROLE foo TO") {
     failsToParse
   }
 
-  test("ALTER ROLE SET NAME bar") {
+  test("RENAME ROLE TO bar") {
     failsToParse
   }
 
-  test("ALTER ROLE SET NAME") {
+  test("RENAME ROLE TO") {
     failsToParse
   }
 
-  test("ALTER ROLE foo SET NAME TO bar") {
+  test("RENAME ROLE foo SET NAME TO bar") {
     failsToParse
   }
 
   test("RENAME ROLE foo SET NAME bar") {
+    failsToParse
+  }
+
+  test("ALTER ROLE foo SET NAME bar") {
     failsToParse
   }
 

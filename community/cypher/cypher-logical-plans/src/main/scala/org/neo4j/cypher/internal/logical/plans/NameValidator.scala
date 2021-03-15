@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
-import java.util.regex.Pattern
-
 import org.neo4j.exceptions.InvalidArgumentException
+
+import java.util.regex.Pattern
 
 object NameValidator {
   // Allow all ascii from '!' to '~', apart from ',' and ':' which are used as separators in flat file
@@ -53,9 +53,11 @@ object NameValidator {
     true
   }
 
-  def assertUnreservedRoleName(verb: String, name: String): Boolean =
+  def assertUnreservedRoleName(verb: String, name: String, newName: Option[String] = None): Boolean =
     if (reservedRoleName.equals(name)) {
       throw new InvalidArgumentException(s"Failed to $verb the specified role '$name': '$name' is a reserved role.")
+    } else if (newName.isDefined && reservedRoleName.equals(newName.get)) {
+      throw new InvalidArgumentException(s"Failed to $verb the specified role '$name' to '${newName.get}': '${newName.get}' is a reserved role.")
     } else {
       true
     }

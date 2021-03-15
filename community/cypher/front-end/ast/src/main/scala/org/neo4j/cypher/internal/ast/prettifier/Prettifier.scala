@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.ast.AllNodes
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.AllQualifier
 import org.neo4j.cypher.internal.ast.AllRelationships
-import org.neo4j.cypher.internal.ast.AlterRole
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
@@ -114,6 +113,7 @@ import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
+import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
@@ -157,7 +157,6 @@ import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.UserAllQualifier
-import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
@@ -361,8 +360,8 @@ case class Prettifier(
           case _                    => s"${x.name} ${Prettifier.escapeName(roleName)} AS COPY OF ${Prettifier.escapeName(fromRole)}"
         }
 
-      case x @ AlterRole(fromRoleName, toRoleName) =>
-        s"${x.name} ${Prettifier.escapeName(fromRoleName)} SET NAME ${Prettifier.escapeName(toRoleName)}"
+      case x @ RenameRole(fromRoleName, toRoleName) =>
+        s"${x.name} ${Prettifier.escapeName(fromRoleName)} TO ${Prettifier.escapeName(toRoleName)}"
 
       case x @ DropRole(roleName, ifExists) =>
         if (ifExists) s"${x.name} ${Prettifier.escapeName(roleName)} IF EXISTS"

@@ -274,10 +274,10 @@ final case class CreateRole(roleName: Either[String, Parameter], from: Option[Ei
     }
 }
 
-final case class AlterRole(fromRoleName: Either[String, Parameter], toRoleName: Either[String, Parameter])
+final case class RenameRole(fromRoleName: Either[String, Parameter], toRoleName: Either[String, Parameter])
                            (val position: InputPosition) extends WriteAdministrationCommand {
 
-  override def name: String = "ALTER ROLE"
+  override def name: String = "RENAME ROLE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -578,7 +578,7 @@ case object ShowRoleAction extends RoleManagementAction("SHOW ROLE")
 
 case object CreateRoleAction extends RoleManagementAction("CREATE ROLE")
 
-case object AlterRoleAction extends RoleManagementAction("ALTER ROLE")
+case object RenameRoleAction extends RoleManagementAction("RENAME ROLE")
 
 case object DropRoleAction extends RoleManagementAction("DROP ROLE")
 

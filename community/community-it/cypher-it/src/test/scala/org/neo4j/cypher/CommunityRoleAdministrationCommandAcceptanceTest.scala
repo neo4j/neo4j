@@ -38,11 +38,11 @@ class CommunityRoleAdministrationCommandAcceptanceTest extends CommunityAdminist
     assertFailure("CREATE ROLE $foo", "Unsupported administration command: CREATE ROLE $foo")
   }
 
-  test("should fail on altering role from community") {
-    assertFailure("ALTER ROLE reader SET NAME bookworm", "Unsupported administration command: ALTER ROLE reader SET NAME bookworm")
-    assertFailure("ALTER ROLE $reader SET NAME bookworm", "Unsupported administration command: ALTER ROLE $reader SET NAME bookworm")
-    assertFailure("ALTER ROLE reader SET NAME $bookworm", "Unsupported administration command: ALTER ROLE reader SET NAME $bookworm")
-    assertFailure("ALTER ROLE $reader SET NAME $bookworm", "Unsupported administration command: ALTER ROLE $reader SET NAME $bookworm")
+  test("should fail on renaming role from community") {
+    assertFailure("RENAME ROLE reader TO bookworm", "Unsupported administration command: RENAME ROLE reader TO bookworm")
+    assertFailure("RENAME ROLE $reader TO bookworm", "Unsupported administration command: RENAME ROLE $reader TO bookworm")
+    assertFailure("RENAME ROLE reader TO $bookworm", "Unsupported administration command: RENAME ROLE reader TO $bookworm")
+    assertFailure("RENAME ROLE $reader TO $bookworm", "Unsupported administration command: RENAME ROLE $reader TO $bookworm")
   }
 
   test("should fail on creating role as copy of role from community") {

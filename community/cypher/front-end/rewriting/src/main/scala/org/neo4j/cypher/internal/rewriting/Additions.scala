@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
-import org.neo4j.cypher.internal.ast.AlterRole
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.CreateNodeIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
@@ -35,6 +34,7 @@ import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
+import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.ShowConstraints
@@ -149,7 +149,7 @@ object Additions {
       case c: AlterUser if c.ifExists =>
         throw cypherExceptionFactory.syntaxException("Updating a user with `IF EXISTS` is not supported in this Cypher version.", c.position)
 
-      case c: AlterRole =>
+      case c: RenameRole =>
         throw cypherExceptionFactory.syntaxException("Changing a role name is not supported in this Cypher version.", c.position)
 
       case c: ShowIndexesClause if c.where.isDefined || c.hasYield =>

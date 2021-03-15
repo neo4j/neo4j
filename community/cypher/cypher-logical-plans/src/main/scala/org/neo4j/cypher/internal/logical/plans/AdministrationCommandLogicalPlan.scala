@@ -80,7 +80,7 @@ case class ShowRoles(source: PrivilegePlan,
                      returns: Option[Return])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class CreateRole(source: SecurityAdministrationLogicalPlan, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
-case class AlterRole(source: SecurityAdministrationLogicalPlan, fromRoleName: Either[String, Parameter], toRoleName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
+case class RenameRole(source: SecurityAdministrationLogicalPlan, fromRoleName: Either[String, Parameter], toRoleName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class DropRole(source: SecurityAdministrationLogicalPlan, roleName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class GrantRoleToUser(source: SecurityAdministrationLogicalPlan, roleName: Either[String, Parameter], userName: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class RevokeRoleFromUser(source: SecurityAdministrationLogicalPlan, roleName: Either[String, Parameter], userNames: Either[String, Parameter])(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))

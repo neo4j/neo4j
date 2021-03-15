@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.ast.AllRoleActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
-import org.neo4j.cypher.internal.ast.AlterRole
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
@@ -159,6 +158,8 @@ import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
+import org.neo4j.cypher.internal.ast.RenameRole
+import org.neo4j.cypher.internal.ast.RenameRoleAction
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
@@ -1360,10 +1361,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     ifExistsDo   <- _ifExistsDo
   } yield CreateRole(roleName, fromRoleName, ifExistsDo)(pos)
 
-  def _alterRole: Gen[AlterRole] = for {
+  def _renameRole: Gen[RenameRole] = for {
     fromRoleName     <- _nameAsEither
     toRoleName       <- _nameAsEither
-  } yield AlterRole(fromRoleName, toRoleName)(pos)
+  } yield RenameRole(fromRoleName, toRoleName)(pos)
 
   def _dropRole: Gen[DropRole] = for {
     roleName <- _nameAsEither
@@ -1383,7 +1384,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _roleCommand: Gen[AdministrationCommand] = oneOf(
     _showRoles,
     _createRole,
-    _alterRole,
+    _renameRole,
     _dropRole,
     _grantRole,
     _revokeRole
@@ -1398,7 +1399,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     ExecuteProcedureAction, ExecuteBoostedProcedureAction, ExecuteAdminProcedureAction,
     ExecuteFunctionAction, ExecuteBoostedFunctionAction,
     AllUserActions, ShowUserAction, CreateUserAction, SetUserStatusAction, SetUserHomeDatabaseAction, SetPasswordsAction, AlterUserAction, DropUserAction,
-    AllRoleActions, ShowRoleAction, CreateRoleAction, DropRoleAction, AssignRoleAction, RemoveRoleAction,
+    AllRoleActions, ShowRoleAction, CreateRoleAction, RenameRoleAction, DropRoleAction, AssignRoleAction, RemoveRoleAction,
     AllDatabaseManagementActions, CreateDatabaseAction, DropDatabaseAction,
     AllPrivilegeActions, ShowPrivilegeAction, AssignPrivilegeAction, RemovePrivilegeAction
   )

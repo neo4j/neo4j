@@ -866,20 +866,20 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "create or replace role `ab%$c` as copy of `$d3f`" ->
       "CREATE OR REPLACE ROLE `ab%$c` AS COPY OF `$d3f`",
 
-    "alter role abc set name cba" ->
-      "ALTER ROLE abc SET NAME cba",
+    "rename role abc to cba" ->
+      "RENAME ROLE abc TO cba",
 
-    "alter role `a%b$c` set name `c!b?a`" ->
-      "ALTER ROLE `a%b$c` SET NAME `c!b?a`",
+    "rename role `a%b$c` to `c!b?a`" ->
+      "RENAME ROLE `a%b$c` TO `c!b?a`",
 
-    "alter role $param set name cba" ->
-      "ALTER ROLE $param SET NAME cba",
+    "rename role $param to cba" ->
+      "RENAME ROLE $param TO cba",
 
-    "alter role abc set name $other" ->
-      "ALTER ROLE abc SET NAME $other",
+    "rename role abc to $other" ->
+      "RENAME ROLE abc TO $other",
 
-    "alter role $param set name $other" ->
-      "ALTER ROLE $param SET NAME $other",
+    "rename role $param to $other" ->
+      "RENAME ROLE $param TO $other",
 
     "drop role abc" ->
       "DROP ROLE abc",
@@ -1587,6 +1587,9 @@ class ParboiledPrettifierIT extends CypherFunSuite {
 
           s"$action create role on dbms $preposition role" ->
             s"$action CREATE ROLE ON DBMS $preposition role",
+
+          s"$action rename role on dbms $preposition role" ->
+            s"$action RENAME ROLE ON DBMS $preposition role",
 
           s"$action drop role on dbms $preposition role" ->
             s"$action DROP ROLE ON DBMS $preposition role",

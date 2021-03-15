@@ -209,6 +209,7 @@ import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
+import org.neo4j.cypher.internal.logical.plans.RenameRole
 import org.neo4j.cypher.internal.logical.plans.RequireRole
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
@@ -1213,6 +1214,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(DropRole(privLhsLP, util.Left("role")), 1.0), adminPlanDescription)
 
     assertGood(attach(CreateRole(privLhsLP, util.Left("role")), 1.0), adminPlanDescription)
+
+    assertGood(attach(RenameRole(privLhsLP, util.Left("role1"), Left("role2")), 1.0), adminPlanDescription)
 
     assertGood(attach(RequireRole(privLhsLP, util.Left("role")), 1.0), adminPlanDescription)
 
