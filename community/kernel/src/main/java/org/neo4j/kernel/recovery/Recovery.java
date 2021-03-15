@@ -286,7 +286,7 @@ public final class Recovery
         checkAllFilesPresence( databaseLayout, fs, pageCache, storageEngineFactory );
         LifeSupport recoveryLife = new LifeSupport();
         Monitors monitors = new Monitors( globalMonitors, logProvider );
-        DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, EmptyVersionContextSupplier.EMPTY );
+        DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, EmptyVersionContextSupplier.EMPTY, IOController.DISABLED );
         SimpleLogService logService = new SimpleLogService( logProvider );
         VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
 
@@ -474,7 +474,7 @@ public final class Recovery
     {
         ConfiguringPageCacheFactory pageCacheFactory =
                 new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, NullLog.getInstance(),
-                        EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(), new MemoryPools(), IOController.DISABLED );
+                        EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(), new MemoryPools() );
         return pageCacheFactory.getOrCreatePageCache();
     }
 

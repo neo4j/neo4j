@@ -118,16 +118,16 @@ class DatabaseShutdownTest
                     {
                         @Override
                         protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers,
-                                JobScheduler jobScheduler, SystemNanoClock clock, MemoryPools memoryPools, IOController ioController )
+                                JobScheduler jobScheduler, SystemNanoClock clock, MemoryPools memoryPools )
                         {
-                            PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, jobScheduler, clock, memoryPools, ioController );
+                            PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, jobScheduler, clock, memoryPools );
                             return new DelegatingPageCache( pageCache )
                             {
                                 @Override
                                 public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName,
-                                        ImmutableSet<OpenOption> openOptions ) throws IOException
+                                        ImmutableSet<OpenOption> openOptions, IOController ioController ) throws IOException
                                 {
-                                    PagedFile pagedFile = super.map( path, versionContextSupplier, pageSize, databaseName, openOptions );
+                                    PagedFile pagedFile = super.map( path, versionContextSupplier, pageSize, databaseName, openOptions, ioController );
                                     return new DelegatingPagedFile( pagedFile )
                                     {
                                         @Override

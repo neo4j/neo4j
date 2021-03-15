@@ -46,6 +46,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.DelegatingPageCache;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -281,14 +282,14 @@ class NodeStoreTest
                 {
                     @Override
                     public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName,
-                            ImmutableSet<OpenOption> openOptions ) throws IOException
+                            ImmutableSet<OpenOption> openOptions, IOController ioController ) throws IOException
                     {
                         if ( path.getFileName().toString().toLowerCase().endsWith( ".id" ) )
                         {
                             fired.setTrue();
                             throw new IOException( "Proving a point here" );
                         }
-                        return super.map( path, versionContextSupplier, pageSize, databaseName, openOptions );
+                        return super.map( path, versionContextSupplier, pageSize, databaseName, openOptions, ioController );
                     }
                 };
 

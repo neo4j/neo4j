@@ -83,7 +83,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
-import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.mockito.mock.Property.property;
@@ -164,7 +163,7 @@ public class ConsistencyCheckServiceIntegrationTest
         ConfiguringPageCacheFactory pageCacheFactory =
                 new ConfiguringPageCacheFactory( testDirectory.getFileSystem(), Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" ),
                         pageCacheTracer, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(),
-                        new MemoryPools( false ), DISABLED );
+                        new MemoryPools( false ) );
         try ( Lifespan life = new Lifespan( jobScheduler );
               PageCache pageCache = pageCacheFactory.getOrCreatePageCache() )
         {

@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.neo4j.adversaries.Adversary;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
@@ -57,8 +58,8 @@ public class AdversarialPageCache implements PageCache
     }
 
     @Override
-    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions )
-            throws IOException
+    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions,
+            IOController ioController ) throws IOException
     {
         if ( openOptions.contains( CREATE ) )
         {
@@ -68,7 +69,7 @@ public class AdversarialPageCache implements PageCache
         {
             adversary.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class );
         }
-        PagedFile pagedFile = delegate.map( path, versionContextSupplier, pageSize, databaseName, openOptions );
+        PagedFile pagedFile = delegate.map( path, versionContextSupplier, pageSize, databaseName, openOptions, ioController );
         return new AdversarialPagedFile( pagedFile, adversary );
     }
 

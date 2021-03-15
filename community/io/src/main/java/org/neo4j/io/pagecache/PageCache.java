@@ -65,7 +65,7 @@ public interface PageCache extends AutoCloseable
      */
     default PagedFile map( Path path, int pageSize, String databaseName ) throws IOException
     {
-        return map( path, versionContextSupplier(), pageSize, databaseName, immutable.empty() );
+        return map( path, pageSize, databaseName, immutable.empty() );
     }
 
     /**
@@ -92,7 +92,7 @@ public interface PageCache extends AutoCloseable
      */
     default PagedFile map( Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
-        return map( path, versionContextSupplier(), pageSize, databaseName, openOptions );
+        return map( path, versionContextSupplier(), pageSize, databaseName, openOptions, IOController.DISABLED );
     }
 
     /**
@@ -114,18 +114,19 @@ public interface PageCache extends AutoCloseable
      * been mapped.
      * The {@link StandardOpenOption#DELETE_ON_CLOSE} will cause the file to be deleted after the last unmapping.
      * All other options are either silently ignored, or will cause an exception to be thrown.
+     * @param ioController database specific io controller
      * @throws java.nio.file.NoSuchFileException if the given file does not exist, and the
      * {@link StandardOpenOption#CREATE} option was not specified.
      * @throws IOException if the file could otherwise not be mapped. Causes include the file being locked.
      */
-    PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions )
-            throws IOException;
+    PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions,
+            IOController ioController ) throws IOException;
 
     /**
      * Ask for an already mapped paged file, backed by this page cache.
      * <p>
      * If mapping exist, the returned {@link Optional} will report {@link Optional#isPresent()} true and
-     * {@link Optional#get()} will return the same {@link PagedFile} instance that was initially returned my
+     * {@link Optional#get()} will return the same {@link PagedFile} instance that was initially returned by
      * {@link #map(Path, int, String, ImmutableSet)}.
      * If no mapping exist for this file, then returned {@link Optional} will report {@link Optional#isPresent()}
      * false.
@@ -160,13 +161,9 @@ public interface PageCache extends AutoCloseable
 
     /**
      * Close the page cache to prevent any future mapping of files.
-     * This also releases any internal resources, including the {@link PageSwapperFactory} through its
-     * {@link PageSwapperFactory#close() close} method.
      *
      * @throws IllegalStateException if not all files have been unmapped, with {@link PagedFile#close()}, prior to
      * closing the page cache. In this case, the page cache <em>WILL NOT</em> be considered to be successfully closed.
-     * @throws RuntimeException if the {@link PageSwapperFactory#close()} method throws. In this case the page cache
-     * <em>WILL BE</em> considered to have been closed successfully.
      */
     @Override
     void close();

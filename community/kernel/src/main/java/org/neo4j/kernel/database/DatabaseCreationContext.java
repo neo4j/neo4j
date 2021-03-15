@@ -31,7 +31,6 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -43,6 +42,7 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
@@ -102,7 +102,7 @@ public interface DatabaseCreationContext
 
     GlobalProcedures getGlobalProcedures();
 
-    IOController getIoLimiter();
+    IOControllerService getIoControllerService();
 
     LongFunction<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory();
 

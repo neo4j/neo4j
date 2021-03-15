@@ -24,7 +24,6 @@ import java.util.function.Function;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -41,8 +40,6 @@ public interface EditionDatabaseComponents
     TokenHolders getTokenHolders();
 
     Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory();
-
-    IOController getIoLimiter();
 
     ConstraintSemantics getConstraintSemantics();
 

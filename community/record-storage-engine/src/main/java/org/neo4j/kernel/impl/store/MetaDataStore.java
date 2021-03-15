@@ -60,7 +60,6 @@ import static java.lang.String.format;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.DATABASE_ID_LEAST_SIGN_BITS;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.DATABASE_ID_MOST_SIGN_BITS;
@@ -304,7 +303,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         long previousValue = FIELD_NOT_INITIALIZED;
         int pageSize = pageCache.pageSize();
-        try ( PagedFile pagedFile = pageCache.map( neoStore, EMPTY, pageSize, databaseName, immutable.empty() ) )
+        try ( PagedFile pagedFile = pageCache.map( neoStore, pageSize, databaseName, immutable.empty() ) )
         {
             int offset = offset( position );
             try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
@@ -364,7 +363,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         var recordFormat = new MetaDataRecordFormat();
         int pageSize = pageCache.pageSize();
         long value = FIELD_NOT_PRESENT;
-        try ( PagedFile pagedFile = pageCache.map( neoStore, EMPTY, pageSize, databaseName, immutable.empty() ) )
+        try ( PagedFile pagedFile = pageCache.map( neoStore, pageSize, databaseName, immutable.empty() ) )
         {
             if ( pagedFile.getLastPageId() >= 0 )
             {

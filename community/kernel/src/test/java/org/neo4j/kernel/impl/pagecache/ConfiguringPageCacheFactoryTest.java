@@ -40,7 +40,6 @@ import org.neo4j.time.Clocks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.io.pagecache.IOController.DISABLED;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class ConfiguringPageCacheFactoryTest
@@ -74,7 +73,7 @@ class ConfiguringPageCacheFactoryTest
         // When
         ConfiguringPageCacheFactory factory =
                 new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler,
-                        Clocks.nanoClock(), new MemoryPools(), DISABLED );
+                        Clocks.nanoClock(), new MemoryPools() );
 
         // Then
         try ( PageCache cache = factory.getOrCreatePageCache() )

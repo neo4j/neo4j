@@ -42,7 +42,6 @@ import org.neo4j.internal.collector.DataCollectorProcedures;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.kernel.api.net.DefaultNetworkConnectionTracker;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -79,7 +78,6 @@ public abstract class AbstractEditionModule
 {
     protected NetworkConnectionTracker connectionTracker;
     protected ConstraintSemantics constraintSemantics;
-    protected IOController ioController;
     protected Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     protected SecurityProvider securityProvider;
     protected DefaultDatabaseResolver defaultDatabaseResolver;
@@ -135,11 +133,6 @@ public abstract class AbstractEditionModule
     public ConstraintSemantics getConstraintSemantics()
     {
         return constraintSemantics;
-    }
-
-    public IOController getIoLimiter()
-    {
-        return ioController;
     }
 
     public Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory()

@@ -109,6 +109,7 @@ import org.neo4j.kernel.impl.index.schema.LoggingMonitor;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -220,7 +221,7 @@ public class Database extends LifecycleAdapter
     private final CommitProcessFactory commitProcessFactory;
     private final ConstraintSemantics constraintSemantics;
     private final GlobalProcedures globalProcedures;
-    private final IOController ioController;
+    private final IOControllerService ioControllerService;
     private final SystemNanoClock clock;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
@@ -269,6 +270,7 @@ public class Database extends LifecycleAdapter
     private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private DatabaseAvailability databaseAvailability;
     private DatabaseTransactionEventListeners databaseTransactionEventListeners;
+    private IOController ioController;
 
     public Database( DatabaseCreationContext context )
     {
@@ -293,7 +295,7 @@ public class Database extends LifecycleAdapter
         this.constraintSemantics = context.getConstraintSemantics();
         this.parentMonitors = context.getMonitors();
         this.globalProcedures = context.getGlobalProcedures();
-        this.ioController = context.getIoLimiter();
+        this.ioControllerService = context.getIoControllerService();
         this.clock = context.getClock();
         this.eventListeners = context.getDatabaseEventListeners();
         this.accessCapabilityFactory = context.getAccessCapabilityFactory();
@@ -336,7 +338,8 @@ public class Database extends LifecycleAdapter
         try
         {
             databaseDependencies = new Dependencies( globalDependencies );
-            databasePageCache = new DatabasePageCache( globalPageCache, versionContextSupplier );
+            ioController = ioControllerService.createIOController( databaseConfig, clock );
+            databasePageCache = new DatabasePageCache( globalPageCache, versionContextSupplier, ioController );
             databaseMonitors = new Monitors( parentMonitors, internalLogProvider );
 
             life = new LifeSupport();

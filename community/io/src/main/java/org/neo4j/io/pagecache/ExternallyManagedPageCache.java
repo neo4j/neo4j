@@ -58,10 +58,10 @@ public class ExternallyManagedPageCache implements PageCache
     }
 
     @Override
-    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions )
-            throws IOException
+    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions,
+            IOController ioController ) throws IOException
     {
-        return delegate.map( path, versionContextSupplier, pageSize, databaseName, openOptions );
+        return delegate.map( path, versionContextSupplier, pageSize, databaseName, openOptions, ioController );
     }
 
     @Override

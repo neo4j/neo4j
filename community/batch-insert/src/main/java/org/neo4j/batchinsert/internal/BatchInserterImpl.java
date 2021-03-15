@@ -201,7 +201,6 @@ import static org.neo4j.internal.recordstorage.RelationshipModifier.DEFAULT_EXTE
 import static org.neo4j.internal.schema.IndexType.fromPublicApi;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForRelType;
-import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
@@ -286,7 +285,7 @@ public class BatchInserterImpl implements BatchInserter
             locker = tryLockStore( fileSystem, databaseLayout );
             ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, pageCacheTracer, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY, jobScheduler, Clocks.nanoClock(),
-                    new MemoryPools( config.get( memory_tracking ) ), DISABLED );
+                    new MemoryPools( config.get( memory_tracking ) ) );
             pageCache = pageCacheFactory.getOrCreatePageCache();
             life.add( new PageCacheLifecycle( pageCache ) );
 

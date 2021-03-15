@@ -171,7 +171,6 @@ public class MuninnPageCache implements PageCache
     private final IOBufferFactory bufferFactory;
     private final int faultLockStriping;
     private final boolean enableEvictionThread;
-    private final IOController ioController;
     final PageList pages;
     // All PageCursors are initialised with their pointers pointing to the victim page. This way, we don't have to throw
     // exceptions on bounds checking failures; we can instead return the victim page pointer, and permit the page
@@ -245,11 +244,10 @@ public class MuninnPageCache implements PageCache
         private final IOBufferFactory bufferFactory;
         private final int faultLockStriping;
         private final boolean enableEvictionThread;
-        private final IOController ioController;
 
         private Configuration( MemoryAllocator memoryAllocator, SystemNanoClock clock, MemoryTracker memoryTracker, PageCacheTracer pageCacheTracer,
                 VersionContextSupplier versionContextSupplier, int pageSize, IOBufferFactory bufferFactory, int faultLockStriping,
-                boolean enableEvictionThread, IOController ioController )
+                boolean enableEvictionThread )
         {
             this.memoryAllocator = memoryAllocator;
             this.clock = clock;
@@ -260,7 +258,6 @@ public class MuninnPageCache implements PageCache
             this.bufferFactory = bufferFactory;
             this.faultLockStriping = faultLockStriping;
             this.enableEvictionThread = enableEvictionThread;
-            this.ioController = ioController;
         }
 
         /**
@@ -269,7 +266,7 @@ public class MuninnPageCache implements PageCache
         public Configuration memoryAllocator( MemoryAllocator memoryAllocator )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, ioController );
+                    faultLockStriping, enableEvictionThread );
         }
 
         /**
@@ -278,7 +275,7 @@ public class MuninnPageCache implements PageCache
         public Configuration clock( SystemNanoClock clock )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, ioController );
+                    faultLockStriping, enableEvictionThread );
         }
 
         /**
@@ -287,7 +284,7 @@ public class MuninnPageCache implements PageCache
         public Configuration memoryTracker( MemoryTracker memoryTracker )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, ioController );
+                    faultLockStriping, enableEvictionThread );
         }
 
         /**
@@ -296,7 +293,7 @@ public class MuninnPageCache implements PageCache
         public Configuration pageCacheTracer( PageCacheTracer pageCacheTracer )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, ioController );
+                    faultLockStriping, enableEvictionThread );
         }
 
         /**
@@ -305,7 +302,7 @@ public class MuninnPageCache implements PageCache
         public Configuration versionContextSupplier( VersionContextSupplier versionContextSupplier )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, ioController );
+                    faultLockStriping, enableEvictionThread );
         }
 
         /**
@@ -314,7 +311,7 @@ public class MuninnPageCache implements PageCache
         public Configuration pageSize( int pageSize )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, ioController );
+                    faultLockStriping, enableEvictionThread );
         }
 
         /**
@@ -323,7 +320,7 @@ public class MuninnPageCache implements PageCache
         public Configuration bufferFactory( IOBufferFactory bufferFactory )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, ioController );
+                    faultLockStriping, enableEvictionThread );
         }
 
         /**
@@ -332,7 +329,7 @@ public class MuninnPageCache implements PageCache
         public Configuration faultLockStriping( int faultLockStriping )
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, ioController );
+                    faultLockStriping, enableEvictionThread );
         }
 
         /**
@@ -341,16 +338,7 @@ public class MuninnPageCache implements PageCache
         public Configuration disableEvictionThread()
         {
             return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping, false, ioController );
-        }
-
-        /**
-         * @param ioController page cache io controller to control io from different areas
-         */
-        public Configuration ioController( IOController ioController )
-        {
-            return new Configuration( memoryAllocator, clock, memoryTracker, pageCacheTracer, versionContextSupplier, pageSize, bufferFactory,
-                    faultLockStriping, enableEvictionThread, ioController );
+                    faultLockStriping, false );
         }
     }
 
@@ -370,7 +358,7 @@ public class MuninnPageCache implements PageCache
     public static Configuration config( MemoryAllocator memoryAllocator )
     {
         return new Configuration( memoryAllocator, Clocks.nanoClock(), EmptyMemoryTracker.INSTANCE, PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY,
-                PAGE_SIZE, DISABLED_BUFFER_FACTORY, LatchMap.faultLockStriping, true, IOController.DISABLED );
+                PAGE_SIZE, DISABLED_BUFFER_FACTORY, LatchMap.faultLockStriping, true );
     }
 
     /**
@@ -403,7 +391,6 @@ public class MuninnPageCache implements PageCache
         this.clock = configuration.clock;
         this.faultLockStriping = configuration.faultLockStriping;
         this.enableEvictionThread = configuration.enableEvictionThread;
-        this.ioController = configuration.ioController;
 
         setFreelistHead( new AtomicInteger() );
     }
@@ -440,7 +427,7 @@ public class MuninnPageCache implements PageCache
 
     @Override
     public synchronized PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int filePageSize, String databaseName,
-            ImmutableSet<OpenOption> openOptions ) throws IOException
+            ImmutableSet<OpenOption> openOptions, IOController ioController ) throws IOException
     {
         assertHealthy();
         ensureThreadsInitialised();
@@ -701,24 +688,10 @@ public class MuninnPageCache implements PageCache
 
         try ( MajorFlushEvent ignored = pageCacheTracer.beginCacheFlush() )
         {
-            if ( ioController.isEnabled() )
-            {
-                flushAllPages( files, ioController );
-            }
-            else
-            {
-                flushAllPagesParallel( files, ioController );
-            }
+            // When we flush whole page cache it can only happen on shutdown and we should be able to progress as fast as we can with disabled io controller
+            flushAllPagesParallel( files, IOController.DISABLED );
         }
         clearEvictorException();
-    }
-
-    private void flushAllPages( List<PagedFile> files, IOController limiter ) throws IOException
-    {
-        for ( PagedFile file : files )
-        {
-            flushFile( (MuninnPagedFile) file, limiter );
-        }
     }
 
     private void flushAllPagesParallel( List<PagedFile> files, IOController limiter ) throws IOException

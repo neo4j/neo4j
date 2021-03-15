@@ -127,7 +127,6 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
-import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 @Neo4jLayoutExtension
@@ -471,9 +470,9 @@ class DatabaseRecoveryIT
         try (
                 ThreadPoolJobScheduler jobScheduler = new ThreadPoolJobScheduler();
                 PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), PageCacheTracer.NULL, NullLog.getInstance(), contextSupplier,
-                        jobScheduler, Clocks.nanoClock(), new MemoryPools(), DISABLED ).getOrCreatePageCache();
+                        jobScheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
                 PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL, NullLog.getInstance(), contextSupplier,
-                        jobScheduler, Clocks.nanoClock(), new MemoryPools(), DISABLED ).getOrCreatePageCache();
+                        jobScheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
                 NeoStores store1 = new StoreFactory( databaseLayout, defaults(),
                         new DefaultIdGeneratorFactory( fs1, immediate(), databaseLayout.getDatabaseName() ),
                         pageCache1, fs1, logProvider, PageCacheTracer.NULL ).openAllNeoStores();

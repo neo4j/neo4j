@@ -42,6 +42,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -106,9 +107,9 @@ class MetaDataStoreTest
         {
             @Override
             public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName,
-                    ImmutableSet<OpenOption> openOptions ) throws IOException
+                    ImmutableSet<OpenOption> openOptions, IOController ioController ) throws IOException
             {
-                return new DelegatingPagedFile( super.map( path, versionContextSupplier, pageSize, databaseName, openOptions ) )
+                return new DelegatingPagedFile( super.map( path, versionContextSupplier, pageSize, databaseName, openOptions, ioController ) )
                 {
                     @Override
                     public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException

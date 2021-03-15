@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
+import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.service.PrioritizedService;
 import org.neo4j.time.SystemNanoClock;
 
+@Service
 public interface IOControllerService extends PrioritizedService
 {
     IOController createIOController( Config config, SystemNanoClock clock );

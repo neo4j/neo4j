@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.pagecache;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -35,7 +34,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
-import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 
 /*
@@ -54,12 +52,12 @@ public final class ConfigurableStandalonePageCacheFactory
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler, PageCacheTracer pageCacheTracer )
     {
         var config = Config.defaults();
-        return createPageCache( fileSystem, pageCacheTracer, config, EMPTY, jobScheduler, new MemoryPools( config.get( memory_tracking ) ), DISABLED );
+        return createPageCache( fileSystem, pageCacheTracer, config, EMPTY, jobScheduler, new MemoryPools( config.get( memory_tracking ) ) );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, JobScheduler jobScheduler, PageCacheTracer pageCacheTracer )
     {
-        return createPageCache( fileSystem, pageCacheTracer, config, EMPTY, jobScheduler, new MemoryPools( config.get( memory_tracking ) ), DISABLED );
+        return createPageCache( fileSystem, pageCacheTracer, config, EMPTY, jobScheduler, new MemoryPools( config.get( memory_tracking ) ) );
     }
 
     /**
@@ -72,7 +70,7 @@ public final class ConfigurableStandalonePageCacheFactory
      * @return created page cache instance
      */
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, PageCacheTracer pageCacheTracer, Config config,
-            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, MemoryPools memoryPools, IOController ioController )
+            VersionContextSupplier versionContextSupplier, JobScheduler jobScheduler, MemoryPools memoryPools )
     {
         config.setIfNotSet( GraphDatabaseSettings.pagecache_memory, "8M" );
         Neo4jLoggerContext loggerContext =
@@ -84,7 +82,7 @@ public final class ConfigurableStandalonePageCacheFactory
         {
             ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                     fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ), versionContextSupplier, jobScheduler,
-                    Clocks.nanoClock(), memoryPools, ioController );
+                    Clocks.nanoClock(), memoryPools );
             return pageCacheFactory.getOrCreatePageCache();
         }
     }

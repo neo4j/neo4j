@@ -44,7 +44,6 @@ import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.GuardVersionContextSupplier;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
@@ -152,6 +151,7 @@ public class GlobalModule
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final SystemGraphComponents systemGraphComponents;
     private final CentralBufferMangerHolder centralBufferMangerHolder;
+    private final IOControllerService ioControllerService;
 
     /**
      * @param globalConfig configuration affecting global aspects of the system.
@@ -226,9 +226,9 @@ public class GlobalModule
 
         collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );
 
-        IOController ioController = loadIOController( globalConfig, globalClock );
+        ioControllerService = loadIOControllerService();
         pageCache = tryResolveOrCreate( PageCache.class,
-                () -> createPageCache( fileSystem, globalConfig, logService, tracers, jobScheduler, globalClock, memoryPools, ioController ) );
+                () -> createPageCache( fileSystem, globalConfig, logService, tracers, jobScheduler, globalClock, memoryPools ) );
 
         globalLife.add( new PageCacheLifecycle( pageCache ) );
 
@@ -378,11 +378,11 @@ public class GlobalModule
     }
 
     protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers, JobScheduler jobScheduler,
-            SystemNanoClock clock, MemoryPools memoryPools, IOController ioController )
+            SystemNanoClock clock, MemoryPools memoryPools )
     {
         Log pageCacheLog = logging.getInternalLog( PageCache.class );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fileSystem, config, tracers.getPageCacheTracer(), pageCacheLog,
-                GuardVersionContextSupplier.INSTANCE, jobScheduler, clock, memoryPools, ioController );
+                GuardVersionContextSupplier.INSTANCE, jobScheduler, clock, memoryPools );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         if ( config.get( GraphDatabaseInternalSettings.dump_configuration ) )
@@ -438,10 +438,10 @@ public class GlobalModule
         return new CentralBufferMangerHolder( nettyAllocator, bufferPool );
     }
 
-    private static IOController loadIOController( Config globalConfig, SystemNanoClock clock )
+    private static IOControllerService loadIOControllerService()
     {
         return Services.loadByPriority( IOControllerService.class ).orElseThrow(
-                () -> new IllegalStateException( "IOControllerService not found." ) ).createIOController( globalConfig, clock );
+                () -> new IllegalStateException( "IOControllerService not found." ) );
     }
 
     public FileWatcher getFileWatcher()
@@ -582,5 +582,10 @@ public class GlobalModule
     public CentralBufferMangerHolder getCentralBufferMangerHolder()
     {
         return centralBufferMangerHolder;
+    }
+
+    public IOControllerService getIoControllerService()
+    {
+        return ioControllerService;
     }
 }

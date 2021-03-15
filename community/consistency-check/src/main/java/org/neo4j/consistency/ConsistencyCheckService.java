@@ -87,7 +87,6 @@ import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
-import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
 import static org.neo4j.kernel.impl.index.schema.FullStoreChangeStream.EMPTY;
@@ -158,7 +157,7 @@ public class ConsistencyCheckService
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
         ConfiguringPageCacheFactory pageCacheFactory =
                 new ConfiguringPageCacheFactory( fileSystem, config, pageCacheTracer, logProvider.getLog( PageCache.class ), EmptyVersionContextSupplier.EMPTY,
-                        jobScheduler, Clocks.nanoClock(), new MemoryPools( config.get( memory_tracking ) ), DISABLED );
+                        jobScheduler, Clocks.nanoClock(), new MemoryPools( config.get( memory_tracking ) ) );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         try

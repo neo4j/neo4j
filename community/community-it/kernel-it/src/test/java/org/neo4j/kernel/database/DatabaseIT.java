@@ -37,6 +37,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -380,9 +381,9 @@ class DatabaseIT
 
         @Override
         public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName,
-                ImmutableSet<OpenOption> openOptions ) throws IOException
+                ImmutableSet<OpenOption> openOptions, IOController ioController ) throws IOException
         {
-            return new PageFileWrapper( super.map( path, versionContextSupplier, pageSize, databaseName, openOptions ), fileFlushes );
+            return new PageFileWrapper( super.map( path, versionContextSupplier, pageSize, databaseName, openOptions, ioController ), fileFlushes );
         }
 
         @Override

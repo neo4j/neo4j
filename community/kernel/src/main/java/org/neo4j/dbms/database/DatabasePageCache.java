@@ -30,6 +30,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.neo4j.io.pagecache.IOController;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -50,23 +52,23 @@ public class DatabasePageCache implements PageCache
     private final PageCache globalPageCache;
     private final CopyOnWriteArrayList<PagedFile> databasePagedFiles = new CopyOnWriteArrayList<>();
     private final VersionContextSupplier versionContextSupplier;
+    private final IOController ioController;
     private boolean closed;
 
-    public DatabasePageCache( PageCache globalPageCache, VersionContextSupplier versionContextSupplier )
+    public DatabasePageCache( PageCache globalPageCache, VersionContextSupplier versionContextSupplier, IOController ioController )
     {
-        requireNonNull( globalPageCache );
-        requireNonNull( versionContextSupplier );
-        this.globalPageCache = globalPageCache;
-        this.versionContextSupplier = versionContextSupplier;
+        this.globalPageCache = requireNonNull( globalPageCache );
+        this.versionContextSupplier = requireNonNull( versionContextSupplier );
+        this.ioController = requireNonNull( ioController );
     }
 
     @Override
     public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName,
-            ImmutableSet<OpenOption> openOptions ) throws IOException
+            ImmutableSet<OpenOption> openOptions, IOController ignoredController ) throws IOException
     {
         // no one should call this version of map method with emptyDatabaseName != null,
         // since it is this class that is decorating map calls with the name of the database
-        PagedFile pagedFile = globalPageCache.map( path, versionContextSupplier, pageSize, databaseName, openOptions );
+        PagedFile pagedFile = globalPageCache.map( path, versionContextSupplier, pageSize, databaseName, openOptions, ioController );
         DatabasePageFile databasePageFile = new DatabasePageFile( pagedFile, databasePagedFiles );
         databasePagedFiles.add( databasePageFile );
         return databasePageFile;

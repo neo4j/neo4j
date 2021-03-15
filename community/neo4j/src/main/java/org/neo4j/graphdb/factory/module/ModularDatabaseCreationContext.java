@@ -34,7 +34,6 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -49,6 +48,7 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
@@ -89,7 +89,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final Monitors parentMonitors;
     private final Tracers tracers;
     private final GlobalProcedures globalProcedures;
-    private final IOController ioController;
+    private final IOControllerService ioControllerService;
     private final LongFunction<DatabaseAvailabilityGuard> databaseAvailabilityGuardFactory;
     private final SystemNanoClock clock;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
@@ -142,7 +142,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.constraintSemantics = editionComponents.getConstraintSemantics();
         this.tracers = globalModule.getTracers();
         this.globalProcedures = globalProcedures;
-        this.ioController = editionComponents.getIoLimiter();
+        this.ioControllerService = globalModule.getIoControllerService();
         this.clock = globalModule.getGlobalClock();
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         this.dbmsInfo = globalModule.getDbmsInfo();
@@ -279,9 +279,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public IOController getIoLimiter()
+    public IOControllerService getIoControllerService()
     {
-        return ioController;
+        return ioControllerService;
     }
 
     @Override
