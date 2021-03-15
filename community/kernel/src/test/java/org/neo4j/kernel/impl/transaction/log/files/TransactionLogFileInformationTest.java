@@ -135,7 +135,7 @@ class TransactionLogFileInformationTest
     }
 
     @Test
-    void doNotReadAgainPreviouslyObserverLogTransactionTime() throws IOException
+    void doNotReadAgainPreviouslyObservedLogTransactionTime() throws IOException
     {
         var logEntryReader = mock( LogEntryReader.class );
         var readableLogChannel = mock( ReadableLogChannel.class );
