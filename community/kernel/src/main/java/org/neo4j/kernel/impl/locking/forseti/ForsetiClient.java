@@ -118,6 +118,7 @@ public class ForsetiClient implements Locks.Client
     private long lockAcquisitionTimeoutNano;
 
     private final SystemNanoClock clock;
+    private final boolean verboseDeadlocks;
 
     /** List of other clients this client is waiting for. */
     private final SimpleBitSet waitList = new SimpleBitSet( 64 );
@@ -152,7 +153,7 @@ public class ForsetiClient implements Locks.Client
     public ForsetiClient( int id, ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps,
                           WaitStrategy[] waitStrategies, Pool<ForsetiClient> clientPool,
                           DeadlockResolutionStrategy deadlockResolutionStrategy, IntFunction<ForsetiClient> clientById,
-                          SystemNanoClock clock )
+                          SystemNanoClock clock, boolean verboseDeadlocks )
     {
         this.clientId = id;
         this.lockMaps = lockMaps;
@@ -163,6 +164,7 @@ public class ForsetiClient implements Locks.Client
         this.sharedLockCounts = new HeapTrackingLongIntHashMap[lockMaps.length];
         this.exclusiveLockCounts = new HeapTrackingLongIntHashMap[lockMaps.length];
         this.clock = clock;
+        this.verboseDeadlocks = verboseDeadlocks;
     }
 
     /**
@@ -954,6 +956,18 @@ public class ForsetiClient implements Locks.Client
                 // reduces the probably of a false positive, but does not eliminate them.
                 if ( isDeadlockReal( lock, tries ) )
                 {
+                    if ( verboseDeadlocks )
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        sb.append( " All locks:[" );
+                        for ( int i = 0; i < lockMaps.length; i++ )
+                        {
+                            sb.append( ResourceTypes.fromId( i ) ).append( "[" );
+                            sb.append( lockMaps[i] ).append( "]" );
+                        }
+                        sb.append( "]" );
+                        message += sb.toString();
+                    }
                     // After checking several times, this really does look like a real deadlock.
                     throw new DeadlockDetectedException( message );
                 }

@@ -72,6 +72,9 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<String> lock_manager = newBuilder( "unsupported.dbms.lock_manager", STRING, "forseti" ).build();
 
     @Internal
+    public static final Setting<Boolean> lock_manager_verbose_deadlocks = newBuilder( "unsupported.dbms.lock_manager.verbose_deadlocks", BOOL, false ).build();
+
+    @Internal
     public static final Setting<String> tracer = newBuilder( "unsupported.dbms.tracer", STRING, null ).build();
 
     @Internal

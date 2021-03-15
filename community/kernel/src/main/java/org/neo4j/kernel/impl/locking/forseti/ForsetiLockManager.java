@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.lock.LockType;
@@ -300,6 +301,7 @@ public class ForsetiLockManager implements Locks
         private final ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps;
         private final WaitStrategy[] waitStrategies;
         private final DeadlockResolutionStrategy deadlockResolutionStrategy;
+        private final boolean verboseDeadlocks;
 
         ForsetiClientFlyweightPool( Config config, SystemNanoClock clock, ConcurrentMap<Long,Lock>[] lockMaps,
                 WaitStrategy[] waitStrategies )
@@ -310,6 +312,7 @@ public class ForsetiLockManager implements Locks
             this.lockMaps = lockMaps;
             this.waitStrategies = waitStrategies;
             this.deadlockResolutionStrategy = config.get( forseti_deadlock_resolution_strategy );
+            this.verboseDeadlocks = config.get( GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks );
         }
 
         @Override
@@ -321,7 +324,7 @@ public class ForsetiLockManager implements Locks
                 id = clientIds.getAndIncrement();
             }
             ForsetiClient client = new ForsetiClient( id, lockMaps, waitStrategies, this,
-                    deadlockResolutionStrategy, clientsById::get, clock );
+                    deadlockResolutionStrategy, clientsById::get, clock, verboseDeadlocks );
             clientsById.put( id, client );
             return client;
         }
