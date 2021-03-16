@@ -25,7 +25,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
-import java.util.Optional;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -46,6 +45,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 import static java.util.Arrays.fill;
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
@@ -149,7 +149,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         this.pageCacheTracer = pageCacheTracer;
         this.pageFaultLatches = new LatchMap( faultLockStriping );
         this.bufferFactory = pageCache.getBufferFactory();
-        this.databaseName = databaseName;
+        this.databaseName = requireNonNull( databaseName );
 
         // The translation table is an array of arrays of integers that are either UNMAPPED_TTE, or the id of a page in
         // the page list. The table only grows the outer array, and all the inner "chunks" all stay the same size. This
@@ -783,9 +783,9 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     }
 
     @Override
-    public Optional<String> getDatabaseName()
+    public String getDatabaseName()
     {
-        return Optional.ofNullable( databaseName );
+        return databaseName;
     }
 
     /**

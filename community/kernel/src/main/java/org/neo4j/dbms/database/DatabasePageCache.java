@@ -219,7 +219,7 @@ public class DatabasePageCache implements PageCache
         }
 
         @Override
-        public Optional<String> getDatabaseName()
+        public String getDatabaseName()
         {
             return delegate.getDatabaseName();
         }

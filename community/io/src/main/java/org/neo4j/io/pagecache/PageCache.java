@@ -117,7 +117,7 @@ public interface PageCache extends AutoCloseable
      */
     default PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
-        return map( path, versionContextSupplier, pageSize, openOptions, null );
+        return map( path, versionContextSupplier, pageSize, openOptions, "neo4j" );
     }
 
     /**
