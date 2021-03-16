@@ -196,4 +196,49 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
     assertSameAST(testName)
   }
 
+  test("SHOW NODE INDEXES") {
+    assertJavaCCException(testName,
+      """Invalid input 'NODE': expected
+        |  "ALL"
+        |  "BTREE"
+        |  "DATABASE"
+        |  "DATABASES"
+        |  "DEFAULT"
+        |  "HOME"
+        |  "INDEX"
+        |  "INDEXES"
+        |  "POPULATED"
+        |  "ROLES" (line 1, column 6 (offset: 5))""".stripMargin)
+  }
+
+  test("SHOW REL INDEXES") {
+    assertJavaCCException(testName,
+      """Invalid input 'REL': expected
+        |  "ALL"
+        |  "BTREE"
+        |  "DATABASE"
+        |  "DATABASES"
+        |  "DEFAULT"
+        |  "HOME"
+        |  "INDEX"
+        |  "INDEXES"
+        |  "POPULATED"
+        |  "ROLES" (line 1, column 6 (offset: 5))""".stripMargin)
+  }
+
+  test("SHOW RELATIONSHIP INDEXES") {
+    assertJavaCCException(testName,
+      """Invalid input 'RELATIONSHIP': expected
+        |  "ALL"
+        |  "BTREE"
+        |  "DATABASE"
+        |  "DATABASES"
+        |  "DEFAULT"
+        |  "HOME"
+        |  "INDEX"
+        |  "INDEXES"
+        |  "POPULATED"
+        |  "ROLES" (line 1, column 6 (offset: 5))""".stripMargin)
+  }
+
 }
