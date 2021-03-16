@@ -66,7 +66,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
     private static final String COUNT_STORE_CONSISTENCY_CHECKER_TAG = "countStoreConsistencyChecker";
     private static final String SCHEMA_CONSISTENCY_CHECKER_TAG = "schemaConsistencyChecker";
     private static final String CONSISTENCY_CHECKER_TOKEN_LOADER_TAG = "consistencyCheckerTokenLoader";
-    static final int[] DEFAULT_SLOT_SIZES = {ID_SLOT_SIZE, ID_SLOT_SIZE, 1, 1, 1, 1, 1};
+    static final int[] DEFAULT_SLOT_SIZES = {ID_SLOT_SIZE, ID_SLOT_SIZE, 1, 1, 1, 1, 1, 1 /*2 bits unused*/};
 
     private final PageCache pageCache;
     private final NeoStores neoStores;

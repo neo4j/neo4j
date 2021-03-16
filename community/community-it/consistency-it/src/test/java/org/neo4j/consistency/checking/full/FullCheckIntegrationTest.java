@@ -193,7 +193,7 @@ public class FullCheckIntegrationTest
     protected int T;
     protected int M;
     protected final List<Long> indexedNodes = new ArrayList<>();
-    private Map<Setting<?>,Object> settings = new HashMap<>();
+    private final Map<Setting<?>,Object> settings = new HashMap<>();
 
     @BeforeEach
     protected void setUp()
@@ -2293,6 +2293,64 @@ public class FullCheckIntegrationTest
         // then
         assertFalse( stats.isConsistent() );
         on( stats ).verify( RecordType.PROPERTY, 1 )
+                .andThatsAllFolks();
+    }
+
+    @Test
+    void shouldDetectCutOffRelationshipGroupChains() throws Exception
+    {
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( TransactionDataBuilder tx, IdGenerator next )
+            {
+                // node -> group1 -> group2 -X-> group3 -> group4
+                //                           ^
+                //                           | chain cut off
+
+                long nodeId = next.node();
+                long group1Id = next.relationshipGroup();
+                long group2Id = next.relationshipGroup();
+                long group3Id = next.relationshipGroup();
+                long group4Id = next.relationshipGroup();
+
+                int type1 = next.relationshipType();
+                int type2 = next.relationshipType();
+                int type3 = next.relationshipType();
+                int type4 = next.relationshipType();
+
+                NodeRecord node = new NodeRecord( nodeId ).initialize( true, NULL_REFERENCE.longValue(), true, group1Id, NO_LABELS_FIELD.longValue() );
+                RelationshipGroupRecord group1 = new RelationshipGroupRecord( group1Id ).initialize(
+                        true, type1, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), nodeId, group2Id );
+                RelationshipGroupRecord group2 = new RelationshipGroupRecord( group2Id ).initialize(
+                        true, type2, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), nodeId,
+                        // cut-off point
+                        NULL_REFERENCE.longValue() );
+                RelationshipGroupRecord group3 = new RelationshipGroupRecord( group3Id ).initialize(
+                        true, type3, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), nodeId, group4Id );
+                RelationshipGroupRecord group4 = new RelationshipGroupRecord( group3Id ).initialize(
+                        true, type4, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), nodeId,
+                        // correct end of chain
+                        NULL_REFERENCE.longValue() );
+
+                tx.create( node );
+                tx.relationshipType( type1, "T1", false );
+                tx.relationshipType( type2, "T2", false );
+                tx.relationshipType( type3, "T3", false );
+                tx.relationshipType( type4, "T4", false );
+                tx.create( group1 );
+                tx.create( group2 );
+                tx.create( group3 );
+                tx.create( group4 );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        assertFalse( stats.isConsistent() );
+        on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 1 )
                 .andThatsAllFolks();
     }
 

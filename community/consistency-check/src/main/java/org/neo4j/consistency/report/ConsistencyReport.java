@@ -449,6 +449,9 @@ public interface ConsistencyReport
 
         @Documented( "The first loop relationship does not share node with group" )
         void firstLoopRelationshipDoesNotShareNodeWithGroup( RelationshipRecord record );
+
+        @Documented( "The relationship group chain has multiple last groups" )
+        void multipleLastGroups( NodeRecord record );
     }
 
     interface DynamicConsistencyReport extends ConsistencyReport

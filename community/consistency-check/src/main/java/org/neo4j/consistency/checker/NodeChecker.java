@@ -134,7 +134,7 @@ class NodeChecker implements Checker
             ProgressListener localProgress = nodeProgress.threadLocalReporter();
             MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
             CacheAccess.Client client = context.cacheAccess.client();
-            long[] nextRelCacheFields = new long[]{-1, -1, 1/*inUse*/, 0, 0, 1/*note that this needs to be checked*/, 0};
+            long[] nextRelCacheFields = new long[]{-1, -1, 1/*inUse*/, 0, 0, 1/*note that this needs to be checked*/, 0, 0};
             Iterator<EntityTokenRange> nodeLabelRangeIterator = labelIndexReader.iterator();
             EntityTokenIndexCheckState labelIndexState = new EntityTokenIndexCheckState( null, fromNodeId - 1 );
             for ( long nodeId = fromNodeId; nodeId < toNodeId && !context.isCancelled(); nodeId++ )

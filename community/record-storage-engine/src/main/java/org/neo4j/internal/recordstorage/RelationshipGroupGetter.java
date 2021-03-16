@@ -116,6 +116,13 @@ public class RelationshipGroupGetter
             if ( closestPreviousChange != null )
             {   // ...after the closest previous one
                 RelationshipGroupRecord closestPrevious = closestPreviousChange.forChangingLinkage();
+
+                // if there's' a group after the found insertion point we need to set its prev to this new group
+                if ( !isNull( closestPrevious.getNext() ) )
+                {
+                    relGroupRecords.getOrLoad( closestPrevious.getNext(), null, cursorTracer ).forChangingLinkage().setPrev( id );
+                }
+
                 record.setNext( closestPrevious.getNext() );
                 record.setPrev( closestPrevious.getId() );
                 closestPrevious.setNext( id );

@@ -105,6 +105,17 @@ class RelationshipGroupChecker implements Checker
                         // The old checker only verified that the relationship group that node.nextGroup pointed to had this node as its owner
                         client.putToCacheSingle( owningNode, CacheSlots.NodeLink.SLOT_CHECK_MARK, 0 );
                     }
+
+                    if ( NULL_REFERENCE.is( record.getNext() ) )
+                    {
+                        // This is the last group in the chain for this node. Verify that there's only one such last group.
+                        boolean hasAlreadySeenLastGroup = client.getBooleanFromCache( owningNode, CacheSlots.NodeLink.SLOT_HAS_LAST_GROUP );
+                        if ( hasAlreadySeenLastGroup )
+                        {
+                            reporter.forRelationshipGroup( record ).multipleLastGroups( context.recordLoader.node( owningNode, cursorTracer ) );
+                        }
+                        client.putToCacheSingle( owningNode, CacheSlots.NodeLink.SLOT_HAS_LAST_GROUP, 1 );
+                    }
                 }
 
                 if ( firstRound )

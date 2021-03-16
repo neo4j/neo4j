@@ -337,7 +337,7 @@ class RelationshipModifierTest
     {
         // given and initial state
         long node = createEmptyNode();
-        IntSupplier typeStrategy = randomTypes( 4 );
+        IntSupplier typeStrategy = randomTypes( 10 );
         Supplier<RelationshipDirection> directionStrategy = RANDOM_DIRECTION;
         LongSupplier otherNodeStrategy = this::createEmptyNode;
         int maxRelationships = 100;
@@ -411,14 +411,8 @@ class RelationshipModifierTest
     {
         // Acquire the "external" locks that the RelationshipModifier rely on when making decisions internally
         CommandCreationLocking context = new CommandCreationLocking();
-        modifications.creations().forEach( ( id, type, start, end ) ->
-        {
-            context.acquireRelationshipCreationLock( txState, locks, NONE, start, end );
-        } );
-        modifications.deletions().forEach( ( id, type, start, end ) ->
-        {
-            context.acquireRelationshipDeletionLock( txState, locks, NONE, start, end , id );
-        } );
+        modifications.creations().forEach( ( id, type, start, end ) -> context.acquireRelationshipCreationLock( txState, locks, NONE, start, end ) );
+        modifications.deletions().forEach( ( id, type, start, end ) -> context.acquireRelationshipDeletionLock( txState, locks, NONE, start, end , id ) );
 
         RecordAccessSet changes = store.newRecordChanges( loadMonitor, readMonitor );
         modifier.modifyRelationships( modifications, changes, groupUpdater, locks, NONE );

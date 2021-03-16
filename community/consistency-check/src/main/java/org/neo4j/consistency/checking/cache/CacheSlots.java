@@ -52,6 +52,8 @@ public interface CacheSlots
         int SLOT_HAS_INLINED_LABELS = 4;
         int SLOT_CHECK_MARK = 5;
         int SLOT_HAS_SINGLE_LABEL = 6;
+        // For dense nodes, whether or not a "last" group has been seen for this node
+        int SLOT_HAS_LAST_GROUP = 7;
     }
 
     interface RelationshipLink

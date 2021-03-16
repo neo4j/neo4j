@@ -671,7 +671,7 @@ public class DetectRandomSabotageIT
                     {
                         // prev isn't stored in the record format
                         return loadChangeUpdate( random, stores.getRelationshipGroupStore(), usedRecord(), RelationshipGroupRecord::getNext,
-                                RelationshipGroupRecord::setNext, () -> randomLargeSometimesNegative( random ) );
+                                RelationshipGroupRecord::setNext, () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue(), id -> true ) );
                     }
                 },
         RELATIONSHIP_GROUP_TYPE
