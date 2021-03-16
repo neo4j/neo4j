@@ -869,8 +869,8 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "rename role abc to cba" ->
       "RENAME ROLE abc TO cba",
 
-    "rename role `a%b$c` to `c!b?a`" ->
-      "RENAME ROLE `a%b$c` TO `c!b?a`",
+    "rename role `a%b$c` if exists to `c!b?a`" ->
+      "RENAME ROLE `a%b$c` IF EXISTS TO `c!b?a`",
 
     "rename role $param to cba" ->
       "RENAME ROLE $param TO cba",
@@ -878,8 +878,8 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "rename role abc to $other" ->
       "RENAME ROLE abc TO $other",
 
-    "rename role $param to $other" ->
-      "RENAME ROLE $param TO $other",
+    "rename role $param IF EXISTS to $other" ->
+      "RENAME ROLE $param IF EXISTS TO $other",
 
     "drop role abc" ->
       "DROP ROLE abc",

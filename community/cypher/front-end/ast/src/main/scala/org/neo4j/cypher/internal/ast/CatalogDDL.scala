@@ -274,7 +274,7 @@ final case class CreateRole(roleName: Either[String, Parameter], from: Option[Ei
     }
 }
 
-final case class RenameRole(fromRoleName: Either[String, Parameter], toRoleName: Either[String, Parameter])
+final case class RenameRole(fromRoleName: Either[String, Parameter], toRoleName: Either[String, Parameter], ifExists: Boolean)
                            (val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name: String = "RENAME ROLE"

@@ -360,8 +360,9 @@ case class Prettifier(
           case _                    => s"${x.name} ${Prettifier.escapeName(roleName)} AS COPY OF ${Prettifier.escapeName(fromRole)}"
         }
 
-      case x @ RenameRole(fromRoleName, toRoleName) =>
-        s"${x.name} ${Prettifier.escapeName(fromRoleName)} TO ${Prettifier.escapeName(toRoleName)}"
+      case x @ RenameRole(fromRoleName, toRoleName, ifExists) =>
+        val maybeIfExists = if (ifExists) " IF EXISTS" else ""
+        s"${x.name} ${Prettifier.escapeName(fromRoleName)}$maybeIfExists TO ${Prettifier.escapeName(toRoleName)}"
 
       case x @ DropRole(roleName, ifExists) =>
         if (ifExists) s"${x.name} ${Prettifier.escapeName(roleName)} IF EXISTS"

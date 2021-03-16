@@ -215,9 +215,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             roleName, fromName, "DENIED"),
           prettifier.asString(c)))
 
-      // RENAME ROLE foo TO bar
-      case c@RenameRole(fromRoleName, toRoleName) =>
-        val source = plans.AssertDbmsAdmin(RenameRoleAction)
+      // RENAME ROLE foo [IF EXISTS] TO bar
+      case c@RenameRole(fromRoleName, toRoleName, ifExists) =>
+        val admin = plans.AssertDbmsAdmin(RenameRoleAction)
+        val source = if (ifExists) plans.DoNothingIfNotExists(admin, "Role", fromRoleName, "rename") else admin
         Some(plans.LogSystemCommand(plans.RenameRole(source, fromRoleName, toRoleName), prettifier.asString(c)))
 
       // DROP ROLE foo [IF EXISTS]

@@ -237,27 +237,43 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   // Renaming role
 
   test("RENAME ROLE foo TO bar") {
-    yields(ast.RenameRole(literalFoo, literalBar))
+    yields(ast.RenameRole(literalFoo, literalBar, ifExists = false))
   }
 
   test("RENAME ROLE foo TO $bar") {
-    yields(ast.RenameRole(literalFoo, param("bar")))
+    yields(ast.RenameRole(literalFoo, param("bar"), ifExists = false))
   }
 
   test("RENAME ROLE $foo TO bar") {
-    yields(ast.RenameRole(param("foo"), literalBar))
+    yields(ast.RenameRole(param("foo"), literalBar, ifExists = false))
   }
 
   test("RENAME ROLE $foo TO $bar") {
-    yields(ast.RenameRole(param("foo"), param("bar")))
+    yields(ast.RenameRole(param("foo"), param("bar"), ifExists = false))
+  }
+
+  test("RENAME ROLE foo IF EXISTS TO bar") {
+    yields(ast.RenameRole(literalFoo, literalBar, ifExists = true))
+  }
+
+  test("RENAME ROLE foo IF EXISTS TO $bar") {
+    yields(ast.RenameRole(literalFoo, param("bar"), ifExists = true))
+  }
+
+  test("RENAME ROLE $foo IF EXISTS TO bar") {
+    yields(ast.RenameRole(param("foo"), literalBar, ifExists = true))
+  }
+
+  test("RENAME ROLE $foo IF EXISTS TO $bar") {
+    yields(ast.RenameRole(param("foo"), param("bar"), ifExists = true))
   }
 
   test("RENAME ROLE foo TO ``") {
-    yields(ast.RenameRole(literalFoo, literalEmpty))
+    yields(ast.RenameRole(literalFoo, literalEmpty, ifExists = false))
   }
 
   test("RENAME ROLE `` TO bar") {
-    yields(ast.RenameRole(literalEmpty, literalBar))
+    yields(ast.RenameRole(literalEmpty, literalBar, ifExists = false))
   }
 
   test("RENAME ROLE foo TO") {
@@ -281,6 +297,26 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("ALTER ROLE foo SET NAME bar") {
+    failsToParse
+  }
+
+  test("RENAME ROLE foo IF EXIST TO bar") {
+    failsToParse
+  }
+
+  test("RENAME ROLE foo IF NOT EXISTS TO bar") {
+    failsToParse
+  }
+
+  test("RENAME ROLE foo TO bar IF EXISTS") {
+    failsToParse
+  }
+
+  test("RENAME IF EXISTS ROLE foo TO bar") {
+    failsToParse
+  }
+
+  test("RENAME OR REPLACE ROLE foo TO bar") {
     failsToParse
   }
 

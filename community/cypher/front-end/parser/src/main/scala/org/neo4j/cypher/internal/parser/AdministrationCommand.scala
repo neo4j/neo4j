@@ -205,7 +205,10 @@ trait AdministrationCommand extends Parser
   }
 
   def RenameRole: Rule1[ast.RenameRole] = rule("RENAME ROLE") {
-    group(keyword("RENAME ROLE") ~~  SymbolicNameOrStringParameter ~~ keyword("TO") ~~ SymbolicNameOrStringParameter) ~~>> (ast.RenameRole(_, _))
+    group(keyword("RENAME ROLE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF EXISTS") ~~ keyword("TO")
+      ~~ SymbolicNameOrStringParameter) ~~>> (ast.RenameRole(_, _, ifExists = true)) |
+    group(keyword("RENAME ROLE") ~~ SymbolicNameOrStringParameter ~~ keyword("TO")
+      ~~ SymbolicNameOrStringParameter) ~~>> (ast.RenameRole(_, _, ifExists = false))
   }
 
   def DropRole: Rule1[ast.DropRole] = rule("DROP ROLE") {
