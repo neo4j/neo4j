@@ -64,9 +64,9 @@ trait RewritePhaseTest {
   def assertRewritten(from: String, to: String): Unit = assertRewritten(from, to, List.empty)
 
   def assertRewritten(from: String, to: String, semanticTableExpressions: List[Expression], features: SemanticFeature*): Unit = {
-    val fromOutState: BaseState = prepareFrom(from, features: _*)
+    val fromOutState: BaseState = prepareFrom(from, rewriterPhaseUnderTest, features: _*)
 
-    val toOutState = prepareFrom(to, features: _*)
+    val toOutState = prepareFrom(to, rewriterPhaseForExpected, features: _*)
 
     fromOutState.statement() should equal(toOutState.statement())
     semanticTableExpressions.foreach { e =>
@@ -75,7 +75,7 @@ trait RewritePhaseTest {
   }
 
   def assertRewritten(from: String, to: Statement, semanticTableExpressions: List[Expression], features: SemanticFeature*): Unit = {
-    val fromOutState: BaseState = prepareFrom(from, features: _*)
+    val fromOutState: BaseState = prepareFrom(from, rewriterPhaseUnderTest, features: _*)
 
     fromOutState.statement() should equal(to)
     semanticTableExpressions.foreach { e =>
@@ -90,10 +90,10 @@ trait RewritePhaseTest {
     astRewriter.rewrite(cleanedAst, cleanedAst.semanticState(features: _*), Map.empty, exceptionFactory)
   }
 
- def prepareFrom(from: String, features: SemanticFeature*): BaseState = {
+ def prepareFrom(from: String, transformer: Transformer[BaseContext, BaseState, BaseState], features: SemanticFeature*): BaseState = {
     val fromAst = parseAndRewrite(from, features: _*)
     val fromInState = SemanticAnalysis(warn = false, features: _*).process(InitialState(from, None, plannerName, maybeStatement = Some(fromAst)), TestContext())
-    val fromOutState = rewriterPhaseUnderTest.transform(fromInState, ContextHelper.create())
+    val fromOutState = transformer.transform(fromInState, ContextHelper.create())
     fromOutState
   }
 }

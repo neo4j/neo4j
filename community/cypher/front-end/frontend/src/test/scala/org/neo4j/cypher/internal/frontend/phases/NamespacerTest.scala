@@ -180,7 +180,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
   test("should rewrite outer scope variables of exists subclause even if not used in subclause") {
     val query = "MATCH (n) WHERE EXISTS { MATCH (p:Label) } WITH n as m, 1 as n RETURN m, n"
 
-    val statement = prepareFrom(query).statement()
+    val statement = prepareFrom(query, rewriterPhaseUnderTest).statement()
 
     val outerScope = statement.treeFold(Set.empty[Variable]) {
       case expr: ExistsSubClause =>
