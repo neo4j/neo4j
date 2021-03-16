@@ -27,6 +27,7 @@ import java.util.stream.Collectors
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.AllConstraints
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AscSortItem
@@ -38,6 +39,7 @@ import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.Delete
+import org.neo4j.cypher.internal.ast.DeprecatedSyntax
 import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropDatabase
@@ -45,6 +47,7 @@ import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
 import org.neo4j.cypher.internal.ast.DropRole
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DumpData
+import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
@@ -59,7 +62,11 @@ import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
+import org.neo4j.cypher.internal.ast.NewSyntax
 import org.neo4j.cypher.internal.ast.NoWait
+import org.neo4j.cypher.internal.ast.NodeExistsConstraints
+import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.OldValidSyntax
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OrderBy
@@ -67,6 +74,7 @@ import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RemoveItem
@@ -119,6 +127,7 @@ import org.neo4j.cypher.internal.ast.factory.ASTFactory.MergeActionType
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowConstraintType
+import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -839,11 +848,25 @@ class Neo4jASTFactory(query: String)
   }
 
   override def showConstraintClause(p: InputPosition,
-                                    constraintType: ShowConstraintType,
+                                    constraintTypeString: String,
                                     brief: Boolean,
                                     verbose: Boolean,
                                     where: Expression,
                                     hasYield: Boolean): Clause = {
+    val constraintType: ShowConstraintType = constraintTypeString match {
+      case "all" => AllConstraints
+      case "unique" => UniqueConstraints
+      case "node_key" => NodeKeyConstraints
+      case "exists_new" => ExistsConstraints(NewSyntax)
+      case "exists_deprecated" => ExistsConstraints(DeprecatedSyntax)
+      case "exists_old" => ExistsConstraints(OldValidSyntax)
+      case "node_exists_new" => NodeExistsConstraints(NewSyntax)
+      case "node_exists_deprecated" => NodeExistsConstraints(DeprecatedSyntax)
+      case "node_exists_old" => NodeExistsConstraints(OldValidSyntax)
+      case "rel_exists_new" => RelExistsConstraints(NewSyntax)
+      case "rel_exists_deprecated" => RelExistsConstraints(DeprecatedSyntax)
+      case "rel_exists_old" => RelExistsConstraints(OldValidSyntax)
+    }
     ShowConstraintsClause(constraintType, brief, verbose, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
   }
 
