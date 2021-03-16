@@ -104,6 +104,8 @@ object Function {
     Tan,
     ToBoolean,
     ToFloat,
+    ToFloatList,
+    ToFloatOrNull,
     ToInteger,
     ToIntegerList,
     ToIntegerOrNull,

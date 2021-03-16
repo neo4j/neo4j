@@ -1215,6 +1215,34 @@ public final class CypherFunctions
         }
     }
 
+    public static Value toFloatOrNull( AnyValue in )
+    {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( in instanceof NumberValue || in instanceof TextValue )
+        {
+            return toFloat( in );
+        }
+        else
+        {
+            return NO_VALUE;
+        }
+    }
+
+    public static AnyValue toFloatList( AnyValue in )
+    {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( !(in instanceof ListValue) )
+        {
+            throw new ParameterWrongTypeException( String.format("Expected a List, got: %s in function: ToFloatList", in), null );
+        }
+
+        ListValue lv = (ListValue) in;
+
+        return Arrays.stream( lv.asArray() )
+                     .map( entry -> entry == NO_VALUE ? NO_VALUE : toFloatOrNull( entry ) )
+                     .collect( ListValueBuilder.collector() );
+    }
+
     public static Value toInteger( AnyValue in )
     {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";

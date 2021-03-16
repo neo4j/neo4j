@@ -93,6 +93,8 @@ import org.neo4j.cypher.internal.expressions.functions.Tail
 import org.neo4j.cypher.internal.expressions.functions.Tan
 import org.neo4j.cypher.internal.expressions.functions.ToBoolean
 import org.neo4j.cypher.internal.expressions.functions.ToFloat
+import org.neo4j.cypher.internal.expressions.functions.ToFloatList
+import org.neo4j.cypher.internal.expressions.functions.ToFloatOrNull
 import org.neo4j.cypher.internal.expressions.functions.ToInteger
 import org.neo4j.cypher.internal.expressions.functions.ToIntegerList
 import org.neo4j.cypher.internal.expressions.functions.ToIntegerOrNull
@@ -502,6 +504,8 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case Tan => commands.expressions.TanFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToBoolean => commands.expressions.ToBooleanFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToFloat => commands.expressions.ToFloatFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case ToFloatList => commands.expressions.ToFloatListFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case ToFloatOrNull => commands.expressions.ToFloatOrNullFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToInteger => commands.expressions.ToIntegerFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToIntegerList => commands.expressions.ToIntegerListFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToIntegerOrNull => commands.expressions.ToIntegerOrNullFunction(self.toCommandExpression(id, invocation.arguments.head))
