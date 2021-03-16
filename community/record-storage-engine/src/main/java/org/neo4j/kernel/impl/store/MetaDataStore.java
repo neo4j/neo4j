@@ -74,9 +74,9 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHeader> implements MetadataProvider
 {
-    public static final String TYPE_DESCRIPTOR = "NeoStore";
+    private static final String TYPE_DESCRIPTOR = "NeoStore";
     // This value means the field has not been refreshed from the store. Normally, this should happen only once
-    public static final long FIELD_NOT_INITIALIZED = Long.MIN_VALUE;
+    static final long FIELD_NOT_INITIALIZED = Long.MIN_VALUE;
     private static final String METADATA_REFRESH_TAG = "metadataRefresh";
     private static final UUID NOT_INITIALIZED_UUID = new UUID( FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
 

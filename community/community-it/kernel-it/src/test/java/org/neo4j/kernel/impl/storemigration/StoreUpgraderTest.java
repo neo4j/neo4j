@@ -52,7 +52,6 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -302,7 +301,7 @@ public class StoreUpgraderTest
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             assertThat( neoStores.getMetaDataStore().getUpgradeTransaction() ).isEqualTo( neoStores.getMetaDataStore().getLastCommittedTransaction() );
-            assertThat( neoStores.getMetaDataStore().getUpgradeTime() ).isNotEqualTo( MetaDataStore.FIELD_NOT_INITIALIZED );
+            assertThat( neoStores.getMetaDataStore().getUpgradeTime() ).isPositive();
         }
     }
 
@@ -634,7 +633,7 @@ public class StoreUpgraderTest
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             assertThat( neoStores.getMetaDataStore().getUpgradeTransaction() ).isEqualTo( neoStores.getMetaDataStore().getLastCommittedTransaction() );
-            assertThat( neoStores.getMetaDataStore().getUpgradeTime() ).isNotEqualTo( MetaDataStore.FIELD_NOT_INITIALIZED );
+            assertThat( neoStores.getMetaDataStore().getUpgradeTime() ).isPositive();
 
             long minuteAgo = System.currentTimeMillis() - unit.toMillis( duration );
             assertThat( neoStores.getMetaDataStore().getUpgradeTime() ).isGreaterThan( minuteAgo );
