@@ -2443,37 +2443,34 @@ YIELD YieldClause():
 
 STATEMENT ShowIndexes(Token start, USE_CLAUSE useClause, boolean all):
 {
-  CLAUSE x;
-  List<CLAUSE> y = new ArrayList<>();
   List<CLAUSE> clauses = new ArrayList<>();
-    if (useClause != null) {
-        clauses.add(useClause);
-    }
-}
-{
-    y=ShowIndexesClause(start, all) { clauses.addAll( y ); }  ( x=ReturnClause() { clauses.add(x); } )?
-            { return astFactory.newSingleQuery(clauses); }
-}
-
-List<CLAUSE> ShowIndexesClause(Token start, boolean all):
-{
-    boolean brief = false;
-    boolean verbose = false;
-    EXPRESSION where = null;
-    YIELD yieldClause = null;
+  if (useClause != null) {
+      clauses.add( useClause );
+  }
+  boolean brief = false;
+  boolean verbose = false;
+  EXPRESSION where = null;
+  YIELD yieldClause = null;
+  RETURN_CLAUSE returnClause = null;
 }
 {
     (<INDEX>|<INDEXES>)
-    ( ( ( <BRIEF> { brief = true; } | <VERBOSE> { verbose = true; }) (<OUTPUT>)? ) | yieldClause = YieldClause() | where = Where() )?
+    ( ( ( <BRIEF> { brief = true; } | <VERBOSE> { verbose = true; }) (<OUTPUT>)? ) | (yieldClause = YieldClause() ( returnClause=ReturnClause() )?) | where = Where() )?
     {
         if ( yieldClause != null )
         {
-            return List.of( astFactory.showIndexClause(pos(start), all, brief, verbose, where, true), yieldClause );
+            clauses.add( astFactory.showIndexClause( pos( start ), all, brief, verbose, where, true ) );
+            clauses.add( yieldClause );
+            if ( returnClause != null )
+            {
+                clauses.add( returnClause );
+            }
         }
         else
         {
-            return List.of( astFactory.showIndexClause(pos(start), all, brief, verbose, where, false) );
+            clauses.add( astFactory.showIndexClause( pos( start ), all, brief, verbose, where, false ) );
         }
+        return astFactory.newSingleQuery( clauses );
     }
 }
 

@@ -153,6 +153,14 @@ class ShowSchemaCommandParserTest
     failsToParse
   }
 
+  test("SHOW INDEXES BRIEF RETURN *") {
+    failsToParse
+  }
+
+  test("SHOW INDEXES VERBOSE RETURN *") {
+    failsToParse
+  }
+
   test("SHOW INDEXES BRIEF WHERE uniqueness = 'UNIQUE'") {
     failsToParse
   }
@@ -166,6 +174,10 @@ class ShowSchemaCommandParserTest
   }
 
   test("SHOW INDEXES WHERE uniqueness = 'UNIQUE' YIELD *") {
+    failsToParse
+  }
+
+  test("SHOW INDEXES WHERE uniqueness = 'UNIQUE' RETURN *") {
     failsToParse
   }
 
@@ -185,6 +197,10 @@ class ShowSchemaCommandParserTest
 
   test("SHOW INDEXES WITH name, type RETURN *") {
     // Can't parse WITH after SHOW
+    failsToParse
+  }
+
+  test("SHOW INDEXES RETURN *") {
     failsToParse
   }
 

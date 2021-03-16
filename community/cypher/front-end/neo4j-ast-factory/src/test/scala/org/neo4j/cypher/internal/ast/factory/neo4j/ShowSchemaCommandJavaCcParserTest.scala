@@ -145,6 +145,14 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
     assertSameAST(testName)
   }
 
+  test("SHOW INDEXES BRIEF RETURN *") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW INDEXES VERBOSE RETURN *") {
+    assertSameAST(testName)
+  }
+
   test("SHOW INDEXES BRIEF WHERE uniqueness = 'UNIQUE'") {
     assertSameAST(testName)
   }
@@ -158,6 +166,10 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
   }
 
   test("SHOW INDEXES WHERE uniqueness = 'UNIQUE' YIELD *") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW INDEXES WHERE uniqueness = 'UNIQUE' RETURN *") {
     assertSameAST(testName)
   }
 
@@ -178,6 +190,10 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
   test("SHOW INDEXES WITH name, type RETURN *") {
     // Can't parse WITH after SHOW
     assertJavaCCExceptionStart(testName, "Invalid input 'WITH': expected")
+  }
+
+  test("SHOW INDEXES RETURN *") {
+    assertSameAST(testName)
   }
 
 }
