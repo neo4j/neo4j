@@ -52,6 +52,10 @@ public interface ASTExpressionFactory<
 
     PARAMETER newStringParameter( POS p, String offset );
 
+    PARAMETER newSensitiveStringParameter( POS p, VARIABLE v );
+
+    PARAMETER newSensitiveStringParameter( POS p, String offset );
+
     EXPRESSION oldParameter( POS p, VARIABLE v );
 
     EXPRESSION newDouble( POS p, String image );

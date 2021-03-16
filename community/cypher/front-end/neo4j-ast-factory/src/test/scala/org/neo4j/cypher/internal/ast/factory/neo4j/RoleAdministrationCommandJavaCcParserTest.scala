@@ -98,12 +98,14 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     val exceptionMessage =
       s"""Invalid input 'ROLE': expected
          |  "ALL"
+         |  "CURRENT"
          |  "DATABASE"
          |  "DATABASES"
          |  "DEFAULT"
          |  "HOME"
          |  "POPULATED"
-         |  "ROLES" (line 1, column 14 (offset: 13))""".stripMargin
+         |  "ROLES"
+         |  "USERS" (line 1, column 14 (offset: 13))""".stripMargin
 
     assertJavaCCException(testName, exceptionMessage)
   }
@@ -121,6 +123,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
       s"""Invalid input 'ROLE': expected
          |  "ALL"
          |  "BTREE"
+         |  "CURRENT"
          |  "DATABASE"
          |  "DATABASES"
          |  "DEFAULT"
@@ -128,7 +131,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "INDEX"
          |  "INDEXES"
          |  "POPULATED"
-         |  "ROLES" (line 1, column 6 (offset: 5))""".stripMargin
+         |  "ROLES"
+         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
 
     assertJavaCCException(testName, exceptionMessage)
   }
@@ -138,6 +142,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
       s"""Invalid input 'ROLE': expected
          |  "ALL"
          |  "BTREE"
+         |  "CURRENT"
          |  "DATABASE"
          |  "DATABASES"
          |  "DEFAULT"
@@ -145,7 +150,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "INDEX"
          |  "INDEXES"
          |  "POPULATED"
-         |  "ROLES" (line 1, column 6 (offset: 5))""".stripMargin
+         |  "ROLES"
+         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
 
     assertJavaCCException(testName, exceptionMessage)
   }
@@ -159,6 +165,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
       s"""Invalid input 'ROLE': expected
          |  "ALL"
          |  "BTREE"
+         |  "CURRENT"
          |  "DATABASE"
          |  "DATABASES"
          |  "DEFAULT"
@@ -166,7 +173,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
          |  "INDEX"
          |  "INDEXES"
          |  "POPULATED"
-         |  "ROLES" (line 1, column 6 (offset: 5))""".stripMargin
+         |  "ROLES"
+         |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
 
     assertJavaCCException(testName, exceptionMessage)
   }

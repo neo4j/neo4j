@@ -226,6 +226,37 @@ public interface ASTFactory<STATEMENT,
 
     ADMINISTRATION_COMMAND revokeRoles( POS p, List<Either<String,PARAMETER>> roles, List<Either<String,PARAMETER>> users );
 
+    // User Administration Commands
+
+    ADMINISTRATION_COMMAND createUser( POS p,
+                                       boolean replace,
+                                       boolean ifNotExists,
+                                       Either<String, PARAMETER> username,
+                                       Either<String, PARAMETER> password,
+                                       boolean encrypted,
+                                       boolean changeRequired,
+                                       Boolean suspended,
+                                       Either<String, PARAMETER> homeDatabase );
+
+    ADMINISTRATION_COMMAND dropUser( POS p, boolean ifExists, Either<String, PARAMETER> username );
+
+    ADMINISTRATION_COMMAND setOwnPassword( POS p, Either<String,PARAMETER> currentPassword, Either<String,PARAMETER> newPassword );
+
+    ADMINISTRATION_COMMAND alterUser( POS p,
+                                      boolean ifExists,
+                                      Either<String,PARAMETER> username,
+                                      Either<String,PARAMETER> password,
+                                      boolean encrypted,
+                                      Boolean changeRequired,
+                                      Boolean suspended,
+                                      Either<String,PARAMETER> homeDatabase,
+                                      boolean removeHome );
+
+    ADMINISTRATION_COMMAND showUsers( POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, EXPRESSION where );
+
+    ADMINISTRATION_COMMAND showCurrentUser( POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, EXPRESSION where );
+
+    //Database Administration Commands
     ADMINISTRATION_COMMAND createDatabase( POS p, boolean replace, Either<String,PARAMETER> databaseName, boolean ifNotExists, WAIT_CLAUSE waitClause );
 
     ADMINISTRATION_COMMAND dropDatabase( POS p, Either<String,PARAMETER> databaseName, boolean ifExists, boolean dumpData, WAIT_CLAUSE wait );

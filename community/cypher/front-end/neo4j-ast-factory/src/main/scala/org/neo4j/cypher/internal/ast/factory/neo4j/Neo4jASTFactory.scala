@@ -19,15 +19,22 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import java.lang
+import java.nio.charset.StandardCharsets
+import java.util
+import java.util.stream.Collectors
+
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
+import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateRole
+import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.Delete
@@ -36,6 +43,7 @@ import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
 import org.neo4j.cypher.internal.ast.DropRole
+import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
@@ -60,6 +68,7 @@ import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Remove
+import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RemoveItem
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
@@ -72,13 +81,17 @@ import org.neo4j.cypher.internal.ast.SeekOnly
 import org.neo4j.cypher.internal.ast.SeekOrScan
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
+import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetItem
 import org.neo4j.cypher.internal.ast.SetLabelItem
+import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPropertyItem
+import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowRoles
+import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.SortItem
@@ -93,6 +106,7 @@ import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.UseGraph
+import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
@@ -120,6 +134,7 @@ import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ExtractExpression
 import org.neo4j.cypher.internal.expressions.False
@@ -175,6 +190,8 @@ import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SensitiveParameter
+import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
@@ -195,8 +212,6 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTString
 
-import java.util
-import java.util.stream.Collectors
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.util.Either
 
@@ -496,6 +511,10 @@ class Neo4jASTFactory(query: String)
   override def newStringParameter(p: InputPosition, v: Variable): Parameter = Parameter(v.name, CTString)(p)
 
   override def newStringParameter(p: InputPosition, offset: String): Parameter = Parameter(offset, CTString)(p)
+
+  override def newSensitiveStringParameter(p: InputPosition, v: Variable): Parameter = new ExplicitParameter(v.name, CTString)(p) with SensitiveParameter
+
+  override def newSensitiveStringParameter(p: InputPosition, offset: String): Parameter = new ExplicitParameter(offset, CTString)(p) with SensitiveParameter
 
   override def oldParameter(p: InputPosition, v: Variable): Expression = ParameterWithOldSyntax(v.name, CTAny)(p)
 
@@ -829,21 +848,64 @@ class Neo4jASTFactory(query: String)
     CreateRole(roleName, Option(from), ifExistsDo(replace, ifNotExists))(p)
   }
 
+  override def createUser(p: InputPosition,
+                          replace: Boolean,
+                          ifNotExists: Boolean,
+                          username: Either[String, Parameter],
+                          password: Either[String, Parameter],
+                          encrypted: Boolean,
+                          changeRequired: Boolean,
+                          suspended: lang.Boolean,
+                          homeDatabase: Either[String, Parameter]): AdministrationCommand = {
+    val passwordExpression = convertToSensitive(p, password)
+    val homeAction = if (homeDatabase == null) None else Some(SetHomeDatabaseAction(homeDatabase))
+    val userOptions = UserOptions(Some(changeRequired), asBooleanOption(suspended), homeAction)
+    CreateUser(username, encrypted, passwordExpression, userOptions, ifExistsDo(replace, ifNotExists))(p)
+  }
+
+  override def dropUser(p: InputPosition, ifExists: Boolean, username: Either[String, Parameter]): DropUser = {
+    DropUser(username, ifExists)(p)
+  }
+
+  override def setOwnPassword(p: InputPosition,
+                              currentPassword: Either[String, Parameter],
+                              newPassword: Either[String, Parameter]): SetOwnPassword = {
+    SetOwnPassword(convertToSensitive(p, newPassword), convertToSensitive(p, currentPassword))(p)
+  }
+
+  override def alterUser(p: InputPosition,
+                         ifExists: Boolean,
+                         username: Either[String, Parameter],
+                         password: Either[String, Parameter],
+                         encrypted: Boolean,
+                         changeRequired: lang.Boolean,
+                         suspended: lang.Boolean,
+                         homeDatabase: Either[String, Parameter],
+                         removeHome: Boolean): AlterUser = {
+    val (passwordExpression, isEncrypted) = Option(password) match {
+      case Some(Left(value))  => (Some(SensitiveStringLiteral(value.getBytes(StandardCharsets.UTF_8))(p)), Some(encrypted))
+      case Some(Right(value)) => (Some(new ExplicitParameter(value.name, CTString)(value.position) with SensitiveParameter), Some(encrypted))
+      case None               => (None, None)
+    }
+    val homeAction = if (removeHome) Some(RemoveHomeDatabaseAction) else if (homeDatabase == null) None else Some(SetHomeDatabaseAction(homeDatabase))
+    val userOptions = UserOptions(asBooleanOption(changeRequired), asBooleanOption(suspended), homeAction)
+    AlterUser(username, isEncrypted, passwordExpression, userOptions, ifExists)(p)
+  }
+
+  override def showUsers(p: InputPosition, yieldExpr: Yield, returnWithoutGraph: Return, where: Expression): ShowUsers = {
+    ShowUsers(yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
+  }
+
+  override def showCurrentUser(p: InputPosition, yieldExpr: Yield, returnWithoutGraph: Return, where: Expression): ShowCurrentUser = {
+    ShowCurrentUser(yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
+  }
+
   override def createDatabase(p: InputPosition,
                               replace: Boolean,
                               databaseName: Either[String, Parameter],
                               ifNotExists: Boolean,
                               wait: WaitUntilComplete): CreateDatabase = {
     CreateDatabase(databaseName, ifExistsDo(replace, ifNotExists), wait)(p)
-  }
-
-  private def ifExistsDo(replace: Boolean, ifNotExists: Boolean): IfExistsDo = {
-    (replace, ifNotExists) match {
-      case (true, true) => IfExistsInvalidSyntax
-      case (true, false) => IfExistsReplace
-      case (false, true) => IfExistsDoNothing
-      case (false, false) => IfExistsThrowError
-    }
   }
 
   override def wait(wait: Boolean, seconds: Long): WaitUntilComplete = {
@@ -870,14 +932,7 @@ class Neo4jASTFactory(query: String)
                          yieldExpr: Yield,
                          returnWithoutGraph: Return,
                          where: Expression): ShowRoles = {
-    val yieldOrWhere = if (yieldExpr != null) {
-      Some(Left(yieldExpr, Option(returnWithoutGraph)))
-    } else if (where != null) {
-      Some(Right(Where(where)(where.position)))
-    } else {
-      None
-    }
-    ShowRoles(WithUsers, showAll, yieldOrWhere)(p)
+    ShowRoles(WithUsers, showAll, yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
   }
 
   def dropDatabase(p:InputPosition, databaseName: Either[String, Parameter], ifExists: Boolean, dumpData: Boolean, wait: WaitUntilComplete): DropDatabase = {
@@ -939,6 +994,36 @@ class Neo4jASTFactory(query: String)
   }
 
   override def inputPosition(offset: Int, line: Int, column: Int): InputPosition = InputPosition(offset, line, column)
+
+  private def ifExistsDo(replace: Boolean, ifNotExists: Boolean): IfExistsDo = {
+    (replace, ifNotExists) match {
+      case (true, true) => IfExistsInvalidSyntax
+      case (true, false) => IfExistsReplace
+      case (false, true) => IfExistsDoNothing
+      case (false, false) => IfExistsThrowError
+    }
+  }
+
+  private def yieldOrWhere(yieldExpr: Yield,
+                           returnWithoutGraph: Return,
+                           where: Expression): Option[Either[(Yield, Option[Return]), Where]] = {
+    if (yieldExpr != null) {
+      Some(Left(yieldExpr, Option(returnWithoutGraph)))
+    } else if (where != null) {
+      Some(Right(Where(where)(where.position)))
+    } else {
+      None
+    }
+  }
+
+  private def convertToSensitive(p: InputPosition, password: Either[String, Parameter]): Expression = {
+    password match {
+      case Left(value) => SensitiveStringLiteral(value.getBytes(StandardCharsets.UTF_8))(p)
+      case Right(value) => new ExplicitParameter(value.name, CTString)(value.position) with SensitiveParameter
+    }
+  }
+
+  private def asBooleanOption(bool: lang.Boolean): Option[Boolean] = if (bool == null) None else Some(bool.booleanValue())
 
   private def pretty[T <: AnyRef](ts: util.List[T]): String = {
     ts.stream().map[String](t => t.toString).collect(Collectors.joining(","))

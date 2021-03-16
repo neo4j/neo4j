@@ -49,6 +49,7 @@ import scala.util.Right;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos;
@@ -144,6 +145,21 @@ public class Cypher<STATEMENT,
 
   private POS pos(Token t) {
     return astFactory.inputPosition(t.beginOffset, t.beginLine, t.beginColumn);
+  }
+
+  private <T> Optional<T> setOrThrowIfAlreadySet(Token start, Optional<T> optional, T value, String errorMessage)  throws Exception {
+    if (optional.isEmpty()) {
+      return Optional.of(value);
+    }
+    else {
+      throw exceptionFactory.syntaxException(new ParseException(errorMessage), start.beginOffset, start.beginLine, start.beginColumn);
+    }
+  }
+
+  private void assertNotAlreadySet(Object object, Token token, String errorMessage) throws Exception {
+    if (object != null) {
+        throw exceptionFactory.syntaxException(new ParseException(errorMessage), token.beginOffset, token.beginLine, token.beginColumn);
+    }
   }
 }
 
@@ -256,8 +272,10 @@ MORE : { < ESCAPED_SYMBOLIC_NAME_OPEN: "`" > : ESC_SYMB_NAME }
 */
 TOKEN [IGNORE_CASE] :
 {
-    < ALL_SHORTEST_PATH: "allShortestPaths" >
+    < ACTIVE: "ACTIVE" >
+    | < ALL_SHORTEST_PATH: "allShortestPaths" >
     | < ALL: "ALL" >
+    | < ALTER: "ALTER" >
     | < AND: "AND" >
     | < ANY: "ANY" >
     | < AS: "AS" >
@@ -270,6 +288,7 @@ TOKEN [IGNORE_CASE] :
     | < CALL: "CALL" >
     | < CASE: "CASE" >
     | < CATALOG: "CATALOG">
+    | < CHANGE: "CHANGE">
     | < COMMIT: "COMMIT" >
     | < CONSTRAINT: "CONSTRAINT" >
     | < CONTAINS: "CONTAINS" >
@@ -277,6 +296,7 @@ TOKEN [IGNORE_CASE] :
     | < COUNT: "count" >
     | < CREATE: "CREATE" >
     | < CSV: "CSV" >
+    | < CURRENT: "CURRENT" >
     | < DATA: "DATA">
     | < DATABASE: "DATABASE">
     | < DATABASES: "DATABASES">
@@ -293,6 +313,7 @@ TOKEN [IGNORE_CASE] :
     | < DROP: "DROP" >
     | < DUMP: "DUMP">
     | < ELSE: "ELSE" >
+    | < ENCRYPTED: "ENCRYPTED" >
     | < END: "END" >
     | < ENDS: "ENDS" >
     | < EQ: "=" >
@@ -340,7 +361,9 @@ TOKEN [IGNORE_CASE] :
     | < OR: "OR" >
     | < ORDER: "ORDER" >
     | < OUTPUT: "OUTPUT" >
+    | < PASSWORD: "PASSWORD" >
     | < PERIODIC: "PERIODIC" >
+    | < PLAINTEXT: "PLAINTEXT" >
     | < PLUS: "+" >
     | < POPULATED: "POPULATED">
     | < POW: "^" >
@@ -351,6 +374,7 @@ TOKEN [IGNORE_CASE] :
     | < REGEQ: "=~" >
     | < REMOVE: "REMOVE" >
     | < REPLACE: "REPLACE" >
+    | < REQUIRED: "REQUIRED" >
     | < RETURN: "RETURN" >
     | < REVOKE: "REVOKE">
     | < ROLE: "ROLE">
@@ -368,7 +392,9 @@ TOKEN [IGNORE_CASE] :
     | < SKIPROWS: "SKIP" >
     | < START: "START">
     | < STARTS: "STARTS" >
+    | < STATUS: "STATUS" >
     | < STOP: "STOP">
+    | < SUSPENDED: "SUSPENDED">
     | < THEN: "THEN" >
     | < TIMES: "*" >
     | < TO: "TO" >
@@ -377,6 +403,7 @@ TOKEN [IGNORE_CASE] :
     | < UNIQUE: "UNIQUE" >
     | < UNWIND: "UNWIND" >
     | < USE: "USE" >
+    | < USER: "USER">
     | < USERS: "USERS">
     | < USING: "USING" >
     | < VERBOSE: "VERBOSE" >
@@ -1070,7 +1097,7 @@ List<STATEMENT> Statements() throws Exception :
   }
 }
 
-STATEMENT Statement() :
+STATEMENT Statement() throws Exception:
 {
     STATEMENT statement;
     USE_CLAUSE useClause = null;
@@ -1085,7 +1112,7 @@ STATEMENT Statement() :
     }
 }
 
-STATEMENT SingleQueryOrAdministrationCommand(USE_CLAUSE useClause):
+STATEMENT SingleQueryOrAdministrationCommand(USE_CLAUSE useClause) throws Exception:
 {
     STATEMENT statement = null;
     QUERY query = null;
@@ -2401,6 +2428,8 @@ STATEMENT ShowCommand(USE_CLAUSE useClause) :
     | statement = ShowRoles(start, useClause, true)
     | statement = ShowIndexes(start, useClause, true)
     | statement = ShowDatabase(start, useClause)
+    | statement = ShowUsers(start, useClause)
+    | statement = ShowCurrentUser(start, useClause)
   ) { return statement; }
 }
 
@@ -2488,13 +2517,15 @@ ADMINISTRATION_COMMAND ShowAdministrationCommand(USE_CLAUSE useClause):
     (
        ((<POPULATED> { showAll = false; }) | <ALL>)? s = ShowRoles(show, useClause, showAll)
        | s = ShowDatabase(show, useClause)
+       | s = ShowUsers(show, useClause)
+       | s = ShowCurrentUser(show, useClause)
     )
     {
         return s;
     }
 }
 
-ADMINISTRATION_COMMAND CreateAdministrationCommand(USE_CLAUSE useClause):
+ADMINISTRATION_COMMAND CreateAdministrationCommand(USE_CLAUSE useClause) throws Exception:
 {
     Token start;
     boolean replace = false;
@@ -2504,6 +2535,7 @@ ADMINISTRATION_COMMAND CreateAdministrationCommand(USE_CLAUSE useClause):
     (<CATALOG>)?
     start=<CREATE> (<OR> <REPLACE> { replace = true; })? (
         command=CreateRole(start, replace)
+        | command=CreateUser(start, replace)
         | command=CreateDatabase(start, replace)
     )
     {
@@ -2511,13 +2543,14 @@ ADMINISTRATION_COMMAND CreateAdministrationCommand(USE_CLAUSE useClause):
     }
 }
 
-ADMINISTRATION_COMMAND AdministrationCommand(USE_CLAUSE useClause):
+ADMINISTRATION_COMMAND AdministrationCommand(USE_CLAUSE useClause) throws Exception:
 {
     ADMINISTRATION_COMMAND s;
 }
 {
     (
         s = DropCommand()
+        | s = AlterCommand()
         | s = RenameCommand()
         | s = GrantRole()
         | s = RevokeRole()
@@ -2546,6 +2579,33 @@ ADMINISTRATION_COMMAND ShowRoles(Token start, USE_CLAUSE useClause, boolean show
     }
 }
 
+ADMINISTRATION_COMMAND ShowUsers(Token start, USE_CLAUSE useClause):
+{
+    YIELD yield = null;
+    RETURN_CLAUSE returnClause = null;
+    EXPRESSION where = null;
+}
+{
+   <USERS> ( ( yield = YieldClause() (returnClause = ReturnClause())? )
+          | (where = Where()) )?
+   {
+        return astFactory.useGraph(astFactory.showUsers(pos(start), yield, returnClause, where), useClause);
+   }
+}
+
+ADMINISTRATION_COMMAND ShowCurrentUser(Token start, USE_CLAUSE useClause):
+{
+    YIELD yield = null;
+    RETURN_CLAUSE returnClause = null;
+    EXPRESSION where = null;
+}
+{
+   <CURRENT> <USER> ( ( yield = YieldClause() (returnClause = ReturnClause())? )
+          | (where = Where()) )?
+   {
+        return astFactory.useGraph(astFactory.showCurrentUser(pos(start), yield, returnClause, where), useClause);
+   }
+}
 ADMINISTRATION_COMMAND ShowDatabase(Token start, USE_CLAUSE useClause):
 {
     DATABASE_SCOPE scope;
@@ -2596,6 +2656,153 @@ ADMINISTRATION_COMMAND CreateRole(Token start, boolean replace):
     {
         return astFactory.createRole( pos(start), replace, roleName, sourceRoleName, ifNotExists );
     }
+}
+
+ADMINISTRATION_COMMAND CreateUser(Token start, boolean replace) throws Exception:
+{
+    Token set = null;
+    Either<String, PARAMETER> username = null;
+    Either<String, PARAMETER> password = null;
+    boolean ifNotExists = false;
+    boolean encrypted = false;
+    Optional<Boolean> changeRequired = Optional.empty();
+    Optional<Boolean> suspended = Optional.empty();
+    Optional<Either<String, PARAMETER>> homeDatabase = Optional.empty();
+}
+{
+    <USER>
+    username=SymbolicNameOrStringParameter()
+    (<IF> <NOT> <EXISTS> { ifNotExists = true; })?
+    <SET> ((<PLAINTEXT> { encrypted = false; }) | (<ENCRYPTED> { encrypted = true; }) )? <PASSWORD>
+    password=SensitiveStringOrParameter() (changeRequired=PasswordChangeRequired(start, changeRequired))?
+    (set=<SET> (<PASSWORD> changeRequired=PasswordChangeRequired(set, changeRequired)
+    | suspended=UserStatus(set, suspended)
+    | homeDatabase=HomeDatabase(set, homeDatabase)
+    ))*
+    {
+        return astFactory.createUser( pos(start), replace, ifNotExists, username, password, encrypted,
+            changeRequired.orElse(true), suspended.orElse(null), homeDatabase.orElse(null) );
+    }
+}
+
+ADMINISTRATION_COMMAND DropUser(Token start) :
+{
+    Either<String, PARAMETER> username = null;
+    boolean ifExists = false;
+}
+{
+    <USER>
+    username=SymbolicNameOrStringParameter()
+    (<IF> <EXISTS> { ifExists = true; })?
+    {
+        return astFactory.dropUser( pos(start), ifExists, username );
+    }
+}
+
+ADMINISTRATION_COMMAND AlterCommand() throws Exception:
+{
+  Token start = null;
+  ADMINISTRATION_COMMAND statement = null;
+}
+{
+    start=<ALTER> (
+        statement=AlterCurrentUser(start)
+        | statement=AlterUser(start)
+    )
+    { return statement; }
+}
+
+ADMINISTRATION_COMMAND AlterCurrentUser(Token start) throws Exception:
+{
+  Either<String, PARAMETER> currentPassword = null;
+  Either<String, PARAMETER> newPassword = null;
+}
+{
+    <CURRENT> <USER> <SET> <PASSWORD> <FROM> currentPassword=SensitiveStringOrParameter() <TO> newPassword=SensitiveStringOrParameter()
+    { return astFactory.setOwnPassword(pos(start), currentPassword, newPassword); }
+}
+
+ADMINISTRATION_COMMAND AlterUser(Token start) throws Exception:
+{
+    Token set = null;
+    Either<String, PARAMETER> username = null;
+    Either<String, PARAMETER> password = null;
+    boolean ifExists = false;
+    boolean encrypted = false;
+    Optional<Boolean> changeRequired = Optional.empty();
+    Optional<Boolean> suspended = Optional.empty();
+    Optional<Either<String, PARAMETER>> homeDatabase = Optional.empty();
+    boolean removeHome = false;
+    String passwordSetError = "Duplicate SET PASSWORD clause";
+}
+{
+    <USER>
+    username=SymbolicNameOrStringParameter()
+    (<IF> <EXISTS> { ifExists = true; })?
+    ((
+        set=<SET> (
+            <PLAINTEXT> { assertNotAlreadySet(password, set, passwordSetError); } <PASSWORD> password=SetPassword(set, password) (changeRequired=PasswordChangeRequired(set, changeRequired))?
+            | <ENCRYPTED> { assertNotAlreadySet(password, set, passwordSetError); encrypted = true; } <PASSWORD> password=SetPassword(set, password) (changeRequired=PasswordChangeRequired(set, changeRequired))?
+            | <PASSWORD> (
+                changeRequired=PasswordChangeRequired(set, changeRequired)
+                | password=SetPassword(set, password) (changeRequired=PasswordChangeRequired(set, changeRequired))?
+            )
+            | suspended=UserStatus(set, suspended)
+            | homeDatabase=HomeDatabase(set, homeDatabase)
+        )
+    )+
+    | <REMOVE> <HOME> <DATABASE> { removeHome = true; })
+    {
+        return astFactory.alterUser( pos(start), ifExists, username, password, encrypted,
+            changeRequired.orElse(null), suspended.orElse(null), homeDatabase.orElse(null), removeHome );
+    }
+}
+
+Either<String, PARAMETER> SetPassword(Token start, Either<String, PARAMETER> password) throws Exception:
+{
+    String errorMessage = "Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause";
+    Either<String, PARAMETER> newPassword = null;
+}
+{
+    newPassword=SensitiveStringOrParameter()
+    {
+        if (password != null) {
+            throw exceptionFactory.syntaxException(new ParseException(errorMessage), start.beginOffset, start.beginLine, start.beginColumn);
+        }
+        return newPassword;
+    }
+}
+
+Optional<Boolean> PasswordChangeRequired(Token start, Optional<Boolean> changeRequired) throws Exception:
+{
+    String errorMessage = "Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause";
+    boolean required = true;
+}
+{
+    <CHANGE> (<NOT> {required = false;})? <REQUIRED>
+    { return setOrThrowIfAlreadySet(start, changeRequired, required, errorMessage); }
+}
+
+Optional<Boolean> UserStatus(Token start, Optional<Boolean> suspended) throws Exception:
+{
+    String errorMessage = "Duplicate SET STATUS {SUSPENDED|ACTIVE} clause";
+    boolean suspend = false;
+}
+{
+    <STATUS> (
+        <SUSPENDED> {suspend = true;}
+        | <ACTIVE>
+    )  { return setOrThrowIfAlreadySet(start, suspended, suspend, errorMessage); }
+}
+
+Optional<Either<String, PARAMETER>> HomeDatabase(Token start, Optional<Either<String, PARAMETER>> homeDatabase) throws Exception:
+{
+    String errorMessage = "Duplicate SET HOME DATABASE clause";
+    Either<String, PARAMETER> home = null;
+}
+{
+    <HOME> <DATABASE> home=SymbolicDatabaseNameStringOrParameter()
+    { return setOrThrowIfAlreadySet(start, homeDatabase, home, errorMessage); }
 }
 
 ADMINISTRATION_COMMAND CreateDatabase(Token start, boolean replace):
@@ -2674,6 +2881,7 @@ ADMINISTRATION_COMMAND DropCommand():
     start=<DROP>
     (
         c =DropRole(start)
+        | c = DropUser(start)
         | c = DropDatabase(start)
     )
     {
@@ -2799,6 +3007,17 @@ Either<String, PARAMETER> SymbolicDatabaseNameStringOrParameter():
    | parameter=StringParameter() { return new Right<String, PARAMETER>(parameter); }
 }
 
+Either<String, PARAMETER> SensitiveStringOrParameter():
+{
+   Token name;
+   PARAMETER parameter;
+}
+{
+   ( name=<STRING_LITERAL1>
+   | name=<STRING_LITERAL2>) { return new Left<String, PARAMETER>(name.image); }
+   | parameter=StringParameter() { return new Right<String, PARAMETER>(parameter); }
+}
+
 Token SymbolicNameString() :
 {Token t;}
 {
@@ -2808,8 +3027,10 @@ Token SymbolicNameString() :
     | t=<ESCAPED_SYMBOLIC_NAME>
 
     //list of allowed keywords
+    | t=<ACTIVE>
     | t=<ALL_SHORTEST_PATH>
     | t=<ALL>
+    | t=<ALTER>
     | t=<AND>
     | t=<ANY>
     | t=<AS>
@@ -2821,6 +3042,7 @@ Token SymbolicNameString() :
     | t=<CALL>
     | t=<CASE>
     | t=<CATALOG>
+    | t=<CHANGE>
     | t=<COMMIT>
     | t=<CONSTRAINT>
     | t=<CONTAINS>
@@ -2828,6 +3050,7 @@ Token SymbolicNameString() :
     | t=<COUNT>
     | t=<CREATE>
     | t=<CSV>
+    | t=<CURRENT>
     | t=<DATA>
     | t=<DATABASE>
     | t=<DATABASES>
@@ -2841,6 +3064,7 @@ Token SymbolicNameString() :
     | t=<DROP>
     | t=<DUMP>
     | t=<ELSE>
+    | t=<ENCRYPTED>
     | t=<END>
     | t=<ENDS>
     | t=<EXISTS>
@@ -2876,12 +3100,15 @@ Token SymbolicNameString() :
     | t=<OR>
     | t=<ORDER>
     | t=<OUTPUT>
+    | t=<PASSWORD>
     | t=<PERIODIC>
+    | t=<PLAINTEXT>
     | t=<POPULATED>
     | t=<REDUCE>
     | t=<REMOVE>
     | t=<RENAME>
     | t=<REPLACE>
+    | t=<REQUIRED>
     | t=<RETURN>
     | t=<REVOKE>
     | t=<ROLE>
@@ -2898,7 +3125,9 @@ Token SymbolicNameString() :
     | t=<SKIPROWS>
     | t=<START>
     | t=<STARTS>
+    | t=<STATUS>
     | t=<STOP>
+    | t=<SUSPENDED>
     | t=<THEN>
     | t=<TO>
     | t=<TRUE>
@@ -2906,6 +3135,7 @@ Token SymbolicNameString() :
     | t=<UNIQUE>
     | t=<UNWIND>
     | t=<USE>
+    | t=<USER>
     | t=<USERS>
     | t=<USING>
     | t=<VERBOSE>

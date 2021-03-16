@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.parser.javacc
 
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ACTIVE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALL
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALL_SHORTEST_PATH
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ALTER
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.AND
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ANY
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.AS
@@ -32,6 +34,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.BY
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CALL
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CASE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CATALOG
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CHANGE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.COMMIT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONSTRAINT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CONTAINS
@@ -39,6 +42,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.COPY
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.COUNT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CREATE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CSV
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.CURRENT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DATA
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DATABASE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DATABASES
@@ -52,6 +56,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DISTINCT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DROP
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.DUMP
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELSE
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ENCRYPTED
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.END
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ENDS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ESCAPED_SYMBOLIC_NAME
@@ -88,12 +93,15 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.OPTIONAL
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.OR
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ORDER
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.OUTPUT
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PASSWORD
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PERIODIC
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PLAINTEXT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.POPULATED
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REDUCE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REMOVE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.RENAME
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REPLACE
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REQUIRED
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.RETURN
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REVOKE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ROLE
@@ -110,7 +118,9 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.SINGLE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.SKIPROWS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.START
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.STARTS
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.STATUS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.STOP
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.SUSPENDED
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.THEN
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.TO
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRUE
@@ -118,6 +128,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNION
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNIQUE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNWIND
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.USE
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.USER
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.USERS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.USING
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.VERBOSE
@@ -133,8 +144,10 @@ object IdentifierTokens {
   val tokens = Set(
     ESCAPED_SYMBOLIC_NAME,
     //keywords
+    ACTIVE,
     ALL_SHORTEST_PATH,
     ALL,
+    ALTER,
     AND,
     ANY,
     AS,
@@ -146,6 +159,7 @@ object IdentifierTokens {
     CALL,
     CASE,
     CATALOG,
+    CHANGE,
     COMMIT,
     CONSTRAINT,
     CONTAINS,
@@ -153,6 +167,7 @@ object IdentifierTokens {
     COUNT,
     CREATE,
     CSV,
+    CURRENT,
     DATA,
     DATABASE,
     DATABASES,
@@ -166,6 +181,7 @@ object IdentifierTokens {
     DROP,
     DUMP,
     ELSE,
+    ENCRYPTED,
     END,
     ENDS,
     EXISTS,
@@ -201,12 +217,15 @@ object IdentifierTokens {
     OR,
     ORDER,
     OUTPUT,
+    PASSWORD,
     PERIODIC,
+    PLAINTEXT,
     POPULATED,
     REDUCE,
     REMOVE,
     RENAME,
     REPLACE,
+    REQUIRED,
     RETURN,
     REVOKE,
     ROLE,
@@ -223,7 +242,9 @@ object IdentifierTokens {
     SKIPROWS,
     START,
     STARTS,
+    STATUS,
     STOP,
+    SUSPENDED,
     THEN,
     TO,
     TRUE,
@@ -231,6 +252,7 @@ object IdentifierTokens {
     UNIQUE,
     UNWIND,
     USE,
+    USER,
     USERS,
     USING,
     VERBOSE,

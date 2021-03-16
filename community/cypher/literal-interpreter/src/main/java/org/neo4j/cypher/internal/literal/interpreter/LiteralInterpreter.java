@@ -342,6 +342,44 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
+    public NULL createUser( NULL p, boolean replace, boolean ifNotExists, Either<String,Object> username, Either<String,Object> password, boolean encrypted,
+                            boolean changeRequired, Boolean suspended, Either<String,Object> homeDatabase )
+    {
+        throw new UnsupportedOperationException( "createUser is not a literal" );
+    }
+
+    @Override
+    public NULL dropUser( NULL p, boolean ifExists, Either<String,Object> username )
+    {
+        throw new UnsupportedOperationException( "dropUser is not a literal" );
+    }
+
+    @Override
+    public NULL setOwnPassword( NULL p, Either<String,Object> currentPassword, Either<String,Object> newPassword )
+    {
+        throw new UnsupportedOperationException( "setOwnPassword is not a literal" );
+    }
+
+    @Override
+    public NULL alterUser( NULL p, boolean ifExists, Either<String,Object> username, Either<String,Object> password, boolean encrypted, Boolean changeRequired,
+                           Boolean suspended, Either<String,Object> homeDatabase, boolean removeHome )
+    {
+        throw new UnsupportedOperationException( "alterUser is not a literal" );
+    }
+
+    @Override
+    public NULL showUsers( NULL p, NULL yieldExpr, NULL returnWithoutGraph, Object where )
+    {
+        throw new UnsupportedOperationException( "showUsers is not a literal" );
+    }
+
+    @Override
+    public NULL showCurrentUser( NULL p, NULL yieldExpr, NULL returnWithoutGraph, Object where )
+    {
+        throw new UnsupportedOperationException( "showCurrentUser is not a literal" );
+    }
+
+    @Override
     public NULL yieldClause( NULL p, boolean returnAll, List<NULL> nulls, List<NULL> orderBy, Object skip, Object limit, Object where )
     {
         throw new UnsupportedOperationException( "yieldClause is not a literal" );
@@ -435,6 +473,18 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     public Object newStringParameter( NULL p, String offset )
     {
         throw new UnsupportedOperationException( "newStringParameter is not a literal" );
+    }
+
+    @Override
+    public Object newSensitiveStringParameter( NULL p, Object v )
+    {
+        throw new UnsupportedOperationException( "newSensitiveStringParameter is not a literal" );
+    }
+
+    @Override
+    public Object newSensitiveStringParameter( NULL p, String offset )
+    {
+        throw new UnsupportedOperationException( "newSensitiveStringParameter is not a literal" );
     }
 
     @Override
