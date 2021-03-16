@@ -60,16 +60,17 @@ case class DropConstraintOnName(name: String, ifExists: Boolean)(implicit idGen:
 
 case class ShowConstraints(constraintType: ShowConstraintType, verbose: Boolean, defaultColumnNames: List[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class CreateIndex(source: Option[DoNothingIfExistsForIndex], label: LabelName, propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Map[String, Expression])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+case class CreateIndex(source: Option[DoNothingIfExistsForIndex], entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Map[String, Expression])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
+
 case class DropIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 case class DropIndexOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 case class ShowIndexes(all: Boolean, verbose: Boolean, defaultColumns: Set[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
 
-case class DoNothingIfExistsForIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
-case class DoNothingIfExistsForConstraint(entity: String, entityType: Either[LabelName, RelTypeName], props: Seq[Property], assertion: ConstraintType, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class DoNothingIfExistsForIndex(entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
+case class DoNothingIfExistsForConstraint(entity: String, entityName: Either[LabelName, RelTypeName], props: Seq[Property], assertion: ConstraintType, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 sealed trait ConstraintType
 case object NodeKey extends ConstraintType

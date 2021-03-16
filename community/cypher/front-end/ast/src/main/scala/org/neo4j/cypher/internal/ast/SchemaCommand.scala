@@ -53,9 +53,8 @@ case class CreateIndexOldSyntax(label: LabelName, properties: List[PropertyKeyNa
   def semanticCheck = Seq()
 }
 
-case class CreateIndex(variable: Variable, label: LabelName, properties: List[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Map[String, Expression], useGraph: Option[GraphSelection] = None)(val position: InputPosition)
+abstract class CreateIndex(variable: Variable, properties: List[Property], ifExistsDo: IfExistsDo, options: Map[String, Expression])(val position: InputPosition)
   extends WriteSchemaCommand with SemanticAnalysisTooling {
-  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
   override def semanticCheck: SemanticCheck = ifExistsDo match {
     case IfExistsInvalidSyntax | IfExistsReplace => SemanticError(s"Failed to create index: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
@@ -72,6 +71,16 @@ case class CreateIndex(variable: Variable, label: LabelName, properties: List[Pr
               }
           }
   }
+}
+
+case class CreateNodeIndex(variable: Variable, label: LabelName, properties: List[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Map[String, Expression], useGraph: Option[GraphSelection] = None)(override val position: InputPosition)
+  extends CreateIndex(variable, properties, ifExistsDo, options)(position) {
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
+}
+
+case class CreateRelationshipIndex(variable: Variable, relType: RelTypeName, properties: List[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Map[String, Expression], useGraph: Option[GraphSelection] = None)(override val position: InputPosition)
+  extends CreateIndex(variable, properties, ifExistsDo, options)(position) {
+  override def withGraph(useGraph: Option[GraphSelection]): SchemaCommand = copy(useGraph = useGraph)(position)
 }
 
 case class DropIndex(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends WriteSchemaCommand {

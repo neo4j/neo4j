@@ -277,12 +277,13 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
     // CREATE INDEX ON :LABEL(prop)
     // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
-    case CreateIndex(source, label, props, name, options) => (context, parameterMapping) =>
+    // CREATE INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
+    case CreateIndex(source, entityName, props, name, options) => (context, parameterMapping) =>
       SchemaWriteExecutionPlan("CreateIndex", ctx => {
         val (indexProvider, indexConfig) = getValidProviderAndConfig(options, "index")
-        val labelId = ctx.getOrCreateLabelId(label.name)
+        val (entityId, isNodeIndex) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
-        ctx.addIndexRule(labelId, propertyKeyIds, name, indexProvider, indexConfig)
+        ctx.addIndexRule(entityId, isNodeIndex, propertyKeyIds, name, indexProvider, indexConfig)
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
 
@@ -304,11 +305,11 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
-    case DoNothingIfExistsForIndex(label, propertyKeyNames, name) => (_, _) =>
-      SchemaWriteExecutionPlan("DoNothingIfNotExist", ctx => {
-        val labelId = ctx.getOrCreateLabelId(label.name)
+    case DoNothingIfExistsForIndex(entityName, propertyKeyNames, name) => (_, _) =>
+      SchemaWriteExecutionPlan("DoNothingIfExist", ctx => {
+        val (entityId, isNodeIndex) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
-        if (Try(ctx.indexReference(labelId, propertyKeyIds: _*).getName).isSuccess) {
+        if (Try(ctx.indexReference(entityId, isNodeIndex, propertyKeyIds: _*).getName).isSuccess) {
           IgnoredResult
         } else if (name.exists(ctx.indexExists)) {
           IgnoredResult
@@ -317,12 +318,9 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         }
       }, None)
 
-    case DoNothingIfExistsForConstraint(_, entityType, props, assertion, name) => (_, _) =>
-      SchemaWriteExecutionPlan("DoNothingIfNotExist", ctx => {
-        val entityId = entityType match {
-          case Left(label) => ctx.getOrCreateLabelId(label.name)
-          case Right(relType) => ctx.getOrCreateRelTypeId(relType.name)
-        }
+    case DoNothingIfExistsForConstraint(_, entityName, props, assertion, name) => (_, _) =>
+      SchemaWriteExecutionPlan("DoNothingIfExist", ctx => {
+        val (entityId, _) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
         if (ctx.constraintExists(convertConstraintTypeToConstraintMatcher(assertion), entityId, propertyKeyIds: _*)) {
           IgnoredResult
@@ -332,6 +330,12 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           SuccessResult
         }
       }, None)
+  }
+
+  private def getEntityInfo(entityName: Either[LabelName, RelTypeName], ctx: QueryContext) = entityName match {
+    // returns (entityId, isNodeEntity)
+    case Left(label)    => (ctx.getOrCreateLabelId(label.name), true)
+    case Right(relType) => (ctx.getOrCreateRelTypeId(relType.name), false)
   }
 
   def isApplicable(logicalPlanState: LogicalPlanState): Boolean = logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)

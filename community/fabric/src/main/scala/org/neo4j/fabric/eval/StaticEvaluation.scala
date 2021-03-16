@@ -186,6 +186,8 @@ object StaticEvaluation {
 
     override def getOrCreateLabelId(labelName: String): Int = notAvailable()
 
+    override def getOrCreateTypeId(relTypeName: String): Int = notAvailable()
+
     override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = notAvailable()
 
     override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = notAvailable()
@@ -194,7 +196,7 @@ object StaticEvaluation {
 
     override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] = notAvailable()
 
-    override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = notAvailable()
+    override def addIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = notAvailable()
 
     override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = notAvailable()
 
@@ -208,7 +210,7 @@ object StaticEvaluation {
 
     override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean = notAvailable()
 
-    override def indexReference(label: Int, properties: Int*): IndexDescriptor = notAvailable()
+    override def indexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = notAvailable()
 
     override def nodeIndexSeek(index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder, queries: Seq[PropertyIndexQuery]): NodeValueIndexCursor = notAvailable()
 

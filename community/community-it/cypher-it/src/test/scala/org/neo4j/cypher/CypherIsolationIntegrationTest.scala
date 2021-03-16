@@ -63,7 +63,7 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
   test("Should work around read isolation limitations using explicit lock for cached node properties") {
     // Given
     val n = createLabeledNode(Map("x" -> 0L), "L")
-    graph.createIndex("L", "x")
+    graph.createNodeIndex("L", "x")
 
     val query =
       """MATCH (n:L) WHERE n.x IS NOT NULL
@@ -83,7 +83,7 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
   test("Should work around read isolation limitations using explicit lock for cached node properties with map +=") {
     // Given
     val n = createLabeledNode(Map("x" -> 0L), "L")
-    graph.createIndex("L", "x")
+    graph.createNodeIndex("L", "x")
 
     val query =
       """MATCH (n:L) WHERE n.x IS NOT NULL

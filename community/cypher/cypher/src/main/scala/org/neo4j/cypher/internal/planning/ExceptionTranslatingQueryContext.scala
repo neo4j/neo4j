@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.interpreted.DelegatingQueryTransactionalContext
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Path
-import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
@@ -103,6 +102,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreateLabelId(labelName: String): Int =
     translateException(tokenNameLookup, inner.getOrCreateLabelId(labelName))
 
+  override def getOrCreateTypeId(relTypeName: String): Int =
+    translateException(tokenNameLookup, inner.getOrCreateTypeId(relTypeName))
+
   override val nodeOps: NodeOperations =
     new ExceptionTranslatingOperations[NodeValue, NodeCursor](inner.nodeOps) with NodeOperations
 
@@ -127,8 +129,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] =
     translateException(tokenNameLookup, inner.getOrCreatePropertyKeyIds(propertyKeys))
 
-  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
-    translateException(tokenNameLookup, inner.addIndexRule(labelId, propertyKeyIds, name, provider, indexConfig))
+  override def addIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addIndexRule(entityId, isNodeIndex, propertyKeyIds, name, provider, indexConfig))
 
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     translateException(tokenNameLookup, inner.dropIndexRule(labelId, propertyKeyIds))
@@ -148,8 +150,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean =
     translateException(tokenNameLookup, inner.constraintExists(matchFn, entityId, properties: _*))
 
-  override def indexReference(label: Int, properties: Int*): IndexDescriptor =
-    translateException(tokenNameLookup, inner.indexReference(label, properties:_*))
+  override def indexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor =
+    translateException(tokenNameLookup, inner.indexReference(entityId, isNodeIndex, properties:_*))
 
   override def nodeIndexSeek(index: IndexReadSession,
                              needsValues: Boolean,

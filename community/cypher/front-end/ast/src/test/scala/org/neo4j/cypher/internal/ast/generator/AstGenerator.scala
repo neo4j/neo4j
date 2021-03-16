@@ -16,8 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast.generator
 
-import java.nio.charset.StandardCharsets
-
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AccessDatabaseAction
 import org.neo4j.cypher.internal.ast.ActionResource
@@ -57,10 +55,12 @@ import org.neo4j.cypher.internal.ast.CreateElementAction
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateIndexAction
 import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
+import org.neo4j.cypher.internal.ast.CreateNodeIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
+import org.neo4j.cypher.internal.ast.CreateRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
 import org.neo4j.cypher.internal.ast.CreateRole
@@ -128,11 +128,11 @@ import org.neo4j.cypher.internal.ast.MergeAction
 import org.neo4j.cypher.internal.ast.MergeAdminAction
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedGraphScope
-import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.NodeByIds
 import org.neo4j.cypher.internal.ast.NodeByParameter
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OrderBy
@@ -146,11 +146,11 @@ import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.QueryPart
 import org.neo4j.cypher.internal.ast.ReadAction
-import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipByIds
 import org.neo4j.cypher.internal.ast.RelationshipByParameter
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
+import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemoveItem
 import org.neo4j.cypher.internal.ast.RemoveLabelAction
@@ -185,8 +185,8 @@ import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.ShowConstraintAction
-import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.ast.ShowConstraints
+import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowIndexAction
@@ -312,10 +312,10 @@ import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.RegexMatch
-import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
@@ -357,6 +357,8 @@ import org.scalacheck.Gen.posNum
 import org.scalacheck.Gen.sequence
 import org.scalacheck.Gen.some
 import org.scalacheck.util.Buildable
+
+import java.nio.charset.StandardCharsets
 
 object AstGenerator {
   val OR_MORE_UPPER_BOUND = 3
@@ -1170,12 +1172,16 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _createIndex: Gen[CreateIndex] = for {
     variable   <- _variable
     labelName  <- _labelName
+    relType    <- _relTypeName
     props      <- _listOfProperties
     name       <- option(_identifier)
     ifExistsDo <- _ifExistsDo
     options    <- _mapStringKeys
     use        <- option(_use)
-  } yield CreateIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
+    nodeIndex  = CreateNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
+    relIndex   = CreateRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
+    command    <- oneOf(nodeIndex, relIndex)
+  } yield command
 
   def _dropIndex: Gen[DropIndexOnName] = for {
     name     <- _identifier

@@ -121,28 +121,41 @@ trait GraphIcing {
       })
     }
 
-    def createIndex(label: String, properties: String*): IndexDefinition = {
-      withTx( tx => {
-        tx.execute(s"CREATE INDEX FOR (n:$label) ON (${properties.map(p => s"n.`$p`").mkString(",")})")
-      })
-
-      withTx( tx => {
-        tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
-      } )
-
-      getIndex(label, properties)
+    def createNodeIndex(label: String, properties: String*): IndexDefinition = {
+      createNodeIndex(None, label, properties)
     }
 
-    def createIndexWithName(name: String, label: String, properties: String*): IndexDefinition = {
+    def createRelationshipIndex(relType: String, properties: String*): IndexDefinition = {
+      createRelIndex(None, relType, properties)
+    }
+
+    def createNodeIndexWithName(name: String, label: String, properties: String*): IndexDefinition = {
+      createNodeIndex(Some(name), label, properties)
+    }
+
+    def createRelationshipIndexWithName(name: String, relType: String, properties: String*): IndexDefinition = {
+      createRelIndex(Some(name), relType, properties)
+    }
+
+    private def createNodeIndex(maybeName: Option[String], label: String, properties: Seq[String]): IndexDefinition = {
+      createIndex(maybeName, s"(e:$label)", properties, () => getNodeIndex(label, properties))
+    }
+
+    private def createRelIndex(maybeName: Option[String], relType: String, properties: Seq[String]): IndexDefinition = {
+      createIndex(maybeName, s"()-[e:$relType]-()", properties, () => getRelIndex(relType, properties))
+    }
+
+    private def createIndex(maybeName: Option[String], pattern: String, properties: Seq[String], getIndex: () => IndexDefinition): IndexDefinition = {
+      val nameString = maybeName.map(n => s" `$n`").getOrElse("")
       withTx( tx => {
-        tx.execute(s"CREATE INDEX `$name` FOR (n:$label) ON (${properties.map(p => s"n.`$p`").mkString(",")})")
+        tx.execute(s"CREATE INDEX$nameString FOR $pattern ON (${properties.map(p => s"e.`$p`").mkString(",")})")
       })
 
       withTx( tx =>  {
         tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
       } )
 
-      getIndex(label, properties)
+      getIndex()
     }
 
     def awaitIndexesOnline(): Unit = {
@@ -151,24 +164,36 @@ trait GraphIcing {
       } )
     }
 
-    def getIndex(label: String, properties: Seq[String]): IndexDefinition = {
+    def getNodeIndex(label: String, properties: Seq[String]): IndexDefinition = {
       withTx( tx => {
         tx.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList).get
       } )
     }
 
-    def getMaybeIndex(label: String, properties: Seq[String]): Option[IndexDefinition] = {
+    def getRelIndex(relType: String, properties: Seq[String]): IndexDefinition = {
+      withTx( tx => {
+        tx.schema().getIndexes(RelationshipType.withName(relType)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList).get
+      } )
+    }
+
+    def getMaybeNodeIndex(label: String, properties: Seq[String]): Option[IndexDefinition] = {
       withTx( tx =>  {
         tx.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList)
+      } )
+    }
+
+    def getMaybeRelIndex(relType: String, properties: Seq[String]): Option[IndexDefinition] = {
+      withTx( tx =>  {
+        tx.schema().getIndexes(RelationshipType.withName(relType)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList)
       } )
     }
 
     def getIndexSchemaByName(name: String): (String, Seq[String]) = {
       withTx( tx =>  {
         val index = tx.schema().getIndexByName(name)
-        val label = Iterables.single( index.getLabels ).name()
+        val labelOrRelType = if (index.isNodeIndex) Iterables.single(index.getLabels).name() else Iterables.single(index.getRelationshipTypes).name()
         val properties = index.getPropertyKeys.asScala.toList
-        (label, properties)
+        (labelOrRelType, properties)
       } )
     }
 

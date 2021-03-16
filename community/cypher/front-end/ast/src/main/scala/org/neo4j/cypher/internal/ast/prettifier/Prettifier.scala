@@ -32,10 +32,11 @@ import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateDatabase
-import org.neo4j.cypher.internal.ast.CreateIndex
+import org.neo4j.cypher.internal.ast.CreateNodeIndex
 import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
@@ -218,9 +219,13 @@ case class Prettifier(
       case CreateIndexOldSyntax(LabelName(label), properties, _) =>
         s"CREATE INDEX ON :${backtick(label)}${properties.map(p => backtick(p.name)).mkString("(", ", ", ")")}"
 
-      case CreateIndex(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
+      case CreateNodeIndex(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "INDEX")
         s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}${optionsToString(options)}"
+
+      case CreateRelationshipIndex(Variable(variable), RelTypeName(relType), properties, name, ifExistsDo, options, _) =>
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, "INDEX")
+        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${propertiesToString(properties)}${optionsToString(options)}"
 
       case DropIndex(LabelName(label), properties, _) =>
         s"DROP INDEX ON :${backtick(label)}${properties.map(p => backtick(p.name)).mkString("(", ", ", ")")}"

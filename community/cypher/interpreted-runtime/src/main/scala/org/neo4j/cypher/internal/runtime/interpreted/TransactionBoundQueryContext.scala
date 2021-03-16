@@ -207,6 +207,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     else tokenWrite.labelGetOrCreateForName(labelName)
   }
 
+  override def getOrCreateTypeId(relTypeName: String): Int = {
+    val id = tokenRead.relationshipType(relTypeName)
+    if (id != TokenRead.NO_TOKEN) id
+    else tokenWrite.relationshipTypeGetOrCreateForName(relTypeName)
+  }
+
   def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingIterator[RelationshipValue] = {
 
     val cursor = allocateNodeCursor()
@@ -361,10 +367,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     relCursor
   }
 
-  override def indexReference(label: Int,
-                              properties: Int*): IndexDescriptor =
-    Iterators.single(
-      transactionalContext.kernelTransaction.schemaRead().index(SchemaDescriptor.forLabel(label, properties: _*)))
+  override def indexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = {
+    val descriptor = if (isNodeIndex) SchemaDescriptor.forLabel(entityId, properties: _*) else SchemaDescriptor.forRelType(entityId, properties: _*)
+    Iterators.single(transactionalContext.kernelTransaction.schemaRead().index(descriptor))
+  }
 
   private def innerNodeIndexSeek(index: IndexReadSession,
                                  needsValues: Boolean,
@@ -875,16 +881,17 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     ids
   }
 
-  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
+  override def addIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
     val ktx = transactionalContext.kernelTransaction
+    val descriptor = if (isNodeIndex) SchemaDescriptor.forLabel(entityId, propertyKeyIds: _*) else SchemaDescriptor.forRelType(entityId, propertyKeyIds: _*)
     try {
       if (provider.isEmpty)
-        ktx.schemaWrite().indexCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*), indexConfig, name.orNull)
+        ktx.schemaWrite().indexCreate(descriptor, indexConfig, name.orNull)
       else
-        ktx.schemaWrite().indexCreate(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*), provider.get, indexConfig, name.orNull)
+        ktx.schemaWrite().indexCreate(descriptor, provider.get, indexConfig, name.orNull)
     } catch {
       case e: EquivalentSchemaRuleAlreadyExistsException =>
-        val indexReference = ktx.schemaRead().index(SchemaDescriptor.forLabel(labelId, propertyKeyIds: _*)).next()
+        val indexReference = ktx.schemaRead().index(descriptor).next()
         if (ktx.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED) {
           val message = ktx.schemaRead().indexGetFailure(indexReference)
           throw new FailedIndexException(indexReference.userDescription(ktx.tokenRead()), message)

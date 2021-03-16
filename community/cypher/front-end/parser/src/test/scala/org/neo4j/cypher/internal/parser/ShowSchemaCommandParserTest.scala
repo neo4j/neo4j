@@ -34,144 +34,144 @@ class ShowSchemaCommandParserTest
 
   implicit val parser: Rule1[ast.Statement] = Statement
 
-    // Show indexes
+  // Show indexes
 
-    Seq("INDEX", "INDEXES").foreach { indexKeyword =>
+  Seq("INDEX", "INDEXES").foreach { indexKeyword =>
 
-      // No explicit output
+    // No explicit output
 
-      test(s"SHOW $indexKeyword") {
-        yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = false)(pos)))
-      }
-
-      test(s"SHOW ALL $indexKeyword") {
-        yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = false)(pos)))
-      }
-
-      test(s"SHOW BTREE $indexKeyword") {
-        yields(_ => query(ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = false)(pos)))
-      }
-
-      test(s"USE db SHOW $indexKeyword") {
-        yields(_ => query(use(varFor("db")), ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = false)(pos)))
-      }
-
-      // Brief output (deprecated)
-
-      test(s"SHOW $indexKeyword BRIEF") {
-        yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
-      }
-
-      test(s"SHOW $indexKeyword BRIEF OUTPUT") {
-        yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
-      }
-
-      test(s"SHOW ALL $indexKeyword BRIEF") {
-        yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
-      }
-
-      test(s"SHOW  ALL $indexKeyword BRIEF OUTPUT") {
-        yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
-      }
-
-      test(s"SHOW BTREE $indexKeyword BRIEF") {
-        yields(_ => query(ShowIndexesClause(all = false, brief = true, verbose = false, None, hasYield = false)(pos)))
-      }
-
-      // Verbose output (deprecated)
-
-      test(s"SHOW $indexKeyword VERBOSE") {
-        yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = true, None, hasYield = false)(pos)))
-      }
-
-      test(s"SHOW ALL $indexKeyword VERBOSE") {
-        yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = true, None, hasYield = false)(pos)))
-      }
-
-      test(s"SHOW BTREE $indexKeyword VERBOSE OUTPUT") {
-        yields(_ => query(ShowIndexesClause(all = false, brief = false, verbose = true, None, hasYield = false)(pos)))
-      }
+    test(s"SHOW $indexKeyword") {
+      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = false)(pos)))
     }
 
-    // Show indexes filtering
-
-    test("SHOW INDEX WHERE uniqueness = 'UNIQUE'") {
-      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, Some(where(equals(varFor("uniqueness"), literalString("UNIQUE")))), hasYield = false)(pos)))
+    test(s"SHOW ALL $indexKeyword") {
+      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = false)(pos)))
     }
 
-    test("SHOW INDEXES YIELD populationPercent") {
-      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnItems(variableReturnItem("populationPercent")))))
+    test(s"SHOW BTREE $indexKeyword") {
+      yields(_ => query(ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = false)(pos)))
     }
 
-    test("SHOW BTREE INDEXES YIELD *") {
-      yields(_ => query(ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnAllItems)))
+    test(s"USE db SHOW $indexKeyword") {
+      yields(_ => query(use(varFor("db")), ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = false)(pos)))
     }
 
-    test("USE db SHOW BTREE INDEXES YIELD name, populationPercent AS pp WHERE pp < 50.0 RETURN name") {
-      yields(_ => query(
-        use(varFor("db")),
-        ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = true)(pos),
-        yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
-          where = Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
-        return_(variableReturnItem("name"))
-      ))
+    // Brief output (deprecated)
+
+    test(s"SHOW $indexKeyword BRIEF") {
+      yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
     }
 
-    test("SHOW INDEXES YIELD name AS INDEX, type AS OUTPUT") {
-      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = true)(pos),
-        yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))))
+    test(s"SHOW $indexKeyword BRIEF OUTPUT") {
+      yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
     }
 
-    test("SHOW INDEXES WHERE name = 'GRANT'") {
-      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false,
-        Some(where(equals(varFor("name"), literalString("GRANT")))), hasYield = false)(pos)))
+    test(s"SHOW ALL $indexKeyword BRIEF") {
+      yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
     }
 
-    // Negative tests for show indexes
-
-    test("SHOW ALL BTREE INDEXES") {
-      failsToParse
+    test(s"SHOW  ALL $indexKeyword BRIEF OUTPUT") {
+      yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
     }
 
-    test("SHOW INDEX OUTPUT") {
-      failsToParse
+    test(s"SHOW BTREE $indexKeyword BRIEF") {
+      yields(_ => query(ShowIndexesClause(all = false, brief = true, verbose = false, None, hasYield = false)(pos)))
     }
 
-    test("SHOW INDEX YIELD") {
-      failsToParse
+    // Verbose output (deprecated)
+
+    test(s"SHOW $indexKeyword VERBOSE") {
+      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = true, None, hasYield = false)(pos)))
     }
 
-    test("SHOW INDEX VERBOSE BRIEF OUTPUT") {
-      failsToParse
+    test(s"SHOW ALL $indexKeyword VERBOSE") {
+      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = true, None, hasYield = false)(pos)))
     }
 
-    test("SHOW INDEXES BRIEF YIELD *") {
-      failsToParse
+    test(s"SHOW BTREE $indexKeyword VERBOSE OUTPUT") {
+      yields(_ => query(ShowIndexesClause(all = false, brief = false, verbose = true, None, hasYield = false)(pos)))
     }
+  }
 
-    test("SHOW INDEXES VERBOSE YIELD *") {
-      failsToParse
-    }
+  // Show indexes filtering
 
-    test("SHOW INDEXES BRIEF WHERE uniqueness = 'UNIQUE'") {
-      failsToParse
-    }
+  test("SHOW INDEX WHERE uniqueness = 'UNIQUE'") {
+    yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, Some(where(equals(varFor("uniqueness"), literalString("UNIQUE")))), hasYield = false)(pos)))
+  }
 
-    test("SHOW INDEXES VERBOSE WHERE uniqueness = 'UNIQUE'") {
-      failsToParse
-    }
+  test("SHOW INDEXES YIELD populationPercent") {
+    yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnItems(variableReturnItem("populationPercent")))))
+  }
 
-    test("SHOW INDEXES YIELD * YIELD *") {
-      failsToParse
-    }
+  test("SHOW BTREE INDEXES YIELD *") {
+    yields(_ => query(ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnAllItems)))
+  }
 
-    test("SHOW INDEXES WHERE uniqueness = 'UNIQUE' YIELD *") {
-      failsToParse
-    }
+  test("USE db SHOW BTREE INDEXES YIELD name, populationPercent AS pp WHERE pp < 50.0 RETURN name") {
+    yields(_ => query(
+      use(varFor("db")),
+      ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = true)(pos),
+      yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
+        where = Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
+      return_(variableReturnItem("name"))
+    ))
+  }
 
-    test("SHOW INDEXES YIELD a b RETURN *") {
-      failsToParse
-    }
+  test("SHOW INDEXES YIELD name AS INDEX, type AS OUTPUT") {
+    yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = true)(pos),
+      yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))))
+  }
+
+  test("SHOW INDEXES WHERE name = 'GRANT'") {
+    yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false,
+      Some(where(equals(varFor("name"), literalString("GRANT")))), hasYield = false)(pos)))
+  }
+
+  // Negative tests for show indexes
+
+  test("SHOW ALL BTREE INDEXES") {
+    failsToParse
+  }
+
+  test("SHOW INDEX OUTPUT") {
+    failsToParse
+  }
+
+  test("SHOW INDEX YIELD") {
+    failsToParse
+  }
+
+  test("SHOW INDEX VERBOSE BRIEF OUTPUT") {
+    failsToParse
+  }
+
+  test("SHOW INDEXES BRIEF YIELD *") {
+    failsToParse
+  }
+
+  test("SHOW INDEXES VERBOSE YIELD *") {
+    failsToParse
+  }
+
+  test("SHOW INDEXES BRIEF WHERE uniqueness = 'UNIQUE'") {
+    failsToParse
+  }
+
+  test("SHOW INDEXES VERBOSE WHERE uniqueness = 'UNIQUE'") {
+    failsToParse
+  }
+
+  test("SHOW INDEXES YIELD * YIELD *") {
+    failsToParse
+  }
+
+  test("SHOW INDEXES WHERE uniqueness = 'UNIQUE' YIELD *") {
+    failsToParse
+  }
+
+  test("SHOW INDEXES YIELD a b RETURN *") {
+    failsToParse
+  }
 
   test("SHOW INDEXES YIELD * WITH * MATCH (n) RETURN n") {
     // Can't parse WITH after SHOW
@@ -185,6 +185,18 @@ class ShowSchemaCommandParserTest
 
   test("SHOW INDEXES WITH name, type RETURN *") {
     // Can't parse WITH after SHOW
+    failsToParse
+  }
+
+  test("SHOW NODE INDEXES") {
+    failsToParse
+  }
+
+  test("SHOW REL INDEXES") {
+    failsToParse
+  }
+
+  test("SHOW RELATIONSHIP INDEXES") {
     failsToParse
   }
 

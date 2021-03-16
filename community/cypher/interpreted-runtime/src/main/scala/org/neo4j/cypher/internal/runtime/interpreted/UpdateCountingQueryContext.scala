@@ -113,8 +113,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     removed
   }
 
-  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
-    val result = inner.addIndexRule(labelId, propertyKeyIds, name, provider, indexConfig)
+  override def addIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
+    val result = inner.addIndexRule(entityId, isNodeIndex, propertyKeyIds, name, provider, indexConfig)
     indexesAdded.increase()
     result
   }

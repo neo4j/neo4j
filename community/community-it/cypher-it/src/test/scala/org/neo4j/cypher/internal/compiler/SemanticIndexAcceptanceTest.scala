@@ -97,7 +97,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
 
   override protected def initTest(): Unit = {
     super.initTest()
-    graph.createIndex("Label", "indexed")
+    graph.createNodeIndex("Label", "indexed")
     graph.withTx( tx =>
       tx.schema().awaitIndexesOnline(30, TimeUnit.SECONDS)
      )

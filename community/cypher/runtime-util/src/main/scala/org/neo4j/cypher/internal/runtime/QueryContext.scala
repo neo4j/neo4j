@@ -111,6 +111,8 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getOrCreateLabelId(labelName: String): Int
 
+  def getOrCreateTypeId(relTypeName: String): Int
+
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int
 
   def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int
@@ -119,7 +121,7 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int]
 
-  def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor
+  def addIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor
 
   def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
@@ -127,7 +129,7 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getAllIndexes(): Map[IndexDescriptor, IndexInfo]
 
-  def indexReference(label: Int, properties: Int*): IndexDescriptor
+  def indexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor
 
   def indexExists(name: String): Boolean
 

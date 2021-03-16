@@ -151,19 +151,27 @@ object ShowIndexesCommand {
     indexType match {
       case IndexType.BTREE =>
         val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
-        val escapedProperties = asEscapedString(properties, propStringJoiner)
+        val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
+
         val btreeConfig = configAsString(indexConfig, value => btreeConfigValueAsString(value))
         val optionsString = optionsAsString(providerName, btreeConfig)
 
         maybeConstraint match {
           case Some(constraint) if constraint.isUniquenessConstraint =>
-            s"CREATE CONSTRAINT $escapedName ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS UNIQUE OPTIONS $optionsString"
+            s"CREATE CONSTRAINT $escapedName ON (n$labelsOrTypesWithColons) ASSERT ($escapedNodeProperties) IS UNIQUE OPTIONS $optionsString"
           case Some(constraint) if constraint.isNodeKeyConstraint =>
-            s"CREATE CONSTRAINT $escapedName ON (n$labelsOrTypesWithColons) ASSERT ($escapedProperties) IS NODE KEY OPTIONS $optionsString"
+            s"CREATE CONSTRAINT $escapedName ON (n$labelsOrTypesWithColons) ASSERT ($escapedNodeProperties) IS NODE KEY OPTIONS $optionsString"
           case Some(_) =>
             throw new IllegalArgumentException("Expected an index or index backed constraint, found another constraint.")
           case None =>
-            s"CREATE INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedProperties) OPTIONS $optionsString"
+            entityType match {
+              case EntityType.NODE =>
+                s"CREATE INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties) OPTIONS $optionsString"
+              case EntityType.RELATIONSHIP =>
+                val escapedRelProperties = asEscapedString(properties, relPropStringJoiner)
+                s"CREATE INDEX $escapedName FOR ()-[r$labelsOrTypesWithColons]-() ON ($escapedRelProperties) OPTIONS $optionsString"
+              case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
+            }
         }
       case IndexType.FULLTEXT =>
         val labelsOrTypesArray = asString(labelsOrTypes, arrayStringJoiner)
@@ -230,6 +238,7 @@ object ShowIndexesCommand {
 
   private def colonStringJoiner = new StringJoiner(":",":", "")
   private def propStringJoiner = new StringJoiner(", n.","n.", "")
+  private def relPropStringJoiner = new StringJoiner(", r.","r.", "")
   private def arrayStringJoiner = new StringJoiner(", ", "[", "]")
   private def configStringJoiner = new StringJoiner(",", "{", "}")
 }

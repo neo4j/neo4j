@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.util.InputPosition
 import org.parboiled.scala.Rule1
 
 class SchemaCommandParserTest
@@ -32,7 +33,7 @@ class SchemaCommandParserTest
 
   implicit val parser: Rule1[ast.SchemaCommand] = SchemaCommand
 
-  // Create index
+  // Create node index (old syntax)
 
   test("CREATE INDEX ON :Person(name)") {
     yields(ast.CreateIndexOldSyntax(labelName("Person"), List(propertyKeyName("name"))))
@@ -50,117 +51,155 @@ class SchemaCommandParserTest
     failsToParse
   }
 
-  // new syntax
+  // Create index
 
-  test("CREATE INDEX FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsThrowError, Map.empty))
-  }
+  type CreateIndexFunction = (List[expressions.Property], Option[String], ast.IfExistsDo, Map[String, expressions.Expression]) => InputPosition => ast.CreateIndex
 
-  test("USE neo4j CREATE INDEX FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsThrowError, Map.empty, Some(use(varFor("neo4j")))))
-  }
+  private def nodeIndex(props: List[expressions.Property],
+                        name: Option[String],
+                        ifExistsDo: ast.IfExistsDo,
+                        options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
+    ast.CreateNodeIndex(varFor("n"), labelName("Person"), props, name, ifExistsDo, options)
 
-  test("CREATE INDEX FOR (n:Person) ON (n.name, n.age)") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), None, IfExistsThrowError, Map.empty))
-  }
+  private def relIndex(props: List[expressions.Property],
+                        name: Option[String],
+                        ifExistsDo: ast.IfExistsDo,
+                        options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
+    ast.CreateRelationshipIndex(varFor("n"), relTypeName("R"), props, name, ifExistsDo, options)
 
-  test("CREATE BTREE INDEX my_index FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("my_index"), IfExistsThrowError, Map.empty))
-  }
+  Seq(
+    ("(n:Person)", nodeIndex: CreateIndexFunction),
+    ("()-[n:R]-()", relIndex: CreateIndexFunction),
+    ("()-[n:R]->()", relIndex: CreateIndexFunction),
+    ("()<-[n:R]-()", relIndex: CreateIndexFunction)
+  ).foreach {
+    case (pattern, createIndex: CreateIndexFunction) =>
+      test(s"CREATE INDEX FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), None, IfExistsThrowError, Map.empty))
+      }
 
-  test("CREATE INDEX my_index FOR (n:Person) ON (n.name, n.age)") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), Some("my_index"), IfExistsThrowError, Map.empty))
-  }
+      test(s"USE neo4j CREATE INDEX FOR $pattern ON (n.name)") {
+        yields(_ => createIndex(List(prop("n", "name")), None, IfExistsThrowError, Map.empty).withGraph(Some(use(varFor("neo4j")))))
+      }
 
-  test("CREATE INDEX `$my_index` FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("$my_index"), IfExistsThrowError, Map.empty))
-  }
+      test(s"CREATE INDEX FOR $pattern ON (n.name, n.age)") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), None, IfExistsThrowError, Map.empty))
+      }
 
-  test("CREATE OR REPLACE INDEX FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsReplace, Map.empty))
-  }
+      test(s"CREATE BTREE INDEX my_index FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), IfExistsThrowError, Map.empty))
+      }
 
-  test("CREATE OR REPLACE INDEX my_index FOR (n:Person) ON (n.name, n.age)") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), Some("my_index"), IfExistsReplace, Map.empty))
-  }
+      test(s"CREATE INDEX my_index FOR $pattern ON (n.name, n.age)") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), Some("my_index"), IfExistsThrowError, Map.empty))
+      }
 
-  test("CREATE OR REPLACE INDEX IF NOT EXISTS FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsInvalidSyntax, Map.empty))
-  }
+      test(s"CREATE INDEX `$$my_index` FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), Some("$my_index"), IfExistsThrowError, Map.empty))
+      }
 
-  test("CREATE OR REPLACE INDEX my_index IF NOT EXISTS FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("my_index"), IfExistsInvalidSyntax, Map.empty))
-  }
+      test(s"CREATE OR REPLACE INDEX FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), None, IfExistsReplace, Map.empty))
+      }
 
-  test("CREATE INDEX IF NOT EXISTS FOR (n:Person) ON (n.name, n.age)") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name"), prop("n", "age")), None, IfExistsDoNothing, Map.empty))
-  }
+      test(s"CREATE OR REPLACE INDEX my_index FOR $pattern ON (n.name, n.age)") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), Some("my_index"), IfExistsReplace, Map.empty))
+      }
 
-  test("CREATE INDEX my_index IF NOT EXISTS FOR (n:Person) ON (n.name)") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("my_index"), IfExistsDoNothing, Map.empty))
-  }
+      test(s"CREATE OR REPLACE INDEX IF NOT EXISTS FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), None, IfExistsInvalidSyntax, Map.empty))
+      }
 
-  test("CREATE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider : 'native-btree-1.0'}") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")),
-      None, IfExistsThrowError, Map("indexProvider" -> literalString("native-btree-1.0"))))
-  }
+      test(s"CREATE OR REPLACE INDEX my_index IF NOT EXISTS FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), IfExistsInvalidSyntax, Map.empty))
+      }
 
-  test("CREATE BTREE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsThrowError,
-      Map("indexProvider" -> literalString("lucene+native-3.0"),
-          "indexConfig"   -> mapOf(
-            "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
-            "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
+      test(s"CREATE INDEX IF NOT EXISTS FOR $pattern ON (n.name, n.age)") {
+        yields(createIndex(List(prop("n", "name"), prop("n", "age")), None, IfExistsDoNothing, Map.empty))
+      }
+
+      test(s"CREATE INDEX my_index IF NOT EXISTS FOR $pattern ON (n.name)") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), IfExistsDoNothing, Map.empty))
+      }
+
+      test(s"CREATE INDEX FOR $pattern ON (n.name) OPTIONS {indexProvider : 'native-btree-1.0'}") {
+        yields(createIndex(List(prop("n", "name")),
+          None, IfExistsThrowError, Map("indexProvider" -> literalString("native-btree-1.0"))))
+      }
+
+      test(s"CREATE BTREE INDEX FOR $pattern ON (n.name) OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
+        yields(createIndex(List(prop("n", "name")), None, IfExistsThrowError,
+          Map("indexProvider" -> literalString("lucene+native-3.0"),
+            "indexConfig"   -> mapOf(
+              "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
+              "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
+            )
           )
-      )
-    ))
-  }
-
-  test("CREATE BTREE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'lucene+native-3.0'}") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsThrowError,
-      Map("indexProvider" -> literalString("lucene+native-3.0"),
-        "indexConfig"   -> mapOf(
-          "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
-          "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
-        )
-      )
-    ))
-  }
-
-  test("CREATE BTREE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsThrowError,
-      Map("indexConfig" -> mapOf(
-          "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
-          "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
         ))
-    ))
-  }
+      }
 
-  test("CREATE INDEX FOR (n:Person) ON (n.name) OPTIONS {nonValidOption : 42}") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), None, IfExistsThrowError, Map("nonValidOption" -> literalInt(42))))
-  }
+      test(s"CREATE BTREE INDEX FOR $pattern ON (n.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'lucene+native-3.0'}") {
+        yields(createIndex(List(prop("n", "name")), None, IfExistsThrowError,
+          Map("indexProvider" -> literalString("lucene+native-3.0"),
+            "indexConfig"   -> mapOf(
+              "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
+              "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
+            )
+          )
+        ))
+      }
 
-  test("CREATE INDEX my_index FOR (n:Person) ON (n.name) OPTIONS {}") {
-    yields(ast.CreateIndex(varFor("n"), labelName("Person"), List(prop("n", "name")), Some("my_index"), IfExistsThrowError, Map.empty))
-  }
+      test(s"CREATE BTREE INDEX FOR $pattern ON (n.name) OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}") {
+        yields(createIndex(List(prop("n", "name")), None, IfExistsThrowError,
+          Map("indexConfig" -> mapOf(
+            "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
+            "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
+          ))
+        ))
+      }
 
-  test("CREATE INDEX $my_index FOR (n:Person) ON (n.name)") {
-    failsToParse
+      test(s"CREATE INDEX FOR $pattern ON (n.name) OPTIONS {nonValidOption : 42}") {
+        yields(createIndex(List(prop("n", "name")), None, IfExistsThrowError, Map("nonValidOption" -> literalInt(42))))
+      }
+
+      test(s"CREATE INDEX my_index FOR $pattern ON (n.name) OPTIONS {}") {
+        yields(createIndex(List(prop("n", "name")), Some("my_index"), IfExistsThrowError, Map.empty))
+      }
+
+      test(s"CREATE INDEX $$my_index FOR $pattern ON (n.name)") {
+        failsToParse
+      }
+
+      test(s"CREATE INDEX FOR $pattern ON n.name") {
+        failsToParse
+      }
+
+      test(s"CREATE INDEX FOR $pattern ON (n.name) {indexProvider : 'native-btree-1.0'}") {
+        failsToParse
+      }
+
+      test(s"CREATE INDEX FOR $pattern ON (n.name) OPTIONS") {
+        failsToParse
+      }
   }
 
   test("CREATE INDEX FOR n:Person ON (n.name)") {
     failsToParse
   }
 
-  test("CREATE INDEX FOR (n:Person) ON n.name") {
+  test("CREATE INDEX FOR -[n:R]-() ON (n.name)") {
     failsToParse
   }
 
-  test("CREATE INDEX FOR (n:Person) ON (n.name) {indexProvider : 'native-btree-1.0'}") {
+  test("CREATE INDEX FOR ()-[n:R]- ON (n.name)") {
     failsToParse
   }
 
-  test("CREATE INDEX FOR (n:Person) ON (n.name) OPTIONS") {
+  test("CREATE INDEX FOR -[n:R]- ON (n.name)") {
+    failsToParse
+  }
+
+  test("CREATE INDEX FOR [n:R] ON (n.name)") {
     failsToParse
   }
 
@@ -191,6 +230,38 @@ class SchemaCommandParserTest
   }
 
   test("DROP INDEX my_index ON :Person(name)") {
+    failsToParse
+  }
+
+  test("DROP INDEX ON (:Person(name))") {
+    failsToParse
+  }
+
+  test("DROP INDEX ON (:Person {name})") {
+    failsToParse
+  }
+
+  test("DROP INDEX ON [:Person(name)]") {
+    failsToParse
+  }
+
+  test("DROP INDEX ON -[:Person(name)]-") {
+    failsToParse
+  }
+
+  test("DROP INDEX ON ()-[:Person(name)]-()") {
+    failsToParse
+  }
+
+  test("DROP INDEX ON [:Person {name}]") {
+    failsToParse
+  }
+
+  test("DROP INDEX ON -[:Person {name}]-") {
+    failsToParse
+  }
+
+  test("DROP INDEX ON ()-[:Person {name}]-()") {
     failsToParse
   }
 

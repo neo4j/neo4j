@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.ArgumentMatchers.anyLong
@@ -39,15 +40,15 @@ import org.neo4j.values.storable.Values
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {
 
-  val inner = mock[QueryContext]
-  val nodeA = mock[Node]
-  val nodeB = mock[Node]
-  val nodeAId = 666
-  val rel = mock[Relationship]
-  val relId = 42
+  private val inner = mock[QueryContext]
+  private val nodeA = mock[Node]
+  private val nodeB = mock[Node]
+  private val nodeAId = 666
+  private val rel = mock[Relationship]
+  private val relId = 42
 
-  val nodeOps = mock[NodeOperations]
-  val relOps = mock[RelationshipOperations]
+  private val nodeOps = mock[NodeOperations]
+  private val relOps = mock[RelationshipOperations]
 
   when(inner.nodeOps).thenReturn(nodeOps)
   when(inner.relationshipOps).thenReturn(relOps)
@@ -65,8 +66,11 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     }
   } )
 
-  when(inner.addIndexRule(anyInt(), any(), any(), any(), any()))
+  when(inner.addIndexRule(anyInt(), ArgumentMatchers.eq(true), any(), any(), any(), any()))
     .thenReturn(IndexPrototype.forSchema(SchemaDescriptor.forLabel(1, 2)).withName("index_1").materialise(1))
+
+  when(inner.addIndexRule(anyInt(), ArgumentMatchers.eq(false), any(), any(), any(), any()))
+    .thenReturn(IndexPrototype.forSchema(SchemaDescriptor.forRelType(1, 2)).withName("index_1").materialise(1))
 
   var context: UpdateCountingQueryContext = _
 
@@ -188,14 +192,26 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     context.getStatistics should equal(QueryStatistics(labelsRemoved = 3))
   }
 
-  test("add_index") {
-    context.addIndexRule(0, Array(1), None, None, IndexConfig.empty)
+  test("add_index for node") {
+    context.addIndexRule(0, isNodeIndex = true, Array(1), None, None, IndexConfig.empty)
 
     context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
   }
 
-  test("add_index with name") {
-    context.addIndexRule(0, Array(1), Some("name"), None, IndexConfig.empty)
+  test("add_index for node with name") {
+    context.addIndexRule(0, isNodeIndex = true, Array(1), Some("name"), None, IndexConfig.empty)
+
+    context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
+  }
+
+  test("add_index for relationship") {
+    context.addIndexRule(0, isNodeIndex = false, Array(1), None, None, IndexConfig.empty)
+
+    context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
+  }
+
+  test("add_index for relationship with name") {
+    context.addIndexRule(0, isNodeIndex = false, Array(1), Some("name"), None, IndexConfig.empty)
 
     context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
   }

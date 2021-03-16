@@ -357,14 +357,14 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         val info = relationshipCountFromCountStoreInfo(ident, startLabel, typeNames, endLabel)
         PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
-      case DoNothingIfExistsForIndex(labelName, propertyKeyNames, nameOption) =>
-        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(indexInfo(nameOption, labelName, propertyKeyNames, Map.empty))), variables, withRawCardinalities)
+      case DoNothingIfExistsForIndex(entityName, propertyKeyNames, nameOption) =>
+        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(indexInfo(nameOption, entityName, propertyKeyNames, Map.empty))), variables, withRawCardinalities)
 
-      case CreateIndex(_, labelName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(indexInfo(nameOption, labelName, propertyKeyNames, options))), variables, withRawCardinalities)
+      case CreateIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
+        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(indexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
 
       case DropIndex(labelName, propertyKeyNames) =>
-        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(indexInfo(None, labelName, propertyKeyNames, Map.empty))), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(indexInfo(None, Left(labelName), propertyKeyNames, Map.empty))), variables, withRawCardinalities)
 
       case DropIndexOnName(name, _) =>
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(pretty"INDEX ${asPrettyString(name)}")), variables, withRawCardinalities)
@@ -374,13 +374,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         val colsDescription = if (verbose) pretty"allColumns" else pretty"defaultColumns"
         PlanDescriptionImpl(id, "ShowIndexes", NoChildren, Seq(Details(pretty"$allDescription, $colsDescription")), variables, withRawCardinalities)
 
-      case DoNothingIfExistsForConstraint(entity, entityType, props, assertion, name) =>
+      case DoNothingIfExistsForConstraint(entity, entityName, props, assertion, name) =>
         val a = assertion match {
           case NodeKey    => scala.util.Right("IS NODE KEY")
           case Uniqueness => scala.util.Right("IS UNIQUE")
           case _          => scala.util.Right("IS NOT NULL")
         }
-        PlanDescriptionImpl(id, s"DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(Details(constraintInfo(name, entity, entityType, props, a))), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, s"DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(Details(constraintInfo(name, entity, entityName, props, a))), variables, withRawCardinalities)
 
       case CreateUniquePropertyConstraint(_, node, label, properties: Seq[Property], nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), properties, scala.util.Right("IS UNIQUE"), options))
@@ -679,8 +679,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         }
         PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children, Seq(Details(pretty"$expandDescription$predicatesDescription")), variables, withRawCardinalities)
 
-      case CreateIndex(_, labelName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(indexInfo(nameOption, labelName, propertyKeyNames, options))), variables, withRawCardinalities)
+      case CreateIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
+        PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(indexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
 
       case CreateUniquePropertyConstraint(_, node, label, properties: Seq[Property], nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), properties, scala.util.Right("IS UNIQUE"), options))
@@ -1113,19 +1113,26 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
     if (caches.isEmpty) pretty"" else caches.map(asPrettyString(_)).mkPrettyString(", ", ", ", "")
   }
 
-  private def indexInfo(nameOption: Option[String], label: LabelName, properties: Seq[PropertyKeyName], options: Map[String, Expression]): PrettyString = {
+  private def indexInfo(nameOption: Option[String], entityName: Either[LabelName, RelTypeName], properties: Seq[PropertyKeyName], options: Map[String, Expression]): PrettyString = {
     val name = nameOption match {
       case Some(n) => pretty" ${asPrettyString(n)}"
       case _ => pretty""
     }
     val propertyString = properties.map(asPrettyString(_)).mkPrettyString("(", SEPARATOR, ")")
-    val prettyLabel = asPrettyString(label.name)
-    pretty"INDEX$name FOR (:$prettyLabel) ON $propertyString${prettyOptions(options)}"
+    val pattern = entityName match {
+      case Left(label) =>
+        val prettyLabel = asPrettyString(label.name)
+        pretty"(:$prettyLabel)"
+      case Right(relType) =>
+        val prettyType = asPrettyString(relType.name)
+        pretty"()-[:$prettyType]-()"
+    }
+    pretty"INDEX$name FOR $pattern ON $propertyString${prettyOptions(options)}"
   }
 
   private def constraintInfo(nameOption: Option[String],
                              entity: String,
-                             entityType: Either[LabelName, RelTypeName],
+                             entityName: Either[LabelName, RelTypeName],
                              properties: Seq[Property],
                              assertion: Either[String, String],
                              options: Map[String, Expression] = Map.empty): PrettyString = {
@@ -1137,7 +1144,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
     val propertyString = properties.map(asPrettyString(_)).mkPrettyString("(", SEPARATOR, ")")
     val prettyEntity = asPrettyString(entity)
 
-    val entityInfo = entityType match {
+    val entityInfo = entityName match {
       case scala.util.Left(label) => pretty"($prettyEntity:${asPrettyString(label)})"
       case scala.util.Right(relType) => pretty"()-[$prettyEntity:${asPrettyString(relType)}]-()"
     }

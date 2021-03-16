@@ -17,9 +17,10 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AlterUser
-import org.neo4j.cypher.internal.ast.CreateIndex
+import org.neo4j.cypher.internal.ast.CreateNodeIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreateUser
@@ -55,7 +56,7 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("The USE clause is not supported in this Cypher version.", u.position)
 
       // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:Label) ON (n.prop) [OPTIONS {...}]
-      case c: CreateIndex =>
+      case c: CreateNodeIndex =>
         throw cypherExceptionFactory.syntaxException("Creating index using this syntax is not supported in this Cypher version.", c.position)
 
       // DROP INDEX name
@@ -147,7 +148,7 @@ object Additions {
       case c: AlterUser if c.ifExists =>
         throw cypherExceptionFactory.syntaxException("Updating a user with `IF EXISTS` is not supported in this Cypher version.", c.position)
 
-      case c:ShowIndexesClause if c.where.isDefined || c.hasYield =>
+      case c: ShowIndexesClause if c.where.isDefined || c.hasYield =>
         throw cypherExceptionFactory.syntaxException("Using YIELD or WHERE to list indexes is not supported in this Cypher version.", c.position)
 
       case c: ShowDatabase if c.scope.isInstanceOf[HomeDatabaseScope] =>
@@ -176,6 +177,10 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Denying privileges on `HOME GRAPH` is not supported in this Cypher version.", p.position)
       case p@RevokePrivilege(GraphPrivilege(_, List(HomeGraphScope())), _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Revoking privileges on `HOME GRAPH` is not supported in this Cypher version.", p.position)
+
+      // CREATE INDEX [name] [IF NOT EXISTS] FOR ()-[n:RelType]-() ON (n.prop) [OPTIONS {...}]
+      case c: CreateRelationshipIndex =>
+        throw cypherExceptionFactory.syntaxException("Relationship property indexes are not supported in this Cypher version.", c.position)
     }
   }
 

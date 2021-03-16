@@ -240,6 +240,48 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "create INDEX foo IF not EXISTS FOR (n:A) ON (n.p)" ->
       "CREATE INDEX foo IF NOT EXISTS FOR (n:A) ON (n.p)",
 
+    "create INDEX FOR ()-[n:R]->() ON (n.p)" ->
+      "CREATE INDEX FOR ()-[n:R]-() ON (n.p)",
+
+    "create btree INDEX FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)" ->
+      "CREATE INDEX FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)",
+
+    "create INDEX foo FOR ()<-[n:R]-() ON (n.p)" ->
+      "CREATE INDEX foo FOR ()-[n:R]-() ON (n.p)",
+
+    "create INDEX `foo` FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE INDEX foo FOR ()-[n:R]-() ON (n.p)",
+
+    "create INDEX `$foo` FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)" ->
+      "CREATE INDEX `$foo` FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)",
+
+    "CREATE index FOR ()-[n:R]->() on (n.name) OPtiONS {indexProvider: 'native-btree-1.0'}" ->
+      """CREATE INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {indexProvider: "native-btree-1.0"}""",
+
+    "create BTREE INDEX for ()-[n:R]-() ON (n.name) OPTIONS {`indexProvider`: 'lucene+native-3.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
+      """CREATE INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {indexProvider: "lucene+native-3.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
+
+    "create BTREE INDEX myIndex for ()-[n:R]-() ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
+      """CREATE INDEX myIndex FOR ()-[n:R]-() ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
+
+    "CREATE index FOR ()-[n:R]-() on (n.name) OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+      """CREATE INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+
+    "CREATE index FOR ()<-[n:R]-() on (n.name) OPtiONS {}" ->
+      """CREATE INDEX FOR ()-[n:R]-() ON (n.name)""",
+
+    "create or REPLACE INDEX FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE OR REPLACE INDEX FOR ()-[n:R]-() ON (n.p)",
+
+    "create or REPLACE INDEX foo FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE OR REPLACE INDEX foo FOR ()-[n:R]-() ON (n.p)",
+
+    "create INDEX IF not EXISTS FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE INDEX IF NOT EXISTS FOR ()-[n:R]-() ON (n.p)",
+
+    "create INDEX foo IF not EXISTS FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE INDEX foo IF NOT EXISTS FOR ()-[n:R]-() ON (n.p)",
+
     "drop INDEX ON :A(p)" ->
       "DROP INDEX ON :A(p)",
 

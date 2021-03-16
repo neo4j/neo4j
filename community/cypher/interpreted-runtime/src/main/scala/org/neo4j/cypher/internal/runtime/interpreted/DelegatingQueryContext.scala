@@ -118,6 +118,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getOrCreateLabelId(labelName: String): Int = singleDbHit(inner.getOrCreateLabelId(labelName))
 
+  override def getOrCreateTypeId(relTypeName: String): Int = singleDbHit(inner.getOrCreateTypeId(relTypeName))
+
   override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingIterator[RelationshipValue] =
   manyDbHits(inner.getRelationshipsForIds(node, dir, types))
 
@@ -161,8 +163,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     inner.getOrCreatePropertyKeyIds(propertyKeys)
   }
 
-  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
-    singleDbHit(inner.addIndexRule(labelId, propertyKeyIds, name, provider, indexConfig))
+  override def addIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
+    singleDbHit(inner.addIndexRule(entityId, isNodeIndex, propertyKeyIds, name, provider, indexConfig))
 
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = singleDbHit(inner.dropIndexRule(labelId, propertyKeyIds))
 
@@ -177,7 +179,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean =
     singleDbHit(inner.constraintExists(matchFn, entityId, properties: _*))
 
-  override def indexReference(label: Int, properties: Int*): IndexDescriptor = singleDbHit(inner.indexReference(label, properties:_*))
+  override def indexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = singleDbHit(inner.indexReference(entityId, isNodeIndex, properties:_*))
 
   override def nodeIndexSeek(index: IndexReadSession,
                              needsValues: Boolean,

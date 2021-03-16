@@ -47,10 +47,10 @@ trait SampleGraphs {
       relate(source, rooms.head, "STAYS_IN")
 
     graph.createUniqueConstraint("User", "email")
-    graph.createIndex("User", "lastName")
-    graph.createIndex("User", "firstName", "lastName")
-    graph.createIndex("Room", "hotel", "number")
-    graph.createIndex("Car", "number")
+    graph.createNodeIndex("User", "lastName")
+    graph.createNodeIndex("User", "firstName", "lastName")
+    graph.createNodeIndex("Room", "hotel", "number")
+    graph.createNodeIndex("Car", "number")
 
     graph.withTx( tx => tx.schema().awaitIndexesOnline(5, TimeUnit.MINUTES)
     )

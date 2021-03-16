@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.neo4j.cypher.internal.ast.CreateIndex
+import org.neo4j.cypher.internal.ast.CreateNodeIndex
 import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
@@ -32,10 +33,15 @@ import org.neo4j.cypher.internal.ast.DropNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.DropNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
+import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.ShowConstraints
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
@@ -59,6 +65,20 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
 
   override def process(from: BaseState, context: PlannerContext): LogicalPlanState = {
     implicit val idGen: SequentialIdGen = new SequentialIdGen()
+
+    def createIndex(entityName: Either[LabelName, RelTypeName],
+                    props: List[Property],
+                    name: Option[String],
+                    ifExistsDo: IfExistsDo,
+                    options: Map[String, Expression]): Option[LogicalPlan] = {
+      val propKeys = props.map(_.propertyKey)
+      val source = ifExistsDo match {
+        case IfExistsDoNothing => Some(plans.DoNothingIfExistsForIndex(entityName, propKeys, name))
+        case _ => None
+      }
+      Some(plans.CreateIndex(source, entityName, propKeys, name, options))
+    }
+
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY [OPTIONS {...}]
       case CreateNodeKeyConstraint(node, label, props, name, ifExistsDo, options, _) =>
@@ -122,16 +142,15 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         
       // CREATE INDEX ON :LABEL(prop)
       case CreateIndexOldSyntax(label, props, _) =>
-        Some(plans.CreateIndex(None, label, props, None, Map.empty))
+        Some(plans.CreateIndex(None, Left(label), props, None, Map.empty))
 
       // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
-      case CreateIndex(_, label, props, name, ifExistsDo, options, _) =>
-        val propKeys = props.map(_.propertyKey)
-        val source = ifExistsDo match {
-          case IfExistsDoNothing => Some(plans.DoNothingIfExistsForIndex(label, propKeys, name))
-          case _ => None
-        }
-        Some(plans.CreateIndex(source, label, propKeys, name, options))
+      case CreateNodeIndex(_, label, props, name, ifExistsDo, options, _) =>
+        createIndex(Left(label), props, name, ifExistsDo, options)
+
+      // CREATE INDEX [name] [IF NOT EXISTS] FOR ()-[r:RELATIONSHIP_TYPE]->() ON (r.prop) [OPTIONS {...}]
+      case CreateRelationshipIndex(_, relType, props, name, ifExistsDo, options, _) =>
+        createIndex(Right(relType), props, name, ifExistsDo, options)
 
       // DROP INDEX ON :LABEL(prop)
       case DropIndex(label, props, _) =>
