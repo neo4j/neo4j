@@ -26,6 +26,34 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport {
 
+  test("should collapse collection containing ConstValues for id function") {
+    shouldRewrite(
+      "MATCH (a) WHERE id(a) IN [42] OR id(a) IN [13] RETURN a",
+      "MATCH (a) WHERE id(a) IN [42, 13] RETURN a"
+    )
+  }
+
+  test("should collapse collections containing ConstValues and nonConstValues for id function") {
+    shouldRewrite(
+      "MATCH (a) WHERE id(a) IN [42] OR id(a) IN [rand()] RETURN a",
+      "MATCH (a) WHERE id(a) IN [42, rand()] RETURN a"
+    )
+  }
+
+  test("should collapse collection containing ConstValues for property") {
+    shouldRewrite(
+      "MATCH (a) WHERE a.prop IN [42] OR a.prop IN [13] RETURN a",
+      "MATCH (a) WHERE a.prop IN [42, 13] RETURN a"
+    )
+  }
+
+  test("should collapse collections containing ConstValues and nonConstValues for property") {
+    shouldRewrite(
+      "MATCH (a) WHERE a.prop IN [42] OR a.prop IN [rand()] RETURN a",
+      "MATCH (a) WHERE a.prop IN [42, rand()] RETURN a"
+    )
+  }
+
   test("MATCH (a) WHERE a.prop IN [1,2,3] AND a.prop IN [2,3,4] RETURN *") {
     shouldRewrite(
       "MATCH (a) WHERE a.prop IN [1,2,3] AND a.prop IN [2,3,4] RETURN *",
@@ -132,6 +160,29 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
 
   test( "RETURN ANY(i IN [1,2,3]) AND ANY(i IN [4])") {
    shouldNotRewrite("MATCH (n) WHERE ANY(i IN n.prop WHERE i IN [1,2]) AND ANY(i IN n.prop WHERE i IN [3]) RETURN n")
+  }
+
+  test("RETURN [] OR [] AS n") {
+    shouldNotRewrite("RETURN [] OR [] AS n")
+  }
+
+  test("RETURN [1] OR [1] AS n") {
+    shouldNotRewrite("RETURN [1] OR [1] AS n")
+  }
+
+  test("RETURN [] AND [] AS n") {
+    shouldNotRewrite("RETURN [] AND [] AS n")
+  }
+
+  test("RETURN [1] AND [1] AS n") {
+    shouldNotRewrite("RETURN [1] AND [1] AS n")
+  }
+
+  test("should collapse collection containing ConstValues for id function but keep unrelated list") {
+    shouldRewrite(
+      "MATCH (a) WHERE id(a) IN [42] OR [] OR id(a) IN [13] RETURN a",
+      "MATCH (a) WHERE id(a) IN [42, 13] OR [] RETURN a"
+    )
   }
 
   private def shouldRewrite(from: String, to: String): Unit = {

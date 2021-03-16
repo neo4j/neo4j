@@ -43,13 +43,13 @@ case object MultipleInPredicatesAreMerged extends Condition
  * Merges multiple IN predicates into one.
  *
  * Examples:
- * MATCH (n) WHERE n.prop IN [1,2,3] AND [2,3,4] RETURN n.prop
+ * MATCH (n) WHERE n.prop IN [1,2,3] AND n.prop IN [2,3,4] RETURN n.prop
  * -> MATCH (n) WHERE n.prop IN [2,3]
  *
- * MATCH (n) WHERE n.prop IN [1,2,3] OR [2,3,4] RETURN n.prop
+ * MATCH (n) WHERE n.prop IN [1,2,3] OR n.prop IN [2,3,4] RETURN n.prop
  * -> MATCH (n) WHERE n.prop IN [1,2,3,4]
  *
- * MATCH (n) WHERE n.prop IN [1,2,3] AND [4,5,6] RETURN n.prop
+ * MATCH (n) WHERE n.prop IN [1,2,3] AND n.prop IN [4,5,6] RETURN n.prop
  * -> MATCH (n) WHERE FALSE
  *
  * NOTE: this rewriter must be applied before auto parameterization, since after
@@ -67,22 +67,22 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
 
   private val inner: Rewriter = bottomUp(Rewriter.lift {
 
-    case and@And(lhs, rhs) if noOrsNorInnerScopes(lhs) && noOrsNorInnerScopes(rhs) =>
-      if (noNots(lhs) && noNots(rhs))
+    case and@And(lhs, rhs) if containNeitherOrsNorInnerScopes(lhs, rhs) && containIns(lhs, rhs) =>
+      if (containNoNots(lhs, rhs))
       //Look for a `IN [...] AND a IN [...]` and compute the intersection of lists
         rewriteBinaryOperator(and, (a, b) => a intersect b, (l, r) => and.copy(l, r)(and.position))
-      else if (nots(lhs) && nots(rhs))
+      else if (containNots(lhs, rhs))
       //Look for a `NOT IN [...] AND a NOT IN [...]` and compute the union of lists
         rewriteBinaryOperator(and, (a, b) => a union b, (l, r) => and.copy(l, r)(and.position))
       else
       // In case only one of lhs and rhs includes a NOT we cannot rewrite
         and
 
-    case or@Or(lhs, rhs) if noAnds(lhs) && noAnds(rhs) =>
-      if (noNots(lhs) && noNots(rhs))
+    case or@Or(lhs, rhs) if containNoAnds(lhs, rhs) && containIns(lhs, rhs) =>
+      if (containNoNots(lhs, rhs))
       //Look for `a IN [...] OR a IN [...]` and compute union of lists
         rewriteBinaryOperator(or, (a, b) => a union b, (l, r) => or.copy(l, r)(or.position))
-      else if (nots(lhs) && nots(rhs))
+      else if (containNots(lhs, rhs))
       //Look for a `NOT IN [...] OR a NOT IN [...]` and compute the intersection of lists
         rewriteBinaryOperator(or, (a, b) => a intersect b, (l, r) => or.copy(l, r)(or.position))
       else
@@ -90,22 +90,26 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
         or
   })
 
-  private def noOrsNorInnerScopes(expression: Expression):Boolean = !expression.treeExists {
+  private def containNeitherOrsNorInnerScopes(expressions: Expression*):Boolean = expressions.forall(!_.treeExists {
     case _: Or => true
     case _: ScopeExpression => true
-  }
+  })
 
-  private def noAnds(expression: Expression):Boolean = !expression.treeExists {
+  private def containNoAnds(expressions: Expression*):Boolean = expressions.forall(!_.treeExists {
     case _: And => true
-  }
+  })
 
-  private def nots(expression: Expression): Boolean = expression.treeExists {
+  private def containNots(expressions: Expression*): Boolean = expressions.forall(_.treeExists {
     case _: Not => true
-  }
+  })
 
-  private def noNots(expression: Expression): Boolean = !expression.treeExists {
+  private def containNoNots(expressions: Expression*): Boolean = expressions.forall(!_.treeExists {
     case _: Not => true
-  }
+  })
+
+  private def containIns(expressions: Expression*): Boolean = expressions.forall(_.treeExists {
+    case In(_, _) => true
+  })
 
   //Takes a binary operator a merge operator and a copy constructor
   //and rewrites the binary operator
