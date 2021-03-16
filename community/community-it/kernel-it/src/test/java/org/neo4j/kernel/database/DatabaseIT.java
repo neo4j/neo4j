@@ -29,6 +29,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -60,6 +61,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -96,6 +98,17 @@ class DatabaseIT
         pageCacheWrapper = new PageCacheWrapper( pageCacheExtension.getPageCache( fs ) );
         dependencies.satisfyDependency( pageCacheWrapper );
         builder.setInternalLogProvider( logProvider ).setExternalDependencies( dependencies );
+    }
+
+    @Test
+    void shutdownOfDatabaseShouldFlushWithoutAnyIOLimitations()
+    {
+        pageCacheWrapper.disabledIOController.set( true );
+
+        assertThat( pageCacheWrapper.ioControllerChecks.get() ).isZero();
+        assertDoesNotThrow( () -> database.stop() );
+
+        assertThat( pageCacheWrapper.ioControllerChecks.get() ).isPositive();
     }
 
     @Test
@@ -361,6 +374,8 @@ class DatabaseIT
     {
         private final AtomicInteger flushes = new AtomicInteger();
         private final AtomicInteger fileFlushes = new AtomicInteger();
+        private final AtomicInteger ioControllerChecks = new AtomicInteger();
+        private final AtomicBoolean disabledIOController = new AtomicBoolean();
 
         PageCacheWrapper( PageCache delegate )
         {
@@ -370,20 +385,23 @@ class DatabaseIT
         @Override
         public PagedFile map( Path path, int pageSize, String databaseName ) throws IOException
         {
-            return new PageFileWrapper( super.map( path, pageSize, databaseName ), fileFlushes );
+            return new PageFileWrapper( super.map( path, pageSize, databaseName ), fileFlushes, IOController.DISABLED, disabledIOController,
+                    ioControllerChecks );
         }
 
         @Override
         public PagedFile map( Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions ) throws IOException
         {
-            return new PageFileWrapper( super.map( path, pageSize, databaseName, openOptions ), fileFlushes );
+            return new PageFileWrapper( super.map( path, pageSize, databaseName, openOptions ), fileFlushes, IOController.DISABLED, disabledIOController,
+                    ioControllerChecks );
         }
 
         @Override
-        public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName,
-                ImmutableSet<OpenOption> openOptions, IOController ioController ) throws IOException
+        public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions,
+                IOController ioController ) throws IOException
         {
-            return new PageFileWrapper( super.map( path, versionContextSupplier, pageSize, databaseName, openOptions, ioController ), fileFlushes );
+            return new PageFileWrapper( super.map( path, versionContextSupplier, pageSize, databaseName, openOptions, ioController ), fileFlushes, ioController,
+                    disabledIOController, ioControllerChecks );
         }
 
         @Override
@@ -406,18 +424,29 @@ class DatabaseIT
 
     private static class PageFileWrapper extends DelegatingPagedFile
     {
-
         private final AtomicInteger flushCounter;
+        private final IOController ioController;
+        private final AtomicBoolean disabledIOController;
+        private final AtomicInteger ioControllerChecks;
 
-        PageFileWrapper( PagedFile delegate, AtomicInteger flushCounter )
+        PageFileWrapper( PagedFile delegate, AtomicInteger flushCounter, IOController ioController, AtomicBoolean disabledIOController,
+                AtomicInteger ioControllerChecks )
         {
             super( delegate );
             this.flushCounter = flushCounter;
+            this.ioController = ioController;
+            this.disabledIOController = disabledIOController;
+            this.ioControllerChecks = ioControllerChecks;
         }
 
         @Override
         public void flushAndForce() throws IOException
         {
+            if ( disabledIOController.get() )
+            {
+                assertFalse( ioController.isEnabled() );
+                ioControllerChecks.incrementAndGet();
+            }
             flushCounter.incrementAndGet();
             super.flushAndForce();
         }

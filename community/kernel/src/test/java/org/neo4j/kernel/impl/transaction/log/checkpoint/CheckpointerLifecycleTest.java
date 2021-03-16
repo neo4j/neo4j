@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 
@@ -35,7 +36,8 @@ class CheckpointerLifecycleTest
 {
     private final CheckPointer checkPointer = mock( CheckPointer.class );
     private final Health databaseHealth = mock( DatabaseHealth.class );
-    private CheckpointerLifecycle checkpointLifecycle = new CheckpointerLifecycle( checkPointer, databaseHealth );
+    private final IOController ioController = mock( IOController.class );
+    private final CheckpointerLifecycle checkpointLifecycle = new CheckpointerLifecycle( checkPointer, databaseHealth, ioController );
 
     @BeforeEach
     void setUp()
@@ -58,5 +60,13 @@ class CheckpointerLifecycleTest
         checkpointLifecycle.shutdown();
 
         verifyNoInteractions( checkPointer );
+    }
+
+    @Test
+    void disableIOControllerOnShutdown() throws Exception
+    {
+        checkpointLifecycle.shutdown();
+
+        verify( ioController ).disable();
     }
 }

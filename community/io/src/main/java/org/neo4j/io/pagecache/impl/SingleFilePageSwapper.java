@@ -260,13 +260,16 @@ public class SingleFilePageSwapper implements PageSwapper
         return "Read failed after " + readTotal + " of " + size + " bytes from fileOffset " + fileOffset + ".";
     }
 
-    private int swapOut( long bufferAddress, long fileOffset, int bufferLength ) throws IOException
+    private int swapOut( long bufferAddress, long fileOffset, int bufferLength, boolean countIo ) throws IOException
     {
         try
         {
             ByteBuffer bufferProxy = proxy( bufferAddress, bufferLength );
             channel.writeAll( bufferProxy, fileOffset );
-            ioController.reportIO( 1 );
+            if ( countIo )
+            {
+                ioController.reportIO( 1 );
+            }
         }
         catch ( IOException e )
         {
@@ -382,7 +385,7 @@ public class SingleFilePageSwapper implements PageSwapper
         return bytesRead;
     }
 
-    private long countBuffersLengths( int[] bufferLengths, int length )
+    private static long countBuffersLengths( int[] bufferLengths, int length )
     {
         long bytesToRead = 0;
         for ( int i = 0; i < length; i++ )
@@ -404,6 +407,7 @@ public class SingleFilePageSwapper implements PageSwapper
                 read = channel.read( srcs );
             }
             while ( read != -1 && (readTotal += read) < bytesToRead );
+            ioController.reportIO( 1 );
             return readTotal;
         }
     }
@@ -431,6 +435,11 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public long write( long filePageId, long bufferAddress, int bufferLength ) throws IOException
     {
+        return write( filePageId, bufferAddress, bufferLength, true );
+    }
+
+    private int write( long filePageId, long bufferAddress, int bufferLength, boolean countIo ) throws IOException
+    {
         long fileOffset = pageIdToPosition( filePageId );
         increaseFileSizeTo( fileOffset + bufferLength );
 
@@ -440,7 +449,7 @@ public class SingleFilePageSwapper implements PageSwapper
             {
                 try
                 {
-                    return swapOut( bufferAddress, fileOffset, bufferLength );
+                    return swapOut( bufferAddress, fileOffset, bufferLength, countIo );
                 }
                 catch ( ClosedChannelException e )
                 {
@@ -493,7 +502,7 @@ public class SingleFilePageSwapper implements PageSwapper
         return lockPositionWriteVector( fileOffset, srcs, bytesToWrite );
     }
 
-    private ByteBuffer[] convertToByteBuffers( long[] bufferAddresses, int[] bufferLengths, int length )
+    private static ByteBuffer[] convertToByteBuffers( long[] bufferAddresses, int[] bufferLengths, int length )
     {
         ByteBuffer[] buffers = new ByteBuffer[length];
         for ( int i = 0; i < length; i++ )
@@ -517,6 +526,8 @@ public class SingleFilePageSwapper implements PageSwapper
             long bytesWritten = 0;
             synchronized ( channel.getPositionLock() )
             {
+                // we do not report external io to ioController here since its only checkpoint that is calling this method and
+                // io is counted as related to checkpoint
                 setPositionUnderLock( fileOffset );
                 do
                 {
@@ -556,7 +567,7 @@ public class SingleFilePageSwapper implements PageSwapper
         {
             long address = bufferAddresses[i];
             int bufferLength = bufferLengths[i];
-            bytes += write( filePageId, address, bufferLength );
+            bytes += write( filePageId, address, bufferLength, false );
             filePageId += bufferLength / filePageSize;
         }
         return bytes;

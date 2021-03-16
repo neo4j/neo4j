@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -28,7 +29,7 @@ import java.nio.file.Path;
  * executing, then they must either throw an InterruptedException, or leave the interrupted-status
  * flag alone.
  */
-public interface PageSwapper
+public interface PageSwapper extends Closeable
 {
     /**
      * Read the page with the given filePageId, from the concrete file on the
@@ -134,11 +135,6 @@ public interface PageSwapper
      * Get the file that this PageSwapper represents.
      */
     Path path();
-
-    /**
-     * Close and release all resources associated with the file underlying this PageSwapper.
-     */
-    void close() throws IOException;
 
     /**
      * Close and release all resources associated with the file underlying this PageSwapper, and then delete that file.

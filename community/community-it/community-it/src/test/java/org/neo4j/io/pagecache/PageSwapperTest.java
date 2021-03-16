@@ -1112,7 +1112,19 @@ public abstract class PageSwapperTest
             boolean createIfNotExist,
             boolean useDirectIO ) throws IOException
     {
-        PageSwapper swapper = factory.createPageSwapper( path, filePageSize, callback, createIfNotExist, useDirectIO, DISABLED );
+        return createSwapper( factory, path, filePageSize, callback, createIfNotExist, useDirectIO, DISABLED );
+    }
+
+    protected PageSwapper createSwapper(
+            PageSwapperFactory factory,
+            Path path,
+            int filePageSize,
+            PageEvictionCallback callback,
+            boolean createIfNotExist,
+            boolean useDirectIO,
+            IOController controller ) throws IOException
+    {
+        PageSwapper swapper = factory.createPageSwapper( path, filePageSize, callback, createIfNotExist, useDirectIO, controller );
         openedSwappers.add( swapper );
         return swapper;
     }

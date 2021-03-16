@@ -27,6 +27,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.function.ThrowingSupplier;
 
 import java.io.BufferedReader;
+import java.io.Flushable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -42,6 +43,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
@@ -56,9 +58,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PageSwapperTest;
+import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 
 import static java.util.concurrent.ConcurrentHashMap.newKeySet;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -83,7 +87,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     private static final int INTERRUPT_ATTEMPTS = 100;
 
     @BeforeEach
-    void setUp() throws IOException
+    void setUp()
     {
         path = Path.of( "file" ).normalize();
         ephemeralFileSystem = new EphemeralFileSystemAbstraction();
@@ -137,6 +141,139 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         for ( int i = 0; i < length; i++ )
         {
             UnsafeUtil.putByte( page + srcOffset + i, data[tgtOffset + i] );
+        }
+    }
+
+    @Test
+    void reportExternalIoOnSwapIn() throws IOException
+    {
+        byte[] bytes = new byte[] { 1, 2, 3, 4 };
+        try ( StoreChannel channel = getFs().write( getPath() ) )
+        {
+            channel.writeAll( wrap( bytes ) );
+        }
+
+        PageSwapperFactory factory = createSwapperFactory( getFs() );
+        CountingIOController controller = new CountingIOController();
+        try ( var swapper = createSwapper( factory, getPath(), 4, null, false, false, controller ) )
+        {
+            long target = createPage( 4 );
+            int numberOfReads = 12;
+            for ( int i = 0; i < numberOfReads; i++ )
+            {
+                assertEquals( 4, swapper.read( 0, target ) );
+            }
+            assertEquals( numberOfReads, controller.getExternalIOCounter() );
+        }
+    }
+
+    @Test
+    void reportExternalIoOnSwapInWithLength() throws IOException
+    {
+        byte[] bytes = new byte[] { 1, 2, 3, 4 };
+        try ( StoreChannel channel = getFs().write( getPath() ) )
+        {
+            channel.writeAll( wrap( bytes ) );
+        }
+
+        PageSwapperFactory factory = createSwapperFactory( getFs() );
+        CountingIOController controller = new CountingIOController();
+        try ( var swapper = createSwapper( factory, getPath(), 4, null, false, false, controller ) )
+        {
+            long target = createPage( 4 );
+            int numberOfReads = 12;
+            for ( int i = 0; i < numberOfReads; i++ )
+            {
+                assertEquals( 4, swapper.read( 0, target, bytes.length ) );
+            }
+            assertEquals( numberOfReads, controller.getExternalIOCounter() );
+        }
+    }
+
+    @Test
+    void reportExternalIoOnSwapInWithMultipleBuffers() throws IOException
+    {
+        byte[] bytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+        try ( StoreChannel channel = getFs().write( getPath() ) )
+        {
+            channel.writeAll( wrap( bytes ) );
+        }
+
+        PageSwapperFactory factory = createSwapperFactory( getFs() );
+        CountingIOController controller = new CountingIOController();
+        try ( var swapper = createSwapper( factory, getPath(), 4, null, false, false, controller ) )
+        {
+            long target1 = createPage( 4 );
+            long target2 = createPage( 4 );
+            long target3 = createPage( 4 );
+            int numberOfReads = 12;
+            int buffers = 3;
+            for ( int i = 0; i < numberOfReads; i++ )
+            {
+                assertEquals( 12, swapper.read( 0, new long[]{target1, target2, target3}, new int[]{4, 4, 4}, buffers ) );
+            }
+            long expectedIO = getEphemeralFileSystem() == getFs() ? numberOfReads * buffers : numberOfReads;
+            assertEquals( expectedIO, controller.getExternalIOCounter() );
+        }
+    }
+
+    @Test
+    void reportExternalIoOnSwapOut() throws IOException
+    {
+        createEmptyFile();
+
+        PageSwapperFactory factory = createSwapperFactory( getFs() );
+        CountingIOController controller = new CountingIOController();
+        try ( var swapper = createSwapper( factory, getPath(), 4, null, false, false, controller ) )
+        {
+            long target = createPage( 4 );
+            int numberOfWrites = 42;
+            for ( int i = 0; i < numberOfWrites; i++ )
+            {
+                assertEquals( 4, swapper.write( 0, target ) );
+            }
+            assertEquals( numberOfWrites, controller.getExternalIOCounter() );
+        }
+    }
+
+    @Test
+    void reportExternalIoOnSwapOutWithLength() throws IOException
+    {
+        createEmptyFile();
+
+        PageSwapperFactory factory = createSwapperFactory( getFs() );
+        CountingIOController controller = new CountingIOController();
+        try ( var swapper = createSwapper( factory, getPath(), 4, null, false, false, controller ) )
+        {
+            long target = createPage( 4 );
+            int numberOfWrites = 42;
+            for ( int i = 0; i < numberOfWrites; i++ )
+            {
+                assertEquals( 4, swapper.write( 0, target, 4 ) );
+            }
+            assertEquals( numberOfWrites, controller.getExternalIOCounter() );
+        }
+    }
+
+    @Test
+    void doNotReportExternalIoOnCheckpointerCalledVectoredFlush() throws IOException
+    {
+        createEmptyFile();
+
+        PageSwapperFactory factory = createSwapperFactory( getFs() );
+        CountingIOController controller = new CountingIOController();
+        try ( var swapper = createSwapper( factory, getPath(), 4, null, false, false, controller ) )
+        {
+            long target1 = createPage( 4 );
+            long target2 = createPage( 4 );
+            long target3 = createPage( 4 );
+            int numberOfReads = 12;
+            int buffers = 3;
+            for ( int i = 0; i < numberOfReads; i++ )
+            {
+                assertEquals( 12, swapper.write( 0, new long[]{target1, target2, target3}, new int[]{4, 4, 4}, buffers, buffers ) );
+            }
+            assertEquals( 0, controller.getExternalIOCounter() );
         }
     }
 
@@ -702,6 +839,14 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         }
     }
 
+    private void createEmptyFile() throws IOException
+    {
+        try ( var ignored = getFs().write( getPath() ) )
+        {
+            // create file
+        }
+    }
+
     private static class ThreadRegistryFactory extends NamedThreadFactory
     {
         private final Set<Thread> threads = newKeySet();
@@ -722,6 +867,28 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         public Set<Thread> getThreads()
         {
             return threads;
+        }
+    }
+
+    private static class CountingIOController implements IOController
+    {
+        private final AtomicLong externalIOCounter = new AtomicLong();
+
+        @Override
+        public void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
+        {
+            // empty
+        }
+
+        @Override
+        public void reportIO( int completedIOs )
+        {
+            externalIOCounter.addAndGet( completedIOs );
+        }
+
+        public long getExternalIOCounter()
+        {
+            return externalIOCounter.longValue();
         }
     }
 }
