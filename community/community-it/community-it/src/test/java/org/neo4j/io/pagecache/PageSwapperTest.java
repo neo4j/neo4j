@@ -72,7 +72,6 @@ public abstract class PageSwapperTest
     protected static final PageEvictionCallback NO_CALLBACK = filePageId -> {};
 
     private static final int cachePageSize = 32;
-    private final ConcurrentLinkedQueue<PageSwapperFactory> openedFactories = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<PageSwapper> openedSwappers = new ConcurrentLinkedQueue<>();
     private final MemoryAllocator mman = MemoryAllocator.createAllocator( KibiByte.toBytes( 32 ), new LocalMemoryTracker() );
 
@@ -101,25 +100,6 @@ public abstract class PageSwapperTest
                 swapper.close();
             }
             catch ( IOException e )
-            {
-                if ( exception == null )
-                {
-                    exception = e;
-                }
-                else
-                {
-                    exception.addSuppressed( e );
-                }
-            }
-        }
-
-        while ( (factory = openedFactories.poll()) != null )
-        {
-            try
-            {
-                factory.close();
-            }
-            catch ( Exception e )
             {
                 if ( exception == null )
                 {
@@ -1094,9 +1074,7 @@ public abstract class PageSwapperTest
 
     protected final PageSwapperFactory createSwapperFactory( FileSystemAbstraction fileSystem )
     {
-        PageSwapperFactory factory = swapperFactory( fileSystem );
-        openedFactories.add( factory );
-        return factory;
+        return swapperFactory( fileSystem );
     }
 
     protected long createPage( int cachePageSize )

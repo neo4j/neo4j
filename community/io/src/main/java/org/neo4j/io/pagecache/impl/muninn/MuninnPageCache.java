@@ -792,9 +792,6 @@ public class MuninnPageCache implements PageCache
 
         interrupt( evictionThread );
         evictionThread = null;
-
-        // Close the page swapper factory last. If this fails then we will still consider ourselves closed.
-        swapperFactory.close();
     }
 
     private static void interrupt( Thread thread )

@@ -56,10 +56,4 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
         }
         return new SingleFilePageSwapper( file, fs, filePageSize, onEviction, useDirectIO );
     }
-
-    @Override
-    public void close()
-    {
-        // We have nothing to close
-    }
 }

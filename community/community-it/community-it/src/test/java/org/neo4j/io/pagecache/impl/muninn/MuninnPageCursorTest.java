@@ -58,7 +58,7 @@ class MuninnPageCursorTest
     @Inject
     private FileSystemAbstraction fs;
     private JobScheduler jobScheduler;
-    private LifeSupport life = new LifeSupport();
+    private final LifeSupport life = new LifeSupport();
 
     @BeforeEach
     private void start()
@@ -162,12 +162,6 @@ class MuninnPageCursorTest
                         return super.read( filePageId, bufferAddress );
                     }
                 };
-            }
-
-            @Override
-            public void close()
-            {
-                actual.close();
             }
         };
     }

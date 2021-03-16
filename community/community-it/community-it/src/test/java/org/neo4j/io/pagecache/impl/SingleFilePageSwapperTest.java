@@ -535,7 +535,6 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         finally
         {
             swapper.close();
-            factory.close();
         }
 
         RandomAdversary adversary = new RandomAdversary( 0.5, 0.0, 0.0 );
