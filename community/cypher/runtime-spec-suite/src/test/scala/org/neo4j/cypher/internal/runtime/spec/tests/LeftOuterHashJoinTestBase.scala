@@ -357,7 +357,6 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
 
   List("", " with aggregation on top").foreach { t =>
     test(s"should work when LHS and RHS produce nulls in the join column $t") {
-      assume(runtime.name != "Parallel") // TODO https://trello.com/c/9UNTaVBX/2373-node-left-outer-hash-join-with-aggregation-gives-the-wrong-result-in-parallel-runtime
 
       val randomSmallIntProps: PartialFunction[Int, Map[String, Any]] = {
         case _ => Map("leftProp" -> Random.nextInt(4), "rightProp" -> Random.nextInt(4))
