@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.ListLiteral
@@ -41,30 +40,31 @@ case object collapseMultipleInPredicates extends StatementRewriter with StepSequ
   case class InValue(lhs: Expression, expr: Expression)
 
   override def instance(ignored: BaseContext): Rewriter = bottomUp(Rewriter.lift {
-    case predicate@Ors(exprs) =>
-      // Find all the expressions we want to rewrite
-      val (const: Seq[Expression], nonRewritable: Seq[Expression]) = exprs.toList.partition {
-        case In(_, rhs: ListLiteral) => true
+    case predicate@Ors(booleanExpressions) =>
+      val (expressionsToRewrite: Seq[Expression], nonRewritable: Seq[Expression]) = booleanExpressions.partition {
+        case In(_, _: ListLiteral) => true
         case _ => false
       }
 
-      // For each expression on the RHS of any IN, produce a InValue place holder
-      val ins: Seq[InValue] = const.flatMap {
+      // We regroup the expressions by their left hand side
+      val insByLhs = expressionsToRewrite.flatMap {
         case In(lhs, rhs: ListLiteral) =>
           rhs.expressions.map(expr => InValue(lhs, expr))
-      }
+      }.groupBy(_.lhs)
 
-      // Find all IN against the same predicate and rebuild the collection with all available values
-      val groupedINPredicates = ins.groupBy(_.lhs)
-      val flattenConst: Iterable[In] = groupedINPredicates.map {
+      // Find all IN-expressions with the same left hand side and rebuild the expressions
+      val reorderedInExpressions: Iterable[In] = insByLhs.map {
         case (lhs, values) =>
           val pos = lhs.position
-          expressions.In(lhs, ListLiteral(values.map(_.expr).toIndexedSeq)(pos))(pos)
+          In(lhs, ListLiteral(values.map(_.expr).toIndexedSeq)(pos))(pos)
       }
 
-      // Return the original non-rewritten predicates with our new ones
-      nonRewritable ++ flattenConst match {
-        case head :: Nil => head
+      // Return the original non-rewritten expressions together with our new ones
+      val allNewExpressions = nonRewritable ++ reorderedInExpressions
+      allNewExpressions match {
+        case head :: Nil if !reorderedInExpressions.isEmpty =>
+          // we only have one element from reorderedInExpressions
+          head
         case l => Ors(l)(predicate.position)
       }
   })
