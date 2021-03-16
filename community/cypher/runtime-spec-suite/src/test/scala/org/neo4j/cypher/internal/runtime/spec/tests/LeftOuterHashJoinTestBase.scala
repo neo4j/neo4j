@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import java.util.Collections.emptyList
-
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -29,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
 
+import java.util.Collections.emptyList
 import scala.collection.JavaConverters.asJavaIterableConverter
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.util.Random
@@ -609,26 +608,28 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edi
     runtimeResult should beColumns("exposures").withRows(expected, listInAnyOrder = true)
   }
 
-  // Emulates outer join.
-  // Given keyed rows (k, v) and a key k',
-  // return the rows that have a matching key (k', v)
-  // or a single row (k', null) if no key matches
-  private def matchingRowsOuter[K, V >: Null](rows: Seq[(K, V)], key: K): Seq[(K, V)] = {
-    // Get matching rows. Null keys match nothing. No matches gives a null value
-    rows.collect { case row@(candidate, _) if matches(key, candidate) => row }
-      .padTo(1, (key, null))
+  test("nested joins") {
+    // given
+    val nodes = given {
+      nodeGraph(12)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .leftOuterHashJoin("y")
+      .|.leftOuterHashJoin("y")
+      .|.|.allNodeScan("y")
+      .|.allNodeScan("y")
+      .allNodeScan("y")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expectedResultRows = nodes.map(Array(_))
+    runtimeResult should beColumns("y").withRows(expectedResultRows)
   }
-
-  private def matches[K](key: K, candidate: K): Boolean = key match {
-    case null                                           => false
-    case p: Product if p.productIterator.contains(null) => false
-    case k                                              => k == candidate
-  }
-
-}
-
-trait NestedLeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext] {
-  self: LeftOuterHashJoinTestBase[CONTEXT] =>
 
   test("nested joins on nodes with different types and different nullability") {
     // given
@@ -657,4 +658,21 @@ trait NestedLeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext] {
     val expectedResultRows = nodes.map(Array(_))
     runtimeResult should beColumns("y").withRows(expectedResultRows)
   }
+
+  // Emulates outer join.
+  // Given keyed rows (k, v) and a key k',
+  // return the rows that have a matching key (k', v)
+  // or a single row (k', null) if no key matches
+  private def matchingRowsOuter[K, V >: Null](rows: Seq[(K, V)], key: K): Seq[(K, V)] = {
+    // Get matching rows. Null keys match nothing. No matches gives a null value
+    rows.collect { case row@(candidate, _) if matches(key, candidate) => row }
+      .padTo(1, (key, null))
+  }
+
+  private def matches[K](key: K, candidate: K): Boolean = key match {
+    case null                                           => false
+    case p: Product if p.productIterator.contains(null) => false
+    case k                                              => k == candidate
+  }
+
 }
