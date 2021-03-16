@@ -58,8 +58,10 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 import static java.lang.String.format;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.DATABASE_ID_LEAST_SIGN_BITS;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.DATABASE_ID_MOST_SIGN_BITS;
