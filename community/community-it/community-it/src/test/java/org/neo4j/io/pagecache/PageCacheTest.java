@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.Flushable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -66,6 +67,7 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.randomharness.Record;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
@@ -246,46 +248,42 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    void pageCacheFlushAndForceMustThrowOnNullIOPSLimiter()
+    void pagedFileFlushAndForceMustThrowOnNullIOPSLimiter()
     {
         configureStandardPageCache();
-        assertThrows( IllegalArgumentException.class, () -> pageCache.flushAndForce() );
-    }
-
-    @Test
-    void pagedFileFlushAndForceMustThrowOnNullIOPSLimiter() throws Exception
-    {
-        configureStandardPageCache();
-        try ( PagedFile pf = map( file( "a" ), filePageSize ) )
+        assertThrows( NullPointerException.class, () ->
         {
-            assertThrows( IllegalArgumentException.class, () -> pf.flushAndForce() );
-        }
+            try ( PagedFile pf = pageCache.map( file( "a" ), pageCache.versionContextSupplier(), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(),
+                    null ) )
+            {
+                // empty
+            }
+        } );
     }
 
     @Test
-    void pageCacheFlushAndForceMustQueryTheGivenIOPSLimiter() throws Exception
+    void wholePageCacheFlushAndForceExecutedWithoutIOController() throws Exception
     {
         int pagesToDirty = 10_000;
         PageCache cache = getPageCache( fs, ceilingPowerOfTwo( 2 * pagesToDirty ), PageCacheTracer.NULL );
         int pagesPerFlush = DISABLED_BUFFER_FACTORY.equals( cache.getBufferFactory() ) ? 1 : pagecache_flush_buffer_size_in_pages.defaultValue();
-        PagedFile pfA = cache.map( existingFile( "a" ), filePageSize, DEFAULT_DATABASE_NAME );
-        PagedFile pfB = cache.map( existingFile( "b" ), filePageSize, DEFAULT_DATABASE_NAME );
+        AtomicInteger callbackCounter = new AtomicInteger();
+        AtomicInteger ioCounter = new AtomicInteger();
+        PageCacheIOController ioController = new PageCacheIOController( ioCounter, pagesPerFlush, callbackCounter );
+        PagedFile pfA =
+                cache.map( existingFile( "a" ), pageCache.versionContextSupplier(), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController );
+        PagedFile pfB =
+                cache.map( existingFile( "b" ), pageCache.versionContextSupplier(), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController );
 
         dirtyManyPages( pfA, pagesToDirty );
         dirtyManyPages( pfB, pagesToDirty );
 
-        AtomicInteger callbackCounter = new AtomicInteger();
-        AtomicInteger ioCounter = new AtomicInteger();
-//        cache.flushAndForce( ( previousStamp, recentlyCompletedIOs, swapper, flushes ) ->
-//        {
-//            ioCounter.addAndGet( recentlyCompletedIOs * pagesPerFlush );
-//            return callbackCounter.getAndIncrement();
-//        } );
+        cache.flushAndForce();
         pfA.close();
         pfB.close();
 
-        assertThat( callbackCounter.get() ).isGreaterThan( 0 );
-        assertThat( ioCounter.get() ).isGreaterThanOrEqualTo( pagesToDirty * 2 - 30 ); // -30 because of the eviction thread
+        assertThat( callbackCounter.get() ).isEqualTo( 0 );
+        assertThat( ioCounter.get() ).isEqualTo( 0 );
     }
 
     @Test
@@ -295,18 +293,16 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageCache cache = getPageCache( fs, ceilingPowerOfTwo( pagesToDirty ), PageCacheTracer.NULL );
         int pagesPerFlush = DISABLED_BUFFER_FACTORY.equals( cache.getBufferFactory() ) ? 1 : pagecache_flush_buffer_size_in_pages.defaultValue();
 
-        PagedFile pf = cache.map( file( "a" ), filePageSize, DEFAULT_DATABASE_NAME );
+        AtomicInteger callbackCounter = new AtomicInteger();
+        AtomicInteger ioCounter = new AtomicInteger();
+        PageCacheIOController ioController = new PageCacheIOController( ioCounter, pagesPerFlush, callbackCounter );
+
+        PagedFile pf = cache.map( file( "a" ), pageCache.versionContextSupplier(), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController );
 
         // Dirty a bunch of data
         dirtyManyPages( pf, pagesToDirty );
 
-        AtomicInteger callbackCounter = new AtomicInteger();
-        AtomicInteger ioCounter = new AtomicInteger();
-//        pf.flushAndForce( ( previousStamp, recentlyCompletedIOs, swapper, flushes ) ->
-//        {
-//            ioCounter.addAndGet( recentlyCompletedIOs * pagesPerFlush );
-//            return callbackCounter.getAndIncrement();
-//        } );
+        pf.flushAndForce();
         pf.close();
 
         assertThat( callbackCounter.get() ).isGreaterThan( 0 );
@@ -387,7 +383,19 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             configureStandardPageCache();
             Path a = existingFile( "a" );
             Path b = existingFile( "b" );
-            try ( PagedFile pfA = map( pageCache, a, filePageSize ) )
+            BinaryLatch limiterStartLatch = new BinaryLatch();
+            BinaryLatch limiterBlockLatch = new BinaryLatch();
+            var ioController = new EmptyIOController()
+            {
+                @Override
+                public void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
+                {
+                    limiterStartLatch.release();
+                    limiterBlockLatch.await();
+                    super.maybeLimitIO( recentlyCompletedIOs, flushable, flushes );
+                }
+            };
+            try ( PagedFile pfA = pageCache.map( a, pageCache.versionContextSupplier(), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController ) )
             {
                 // Dirty a bunch of pages.
                 try ( PageCursor cursor = pfA.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
@@ -398,16 +406,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     }
                 }
 
-                BinaryLatch limiterStartLatch = new BinaryLatch();
-                BinaryLatch limiterBlockLatch = new BinaryLatch();
                 Future<?> flusher = executor.submit( () ->
                 {
-//                    pageCache.flushAndForce( ( stamp, ios, flushable, flushes ) ->
-//                    {
-//                        limiterStartLatch.release();
-//                        limiterBlockLatch.await();
-//                        return 0;
-//                    } );
+                    pfA.flushAndForce();
                     return null;
                 } );
 
@@ -435,11 +436,21 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         BinaryLatch limiterStartLatch = new BinaryLatch();
         BinaryLatch limiterBlockLatch = new BinaryLatch();
+        var ioController = new EmptyIOController()
+        {
+            @Override
+            public void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
+            {
+                limiterStartLatch.release();
+                limiterBlockLatch.await();
+                super.maybeLimitIO( recentlyCompletedIOs, flushable, flushes );
+            }
+        };
         Future<?> flusher;
 
-        try ( PagedFile pfA = map( pageCache, a, filePageSize );
-                PagedFile pfB = map( pageCache, b, filePageSize );
-                PagedFile pfC = map( pageCache, c, filePageSize ) )
+        try ( PagedFile pfA = pageCache.map( a, pageCache.versionContextSupplier(), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController );
+                PagedFile pfB = pageCache.map( b, pageCache.versionContextSupplier(), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(),  ioController );
+                PagedFile pfC = pageCache.map( c, pageCache.versionContextSupplier(), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController ) )
         {
             // Dirty a bunch of pages.
             try ( PageCursor cursor = pfA.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
@@ -456,12 +467,9 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
             flusher = executor.submit( () ->
             {
-//                pageCache.flushAndForce( ( stamp, ios, flushable, flushes ) ->
-//                {
-//                    limiterStartLatch.release();
-//                    limiterBlockLatch.await();
-//                    return 0;
-//                } );
+                pfA.flushAndForce();
+                pfB.flushAndForce();
+                pfC.flushAndForce();
                 return null;
             } );
 
@@ -6360,6 +6368,27 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertTrue( nofault.shouldRetry() );
             // However, we are no longer in memory, because the page we had earlier got evicted.
             verifyNoFaultReadIsNotInMemory( nofault );
+        }
+    }
+
+    private static class PageCacheIOController extends EmptyIOController
+    {
+        private final AtomicInteger ioCounter;
+        private final int pagesPerFlush;
+        private final AtomicInteger callbackCounter;
+
+        private PageCacheIOController( AtomicInteger ioCounter, int pagesPerFlush, AtomicInteger callbackCounter )
+        {
+            this.ioCounter = ioCounter;
+            this.pagesPerFlush = pagesPerFlush;
+            this.callbackCounter = callbackCounter;
+        }
+
+        @Override
+        public void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
+        {
+            ioCounter.addAndGet( recentlyCompletedIOs * pagesPerFlush );
+            callbackCounter.getAndIncrement();
         }
     }
 }

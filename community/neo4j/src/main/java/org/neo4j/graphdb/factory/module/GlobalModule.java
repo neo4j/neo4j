@@ -441,7 +441,7 @@ public class GlobalModule
     private static IOControllerService loadIOControllerService()
     {
         return Services.loadByPriority( IOControllerService.class ).orElseThrow(
-                () -> new IllegalStateException( "IOControllerService not found." ) );
+                () -> new IllegalStateException( IOControllerService.class.getSimpleName() + " not found." ) );
     }
 
     public FileWatcher getFileWatcher()

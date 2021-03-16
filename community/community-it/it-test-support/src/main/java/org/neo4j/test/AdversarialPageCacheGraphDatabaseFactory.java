@@ -72,8 +72,7 @@ public final class AdversarialPageCacheGraphDatabaseFactory
                             protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers,
                                     JobScheduler jobScheduler, SystemNanoClock clock, MemoryPools memoryPools )
                             {
-                                PageCache pageCache =
-                                        super.createPageCache( fileSystem, config, logging, tracers, jobScheduler, clock, memoryPools );
+                                PageCache pageCache = super.createPageCache( fileSystem, config, logging, tracers, jobScheduler, clock, memoryPools );
                                 return new AdversarialPageCache( pageCache, adversary );
                             }
                         };
