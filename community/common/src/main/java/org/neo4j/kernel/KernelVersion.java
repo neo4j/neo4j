@@ -68,6 +68,11 @@ public enum KernelVersion
         return version > other.version;
     }
 
+    public boolean isLessThan( KernelVersion other )
+    {
+        return version < other.version;
+    }
+
     public boolean isAtLeast( KernelVersion other )
     {
         return version >= other.version;

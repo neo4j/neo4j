@@ -37,6 +37,9 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
      * This descriptor <em>cannot</em> be modified by any of the {@code with*} methods.
      */
     public static final IndexDescriptor NO_INDEX = new IndexDescriptor();
+    public static final long INJECTED_NLI_ID = -2;
+    public static final String NLI_GENERATED_NAME =
+            "__org_neo4j_schema_index_label_scan_store_converted_to_token_index";
 
     private final long id;
     private final String name;
@@ -58,7 +61,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     private IndexDescriptor( long id, String name, SchemaDescriptor schema, boolean isUnique, IndexProviderDescriptor indexProvider, Long owningConstraintId,
             IndexCapability capability, IndexType indexType, IndexConfig indexConfig )
     {
-        if ( id < 0 )
+        if ( id < 0 && id != INJECTED_NLI_ID )
         {
             throw new IllegalArgumentException( "The id of an index must not be negative, but it was attempted to assign " + id + "." );
         }

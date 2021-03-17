@@ -30,16 +30,25 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
 public interface SchemaRuleAccess
 {
+    static SchemaRuleAccess getSchemaRuleAccess( SchemaStore store, TokenHolders tokenHolders, KernelVersionRepository versionRepository,
+            boolean tokenIndexFeatureOn )
+    {
+        return new SchemaStorage( store, tokenHolders, versionRepository, tokenIndexFeatureOn );
+    }
+
+    //TODO change me so that all places uses the correct version. what ever that may be :/
     static SchemaRuleAccess getSchemaRuleAccess( SchemaStore store, TokenHolders tokenHolders )
     {
-        return new SchemaStorage( store, tokenHolders );
+        return new SchemaStorage( store, tokenHolders, () -> KernelVersion.LATEST, false );
     }
 
     long newRuleId( PageCursorTracer cursorTracer );

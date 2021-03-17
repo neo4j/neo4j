@@ -28,16 +28,21 @@ import java.util.Iterator;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -47,6 +52,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
@@ -56,11 +62,24 @@ public class SchemaStorage implements SchemaRuleAccess, org.neo4j.kernel.impl.st
 {
     private final SchemaStore schemaStore;
     private final TokenHolders tokenHolders;
+    private final KernelVersionRepository versionSupplier;
+    private final boolean tokenIndexFeatureOn;
 
+    public SchemaStorage( SchemaStore schemaStore, TokenHolders tokenHolders, KernelVersionRepository versionSupplier, boolean tokenIndexFeatureOn )
+    {
+        this.schemaStore = schemaStore;
+        this.tokenHolders = tokenHolders;
+        this.versionSupplier = versionSupplier;
+        this.tokenIndexFeatureOn = tokenIndexFeatureOn;
+    }
+
+    //TODO remove me when not needed
     public SchemaStorage( SchemaStore schemaStore, TokenHolders tokenHolders )
     {
         this.schemaStore = schemaStore;
         this.tokenHolders = tokenHolders;
+        this.versionSupplier = () -> KernelVersion.LATEST;
+        this.tokenIndexFeatureOn = false;
     }
 
     @Override
@@ -241,10 +260,20 @@ public class SchemaStorage implements SchemaRuleAccess, org.neo4j.kernel.impl.st
     {
         long startId = schemaStore.getNumberOfReservedLowIds();
         long endId = schemaStore.getHighId();
-        return LongStream.range( startId, endId )
+        //TODO fix version check to correct version
+        Stream<IndexDescriptor> nli = Stream.empty();
+        if ( tokenIndexFeatureOn && versionSupplier.kernelVersion().isLessThan( KernelVersion.V4_3_D3 ) )
+        {
+            nli = Stream.of( IndexPrototype.forSchema( SchemaDescriptor.forAllEntityTokens( EntityType.NODE ), new IndexProviderDescriptor( "token", "1.0" ) )
+                            .withIndexType( IndexType.LOOKUP )
+                            .withName( IndexDescriptor.NLI_GENERATED_NAME )
+                            .materialise( IndexDescriptor.INJECTED_NLI_ID ) );
+        }
+
+        return Stream.concat( LongStream.range( startId, endId )
                 .mapToObj( id -> schemaStore.getRecord( id, schemaStore.newRecord(), RecordLoad.LENIENT_ALWAYS, cursorTracer ) )
                 .filter( AbstractBaseRecord::inUse )
-                .flatMap( record -> readSchemaRuleThrowingRuntimeException( record, ignoreMalformed, cursorTracer ) );
+                .flatMap( record -> readSchemaRuleThrowingRuntimeException( record, ignoreMalformed, cursorTracer ) ), nli );
     }
 
     private Stream<IndexDescriptor> indexRules( Stream<SchemaRule> stream )
