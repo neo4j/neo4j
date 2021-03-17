@@ -173,4 +173,10 @@ public class SimpleMetaDataProvider implements MetadataProvider
     {
         return KernelVersion.LATEST;
     }
+
+    @Override
+    public void setDatabaseIdUuid( UUID uuid, PageCursorTracer cursorTracer )
+    {
+        throw new IllegalStateException( "Not supported" );
+    }
 }

@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -768,9 +769,9 @@ class MetaDataStoreTest
         newMetaDataStore( pageCacheTracer );
 
         assertThat( pageCacheTracer.faults() ).isOne();
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 25 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 25 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 24 );
+        assertThat( pageCacheTracer.pins() ).isEqualTo( 27 );
+        assertThat( pageCacheTracer.unpins() ).isEqualTo( 27 );
+        assertThat( pageCacheTracer.hits() ).isEqualTo( 26 );
     }
 
     @Test
@@ -905,6 +906,40 @@ class MetaDataStoreTest
         {
             assertThat( metaDataStore.kernelVersion() ).isEqualTo( KernelVersion.V4_0 ); //and can read it after a restart
 
+        }
+    }
+
+    @Test
+    void shouldBeAbleToReadAndWriteDatabaseIdUuid() throws IOException
+    {
+        // given
+        var databaseIdUuid = UUID.randomUUID();
+
+        // when
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            store.setDatabaseIdUuid( databaseIdUuid, NULL );
+        }
+
+        //then
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            var storedDatabaseId = MetaDataStore.getDatabaseId( pageCache, store.storageFile, NULL );
+            assertThat( storedDatabaseId ).hasValue( databaseIdUuid );
+        }
+    }
+
+    @Test
+    void shouldReturnEmptyIfDatabaseIdHasNeverBeenSet()
+    {
+        // given
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            // when
+            var storeDatabaseId = MetaDataStore.getDatabaseId( pageCache, store.storageFile, NULL );
+
+            // then
+            assertThat( storeDatabaseId ).isEmpty();
         }
     }
 

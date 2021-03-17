@@ -62,6 +62,8 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.DATABASE_ID_LEAST_SIGN_BITS;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.DATABASE_ID_MOST_SIGN_BITS;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.EXTERNAL_STORE_UUID_LEAST_SIGN_BITS;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.EXTERNAL_STORE_UUID_MOST_SIGN_BITS;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.KERNEL_VERSION;
@@ -76,7 +78,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     // This value means the field has not been refreshed from the store. Normally, this should happen only once
     public static final long FIELD_NOT_INITIALIZED = Long.MIN_VALUE;
     private static final String METADATA_REFRESH_TAG = "metadataRefresh";
-    private static final UUID NOT_INITIALISED_EXTERNAL_STORE_UUID = new UUID( FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
+    private static final UUID NOT_INITIALIZED_UUID = new UUID( FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
 
     // Positions of meta-data records
     public enum Position
@@ -105,7 +107,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 "Generated on creation and never updated. Least significant bits" ),
         CHECKPOINT_LOG_VERSION( 18, "Current checkpoint log version" ),
         // This field is changed using explicit upgrade trigger. Store can be upgraded to a later version, but still write commands for an older version
-        KERNEL_VERSION( 19, "The kernel version (also transaction log version) that is currently being used when writing new transactions" );
+        KERNEL_VERSION( 19, "The kernel version (also transaction log version) that is currently being used when writing new transactions" ),
+        DATABASE_ID_MOST_SIGN_BITS( 20, "The last used DatabaseId for this database. Most significant bits" ),
+        DATABASE_ID_LEAST_SIGN_BITS( 21, "The last used DatabaseId for this database. Least significant bits" );
 
         private final int id;
         private final String description;
@@ -141,7 +145,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private volatile int upgradeTxChecksumField = (int) FIELD_NOT_INITIALIZED;
     private volatile long upgradeTimeField = FIELD_NOT_INITIALIZED;
     private volatile long upgradeCommitTimestampField = FIELD_NOT_INITIALIZED;
-    private volatile UUID externalStoreUUID = NOT_INITIALISED_EXTERNAL_STORE_UUID;
+    private volatile UUID externalStoreUUID = NOT_INITIALIZED_UUID;
     private volatile long kernelVersion = FIELD_NOT_INITIALIZED;
     private final PageCacheTracer pageCacheTracer;
 
@@ -204,6 +208,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setExternalStoreUUID( UUID.randomUUID(), cursorTracer );
         setCheckpointLogVersion( 0, cursorTracer );
         setKernelVersion( KernelVersion.LATEST, cursorTracer );
+        setDatabaseIdUuid( NOT_INITIALIZED_UUID, cursorTracer );
 
         initHighId();
         flush( cursorTracer );
@@ -401,6 +406,35 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, upgradeTxCommitTimestamp, cursorTracer );
     }
 
+    public void setDatabaseIdUuid( UUID uuid, PageCursorTracer cursorTracer )
+    {
+        assertNotClosed();
+        setRecord( DATABASE_ID_MOST_SIGN_BITS, uuid.getMostSignificantBits(), cursorTracer );
+        setRecord( DATABASE_ID_LEAST_SIGN_BITS, uuid.getLeastSignificantBits(), cursorTracer );
+    }
+
+    public static Optional<UUID> getDatabaseId( PageCache pageCache, Path neoStore, PageCursorTracer cursorTracer )
+    {
+        try
+        {
+            var msb = getRecord( pageCache, neoStore, Position.DATABASE_ID_MOST_SIGN_BITS, cursorTracer );
+            var lsb = getRecord( pageCache, neoStore, Position.DATABASE_ID_LEAST_SIGN_BITS, cursorTracer );
+            var uuid = new UUID( msb, lsb );
+            if ( isNotInitializedUUID( uuid ) || (msb == FIELD_NOT_PRESENT && lsb == FIELD_NOT_PRESENT) )
+            {
+                return Optional.empty();
+            }
+            else
+            {
+                return Optional.of( uuid );
+            }
+        }
+        catch ( IOException ignored )
+        {
+            return Optional.empty();
+        }
+    }
+
     @Override
     public StoreId getStoreId()
     {
@@ -412,7 +446,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         assertNotClosed();
         var externalStoreUUID = getExternalStoreUUID();
-        return isNotInitialisedExternalUUID( externalStoreUUID ) ? Optional.empty() : Optional.of( new ExternalStoreId( externalStoreUUID ) );
+        return isNotInitializedUUID( externalStoreUUID ) ? Optional.empty() : Optional.of( new ExternalStoreId( externalStoreUUID ) );
     }
 
     public static StoreId getStoreId( PageCache pageCache, Path neoStore, PageCursorTracer cursorTracer ) throws IOException
@@ -472,16 +506,16 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private UUID getExternalStoreUUID()
     {
         assertNotClosed();
-        if ( isNotInitialisedExternalUUID( externalStoreUUID ) )
+        if ( isNotInitializedUUID( externalStoreUUID ) )
         {
             refreshFields();
         }
         return externalStoreUUID;
     }
 
-    private boolean isNotInitialisedExternalUUID( UUID uuid )
+    private static boolean isNotInitializedUUID( UUID uuid )
     {
-        return NOT_INITIALISED_EXTERNAL_STORE_UUID.equals( uuid );
+        return NOT_INITIALIZED_UUID.equals( uuid );
     }
 
     public long getCreationTime()

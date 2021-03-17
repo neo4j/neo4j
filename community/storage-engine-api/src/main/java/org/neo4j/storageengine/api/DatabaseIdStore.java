@@ -19,11 +19,12 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.io.Closeable;
+import java.util.UUID;
 
-/**
- * Provider for metadata that describes stores properties, ids, store level implementation details
- */
-public interface MetadataProvider extends DatabaseIdStore, TransactionIdStore, LogVersionRepository, StoreIdProvider, KernelVersionRepository, Closeable
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+
+@FunctionalInterface
+public interface DatabaseIdStore
 {
+    void setDatabaseIdUuid( UUID uuid, PageCursorTracer cursorTracer );
 }
