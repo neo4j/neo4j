@@ -1995,7 +1995,7 @@ EXPRESSION CaseExpression() :
 }
 {
   t=<CASE> (
-    LOOKAHEAD(2) e=Expression() <WHEN>
+    LOOKAHEAD(e=Expression() <WHEN>) e=Expression() <WHEN>
   | <WHEN> )
   x=Expression() {when.add(x);} <THEN> x=Expression() {then.add(x);}
   ( <WHEN> x=Expression() {when.add(x);} <THEN> x=Expression() {then.add(x);} )*

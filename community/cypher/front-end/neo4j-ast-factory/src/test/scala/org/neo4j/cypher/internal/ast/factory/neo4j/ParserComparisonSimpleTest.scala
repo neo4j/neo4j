@@ -295,4 +295,16 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
   test("RETURN Infinity as double") {
     assertSameAST(testName)
   }
+
+  test("MATCH (n) WITH CASE WHEN (e) THEN e ELSE null END as e RETURN e") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH (n) WITH CASE when(e) WHEN (e) THEN e ELSE null END as e RETURN e") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH (n) WITH CASE when(v1) + 1 WHEN THEN v2 ELSE null END as e RETURN e") {
+    assertSameAST(testName)
+  }
 }
