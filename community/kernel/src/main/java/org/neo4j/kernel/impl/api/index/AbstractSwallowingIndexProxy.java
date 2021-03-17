@@ -29,12 +29,12 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 
 public abstract class AbstractSwallowingIndexProxy implements IndexProxy
 {
-    private final IndexDescriptor descriptor;
+    private final IndexRepresentation indexRepresentation;
     private final IndexPopulationFailure populationFailure;
 
-    AbstractSwallowingIndexProxy( IndexDescriptor descriptor, IndexPopulationFailure populationFailure )
+    AbstractSwallowingIndexProxy( IndexRepresentation indexRepresentation, IndexPopulationFailure populationFailure )
     {
-        this.descriptor = descriptor;
+        this.indexRepresentation = indexRepresentation;
         this.populationFailure = populationFailure;
     }
 
@@ -76,7 +76,7 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     @Override
     public IndexDescriptor getDescriptor()
     {
-        return descriptor;
+        return indexRepresentation.getIndexDescriptor();
     }
 
     @Override

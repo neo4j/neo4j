@@ -19,38 +19,29 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
-import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactory
 {
-    private final IndexDescriptor descriptor;
+    private final IndexRepresentation indexRepresentation;
     private final MinimalIndexAccessor minimalIndexAccessor;
-    private final String indexUserDescription;
-    private final IndexStatisticsStore indexStatisticsStore;
     private final LogProvider logProvider;
 
-    FailedPopulatingIndexProxyFactory( IndexDescriptor descriptor,
+    FailedPopulatingIndexProxyFactory( IndexRepresentation indexRepresentation,
             MinimalIndexAccessor minimalIndexAccessor,
-            String indexUserDescription,
-            IndexStatisticsStore indexStatisticsStore,
             LogProvider logProvider )
     {
-        this.descriptor = descriptor;
+        this.indexRepresentation = indexRepresentation;
         this.minimalIndexAccessor = minimalIndexAccessor;
-        this.indexUserDescription = indexUserDescription;
-        this.indexStatisticsStore = indexStatisticsStore;
         this.logProvider = logProvider;
     }
 
     @Override
     public IndexProxy create( Throwable failure )
     {
-        return new FailedIndexProxy( descriptor, indexUserDescription, minimalIndexAccessor, failure( failure ),
-                indexStatisticsStore, logProvider );
+        return new FailedIndexProxy( indexRepresentation, minimalIndexAccessor, failure( failure ), logProvider );
     }
 }

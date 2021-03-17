@@ -89,7 +89,6 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -604,7 +603,7 @@ class IndexPopulationJobTest
         // given
         NullLogProvider logProvider = NullLogProvider.getInstance();
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( IndexStoreView.EMPTY, logProvider, EntityType.NODE,
-                new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ), jobScheduler, tokens );
+                new DatabaseSchemaState( logProvider ), jobScheduler, tokens );
         IndexPopulationJob populationJob =
                 new IndexPopulationJob( populator, NO_MONITOR, false, NULL, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
 
@@ -649,7 +648,7 @@ class IndexPopulationJobTest
             }
         };
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( failingStoreView, logProvider, EntityType.NODE,
-                new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ), jobScheduler, tokens );
+                new DatabaseSchemaState( logProvider ), jobScheduler, tokens );
         IndexPopulationJob populationJob =
                 new IndexPopulationJob( populator, NO_MONITOR, false, NULL, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
 
@@ -866,12 +865,13 @@ class IndexPopulationJobTest
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
         MultipleIndexPopulator multiPopulator =
-                new MultipleIndexPopulator( storeView, logProvider, type, stateHolder, indexStatisticsStore, jobScheduler, tokens, pageCacheTracer, INSTANCE,
+                new MultipleIndexPopulator( storeView, logProvider, type, stateHolder, jobScheduler, tokens, pageCacheTracer, INSTANCE,
                         "", AUTH_DISABLED, Config.defaults() );
         IndexPopulationJob job =
                 new IndexPopulationJob( multiPopulator, NO_MONITOR, false, pageCacheTracer, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
         IndexDescriptor descriptor = prototype.withName( "index_" + indexId ).materialise( indexId );
-        job.addPopulator( populator, descriptor, format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
+        IndexRepresentation indexProxyInfo = new ValueIndexRepresentation( descriptor, indexStatisticsStore, tokens );
+        job.addPopulator( populator, indexProxyInfo, flipper, failureDelegateFactory );
         return job;
     }
 
@@ -935,10 +935,9 @@ class IndexPopulationJobTest
         private volatile boolean closed;
 
         TrackingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-                IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokens )
+                JobScheduler jobScheduler, TokenNameLookup tokens )
         {
-            super( storeView, logProvider, type, schemaState, indexStatisticsStore, jobScheduler, tokens, NULL, INSTANCE, "", AUTH_DISABLED,
-                    Config.defaults() );
+            super( storeView, logProvider, type, schemaState, jobScheduler, tokens, NULL, INSTANCE, "", AUTH_DISABLED, Config.defaults() );
         }
 
         @Override

@@ -17,24 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index.updater;
+package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 public class UpdateCountingIndexUpdater implements IndexUpdater
 {
-    private final IndexStatisticsStore indexStatisticsStore;
-    private final long indexId;
+    private final IndexRepresentation indexRepresentation;
     private final IndexUpdater delegate;
     private long updates;
 
-    public UpdateCountingIndexUpdater( IndexStatisticsStore indexStatisticsStore, long indexId, IndexUpdater delegate )
+    public UpdateCountingIndexUpdater( IndexRepresentation indexRepresentation, IndexUpdater delegate )
     {
-        this.indexStatisticsStore = indexStatisticsStore;
-        this.indexId = indexId;
+        this.indexRepresentation = indexRepresentation;
         this.delegate = delegate;
     }
 
@@ -49,6 +46,6 @@ public class UpdateCountingIndexUpdater implements IndexUpdater
     public void close() throws IndexEntryConflictException
     {
         delegate.close();
-        indexStatisticsStore.incrementIndexUpdates( indexId, updates );
+        indexRepresentation.incrementUpdateStatisticsForIndex( updates );
     }
 }

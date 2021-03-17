@@ -92,7 +92,7 @@ public class BatchingMultipleIndexPopulatorTest
     {
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator(
                 mock( IndexStoreView.class ), NullLogProvider.getInstance(), EntityType.NODE,
-                mock( SchemaState.class ), mock( IndexStatisticsStore.class ), new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED,
+                mock( SchemaState.class ), new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED,
                 Config.defaults( GraphDatabaseInternalSettings.index_population_queue_threshold, 5 ) );
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
@@ -116,7 +116,7 @@ public class BatchingMultipleIndexPopulatorTest
         FullScanStoreView storeView =
                 new FullScanStoreView( LockService.NO_LOCK_SERVICE, () -> mock( StorageReader.class ), Config.defaults(), jobScheduler );
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator(
-                storeView, NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
+                storeView, NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ),
                 new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED,
                 Config.defaults( GraphDatabaseInternalSettings.index_population_queue_threshold, 2 ) );
 
@@ -153,7 +153,7 @@ public class BatchingMultipleIndexPopulatorTest
         IndexStoreView storeView = newStoreView( update1, update2, update3, update42 );
 
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator( storeView,
-                NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
+                NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ),
                 new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED, Config.defaults() );
 
         IndexPopulator populator1 = addPopulator( batchingPopulator, index1 );
@@ -180,7 +180,7 @@ public class BatchingMultipleIndexPopulatorTest
         try
         {
             MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator( storeView,
-                    NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
+                    NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ),
                     jobScheduler, tokens, NULL, INSTANCE,  "", AUTH_DISABLED,
                     Config.defaults( GraphDatabaseInternalSettings.index_population_batch_max_byte_size, 1L ) );
 
@@ -220,7 +220,7 @@ public class BatchingMultipleIndexPopulatorTest
         return new Update( nodeId, labelIds, propertyId, Values.stringValue( propertyValue ) );
     }
 
-    private static IndexPopulator addPopulator( MultipleIndexPopulator batchingPopulator, IndexDescriptor descriptor )
+    private IndexPopulator addPopulator( MultipleIndexPopulator batchingPopulator, IndexDescriptor descriptor )
     {
         IndexPopulator populator = mock( IndexPopulator.class );
 
@@ -229,10 +229,11 @@ public class BatchingMultipleIndexPopulatorTest
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget( indexProxyFactory );
 
+        IndexRepresentation indexRepresentation = new ValueIndexRepresentation( descriptor, mock( IndexStatisticsStore.class ), tokens );
         batchingPopulator.addPopulator( populator,
-                                        descriptor,
-                                        flipper,
-                                        failedIndexProxyFactory, "testIndex" );
+                indexRepresentation,
+                flipper,
+                failedIndexProxyFactory );
 
         return populator;
     }

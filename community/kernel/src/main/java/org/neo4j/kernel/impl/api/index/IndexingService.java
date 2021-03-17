@@ -73,6 +73,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -816,7 +817,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private IndexPopulationJob newIndexPopulationJob( EntityType type, boolean verifyBeforeFlipping, Subject subject )
     {
-        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, internalLogProvider, type, schemaState, indexStatisticsStore,
+        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, internalLogProvider, type, schemaState,
                 jobScheduler, tokenNameLookup, pageCacheTracer, memoryTracker, databaseName, subject, config );
         return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping, pageCacheTracer, memoryTracker, databaseName, subject, NODE, config );
     }

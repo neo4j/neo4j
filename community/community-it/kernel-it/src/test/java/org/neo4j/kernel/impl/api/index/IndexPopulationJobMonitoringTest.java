@@ -27,6 +27,8 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.schema.SchemaTestUtil;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobMonitoringParams;
 
@@ -118,7 +120,8 @@ class IndexPopulationJobMonitoringTest
     {
         var idxPrototype = IndexPrototype.forSchema( mock( SchemaDescriptor.class ) ).withName( indexName );
         var indexDescriptor = idxPrototype.materialise( 99 );
-        job.addPopulator( null, indexDescriptor, null, null, null );
+        var indexProxyInfo = new ValueIndexRepresentation( indexDescriptor, mock( IndexStatisticsStore.class ), SchemaTestUtil.SIMPLE_NAME_LOOKUP );
+        job.addPopulator( null, indexProxyInfo, null, null );
     }
 
     private void verifyCurrentState( JobMonitoringParams monitoringParams, String expectedCurrentStateDescription )

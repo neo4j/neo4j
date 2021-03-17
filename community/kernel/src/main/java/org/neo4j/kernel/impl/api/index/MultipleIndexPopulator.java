@@ -93,7 +93,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * Usage of this class should be something like:
  * <ol>
  * <li>Instantiation.</li>
- * <li>One or more calls to {@link #addPopulator(IndexPopulator, IndexDescriptor, FlippableIndexProxy, FailedIndexProxyFactory, String)}.</li>
+ * <li>One or more calls to {@link #addPopulator(IndexPopulator, IndexRepresentation, FlippableIndexProxy, FailedIndexProxyFactory)}.</li>
  * <li>Call to {@link #create(PageCursorTracer)} to create data structures and files to start accepting updates.</li>
  * <li>Call to {@link #createStoreScan(PageCacheTracer)} and {@link StoreScan#run(StoreScan.ExternalUpdatesCheck)}(blocking call).</li>
  * <li>While all nodes are being indexed, calls to {@link #queueConcurrentUpdate(IndexEntryUpdate)} are accepted.</li>
@@ -135,7 +135,6 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
     private final Log log;
     private final EntityType type;
     private final SchemaState schemaState;
-    private final IndexStatisticsStore indexStatisticsStore;
     private final PhaseTracker phaseTracker;
     private final JobScheduler jobScheduler;
     private final PageCursorTracer cursorTracer;
@@ -146,7 +145,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
     private final Subject subject;
 
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
-            IndexStatisticsStore indexStatisticsStore, JobScheduler jobScheduler, TokenNameLookup tokenNameLookup, PageCacheTracer cacheTracer,
+            JobScheduler jobScheduler, TokenNameLookup tokenNameLookup, PageCacheTracer cacheTracer,
             MemoryTracker memoryTracker, String databaseName, Subject subject, Config config )
     {
         this.storeView = storeView;
@@ -157,7 +156,6 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
         this.log = logProvider.getLog( IndexPopulationJob.class );
         this.type = type;
         this.schemaState = schemaState;
-        this.indexStatisticsStore = indexStatisticsStore;
         this.phaseTracker = new LoggingPhaseTracker( logProvider.getLog( IndexPopulationJob.class ) );
         this.jobScheduler = jobScheduler;
         this.tokenNameLookup = tokenNameLookup;
@@ -170,18 +168,18 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
         this.batchMaxByteSizeScan = config.get( GraphDatabaseInternalSettings.index_population_batch_max_byte_size ).intValue();
     }
 
-    IndexPopulation addPopulator( IndexPopulator populator, IndexDescriptor indexDescriptor, FlippableIndexProxy flipper,
-            FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
+    IndexPopulation addPopulator( IndexPopulator populator, IndexRepresentation indexRepresentation, FlippableIndexProxy flipper,
+            FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        IndexPopulation population = createPopulation( populator, indexDescriptor, flipper, failedIndexProxyFactory, indexUserDescription );
+        IndexPopulation population = createPopulation( populator, indexRepresentation, flipper, failedIndexProxyFactory );
         populations.add( population );
         return population;
     }
 
-    private IndexPopulation createPopulation( IndexPopulator populator, IndexDescriptor indexDescriptor, FlippableIndexProxy flipper,
-            FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
+    private IndexPopulation createPopulation( IndexPopulator populator, IndexRepresentation indexRepresentation, FlippableIndexProxy flipper,
+            FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        return new IndexPopulation( populator, indexDescriptor, flipper, failedIndexProxyFactory, indexUserDescription );
+        return new IndexPopulation( populator, indexRepresentation, flipper, failedIndexProxyFactory );
     }
 
     boolean hasPopulators()
@@ -193,7 +191,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
     {
         forEachPopulation( population ->
         {
-            log.info( "Index population started: [%s]", population.indexUserDescription );
+            log.info( "Index population started: [%s]", population.getUserDescription() );
             population.create();
         }, cursorTracer );
     }
@@ -283,7 +281,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
             }
         }
 
-        log.error( format( "Failed to populate index: [%s]", population.indexUserDescription ), failure );
+        log.error( format( "Failed to populate index: [%s]", population.getUserDescription() ), failure );
 
         // The flipper will have already flipped to a failed index context here, but
         // it will not include the cause of failure, so we do another flip to a failed
@@ -301,8 +299,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
         }
         catch ( Throwable e )
         {
-            log.error( format( "Unable to close failed populator for index: [%s]",
-                    population.indexUserDescription ), e );
+            log.error( format( "Unable to close failed populator for index: [%s]", population.getUserDescription() ), e );
         }
     }
 
@@ -340,7 +337,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
 
     private void resetIndexCountsForPopulation( IndexPopulation indexPopulation )
     {
-        indexStatisticsStore.replaceStats( indexPopulation.indexId, new IndexSample( 0, 0, 0 ) );
+        indexPopulation.indexRepresentation.replaceStatisticsForIndex( new IndexSample( 0, 0, 0 ) );
     }
 
     /**
@@ -591,27 +588,23 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
     {
         public final IndexPopulator populator;
         final FlippableIndexProxy flipper;
-        private final long indexId;
-        private final IndexDescriptor indexDescriptor;
+        private final IndexRepresentation indexRepresentation;
         private final FailedIndexProxyFactory failedIndexProxyFactory;
-        private final String indexUserDescription;
         private boolean populationOngoing = true;
         private final ReentrantLock populatorLock = new ReentrantLock();
 
-        IndexPopulation( IndexPopulator populator, IndexDescriptor indexDescriptor, FlippableIndexProxy flipper,
-                FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
+        IndexPopulation( IndexPopulator populator, IndexRepresentation indexRepresentation, FlippableIndexProxy flipper,
+                FailedIndexProxyFactory failedIndexProxyFactory )
         {
             this.populator = populator;
-            this.indexDescriptor = indexDescriptor;
-            this.indexId = indexDescriptor.getId();
+            this.indexRepresentation = indexRepresentation;
             this.flipper = flipper;
             this.failedIndexProxyFactory = failedIndexProxyFactory;
-            this.indexUserDescription = indexUserDescription;
         }
 
         private void cancel( IndexPopulationFailure failure )
         {
-            flipper.flipTo( new FailedIndexProxy( indexDescriptor, indexUserDescription, populator, failure, indexStatisticsStore, logProvider ) );
+            flipper.flipTo( new FailedIndexProxy( indexRepresentation, populator, failure, logProvider ) );
         }
 
         void create() throws IOException
@@ -686,10 +679,10 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
                             {
                                 populator.verifyDeferredConstraints( propertyAccessor );
                             }
-                            if ( indexDescriptor.getIndexType() != IndexType.LOOKUP )
+                            if ( indexRepresentation.getIndexDescriptor().getIndexType() != IndexType.LOOKUP )
                             {
                                 IndexSample sample = populator.sample( cursorTracer );
-                                indexStatisticsStore.replaceStats( indexId, sample );
+                                indexRepresentation.replaceStatisticsForIndex( sample );
                             }
                             populator.close( true, cursorTracer );
                             schemaState.clear();
@@ -710,19 +703,24 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
 
         private void logCompletionMessage()
         {
-            log.info( "Index creation finished for index [%s].", indexUserDescription );
+            log.info( "Index creation finished for index [%s].", indexRepresentation.getIndexUserDescription() );
         }
 
         @Override
         public SchemaDescriptor schema()
         {
-            return indexDescriptor.schema();
+            return indexRepresentation.getIndexDescriptor().schema();
         }
 
         @Override
         public String userDescription( TokenNameLookup tokenNameLookup )
         {
-            return indexUserDescription;
+            return indexRepresentation.getIndexDescriptor().userDescription( tokenNameLookup );
+        }
+
+        String getUserDescription()
+        {
+            return indexRepresentation.getIndexUserDescription();
         }
 
         void scanCompleted( PageCursorTracer cursorTracer ) throws IndexEntryConflictException
@@ -732,7 +730,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
                 @Override
                 public <T> JobHandle<T> schedule( IndexPopulator.JobDescriptionSupplier descriptionSupplier, Callable<T> job )
                 {
-                    var description = descriptionSupplier.getJobDescription( indexDescriptor.getName() );
+                    var description = descriptionSupplier.getJobDescription( indexRepresentation.getIndexDescriptor().getName() );
                     var jobMonitoringParams = new JobMonitoringParams( subject, databaseName, description );
                     return jobScheduler.schedule( Group.INDEX_POPULATION_WORK, jobMonitoringParams, job );
                 }

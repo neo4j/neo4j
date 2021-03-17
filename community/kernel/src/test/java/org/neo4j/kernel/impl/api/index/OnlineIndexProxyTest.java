@@ -25,6 +25,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.schema.SchemaTestUtil;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 
 import static org.mockito.Mockito.mock;
@@ -38,12 +39,13 @@ class OnlineIndexProxyTest
     private final IndexAccessor accessor = mock( IndexAccessor.class );
     private final IndexStoreView storeView = mock( IndexStoreView.class );
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
+    private final IndexRepresentation indexRepresentation = new ValueIndexRepresentation( descriptor, indexStatisticsStore, SchemaTestUtil.SIMPLE_NAME_LOOKUP );
 
     @Test
     void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped()
     {
         // given
-        OnlineIndexProxy index = new OnlineIndexProxy( descriptor, accessor, indexStatisticsStore, false );
+        OnlineIndexProxy index = new OnlineIndexProxy( indexRepresentation, accessor, false );
 
         // when
         index.drop();

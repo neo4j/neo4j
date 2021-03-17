@@ -73,6 +73,15 @@ public interface IndexProxy extends MinimalIndexAccessor
 
     IndexDescriptor getDescriptor();
 
+    /**
+     * Change the index descriptor connected to this proxy.
+     * This should only be done if the index descriptors describe the same physical index.
+     */
+    default void changeIdentity( IndexDescriptor descriptor )
+    {
+        throw new UnsupportedOperationException( "Identity of this proxy is immutable" );
+    }
+
     InternalIndexState getState();
 
     /**

@@ -1090,8 +1090,12 @@ class IndexingServiceTest
             FlippableIndexProxy flippableIndexProxy = (FlippableIndexProxy) delegate;
             Exception expectedCause = new Exception( "index was failed on purpose" );
             IndexPopulationFailure indexFailure = IndexPopulationFailure.failure( expectedCause );
-            flippableIndexProxy.flipTo( new FailedIndexProxy( indexRule, "string", mock( IndexPopulator.class ),
-                indexFailure, mock( IndexStatisticsStore.class ), internalLogProvider ) );
+
+            flippableIndexProxy.flipTo(
+                    new FailedIndexProxy( new ValueIndexRepresentation( indexRule, mock( IndexStatisticsStore.class ), nameLookup ),
+                            mock( IndexPopulator.class ),
+                            indexFailure, internalLogProvider )
+            );
             barrier.release();
             exceptionBarrier.await();
 

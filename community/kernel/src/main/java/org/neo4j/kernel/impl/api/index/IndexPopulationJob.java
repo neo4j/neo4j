@@ -29,7 +29,6 @@ import org.neo4j.common.Subject;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -48,7 +47,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.index_popula
 /**
  * A background job for initially populating one or more index over existing data in the database.
  * Use provided store view to scan store. Participating {@link IndexPopulator} are added with
- * {@link #addPopulator(IndexPopulator, IndexDescriptor, String, FlippableIndexProxy, FailedIndexProxyFactory)}
+ * {@link #addPopulator(IndexPopulator, IndexRepresentation, FlippableIndexProxy, FailedIndexProxyFactory)}
  * before {@link #run() running} this job.
  */
 public class IndexPopulationJob implements Runnable
@@ -69,7 +68,7 @@ public class IndexPopulationJob implements Runnable
     /**
      * A list of all indexes populated by this job.
      */
-    private final List<IndexDescriptor> populatedIndexes = new ArrayList<>();
+    private final List<IndexRepresentation> populatedIndexes = new ArrayList<>();
 
     private volatile StoreScan storeScan;
     private volatile boolean stopped;
@@ -99,18 +98,16 @@ public class IndexPopulationJob implements Runnable
      * Adds an {@link IndexPopulator} to be populated in this store scan. All participating populators must
      * be added before calling {@link #run()}.
      *  @param populator {@link IndexPopulator} to participate.
-     * @param indexDescriptor {@link IndexDescriptor} meta information about index.
-     * @param indexUserDescription user description of this index.
+     * @param indexRepresentation {@link IndexRepresentation} meta information about index.
      * @param flipper {@link FlippableIndexProxy} to call after a successful population.
      * @param failedIndexProxyFactory {@link FailedIndexProxyFactory} to use after an unsuccessful population.
      */
-    MultipleIndexPopulator.IndexPopulation addPopulator( IndexPopulator populator, IndexDescriptor indexDescriptor, String indexUserDescription,
+    MultipleIndexPopulator.IndexPopulation addPopulator( IndexPopulator populator, IndexRepresentation indexRepresentation,
             FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         assert storeScan == null : "Population have already started, too late to add populators at this point";
-        populatedIndexes.add( indexDescriptor );
-        return this.multiPopulator.addPopulator( populator, indexDescriptor, flipper, failedIndexProxyFactory,
-                indexUserDescription );
+        populatedIndexes.add( indexRepresentation );
+        return this.multiPopulator.addPopulator( populator, indexRepresentation, flipper, failedIndexProxyFactory );
     }
 
     /**
@@ -296,7 +293,7 @@ public class IndexPopulationJob implements Runnable
                     }
 
                     stateDescriptionBuilder.append( "'" )
-                                           .append( index.getName() )
+                                           .append( index.getIndexDescriptor().getName() )
                                            .append( "'" );
                 }
 
@@ -329,7 +326,7 @@ public class IndexPopulationJob implements Runnable
         if ( populatedIndexes.size() == 1 )
         {
             var index = populatedIndexes.get( 0 );
-            return "Population of index '" + index.getName() + "'";
+            return "Population of index '" + index.getIndexDescriptor().getName() + "'";
         }
 
         return "Population of " + populatedIndexes.size() + " '" + populatedEntityType + "' indexes";

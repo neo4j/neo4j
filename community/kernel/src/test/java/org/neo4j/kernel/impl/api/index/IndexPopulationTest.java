@@ -27,7 +27,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
@@ -55,6 +54,9 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class IndexPopulationTest
 {
+    private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
+    private final InMemoryTokens tokens = new InMemoryTokens();
+
     @Test
     void mustFlipToFailedIfFailureToApplyLastBatchWhileFlipping() throws Exception
     {
@@ -62,19 +64,17 @@ class IndexPopulationTest
         NullLogProvider logProvider = NullLogProvider.getInstance();
         IndexStoreView storeView = emptyIndexStoreViewThatProcessUpdates();
         IndexPopulator.Adapter populator = emptyPopulatorWithThrowingUpdater();
-        IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
-        FailedIndexProxy failedProxy = failedIndexProxy( populator, indexStatisticsStore );
-        OnlineIndexProxy onlineProxy = onlineIndexProxy( indexStatisticsStore );
+        FailedIndexProxy failedProxy = failedIndexProxy( populator );
+        OnlineIndexProxy onlineProxy = onlineIndexProxy();
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget( () -> onlineProxy );
-        InMemoryTokens tokens = new InMemoryTokens();
 
         MultipleIndexPopulator multipleIndexPopulator =
-                new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore,
+                new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ),
                         JobSchedulerFactory.createInitialisedScheduler(), tokens, PageCacheTracer.NULL, INSTANCE, "", AUTH_DISABLED, Config.defaults() );
 
         MultipleIndexPopulator.IndexPopulation indexPopulation =
-                multipleIndexPopulator.addPopulator( populator, dummyMeta(), flipper, t -> failedProxy, "userDescription" );
+                multipleIndexPopulator.addPopulator( populator, dummyIndex(), flipper, t -> failedProxy );
         multipleIndexPopulator.queueConcurrentUpdate( someUpdate() );
         multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL ).run( StoreScan.NO_EXTERNAL_UPDATES );
 
@@ -85,15 +85,15 @@ class IndexPopulationTest
         assertSame( InternalIndexState.FAILED, flipper.getState(), "flipper should have flipped to failing proxy" );
     }
 
-    private OnlineIndexProxy onlineIndexProxy( IndexStatisticsStore indexStatisticsStore )
+    private OnlineIndexProxy onlineIndexProxy()
     {
-        return new OnlineIndexProxy( dummyMeta(), IndexAccessor.EMPTY, indexStatisticsStore, false );
+        return new OnlineIndexProxy( dummyIndex(), IndexAccessor.EMPTY, false );
     }
 
-    private FailedIndexProxy failedIndexProxy( MinimalIndexAccessor minimalIndexAccessor, IndexStatisticsStore indexStatisticsStore )
+    private FailedIndexProxy failedIndexProxy( MinimalIndexAccessor minimalIndexAccessor )
     {
-        return new FailedIndexProxy( dummyMeta(), "userDescription", minimalIndexAccessor, IndexPopulationFailure
-                .failure( "failure" ), indexStatisticsStore, NullLogProvider.getInstance() );
+        return new FailedIndexProxy( dummyIndex(), minimalIndexAccessor, IndexPopulationFailure
+                .failure( "failure" ), NullLogProvider.getInstance() );
     }
 
     private IndexPopulator.Adapter emptyPopulatorWithThrowingUpdater()
@@ -152,9 +152,9 @@ class IndexPopulationTest
         };
     }
 
-    private IndexDescriptor dummyMeta()
+    private IndexRepresentation dummyIndex()
     {
-        return TestIndexDescriptorFactory.forLabel( 0, 0 );
+        return new ValueIndexRepresentation( TestIndexDescriptorFactory.forLabel( 0, 0 ), indexStatisticsStore, tokens );
     }
 
     private IndexEntryUpdate<LabelSchemaDescriptor> someUpdate()

@@ -34,18 +34,14 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.api.index.updater.UpdateCountingIndexUpdater;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 
 public class OnlineIndexProxy implements IndexProxy
 {
-    private final long indexId;
-    private final IndexDescriptor descriptor;
+    private final IndexRepresentation indexRepresentation;
     final IndexAccessor accessor;
-    private final IndexStatisticsStore indexStatisticsStore;
     private boolean started;
 
     // About this flag: there are two online "modes", you might say...
@@ -74,14 +70,11 @@ public class OnlineIndexProxy implements IndexProxy
     //   slightly more costly, but shouldn't make that big of a difference hopefully.
     private final boolean forcedIdempotentMode;
 
-    OnlineIndexProxy( IndexDescriptor descriptor, IndexAccessor accessor, IndexStatisticsStore indexStatisticsStore,
-            boolean forcedIdempotentMode )
+    OnlineIndexProxy( IndexRepresentation indexRepresentation, IndexAccessor accessor, boolean forcedIdempotentMode )
     {
         assert accessor != null;
-        this.indexId = descriptor.getId();
-        this.descriptor = descriptor;
+        this.indexRepresentation = indexRepresentation;
         this.accessor = accessor;
-        this.indexStatisticsStore = indexStatisticsStore;
         this.forcedIdempotentMode = forcedIdempotentMode;
     }
 
@@ -115,20 +108,26 @@ public class OnlineIndexProxy implements IndexProxy
 
     private IndexUpdater updateCountingUpdater( final IndexUpdater indexUpdater )
     {
-        return new UpdateCountingIndexUpdater( indexStatisticsStore, indexId, indexUpdater );
+        return new UpdateCountingIndexUpdater( indexRepresentation, indexUpdater );
     }
 
     @Override
     public void drop()
     {
-        indexStatisticsStore.removeIndex( getDescriptor().getId() );
+        indexRepresentation.removeStatisticsForIndex();
         accessor.drop();
     }
 
     @Override
     public IndexDescriptor getDescriptor()
     {
-        return descriptor;
+        return indexRepresentation.getIndexDescriptor();
+    }
+
+    @Override
+    public void changeIdentity( IndexDescriptor descriptor )
+    {
+        indexRepresentation.changeIndexDescriptor( descriptor );
     }
 
     @Override
@@ -218,7 +217,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + descriptor + "]";
+        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + indexRepresentation.getIndexDescriptor() + "]";
     }
 
     @Override

@@ -51,6 +51,12 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
+    public void changeIdentity( IndexDescriptor descriptor )
+    {
+        getDelegate().changeIdentity( descriptor );
+    }
+
+    @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode, PageCursorTracer cursorTracer )
     {
         return getDelegate().newUpdater( mode, cursorTracer );

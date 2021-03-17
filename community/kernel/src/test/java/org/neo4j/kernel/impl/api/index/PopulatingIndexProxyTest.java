@@ -25,7 +25,9 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaTestUtil;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -34,6 +36,8 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 class PopulatingIndexProxyTest
 {
     private final IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withName( "index" ).materialise( 13 );
+    private final IndexRepresentation indexRepresentation =
+            new ValueIndexRepresentation( index, mock( IndexStatisticsStore.class ), SchemaTestUtil.SIMPLE_NAME_LOOKUP );
     private final IndexPopulationJob indexPopulationJob = mock( IndexPopulationJob.class );
     private final IndexPopulation indexPopulation = mock( IndexPopulation.class );
     private PopulatingIndexProxy populatingIndexProxy;
@@ -41,7 +45,7 @@ class PopulatingIndexProxyTest
     @BeforeEach
     void setUp()
     {
-        populatingIndexProxy = new PopulatingIndexProxy( index, indexPopulationJob, indexPopulation );
+        populatingIndexProxy = new PopulatingIndexProxy( indexRepresentation, indexPopulationJob, indexPopulation );
     }
 
     @Test

@@ -30,7 +30,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.values.storable.Value;
@@ -39,22 +38,18 @@ import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceItera
 
 public class FailedIndexProxy extends AbstractSwallowingIndexProxy
 {
+    private final IndexRepresentation indexRepresentation;
     private final MinimalIndexAccessor minimalIndexAccessor;
-    private final String indexUserDescription;
-    private final IndexStatisticsStore indexStatisticsStore;
     private final Log log;
 
-    FailedIndexProxy( IndexDescriptor descriptor,
-            String indexUserDescription,
+    FailedIndexProxy( IndexRepresentation indexRepresentation,
             MinimalIndexAccessor minimalIndexAccessor,
             IndexPopulationFailure populationFailure,
-            IndexStatisticsStore indexStatisticsStore,
             LogProvider logProvider )
     {
-        super( descriptor, populationFailure );
+        super( indexRepresentation, populationFailure );
+        this.indexRepresentation = indexRepresentation;
         this.minimalIndexAccessor = minimalIndexAccessor;
-        this.indexUserDescription = indexUserDescription;
-        this.indexStatisticsStore = indexStatisticsStore;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -65,10 +60,16 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     }
 
     @Override
+    public void changeIdentity( IndexDescriptor descriptor )
+    {
+        indexRepresentation.changeIndexDescriptor( descriptor );
+    }
+
+    @Override
     public void drop()
     {
-        indexStatisticsStore.removeIndex( getDescriptor().getId() );
-        String message = "FailedIndexProxy#drop index on " + indexUserDescription + " dropped due to:\n" +
+        indexRepresentation.removeStatisticsForIndex();
+        String message = "FailedIndexProxy#drop index on " + indexRepresentation.getIndexUserDescription() + " dropped due to:\n" +
                      getPopulationFailure().asString();
         log.info( message );
         minimalIndexAccessor.drop();
@@ -88,7 +89,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
 
     private IndexPopulationFailedKernelException failureCause()
     {
-        return getPopulationFailure().asIndexPopulationFailure( getDescriptor().schema(), indexUserDescription );
+        return getPopulationFailure().asIndexPopulationFailure( getDescriptor().schema(), indexRepresentation.getIndexUserDescription() );
     }
 
     @Override

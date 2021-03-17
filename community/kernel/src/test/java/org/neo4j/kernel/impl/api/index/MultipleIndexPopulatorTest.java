@@ -107,7 +107,7 @@ class MultipleIndexPopulatorTest
         when( indexStoreView.visitNodes( any(), any(), any(), any(), anyBoolean(), anyBoolean(), any(), any() ) ).thenReturn( mock( StoreScan.class ) );
         schemaState = mock( SchemaState.class );
         tokens = new InMemoryTokens();
-        multipleIndexPopulator = new MultipleIndexPopulator( indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState, indexStatisticsStore,
+        multipleIndexPopulator = new MultipleIndexPopulator( indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState,
                 jobScheduler, tokens, PageCacheTracer.NULL, INSTANCE, "", AUTH_DISABLED, Config.defaults() );
     }
 
@@ -642,7 +642,8 @@ class MultipleIndexPopulatorTest
     private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexDescriptor descriptor, IndexPopulator indexPopulator,
         FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        return multipleIndexPopulator.addPopulator( indexPopulator, descriptor, flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
+        IndexRepresentation indexRepresentation = new ValueIndexRepresentation( descriptor, indexStatisticsStore, tokens );
+        return multipleIndexPopulator.addPopulator( indexPopulator, indexRepresentation, flippableIndexProxy, failedIndexProxyFactory );
     }
 
     private IndexPopulation addPopulator( IndexPopulator indexPopulator, int id ) throws FlipFailedKernelException
