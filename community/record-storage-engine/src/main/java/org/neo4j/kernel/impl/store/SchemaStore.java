@@ -445,6 +445,16 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             }
             nextProp = propRecord.getNextProp();
         }
+        if ( props.isEmpty() )
+        {
+            IndexDescriptor descriptor =
+                    IndexPrototype.forSchema( SchemaDescriptor.forAllEntityTokens( EntityType.NODE ), new IndexProviderDescriptor( "token", "1.0" ) )
+                            .withIndexType( IndexType.LOOKUP )
+                            .withName( IndexDescriptor.NLI_GENERATED_NAME )
+                            .materialise( record.getId() );
+            props.putAll( mapifySchemaRule( descriptor ) );
+
+        }
         return props;
     }
 

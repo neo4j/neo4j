@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -55,6 +56,11 @@ import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreIdUsage;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreRecords;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreVersions;
 import org.neo4j.internal.schema.IndexConfigCompleter;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -68,11 +74,13 @@ import org.neo4j.kernel.impl.store.IdUpdateListener;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockService;
@@ -415,7 +423,42 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
         //This command will be the first one in the "new" version, indicating the switch and writing it to the MetaDataStore
         LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get( versionToUpgradeTo );
-        return List.of( new Command.MetaDataCommand( serialization, before, after ) );
+
+        var commands = new ArrayList<StorageCommand>();
+        commands.add( new Command.MetaDataCommand( serialization, before, after ) );
+
+        //TODO change to the version for the drop this goes into
+        if ( usingTokenIndexes && currentVersion.isLessThan( KernelVersion.V4_3_D3 ) )
+        {
+            commands.add( createSchemaUpgradeCommand( serialization ) );
+        }
+        return commands;
+    }
+
+    private StorageCommand createSchemaUpgradeCommand( LogCommandSerialization serialization )
+    {
+        try ( var tracer = cacheTracer.createPageCursorTracer( "schema_upgrade" ) )
+        {
+            SchemaStore schemaStore = neoStores.getSchemaStore();
+            long nliId = schemaStore.nextId( tracer );
+
+            // TODO read from storage before? ask someone
+            var before = schemaStore.newRecord();
+            before.setId( nliId );
+            before.initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
+
+            var after = schemaStore.newRecord();
+            after.setId( nliId );
+            after.initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
+            after.setCreated();
+
+            var rule
+                    = IndexPrototype.forSchema( SchemaDescriptor.forAllEntityTokens( EntityType.NODE ), new IndexProviderDescriptor( "token", "1.0" ) )
+                                     .withIndexType( IndexType.LOOKUP )
+                                     .withName( IndexDescriptor.NLI_GENERATED_NAME )
+                                     .materialise( nliId );
+            return new Command.SchemaRuleCommand( serialization, before, after, rule );
+        }
     }
 
     @Override
@@ -423,7 +466,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         TransactionApplierFactoryChain batchApplier = applierChain( mode );
         CommandsToApply initialBatch = batch;
-        try ( BatchContext context =  createBatchContext( batchApplier, batch ) )
+        try ( BatchContext context = createBatchContext( batchApplier, batch ) )
         {
             while ( batch != null )
             {
