@@ -243,7 +243,7 @@ class ReversedSingleFileTransactionCursorTest
 
     private void writeTransactions( int transactionCount, int minTransactionSize, int maxTransactionSize ) throws IOException
     {
-        FlushablePositionAwareChecksumChannel channel = (FlushablePositionAwareChecksumChannel) logFile.getTransactionLogWriter().getChannel();
+        FlushablePositionAwareChecksumChannel channel = logFile.getTransactionLogWriter().getChannel();
         TransactionLogWriter writer = logFile.getTransactionLogWriter();
         int previousChecksum = BASE_TX_CHECKSUM;
         for ( int i = 0; i < transactionCount; i++ )
@@ -280,12 +280,6 @@ class ReversedSingleFileTransactionCursorTest
         public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel )
         {
             return new CorruptedLogEntryWriter<>( channel, KernelVersion.LATEST );
-        }
-
-        @Override
-        public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel, KernelVersion version )
-        {
-            return new CorruptedLogEntryWriter<>( channel, version );
         }
     }
 

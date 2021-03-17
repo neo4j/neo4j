@@ -897,12 +897,6 @@ class RecoveryCorruptedTransactionLogIT
         {
             return (LogEntryWriter<T>) logEntryWriter;
         }
-
-        @Override
-        public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel, KernelVersion version )
-        {
-            return (LogEntryWriter<T>) logEntryWriter;
-        }
     }
 
     private static class CorruptedLogEntryWrapper implements LogEntryWriterWrapper
