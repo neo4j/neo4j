@@ -32,6 +32,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.String.format;
@@ -39,11 +40,14 @@ import static java.util.Objects.requireNonNull;
 
 public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexProviderMap
 {
+    private static final String TOKEN_INDEX_PROVIDER_NAME = "token-1.0";
+
     private final Map<IndexProviderDescriptor,IndexProvider> indexProvidersByDescriptor = new HashMap<>();
     private final Map<String,IndexProvider> indexProvidersByName = new HashMap<>();
     private final DependencyResolver dependencies;
     private IndexProvider defaultIndexProvider;
     private IndexProvider fulltextIndexProvider;
+    private IndexProvider tokenIndexProvider;
     private final Config config;
 
     public DefaultIndexProviderMap( DependencyResolver dependencies, Config config )
@@ -85,6 +89,13 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
     }
 
     @Override
+    public IndexProvider getTokenIndexProvider()
+    {
+        assertInit();
+        return tokenIndexProvider;
+    }
+
+    @Override
     public IndexProvider lookup( IndexProviderDescriptor providerDescriptor )
     {
         assertInit();
@@ -121,7 +132,7 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
 
     private void assertInit()
     {
-        if ( defaultIndexProvider == null || fulltextIndexProvider == null )
+        if ( defaultIndexProvider == null || fulltextIndexProvider == null || tokenIndexProvider == null )
         {
             throw new IllegalStateException( "DefaultIndexProviderMap must be part of life cycle and initialized before getting providers." );
         }
@@ -141,6 +152,18 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
         {
             // Not all environments have the full-text index provider available.
             fulltextIndexProvider = IndexProvider.EMPTY;
+        }
+
+        if ( config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
+        {
+            var configuredTokenIndexProvider = indexProvidersByName.get( TOKEN_INDEX_PROVIDER_NAME );
+            requireNonNull( configuredTokenIndexProvider, () -> format( "Token index provider: `%s` not found. Available index providers: %s.",
+                    TOKEN_INDEX_PROVIDER_NAME, indexProvidersByName.keySet().toString() ) );
+            tokenIndexProvider = configuredTokenIndexProvider;
+        }
+        else
+        {
+            tokenIndexProvider = IndexProvider.EMPTY;
         }
     }
 

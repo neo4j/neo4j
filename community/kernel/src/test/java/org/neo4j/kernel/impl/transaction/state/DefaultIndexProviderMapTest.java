@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -62,6 +64,26 @@ class DefaultIndexProviderMapTest
         DefaultIndexProviderMap defaultIndexProviderMap = createDefaultProviderMap( dependencies, provider.getProviderDescriptor() );
         defaultIndexProviderMap.init();
         assertThrows( IndexProviderNotFoundException.class, () -> defaultIndexProviderMap.lookup( new IndexProviderDescriptor( "provider2", "1.2" ) ) );
+    }
+
+    @Test
+    void shouldInitializeTokenIndexProvider()
+    {
+        // given
+        IndexProvider tokenIndexProvider = provider( "token", "1.0" );
+        IndexProvider provider;
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( provider = provider( "provider", "1.2" ) );
+        dependencies.satisfyDependency( tokenIndexProvider );
+
+        // when
+        DefaultIndexProviderMap defaultIndexProviderMap = new DefaultIndexProviderMap( dependencies,
+                Config.newBuilder()
+                      .set( GraphDatabaseSettings.default_schema_provider, provider.getProviderDescriptor().name() )
+                      .set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true )
+                      .build() );
+        defaultIndexProviderMap.init();
+        Assertions.assertThat( defaultIndexProviderMap.getTokenIndexProvider() ).isEqualTo( tokenIndexProvider );
     }
 
     private static IndexProvider provider( String name, String version )

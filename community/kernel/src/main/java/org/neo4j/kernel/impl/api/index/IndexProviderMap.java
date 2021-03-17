@@ -65,6 +65,13 @@ public interface IndexProviderMap extends IndexConfigCompleter
     IndexProvider getFulltextProvider();
 
     /**
+     * There's always a token index provider, this method returns it.
+     *
+     * @return token index provider for this instance
+     */
+    IndexProvider getTokenIndexProvider();
+
+    /**
      * Visits all the {@link IndexProvider} with the visitor.
      *
      * @param visitor {@link Consumer} visiting all the {@link IndexProvider index providers} in this map.
@@ -99,6 +106,12 @@ public interface IndexProviderMap extends IndexConfigCompleter
 
         @Override
         public IndexProvider getFulltextProvider()
+        {
+            return IndexProvider.EMPTY;
+        }
+
+        @Override
+        public IndexProvider getTokenIndexProvider()
         {
             return IndexProvider.EMPTY;
         }
