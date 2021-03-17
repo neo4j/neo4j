@@ -134,6 +134,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final Monitor monitor;
     private final SchemaState schemaState;
     private final IndexPopulationJobController populationJobController;
+    private final boolean usingTokenIndexes;
     private static final String INIT_TAG = "Initialize IndexingService";
     private final IndexStoreView storeView;
 
@@ -250,6 +251,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.readOnlyChecker = readOnlyChecker;
         this.config = config;
         this.storeView = indexStoreViewFactory.createTokenIndexStoreView( descriptor -> indexMapRef.getIndexProxy( descriptor.getId() ) );
+        this.usingTokenIndexes = config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes );
     }
 
     /**
@@ -267,6 +269,15 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 Map<InternalIndexState,List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
                 for ( IndexDescriptor descriptor : indexDescriptors )
                 {
+                    // No index (except NLI) is allowed to have the name generated for NLI.
+                    if ( usingTokenIndexes && descriptor.getName().equals( IndexDescriptor.NLI_GENERATED_NAME ) &&
+                         !(descriptor.schema().isAnyTokenSchemaDescriptor() && descriptor.schema().entityType() == NODE) )
+                    {
+                        throw new IllegalStateException( "Index '" + descriptor.userDescription( tokenNameLookup ) + "' is using a reserved name: '" +
+                                                         IndexDescriptor.NLI_GENERATED_NAME + "'. This index must be removed on an earlier version " +
+                                                         "to be able to use binaries for version 4.3 or newer." );
+                    }
+
                     IndexProxy indexProxy;
 
                     IndexProviderDescriptor providerDescriptor = descriptor.getIndexProvider();

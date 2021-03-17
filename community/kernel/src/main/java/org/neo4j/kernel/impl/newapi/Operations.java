@@ -156,6 +156,7 @@ public class Operations implements Write, SchemaWrite
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
     private final boolean relationshipPropertyIndexesEnabled;
+    private final boolean usingTokenIndexes;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
@@ -182,6 +183,7 @@ public class Operations implements Write, SchemaWrite
         this.memoryTracker = memoryTracker;
         additionLockVerification = config.get( additional_lock_verification );
         relationshipPropertyIndexesEnabled = config.get( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes );
+        usingTokenIndexes = config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes );
     }
 
     public void initialize()
@@ -1241,6 +1243,11 @@ public class Operations implements Write, SchemaWrite
         if ( indexWithSameName != IndexDescriptor.NO_INDEX )
         {
             throw new IndexWithNameAlreadyExistsException( name );
+        }
+        if ( usingTokenIndexes && name.equals( IndexDescriptor.NLI_GENERATED_NAME ) )
+        {
+            throw new IllegalArgumentException(
+                    "The name '" + IndexDescriptor.NLI_GENERATED_NAME + "' is a reserved name and can't be used when creating indexes" );
         }
     }
 
