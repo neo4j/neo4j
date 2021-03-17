@@ -23,7 +23,6 @@ import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.map.primitive.LongIntMap;
 
-import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -80,6 +79,7 @@ import static org.neo4j.lock.LockType.SHARED;
  */
 public class ForsetiClient implements Locks.Client
 {
+    static final int NO_CLIENT_ID = -1;
     /** Id for this client */
     private final int clientId;
 
@@ -205,8 +205,8 @@ public class ForsetiClient implements Locks.Client
             for ( long resourceId : resourceIds )
             {
                 // First, check if we already hold this as a shared lock
-                int heldCount = heldShareLocks.getIfAbsent( resourceId, -1 );
-                if ( heldCount != -1 )
+                int heldCount = heldShareLocks.getIfAbsent( resourceId, NO_CLIENT_ID );
+                if ( heldCount != NO_CLIENT_ID )
                 {
                     // We already have a lock on this, just increment our local reference counter.
                     heldShareLocks.put( resourceId, Math.incrementExact( heldCount ) );
@@ -338,8 +338,8 @@ public class ForsetiClient implements Locks.Client
 
             for ( long resourceId : resourceIds )
             {
-                int heldCount = heldLocks.getIfAbsent( resourceId, -1 );
-                if ( heldCount != -1 )
+                int heldCount = heldLocks.getIfAbsent( resourceId, NO_CLIENT_ID );
+                if ( heldCount != NO_CLIENT_ID )
                 {
                     // We already have a lock on this, just increment our local reference counter.
                     heldLocks.put( resourceId, Math.incrementExact( heldCount ) );
@@ -408,8 +408,8 @@ public class ForsetiClient implements Locks.Client
             ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap = lockMaps[resourceType.typeId()];
             HeapTrackingLongIntHashMap heldLocks = getExclusiveLockCount( resourceType );
 
-            int heldCount = heldLocks.getIfAbsent( resourceId, -1 );
-            if ( heldCount != -1 )
+            int heldCount = heldLocks.getIfAbsent( resourceId, NO_CLIENT_ID );
+            if ( heldCount != NO_CLIENT_ID )
             {
                 // We already have a lock on this, just increment our local reference counter.
                 heldLocks.put( resourceId, Math.incrementExact( heldCount ) );
@@ -462,8 +462,8 @@ public class ForsetiClient implements Locks.Client
             HeapTrackingLongIntHashMap heldShareLocks = getSharedLockCount( resourceType );
             HeapTrackingLongIntHashMap heldExclusiveLocks = getExclusiveLockCount( resourceType );
 
-            int heldCount = heldShareLocks.getIfAbsent( resourceId, -1 );
-            if ( heldCount != -1 )
+            int heldCount = heldShareLocks.getIfAbsent( resourceId, NO_CLIENT_ID );
+            if ( heldCount != NO_CLIENT_ID )
             {
                 // We already have a lock on this, just increment our local reference counter.
                 heldShareLocks.put( resourceId, Math.incrementExact( heldCount ) );
@@ -810,8 +810,8 @@ public class ForsetiClient implements Locks.Client
     /** Release a lock locally, and return true if we still hold more references to that lock. */
     private boolean releaseLocalLock( ResourceType type, long resourceId, HeapTrackingLongIntHashMap localLocks )
     {
-        int lockCount = localLocks.removeKeyIfAbsent( resourceId, -1 );
-        if ( lockCount == -1 )
+        int lockCount = localLocks.removeKeyIfAbsent( resourceId, NO_CLIENT_ID );
+        if ( lockCount == NO_CLIENT_ID )
         {
             throw new IllegalStateException( this + " cannot release lock that it does not hold: " +
                                              type + "[" + resourceId + "]." );
@@ -932,46 +932,36 @@ public class ForsetiClient implements Locks.Client
         clearAndCopyWaitList( lock );
         waitStrategies[type.typeId()].apply( tries );
 
-        int b = lock.detectDeadlock( id() );
-        if ( b != -1 && deadlockResolutionStrategy.shouldAbort( this, clientById.apply( b ) ) )
+        int id = lock.detectDeadlock( id() );
+        if ( id != NO_CLIENT_ID && deadlockResolutionStrategy.shouldAbort( this, clientById.apply( id ) ) )
         {
-            // Force the operations below to happen after the reads we do for deadlock
-            // detection in the lines above, as a way to cut down on false-positive deadlocks
-            VarHandle.acquireFence();
-
-            // Create message before we clear the wait-list, to lower the chance of the message being insane
-            String message = this + " can't acquire " + lock + " on " + type + "(" + resourceId +
-                             "), because holders of that lock " +
-                             "are waiting for " + this + ".\n Wait list:" + lock.describeWaitList();
-
-            // Minimize the risk of false positives by double-checking that the deadlock remains
-            // after we've generated a description of it.
-            if ( lock.detectDeadlock( id() ) != -1 )
+            // If the deadlock is real, then an owner of this lock must be (transitively) waiting on a lock that
+            // we own. So to verify the deadlock, we traverse the lock owners and their `waitingForLock` fields,
+            // to find a lock that has us among the owners.
+            // We only act upon the result of this method if the `tries` count is above some threshold. The reason
+            // is that the Lock.collectOwners, which is algorithm relies upon, is inherently racy, and so only
+            // reduces the probably of a false positive, but does not eliminate them.
+            if ( tries > 100 && isDeadlockReal( lock ) )
             {
-                // If the deadlock is real, then an owner of this lock must be (transitively) waiting on a lock that
-                // we own. So to verify the deadlock, we traverse the lock owners and their `waitingForLock` fields,
-                // to find a lock that has us among the owners.
-                // We only act upon the result of this method if the `tries` count is above some threshold. The reason
-                // is that the Lock.collectOwners, which is algorithm relies upon, is inherently racy, and so only
-                // reduces the probably of a false positive, but does not eliminate them.
-                if ( isDeadlockReal( lock, tries ) )
+                String message = this + " can't acquire " + lock + " on " + type + "(" + resourceId +
+                        "), because holders of that lock " +
+                        "are waiting for " + this + ".\n Wait list:" + lock.describeWaitList();
+                if ( verboseDeadlocks )
                 {
-                    if ( verboseDeadlocks )
+                    StringBuilder sb = new StringBuilder();
+                    sb.append( " All locks:[" );
+                    for ( int i = 0; i < lockMaps.length; i++ )
                     {
-                        StringBuilder sb = new StringBuilder();
-                        sb.append( " All locks:[" );
-                        for ( int i = 0; i < lockMaps.length; i++ )
-                        {
-                            sb.append( ResourceTypes.fromId( i ) ).append( "[" );
-                            sb.append( lockMaps[i] ).append( "]" );
-                        }
-                        sb.append( "]" );
-                        message += sb.toString();
+                        sb.append( ResourceTypes.fromId( i ) ).append( "[" );
+                        sb.append( lockMaps[i] ).append( "]" );
                     }
-                    // After checking several times, this really does look like a real deadlock.
-                    throw new DeadlockDetectedException( message );
+                    sb.append( "]" );
+                    message += sb.toString();
                 }
+                // After checking several times, this really does look like a real deadlock.
+                throw new DeadlockDetectedException( message );
             }
+            Thread.yield();
         }
     }
 
@@ -981,7 +971,7 @@ public class ForsetiClient implements Locks.Client
         lock.copyHolderWaitListsInto( waitList );
     }
 
-    private boolean isDeadlockReal( ForsetiLockManager.Lock lock, int tries )
+    private boolean isDeadlockReal( ForsetiLockManager.Lock lock )
     {
         Set<ForsetiLockManager.Lock> waitedUpon = new HashSet<>();
         Set<ForsetiClient> owners = new HashSet<>();
@@ -993,7 +983,7 @@ public class ForsetiClient implements Locks.Client
         {
             waitedUpon.addAll( nextWaitedUpon );
             collectNextOwners( waitedUpon, owners, nextWaitedUpon, nextOwners );
-            if ( nextOwners.contains( this ) && tries > 20 )
+            if ( nextOwners.contains( this ) )
             {
                 // Worrying... let's take a deep breath
                 nextOwners.clear();
