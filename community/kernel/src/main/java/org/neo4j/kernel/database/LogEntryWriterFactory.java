@@ -40,10 +40,10 @@ public interface LogEntryWriterFactory
         return new LogEntryWriter<>( channel, version );
     }
 
-    static <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel, TransactionRepresentation tx, LogEntryWriterFactory factory )
+    static <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel, TransactionRepresentation tx )
     {
-        KernelVersion version = tx.version();
-        return version != null ? factory.createEntryWriter( channel, version ) : factory.createEntryWriter( channel );
+        var version = tx.version() == null ? KernelVersion.LATEST : tx.version();
+        return new LogEntryWriter<>( channel, version );
     }
 
     LogEntryWriterFactory LATEST = new LogEntryWriterFactory()
