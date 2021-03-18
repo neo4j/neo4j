@@ -71,6 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
@@ -927,7 +928,7 @@ class MetaDataStoreTest
         //then
         try ( MetaDataStore store = newMetaDataStore() )
         {
-            var storedDatabaseId = MetaDataStore.getDatabaseId( pageCache, store.storageFile, NULL );
+            var storedDatabaseId = MetaDataStore.getDatabaseId( pageCache, store.storageFile, DEFAULT_DATABASE_NAME, NULL );
             assertThat( storedDatabaseId ).hasValue( databaseIdUuid );
         }
     }
@@ -939,7 +940,7 @@ class MetaDataStoreTest
         try ( MetaDataStore store = newMetaDataStore() )
         {
             // when
-            var storeDatabaseId = MetaDataStore.getDatabaseId( pageCache, store.storageFile, NULL );
+            var storeDatabaseId = MetaDataStore.getDatabaseId( pageCache, store.storageFile, DEFAULT_DATABASE_NAME, NULL );
 
             // then
             assertThat( storeDatabaseId ).isEmpty();

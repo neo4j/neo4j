@@ -420,12 +420,12 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setRecord( DATABASE_ID_LEAST_SIGN_BITS, uuid.getLeastSignificantBits(), cursorTracer );
     }
 
-    public static Optional<UUID> getDatabaseId( PageCache pageCache, Path neoStore, PageCursorTracer cursorTracer )
+    public static Optional<UUID> getDatabaseId( PageCache pageCache, Path neoStore, String dabaseName, PageCursorTracer cursorTracer )
     {
         try
         {
-            var msb = getRecord( pageCache, neoStore, Position.DATABASE_ID_MOST_SIGN_BITS, cursorTracer );
-            var lsb = getRecord( pageCache, neoStore, Position.DATABASE_ID_LEAST_SIGN_BITS, cursorTracer );
+            var msb = getRecord( pageCache, neoStore, Position.DATABASE_ID_MOST_SIGN_BITS, dabaseName, cursorTracer );
+            var lsb = getRecord( pageCache, neoStore, Position.DATABASE_ID_LEAST_SIGN_BITS, dabaseName, cursorTracer );
             var uuid = new UUID( msb, lsb );
             if ( isNotInitializedUUID( uuid ) || (msb == FIELD_NOT_PRESENT && lsb == FIELD_NOT_PRESENT) )
             {
