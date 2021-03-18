@@ -31,6 +31,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationCommand
       ("REMOVE ROLE", ast.RemoveRoleAction),
       ("ROLE MANAGEMENT", ast.AllRoleActions),
       ("CREATE USER", ast.CreateUserAction),
+      ("RENAME USER", ast.RenameUserAction),
       ("DROP USER", ast.DropUserAction),
       ("SHOW USER", ast.ShowUserAction),
       ("SET PASSWORD", ast.SetPasswordsAction),

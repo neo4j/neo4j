@@ -54,6 +54,8 @@ import org.neo4j.cypher.internal.ast.RemovePrivilegeAction
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameRoleAction
+import org.neo4j.cypher.internal.ast.RenameUser
+import org.neo4j.cypher.internal.ast.RenameUserAction
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.RevokeBothType
 import org.neo4j.cypher.internal.ast.RevokeDenyType
@@ -158,6 +160,12 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(
           plans.CreateUser(source, userName, isEncryptedPassword, initialPassword, userOptions.requirePasswordChange.getOrElse(true), userOptions.suspended, userOptions.homeDatabase),
           prettifier.asString(c)))
+
+      // RENAME USER foo [IF EXISTS] TO bar
+      case c@RenameUser(fromUserName, toUserName, ifExists) =>
+        val admin = plans.AssertDbmsAdmin(RenameUserAction)
+        val source = if (ifExists) plans.DoNothingIfNotExists(admin, "User", fromUserName, "rename") else admin
+        Some(plans.LogSystemCommand(plans.RenameUser(source, fromUserName, toUserName), prettifier.asString(c)))
 
       // DROP USER foo [IF EXISTS]
       case c@DropUser(userName, ifExists) =>

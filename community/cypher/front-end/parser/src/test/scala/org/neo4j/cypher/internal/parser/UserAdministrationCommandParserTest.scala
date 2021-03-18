@@ -484,6 +484,92 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
     failsToParse
   }
 
+    // Renaming role
+
+  test("RENAME USER foo TO bar") {
+    yields(ast.RenameUser(literalFoo, literalBar, ifExists = false))
+  }
+
+  test("RENAME USER foo TO $bar") {
+    yields(ast.RenameUser(literalFoo, param("bar"), ifExists = false))
+  }
+
+  test("RENAME USER $foo TO bar") {
+    yields(ast.RenameUser(param("foo"), literalBar, ifExists = false))
+  }
+
+  test("RENAME USER $foo TO $bar") {
+    yields(ast.RenameUser(param("foo"), param("bar"), ifExists = false))
+  }
+
+  test("RENAME USER foo IF EXISTS TO bar") {
+    yields(ast.RenameUser(literalFoo, literalBar, ifExists = true))
+  }
+
+  test("RENAME USER foo IF EXISTS TO $bar") {
+    yields(ast.RenameUser(literalFoo, param("bar"), ifExists = true))
+  }
+
+  test("RENAME USER $foo IF EXISTS TO bar") {
+    yields(ast.RenameUser(param("foo"), literalBar, ifExists = true))
+  }
+
+  test("RENAME USER $foo IF EXISTS TO $bar") {
+    yields(ast.RenameUser(param("foo"), param("bar"), ifExists = true))
+  }
+
+  test("RENAME USER foo TO ``") {
+    yields(ast.RenameUser(literalFoo, literalEmpty, ifExists = false))
+  }
+
+  test("RENAME USER `` TO bar") {
+    yields(ast.RenameUser(literalEmpty, literalBar, ifExists = false))
+  }
+
+  test("RENAME USER foo TO") {
+    failsToParse
+  }
+
+  test("RENAME USER TO bar") {
+    failsToParse
+  }
+
+  test("RENAME USER TO") {
+    failsToParse
+  }
+
+  test("RENAME USER foo SET NAME TO bar") {
+    failsToParse
+  }
+
+  test("RENAME USER foo SET NAME bar") {
+    failsToParse
+  }
+
+  test("RENAME USER foo IF EXIST TO bar") {
+    failsToParse
+  }
+
+  test("RENAME USER foo IF NOT EXISTS TO bar") {
+    failsToParse
+  }
+
+  test("RENAME USER foo TO bar IF EXISTS") {
+    failsToParse
+  }
+
+  test("RENAME IF EXISTS USER foo TO bar") {
+    failsToParse
+  }
+
+  test("RENAME OR REPLACE USER foo TO bar") {
+    failsToParse
+  }
+
+  test("RENAME USER foo TO bar SET PASSWORD 'secret'") {
+    failsToParse
+  }
+
   //  Dropping user
 
   test("DROP USER foo") {
@@ -654,6 +740,14 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("ALTER USER foo SET HOME DATABASE `#dfkfop!`") {
     yields(ast.AlterUser(literalFoo, None, None, ast.UserOptions(None, None, Some(ast.SetHomeDatabaseAction(Left("#dfkfop!")))), ifExists = false))
+  }
+
+  test("ALTER USER foo RENAME TO bar") {
+    failsToParse
+  }
+
+  test("ALTER USER foo SET NAME bar") {
+    failsToParse
   }
 
   test("ALTER user command finds password literal at correct offset") {

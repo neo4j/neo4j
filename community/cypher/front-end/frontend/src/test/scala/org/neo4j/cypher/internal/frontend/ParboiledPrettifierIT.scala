@@ -651,6 +651,21 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "create user abc set plaintext password $password" ->
       "CREATE USER abc SET PASSWORD $password CHANGE REQUIRED",
 
+    "rename user alice to bob" ->
+      "RENAME USER alice TO bob",
+
+    "rename user `a%i$e` if exists to `b!b`" ->
+      "RENAME USER `a%i$e` IF EXISTS TO `b!b`",
+
+    "rename user $param to bob" ->
+      "RENAME USER $param TO bob",
+
+    "rename user alice to $other" ->
+      "RENAME USER alice TO $other",
+
+    "rename user $param IF EXISTS to $other" ->
+      "RENAME USER $param IF EXISTS TO $other",
+
     "alter user abc set password 'foo'" ->
       "ALTER USER abc SET PASSWORD '******'",
 
@@ -1608,6 +1623,9 @@ class ParboiledPrettifierIT extends CypherFunSuite {
 
           s"$action create user on dbms $preposition $$role" ->
             s"$action CREATE USER ON DBMS $preposition $$role",
+
+          s"$action rename user on dbms $preposition role" ->
+            s"$action RENAME USER ON DBMS $preposition role",
 
           s"$action drop user on dbms $preposition role" ->
             s"$action DROP USER ON DBMS $preposition role",

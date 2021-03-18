@@ -210,6 +210,7 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RenameRole
+import org.neo4j.cypher.internal.logical.plans.RenameUser
 import org.neo4j.cypher.internal.logical.plans.RequireRole
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
@@ -1203,7 +1204,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(
       CreateUser(privLhsLP, util.Left("name"), isEncryptedPassword = false, varFor("password"), requirePasswordChange = false, suspended = None, defaultDatabase = None),1.0), adminPlanDescription)
 
-    assertGood(attach(DropUser(privLhsLP, util.Left("name")), 1.0), adminPlanDescription)
+   assertGood(attach(RenameUser(privLhsLP, util.Left("user1"), Left("user2")), 1.0), adminPlanDescription)
+
+     assertGood(attach(DropUser(privLhsLP, util.Left("name")), 1.0), adminPlanDescription)
 
     assertGood(attach(AlterUser(privLhsLP, util.Left("name"), isEncryptedPassword = Some(true), None, requirePasswordChange = Some(true), suspended = Some(false), defaultDatabase = None), 1.0), adminPlanDescription)
 

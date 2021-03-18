@@ -296,4 +296,37 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       parameterConverter = mapper
     )
   }
+
+  protected def makeRenameExecutionPlan(entity: String,
+                                        fromName: Either[String, Parameter],
+                                        toName: Either[String, Parameter],
+                                        initFunction: MapValue => Boolean)
+                                       (sourcePlan: Option[ExecutionPlan], normalExecutionEngine: ExecutionEngine): ExecutionPlan = {
+    val fromNameFields = getNameFields("fromName", fromName)
+    val toNameFields = getNameFields("toName", toName)
+    val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => toNameFields.nameConverter(tx, fromNameFields.nameConverter(tx, p))
+
+    UpdatingSystemCommandExecutionPlan("CreateRole", normalExecutionEngine,
+      s"""MATCH (old:$entity {name: $$`${fromNameFields.nameKey}`})
+         |SET old.name = $$`${toNameFields.nameKey}`
+         |RETURN old.name
+        """.stripMargin,
+      VirtualValues.map(Array(fromNameFields.nameKey, toNameFields.nameKey), Array(fromNameFields.nameValue, toNameFields.nameValue)),
+      QueryHandler
+        .handleNoResult(p => Some(new InvalidArgumentException(s"Failed to rename the specified ${entity.toLowerCase} '${runtimeValue(fromName, p)}' to " +
+          s"'${runtimeValue(toName, p)}': The ${entity.toLowerCase} '${runtimeValue(fromName, p)}' does not exist.")))
+        .handleError((error, p) => (error, error.getCause) match {
+          case (_, _: UniquePropertyValueValidationException) =>
+            new InvalidArgumentException(s"Failed to rename the specified ${entity.toLowerCase} '${runtimeValue(fromName, p)}' to " +
+              s"'${runtimeValue(toName, p)}': " + s"$entity '${runtimeValue(toName, p)}' already exists.", error)
+          case (e: HasStatus, _) if e.status() == Status.Cluster.NotALeader =>
+            new DatabaseAdministrationOnFollowerException(s"Failed to rename the specified ${entity.toLowerCase} '${runtimeValue(fromName, p)}': $followerError", error)
+          case _ =>
+            new IllegalStateException(s"Failed to rename the specified ${entity.toLowerCase} '${runtimeValue(fromName, p)}' to '${runtimeValue(toName, p)}'.", error)
+        }),
+      sourcePlan,
+      initFunction = initFunction,
+      parameterConverter = mapValueConverter
+    )
+  }
 }

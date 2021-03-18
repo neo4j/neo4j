@@ -74,6 +74,7 @@ public enum PrivilegeAction
 
     SHOW_USER,
     CREATE_USER,
+    RENAME_USER,
     SET_USER_STATUS,
     SET_PASSWORDS,
     SET_USER_HOME_DATABASE,
@@ -199,6 +200,7 @@ public enum PrivilegeAction
                     {
                     case SHOW_USER:
                     case CREATE_USER:
+                    case RENAME_USER:
                     case DROP_USER:
                         return true;
                     default:

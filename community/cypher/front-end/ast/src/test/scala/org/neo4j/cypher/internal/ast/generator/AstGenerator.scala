@@ -160,6 +160,7 @@ import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameRoleAction
+import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
@@ -1315,6 +1316,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     // hence the explicit 'Some(requirePasswordChange)'
   } yield CreateUser(userName, isEncryptedPassword, password, UserOptions(Some(requirePasswordChange), suspended, homeDatabase), ifExistsDo)(pos)
 
+  def _renameUser: Gen[RenameUser] = for {
+    fromUserName <- _nameAsEither
+    toUserName   <- _nameAsEither
+    ifExists     <- boolean
+  } yield RenameUser(fromUserName, toUserName, ifExists)(pos)
+
   def _dropUser: Gen[DropUser] = for {
     userName <- _nameAsEither
     ifExists <- boolean
@@ -1342,6 +1349,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     _showUsers,
     _showCurrentUser,
     _createUser,
+    _renameUser,
     _dropUser,
     _alterUser,
     _setOwnPassword

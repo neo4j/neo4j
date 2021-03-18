@@ -43,6 +43,8 @@ import org.neo4j.cypher.internal.logical.plans.DropUser
 import org.neo4j.cypher.internal.logical.plans.EnsureNodeExists
 import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NameValidator
+import org.neo4j.cypher.internal.logical.plans.RenameUser
 import org.neo4j.cypher.internal.logical.plans.SetOwnPassword
 import org.neo4j.cypher.internal.logical.plans.ShowCurrentUser
 import org.neo4j.cypher.internal.logical.plans.ShowDatabase
@@ -203,6 +205,16 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       else {
         makeCreateUserExecutionPlan(userName, isEncryptedPassword, password, requirePasswordChange, suspended = false, defaultDatabase = None)(sourcePlan, normalExecutionEngine)
       }
+
+    // RENAME USER
+    case RenameUser(source, fromUserName, toUserName) => context =>
+      val sourcePlan: Option[ExecutionPlan] = Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
+      makeRenameExecutionPlan("User", fromUserName, toUserName,
+        params => {
+          val toName = runtimeValue(toUserName, params)
+          NameValidator.assertValidUsername(toName)
+        }
+      )(sourcePlan, normalExecutionEngine)
 
     // ALTER USER foo [SET [PLAINTEXT | ENCRYPTED] PASSWORD pw] [CHANGE [NOT] REQUIRED]
     case AlterUser(source, userName, isEncryptedPassword, password, requirePasswordChange, suspended, defaultDatabase) => context =>

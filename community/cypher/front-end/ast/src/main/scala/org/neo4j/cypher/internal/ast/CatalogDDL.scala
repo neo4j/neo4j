@@ -284,6 +284,16 @@ final case class RenameRole(fromRoleName: Either[String, Parameter], toRoleName:
       SemanticState.recordCurrentScope(this)
 }
 
+final case class RenameUser(fromUserName: Either[String, Parameter], toUserName: Either[String, Parameter], ifExists: Boolean)
+                           (val position: InputPosition) extends WriteAdministrationCommand {
+
+  override def name: String = "RENAME USER"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+}
+
 final case class DropRole(roleName: Either[String, Parameter], ifExists: Boolean)(val position: InputPosition) extends WriteAdministrationCommand {
 
   override def name = "DROP ROLE"
@@ -559,6 +569,8 @@ case object AllUserActions extends UserManagementAction("USER MANAGEMENT")
 case object ShowUserAction extends UserManagementAction("SHOW USER")
 
 case object CreateUserAction extends UserManagementAction("CREATE USER")
+
+case object RenameUserAction extends RoleManagementAction("RENAME USER")
 
 case object SetUserStatusAction extends UserManagementAction("SET USER STATUS")
 

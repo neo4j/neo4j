@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.RenameRole
+import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.ShowConstraints
@@ -151,6 +152,9 @@ object Additions {
 
       case c: RenameRole =>
         throw cypherExceptionFactory.syntaxException("Changing a role name is not supported in this Cypher version.", c.position)
+
+      case c: RenameUser =>
+        throw cypherExceptionFactory.syntaxException("Changing a username is not supported in this Cypher version.", c.position)
 
       case c: ShowIndexesClause if c.where.isDefined || c.hasYield =>
         throw cypherExceptionFactory.syntaxException("Using YIELD or WHERE to list indexes is not supported in this Cypher version.", c.position)

@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher
 
-import java.util
-import java.util.Collections
-
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.auth_enabled
@@ -41,6 +38,8 @@ import org.neo4j.kernel.api.security.AuthManager
 import org.neo4j.server.security.auth.SecurityTestUtils
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
+import java.util
+import java.util.Collections
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 //noinspection RedundantDefaultArgument
@@ -50,11 +49,13 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
   private val defaultUser = user(defaultUsername)
   private val defaultUserMap = Map("user" -> defaultUsername)
   private val username = "foo"
+  private val newUsername = "oof"
   private val userFoo = user(username)
   private val userFooMap = Map("user" -> username)
   private val password = "bar"
   private val newPassword = "new"
   private val wrongPassword = "wrong"
+  private val alterDefaultUserQuery = s"ALTER USER $defaultUsername SET PASSWORD '$password' CHANGE NOT REQUIRED"
 
   override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(auth_enabled -> java.lang.Boolean.TRUE)
 
@@ -728,6 +729,130 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
   test("should fail when creating user when not on system database") {
     assertFailWhenNotOnSystem("CREATE USER foo SET PASSWORD 'bar'", "CREATE USER")
+  }
+
+
+  // Test for renaming users
+
+  test("should rename user") {
+    // GIVEN
+    prepareUser()
+
+    // WHEN
+    execute(s"RENAME USER $username TO $newUsername")
+
+    // THEN
+    testUserLogin(username, password, AuthenticationResult.FAILURE)
+    testUserLogin(newUsername, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should rename user with parameter for new username") {
+    // GIVEN
+    prepareUser()
+
+    // WHEN
+    execute(s"RENAME USER $username TO $$to", Map("to" -> newUsername))
+
+    // THEN
+    testUserLogin(username, password, AuthenticationResult.FAILURE)
+    testUserLogin(newUsername, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should rename user with parameter for old username") {
+    // GIVEN
+    prepareUser()
+
+    // WHEN
+    execute(s"RENAME USER $$from TO $newUsername", Map("from" -> username))
+
+    // THEN
+    testUserLogin(username, password, AuthenticationResult.FAILURE)
+    testUserLogin(newUsername, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should rename user with parameters for both inputs") {
+    // GIVEN
+    prepareUser()
+
+    // WHEN
+    execute("RENAME USER $from TO $to", Map("from" -> username, "to" -> newUsername))
+
+    // THEN
+    testUserLogin(username, password, AuthenticationResult.FAILURE)
+    testUserLogin(newUsername, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should rename default user") {
+    // GIVEN
+    execute(alterDefaultUserQuery)
+
+    // WHEN
+    execute(s"RENAME USER $defaultUsername TO $newUsername")
+
+    // THEN
+    testUserLogin(defaultUsername, password, AuthenticationResult.FAILURE)
+    testUserLogin(newUsername, password, AuthenticationResult.SUCCESS)
+  }
+
+  test("should rename existing user using if exists") {
+    // GIVEN
+    prepareUser()
+
+    // WHEN
+    execute(s"RENAME USER $username IF EXISTS TO $newUsername")
+
+    // THEN
+    testUserLogin(username, password, AuthenticationResult.FAILURE)
+    testUserLogin(newUsername, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should fail when renaming non-existing user") {
+    // WHEN
+    val exception = the[InvalidArgumentException] thrownBy execute(s"RENAME USER iDontExist TO $newUsername")
+
+    // THEN
+    exception.getMessage should startWith(s"Failed to rename the specified user 'iDontExist' to '$newUsername': The user 'iDontExist' does not exist.")
+    execute("SHOW USERS").toSet should be(Set(defaultUser))
+  }
+
+  test("should do nothing when renaming non-existing role if exists") {
+    // WHEN
+    execute(s"RENAME USER iDontExist IF EXISTS TO $newUsername")
+
+    // THEN
+    execute("SHOW USERS").toSet should be(Set(defaultUser))
+  }
+
+  test("should not rename to existing name") {
+    // GIVEN
+    prepareUser()
+    execute(s"CREATE USER $newUsername SET PASSWORD '$newPassword'")
+
+    // WHEN
+    val exception = the[InvalidArgumentException] thrownBy execute(s"RENAME USER $username TO $newUsername")
+
+    // THEN
+    exception.getMessage should startWith(s"Failed to rename the specified user '$username' to '$newUsername': User '$newUsername' already exists.")
+
+    testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+    testUserLogin(newUsername, password, AuthenticationResult.FAILURE)
+    testUserLogin(newUsername, newPassword, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test("should not rename to existing name using if exists") {
+    // GIVEN
+    prepareUser()
+    execute(s"CREATE USER $newUsername SET PASSWORD '$newPassword'")
+
+    // WHEN
+    val exception = the[InvalidArgumentException] thrownBy execute(s"RENAME USER $username IF EXISTS TO $newUsername")
+
+    // THEN
+    exception.getMessage should startWith(s"Failed to rename the specified user '$username' to '$newUsername': User '$newUsername' already exists.")
+
+    testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+    testUserLogin(newUsername, password, AuthenticationResult.FAILURE)
+    testUserLogin(newUsername, newPassword, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
   // Tests for dropping users
