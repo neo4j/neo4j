@@ -263,4 +263,36 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
   test("WITH 1 AS x CALL { WITH x USE neo4j RETURN x AS y } RETURN x, y") {
     assertSameAST(testName)
   }
+
+  test("RETURN 0.0d as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN .0d as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 1e0d as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 0.0f as flat") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 0.0somegibberish as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 0.0 as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN NaN as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN Infinity as double") {
+    assertSameAST(testName)
+  }
 }
