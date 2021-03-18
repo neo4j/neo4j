@@ -19,7 +19,7 @@
  */
 package org.neo4j.fabric.util
 
-import org.neo4j.cypher.internal.ast.CatalogDDL
+import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.semantics.FeatureError
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
@@ -93,7 +93,7 @@ object Errors {
 
   def semantic(message: String) = throw new InvalidSemanticsException(message)
 
-  def ddlNotSupported(ddl: CatalogDDL) = throw new DatabaseAdministrationException(
+  def ddlNotSupported(ddl: AdministrationCommand) = throw new DatabaseAdministrationException(
     s"This is an administration command and it should be executed against the system database: ${ddl.name}")
 
   def entityNotFound(kind: String, needle: String): Nothing = throw new EntityNotFoundException(s"$kind not found: $needle")

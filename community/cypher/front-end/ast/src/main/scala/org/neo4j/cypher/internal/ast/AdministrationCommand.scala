@@ -39,13 +39,10 @@ import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-sealed trait CatalogDDL extends Statement with SemanticAnalysisTooling {
+sealed trait AdministrationCommand extends Statement with SemanticAnalysisTooling {
 
   def name: String
 
-}
-
-sealed trait AdministrationCommand extends CatalogDDL {
   // We parse USE to give a nice error message, but it's not considered to be a part of the AST
   private var useGraphVar: Option[UseGraph] = None
   def useGraph: Option[UseGraph] = useGraphVar
