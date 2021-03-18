@@ -91,7 +91,7 @@ public class RecordStorageEngineRule extends ExternalResource
             EntityTokenUpdateListener relationshipTypeUpdateListener, LockService lockService, TokenHolders tokenHolders,
             Config config, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter )
     {
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         RecordStorageEngine engine =
                 new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs, nullLogProvider, tokenHolders, mock( SchemaState.class ),

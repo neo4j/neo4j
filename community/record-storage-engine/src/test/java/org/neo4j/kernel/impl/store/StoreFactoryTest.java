@@ -71,7 +71,7 @@ class StoreFactoryTest
     @BeforeEach
     void setUp()
     {
-        idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() );
     }
 
     private StoreFactory storeFactory( Config config, PageCacheTracer pageCacheTracer )

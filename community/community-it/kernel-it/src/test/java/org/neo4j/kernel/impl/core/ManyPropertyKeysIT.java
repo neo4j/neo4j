@@ -133,7 +133,8 @@ class ManyPropertyKeysIT
         var cacheTracer = PageCacheTracer.NULL;
         var cursorTracer = cacheTracer.createPageCursorTracer( "databaseWithManyPropertyKeys" );
         StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(),
-                new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache, fileSystem, NullLogProvider.getInstance(), cacheTracer );
+                new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() ), pageCache, fileSystem,
+                NullLogProvider.getInstance(), cacheTracer );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )

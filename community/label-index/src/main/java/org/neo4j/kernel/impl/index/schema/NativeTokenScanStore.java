@@ -116,13 +116,13 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     private final Monitors monitors;
 
     /**
-     * {@link PageCache} to {@link PageCache#map(Path, int, ImmutableSet)}
+     * {@link PageCache} to {@link PageCache#map(Path, int, String, ImmutableSet)}
      * store file backing this token scan store. Passed to {@link GBPTree}.
      */
     private final PageCache pageCache;
 
     /**
-     * Store file {@link PageCache#map(Path, int, ImmutableSet)}.
+     * Store file {@link PageCache#map(Path, int, String, ImmutableSet)}.
      */
     private final Path storeFile;
 
@@ -141,7 +141,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     /**
      * Layout of the database.
      */
-    private final DatabaseLayout directoryStructure;
+    private final DatabaseLayout databaseLayout;
     private final Config config;
     private final PageCacheTracer cacheTracer;
     private final MemoryTracker memoryTracker;
@@ -189,19 +189,19 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
      */
     private static final Consumer<PageCursor> writeClean = pageCursor -> pageCursor.putByte( CLEAN );
 
-    NativeTokenScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
+    NativeTokenScanStore( PageCache pageCache, DatabaseLayout databaseLayout, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
             boolean readOnly, Config config, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, EntityType entityType,
             PageCacheTracer cacheTracer, MemoryTracker memoryTracker, String tokenStoreName )
     {
         this.pageCache = pageCache;
         this.fs = fs;
         this.fullStoreChangeStream = fullStoreChangeStream;
-        this.directoryStructure = directoryStructure;
+        this.databaseLayout = databaseLayout;
         this.config = config;
         this.cacheTracer = cacheTracer;
         this.memoryTracker = memoryTracker;
         boolean isLabelScanStore = entityType == EntityType.NODE;
-        this.storeFile = isLabelScanStore ? directoryStructure.labelScanStore() : directoryStructure.relationshipTypeScanStore();
+        this.storeFile = isLabelScanStore ? databaseLayout.labelScanStore() : databaseLayout.relationshipTypeScanStore();
         this.readOnly = readOnly;
         this.monitors = monitors;
         String monitorTag = isLabelScanStore ? TokenScanStore.LABEL_SCAN_STORE_MONITOR_TAG : TokenScanStore.RELATIONSHIP_TYPE_SCAN_STORE_MONITOR_TAG;
@@ -394,7 +394,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         }
 
         writeMonitor = config.get( GraphDatabaseInternalSettings.token_scan_write_log_enabled )
-                       ? new TokenScanWriteMonitor( fs, directoryStructure, entityType(), config )
+                       ? new TokenScanWriteMonitor( fs, databaseLayout, entityType(), config )
                        : NativeTokenScanWriter.EMPTY;
         singleWriter = new NativeTokenScanWriter( 1_000, writeMonitor );
 
@@ -427,8 +427,8 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
                 headerData -> isRebuilding.setValue( headerData.get() == NEEDS_REBUILDING );
         try
         {
-            index = new GBPTree<>( pageCache, storeFile, new TokenScanLayout(), monitor, readRebuilding,
-                    needsRebuildingWriter, recoveryCleanupWorkCollector, readOnly, cacheTracer, immutable.empty(), tokenStoreName );
+            index = new GBPTree<>( pageCache, storeFile, new TokenScanLayout(), monitor, readRebuilding, needsRebuildingWriter, recoveryCleanupWorkCollector,
+                    readOnly, cacheTracer, immutable.empty(), databaseLayout.getDatabaseName(), tokenStoreName );
             return isRebuilding.getValue();
         }
         catch ( TreeFileNotFoundException e )

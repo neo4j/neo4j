@@ -116,6 +116,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_rotation_timeout;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.AUTH_DISABLED;
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
@@ -402,8 +403,10 @@ public class NeoStoresTest
     {
         Path storeDir = dir.homePath();
         createShutdownTestDatabase( fs, storeDir );
-        assertEquals( 0, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 10, NULL ) );
-        assertEquals( 10, MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 12, NULL ) );
+        assertEquals( 0,
+                MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 10, databaseLayout.getDatabaseName(), NULL ) );
+        assertEquals( 10,
+                MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), Position.LOG_VERSION, 12, databaseLayout.getDatabaseName(), NULL ) );
 
         Config config = Config.defaults();
         StoreFactory sf = getStoreFactory( config, databaseLayout, fs, LOG_PROVIDER );
@@ -437,7 +440,7 @@ public class NeoStoresTest
             channel.writeAll( ByteBuffer.wrap( UTF8.encode( "This is some data that is not a record." ) ) );
         }
 
-        MetaDataStore.setRecord( pageCache, file, Position.STORE_VERSION, recordVersion, NULL );
+        MetaDataStore.setRecord( pageCache, file, Position.STORE_VERSION, recordVersion, databaseLayout.getDatabaseName(), NULL );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
@@ -458,7 +461,7 @@ public class NeoStoresTest
     {
         // given
         Config config = Config.defaults();
-        StoreFactory sf = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ),
+        StoreFactory sf = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
                 pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL );
 
         // when
@@ -540,12 +543,12 @@ public class NeoStoresTest
 
         Path file = databaseLayout.metadataStore();
 
-        assertNotEquals( 10, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, NULL ) );
-        assertNotEquals( 11, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, NULL ) );
+        assertNotEquals( 10, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, databaseLayout.getDatabaseName(), NULL ) );
+        assertNotEquals( 11, MetaDataStore.getRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, databaseLayout.getDatabaseName(), NULL ) );
 
-        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, 10, NULL );
-        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, 11, NULL );
-        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TIME, 12, NULL );
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_ID, 10, databaseLayout.getDatabaseName(), NULL );
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_CHECKSUM, 11, databaseLayout.getDatabaseName(), NULL );
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TIME, 12, databaseLayout.getDatabaseName(), NULL );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
@@ -562,7 +565,7 @@ public class NeoStoresTest
             assertArrayEquals( new long[]{6, 44, 43}, metaDataStore.getLastClosedTransaction() );
         }
 
-        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, 13, NULL );
+        MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, 13, databaseLayout.getDatabaseName(), NULL );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
@@ -671,7 +674,7 @@ public class NeoStoresTest
     {
         // given
         fs.deleteRecursively( databaseLayout.databaseDirectory() );
-        DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fs, immediate() );
+        DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL );
 
         // when
@@ -687,7 +690,7 @@ public class NeoStoresTest
     {
         // given
         fs.deleteRecursively( databaseLayout.databaseDirectory() );
-        DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fs, immediate() );
+        DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL );
         StoreType[] allStoreTypes = StoreType.values();
         StoreType[] allButLastStoreTypes = Arrays.copyOf( allStoreTypes, allStoreTypes.length - 1 );
@@ -709,7 +712,7 @@ public class NeoStoresTest
     {
         RecordFormats recordFormats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, LOG_PROVIDER, PageCacheTracer.NULL,
                 immutable.empty() );
     }
@@ -720,7 +723,7 @@ public class NeoStoresTest
         Config config = Config.defaults( GraphDatabaseSettings.fail_on_missing_files, false );
         dependencies.satisfyDependency( config );
         closeStorageEngine();
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
 
         TokenHolders tokenHolders = new TokenHolders(
                 createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
@@ -848,7 +851,8 @@ public class NeoStoresTest
     private StoreFactory getStoreFactory( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs,
             NullLogProvider logProvider )
     {
-        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, logProvider, PageCacheTracer.NULL );
+        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
+                logProvider, PageCacheTracer.NULL );
     }
 
     private static class CloseFailingDefaultIdGeneratorFactory extends DefaultIdGeneratorFactory
@@ -857,20 +861,20 @@ public class NeoStoresTest
 
         CloseFailingDefaultIdGeneratorFactory( FileSystemAbstraction fs, String errorMessage )
         {
-            super( fs, immediate() );
+            super( fs, immediate(), DEFAULT_DATABASE_NAME );
             this.errorMessage = errorMessage;
         }
 
         @Override
         protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                 Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, Config config, PageCursorTracer cursorTracer,
-                ImmutableSet<OpenOption> openOptions )
+                String databaseName, ImmutableSet<OpenOption> openOptions )
         {
             if ( idType == IdType.NODE )
             {
                 // Return a special id generator which will throw exception on close
                 return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, allowLargeIdCaches, () -> 6 * 7, maxValue, readOnly, config,
-                        cursorTracer )
+                        databaseName, cursorTracer )
                 {
                     @Override
                     public synchronized void close()
@@ -881,7 +885,7 @@ public class NeoStoresTest
                 };
             }
             return super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnly, config, cursorTracer,
-                    openOptions );
+                    databaseName, openOptions );
         }
     }
 }

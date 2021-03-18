@@ -43,9 +43,9 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
  */
 public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorFactory
 {
-    public ScanOnOpenOverwritingIdGeneratorFactory( FileSystemAbstraction fs )
+    public ScanOnOpenOverwritingIdGeneratorFactory( FileSystemAbstraction fs, String databaseName )
     {
-        super( fs, immediate() );
+        super( fs, immediate(), databaseName );
     }
 
     @Override

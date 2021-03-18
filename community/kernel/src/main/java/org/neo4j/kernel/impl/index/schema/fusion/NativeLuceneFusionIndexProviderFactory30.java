@@ -73,13 +73,14 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
             Config config, OperationalMode operationalMode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer )
     {
-        return create( pageCache, storeDir, fs, monitors, monitorTag, config, operationalMode, recoveryCleanupWorkCollector, pageCacheTracer );
+        return create( pageCache, storeDir, fs, monitors, monitorTag, config, operationalMode, recoveryCleanupWorkCollector, pageCacheTracer,
+                databaseLayout.getDatabaseName() );
     }
 
     @VisibleForTesting
     public static FusionIndexProvider create( PageCache pageCache, Path databaseDirectory, FileSystemAbstraction fs,
                                               Monitors monitors, String monitorTag, Config config, OperationalMode operationalMode,
-                                              RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer )
+                                              RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer, String databaseName )
     {
         IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( databaseDirectory );
         boolean isSingleInstance = operationalMode == OperationalMode.SINGLE;
@@ -88,6 +89,7 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
 
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).withMonitors( monitors ).withTag( monitorTag )
                                                                         .withReadOnly( readOnly ).withPageCacheTracer( pageCacheTracer )
+                                                                        .withDatabaseName( databaseName )
                                                                         .build();
         GenericNativeIndexProvider generic =
                 new GenericNativeIndexProvider( databaseIndexContext, childDirectoryStructure,

@@ -104,10 +104,10 @@ class MetaDataStoreTest
         pageCacheWithFakeOverflow = new DelegatingPageCache( pageCache )
         {
             @Override
-            public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize,
+            public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName,
                     ImmutableSet<OpenOption> openOptions ) throws IOException
             {
-                return new DelegatingPagedFile( super.map( path, versionContextSupplier, pageSize, openOptions ) )
+                return new DelegatingPagedFile( super.map( path, versionContextSupplier, pageSize, databaseName, openOptions ) )
                 {
                     @Override
                     public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
@@ -635,17 +635,17 @@ class MetaDataStoreTest
     {
         fakePageCursorOverflow = true;
         assertThrows( UnderlyingStorageException.class,
-                () -> MetaDataStore.setRecord( pageCacheWithFakeOverflow, createMetaDataFile(), STORE_VERSION, 4242, NULL ) );
+                () -> MetaDataStore.setRecord( pageCacheWithFakeOverflow, createMetaDataFile(), STORE_VERSION, 4242, databaseLayout.getDatabaseName(), NULL ) );
     }
 
     @Test
     void staticGetRecordMustThrowOnPageOverflow() throws Exception
     {
         Path metaDataFile = createMetaDataFile();
-        MetaDataStore.setRecord( pageCacheWithFakeOverflow, metaDataFile, STORE_VERSION, 4242, NULL );
+        MetaDataStore.setRecord( pageCacheWithFakeOverflow, metaDataFile, STORE_VERSION, 4242, databaseLayout.getDatabaseName(), NULL );
         fakePageCursorOverflow = true;
         assertThrows( UnderlyingStorageException.class,
-                () -> MetaDataStore.getRecord( pageCacheWithFakeOverflow, metaDataFile, STORE_VERSION, NULL ) );
+                () -> MetaDataStore.getRecord( pageCacheWithFakeOverflow, metaDataFile, STORE_VERSION, databaseLayout.getDatabaseName(), NULL ) );
 
     }
 
@@ -746,7 +746,8 @@ class MetaDataStoreTest
         // when
         try ( MetaDataStore store = newMetaDataStore() )
         {
-            MetaDataStore.setStoreId( pageCache, store.getStorageFile(), storeId, upgradeTxChecksum, upgradeTxCommitTimestamp, NULL );
+            MetaDataStore.setStoreId( pageCache, store.getStorageFile(), storeId, upgradeTxChecksum, upgradeTxCommitTimestamp, databaseLayout.getDatabaseName(),
+                    NULL );
         }
 
         // then
@@ -781,7 +782,8 @@ class MetaDataStoreTest
         var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnSetRecord" );
         try ( var metaDataStore = newMetaDataStore() )
         {
-            MetaDataStore.setRecord( pageCache, metaDataStore.getStorageFile(), MetaDataStore.Position.RANDOM_NUMBER, 3, cursorTracer );
+            MetaDataStore.setRecord( pageCache, metaDataStore.getStorageFile(), MetaDataStore.Position.RANDOM_NUMBER, 3, databaseLayout.getDatabaseName(),
+                    cursorTracer );
 
             assertThat( cursorTracer.pins() ).isOne();
             assertThat( cursorTracer.unpins() ).isOne();
@@ -796,7 +798,8 @@ class MetaDataStoreTest
         var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnGetRecord" );
         try ( var metaDataStore = newMetaDataStore() )
         {
-            MetaDataStore.getRecord( pageCache, metaDataStore.getStorageFile(), MetaDataStore.Position.RANDOM_NUMBER, cursorTracer );
+            MetaDataStore.getRecord( pageCache, metaDataStore.getStorageFile(), MetaDataStore.Position.RANDOM_NUMBER, databaseLayout.getDatabaseName(),
+                    cursorTracer );
 
             assertThat( cursorTracer.pins() ).isOne();
             assertThat( cursorTracer.unpins() ).isOne();
@@ -811,7 +814,7 @@ class MetaDataStoreTest
         var cursorTracer = cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnGetStoreId" );
         try ( var metaDataStore = newMetaDataStore() )
         {
-            MetaDataStore.getStoreId( pageCache, metaDataStore.getStorageFile(), cursorTracer );
+            MetaDataStore.getStoreId( pageCache, metaDataStore.getStorageFile(), databaseLayout.getDatabaseName(), cursorTracer );
 
             assertThat( cursorTracer.pins() ).isEqualTo( 5 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 5 );
@@ -827,7 +830,7 @@ class MetaDataStoreTest
         try ( var metaDataStore = newMetaDataStore() )
         {
             var storeId = new StoreId( 1, 2, 3, 4, 5 );
-            MetaDataStore.setStoreId( pageCache, metaDataStore.getStorageFile(), storeId, 6, 7, cursorTracer );
+            MetaDataStore.setStoreId( pageCache, metaDataStore.getStorageFile(), storeId, 6, 7, databaseLayout.getDatabaseName(), cursorTracer );
 
             assertThat( cursorTracer.pins() ).isEqualTo( 7 );
             assertThat( cursorTracer.unpins() ).isEqualTo( 7 );
@@ -952,7 +955,7 @@ class MetaDataStoreTest
     {
         LogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ),
+                new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
                         pageCacheWithFakeOverflow, fs, logProvider, pageCacheTracer );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }

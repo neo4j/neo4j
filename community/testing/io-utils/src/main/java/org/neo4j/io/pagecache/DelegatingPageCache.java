@@ -40,10 +40,10 @@ public class DelegatingPageCache implements PageCache
     }
 
     @Override
-    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions, String databaseName )
+    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions )
             throws IOException
     {
-        return delegate.map( path, versionContextSupplier, pageSize, openOptions, databaseName );
+        return delegate.map( path, versionContextSupplier, pageSize, databaseName, openOptions );
     }
 
     @Override

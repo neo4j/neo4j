@@ -37,6 +37,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
@@ -55,7 +56,7 @@ class BufferedIdControllerTest
     @BeforeEach
     void setUp()
     {
-        idGeneratorFactory = new BufferingIdGeneratorFactory( new DefaultIdGeneratorFactory( fs, immediate() ) );
+        idGeneratorFactory = new BufferingIdGeneratorFactory( new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ) );
     }
 
     @Test

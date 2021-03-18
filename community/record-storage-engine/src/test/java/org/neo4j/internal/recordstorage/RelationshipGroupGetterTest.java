@@ -79,7 +79,7 @@ class RelationshipGroupGetterTest
     {
         LogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(),
-                new DefaultIdGeneratorFactory( fs, immediate()  ), pageCache, fs, logProvider, PageCacheTracer.NULL );
+                new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs, logProvider, PageCacheTracer.NULL );
         stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP, StoreType.NODE, StoreType.NODE_LABEL );
         groupStore = spy( stores.getRelationshipGroupStore() );
         NodeStore nodeStore = stores.getNodeStore();

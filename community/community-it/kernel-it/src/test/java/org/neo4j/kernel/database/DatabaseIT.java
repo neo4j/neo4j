@@ -368,28 +368,22 @@ class DatabaseIT
         }
 
         @Override
-        public PagedFile map( Path path, int pageSize ) throws IOException
+        public PagedFile map( Path path, int pageSize, String databaseName ) throws IOException
         {
-            return new PageFileWrapper( super.map( path, pageSize ), fileFlushes );
+            return new PageFileWrapper( super.map( path, pageSize, databaseName ), fileFlushes );
         }
 
         @Override
-        public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
+        public PagedFile map( Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions ) throws IOException
         {
-            return new PageFileWrapper( super.map( path, versionContextSupplier, pageSize, openOptions ), fileFlushes );
+            return new PageFileWrapper( super.map( path, pageSize, databaseName, openOptions ), fileFlushes );
         }
 
         @Override
-        public PagedFile map( Path path, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
+        public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName,
+                ImmutableSet<OpenOption> openOptions ) throws IOException
         {
-            return new PageFileWrapper( super.map( path, pageSize, openOptions ), fileFlushes );
-        }
-
-        @Override
-        public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions,
-                String databaseName ) throws IOException
-        {
-            return new PageFileWrapper( super.map( path, versionContextSupplier, pageSize, openOptions, databaseName ), fileFlushes );
+            return new PageFileWrapper( super.map( path, versionContextSupplier, pageSize, databaseName, openOptions ), fileFlushes );
         }
 
         @Override

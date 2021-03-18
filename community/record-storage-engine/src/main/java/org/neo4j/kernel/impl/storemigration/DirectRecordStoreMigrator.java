@@ -76,7 +76,8 @@ class DirectRecordStoreMigrator
                     pageCache, fs, fromFormat, NullLogProvider.getInstance(), cacheTracer, immutable.empty() )
                         .openNeoStores( true, storesToOpen );
                 NeoStores toStores = new StoreFactory( toDirectoryStructure, withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ),
-                    new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, toFormat, NullLogProvider.getInstance(), cacheTracer, immutable.empty() )
+                        new DefaultIdGeneratorFactory( fs, immediate(), toDirectoryStructure.getDatabaseName() ), pageCache, fs, toFormat,
+                        NullLogProvider.getInstance(), cacheTracer, immutable.empty() )
                         .openNeoStores( true, storesToOpen );
                 var cursorTracer = cacheTracer.createPageCursorTracer( DIRECT_STORE_MIGRATOR_TAG ) )
         {

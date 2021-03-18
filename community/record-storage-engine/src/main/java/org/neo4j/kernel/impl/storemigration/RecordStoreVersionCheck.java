@@ -47,6 +47,7 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     private final Path metaDataFile;
     private final RecordFormats configuredFormat;
     private final Config config;
+    private final String databaseName;
 
     public RecordStoreVersionCheck( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout, LogProvider logProvider, Config config,
             PageCacheTracer pageCacheTracer )
@@ -58,6 +59,7 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     {
         this.pageCache = pageCache;
         this.metaDataFile = databaseLayout.metadataStore();
+        this.databaseName = databaseLayout.getDatabaseName();
         this.configuredFormat = configuredFormat;
         this.config = config;
     }
@@ -78,7 +80,7 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
 
     private String readVersion( PageCursorTracer cursorTracer ) throws IOException
     {
-        long record = MetaDataStore.getRecord( pageCache, metaDataFile, STORE_VERSION, cursorTracer );
+        long record = MetaDataStore.getRecord( pageCache, metaDataFile, STORE_VERSION, databaseName, cursorTracer );
         if ( record == MetaDataRecordFormat.FIELD_NOT_PRESENT )
         {
             throw new IllegalStateException( "Uninitialized version field in " + metaDataFile );

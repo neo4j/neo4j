@@ -49,6 +49,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -128,9 +129,9 @@ class DynamicArrayStoreTest
 
     private DynamicArrayStore dynamicArrayStore()
     {
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
-        DynamicArrayStore store = new DynamicArrayStore( storeFile, idFile, Config.defaults(), IdType.ARRAY_BLOCK,
-                idGeneratorFactory, pageCache, NullLogProvider.getInstance(), 1, Standard.LATEST_RECORD_FORMATS, immutable.empty() );
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME );
+        DynamicArrayStore store = new DynamicArrayStore( storeFile, idFile, Config.defaults(), IdType.ARRAY_BLOCK, idGeneratorFactory, pageCache,
+                NullLogProvider.getInstance(), 1, Standard.LATEST_RECORD_FORMATS, DEFAULT_DATABASE_NAME, immutable.empty() );
         store.initialise( true, NULL );
         return store;
     }

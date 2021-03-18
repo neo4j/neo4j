@@ -47,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -105,7 +106,7 @@ class GenericConfigExtractorTest
         assertFalse( fs.fileExists( genericFile ) );
 
         // when
-        GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, NULL, myLog );
+        GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, NULL, myLog, DEFAULT_DATABASE_NAME );
 
         // then
         String reason = "Index file does not exists.";
@@ -125,7 +126,7 @@ class GenericConfigExtractorTest
         assertTrue( fs.fileExists( genericFile ) );
 
         // when
-        GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, NULL, myLog );
+        GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, NULL, myLog, DEFAULT_DATABASE_NAME );
 
         // then
         String reason = "Index is in FAILED state.";
@@ -142,7 +143,7 @@ class GenericConfigExtractorTest
         corruptFile( fs, genericFile );
 
         // when
-        GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, NULL, myLog );
+        GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, NULL, myLog, DEFAULT_DATABASE_NAME );
 
         // then
         String reason = "Index meta data is corrupt and can not be parsed.";
@@ -160,7 +161,8 @@ class GenericConfigExtractorTest
         assertTrue( fs.fileExists( genericFile ) );
 
         // when
-        IndexConfig indexConfig = GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, NULL, NullLog.getInstance() );
+        IndexConfig indexConfig =
+                GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, NULL, NullLog.getInstance(), DEFAULT_DATABASE_NAME );
 
         // then
         assertExpectedIndexConfig( indexConfig );

@@ -55,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -155,7 +156,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
 //        getPageCache( fs, cachePages, pageSize, linearTracers.getPageCacheTracer(),
 //                linearTracers.getCursorTracerSupplier() );
             getPageCache( fs, cachePages, PageCacheTracer.NULL );
-            try ( PagedFile pagedFile = pageCache.map( file( "a" ), pageSize ) )
+            try ( PagedFile pagedFile = pageCache.map( file( "a" ), pageSize, DEFAULT_DATABASE_NAME ) )
             {
                 profiler.profile();
 
@@ -305,7 +306,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             assertThat( maxCursorsPerThread * threadCount ).isLessThan( cachePages );
 
             getPageCache( fs, cachePages, PageCacheTracer.NULL );
-            try ( PagedFile pagedFile = pageCache.map( file( "a" ), pageSize ) )
+            try ( PagedFile pagedFile = pageCache.map( file( "a" ), pageSize, DEFAULT_DATABASE_NAME ) )
             {
                 profiler.profile();
 
@@ -400,7 +401,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             getPageCache( fs, maxPages, PageCacheTracer.NULL );
             profiler.profile();
 
-            final PagedFile pf = pageCache.map( file, filePageSize );
+            final PagedFile pf = pageCache.map( file, filePageSize, DEFAULT_DATABASE_NAME );
             final CountDownLatch hasLockLatch = new CountDownLatch( 1 );
             final CountDownLatch unlockLatch = new CountDownLatch( 1 );
             final CountDownLatch secondThreadGotLockLatch = new CountDownLatch( 1 );
@@ -517,8 +518,8 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
             LinearTracers linearTracers = pageCacheTracer();
             getPageCache( fs, maxPages, linearTracers.getPageCacheTracer() );
 
-            try ( PagedFile pfA = pageCache.map( existingFile( "a" ), filePageSize );
-                  PagedFile pfB = pageCache.map( existingFile( "b" ), filePageSize / 2 + 1 ) )
+            try ( PagedFile pfA = pageCache.map( existingFile( "a" ), filePageSize, DEFAULT_DATABASE_NAME );
+                  PagedFile pfB = pageCache.map( existingFile( "b" ), filePageSize / 2 + 1, DEFAULT_DATABASE_NAME ) )
             {
                 adversary.setProbabilityFactor( 1.0 );
                 profiler.profile();
@@ -652,7 +653,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
         int iterations = Short.MAX_VALUE * 3;
         for ( int i = 0; i < iterations; i++ )
         {
-            try ( PagedFile pagedFile = pageCache.map( file, filePageSize ) )
+            try ( PagedFile pagedFile = pageCache.map( file, filePageSize, DEFAULT_DATABASE_NAME ) )
             {
                 try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
                 {

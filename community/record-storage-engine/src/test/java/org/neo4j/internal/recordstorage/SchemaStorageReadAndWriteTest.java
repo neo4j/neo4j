@@ -65,7 +65,7 @@ class SchemaStorageReadAndWriteTest
     @Inject
     private DatabaseLayout databaseLayout;
 
-    private RandomSchema randomSchema = new RandomSchema()
+    private final RandomSchema randomSchema = new RandomSchema()
     {
         @Override
         public int nextRuleId()
@@ -81,7 +81,8 @@ class SchemaStorageReadAndWriteTest
     void before() throws Exception
     {
         testDirectory.prepareDirectory( getClass(), "test" );
-        var storeFactory = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ),
+        var storeFactory =
+                new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
                 pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL );
         neoStores = storeFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.LABEL_TOKEN,
                 StoreType.RELATIONSHIP_TYPE_TOKEN );

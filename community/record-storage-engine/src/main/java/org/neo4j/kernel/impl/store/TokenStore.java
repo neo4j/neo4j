@@ -67,10 +67,11 @@ public abstract class TokenStore<RECORD extends TokenRecord>
             String typeDescriptor,
             RecordFormat<RECORD> recordFormat,
             String storeVersion,
+            String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
-                recordFormat, NO_STORE_HEADER_FORMAT, storeVersion, openOptions );
+                recordFormat, NO_STORE_HEADER_FORMAT, storeVersion, databaseName, openOptions );
         this.nameStore = nameStore;
     }
 

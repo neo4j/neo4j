@@ -31,12 +31,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 class PageCacheArrayFactoryMonitorTest
 {
     private final PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( mock( PageCache.class ), NULL, Path.of( "storeDir" ),
-            NullLog.getInstance() );
+            NullLog.getInstance(), DEFAULT_DATABASE_NAME );
     private final PageCacheArrayFactoryMonitor monitor = new PageCacheArrayFactoryMonitor();
 
     @Test

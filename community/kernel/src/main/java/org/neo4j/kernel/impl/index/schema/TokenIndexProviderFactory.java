@@ -73,7 +73,7 @@ public class TokenIndexProviderFactory extends AbstractIndexProviderFactory
         boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.SINGLE == mode);
         DatabaseIndexContext databaseIndexContext =
                 DatabaseIndexContext.builder( pageCache, fs ).withMonitors( monitors ).withTag( monitorTag ).withReadOnly( readOnly )
-                        .withPageCacheTracer( pageCacheTracer ).build();
+                        .withPageCacheTracer( pageCacheTracer ).withDatabaseName( databaseLayout.getDatabaseName() ).build();
         return new TokenIndexProvider( databaseIndexContext, directoryStructure, recoveryCleanupWorkCollector, config, databaseLayout );
     }
 }

@@ -60,7 +60,8 @@ class TestGrowingFileMemoryMapping
         final int NUMBER_OF_RECORDS = 1000000;
 
         Config config = Config.defaults();
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), immediate() );
+        DefaultIdGeneratorFactory idGeneratorFactory =
+                new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), immediate(), databaseLayout.getDatabaseName() );
         StoreFactory storeFactory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache,
                 testDirectory.getFileSystem(), NullLogProvider.getInstance(), NULL );
 

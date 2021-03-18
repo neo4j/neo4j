@@ -168,7 +168,8 @@ class CsvInputEstimateCalculationIT
             // then compare estimates with actual disk sizes
             SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs );
             try ( PageCache pageCache = new MuninnPageCache( swapperFactory, jobScheduler, MuninnPageCache.config( 1000 ) );
-                  NeoStores stores = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs,
+                    NeoStores stores = new StoreFactory( databaseLayout, config,
+                            new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
                           NullLogProvider.getInstance(), PageCacheTracer.NULL ).openAllNeoStores() )
             {
                 assertRoughlyEqual( estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse() );

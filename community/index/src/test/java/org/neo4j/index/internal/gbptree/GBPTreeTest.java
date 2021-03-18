@@ -112,6 +112,7 @@ import static org.neo4j.test.rule.PageCacheConfig.config;
 class GBPTreeTest
 {
     private static final Layout<MutableLong,MutableLong> layout = longLayout().build();
+    private static final String DATABASE_NAME = "neo4j";
 
     @RegisterExtension
     static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( config().withAccessChecks( true ) );
@@ -242,7 +243,7 @@ class GBPTreeTest
         PageCache pageCache = createPageCache( pageSize );
         index( pageCache ).build().close();
 
-        try ( PagedFile pagedFile = pageCache.map( indexFile, pageSize );
+        try ( PagedFile pagedFile = pageCache.map( indexFile, pageSize, "neo4j" );
               PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PF_SHARED_WRITE_LOCK, NULL ) )
         {
             assertTrue( cursor.next() );
@@ -520,7 +521,7 @@ class GBPTreeTest
 
         byte[] newHeader = new byte[random.nextInt( 100 )];
         random.nextBytes( newHeader );
-        GBPTree.overwriteHeader( pageCache, indexFile, pc -> pc.putBytes( newHeader ), NULL );
+        GBPTree.overwriteHeader( pageCache, indexFile, pc -> pc.putBytes( newHeader ), DATABASE_NAME, NULL );
 
         Pair<TreeState,TreeState> treeStatesAfterOverwrite = readTreeStates( pageCache );
 
@@ -537,7 +538,7 @@ class GBPTreeTest
     private Pair<TreeState,TreeState> readTreeStates( PageCache pageCache ) throws IOException
     {
         Pair<TreeState,TreeState> treeStatesBeforeOverwrite;
-        try ( PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
+        try ( PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), DATABASE_NAME );
               PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
             treeStatesBeforeOverwrite = TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
@@ -597,7 +598,7 @@ class GBPTreeTest
 
         // WHEN
         // Read separate
-        GBPTree.readHeader( pageCache, indexFile, headerReader, NULL );
+        GBPTree.readHeader( pageCache, indexFile, headerReader, DATABASE_NAME, NULL );
 
         assertEquals( expectedHeader.length, length.get() );
         assertArrayEquals( expectedHeader, readHeader );
@@ -608,13 +609,14 @@ class GBPTreeTest
     {
         // given
         Path doesNotExist = Path.of( "Does not exist" );
-        assertThrows( NoSuchFileException.class, () -> GBPTree.readHeader( createPageCache( defaultPageSize ), doesNotExist, NO_HEADER_READER, NULL ) );
+        assertThrows( NoSuchFileException.class,
+                () -> GBPTree.readHeader( createPageCache( defaultPageSize ), doesNotExist, NO_HEADER_READER, DATABASE_NAME, NULL ) );
     }
 
     @Test
     void openWithReadHeaderMustThrowMetadataMismatchExceptionIfFileIsEmpty() throws Exception
     {
-        openMustThrowMetadataMismatchExceptionIfFileIsEmpty( pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, NULL ) );
+        openMustThrowMetadataMismatchExceptionIfFileIsEmpty( pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, DATABASE_NAME, NULL ) );
     }
 
     @Test
@@ -627,7 +629,7 @@ class GBPTreeTest
     {
         // given an existing empty file
         PageCache pageCache = createPageCache( defaultPageSize );
-        pageCache.map( indexFile, pageCache.pageSize(), immutable.of( CREATE ) ).close();
+        pageCache.map( indexFile, pageCache.pageSize(), DATABASE_NAME, immutable.of( CREATE ) ).close();
 
         assertThrows( MetadataMismatchException.class, () -> opener.accept( pageCache ) );
     }
@@ -636,7 +638,7 @@ class GBPTreeTest
     void readHeaderMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing() throws Exception
     {
         openMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing(
-                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, NULL ) );
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, DATABASE_NAME, NULL ) );
     }
 
     @Test
@@ -660,7 +662,7 @@ class GBPTreeTest
     void readHeaderMustThrowIOExceptionIfStatePagesAreAllZeros() throws Exception
     {
         openMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros(
-                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, NULL ) );
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, DATABASE_NAME, NULL ) );
     }
 
     @Test
@@ -705,7 +707,7 @@ class GBPTreeTest
                 length.set( headerData.limit() );
                 headerData.get( readHeader );
             };
-            GBPTree.readHeader( pageCache, indexFile, headerReader, NULL );
+            GBPTree.readHeader( pageCache, indexFile, headerReader, DATABASE_NAME, NULL );
 
             // THEN
             assertEquals( headerBytes.length, length.get() );
@@ -1364,7 +1366,7 @@ class GBPTreeTest
             index( specificPageCache ).build().close();
 
             // a tree state pointing to root with valid successor
-            try ( PagedFile pagedFile = specificPageCache.map( indexFile, specificPageCache.pageSize() );
+            try ( PagedFile pagedFile = specificPageCache.map( indexFile, specificPageCache.pageSize(), DATABASE_NAME );
                   PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
             {
                 Pair<TreeState,TreeState> treeStates =
@@ -1796,7 +1798,7 @@ class GBPTreeTest
 
     private void corruptTheChild( PageCache pageCache, long corruptChild ) throws IOException
     {
-        try ( PagedFile pagedFile = pageCache.map( indexFile, defaultPageSize );
+        try ( PagedFile pagedFile = pageCache.map( indexFile, defaultPageSize, DATABASE_NAME );
               PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
             assertTrue( cursor.next( corruptChild ) );
@@ -1892,9 +1894,9 @@ class GBPTreeTest
         return new DelegatingPageCache( createPageCache( defaultPageSize ) )
         {
             @Override
-            public PagedFile map( Path path, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
+            public PagedFile map( Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions ) throws IOException
             {
-                return new DelegatingPagedFile( super.map( path, pageSize, openOptions ) )
+                return new DelegatingPagedFile( super.map( path, pageSize, databaseName, openOptions ) )
                 {
                     @Override
                     public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
@@ -1929,9 +1931,9 @@ class GBPTreeTest
         return new DelegatingPageCache( createPageCache( defaultPageSize ) )
         {
             @Override
-            public PagedFile map( Path path, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
+            public PagedFile map( Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions ) throws IOException
             {
-                return new DelegatingPagedFile( super.map( path, pageSize, openOptions ) )
+                return new DelegatingPagedFile( super.map( path, pageSize, databaseName, openOptions ) )
                 {
                     @Override
                     public PageCursor io( long pageId, int pf_flags, PageCursorTracer tracer ) throws IOException
@@ -2016,9 +2018,9 @@ class GBPTreeTest
         return new DelegatingPageCache( createPageCache( defaultPageSize * 4 ) )
         {
             @Override
-            public PagedFile map( Path path, int pageSize, ImmutableSet<OpenOption> openOptions ) throws IOException
+            public PagedFile map( Path path, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions ) throws IOException
             {
-                return new DelegatingPagedFile( super.map( path, pageSize, openOptions ) )
+                return new DelegatingPagedFile( super.map( path, pageSize, databaseName, openOptions ) )
                 {
                     @Override
                     public void close()

@@ -61,6 +61,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
 {
@@ -287,7 +288,7 @@ public class GenericKeyStateFormatTest extends FormatCompatibilityVerifier
     {
         ImmutableSet<OpenOption> openOptions = create ? immutable.of( WRITE, CREATE) : immutable.of( WRITE );
         try ( PageCache pageCache = pageCacheRule.getPageCache( globalFs.get() );
-              PagedFile pagedFile = pageCache.map( storeFile, pageCache.pageSize(), openOptions );
+              PagedFile pagedFile = pageCache.map( storeFile, pageCache.pageSize(), DEFAULT_DATABASE_NAME, openOptions );
               PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
         {
             cursor.next();

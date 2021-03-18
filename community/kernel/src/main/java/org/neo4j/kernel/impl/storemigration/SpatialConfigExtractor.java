@@ -54,14 +54,14 @@ final class SpatialConfigExtractor
     }
 
     static IndexConfig indexConfigFromSpatialFile( PageCache pageCache, List<SpatialFile> spatialFiles,
-            PageCursorTracer cursorTracer, Log log ) throws IOException
+            PageCursorTracer cursorTracer, Log log, String databaseName ) throws IOException
     {
         Map<String,Value> map = new HashMap<>();
         for ( SpatialFile spatialFile : spatialFiles )
         {
             try
             {
-                GBPTree.readHeader( pageCache, spatialFile.getIndexFile(), headerReader( map, spatialFile, log ), cursorTracer );
+                GBPTree.readHeader( pageCache, spatialFile.getIndexFile(), headerReader( map, spatialFile, log ), databaseName, cursorTracer );
             }
             catch ( MetadataMismatchException e )
             {

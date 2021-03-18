@@ -280,7 +280,7 @@ class NodeStoreTest
                 PageCache customPageCache = new DelegatingPageCache( pageCache )
                 {
                     @Override
-                    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize,
+                    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName,
                             ImmutableSet<OpenOption> openOptions ) throws IOException
                     {
                         if ( path.getFileName().toString().toLowerCase().endsWith( ".id" ) )
@@ -288,7 +288,7 @@ class NodeStoreTest
                             fired.setTrue();
                             throw new IOException( "Proving a point here" );
                         }
-                        return super.map( path, versionContextSupplier, pageSize, openOptions );
+                        return super.map( path, versionContextSupplier, pageSize, databaseName, openOptions );
                     }
                 };
 
@@ -417,15 +417,15 @@ class NodeStoreTest
 
     private NodeStore newNodeStore( FileSystemAbstraction fs, PageCache pageCache )
     {
-        IdGeneratorFactory idGeneratorFactory = spy( new DefaultIdGeneratorFactory( fs, immediate() )
+        IdGeneratorFactory idGeneratorFactory = spy( new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() )
         {
             @Override
             protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                     Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, Config config, PageCursorTracer cursorTracer,
-                    ImmutableSet<OpenOption> openOptions )
+                    String databaseName, ImmutableSet<OpenOption> openOptions )
             {
                 return spy( super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnly, config,
-                        cursorTracer, openOptions ) );
+                        cursorTracer, databaseName, openOptions ) );
             }
         } );
         StoreFactory factory =

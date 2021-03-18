@@ -61,17 +61,20 @@ public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFact
             String monitorTag, Config config, OperationalMode operationalMode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer )
     {
-        return create( pageCache, storeDir, fs, monitors, monitorTag, config, operationalMode, recoveryCleanupWorkCollector, pageCacheTracer );
+        return create( pageCache, storeDir, fs, monitors, monitorTag, config, operationalMode, recoveryCleanupWorkCollector, pageCacheTracer,
+                databaseLayout.getDatabaseName() );
     }
 
     public static GenericNativeIndexProvider create( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,
                                                      String monitorTag, Config config, OperationalMode mode,
-                                                     RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer )
+                                                     RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer,
+                                                     String databaseName )
     {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
         boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.SINGLE == mode);
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).withMonitors( monitors ).withTag( monitorTag )
                                                                         .withReadOnly( readOnly ).withPageCacheTracer( pageCacheTracer )
+                                                                        .withDatabaseName( databaseName )
                                                                         .build();
         return new GenericNativeIndexProvider( databaseIndexContext, directoryStructure, recoveryCleanupWorkCollector, config );
     }

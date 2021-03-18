@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.logging.LogProvider;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 class LabelTokenStoreTest extends TokenStoreTestTemplate<LabelTokenRecord>
 {
@@ -36,6 +37,7 @@ class LabelTokenStoreTest extends TokenStoreTestTemplate<LabelTokenRecord>
     protected TokenStore<LabelTokenRecord> instantiateStore( Path file, Path idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
             LogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config )
     {
-        return new LabelTokenStore( file, idFile, config, generatorFactory, pageCache, logProvider, nameStore, formats, immutable.empty() );
+        return new LabelTokenStore( file, idFile, config, generatorFactory, pageCache, logProvider, nameStore, formats, DEFAULT_DATABASE_NAME,
+                immutable.empty() );
     }
 }

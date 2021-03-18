@@ -39,6 +39,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forAllEntityTokens;
@@ -50,7 +51,8 @@ class NativeIndexProviderTest extends IndexProviderTests
 {
     private static final ProviderFactory factory =
             ( pageCache, fs, dir, monitors, collector, readOnly, databaseLayout ) -> {
-                DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).withMonitors( monitors ).withReadOnly( readOnly ).build();
+                DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).withMonitors( monitors )
+                        .withReadOnly( readOnly ).withDatabaseName( DEFAULT_DATABASE_NAME ).build();
                 return new GenericNativeIndexProvider( context, dir, collector, Config.defaults() );
             };
 

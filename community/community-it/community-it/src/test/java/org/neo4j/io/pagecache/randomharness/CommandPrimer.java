@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.TinyLockManager;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class CommandPrimer
@@ -156,7 +157,7 @@ class CommandPrimer
             @Override
             public void perform() throws Exception
             {
-                fileMap.put( file, cache.map( file, filePageSize ) );
+                fileMap.put( file, cache.map( file, filePageSize, DEFAULT_DATABASE_NAME ) );
             }
         };
     }

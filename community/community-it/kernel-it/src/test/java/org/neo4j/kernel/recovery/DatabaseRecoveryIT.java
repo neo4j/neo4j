@@ -474,9 +474,11 @@ class DatabaseRecoveryIT
                         jobScheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
                 PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL, NullLog.getInstance(), contextSupplier,
                         jobScheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
-                NeoStores store1 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs1, immediate() ),
+                NeoStores store1 = new StoreFactory( databaseLayout, defaults(),
+                        new DefaultIdGeneratorFactory( fs1, immediate(), databaseLayout.getDatabaseName() ),
                         pageCache1, fs1, logProvider, PageCacheTracer.NULL ).openAllNeoStores();
-                NeoStores store2 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs2, immediate() ),
+                NeoStores store2 = new StoreFactory( databaseLayout, defaults(),
+                        new DefaultIdGeneratorFactory( fs2, immediate(), databaseLayout.getDatabaseName() ),
                         pageCache2, fs2, logProvider, PageCacheTracer.NULL ).openAllNeoStores()
                 )
         {

@@ -89,7 +89,7 @@ public class GBPTreeBootstrapper implements Closeable
             // Create layout and treeNode from meta
             Layout<?,?> layout = layoutBootstrapper.create( file, pageCache, meta );
             GBPTree<?,?> tree = new GBPTree<>( pageCache, file, layout, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), readOnly,
-                    pageCacheTracer, Sets.immutable.empty(), file.getFileName().toString() );
+                    pageCacheTracer, Sets.immutable.empty(), file.getFileName().toString(), file.getFileName().toString() );
             return new SuccessfulBootstrap( tree, layout, state, meta );
         }
         catch ( Exception e )
@@ -109,7 +109,7 @@ public class GBPTreeBootstrapper implements Closeable
         MetaVisitor<?,?> metaVisitor = new MetaVisitor();
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "TreeBootstrap" ) )
         {
-            GBPTreeStructure.visitMeta( pageCache, file, metaVisitor, cursorTracer );
+            GBPTreeStructure.visitMeta( pageCache, file, metaVisitor, file.getFileName().toString(), cursorTracer );
         }
         return metaVisitor;
     }
@@ -119,7 +119,7 @@ public class GBPTreeBootstrapper implements Closeable
         StateVisitor<?,?> stateVisitor = new StateVisitor();
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( "TreeBootstrap" ) )
         {
-            GBPTreeStructure.visitState( pageCache, file, stateVisitor, cursorTracer );
+            GBPTreeStructure.visitState( pageCache, file, stateVisitor, file.getFileName().toString(), cursorTracer );
         }
         return stateVisitor;
     }
@@ -132,7 +132,7 @@ public class GBPTreeBootstrapper implements Closeable
         }
         closePageCache();
         var swapper = new SingleFilePageSwapperFactory( fs );
-        long expectedMemory = Math.max( MuninnPageCache.memoryRequiredForPages( 100 ), 3 * pageSize );
+        long expectedMemory = Math.max( MuninnPageCache.memoryRequiredForPages( 100 ), 3L * pageSize );
         pageCache = new MuninnPageCache( swapper, jobScheduler, config( createAllocator( expectedMemory, EmptyMemoryTracker.INSTANCE ) ).pageSize( pageSize ) );
     }
 

@@ -472,11 +472,14 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private final PageCacheTracer pageCacheTracer;
 
     /**
-     * Array of {@link OpenOption} which is passed to calls to {@link PageCache#map(Path, int, ImmutableSet)}
+     * Array of {@link OpenOption} which is passed to calls to {@link PageCache#map(Path, int, String, ImmutableSet)}
      * at open/create. When initially creating the file an array consisting of {@link StandardOpenOption#CREATE}
      * concatenated with the contents of this array is passed into the map call.
      */
     private final ImmutableSet<OpenOption> openOptions;
+
+    // Name of the database this tree belongs to.
+    private String databaseName;
 
     /**
      * Whether or not this tree has been closed. Accessed and changed solely in
@@ -566,19 +569,21 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * @param headerWriter writes header data if indexFile is created as a result of this call.
      * @param recoveryCleanupWorkCollector collects recovery cleanup jobs for execution after recovery.
      * @param readOnly Opening tree in readOnly mode will prevent any modifications to it.
+     * @param databaseName name of the database this tree belongs to.
      * @param name name of the tree that will be used when describing work related to this tree.
      * @throws UncheckedIOException on page cache error
      * @throws MetadataMismatchException if meta information does not match constructor parameters or meta page is missing
      */
     public GBPTree( PageCache pageCache, Path indexFile, Layout<KEY,VALUE> layout, Monitor monitor, Header.Reader headerReader,
             Consumer<PageCursor> headerWriter, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, PageCacheTracer pageCacheTracer,
-            ImmutableSet<OpenOption> openOptions, String name ) throws MetadataMismatchException
+            ImmutableSet<OpenOption> openOptions, String databaseName, String name ) throws MetadataMismatchException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
         this.readOnly = readOnly;
         this.pageCacheTracer = pageCacheTracer;
         this.openOptions = openOptions;
+        this.databaseName = databaseName;
         this.generation = Generation.generation( MIN_GENERATION, MIN_GENERATION + 1 );
         long rootId = IdSpace.MIN_TREE_NODE_ID;
         setRoot( rootId, Generation.unstableGeneration( generation ) );
@@ -588,7 +593,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         {
             try
             {
-                this.pagedFile = openOrCreate( pageCache, indexFile, cursorTracer, openOptions );
+                this.pagedFile = openOrCreate( pageCache, indexFile, cursorTracer, databaseName, openOptions );
                 this.pageSize = pagedFile.pageSize();
                 closed = false;
                 TreeNodeSelector.Factory format;
@@ -686,12 +691,12 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         clean = true;
     }
 
-    private PagedFile openOrCreate( PageCache pageCache, Path indexFile, PageCursorTracer cursorTracer,
+    private PagedFile openOrCreate( PageCache pageCache, Path indexFile, PageCursorTracer cursorTracer, String databaseName,
             ImmutableSet<OpenOption> openOptions ) throws IOException, MetadataMismatchException
     {
         try
         {
-            return openExistingIndexFile( pageCache, indexFile, cursorTracer, openOptions );
+            return openExistingIndexFile( pageCache, indexFile, cursorTracer, databaseName, openOptions );
         }
         catch ( NoSuchFileException e )
         {
@@ -703,10 +708,10 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
     }
 
-    private static PagedFile openExistingIndexFile( PageCache pageCache, Path indexFile, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
-            throws IOException, MetadataMismatchException
+    private static PagedFile openExistingIndexFile( PageCache pageCache, Path indexFile, PageCursorTracer cursorTracer, String databaseName,
+            ImmutableSet<OpenOption> openOptions ) throws IOException, MetadataMismatchException
     {
-        PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), openOptions );
+        PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), databaseName, openOptions );
         // This index already exists, verify meta data aligns with expectations
 
         MutableBoolean pagedFileOpen = new MutableBoolean( true );
@@ -742,7 +747,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         // First time
         monitor.noStoreFile();
         // We need to create this index
-        PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), openOptions.newWith( CREATE ) );
+        PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), databaseName, openOptions.newWith( CREATE ) );
         created = true;
         return pagedFile;
     }
@@ -776,13 +781,14 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * @param indexFile {@link Path} containing the actual index
      * @param headerReader reads header data, previously written using {@link #checkpoint(IOLimiter, Consumer, PageCursorTracer)}
      * or {@link #close()}
+     * @param databaseName name of the database index file belongs to.
      * @throws IOException On page cache error
      * @throws MetadataMismatchException if some meta page is missing (tree not fully initialized)
      */
-    public static void readHeader( PageCache pageCache, Path indexFile, Header.Reader headerReader, PageCursorTracer cursorTracer )
+    public static void readHeader( PageCache pageCache, Path indexFile, Header.Reader headerReader, String databaseName, PageCursorTracer cursorTracer )
             throws IOException, MetadataMismatchException
     {
-        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorTracer, immutable.empty() ) )
+        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorTracer, databaseName, immutable.empty() ) )
         {
             Pair<TreeState,TreeState> states = loadStatePages( pagedFile, cursorTracer );
             TreeState state = TreeStatePair.selectNewestValidState( states );
@@ -880,11 +886,11 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     }
 
     @VisibleForTesting
-    public static void overwriteHeader( PageCache pageCache, Path indexFile, Consumer<PageCursor> headerWriter, PageCursorTracer cursorTracer )
-            throws IOException
+    public static void overwriteHeader( PageCache pageCache, Path indexFile, Consumer<PageCursor> headerWriter, String databaseName,
+            PageCursorTracer cursorTracer ) throws IOException
     {
         Header.Writer writer = replace( headerWriter );
-        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorTracer, immutable.empty() ) )
+        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorTracer, databaseName, immutable.empty() ) )
         {
             Pair<TreeState,TreeState> states = readStatePages( pagedFile, cursorTracer );
             TreeState newestValidState = TreeStatePair.selectNewestValidState( states );

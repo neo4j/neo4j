@@ -112,7 +112,7 @@ public class RecordRelationshipTraversalCursorTest
     @BeforeEach
     void setupStores()
     {
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs,
                 getRecordFormats(), NullLogProvider.getInstance(), PageCacheTracer.NULL, Sets.immutable.empty() );
         neoStores = storeFactory.openAllNeoStores( true );

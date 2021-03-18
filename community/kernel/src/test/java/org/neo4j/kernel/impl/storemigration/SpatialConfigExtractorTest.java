@@ -49,6 +49,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -112,7 +113,7 @@ class SpatialConfigExtractorTest
 
         // when
         List<SpatialFile> spatialFiles = IndexMigration.getSpatialFiles( fs, spatialDirectory );
-        SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, NULL, myLog );
+        SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, NULL, myLog, DEFAULT_DATABASE_NAME );
 
         // then
         String reason = "Index is in FAILED state.";
@@ -129,7 +130,7 @@ class SpatialConfigExtractorTest
         corruptFile( fs, spatialFile.getIndexFile() );
 
         // when
-        SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, singletonList( spatialFile ), NULL, myLog );
+        SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, singletonList( spatialFile ), NULL, myLog, DEFAULT_DATABASE_NAME );
 
         // then
         String reason = "Index meta data is corrupt and can not be parsed.";
@@ -148,7 +149,8 @@ class SpatialConfigExtractorTest
 
         // when
         List<SpatialFile> spatialFiles = IndexMigration.getSpatialFiles( fs, spatialDir );
-        IndexConfig indexConfig = SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, NULL, NullLog.getInstance() );
+        IndexConfig indexConfig =
+                SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, NULL, NullLog.getInstance(), DEFAULT_DATABASE_NAME );
 
         // then
         assertExpectedIndexConfig( indexConfig );

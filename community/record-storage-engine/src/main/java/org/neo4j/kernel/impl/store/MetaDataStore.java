@@ -183,10 +183,11 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache, LogProvider logProvider, RecordFormat<MetaDataRecord> recordFormat,
             String storeVersion, PageCacheTracer pageCacheTracer,
+            String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( file, idFile, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider,
-                TYPE_DESCRIPTOR, recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, storeVersion, openOptions );
+                TYPE_DESCRIPTOR, recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, storeVersion, databaseName, openOptions );
         this.pageCacheTracer = pageCacheTracer;
     }
 
@@ -293,15 +294,17 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
      * @param neoStore {@link Path} pointing to the neostore.
      * @param position record {@link Position}.
      * @param value value to write in that record.
+     * @param databaseName name of database this metadata store belongs to.
      * @param cursorTracer underlying page cursor tracer.
      * @return the previous value before writing.
      * @throws IOException if any I/O related error occurs.
      */
-    public static long setRecord( PageCache pageCache, Path neoStore, Position position, long value, PageCursorTracer cursorTracer ) throws IOException
+    public static long setRecord( PageCache pageCache, Path neoStore, Position position, long value, String databaseName, PageCursorTracer cursorTracer )
+            throws IOException
     {
         long previousValue = FIELD_NOT_INITIALIZED;
         int pageSize = pageCache.pageSize();
-        try ( PagedFile pagedFile = pageCache.map( neoStore, EMPTY, pageSize, immutable.empty() ) )
+        try ( PagedFile pagedFile = pageCache.map( neoStore, EMPTY, pageSize, databaseName, immutable.empty() ) )
         {
             int offset = offset( position );
             try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, cursorTracer ) )
@@ -356,12 +359,12 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
      * @param cursorTracer underlying page cursor tracer.
      * @return the read record value specified by {@link Position}.
      */
-    public static long getRecord( PageCache pageCache, Path neoStore, Position position, PageCursorTracer cursorTracer ) throws IOException
+    public static long getRecord( PageCache pageCache, Path neoStore, Position position, String databaseName, PageCursorTracer cursorTracer ) throws IOException
     {
         var recordFormat = new MetaDataRecordFormat();
         int pageSize = pageCache.pageSize();
         long value = FIELD_NOT_PRESENT;
-        try ( PagedFile pagedFile = pageCache.map( neoStore, EMPTY, pageSize, immutable.empty() ) )
+        try ( PagedFile pagedFile = pageCache.map( neoStore, EMPTY, pageSize, databaseName, immutable.empty() ) )
         {
             if ( pagedFile.getLastPageId() >= 0 )
             {
@@ -398,16 +401,16 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     public static void setStoreId( PageCache pageCache, Path neoStore, StoreId storeId, long upgradeTxChecksum, long upgradeTxCommitTimestamp,
-            PageCursorTracer cursorTracer ) throws IOException
+            String databaseName, PageCursorTracer cursorTracer ) throws IOException
     {
-        setRecord( pageCache, neoStore, Position.TIME, storeId.getCreationTime(), cursorTracer );
-        setRecord( pageCache, neoStore, Position.RANDOM_NUMBER, storeId.getRandomId(), cursorTracer );
-        setRecord( pageCache, neoStore, Position.STORE_VERSION, storeId.getStoreVersion(), cursorTracer );
-        setRecord( pageCache, neoStore, Position.UPGRADE_TIME, storeId.getUpgradeTime(), cursorTracer );
-        setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_ID, storeId.getUpgradeTxId(), cursorTracer );
+        setRecord( pageCache, neoStore, Position.TIME, storeId.getCreationTime(), databaseName, cursorTracer );
+        setRecord( pageCache, neoStore, Position.RANDOM_NUMBER, storeId.getRandomId(), databaseName, cursorTracer );
+        setRecord( pageCache, neoStore, Position.STORE_VERSION, storeId.getStoreVersion(), databaseName, cursorTracer );
+        setRecord( pageCache, neoStore, Position.UPGRADE_TIME, storeId.getUpgradeTime(), databaseName, cursorTracer );
+        setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_ID, storeId.getUpgradeTxId(), databaseName, cursorTracer );
 
-        setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_CHECKSUM, upgradeTxChecksum, cursorTracer );
-        setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, upgradeTxCommitTimestamp, cursorTracer );
+        setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_CHECKSUM, upgradeTxChecksum, databaseName, cursorTracer );
+        setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, upgradeTxCommitTimestamp, databaseName, cursorTracer );
     }
 
     public void setDatabaseIdUuid( UUID uuid, PageCursorTracer cursorTracer )
@@ -453,14 +456,14 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return isNotInitializedUUID( externalStoreUUID ) ? Optional.empty() : Optional.of( new ExternalStoreId( externalStoreUUID ) );
     }
 
-    public static StoreId getStoreId( PageCache pageCache, Path neoStore, PageCursorTracer cursorTracer ) throws IOException
+    public static StoreId getStoreId( PageCache pageCache, Path neoStore, String databaseName, PageCursorTracer cursorTracer ) throws IOException
     {
         return new StoreId(
-                getRecord( pageCache, neoStore, Position.TIME, cursorTracer ),
-                getRecord( pageCache, neoStore, Position.RANDOM_NUMBER, cursorTracer ),
-                getRecord( pageCache, neoStore, Position.STORE_VERSION, cursorTracer ),
-                getRecord( pageCache, neoStore, Position.UPGRADE_TIME, cursorTracer ),
-                getRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_ID, cursorTracer )
+                getRecord( pageCache, neoStore, Position.TIME, databaseName, cursorTracer ),
+                getRecord( pageCache, neoStore, Position.RANDOM_NUMBER, databaseName, cursorTracer ),
+                getRecord( pageCache, neoStore, Position.STORE_VERSION, databaseName, cursorTracer ),
+                getRecord( pageCache, neoStore, Position.UPGRADE_TIME, databaseName, cursorTracer ),
+                getRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_ID, databaseName, cursorTracer )
         );
     }
 

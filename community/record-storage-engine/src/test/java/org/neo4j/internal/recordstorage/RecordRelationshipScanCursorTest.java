@@ -155,7 +155,7 @@ class RecordRelationshipScanCursorTest
 
     private StoreFactory getStoreFactory()
     {
-        return new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate() ),
+        return new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() ),
                 pageCache, fileSystem, NullLogProvider.getInstance(), PageCacheTracer.NULL );
     }
 

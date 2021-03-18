@@ -41,6 +41,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.RandomValues;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -68,7 +69,7 @@ public class StringCollisionValuesTest
                 storage -> NumberArrayFactories.AUTO_WITHOUT_PAGECACHE,
                 storage -> NumberArrayFactories.CHUNKED_FIXED_SIZE,
                 storage -> new PageCachedNumberArrayFactory( storage.pageCache(), PageCacheTracer.NULL, storage.directory().homePath(),
-                        NullLog.getInstance() ) );
+                        NullLog.getInstance(), DEFAULT_DATABASE_NAME ) );
     }
 
     @Parameter( 0 )

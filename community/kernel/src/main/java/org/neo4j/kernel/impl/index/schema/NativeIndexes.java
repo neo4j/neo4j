@@ -36,10 +36,10 @@ public final class NativeIndexes
     private NativeIndexes()
     {}
 
-    public static InternalIndexState readState( PageCache pageCache, Path indexFile, PageCursorTracer cursorTracer ) throws IOException
+    public static InternalIndexState readState( PageCache pageCache, Path indexFile, String databaseName, PageCursorTracer cursorTracer ) throws IOException
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, headerReader, cursorTracer );
+        GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorTracer );
         switch ( headerReader.state )
         {
         case BYTE_FAILED:
@@ -53,11 +53,11 @@ public final class NativeIndexes
         }
     }
 
-    static String readFailureMessage( PageCache pageCache, Path indexFile, PageCursorTracer cursorTracer )
+    static String readFailureMessage( PageCache pageCache, Path indexFile, String databaseName, PageCursorTracer cursorTracer )
             throws IOException
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, headerReader, cursorTracer );
+        GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorTracer );
         return headerReader.failureMessage;
     }
 }

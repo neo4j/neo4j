@@ -116,10 +116,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
             LogProvider logProvider,
             int dataSizeFromConfiguration,
             RecordFormats recordFormats,
+            String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, configuration, idType, idGeneratorFactory, pageCache,
-                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
+                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormats.dynamic(), recordFormats.storeVersion(), databaseName, openOptions );
         allowStorePointsAndTemporal = recordFormats.hasCapability( RecordStorageCapability.POINT_PROPERTIES )
                 && recordFormats.hasCapability( RecordStorageCapability.TEMPORAL_PROPERTIES );
     }

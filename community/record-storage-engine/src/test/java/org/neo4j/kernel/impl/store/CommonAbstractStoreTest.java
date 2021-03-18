@@ -73,6 +73,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -116,7 +117,7 @@ class CommonAbstractStoreTest
                 .thenReturn( idGenerator );
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );
         when( pageFile.io( anyLong(), anyInt(), any() ) ).thenReturn( pageCursor );
-        when( mockedPageCache.map( eq( storeFile ), anyInt(), any() ) ).thenReturn( pageFile );
+        when( mockedPageCache.map( eq( storeFile ), anyInt(), any(), any() ) ).thenReturn( pageFile );
     }
 
     @Test
@@ -143,14 +144,15 @@ class CommonAbstractStoreTest
         PagedFile pagedFile = mock( PagedFile.class );
         PageCursor pageCursor = mock( PageCursor.class );
 
-        when( pageCache.map( eq( storeFile ), anyInt(), any() ) ).thenReturn( pagedFile );
+        when( pageCache.map( eq( storeFile ), anyInt(), any(), any() ) ).thenReturn( pagedFile );
         when( pagedFile.io( eq( 0L ), eq( PagedFile.PF_SHARED_READ_LOCK ), any() ) ).thenReturn( pageCursor );
         when( pageCursor.next() ).thenReturn( false );
 
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
 
         try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( storeFile, idFile, config, IdType.NODE_LABELS, idGeneratorFactory, pageCache,
-                NullLogProvider.getInstance(), GraphDatabaseInternalSettings.label_block_size.defaultValue(), recordFormats, immutable.empty() ) )
+                NullLogProvider.getInstance(), GraphDatabaseInternalSettings.label_block_size.defaultValue(), recordFormats, databaseLayout.getDatabaseName(),
+                immutable.empty() ) )
         {
             StoreNotFoundException storeNotFoundException = assertThrows( StoreNotFoundException.class, () -> dynamicArrayStore.initialise( false, NULL ) );
             assertEquals( "Fail to read header record of store file: " + storeFile.toAbsolutePath(), storeNotFoundException.getMessage() );
@@ -194,9 +196,9 @@ class CommonAbstractStoreTest
         Path nodeStore = databaseLayout.nodeStore();
         Path idFile =
                 databaseLayout.idFile( DatabaseFile.NODE_STORE ).orElseThrow( () -> new IllegalStateException( "Node store id file not found." ) );
-        TheStore store =
-                new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
-                        NullLogProvider.getInstance(), recordFormat, immutable.with( DELETE_ON_CLOSE ) );
+        TheStore store = new TheStore( nodeStore, databaseLayout.idNodeStore(), config, idType,
+                new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, NullLogProvider.getInstance(), recordFormat,
+                immutable.with( DELETE_ON_CLOSE ) );
         store.initialise( true, NULL );
         store.start( NULL );
         assertTrue( fs.fileExists( nodeStore ) );
@@ -261,7 +263,7 @@ class CommonAbstractStoreTest
                 LogProvider logProvider, RecordFormat<TheRecord> recordFormat, ImmutableSet<OpenOption> openOptions )
         {
             super( file, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormat,
-                    NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, STORE_VERSION, openOptions );
+                    NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, STORE_VERSION, DEFAULT_DATABASE_NAME, openOptions );
         }
 
         @Override

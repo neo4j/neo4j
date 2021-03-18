@@ -295,8 +295,8 @@ public class StoreUpgraderTest
         assertThat( pageCacheTracer.unpins() ).isGreaterThan( 0 );
         assertThat( pageCacheTracer.faults() ).isGreaterThan( 0 );
 
-        StoreFactory factory =
-                new StoreFactory( databaseLayout, allowMigrateConfig, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
+        StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig,
+                new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, databaseLayout.getDatabaseName() ), pageCache, fileSystem,
                         NullLogProvider.getInstance(), NULL );
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
@@ -628,7 +628,8 @@ public class StoreUpgraderTest
 
     private void verifyStoreUpgradedWithin( long duration, TimeUnit unit )
     {
-        StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem ),
+        StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig,
+                new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, databaseLayout.getDatabaseName() ),
                                                  pageCache, fileSystem, NullLogProvider.getInstance(), NULL );
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {

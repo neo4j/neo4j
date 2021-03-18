@@ -95,13 +95,13 @@ public class TokenIndex implements ConsistencyCheckable
     private final String monitorTag;
 
     /**
-     * {@link PageCache} to {@link PageCache#map(Path, int, ImmutableSet)}
+     * {@link PageCache} to {@link PageCache#map(Path, int, String, ImmutableSet)}
      * store file backing this token scan store. Passed to {@link GBPTree}.
      */
     private final PageCache pageCache;
 
     /**
-     * IndexFiles wrapping the store file {@link PageCache#map(Path, int, ImmutableSet)}.
+     * IndexFiles wrapping the store file {@link PageCache#map(Path, int, String, ImmutableSet)}.
      */
     final IndexFiles indexFiles;
 
@@ -112,6 +112,7 @@ public class TokenIndex implements ConsistencyCheckable
 
     private final PageCacheTracer cacheTracer;
 
+    private final String databaseName;
     /**
      * The actual index which backs this token index.
      */
@@ -140,6 +141,7 @@ public class TokenIndex implements ConsistencyCheckable
         this.pageCache = databaseIndexContext.pageCache;
         this.fs = databaseIndexContext.fileSystem;
         this.cacheTracer = databaseIndexContext.pageCacheTracer;
+        this.databaseName = databaseIndexContext.databaseName;
         this.indexFiles = indexFiles;
         this.tokenStoreName = descriptor.getName();
     }
@@ -148,7 +150,7 @@ public class TokenIndex implements ConsistencyCheckable
     {
         GBPTree.Monitor monitor = treeMonitor();
         index = new GBPTree<>( pageCache, indexFiles.getStoreFile(), new TokenScanLayout(), monitor, NO_HEADER_READER,
-                headerWriter, recoveryCleanupWorkCollector, readOnly, cacheTracer, immutable.empty(), tokenStoreName );
+                headerWriter, recoveryCleanupWorkCollector, readOnly, cacheTracer, immutable.empty(), databaseName, tokenStoreName );
     }
 
     void instantiateUpdater( Config config, DatabaseLayout directoryStructure, EntityType entityType )

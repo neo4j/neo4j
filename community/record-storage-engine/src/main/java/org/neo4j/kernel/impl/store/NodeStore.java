@@ -74,10 +74,11 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
             LogProvider logProvider,
             DynamicArrayStore dynamicLabelStore,
             RecordFormats recordFormats,
+            String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.node(),
-                NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), openOptions );
+                NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), databaseName, openOptions );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 

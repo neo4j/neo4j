@@ -65,6 +65,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     private final PageCache pageCache;
     private final Path path;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
+    private final String databaseName;
     private final PageCacheTracer pageCacheTracer;
     private final IndexStatisticsLayout layout;
     private final boolean readOnly;
@@ -74,11 +75,12 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     private final ConcurrentHashMap<Long,ImmutableIndexStatistics> cache = new ConcurrentHashMap<>();
 
     public IndexStatisticsStore( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly,
-            PageCacheTracer pageCacheTracer )
+            String databaseName, PageCacheTracer pageCacheTracer )
     {
         this.pageCache = pageCache;
         this.path = path;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
+        this.databaseName = databaseName;
         this.pageCacheTracer = pageCacheTracer;
         this.layout = new IndexStatisticsLayout();
         this.readOnly = readOnly;
@@ -87,7 +89,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     public IndexStatisticsStore( PageCache pageCache, DatabaseLayout databaseLayout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean readOnly, PageCacheTracer pageCacheTracer )
     {
-        this( pageCache, databaseLayout.indexStatisticsStore(), recoveryCleanupWorkCollector, readOnly, pageCacheTracer );
+        this( pageCache, databaseLayout.indexStatisticsStore(), recoveryCleanupWorkCollector, readOnly, databaseLayout.getDatabaseName(), pageCacheTracer );
     }
 
     @Override
@@ -96,7 +98,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         try
         {
             tree = new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, GBPTree.NO_HEADER_READER, GBPTree.NO_HEADER_WRITER,
-                    recoveryCleanupWorkCollector, readOnly, pageCacheTracer, immutable.empty(), "Statistics store" );
+                    recoveryCleanupWorkCollector, readOnly, pageCacheTracer, immutable.empty(), databaseName, "Statistics store" );
         }
         catch ( TreeFileNotFoundException e )
         {

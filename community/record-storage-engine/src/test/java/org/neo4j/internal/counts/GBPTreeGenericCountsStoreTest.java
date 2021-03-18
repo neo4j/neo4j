@@ -72,6 +72,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
@@ -131,7 +132,7 @@ class GBPTreeGenericCountsStoreTest
         assertZeroGlobalTracer( pageCacheTracer );
 
         try ( var counts = new GBPTreeCountsStore( pageCache, file, directory.getFileSystem(), immediate(), CountsBuilder.EMPTY, false, pageCacheTracer,
-                NO_MONITOR ) )
+                NO_MONITOR, DEFAULT_DATABASE_NAME ) )
         {
             assertThat( pageCacheTracer.pins() ).isEqualTo( 14 );
             assertThat( pageCacheTracer.unpins() ).isEqualTo( 14 );
@@ -482,7 +483,8 @@ class GBPTreeGenericCountsStoreTest
     {
         final Path file = directory.file( "non-existing" );
         final IllegalStateException e = assertThrows( IllegalStateException.class,
-                () -> new GBPTreeCountsStore( pageCache, file, fs, immediate(), CountsBuilder.EMPTY, true, PageCacheTracer.NULL, NO_MONITOR ) );
+                () -> new GBPTreeCountsStore( pageCache, file, fs, immediate(), CountsBuilder.EMPTY, true, PageCacheTracer.NULL, NO_MONITOR,
+                        DEFAULT_DATABASE_NAME ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
@@ -705,7 +707,8 @@ class GBPTreeGenericCountsStoreTest
 
     private void instantiateCountsStore( Rebuilder builder, boolean readOnly, GBPTreeGenericCountsStore.Monitor monitor ) throws IOException
     {
-        countsStore = new GBPTreeGenericCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnly, "test", PageCacheTracer.NULL, monitor );
+        countsStore = new GBPTreeGenericCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnly, "test", PageCacheTracer.NULL, monitor,
+                DEFAULT_DATABASE_NAME );
     }
 
     private void assertZeroGlobalTracer( PageCacheTracer pageCacheTracer )

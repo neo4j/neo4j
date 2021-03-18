@@ -98,16 +98,18 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     private final boolean readOnly;
     private final String name;
     private final Monitor monitor;
+    private final String databaseName;
     protected volatile CountsChanges changes = new CountsChanges();
     private final TxIdInformation txIdInformation;
     private volatile boolean started;
 
     public GBPTreeGenericCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-            Rebuilder rebuilder, boolean readOnly, String name, PageCacheTracer pageCacheTracer, Monitor monitor ) throws IOException
+            Rebuilder rebuilder, boolean readOnly, String name, PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName ) throws IOException
     {
         this.readOnly = readOnly;
         this.name = name;
         this.monitor = monitor;
+        this.databaseName = databaseName;
 
         // First just read the header so that we can avoid creating it if this store is read-only
         CountsHeader header = new CountsHeader( NEEDS_REBUILDING_HIGH_ID );
@@ -151,7 +153,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         try
         {
             return new GBPTree<>( pageCache, file, layout, GBPTree.NO_MONITOR, header, header, recoveryCollector, readOnly, pageCacheTracer,
-                    immutable.empty(), name );
+                    immutable.empty(), databaseName, name );
         }
         catch ( TreeFileNotFoundException e )
         {
@@ -428,21 +430,22 @@ public class GBPTreeGenericCountsStore implements CountsStorage
      * @param pageCache {@link PageCache} to use to map the counts store file into.
      * @param file {@link Path} pointing out the counts store.
      * @param out to print to.
+     * @param databaseName name of the database tree belongs to.
      * @param name of the {@link GBPTree}.
      * @param cursorTracer tracer for page cache access.
      * @param keyToString function for generating proper descriptions of the keys.
      * @throws IOException on missing file or I/O error.
      */
-    protected static void dump( PageCache pageCache, Path file, PrintStream out, String name, PageCursorTracer cursorTracer,
+    protected static void dump( PageCache pageCache, Path file, PrintStream out, String databaseName, String name, PageCursorTracer cursorTracer,
             Function<CountsKey,String> keyToString ) throws IOException
     {
         // First check if it even exists as we don't really want to create it as part of dumping it. readHeader will throw if not found
         CountsHeader header = new CountsHeader( BASE_TX_ID );
-        GBPTree.readHeader( pageCache, file, header, cursorTracer );
+        GBPTree.readHeader( pageCache, file, header, databaseName, cursorTracer );
 
         // Now open it and dump its contents
         try ( GBPTree<CountsKey,CountsValue> tree = new GBPTree<>( pageCache, file, new CountsLayout(), GBPTree.NO_MONITOR, header, GBPTree.NO_HEADER_WRITER,
-                RecoveryCleanupWorkCollector.ignore(), true, NULL, immutable.empty(), name ) )
+                RecoveryCleanupWorkCollector.ignore(), true, NULL, immutable.empty(), databaseName, name ) )
         {
             out.printf( "Highest gap-free txId: %d%n", header.highestGapFreeTxId() );
             tree.visit( new GBPTreeVisitor.Adaptor<>()

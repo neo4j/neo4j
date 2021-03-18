@@ -66,7 +66,8 @@ class HighIdTransactionApplierTest
     @BeforeEach
     void before()
     {
-        var storeFactory = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ),
+        var storeFactory =
+                new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
                 pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL );
         neoStores = storeFactory.openAllNeoStores( true );
     }
@@ -78,7 +79,7 @@ class HighIdTransactionApplierTest
     }
 
     @Test
-    void shouldUpdateHighIdsOnExternalTransaction() throws Exception
+    void shouldUpdateHighIdsOnExternalTransaction()
     {
         // GIVEN
         HighIdTransactionApplier tracker = new HighIdTransactionApplier( neoStores );

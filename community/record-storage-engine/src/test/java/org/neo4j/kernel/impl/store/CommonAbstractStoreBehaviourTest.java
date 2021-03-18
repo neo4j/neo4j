@@ -51,6 +51,7 @@ import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -244,7 +245,7 @@ class CommonAbstractStoreBehaviourTest
         }
         int pageSize = store.pagedFile.pageSize();
         store.close();
-        store.pageCache.map( store.getStorageFile(), pageSize, immutable.of( TRUNCATE_EXISTING ) ).close();
+        store.pageCache.map( store.getStorageFile(), pageSize, DEFAULT_DATABASE_NAME, immutable.of( TRUNCATE_EXISTING ) ).close();
         createStore();
     }
 
@@ -434,8 +435,8 @@ class CommonAbstractStoreBehaviourTest
         MyStore( Config config, PageCache pageCache, MyFormat format )
         {
             super( Path.of( STORE_FILENAME ), Path.of( ID_FILENAME ), config, IdType.NODE,
-                    new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
-                    NullLogProvider.getInstance(), "T", format, format, "XYZ", immutable.empty() );
+                    new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), pageCache,
+                    NullLogProvider.getInstance(), "T", format, format, "XYZ", DEFAULT_DATABASE_NAME, immutable.empty() );
         }
 
         @Override

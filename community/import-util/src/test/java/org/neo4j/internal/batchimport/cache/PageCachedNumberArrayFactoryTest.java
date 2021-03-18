@@ -32,6 +32,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -49,7 +50,7 @@ class PageCachedNumberArrayFactoryTest
         // given
         Log log = mock( Log.class );
         Path dir = directory.directory( "cache" );
-        PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, NULL, dir, log );
+        PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, NULL, dir, log, DEFAULT_DATABASE_NAME );
 
         // when
         factory.newIntArray( 1_000, -1, 0, INSTANCE ).close();
@@ -64,7 +65,7 @@ class PageCachedNumberArrayFactoryTest
         // given
         Log log = mock( Log.class );
         Path dir = directory.directory( "cache" );
-        PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, NULL, dir, log );
+        PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, NULL, dir, log, DEFAULT_DATABASE_NAME );
 
         // when
         factory.newLongArray( 1_000, -1, 0, INSTANCE ).close();
@@ -79,7 +80,7 @@ class PageCachedNumberArrayFactoryTest
         // given
         Log log = mock( Log.class );
         Path dir = directory.directory( "cache" );
-        PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, NULL, dir, log );
+        PageCachedNumberArrayFactory factory = new PageCachedNumberArrayFactory( pageCache, NULL, dir, log, DEFAULT_DATABASE_NAME );
 
         // when
         factory.newByteArray( 1_000, new byte[4], 0, INSTANCE ).close();

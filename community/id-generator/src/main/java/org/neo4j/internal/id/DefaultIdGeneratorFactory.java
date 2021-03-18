@@ -46,6 +46,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     protected final FileSystemAbstraction fs;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     protected final boolean allowLargeIdCaches;
+    private final String databaseName;
 
     /**
      * By default doesn't allow large ID caches.
@@ -53,9 +54,9 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
      * @param fs {@link FileSystemAbstraction} to back the id generators.
      * @param recoveryCleanupWorkCollector {@link RecoveryCleanupWorkCollector} for cleanup on starting the id generators.
      */
-    public DefaultIdGeneratorFactory( FileSystemAbstraction fs, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    public DefaultIdGeneratorFactory( FileSystemAbstraction fs, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, String databaseName )
     {
-        this( fs, recoveryCleanupWorkCollector, false );
+        this( fs, recoveryCleanupWorkCollector, false, databaseName );
     }
 
     /**
@@ -64,12 +65,15 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
      * @param allowLargeIdCaches override the "activity" setting from {@link IdType} to always use low activity. This is useful for databases
      * that generally see very low activity so that the id generators won't benefit from having large ID caches and instead use small ID caches.
      * Functionally this makes no difference, it only affects performance (and memory usage which is the main driver for forcing low activity).
+     * @param databaseName name of the database this id generator belongs to
      */
-    public DefaultIdGeneratorFactory( FileSystemAbstraction fs, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean allowLargeIdCaches )
+    public DefaultIdGeneratorFactory( FileSystemAbstraction fs, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean allowLargeIdCaches,
+            String databaseName )
     {
         this.fs = fs;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.allowLargeIdCaches = allowLargeIdCaches;
+        this.databaseName = databaseName;
     }
 
     @Override
@@ -77,18 +81,19 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
             PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         IndexedIdGenerator generator =
-                instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, highIdScanner, maxId, idType, readOnly, config, cursorTracer, openOptions );
+                instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, highIdScanner, maxId, idType, readOnly, config, cursorTracer, databaseName,
+                        openOptions );
         generators.put( idType, generator );
         return generator;
     }
 
     protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, Config config, PageCursorTracer cursorTracer,
-            ImmutableSet<OpenOption> openOptions )
+            String databaseName, ImmutableSet<OpenOption> openOptions )
     {
         // highId not used when opening an IndexedIdGenerator
         return new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, highIdSupplier, maxValue, readOnly,
-                config, cursorTracer, defaultIdMonitor( fs, fileName, config ), openOptions );
+                config, cursorTracer, defaultIdMonitor( fs, fileName, config ), databaseName, openOptions );
     }
 
     @Override
@@ -110,7 +115,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
         IndexedIdGenerator generator =
                 new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, () -> highId, maxId, readOnly,
-                        config, cursorTracer, defaultIdMonitor( fs, fileName, config ), openOptions );
+                        config, cursorTracer, defaultIdMonitor( fs, fileName, config ), databaseName, openOptions );
         generator.checkpoint( UNLIMITED, cursorTracer );
         generators.put( idType, generator );
         return generator;

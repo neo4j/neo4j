@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
 import org.neo4j.monitoring.Monitors;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -49,7 +50,8 @@ public class GenericIndexProviderCompatibilitySuiteTest extends PropertyIndexPro
         OperationalMode mode = OperationalMode.SINGLE;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
         return GenericNativeIndexProviderFactory.
-                create( pageCache, graphDbDir, fs, monitors, monitorTag, config, mode, recoveryCleanupWorkCollector, PageCacheTracer.NULL );
+                create( pageCache, graphDbDir, fs, monitors, monitorTag, config, mode, recoveryCleanupWorkCollector, PageCacheTracer.NULL,
+                        DEFAULT_DATABASE_NAME );
     }
 
     @Override

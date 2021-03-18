@@ -170,10 +170,11 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             PropertyKeyTokenStore propertyKeyTokenStore,
             DynamicArrayStore arrayPropertyStore,
             RecordFormats recordFormats,
+            String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
-                recordFormats.property(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), openOptions );
+                recordFormats.property(), NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), databaseName, openOptions );
         this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayStore = arrayPropertyStore;

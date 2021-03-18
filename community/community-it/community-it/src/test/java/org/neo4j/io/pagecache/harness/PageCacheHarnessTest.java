@@ -44,6 +44,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.randomharness.Command.FlushCache;
@@ -107,7 +108,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setPreparation( ( cache, fs, filesTouched ) ->
             {
                 Path file = filesTouched.iterator().next();
-                try ( PagedFile pf = cache.map( file, cache.pageSize() );
+                try ( PagedFile pf = cache.map( file, cache.pageSize(), DEFAULT_DATABASE_NAME );
                       PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
                 {
                     for ( int pageId = 0; pageId < filePageCount; pageId++ )
@@ -200,7 +201,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
         {
             for ( Path file : filesTouched )
             {
-                try ( PagedFile pf = cache.map( file, cache.pageSize() );
+                try ( PagedFile pf = cache.map( file, cache.pageSize(), DEFAULT_DATABASE_NAME );
                       PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK, NULL ) )
                 {
                     for ( int pageId = 0; pageId < filePageCount && cursor.next(); pageId++ )

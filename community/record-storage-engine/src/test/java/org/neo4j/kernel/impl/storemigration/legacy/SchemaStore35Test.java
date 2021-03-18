@@ -57,6 +57,7 @@ import static java.util.Collections.singleton;
 import static java.util.stream.IntStream.range;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.asCollection;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
@@ -86,10 +87,10 @@ class SchemaStore35Test
     void before()
     {
         Config config = Config.defaults();
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME );
         NullLogProvider logProvider = NullLogProvider.getInstance();
         store = new SchemaStore35( testDirectory.file( "schema35" ), testDirectory.file( "schema35.db.id" ), config, IdType.SCHEMA,
-                idGeneratorFactory, pageCache, logProvider, StandardV3_4.RECORD_FORMATS, immutable.empty() );
+                idGeneratorFactory, pageCache, logProvider, StandardV3_4.RECORD_FORMATS, DEFAULT_DATABASE_NAME, immutable.empty() );
         store.initialise( true, NULL );
     }
 

@@ -426,8 +426,8 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int filePageSize, ImmutableSet<OpenOption> openOptions,
-            String databaseName ) throws IOException
+    public synchronized PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int filePageSize, String databaseName,
+            ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         assertHealthy();
         ensureThreadsInitialised();

@@ -270,7 +270,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 {
                     return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                 }
-            }, readOnly, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR );
+            }, readOnly, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName() );
         }
         catch ( IOException e )
         {
@@ -285,7 +285,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, layout.relationshipGroupDegreesStore(), fs, recoveryCleanupWorkCollector,
                     new DegreesRebuildFromStore( neoStores ), config.get( GraphDatabaseSettings.read_only ), pageCacheTracer,
-                    GBPTreeGenericCountsStore.NO_MONITOR );
+                    GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName() );
         }
         catch ( IOException e )
         {

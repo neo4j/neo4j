@@ -50,14 +50,14 @@ final class GenericConfigExtractor
     {}
 
     static IndexConfig indexConfigFromGenericFile( FileSystemAbstraction fs, PageCache pageCache, Path genericFile,
-            PageCursorTracer cursorTracer, Log log ) throws IOException
+            PageCursorTracer cursorTracer, Log log, String databaseName ) throws IOException
     {
         Map<String,Value> indexConfig = new HashMap<>();
         if ( fs.fileExists( genericFile ) )
         {
             try
             {
-                GBPTree.readHeader( pageCache, genericFile, new GenericConfig( indexConfig, genericFile, log ), cursorTracer );
+                GBPTree.readHeader( pageCache, genericFile, new GenericConfig( indexConfig, genericFile, log ), databaseName, cursorTracer );
             }
             catch ( MetadataMismatchException e )
             {

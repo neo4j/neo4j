@@ -286,7 +286,7 @@ public final class Recovery
         checkAllFilesPresence( databaseLayout, fs, pageCache, storageEngineFactory );
         LifeSupport recoveryLife = new LifeSupport();
         Monitors monitors = new Monitors( globalMonitors, logProvider );
-        DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, EmptyVersionContextSupplier.EMPTY, databaseLayout.getDatabaseName() );
+        DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, EmptyVersionContextSupplier.EMPTY );
         SimpleLogService logService = new SimpleLogService( logProvider );
         VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
 
@@ -307,7 +307,8 @@ public final class Recovery
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );
 
         StorageEngine storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, schemaState,
-                getConstraintSemantics(), indexProviderMap, NO_LOCK_SERVICE, new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector ),
+                getConstraintSemantics(), indexProviderMap, NO_LOCK_SERVICE,
+                new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector, databaseLayout.getDatabaseName() ),
                 new DefaultIdController(), databaseHealth, logService.getInternalLogProvider(), recoveryCleanupCollector, tracers.getPageCacheTracer(),
                 true, memoryTracker );
 
@@ -333,7 +334,8 @@ public final class Recovery
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( databaseLayout, config, databasePageCache, fs, logProvider, tokenHolders, schemaState, getConstraintSemantics(),
-                NO_LOCK_SERVICE, databaseHealth, new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector ), new DefaultIdController(),
+                NO_LOCK_SERVICE, databaseHealth, new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector, databaseLayout.getDatabaseName() ),
+                new DefaultIdController(),
                 EmptyVersionContextSupplier.EMPTY, logService, metadataProvider );
 
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )

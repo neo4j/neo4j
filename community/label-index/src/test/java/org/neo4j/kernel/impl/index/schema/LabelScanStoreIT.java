@@ -55,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFactory;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
@@ -297,8 +298,8 @@ class LabelScanStoreIT
 
     private GBPTree<TokenScanKey,TokenScanValue> openReadOnlyGBPTree( TokenScanLayout labelScanLayout )
     {
-        return new GBPTree<>( pageCache, databaseLayout.labelScanStore(), labelScanLayout, NO_MONITOR, NO_HEADER_READER,
-                NO_HEADER_WRITER, ignore(), true, PageCacheTracer.NULL, Sets.immutable.empty(), "test tree" );
+        return new GBPTree<>( pageCache, databaseLayout.labelScanStore(), labelScanLayout, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), true,
+                PageCacheTracer.NULL, Sets.immutable.empty(), DEFAULT_DATABASE_NAME, "test tree" );
     }
 
     private void newLabelScanStore() throws IOException

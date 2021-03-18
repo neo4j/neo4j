@@ -169,7 +169,7 @@ class RelationshipGroupStoreTest
         {
             config.set( dense_node_threshold, customThreshold );
         }
-        return new StoreFactory( databaseLayout, config.build(), new DefaultIdGeneratorFactory( fs, immediate() ),
+        return new StoreFactory( databaseLayout, config.build(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
                 pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL );
     }
 

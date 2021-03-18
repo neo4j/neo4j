@@ -63,7 +63,7 @@ class NeoStoreOpenFailureTest
     void mustCloseAllStoresIfNeoStoresFailToOpen()
     {
         Config config = Config.defaults();
-        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
+        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() );
         LogProvider logProvider = NullLogProvider.getInstance();
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
         RecordFormatPropertyConfigurator.configureRecordFormat( formats, config );

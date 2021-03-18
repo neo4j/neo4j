@@ -135,6 +135,7 @@ public class ImportLogic implements Closeable
     };
 
     private final Path databaseDirectory;
+    private final String databaseName;
     private final BatchingNeoStores neoStore;
     private final Configuration config;
     private final Config dbConfig;
@@ -181,6 +182,7 @@ public class ImportLogic implements Closeable
             PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         this.databaseDirectory = databaseLayout.databaseDirectory();
+        this.databaseName = databaseLayout.getDatabaseName();
         this.neoStore = neoStore;
         this.config = config;
         this.dbConfig = dbConfig;
@@ -201,7 +203,7 @@ public class ImportLogic implements Closeable
         this.input = input;
         PageCacheArrayFactoryMonitor numberArrayFactoryMonitor = new PageCacheArrayFactoryMonitor();
         numberArrayFactory = auto( neoStore.getPageCache(), pageCacheTracer, databaseDirectory, config.allowCacheAllocationOnHeap(),
-                numberArrayFactoryMonitor, log );
+                numberArrayFactoryMonitor, log, databaseName );
         // Some temporary caches and indexes in the import
         idMapper = instantiateIdMapper( input );
         nodeRelationshipCache = new NodeRelationshipCache( numberArrayFactory, dbConfig.get( GraphDatabaseSettings.dense_node_threshold ), memoryTracker );

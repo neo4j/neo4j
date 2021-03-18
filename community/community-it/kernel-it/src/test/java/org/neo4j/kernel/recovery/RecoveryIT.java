@@ -481,7 +481,9 @@ class RecoveryIT
         PageCache pageCache = getDatabasePageCache( database );
         generateSomeData( database );
 
-        assertEquals( -1, getRecord( pageCache, database.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, NULL ) );
+        assertEquals( -1,
+                getRecord( pageCache, database.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, databaseLayout.getDatabaseName(),
+                        NULL ) );
 
         managementService.shutdown();
 
@@ -871,8 +873,8 @@ class RecoveryIT
         try
         {
             PageCache restartedCache = getDatabasePageCache( restartedDatabase );
-            final long record =
-                    getRecord( restartedCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, NULL );
+            final long record = getRecord( restartedCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP,
+                    databaseLayout.getDatabaseName(), NULL );
             assertThat( record ).isGreaterThan( 0L );
         }
         finally

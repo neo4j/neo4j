@@ -85,11 +85,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             int dataSizeFromConfiguration,
             RecordFormat<DynamicRecord> recordFormat,
             String storeVersion,
+            String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
                 recordFormat, new DynamicStoreHeaderFormat( dataSizeFromConfiguration, recordFormat ),
-                storeVersion, openOptions );
+                storeVersion, databaseName, openOptions );
     }
 
     public static void allocateRecordsFromBytes( Collection<DynamicRecord> recordList, byte[] src, DynamicRecordAllocator dynamicRecordAllocator,

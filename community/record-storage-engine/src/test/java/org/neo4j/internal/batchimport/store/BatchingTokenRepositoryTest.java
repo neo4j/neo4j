@@ -167,7 +167,7 @@ class BatchingTokenRepositoryTest
 
     private NeoStores newNeoStores( StoreType... storeTypes )
     {
-        return new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache, fileSystem,
-                NullLogProvider.getInstance(), PageCacheTracer.NULL ).openNeoStores( true, storeTypes );
+        return new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() ),
+                pageCache, fileSystem, NullLogProvider.getInstance(), PageCacheTracer.NULL ).openNeoStores( true, storeTypes );
     }
 }

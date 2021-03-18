@@ -98,6 +98,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     private final StoreHeaderFormat<HEADER> storeHeaderFormat;
     private HEADER storeHeader;
 
+    private final String databaseName;
     private final ImmutableSet<OpenOption> openOptions;
 
     /**
@@ -126,6 +127,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             RecordFormat<RECORD> recordFormat,
             StoreHeaderFormat<HEADER> storeHeaderFormat,
             String storeVersion,
+            String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         this.storageFile = path;
@@ -138,6 +140,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         this.recordFormat = recordFormat;
         this.storeHeaderFormat = storeHeaderFormat;
         this.storeVersion = storeVersion;
+        this.databaseName = databaseName;
         this.openOptions = openOptions;
         this.log = logProvider.getLog( getClass() );
     }
@@ -195,7 +198,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 // This store has a store-specific header so we have read it before we can be sure that we can map it with correct page size.
                 // Try to open the store file (w/o creating if it doesn't exist), with page size for the configured header value.
                 HEADER defaultHeader = storeHeaderFormat.generateHeader();
-                pagedFile = pageCache.map( storageFile, filePageSize, openOptions.newWith( ANY_PAGE_SIZE ) );
+                pagedFile = pageCache.map( storageFile, filePageSize, databaseName, openOptions.newWith( ANY_PAGE_SIZE ) );
                 HEADER readHeader = readStoreHeaderAndDetermineRecordSize( pagedFile, cursorTracer );
                 if ( !defaultHeader.equals( readHeader ) )
                 {
@@ -208,7 +211,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             if ( pagedFile == null )
             {
                 // Map the file with the correct page size
-                pagedFile = pageCache.map( storageFile, filePageSize, openOptions );
+                pagedFile = pageCache.map( storageFile, filePageSize, databaseName, openOptions );
             }
         }
         catch ( NoSuchFileException | StoreNotFoundException e )
@@ -232,7 +235,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                             readOnly, configuration, cursorTracer, openOptions );
 
                     // Map the file (w/ the CREATE flag) and initialize the header
-                    pagedFile = pageCache.map( storageFile, filePageSize, openOptions.newWith( CREATE ) );
+                    pagedFile = pageCache.map( storageFile, filePageSize, databaseName, openOptions.newWith( CREATE ) );
                     initialiseNewStoreFile( cursorTracer );
                     return true; // <-- successfully created and initialized
                 }

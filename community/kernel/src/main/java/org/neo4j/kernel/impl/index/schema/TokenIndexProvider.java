@@ -109,7 +109,8 @@ public class TokenIndexProvider extends IndexProvider
     {
         try
         {
-            String failureMessage = TokenIndexes.readFailureMessage( databaseIndexContext.pageCache, storeFile( descriptor ), cursorTracer );
+            String failureMessage =
+                    TokenIndexes.readFailureMessage( databaseIndexContext.pageCache, storeFile( descriptor ), databaseIndexContext.databaseName, cursorTracer );
             return defaultIfEmpty( failureMessage, StringUtils.EMPTY );
         }
         catch ( IOException e )
@@ -123,7 +124,7 @@ public class TokenIndexProvider extends IndexProvider
     {
         try
         {
-            return TokenIndexes.readState( databaseIndexContext.pageCache, storeFile( descriptor ), cursorTracer );
+            return TokenIndexes.readState( databaseIndexContext.pageCache, storeFile( descriptor ), databaseIndexContext.databaseName, cursorTracer );
         }
         catch ( MetadataMismatchException | IOException e )
         {

@@ -126,6 +126,6 @@ public class GBPTreeBuilder<KEY,VALUE>
     public GBPTree<KEY,VALUE> build()
     {
         return new GBPTree<>( pageCache, path, layout, monitor, headerReader, headerWriter, recoveryCleanupWorkCollector, readOnly, pageCacheTracer,
-                openOptions, "test tree" );
+                openOptions, "test", "test tree" );
     }
 }

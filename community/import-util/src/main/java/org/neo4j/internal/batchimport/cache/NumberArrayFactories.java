@@ -133,9 +133,9 @@ public class NumberArrayFactories
      * {@code pageCache}.
      */
     public static NumberArrayFactory auto( PageCache pageCache, PageCacheTracer pageCacheTracer,
-                                           Path dir, boolean allowHeapAllocation, NumberArrayFactory.Monitor monitor, Log log )
+                                           Path dir, boolean allowHeapAllocation, NumberArrayFactory.Monitor monitor, Log log, String databaseName )
     {
-        PageCachedNumberArrayFactory pagedArrayFactory = new PageCachedNumberArrayFactory( pageCache, pageCacheTracer, dir, log );
+        PageCachedNumberArrayFactory pagedArrayFactory = new PageCachedNumberArrayFactory( pageCache, pageCacheTracer, dir, log, databaseName );
         ChunkedNumberArrayFactory chunkedArrayFactory = new ChunkedNumberArrayFactory( monitor,
                                                                                        allocationAlternatives( allowHeapAllocation, pagedArrayFactory ) );
         return new Auto( monitor, allocationAlternatives( allowHeapAllocation, chunkedArrayFactory ) );

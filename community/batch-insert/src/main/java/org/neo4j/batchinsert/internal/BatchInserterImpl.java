@@ -295,7 +295,7 @@ public class BatchInserterImpl implements BatchInserter
             msgLog = logService.getInternalLog( getClass() );
 
             boolean dump = config.get( GraphDatabaseInternalSettings.dump_configuration );
-            this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), true );
+            this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), true, databaseLayout.getDatabaseName() );
 
             LogProvider internalLogProvider = logService.getInternalLogProvider();
             RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, this.databaseLayout, fileSystem,
@@ -325,7 +325,8 @@ public class BatchInserterImpl implements BatchInserter
             labelTokenStore = neoStores.getLabelTokenStore();
 
             groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
-                    new DegreesRebuildFromStore( neoStores ), config.get( GraphDatabaseSettings.read_only ), pageCacheTracer, NO_MONITOR );
+                    new DegreesRebuildFromStore( neoStores ), config.get( GraphDatabaseSettings.read_only ), pageCacheTracer, NO_MONITOR,
+                    databaseLayout.getDatabaseName() );
             groupDegreesStore.start( cursorTracer, memoryTracker );
 
             degreeUpdater = groupDegreesStore.directApply( cursorTracer );
@@ -596,7 +597,7 @@ public class BatchInserterImpl implements BatchInserter
         IndexStoreView indexStoreView = new DynamicIndexStoreView( storeIndexStoreView, labelIndex, relationshipTypeIndex,
                 NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ), logProvider, config );
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
-                immediate(), false, cacheTracer );
+                immediate(), false, databaseLayout.getDatabaseName(), cacheTracer );
         IndexingService indexingService = IndexingServiceFactory
                 .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView, tokenHolders, emptyList(), logProvider, userLogProvider,
                         IndexingService.NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, cacheTracer, memoryTracker,
@@ -649,7 +650,7 @@ public class BatchInserterImpl implements BatchInserter
         CountsComputer initialCountsBuilder =
                 new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker, logService.getInternalLog( getClass() ) );
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
-                initialCountsBuilder, false, cacheTracer, NO_MONITOR ) )
+                initialCountsBuilder, false, cacheTracer, NO_MONITOR, databaseLayout.getDatabaseName() ) )
         {
             countsStore.start( PageCursorTracer.NULL, memoryTracker );
             countsStore.checkpoint( IOLimiter.UNLIMITED, PageCursorTracer.NULL );

@@ -37,6 +37,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @TestDirectoryExtension
 class ConfigurableStandalonePageCacheFactoryTest
@@ -54,7 +55,7 @@ class ConfigurableStandalonePageCacheFactoryTest
             fs.write( file ).close();
 
             try ( PageCache cache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, jobScheduler, PageCacheTracer.NULL );
-                    PagedFile pf = cache.map( file, 4096 );
+                    PagedFile pf = cache.map( file, 4096, DEFAULT_DATABASE_NAME );
                     PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, PageCursorTracer.NULL ) )
             {
                 // The default size is currently 8MBs.

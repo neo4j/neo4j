@@ -52,7 +52,7 @@ class AccessCheckingPageCacheTest
         when( mockedPagedFile.io( anyLong(), anyInt(), any() ) ).thenReturn( mockedCursor );
         when( mockedPageCache.map( any( Path.class ), any(), anyInt(), any(), any() ) ).thenReturn( mockedPagedFile );
         pageCache = new AccessCheckingPageCache( mockedPageCache );
-        PagedFile file = pageCache.map( Path.of( "some file" ), 512 );
+        PagedFile file = pageCache.map( Path.of( "some file" ), 512, "database" );
         cursor = file.io( 0, PagedFile.PF_SHARED_READ_LOCK, PageCursorTracer.NULL );
     }
 

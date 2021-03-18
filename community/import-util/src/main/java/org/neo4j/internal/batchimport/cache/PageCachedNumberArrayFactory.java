@@ -43,15 +43,17 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
 {
     private final PageCache pageCache;
     private final Path storeDir;
+    private final String databaseName;
     private final PageCacheTracer pageCacheTracer;
     private final Log log;
 
-    public PageCachedNumberArrayFactory( PageCache pageCache, PageCacheTracer pageCacheTracer, Path storeDir, Log log )
+    public PageCachedNumberArrayFactory( PageCache pageCache, PageCacheTracer pageCacheTracer, Path storeDir, Log log, String databaseName )
     {
         this.pageCache = requireNonNull( pageCache );
         this.log = log;
         this.pageCacheTracer = requireNonNull( pageCacheTracer );
         this.storeDir = requireNonNull( storeDir );
+        this.databaseName = databaseName;
     }
 
     @Override
@@ -60,7 +62,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
         try
         {
             Path tempFile = Files.createTempFile( storeDir, "intArray", ".tmp" );
-            PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), immutable.of( DELETE_ON_CLOSE, CREATE ) );
+            PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), databaseName, immutable.of( DELETE_ON_CLOSE, CREATE ) );
             log.info( "Using page-cache backed caching, this may affect performance negatively. IntArray length:" + length );
             return new PageCacheIntArray( pagedFile, pageCacheTracer, length, defaultValue, base );
         }
@@ -76,7 +78,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
         try
         {
             Path tempFile = Files.createTempFile( storeDir, "longArray", ".tmp" );
-            PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), immutable.of( DELETE_ON_CLOSE, CREATE ) );
+            PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), databaseName, immutable.of( DELETE_ON_CLOSE, CREATE ) );
             log.info( "Using page-cache backed caching, this may affect performance negatively. LongArray length:" + length );
             return new PageCacheLongArray( pagedFile, pageCacheTracer, length, defaultValue, base );
         }
@@ -92,7 +94,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
         try
         {
             Path tempFile = Files.createTempFile( storeDir, "byteArray", ".tmp" );
-            PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), immutable.of( DELETE_ON_CLOSE, CREATE ) );
+            PagedFile pagedFile = pageCache.map( tempFile, pageCache.pageSize(), databaseName, immutable.of( DELETE_ON_CLOSE, CREATE ) );
             log.info( "Using page-cache backed caching, this may affect performance negatively. ByteArray length:" + length );
             return new PageCacheByteArray( pagedFile, pageCacheTracer, length, defaultValue, base );
         }

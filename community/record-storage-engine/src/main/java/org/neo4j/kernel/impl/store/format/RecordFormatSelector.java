@@ -160,7 +160,7 @@ public class RecordFormatSelector
         {
             try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( STORE_SELECTION_TAG ) )
             {
-                long value = MetaDataStore.getRecord( pageCache, neoStoreFile, STORE_VERSION, cursorTracer );
+                long value = MetaDataStore.getRecord( pageCache, neoStoreFile, STORE_VERSION, databaseLayout.getDatabaseName(), cursorTracer );
                 if ( value != MetaDataRecordFormat.FIELD_NOT_PRESENT )
                 {
                     String storeVersion = MetaDataStore.versionLongToString( value );

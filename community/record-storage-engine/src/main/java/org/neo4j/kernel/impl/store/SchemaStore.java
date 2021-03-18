@@ -132,10 +132,11 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             LogProvider logProvider,
             PropertyStore propertyStore,
             RecordFormats recordFormats,
+            String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.schema(),
-                getStoreHeaderFormat( recordFormats ), recordFormats.storeVersion(), openOptions );
+                getStoreHeaderFormat( recordFormats ), recordFormats.storeVersion(), databaseName, openOptions );
         this.propertyStore = propertyStore;
     }
 

@@ -109,12 +109,13 @@ class OnlineIndexUpdatesTest
         Config config = Config.defaults();
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, immediate() ), pageCache, fileSystem,
-                        nullLogProvider, NULL );
+                new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() ), pageCache,
+                        fileSystem, nullLogProvider, NULL );
 
         neoStores = storeFactory.openAllNeoStores( true );
         GBPTreeCountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
-                new CountsComputer( neoStores, pageCache, NULL, databaseLayout, INSTANCE, NullLog.getInstance() ), false, NULL, GBPTreeCountsStore.NO_MONITOR );
+                new CountsComputer( neoStores, pageCache, NULL, databaseLayout, INSTANCE, NullLog.getInstance() ), false, NULL, GBPTreeCountsStore.NO_MONITOR,
+                databaseLayout.getDatabaseName() );
         life.add( wrapInLifecycle( counts ) );
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();

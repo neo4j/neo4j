@@ -56,6 +56,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import static java.lang.String.format;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -317,23 +318,24 @@ public class IndexedIdGenerator implements IdGenerator
     private final Monitor monitor;
 
     public IndexedIdGenerator( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
-            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, Config config, PageCursorTracer cursorTracer )
+            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, Config config, String databaseName,
+            PageCursorTracer cursorTracer )
     {
-        this( pageCache, path, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, initialHighId, maxId, readOnly, config, cursorTracer,
+        this( pageCache, path, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, initialHighId, maxId, readOnly, config, cursorTracer, databaseName,
                 immutable.empty() );
     }
 
     public IndexedIdGenerator( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
             boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, Config config, PageCursorTracer cursorTracer,
-            ImmutableSet<OpenOption> openOptions )
+            String databaseName, ImmutableSet<OpenOption> openOptions )
     {
         this( pageCache, path, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, initialHighId, maxId, readOnly, config, cursorTracer, NO_MONITOR,
-                openOptions );
+                databaseName, openOptions );
     }
 
     public IndexedIdGenerator( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
             boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, boolean readOnly, Config config, PageCursorTracer cursorTracer, Monitor monitor,
-            ImmutableSet<OpenOption> openOptions )
+            String databaseName, ImmutableSet<OpenOption> openOptions )
     {
         this.path = path;
         this.readOnly = readOnly;
@@ -346,7 +348,7 @@ public class IndexedIdGenerator implements IdGenerator
         this.defaultMerger = new IdRangeMerger( false, monitor );
         this.recoveryMerger = new IdRangeMerger( true, monitor );
 
-        Optional<HeaderReader> header = readHeader( pageCache, path, cursorTracer );
+        Optional<HeaderReader> header = readHeader( pageCache, path, databaseName, cursorTracer );
         // We check generation here too since we could get into this scenario:
         // 1. start on existing store, but with missing .id file so that it gets created
         // 2. rebuild will happen in start(), but perhaps the db was shut down or killed before or during start()
@@ -374,7 +376,7 @@ public class IndexedIdGenerator implements IdGenerator
         monitor.opened( highestWrittenId.get(), highId.get() );
 
         this.layout = new IdRangeLayout( idsPerEntry );
-        this.tree = instantiateTree( pageCache, path, recoveryCleanupWorkCollector, readOnly, openOptions );
+        this.tree = instantiateTree( pageCache, path, recoveryCleanupWorkCollector, readOnly, databaseName, openOptions );
 
         boolean strictlyPrioritizeFreelist = config.get( GraphDatabaseInternalSettings.strictly_prioritize_id_freelist );
         this.scanner = readOnly ? null : new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist,
@@ -382,13 +384,13 @@ public class IndexedIdGenerator implements IdGenerator
     }
 
     private GBPTree<IdRangeKey,IdRange> instantiateTree( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            boolean readOnly, ImmutableSet<OpenOption> openOptions )
+            boolean readOnly, String databaseName, ImmutableSet<OpenOption> openOptions )
     {
         try
         {
             final HeaderWriter headerWriter = new HeaderWriter( highId::get, highestWrittenId::get, STARTING_GENERATION, idsPerEntry );
-            return new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector,
-                    readOnly, NULL, openOptions, "Indexed ID generator" );
+            return new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnly, NULL,
+                    openOptions, databaseName, "Indexed ID generator" );
         }
         catch ( TreeFileNotFoundException e )
         {
@@ -648,15 +650,16 @@ public class IndexedIdGenerator implements IdGenerator
      *
      * @param pageCache {@link PageCache} to map id generator in.
      * @param path {@link Path} pointing to the id generator.
+     * @param databaseName name of the database id generator belongs to
      * @return {@link Optional} with the data embedded inside the {@link HeaderReader} if the id generator existed and the header was read correctly,
      * otherwise {@link Optional#empty()}.
      */
-    private static Optional<HeaderReader> readHeader( PageCache pageCache, Path path, PageCursorTracer cursorTracer )
+    private static Optional<HeaderReader> readHeader( PageCache pageCache, Path path, String databaseName, PageCursorTracer cursorTracer )
     {
         try
         {
             HeaderReader headerReader = new HeaderReader();
-            GBPTree.readHeader( pageCache, path, headerReader, cursorTracer );
+            GBPTree.readHeader( pageCache, path, headerReader, databaseName, cursorTracer );
             return Optional.of( headerReader );
         }
         catch ( NoSuchFileException e )
@@ -682,10 +685,11 @@ public class IndexedIdGenerator implements IdGenerator
     {
         try ( var cursorTracer = cacheTracer.createPageCursorTracer( "IndexDump" ) )
         {
-            HeaderReader header = readHeader( pageCache, path, cursorTracer ).orElseThrow( () -> new NoSuchFileException( path.toAbsolutePath().toString() ) );
+            HeaderReader header = readHeader( pageCache, path, DEFAULT_DATABASE_NAME, cursorTracer ).orElseThrow(
+                    () -> new NoSuchFileException( path.toAbsolutePath().toString() ) );
             IdRangeLayout layout = new IdRangeLayout( header.idsPerEntry );
             try ( GBPTree<IdRangeKey,IdRange> tree = new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER,
-                    immediate(), true, cacheTracer, immutable.empty(), "Indexed ID generator" ) )
+                    immediate(), true, cacheTracer, immutable.empty(), DEFAULT_DATABASE_NAME, "Indexed ID generator" ) )
             {
                 tree.visit( new GBPTreeVisitor.Adaptor<>()
                 {

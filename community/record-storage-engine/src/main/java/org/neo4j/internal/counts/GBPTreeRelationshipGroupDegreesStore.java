@@ -36,6 +36,7 @@ import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 /**
  * {@link RelationshipGroupDegreesStore} backed by the {@link GBPTree}.
@@ -47,10 +48,11 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
     static final byte TYPE_DEGREE = (byte) 3;
 
     public GBPTreeRelationshipGroupDegreesStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem,
-            RecoveryCleanupWorkCollector recoveryCollector, DegreesRebuilder rebuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor )
+            RecoveryCleanupWorkCollector recoveryCollector, DegreesRebuilder rebuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor,
+            String databaseName )
             throws IOException
     {
-        super( pageCache, file, fileSystem, recoveryCollector, new RebuilderWrapper( rebuilder ), readOnly, NAME, pageCacheTracer, monitor );
+        super( pageCache, file, fileSystem, recoveryCollector, new RebuilderWrapper( rebuilder ), readOnly, NAME, pageCacheTracer, monitor, databaseName );
     }
 
     @Override
@@ -140,7 +142,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
 
     public static void dump( PageCache pageCache, Path file, PrintStream out, PageCursorTracer cursorTracer ) throws IOException
     {
-        GBPTreeGenericCountsStore.dump( pageCache, file, out, NAME, cursorTracer, GBPTreeRelationshipGroupDegreesStore::keyToString );
+        GBPTreeGenericCountsStore.dump( pageCache, file, out, DEFAULT_DATABASE_NAME, NAME, cursorTracer, GBPTreeRelationshipGroupDegreesStore::keyToString );
     }
 
     private static final Updater NO_OP_UPDATER = new Updater()

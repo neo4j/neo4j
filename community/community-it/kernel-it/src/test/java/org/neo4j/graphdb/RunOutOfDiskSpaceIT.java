@@ -99,7 +99,9 @@ class RunOutOfDiskSpaceIT
         managementService.shutdown();
 
         PageCache pageCache = pageCacheExtension.getPageCache( limitedFs );
-        assertEquals( logVersion, MetaDataStore.getRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.LOG_VERSION, NULL ) );
+        assertEquals( logVersion,
+                MetaDataStore.getRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.LOG_VERSION, databaseLayout.getDatabaseName(),
+                        NULL ) );
     }
 
     @Test
@@ -139,7 +141,9 @@ class RunOutOfDiskSpaceIT
         managementService.shutdown();
 
         PageCache pageCache = pageCacheExtension.getPageCache( limitedFs );
-        assertEquals( logVersion, MetaDataStore.getRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.LOG_VERSION, NULL ) );
+        assertEquals( logVersion,
+                MetaDataStore.getRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.LOG_VERSION, databaseLayout.getDatabaseName(),
+                        NULL ) );
     }
 
 }

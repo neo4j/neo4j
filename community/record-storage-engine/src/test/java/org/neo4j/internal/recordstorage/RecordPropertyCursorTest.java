@@ -79,7 +79,7 @@ public class RecordPropertyCursorTest
     @BeforeEach
     void setup()
     {
-        idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         neoStores = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory,
                 pageCache, fs, getRecordFormats(), NullLogProvider.getInstance(), PageCacheTracer.NULL, Sets.immutable.empty() ).openAllNeoStores( true );
         creator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser( NULL ), NULL, INSTANCE );

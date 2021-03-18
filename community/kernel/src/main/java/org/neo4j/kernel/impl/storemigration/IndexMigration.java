@@ -56,7 +56,7 @@ enum IndexMigration
                     Path lucene10Dir = directoryRootByProviderKeyAndVersion( layout.databaseDirectory(), providerKey, providerVersion );
                     Path spatialDirectory = getSpatialSubDirectory( indexId, lucene10Dir );
                     List<SpatialFile> spatialFiles = getSpatialFiles( fs, spatialDirectory );
-                    return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, cursorTracer, log );
+                    return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, cursorTracer, log, layout.getDatabaseName() );
                 }
 
             },
@@ -76,7 +76,7 @@ enum IndexMigration
                     Path providerRootDirectory = providerRootDirectories( layout )[0];
                     Path spatialDirectory = getSpatialSubDirectory( indexId, providerRootDirectory );
                     List<SpatialFile> spatialFiles = getSpatialFiles( fs, spatialDirectory );
-                    return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, cursorTracer, log );
+                    return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, cursorTracer, log, layout.getDatabaseName() );
                 }
 
             },
@@ -96,7 +96,7 @@ enum IndexMigration
                     Path providerRootDirectory = providerRootDirectories( layout )[0];
                     Path spatialDirectory = getSpatialSubDirectory( indexId, providerRootDirectory );
                     List<SpatialFile> spatialFiles = getSpatialFiles( fs, spatialDirectory );
-                    return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, cursorTracer, log );
+                    return SpatialConfigExtractor.indexConfigFromSpatialFile( pageCache, spatialFiles, cursorTracer, log, layout.getDatabaseName() );
                 }
 
             },
@@ -116,7 +116,7 @@ enum IndexMigration
                 {
                     Path rootDir = providerRootDirectories( layout )[0];
                     Path genericFile = rootDir.resolve( String.valueOf( indexId ) ).resolve( "index-" + indexId );
-                    return GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, cursorTracer, log );
+                    return GenericConfigExtractor.indexConfigFromGenericFile( fs, pageCache, genericFile, cursorTracer, log, layout.getDatabaseName() );
                 }
 
             },

@@ -32,9 +32,10 @@ public class DatabaseIndexContext
     final String monitorTag;
     final boolean readOnly;
     final PageCacheTracer pageCacheTracer;
+    final String databaseName;
 
     private DatabaseIndexContext( PageCache pageCache, FileSystemAbstraction fileSystem, Monitors monitors, String monitorTag, boolean readOnly,
-                                  PageCacheTracer pageCacheTracer )
+                                  PageCacheTracer pageCacheTracer, String databaseName )
     {
         this.pageCache = pageCache;
         this.fileSystem = fileSystem;
@@ -42,6 +43,7 @@ public class DatabaseIndexContext
         this.monitorTag = monitorTag;
         this.readOnly = readOnly;
         this.pageCacheTracer = pageCacheTracer;
+        this.databaseName = databaseName;
     }
 
     /**
@@ -66,6 +68,7 @@ public class DatabaseIndexContext
                 .withReadOnly( copy.readOnly )
                 .withMonitors( copy.monitors )
                 .withTag( copy.monitorTag )
+                .withDatabaseName(copy.databaseName)
                 .withPageCacheTracer( copy.pageCacheTracer );
     }
 
@@ -77,6 +80,7 @@ public class DatabaseIndexContext
         private String monitorTag;
         private boolean readOnly;
         private PageCacheTracer pageCacheTracer;
+        private String databaseName;
 
         private Builder( PageCache pageCache, FileSystemAbstraction fileSystem )
         {
@@ -136,9 +140,15 @@ public class DatabaseIndexContext
             return this;
         }
 
+        public Builder withDatabaseName( String databaseName )
+        {
+            this.databaseName = databaseName;
+            return this;
+        }
+
         public DatabaseIndexContext build()
         {
-            return new DatabaseIndexContext( pageCache, fileSystem, monitors, monitorTag, readOnly, pageCacheTracer );
+            return new DatabaseIndexContext( pageCache, fileSystem, monitors, monitorTag, readOnly, pageCacheTracer, databaseName );
         }
     }
 }

@@ -76,7 +76,7 @@ class GBPTreePartialCreateFuzzIT
         // check readHeader
         try
         {
-            GBPTree.readHeader( pageCache, file, NO_HEADER_READER, NULL );
+            GBPTree.readHeader( pageCache, file, NO_HEADER_READER, testDirectory.homePath().getFileName().toString(), NULL );
         }
         catch ( MetadataMismatchException | IOException e )
         {

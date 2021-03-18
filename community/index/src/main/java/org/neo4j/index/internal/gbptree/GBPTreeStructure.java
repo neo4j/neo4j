@@ -62,11 +62,13 @@ public class GBPTreeStructure<KEY, VALUE>
      * @param pageCache {@link PageCache} able to map tree contained in {@code file}.
      * @param file {@link Path} containing the tree to visit meta page for.
      * @param visitor {@link GBPTreeVisitor} that shall visit meta.
+     * @param databaseName name of the database file belongs to
      * @throws IOException on I/O error.
      */
-    public static void visitMeta( PageCache pageCache, Path file, GBPTreeVisitor visitor, PageCursorTracer cursorTracer ) throws IOException
+    public static void visitMeta( PageCache pageCache, Path file, GBPTreeVisitor visitor, String databaseName, PageCursorTracer cursorTracer )
+            throws IOException
     {
-        try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), immutable.of( StandardOpenOption.READ ) ) )
+        try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), databaseName, immutable.of( StandardOpenOption.READ ) ) )
         {
             try ( PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
             {
@@ -81,11 +83,13 @@ public class GBPTreeStructure<KEY, VALUE>
      * @param pageCache {@link PageCache} able to map tree contained in {@code file}.
      * @param file {@link Path} containing the tree to visit state for.
      * @param visitor {@link GBPTreeVisitor} that shall visit state.
+     * @param databaseName name of the database file belongs to
      * @throws IOException on I/O error.
      */
-    public static void visitState( PageCache pageCache, Path file, GBPTreeVisitor visitor, PageCursorTracer cursorTracer ) throws IOException
+    public static void visitState( PageCache pageCache, Path file, GBPTreeVisitor visitor, String databaseName, PageCursorTracer cursorTracer )
+            throws IOException
     {
-        try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), immutable.of( StandardOpenOption.READ ) ) )
+        try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), databaseName, immutable.of( StandardOpenOption.READ ) ) )
         {
             try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK, cursorTracer ) )
             {

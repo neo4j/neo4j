@@ -42,6 +42,8 @@ import org.neo4j.test.rule.RandomRule;
 import static java.lang.Integer.max;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.NO_MONITOR;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -123,8 +125,8 @@ class NumberArrayTest extends NumberArrayPageCacheTestSupport
         factories.put( "OFF_HEAP", NumberArrayFactories.OFF_HEAP );
         factories.put( "AUTO_WITHOUT_PAGECACHE", NumberArrayFactories.AUTO_WITHOUT_PAGECACHE );
         factories.put( "CHUNKED_FIXED_SIZE", NumberArrayFactories.CHUNKED_FIXED_SIZE );
-        factories.put( "autoWithPageCacheFallback", NumberArrayFactories.auto( pageCache, NULL, dir, true, NumberArrayFactories.NO_MONITOR, log ) );
-        factories.put( "PageCachedNumberArrayFactory", new PageCachedNumberArrayFactory( pageCache, NULL, dir, log ) );
+        factories.put( "autoWithPageCacheFallback", NumberArrayFactories.auto( pageCache, NULL, dir, true, NO_MONITOR, log, DEFAULT_DATABASE_NAME ) );
+        factories.put( "PageCachedNumberArrayFactory", new PageCachedNumberArrayFactory( pageCache, NULL, dir, log, DEFAULT_DATABASE_NAME ) );
         for ( Map.Entry<String,NumberArrayFactory> entry : factories.entrySet() )
         {
             String name = entry.getKey() + " => ";
@@ -179,11 +181,11 @@ class NumberArrayTest extends NumberArrayPageCacheTestSupport
 
     private static class NumberArrayTestData<T extends NumberArray<T>>
     {
-        private String name;
-        private T array;
-        private Function<RandomRule,Object> valueGenerator;
-        private Writer<T> writer;
-        private Reader<T> reader;
+        private final String name;
+        private final T array;
+        private final Function<RandomRule,Object> valueGenerator;
+        private final Writer<T> writer;
+        private final Reader<T> reader;
 
         NumberArrayTestData( String name, T array, Function<RandomRule,Object> valueGenerator, Writer<T> writer, Reader<T> reader )
         {

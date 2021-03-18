@@ -37,6 +37,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 @PageCacheExtension
 public class FreeListIdProviderTracersTest
 {
+    private static final String DATABASE_NAME = "neo4j";
     @Inject
     private PageCache pageCache;
     @Inject
@@ -49,7 +50,7 @@ public class FreeListIdProviderTracersTest
         var cursorTracer = cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnInitialize" );
         assertZeroCursor( cursorTracer );
 
-        try ( var freeListFile = pageCache.map( testDirectory.createFile( "init" ), pageCache.pageSize() ) )
+        try ( var freeListFile = pageCache.map( testDirectory.createFile( "init" ), pageCache.pageSize(), DATABASE_NAME ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
             listIdProvider.initializeAfterCreation( cursorTracer );
@@ -64,7 +65,7 @@ public class FreeListIdProviderTracersTest
         var cursorTracer = cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnNewIdGeneration" );
         assertZeroCursor( cursorTracer );
 
-        try ( var freeListFile = pageCache.map( testDirectory.createFile( "newId" ), pageCache.pageSize() ) )
+        try ( var freeListFile = pageCache.map( testDirectory.createFile( "newId" ), pageCache.pageSize(), DATABASE_NAME ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
             listIdProvider.acquireNewId( 1, 1, cursorTracer );
@@ -79,7 +80,7 @@ public class FreeListIdProviderTracersTest
         var cursorTracer = cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnIdReleaseOnTheSamePage" );
         assertZeroCursor( cursorTracer );
 
-        try ( var freeListFile = pageCache.map( testDirectory.createFile( "releaseId" ), pageCache.pageSize() ) )
+        try ( var freeListFile = pageCache.map( testDirectory.createFile( "releaseId" ), pageCache.pageSize(), DATABASE_NAME ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
             listIdProvider.releaseId( 1, 1,42,  cursorTracer );
@@ -94,7 +95,7 @@ public class FreeListIdProviderTracersTest
         var cursorTracer = cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnIdReleaseOnDifferentPage" );
         assertZeroCursor( cursorTracer );
 
-        try ( var freeListFile = pageCache.map( testDirectory.createFile( "differentReleaseId" ), pageCache.pageSize() ) )
+        try ( var freeListFile = pageCache.map( testDirectory.createFile( "differentReleaseId" ), pageCache.pageSize(), DATABASE_NAME ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
             listIdProvider.initialize( 0, 1, 0, listIdProvider.entriesPerPage() - 1, 0 );
@@ -114,7 +115,7 @@ public class FreeListIdProviderTracersTest
         var cursorTracer = cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnFreeListTraversal" );
         assertZeroCursor( cursorTracer );
 
-        try ( var freeListFile = pageCache.map( testDirectory.createFile( "traversal" ), pageCache.pageSize() ) )
+        try ( var freeListFile = pageCache.map( testDirectory.createFile( "traversal" ), pageCache.pageSize(), DATABASE_NAME ) )
         {
             FreeListIdProvider listIdProvider = new FreeListIdProvider( freeListFile, 0 );
             listIdProvider.initialize( 100, 0, 1, listIdProvider.entriesPerPage() - 1, 0 );

@@ -48,6 +48,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @TestDirectoryExtension
@@ -98,7 +99,7 @@ class MuninnPageCursorTest
             }
         };
         try ( PageCache pageCache = startPageCache( customSwapper( defaultPageSwapperFactory(), onReadAction ) );
-                PagedFile pagedFile = pageCache.map( file, PageCache.PAGE_SIZE, Sets.immutable.of( StandardOpenOption.CREATE ) ) )
+                PagedFile pagedFile = pageCache.map( file, PageCache.PAGE_SIZE, DEFAULT_DATABASE_NAME, Sets.immutable.of( StandardOpenOption.CREATE ) ) )
         {
             try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
             {
@@ -130,7 +131,7 @@ class MuninnPageCursorTest
     private void createSomeData( Path file ) throws IOException
     {
         try ( PageCache pageCache = startPageCache( defaultPageSwapperFactory() );
-                PagedFile pagedFile = pageCache.map( file, PageCache.PAGE_SIZE, Sets.immutable.of( StandardOpenOption.CREATE ) );
+                PagedFile pagedFile = pageCache.map( file, PageCache.PAGE_SIZE, DEFAULT_DATABASE_NAME, Sets.immutable.of( StandardOpenOption.CREATE ) );
                 PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )
         {
             for ( int i = 0; i < 100; i++ )

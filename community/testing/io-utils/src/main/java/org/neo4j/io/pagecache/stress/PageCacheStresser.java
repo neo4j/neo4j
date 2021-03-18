@@ -69,13 +69,14 @@ public class PageCacheStresser
 
     public void stress( PageCache pageCache, PageCacheTracer cacheTracer, Condition condition ) throws Exception
     {
-        Path file = Files.createTempFile( workingDirectory, "pagecacheundertest", ".bin" );
+        String prefix = "pagecacheundertest";
+        Path file = Files.createTempFile( workingDirectory, prefix, ".bin" );
 
         int cachePageSize = pageCache.pageSize();
         RecordFormat format = new RecordFormat( numberOfThreads, cachePageSize );
         int filePageSize = format.getFilePageSize();
 
-        try ( PagedFile pagedFile = pageCache.map( file, filePageSize, Sets.immutable.of( StandardOpenOption.DELETE_ON_CLOSE ) ) )
+        try ( PagedFile pagedFile = pageCache.map( file, filePageSize, prefix, Sets.immutable.of( StandardOpenOption.DELETE_ON_CLOSE ) ) )
         {
             List<RecordStresser> recordStressers = prepare( condition, pagedFile, format, cacheTracer );
             verifyResults( format, pagedFile, recordStressers, cacheTracer );

@@ -40,6 +40,7 @@ import org.neo4j.logging.NullLog;
 import static java.lang.System.currentTimeMillis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.DynamicTest.stream;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -135,8 +136,9 @@ class IntArrayTest extends NumberArrayPageCacheTestSupport
         PageCache pageCache = fixture.pageCache;
         Path dir = fixture.directory;
         NullLog log = NullLog.getInstance();
-        NumberArrayFactory autoWithPageCacheFallback = NumberArrayFactories.auto( pageCache, NULL, dir, true, NumberArrayFactories.NO_MONITOR, log );
-        NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, NULL, dir, log );
+        NumberArrayFactory autoWithPageCacheFallback =
+                NumberArrayFactories.auto( pageCache, NULL, dir, true, NumberArrayFactories.NO_MONITOR, log, DEFAULT_DATABASE_NAME );
+        NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, NULL, dir, log, DEFAULT_DATABASE_NAME );
         return Iterators.iterator( NumberArrayFactories.HEAP, NumberArrayFactories.OFF_HEAP, autoWithPageCacheFallback, pageCacheArrayFactory );
     }
 }

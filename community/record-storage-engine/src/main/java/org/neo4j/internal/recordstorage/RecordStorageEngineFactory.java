@@ -185,7 +185,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         }
         else
         {
-            factory = new DefaultIdGeneratorFactory( fs, immediate() );
+            factory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         }
         return new StoreFactory( databaseLayout, config, factory, pageCache, fs, recordFormats, NullLogProvider.getInstance(), cacheTracer, immutable.empty() )
                 .openNeoStores( META_DATA ).getMetaDataStore();
@@ -194,7 +194,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public StoreId storeId( DatabaseLayout databaseLayout, PageCache pageCache, PageCursorTracer cursorTracer ) throws IOException
     {
-        return MetaDataStore.getStoreId( pageCache, databaseLayout.metadataStore(), cursorTracer );
+        return MetaDataStore.getStoreId( pageCache, databaseLayout.metadataStore(), databaseLayout.getDatabaseName(), cursorTracer );
     }
 
     @Override
@@ -202,8 +202,9 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             LogService logService, String recordFormats, PageCacheTracer cacheTracer, PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
         RecordFormats formats = selectForVersion( recordFormats );
-        StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs, formats,
-                logService.getInternalLogProvider(), cacheTracer, immutable.empty() );
+        StoreFactory factory =
+                new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
+                        formats, logService.getInternalLogProvider(), cacheTracer, immutable.empty() );
         NeoStores stores = factory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
         try
         {

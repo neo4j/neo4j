@@ -102,6 +102,7 @@ import static java.util.Collections.singleton;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.allocateRecordsFromBytes;
@@ -151,7 +152,7 @@ class RecordStorageMigratorIT
     @BeforeEach
     void setup() throws IOException
     {
-        migrationLayout = Neo4jLayout.of( testDirectory.homePath( MIGRATION_DIRECTORY ) ).databaseLayout( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        migrationLayout = Neo4jLayout.of( testDirectory.homePath( MIGRATION_DIRECTORY ) ).databaseLayout( DEFAULT_DATABASE_NAME );
         batchImporterFactory = BatchImporterFactory.withHighestPriority();
         testDirectory.getFileSystem().mkdirs( migrationLayout.databaseDirectory() );
     }
@@ -186,8 +187,8 @@ class RecordStorageMigratorIT
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
         // THEN starting the new store should be successful
-        StoreFactory storeFactory = new StoreFactory(
-                databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs ), pageCache, fs, logService.getInternalLogProvider(),
+        StoreFactory storeFactory = new StoreFactory( databaseLayout, CONFIG,
+                new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs, logService.getInternalLogProvider(),
                 PageCacheTracer.NULL );
         storeFactory.openAllNeoStores().close();
     }
@@ -217,7 +218,7 @@ class RecordStorageMigratorIT
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
-                databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs ), pageCache, fs,
+                databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
                 logService.getInternalLogProvider(), PageCacheTracer.NULL );
         storeFactory.openAllNeoStores().close();
         assertThat( logProvider ).forLevel( ERROR ).doesNotHaveAnyLogs();
@@ -250,7 +251,7 @@ class RecordStorageMigratorIT
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs ), pageCache, fs,
+                new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
                         logService.getInternalLogProvider(), PageCacheTracer.NULL );
         storeFactory.openAllNeoStores().close();
     }
@@ -321,7 +322,7 @@ class RecordStorageMigratorIT
 
         // Uses this special scan-on-open IGF because when the new IndexedIdGenerator was introduced this test would break
         // when trying to open an older store, before doing migration.
-        IdGeneratorFactory igf = new ScanOnOpenOverwritingIdGeneratorFactory( fs );
+        IdGeneratorFactory igf = new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() );
         LogProvider logProvider = logService.getInternalLogProvider();
 
         // Prepare all the tokens we'll need.
@@ -341,7 +342,7 @@ class RecordStorageMigratorIT
         Path storeFile = databaseLayout.schemaStore();
         Path idFile = databaseLayout.idSchemaStore();
         SchemaStore35 schemaStore35 = new SchemaStore35( storeFile, idFile, CONFIG, IdType.SCHEMA, igf, pageCache, logProvider, StandardV3_4.RECORD_FORMATS,
-                immutable.empty() );
+                DEFAULT_DATABASE_NAME, immutable.empty() );
         schemaStore35.initialise( false, NULL );
         SplittableRandom rng = new SplittableRandom( randomRule.seed() );
         LongHashSet indexes = new LongHashSet();
@@ -443,8 +444,9 @@ class RecordStorageMigratorIT
         fs.deleteFile( databaseLayout.idMetadataStore() );
 
         // then
-        try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs,
-                nullLogProvider(), PageCacheTracer.NULL ).openNeoStores( StoreType.META_DATA ) )
+        try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(),
+                new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs, nullLogProvider(),
+                PageCacheTracer.NULL ).openNeoStores( StoreType.META_DATA ) )
         {
             neoStores.start( NULL );
             assertThat( neoStores.getMetaDataStore().getCheckpointLogVersion() ).isEqualTo( 0 );
@@ -465,7 +467,8 @@ class RecordStorageMigratorIT
         String versionToMigrateTo = getVersionToMigrateTo( check );
         // explicitly set a checkpoint log version into the meta data store
         long checkpointLogVersion = 4;
-        MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), CHECKPOINT_LOG_VERSION, checkpointLogVersion, NULL );
+        MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), CHECKPOINT_LOG_VERSION, checkpointLogVersion, databaseLayout.getDatabaseName(),
+                NULL );
 
         // when
         RecordStorageMigrator migrator =
@@ -479,8 +482,9 @@ class RecordStorageMigratorIT
         fs.deleteFile( databaseLayout.idMetadataStore() );
 
         // then
-        try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs,
-                nullLogProvider(), PageCacheTracer.NULL ).openNeoStores( StoreType.META_DATA ) )
+        try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(),
+                new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs, nullLogProvider(),
+                PageCacheTracer.NULL ).openNeoStores( StoreType.META_DATA ) )
         {
             neoStores.start( NULL );
             assertThat( neoStores.getMetaDataStore().getCheckpointLogVersion() ).isEqualTo( checkpointLogVersion );

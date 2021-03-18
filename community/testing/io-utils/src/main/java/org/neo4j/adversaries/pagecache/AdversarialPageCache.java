@@ -58,7 +58,7 @@ public class AdversarialPageCache implements PageCache
     }
 
     @Override
-    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, ImmutableSet<OpenOption> openOptions, String databaseName )
+    public PagedFile map( Path path, VersionContextSupplier versionContextSupplier, int pageSize, String databaseName, ImmutableSet<OpenOption> openOptions )
             throws IOException
     {
         if ( openOptions.contains( CREATE ) )
@@ -69,7 +69,7 @@ public class AdversarialPageCache implements PageCache
         {
             adversary.injectFailure( NoSuchFileException.class, IOException.class, SecurityException.class );
         }
-        PagedFile pagedFile = delegate.map( path, versionContextSupplier, pageSize, openOptions, databaseName );
+        PagedFile pagedFile = delegate.map( path, versionContextSupplier, pageSize, databaseName, openOptions );
         return new AdversarialPagedFile( pagedFile, adversary );
     }
 

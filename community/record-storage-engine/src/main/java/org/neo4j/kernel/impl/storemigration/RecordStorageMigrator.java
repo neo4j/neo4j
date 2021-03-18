@@ -196,8 +196,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         Path neoStore = directoryLayout.metadataStore();
         try ( var cursorTracer = cacheTracer.createPageCursorTracer( RECORD_STORAGE_MIGRATION_TAG ) )
         {
-            long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, cursorTracer );
-            TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, lastTxId, cursorTracer );
+            long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, directoryLayout.getDatabaseName(), cursorTracer );
+            TransactionId lastTxInfo = extractTransactionIdInformation( neoStore, lastTxId, directoryLayout, cursorTracer );
             LogPosition lastTxLogPosition = extractTransactionLogPosition( neoStore, directoryLayout, lastTxId, cursorTracer );
             // Write the tx checksum to file in migrationStructure, because we need it later when moving files into storeDir
             writeLastTxInformation( migrationLayout, lastTxInfo );
@@ -283,7 +283,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         try ( NeoStores oldStores = oldStoreFactory.openAllNeoStores();
                 GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, migrationLayout.countStore(), fileSystem, immediate(),
                         new CountsComputer( oldStores, pageCache, cacheTracer, directoryLayout, memoryTracker, logService.getInternalLog( getClass() ) ),
-                        false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )
+                        false, cacheTracer, GBPTreeCountsStore.NO_MONITOR, migrationLayout.getDatabaseName() ) )
         {
             countsStore.start( cursorTracer, memoryTracker );
             countsStore.checkpoint( IOLimiter.UNLIMITED, cursorTracer );
@@ -364,11 +364,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         return migrationStructure.file( "lastxlogposition" );
     }
 
-    TransactionId extractTransactionIdInformation( Path neoStore, long lastTransactionId, PageCursorTracer cursorTracer )
+    TransactionId extractTransactionIdInformation( Path neoStore, long lastTransactionId, DatabaseLayout directoryLayout, PageCursorTracer cursorTracer )
             throws IOException
     {
-        int checksum = (int) MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, cursorTracer );
-        long commitTimestamp = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, cursorTracer );
+        String databaseName = directoryLayout.getDatabaseName();
+        int checksum = (int) MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, databaseName, cursorTracer );
+        long commitTimestamp = MetaDataStore.getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, databaseName, cursorTracer );
         if ( checksum != FIELD_NOT_PRESENT && commitTimestamp != FIELD_NOT_PRESENT )
         {
             return new TransactionId( lastTransactionId, checksum, commitTimestamp );
@@ -403,8 +404,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     LogPosition extractTransactionLogPosition( Path neoStore, DatabaseLayout sourceDirectoryStructure, long lastTxId,
             PageCursorTracer cursorTracer ) throws IOException
     {
-        long lastClosedTxLogVersion = MetaDataStore.getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION, cursorTracer );
-        long lastClosedTxLogByteOffset = MetaDataStore.getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, cursorTracer );
+        String databaseName = sourceDirectoryStructure.getDatabaseName();
+        long lastClosedTxLogVersion = MetaDataStore.getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION, databaseName, cursorTracer );
+        long lastClosedTxLogByteOffset = MetaDataStore.getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, databaseName, cursorTracer );
         if ( lastClosedTxLogVersion != MetaDataRecordFormat.FIELD_NOT_PRESENT &&
              lastClosedTxLogByteOffset != MetaDataRecordFormat.FIELD_NOT_PRESENT )
         {
@@ -549,12 +551,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
         // Since we'll be using these stores in the batch importer where we don't have this fine control over IdGeneratorFactory
         // it's easier to just figure out highId and create simple id files of the current format at that highId.
-        createStoreFactory( migrationStrcuture, newFormat, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem ) ).openAllNeoStores().close();
+        createStoreFactory( migrationStrcuture, newFormat,
+                new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, migrationStrcuture.getDatabaseName() ) ).openAllNeoStores().close();
     }
 
     private void createStore( DatabaseLayout migrationDirectoryStructure, RecordFormats newFormat )
     {
-        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), migrationDirectoryStructure.getDatabaseName() );
         createStoreFactory( migrationDirectoryStructure, newFormat, idGeneratorFactory ).openAllNeoStores( true ).close();
     }
 
@@ -653,12 +656,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         final Path storeDirNeoStore = sourceDirectoryStructure.metadataStore();
         final Path migrationDirNeoStore = migrationStructure.metadataStore();
+        String databaseName = sourceDirectoryStructure.getDatabaseName();
         fileOperation( COPY, fileSystem, sourceDirectoryStructure, migrationStructure, Iterables.iterable( DatabaseFile.METADATA_STORE ), true,
                 !requiresIdFilesMigration, ExistingTargetStrategy.SKIP );
 
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TRANSACTION_ID,
-                MetaDataStore.getRecord( pageCache, storeDirNeoStore, LAST_TRANSACTION_ID, cursorTracer ), cursorTracer );
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TIME, System.currentTimeMillis(), cursorTracer );
+                MetaDataStore.getRecord( pageCache, storeDirNeoStore, LAST_TRANSACTION_ID, databaseName, cursorTracer ), databaseName, cursorTracer );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TIME, System.currentTimeMillis(), databaseName, cursorTracer );
 
         // Store the checksum of the transaction id the upgrade is at right now. Store it both as
         // LAST_TRANSACTION_CHECKSUM and UPGRADE_TRANSACTION_CHECKSUM. Initially the last transaction and the
@@ -674,23 +678,25 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         //    problematic as long as we don't migrate and translate old logs.
         TransactionId lastTxInfo = readLastTxInformation( migrationStructure );
 
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_TRANSACTION_CHECKSUM, lastTxInfo.checksum(), cursorTracer );
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TRANSACTION_CHECKSUM, lastTxInfo.checksum(), cursorTracer );
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, lastTxInfo.commitTimestamp(), cursorTracer );
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, lastTxInfo.commitTimestamp(), cursorTracer );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_TRANSACTION_CHECKSUM, lastTxInfo.checksum(), databaseName, cursorTracer );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TRANSACTION_CHECKSUM, lastTxInfo.checksum(), databaseName, cursorTracer );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, lastTxInfo.commitTimestamp(), databaseName, cursorTracer );
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, lastTxInfo.commitTimestamp(), databaseName,
+                cursorTracer );
 
         // add LAST_CLOSED_TRANSACTION_LOG_VERSION and LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET to the migrated
         // NeoStore
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION,
-                lastClosedTxLogPosition.getLogVersion(), cursorTracer );
+                lastClosedTxLogPosition.getLogVersion(), databaseName, cursorTracer );
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET,
-                lastClosedTxLogPosition.getByteOffset(), cursorTracer );
+                lastClosedTxLogPosition.getByteOffset(), databaseName, cursorTracer );
 
         // Upgrade version in NeoStore
-        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, STORE_VERSION, MetaDataStore.versionStringToLong( versionToMigrateTo ), cursorTracer );
-        if ( MetaDataStore.getRecord( pageCache, sourceDirectoryStructure.metadataStore(), KERNEL_VERSION, cursorTracer ) == FIELD_NOT_PRESENT )
+        MetaDataStore.setRecord( pageCache, migrationDirNeoStore, STORE_VERSION, MetaDataStore.versionStringToLong( versionToMigrateTo ), databaseName,
+                cursorTracer );
+        if ( MetaDataStore.getRecord( pageCache, sourceDirectoryStructure.metadataStore(), KERNEL_VERSION, databaseName, cursorTracer ) == FIELD_NOT_PRESENT )
         {
-            MetaDataStore.setRecord( pageCache, migrationDirNeoStore, KERNEL_VERSION, KernelVersion.V4_2.version(), cursorTracer );
+            MetaDataStore.setRecord( pageCache, migrationDirNeoStore, KERNEL_VERSION, KernelVersion.V4_2.version(), databaseName, cursorTracer );
         }
     }
 
@@ -708,7 +714,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         IdGeneratorFactory srcIdGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
         StoreFactory srcFactory = createStoreFactory( directoryLayout, oldFormat, srcIdGeneratorFactory );
-        StoreFactory dstFactory = createStoreFactory( migrationLayout, newFormat, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem ) );
+        StoreFactory dstFactory =
+                createStoreFactory( migrationLayout, newFormat, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, migrationLayout.getDatabaseName() ) );
 
         if ( newFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) )
         {
@@ -953,6 +960,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         pageCache,
                         NullLogProvider.getInstance(),
                         oldFormat,
+                        directoryLayout.getDatabaseName(),
                         immutable.empty() );
                 srcSchema.initialise( true, cursorTracer );
                 return new SchemaStorage35( srcSchema );

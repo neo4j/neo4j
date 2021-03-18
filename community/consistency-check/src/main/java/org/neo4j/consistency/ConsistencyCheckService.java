@@ -205,7 +205,7 @@ public class ConsistencyCheckService
         config.set( GraphDatabaseSettings.pagecache_warmup_enabled, false );
 
         LifeSupport life = new LifeSupport();
-        final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
+        final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() );
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, logProvider, pageCacheTracer );
         // Don't start the counts stores here as part of life, instead only shut down. This is because it's better to let FullCheck
@@ -439,8 +439,8 @@ public class ConsistencyCheckService
         @Override
         protected CountsStore open() throws IOException
         {
-            return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
-                    RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingCountsInitializer(), true, pageCacheTracer, GBPTreeCountsStore.NO_MONITOR );
+            return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, RecoveryCleanupWorkCollector.ignore(),
+                    new RebuildPreventingCountsInitializer(), true, pageCacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName() );
         }
     }
 
@@ -456,7 +456,8 @@ public class ConsistencyCheckService
         protected RelationshipGroupDegreesStore open() throws IOException
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem,
-                    RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingDegreesInitializer(), true, pageCacheTracer, GBPTreeCountsStore.NO_MONITOR );
+                    RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingDegreesInitializer(), true, pageCacheTracer, GBPTreeCountsStore.NO_MONITOR,
+                    databaseLayout.getDatabaseName() );
         }
     }
 }

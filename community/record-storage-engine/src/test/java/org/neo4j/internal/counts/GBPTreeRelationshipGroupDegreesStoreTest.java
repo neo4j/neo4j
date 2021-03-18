@@ -43,6 +43,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.EMPTY_REBUILD;
@@ -226,8 +227,8 @@ class GBPTreeRelationshipGroupDegreesStoreTest
 
     private void instantiateCountsStore( DegreesRebuilder builder, boolean readOnly, GBPTreeCountsStore.Monitor monitor ) throws IOException
     {
-        countsStore =
-                new GBPTreeRelationshipGroupDegreesStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnly, PageCacheTracer.NULL, monitor );
+        countsStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnly, PageCacheTracer.NULL, monitor,
+                DEFAULT_DATABASE_NAME );
     }
 
     private static class TestableCountsBuilder implements DegreesRebuilder

@@ -42,8 +42,8 @@ public class AccessCheckingPageCache extends DelegatingPageCache
     }
 
     @Override
-    public PagedFile map( Path path, int pageSize ) throws IOException
+    public PagedFile map( Path path, int pageSize, String databaseName ) throws IOException
     {
-        return new AccessCheckingPagedFile( super.map( path, pageSize ) );
+        return new AccessCheckingPagedFile( super.map( path, pageSize, databaseName ) );
     }
 }

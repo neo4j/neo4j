@@ -62,7 +62,8 @@ class ShortStringPropertyEncodeTest
     @BeforeEach
     void setupStore()
     {
-        neoStores = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate() ),
+        neoStores =
+                new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() ),
                 pageCache, fileSystem, NullLogProvider.getInstance(), NULL ).openNeoStores( true,
                 StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING );
         propertyStore = neoStores.getPropertyStore();

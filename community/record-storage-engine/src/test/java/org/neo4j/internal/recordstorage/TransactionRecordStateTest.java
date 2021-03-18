@@ -186,7 +186,7 @@ class TransactionRecordStateTest
 
     private NeoStores createStores( Config config, RecordFormats formats )
     {
-        idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate() );
+        idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         var storeFactory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs,
                 formats, NullLogProvider.getInstance(), PageCacheTracer.NULL, immutable.empty() );
         return storeFactory.openAllNeoStores( true );

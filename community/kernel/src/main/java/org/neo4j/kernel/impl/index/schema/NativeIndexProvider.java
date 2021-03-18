@@ -119,7 +119,9 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     {
         try
         {
-            String failureMessage = NativeIndexes.readFailureMessage( databaseIndexContext.pageCache, storeFile( descriptor ), cursorTracer );
+            String failureMessage =
+                    NativeIndexes.readFailureMessage( databaseIndexContext.pageCache, storeFile( descriptor ), databaseIndexContext.databaseName,
+                            cursorTracer );
             return defaultIfEmpty( failureMessage, StringUtils.EMPTY );
         }
         catch ( IOException e )
@@ -133,7 +135,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     {
         try
         {
-            return NativeIndexes.readState( databaseIndexContext.pageCache, storeFile( descriptor ), cursorTracer );
+            return NativeIndexes.readState( databaseIndexContext.pageCache, storeFile( descriptor ), databaseIndexContext.databaseName, cursorTracer );
         }
         catch ( MetadataMismatchException | IOException e )
         {

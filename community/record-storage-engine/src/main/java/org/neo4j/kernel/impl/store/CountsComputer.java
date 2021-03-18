@@ -58,7 +58,8 @@ public class CountsComputer implements CountsBuilder
               stores.getNodeStore(), stores.getRelationshipStore(),
               (int) stores.getLabelTokenStore().getHighId(),
               (int) stores.getRelationshipTypeTokenStore().getHighId(),
-              NumberArrayFactories.auto( pageCache, pageCacheTracer, databaseLayout.databaseDirectory(), true, NO_MONITOR, log ),
+                NumberArrayFactories.auto( pageCache, pageCacheTracer, databaseLayout.databaseDirectory(), true, NO_MONITOR, log,
+                        databaseLayout.getDatabaseName() ),
               databaseLayout, pageCacheTracer, memoryTracker );
     }
 

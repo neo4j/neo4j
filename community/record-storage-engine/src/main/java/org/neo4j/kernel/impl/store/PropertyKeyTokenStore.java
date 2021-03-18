@@ -49,9 +49,10 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
             LogProvider logProvider,
             DynamicStringStore nameStore,
             RecordFormats recordFormats,
+            String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore, TYPE_DESCRIPTOR,
-                recordFormats.propertyKeyToken(), recordFormats.storeVersion(), openOptions );
+                recordFormats.propertyKeyToken(), recordFormats.storeVersion(), databaseName, openOptions );
     }
 }

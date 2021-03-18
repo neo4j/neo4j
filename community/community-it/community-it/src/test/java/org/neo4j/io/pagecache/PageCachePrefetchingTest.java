@@ -43,6 +43,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 
 @PageCacheExtension
@@ -154,7 +155,7 @@ class PageCachePrefetchingTest
 
     private void writeToFile( Path file, DefaultPageCursorTracer tracer, int additionalPfFlags ) throws IOException
     {
-        try ( PagedFile pagedFile = pageCache.map( file, PageCache.PAGE_SIZE,
+        try ( PagedFile pagedFile = pageCache.map( file, PageCache.PAGE_SIZE, DEFAULT_DATABASE_NAME,
                 immutable.of( StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE ) ) )
         {
             for ( int i = 0; i < 5; i++ )

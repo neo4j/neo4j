@@ -49,6 +49,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 
@@ -71,7 +72,7 @@ class IdGeneratorMigratorTest
         long nodeStoreStartId;
         long stringStoreStartId;
         long relationshipStoreStartId;
-        try ( NeoStores neoStores = new StoreFactory( db, defaults(), new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs,
+        try ( NeoStores neoStores = new StoreFactory( db, defaults(), new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), pageCache, fs,
                 StandardV3_4.RECORD_FORMATS, nullLogProvider(), PageCacheTracer.NULL, immutable.empty() ).openAllNeoStores( true ) )
         {
             // Let nodes have every fourth a deleted record
@@ -81,8 +82,8 @@ class IdGeneratorMigratorTest
             stringStoreStartId = neoStores.getPropertyStore().getStringStore().getNumberOfReservedLowIds();
         }
         // Pretend that the relationship store was copied so that relationship id file should be migrated from there
-        try ( NeoStores neoStores = new StoreFactory( upgrade, defaults(), new DefaultIdGeneratorFactory( fs, immediate() ), pageCache, fs,
-                Standard.LATEST_RECORD_FORMATS, nullLogProvider(), PageCacheTracer.NULL, immutable.empty() ).openAllNeoStores( true ) )
+        try ( NeoStores neoStores = new StoreFactory( upgrade, defaults(), new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), pageCache,
+                fs, Standard.LATEST_RECORD_FORMATS, nullLogProvider(), PageCacheTracer.NULL, immutable.empty() ).openAllNeoStores( true ) )
         {
             // Let relationships have every fourth a created record
             createSomeRecordsAndSomeHoles( neoStores.getRelationshipStore(), 600, 3, 1 );
@@ -109,7 +110,7 @@ class IdGeneratorMigratorTest
     private void assertIdGeneratorContainsIds( Path idFilePath, IdType idType, int rounds, int numDeleted, int numCreated, long startingId ) throws IOException
     {
         try ( IdGenerator idGenerator = new IndexedIdGenerator( pageCache, idFilePath, immediate(), idType, false, () -> -1, Long.MAX_VALUE, false,
-                Config.defaults(), PageCursorTracer.NULL ) )
+                Config.defaults(), DEFAULT_DATABASE_NAME, PageCursorTracer.NULL ) )
         {
             idGenerator.start( ignored ->
             {

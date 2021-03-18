@@ -45,10 +45,11 @@ public class RelationshipGroupStore extends CommonAbstractStore<RelationshipGrou
             PageCache pageCache,
             LogProvider logProvider,
             RecordFormats recordFormats,
+            String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR,
                 recordFormats.relationshipGroup(), new IntStoreHeaderFormat( config.get( GraphDatabaseSettings.dense_node_threshold ) ),
-                recordFormats.storeVersion(), openOptions );
+                recordFormats.storeVersion(), databaseName, openOptions );
     }
 }

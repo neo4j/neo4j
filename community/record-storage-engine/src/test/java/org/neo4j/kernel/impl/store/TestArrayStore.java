@@ -72,7 +72,7 @@ class TestArrayStore
     @BeforeEach
     void before()
     {
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fileSystem,
                 NullLogProvider.getInstance(), PageCacheTracer.NULL );
         neoStores = factory.openAllNeoStores( true );

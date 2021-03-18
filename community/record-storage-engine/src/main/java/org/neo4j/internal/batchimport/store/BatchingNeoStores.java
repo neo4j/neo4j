@@ -122,6 +122,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private final IdGeneratorFactory tempIdGeneratorFactory;
     private final PageCacheTracer pageCacheTracer;
     private final MemoryTracker memoryTracker;
+    private final String databaseName;
 
     // Some stores are considered temporary during the import and will be reordered/restructured
     // into the main store. These temporary stores will live here
@@ -153,8 +154,9 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         this.pageCache = pageCache;
         this.ioTracer = ioTracer;
         this.externalPageCache = externalPageCache;
-        this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
-        this.tempIdGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
+        this.databaseName = databaseLayout.getDatabaseName();
+        this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseName );
+        this.tempIdGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseName );
         this.pageCacheTracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
     }
@@ -162,7 +164,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private boolean databaseExistsAndContainsData()
     {
         Path metaDataFile = databaseLayout.metadataStore();
-        try ( PagedFile pagedFile = pageCache.map( metaDataFile, pageCache.pageSize(), immutable.of( READ ) ) )
+        try ( PagedFile pagedFile = pageCache.map( metaDataFile, pageCache.pageSize(), databaseName, immutable.of( READ ) ) )
         {
             // OK so the db probably exists
         }
@@ -393,7 +395,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             throw new UncheckedIOException( e );
         }
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
-                RecoveryCleanupWorkCollector.immediate(), builder, false, cacheTracer, GBPTreeCountsStore.NO_MONITOR ) )
+                RecoveryCleanupWorkCollector.immediate(), builder, false, cacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseName ) )
         {
             countsStore.start( cursorTracer, memoryTracker );
             countsStore.checkpoint( UNLIMITED, cursorTracer );

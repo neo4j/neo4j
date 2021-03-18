@@ -36,10 +36,10 @@ public final class TokenIndexes
     private TokenIndexes()
     {}
 
-    public static InternalIndexState readState( PageCache pageCache, Path indexFile, PageCursorTracer cursorTracer ) throws IOException
+    public static InternalIndexState readState( PageCache pageCache, Path indexFile, String databaseName, PageCursorTracer cursorTracer ) throws IOException
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader( FAILED );
-        GBPTree.readHeader( pageCache, indexFile, headerReader, cursorTracer );
+        GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorTracer );
         switch ( headerReader.state )
         {
         case FAILED:
@@ -53,11 +53,11 @@ public final class TokenIndexes
         }
     }
 
-    static String readFailureMessage( PageCache pageCache, Path indexFile, PageCursorTracer cursorTracer )
+    static String readFailureMessage( PageCache pageCache, Path indexFile, String databaseName, PageCursorTracer cursorTracer )
             throws IOException
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader( FAILED );
-        GBPTree.readHeader( pageCache, indexFile, headerReader, cursorTracer );
+        GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorTracer );
         return headerReader.failureMessage;
     }
 }

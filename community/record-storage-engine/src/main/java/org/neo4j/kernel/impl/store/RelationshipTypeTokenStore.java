@@ -49,10 +49,11 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
             LogProvider logProvider,
             DynamicStringStore nameStore,
             RecordFormats recordFormats,
+            String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache, logProvider, nameStore,
                 TYPE_DESCRIPTOR, recordFormats.relationshipTypeToken(),
-                recordFormats.storeVersion(), openOptions );
+                recordFormats.storeVersion(), databaseName, openOptions );
     }
 }

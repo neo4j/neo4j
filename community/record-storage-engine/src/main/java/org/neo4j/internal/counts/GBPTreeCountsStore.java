@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 /**
  * Counts store build on top of the {@link GBPTree}.
@@ -89,9 +90,10 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
     }
 
     public GBPTreeCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-            CountsBuilder initialCountsBuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor ) throws IOException
+            CountsBuilder initialCountsBuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName ) throws IOException
     {
-        super( pageCache, file, fileSystem, recoveryCollector, new InitialCountsRebuilder( initialCountsBuilder ), readOnly, NAME, pageCacheTracer, monitor );
+        super( pageCache, file, fileSystem, recoveryCollector, new InitialCountsRebuilder( initialCountsBuilder ), readOnly, NAME, pageCacheTracer, monitor,
+                databaseName );
     }
 
     @Override
@@ -148,7 +150,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
 
     public static void dump( PageCache pageCache, Path file, PrintStream out, PageCursorTracer cursorTracer ) throws IOException
     {
-        GBPTreeGenericCountsStore.dump( pageCache, file, out, NAME, cursorTracer, GBPTreeCountsStore::keyToString );
+        GBPTreeGenericCountsStore.dump( pageCache, file, out, DEFAULT_DATABASE_NAME, NAME, cursorTracer, GBPTreeCountsStore::keyToString );
     }
 
     private static class Incrementer implements CountsAccessor.Updater

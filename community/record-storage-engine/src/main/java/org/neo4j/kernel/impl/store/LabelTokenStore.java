@@ -48,10 +48,11 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord>
             LogProvider logProvider,
             DynamicStringStore nameStore,
             RecordFormats recordFormats,
+            String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, config, IdType.LABEL_TOKEN, idGeneratorFactory, pageCache,
                 logProvider, nameStore, TYPE_DESCRIPTOR, recordFormats.labelToken(),
-                recordFormats.storeVersion(), openOptions );
+                recordFormats.storeVersion(), databaseName, openOptions );
     }
 }

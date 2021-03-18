@@ -67,6 +67,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forAllEntityTokens;
@@ -83,7 +84,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
     IndexAccessor createAccessor( PageCache pageCache )
     {
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
-        DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).withReadOnly( false ).build();
+        DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).withReadOnly( false ).withDatabaseName( DEFAULT_DATABASE_NAME ).build();
         return new TokenIndexAccessor( context, DatabaseLayout.ofFlat( directory.homePath() ), indexFiles, Config.defaults(), indexDescriptor, cleanup );
     }
 

@@ -93,7 +93,7 @@ class DatabaseStartupTest
               PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
         {
             MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(),
-                    MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ), NULL );
+                    MetaDataStore.Position.STORE_VERSION, MetaDataStore.versionStringToLong( "bad" ), databaseLayout.getDatabaseName(), NULL );
         }
 
         managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
@@ -136,7 +136,7 @@ class DatabaseStartupTest
               PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
         {
             MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.STORE_VERSION,
-                    MetaDataStore.versionStringToLong( badStoreVersion ), NULL );
+                    MetaDataStore.versionStringToLong( badStoreVersion ), databaseLayout.getDatabaseName(), NULL );
         }
 
         managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
@@ -178,7 +178,7 @@ class DatabaseStartupTest
                 PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
         {
             long newTime = System.currentTimeMillis() + 1;
-            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.TIME, newTime, NULL );
+            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.TIME, newTime, databaseLayout.getDatabaseName(), NULL );
         }
 
         // Try to start

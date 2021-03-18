@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.LogProvider;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<RelationshipTypeTokenRecord>
 {
@@ -36,6 +37,7 @@ class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<Relationship
     protected TokenStore<RelationshipTypeTokenRecord> instantiateStore( Path file, Path idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
             LogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config )
     {
-        return new RelationshipTypeTokenStore( file, idFile, config, generatorFactory, pageCache, logProvider, nameStore, formats, immutable.empty() );
+        return new RelationshipTypeTokenStore( file, idFile, config, generatorFactory, pageCache, logProvider, nameStore, formats, DEFAULT_DATABASE_NAME,
+                immutable.empty() );
     }
 }

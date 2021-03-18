@@ -82,9 +82,9 @@ class PropertyStoreTest
 
         DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
 
-        try ( var store = new PropertyStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs, immediate() ), pageCache,
-                        NullLogProvider.getInstance(), stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
-                        RecordFormatSelector.defaultFormat(), immutable.empty() ) )
+        try ( var store = new PropertyStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
+                pageCache, NullLogProvider.getInstance(), stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
+                RecordFormatSelector.defaultFormat(), databaseLayout.getDatabaseName(), immutable.empty() ) )
         {
             store.initialise( true, NULL );
             store.start( NULL );

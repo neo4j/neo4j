@@ -49,10 +49,11 @@ public class RelationshipStore extends CommonAbstractStore<RelationshipRecord,No
             PageCache pageCache,
             LogProvider logProvider,
             RecordFormats recordFormats,
+            String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
                 pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.relationship(), NO_STORE_HEADER_FORMAT,
-                recordFormats.storeVersion(), openOptions );
+                recordFormats.storeVersion(), databaseName, openOptions );
     }
 }

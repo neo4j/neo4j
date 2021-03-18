@@ -56,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFactory;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.test.Race.throwing;
@@ -93,7 +94,7 @@ class IndexStatisticsStoreTest
 
     private IndexStatisticsStore openStore( PageCacheTracer pageCacheTracer, String fileName )
     {
-        var statisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( fileName ), immediate(), false, pageCacheTracer );
+        var statisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( fileName ), immediate(), false, DEFAULT_DATABASE_NAME, pageCacheTracer );
         return lifeSupport.add( statisticsStore );
     }
 
@@ -284,7 +285,7 @@ class IndexStatisticsStoreTest
     void shouldNotStartWithoutFileIfReadOnly()
     {
         final IndexStatisticsStore indexStatisticsStore =
-                new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), true, PageCacheTracer.NULL );
+                new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), true, DEFAULT_DATABASE_NAME, PageCacheTracer.NULL );
         final Exception e = assertThrows( Exception.class, indexStatisticsStore::init );
         assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
@@ -297,12 +298,12 @@ class IndexStatisticsStoreTest
         final Path file = testDirectory.file( "existing" );
 
         // Create store
-        IndexStatisticsStore store = new IndexStatisticsStore( pageCache, file, immediate(), false, PageCacheTracer.NULL );
+        IndexStatisticsStore store = new IndexStatisticsStore( pageCache, file, immediate(), false, DEFAULT_DATABASE_NAME, PageCacheTracer.NULL );
         randomActions( store, 1000 );
         byte[] data = readAll( file );
 
         // Start in readOnly mode
-        IndexStatisticsStore readOnlyStore = new IndexStatisticsStore( pageCache, file, immediate(), true, PageCacheTracer.NULL );
+        IndexStatisticsStore readOnlyStore = new IndexStatisticsStore( pageCache, file, immediate(), true, DEFAULT_DATABASE_NAME, PageCacheTracer.NULL );
         randomActions( readOnlyStore, 10000 );
 
         assertArrayEquals( data, readAll( file ) );

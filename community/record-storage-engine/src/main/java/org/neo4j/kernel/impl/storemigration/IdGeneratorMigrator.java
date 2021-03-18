@@ -115,7 +115,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
 
         // Rebuild the .id files from the legacy stores that haven't been upgraded, i.e. if they remained unchanged
         // Make them end up in upgrade/<store>.id so that they won't overwrite the origin .id file before the upgrade is completed
-        IdGeneratorFactory rebuiltIdGeneratorsFromOldStore = new DefaultIdGeneratorFactory( fileSystem, immediate() )
+        IdGeneratorFactory rebuiltIdGeneratorsFromOldStore = new DefaultIdGeneratorFactory( fileSystem, immediate(), directoryLayout.getDatabaseName() )
         {
             @Override
             public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
@@ -139,7 +139,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         // that we need to open will complain because some of their "sub-stores" doesn't exist. They will be empty, it's fine...
         // and we will not read from them at all. They will just sit there and allow their parent store to be opened.
         // We'll remove them after we have built the id files
-        IdGeneratorFactory rebuiltIdGeneratorsFromNewStore = new DefaultIdGeneratorFactory( fileSystem, immediate() );
+        IdGeneratorFactory rebuiltIdGeneratorsFromNewStore = new DefaultIdGeneratorFactory( fileSystem, immediate(), migrationLayout.getDatabaseName() );
         Set<Path> placeHolderStoreFiles = createEmptyPlaceHolderStoreFiles( migrationLayout, newFormat );
         startAndTriggerRebuild( migrationLayout, newFormat, rebuiltIdGeneratorsFromNewStore, storesInMigrationDirectory, progress, cursorTracer );
         for ( Path emptyPlaceHolderStoreFile : placeHolderStoreFiles )

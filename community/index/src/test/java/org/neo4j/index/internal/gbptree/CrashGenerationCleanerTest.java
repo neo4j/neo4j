@@ -76,6 +76,7 @@ class CrashGenerationCleanerTest
     private RandomRule randomRule;
 
     private static final String FILE_NAME = "index";
+    private static final String DATABASE_NAME = "neo4j";
     private static final int PAGE_SIZE = 256;
 
     private PagedFile pagedFile;
@@ -123,7 +124,7 @@ class CrashGenerationCleanerTest
     {
         PageCache pageCache = pageCacheExtension
                 .getPageCache( fileSystem, config().withPageSize( PAGE_SIZE ).withAccessChecks( true ) );
-        pagedFile = pageCache.map( testDirectory.file( FILE_NAME ), PAGE_SIZE, immutable.of( CREATE, DELETE_ON_CLOSE ) );
+        pagedFile = pageCache.map( testDirectory.file( FILE_NAME ), PAGE_SIZE, DATABASE_NAME, immutable.of( CREATE, DELETE_ON_CLOSE ) );
     }
 
     @AfterEach

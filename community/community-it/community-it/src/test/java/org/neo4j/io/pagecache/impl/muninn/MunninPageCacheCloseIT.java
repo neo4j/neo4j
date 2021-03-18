@@ -40,6 +40,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 class MunninPageCacheCloseIT
@@ -67,7 +68,7 @@ class MunninPageCacheCloseIT
             AtomicBoolean success = new AtomicBoolean( false );
             Thread thread = new Thread( () ->
             {
-                try ( PagedFile pagedFile = pageCache.map( file, 10 ) )
+                try ( PagedFile pagedFile = pageCache.map( file, 10, DEFAULT_DATABASE_NAME ) )
                 {
                     //Write something
                     try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, NULL ) )

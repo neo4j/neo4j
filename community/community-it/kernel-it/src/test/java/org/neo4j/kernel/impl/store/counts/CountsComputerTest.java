@@ -364,7 +364,7 @@ class CountsComputerTest
     private GBPTreeCountsStore createCountsStore( CountsBuilder builder ) throws IOException
     {
         return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(), builder, false, PageCacheTracer.NULL,
-                GBPTreeCountsStore.NO_MONITOR );
+                GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName() );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId ) throws IOException
@@ -376,7 +376,7 @@ class CountsComputerTest
     {
         cleanupCountsForRebuilding();
 
-        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, immediate() );
+        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() );
         StoreFactory storeFactory = new StoreFactory( databaseLayout, CONFIG, idGenFactory, pageCache, fileSystem, LOG_PROVIDER, PageCacheTracer.NULL );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {

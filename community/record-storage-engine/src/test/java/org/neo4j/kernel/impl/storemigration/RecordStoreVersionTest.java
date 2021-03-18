@@ -120,7 +120,8 @@ class RecordStoreVersionTest
         MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, databaseLayout.databaseDirectory() );
         changeVersionNumber( testDirectory.getFileSystem(), databaseLayout.metadataStore(), version );
         Path metadataStore = databaseLayout.metadataStore();
-        MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, MetaDataStore.versionStringToLong( version ), NULL );
+        MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, MetaDataStore.versionStringToLong( version ), databaseLayout.getDatabaseName(),
+                NULL );
     }
 
     @ParameterizedTest

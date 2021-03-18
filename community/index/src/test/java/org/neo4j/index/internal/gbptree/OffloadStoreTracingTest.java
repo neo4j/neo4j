@@ -46,7 +46,7 @@ class OffloadStoreTracingTest
     private TestDirectory testDirectory;
 
     private final SimpleByteArrayLayout layout = new SimpleByteArrayLayout( false );
-    private DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
+    private final DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
     private OffloadStoreImpl<RawBytes,RawBytes> offloadStore;
     private PageCursorTracer cursorTracer;
     private PagedFile pagedFile;
@@ -55,7 +55,7 @@ class OffloadStoreTracingTest
     void setUp() throws IOException
     {
         cursorTracer = pageCacheTracer.createPageCursorTracer( "testCursorTracer" );
-        pagedFile = pageCache.map( testDirectory.createFile( "file" ), pageCache.pageSize() );
+        pagedFile = pageCache.map( testDirectory.createFile( "file" ), pageCache.pageSize(), "neo4j" );
         OffloadPageCursorFactory pcFactory = pagedFile::io;
         var idProvider = new FreeListIdProvider( pagedFile, 10 );
         offloadStore = new OffloadStoreImpl<>( layout, idProvider, pcFactory, ALWAYS_TRUE, pageCache.pageSize() );

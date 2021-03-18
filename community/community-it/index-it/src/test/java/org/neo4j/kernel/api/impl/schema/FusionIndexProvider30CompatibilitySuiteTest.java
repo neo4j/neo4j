@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.monitoring.Monitors;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 
@@ -45,7 +46,7 @@ public class FusionIndexProvider30CompatibilitySuiteTest extends PropertyIndexPr
         OperationalMode mode = OperationalMode.SINGLE;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
         return NativeLuceneFusionIndexProviderFactory30.create( pageCache, graphDbDir, fs, monitors, monitorTag, config, mode, recoveryCleanupWorkCollector,
-                                                                PageCacheTracer.NULL );
+                                                                PageCacheTracer.NULL, DEFAULT_DATABASE_NAME );
     }
 
     @Override

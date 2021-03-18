@@ -56,6 +56,8 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+
 /**
  * The RandomPageCacheTestHarness can plan and run random page cache tests, repeatably if necessary, and verify that
  * the behaviour of the page cache is correct to some degree. For instance, it can verify that records don't end up
@@ -81,7 +83,7 @@ public class RandomPageCacheTestHarness implements Closeable
     private int filePageSize;
     private PageCacheTracer tracer;
     private int commandCount;
-    private double[] commandProbabilityFactors;
+    private final double[] commandProbabilityFactors;
     private long randomSeed;
     private boolean fixedRandomSeed;
     private FileSystemAbstraction fs;
@@ -399,7 +401,7 @@ public class RandomPageCacheTestHarness implements Closeable
         for ( int i = 0; i < Math.min( files.length, initialMappedFiles ); i++ )
         {
             Path file = files[i];
-            fileMap.put( file, cache.map( file, filePageSize ) );
+            fileMap.put( file, cache.map( file, filePageSize, DEFAULT_DATABASE_NAME ) );
         }
 
         plan = plan( cache, files, fileMap );

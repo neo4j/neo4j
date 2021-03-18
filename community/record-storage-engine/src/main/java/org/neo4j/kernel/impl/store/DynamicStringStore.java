@@ -51,9 +51,10 @@ public class DynamicStringStore extends AbstractDynamicStore
             int dataSizeFromConfiguration,
             RecordFormat<DynamicRecord> recordFormat,
             String storeVersion,
+            String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, configuration, idType, idGeneratorFactory, pageCache,
-                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormat, storeVersion, openOptions );
+                logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormat, storeVersion, databaseName, openOptions );
     }
 }

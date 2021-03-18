@@ -764,7 +764,7 @@ class BatchInsertTest
         inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
 
         // then
-        GraphDatabaseAPI graphdb = (GraphDatabaseAPI) switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
+        GraphDatabaseAPI graphdb = switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
         try
         {
             NeoStores neoStores = graphdb.getDependencyResolver()
@@ -1506,7 +1506,7 @@ class BatchInsertTest
                         {
                             return 0;
                         }
-                    }, true, PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR ) )
+                    }, true, PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName() ) )
             {
                 countsStore.start( NULL, INSTANCE );
                 assertEquals( (r + 1) * 100, countsStore.nodeCount( 0, NULL ) );

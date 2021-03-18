@@ -41,8 +41,10 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
 
     public ReadOnlyLogVersionRepository( PageCache pageCache, DatabaseLayout databaseLayout, PageCursorTracer cursorTracer ) throws IOException
     {
-        this.logVersion = new FixedLogVersion( readLogVersion( pageCache, databaseLayout.metadataStore(), cursorTracer, LOG_VERSION ) );
-        this.checkpointLogVersion = new FixedLogVersion( readLogVersion( pageCache, databaseLayout.metadataStore(), cursorTracer, CHECKPOINT_LOG_VERSION ) );
+        this.logVersion =
+                new FixedLogVersion( readLogVersion( pageCache, databaseLayout.metadataStore(), cursorTracer, LOG_VERSION, databaseLayout.getDatabaseName() ) );
+        this.checkpointLogVersion = new FixedLogVersion(
+                readLogVersion( pageCache, databaseLayout.metadataStore(), cursorTracer, CHECKPOINT_LOG_VERSION, databaseLayout.getDatabaseName() ) );
     }
 
     @Override
@@ -110,11 +112,12 @@ public class ReadOnlyLogVersionRepository implements LogVersionRepository
         return version.getValue();
     }
 
-    private static long readLogVersion( PageCache pageCache, Path neoStore, PageCursorTracer cursorTracer, MetaDataStore.Position position ) throws IOException
+    private static long readLogVersion( PageCache pageCache, Path neoStore, PageCursorTracer cursorTracer, MetaDataStore.Position position,
+            String databaseName ) throws IOException
     {
         try
         {
-            long logVersion = MetaDataStore.getRecord( pageCache, neoStore, position, cursorTracer );
+            long logVersion = MetaDataStore.getRecord( pageCache, neoStore, position, databaseName, cursorTracer );
             return logVersion != MetaDataRecordFormat.FIELD_NOT_PRESENT ? logVersion : NOT_EXISTING_VERSION;
         }
         catch ( NoSuchFileException ignore )

@@ -52,6 +52,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     private final String monitorTag;
     private final boolean readOnly;
     private final PageCacheTracer pageCacheTracer;
+    private final String databaseName;
 
     protected GBPTree<KEY,VALUE> tree;
 
@@ -63,6 +64,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         this.monitorTag = databaseIndexContext.monitorTag;
         this.readOnly = databaseIndexContext.readOnly;
         this.pageCacheTracer = databaseIndexContext.pageCacheTracer;
+        this.databaseName = databaseIndexContext.databaseName;
         this.indexFiles = indexFiles;
         this.layout = layout;
         this.descriptor = descriptor;
@@ -74,7 +76,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         GBPTree.Monitor monitor = treeMonitor();
         Path storeFile = indexFiles.getStoreFile();
         tree = new GBPTree<>( pageCache, storeFile, layout, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector,
-                readOnly, pageCacheTracer, immutable.empty(), descriptor.getName() );
+                readOnly, pageCacheTracer, immutable.empty(), descriptor.getName(), databaseName );
         afterTreeInstantiation( tree );
     }
 

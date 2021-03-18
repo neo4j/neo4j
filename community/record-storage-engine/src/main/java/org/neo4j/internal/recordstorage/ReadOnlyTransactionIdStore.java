@@ -53,10 +53,11 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
         if ( NeoStores.isStorePresent( fs, databaseLayout ) )
         {
             Path neoStore = databaseLayout.metadataStore();
-            id = getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, cursorTracer );
-            checksum = (int) getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, cursorTracer );
-            logVersion = getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION, cursorTracer );
-            byteOffset = getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, cursorTracer );
+            String databaseName = databaseLayout.getDatabaseName();
+            id = getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, databaseName, cursorTracer );
+            checksum = (int) getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, databaseName, cursorTracer );
+            logVersion = getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION, databaseName, cursorTracer );
+            byteOffset = getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, databaseName, cursorTracer );
         }
 
         this.transactionId = id;

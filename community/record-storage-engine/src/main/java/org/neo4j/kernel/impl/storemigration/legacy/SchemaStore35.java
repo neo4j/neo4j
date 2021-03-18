@@ -57,10 +57,11 @@ public class SchemaStore35 extends AbstractDynamicStore
             PageCache pageCache,
             LogProvider logProvider,
             RecordFormats recordFormats,
+            String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, BLOCK_SIZE,
-                recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
+                recordFormats.dynamic(), recordFormats.storeVersion(), databaseName, openOptions );
     }
 
     @VisibleForTesting

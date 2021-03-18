@@ -88,6 +88,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_flush_buffer_size_in_pages;
 import static org.neo4j.internal.helpers.Numbers.ceilingPowerOfTwo;
 import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
@@ -119,7 +120,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
     protected PagedFile map( PageCache pageCache, Path file, int filePageSize, ImmutableSet<OpenOption> options ) throws IOException
     {
-        return pageCache.map( file, filePageSize, openOptions.newWithAll( options ) );
+        return pageCache.map( file, filePageSize, DEFAULT_DATABASE_NAME, openOptions.newWithAll( options ) );
     }
 
     protected PagedFile map( Path file, int filePageSize ) throws IOException
@@ -267,8 +268,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         int pagesToDirty = 10_000;
         PageCache cache = getPageCache( fs, ceilingPowerOfTwo( 2 * pagesToDirty ), PageCacheTracer.NULL );
         int pagesPerFlush = DISABLED_BUFFER_FACTORY.equals( cache.getBufferFactory() ) ? 1 : pagecache_flush_buffer_size_in_pages.defaultValue();
-        PagedFile pfA = cache.map( existingFile( "a" ), filePageSize );
-        PagedFile pfB = cache.map( existingFile( "b" ), filePageSize );
+        PagedFile pfA = cache.map( existingFile( "a" ), filePageSize, DEFAULT_DATABASE_NAME );
+        PagedFile pfB = cache.map( existingFile( "b" ), filePageSize, DEFAULT_DATABASE_NAME );
 
         dirtyManyPages( pfA, pagesToDirty );
         dirtyManyPages( pfB, pagesToDirty );
@@ -294,7 +295,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageCache cache = getPageCache( fs, ceilingPowerOfTwo( pagesToDirty ), PageCacheTracer.NULL );
         int pagesPerFlush = DISABLED_BUFFER_FACTORY.equals( cache.getBufferFactory() ) ? 1 : pagecache_flush_buffer_size_in_pages.defaultValue();
 
-        PagedFile pf = cache.map( file( "a" ), filePageSize );
+        PagedFile pf = cache.map( file( "a" ), filePageSize, DEFAULT_DATABASE_NAME );
 
         // Dirty a bunch of data
         dirtyManyPages( pf, pagesToDirty );
@@ -1037,7 +1038,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
-            PagedFile pagedFile = pageCache.map( file( "a" ), pageCachePageSize );
+            PagedFile pagedFile = pageCache.map( file( "a" ), pageCachePageSize, DEFAULT_DATABASE_NAME );
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
             {
                 for ( int i = 0; i < 20; i++ )
@@ -1047,7 +1048,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             }
             pagedFile.close();
-            try ( PagedFile b = pageCache.map( existingFile( "b" ), pageCachePageSize );
+            try ( PagedFile b = pageCache.map( existingFile( "b" ), pageCachePageSize, DEFAULT_DATABASE_NAME );
                   PageCursor cursor = b.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
             {
                 for ( int i = 0; i < 200; i++ )
@@ -4603,7 +4604,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( fs, flushCounter );
         Path file = file( "a" );
         try ( PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
-                PagedFile pf = cache.map( file, filePageSize, immutable.of( DELETE_ON_CLOSE ) );
+                PagedFile pf = cache.map( file, filePageSize, DEFAULT_DATABASE_NAME, immutable.of( DELETE_ON_CLOSE ) );
                 PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
             writeRecords( cursor );
@@ -4619,7 +4620,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( fs, flushCounter );
         Path file = file( "a" );
         try ( PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
-                PagedFile pf = cache.map( file, filePageSize );
+                PagedFile pf = cache.map( file, filePageSize, DEFAULT_DATABASE_NAME );
                 PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
             writeRecords( cursor );
