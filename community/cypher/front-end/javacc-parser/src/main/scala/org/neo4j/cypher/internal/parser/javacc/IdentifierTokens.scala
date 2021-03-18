@@ -92,6 +92,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.PERIODIC
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.POPULATED
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REDUCE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REMOVE
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.RENAME
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REPLACE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.RETURN
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.REVOKE
@@ -204,6 +205,7 @@ object IdentifierTokens {
     POPULATED,
     REDUCE,
     REMOVE,
+    RENAME,
     REPLACE,
     RETURN,
     REVOKE,

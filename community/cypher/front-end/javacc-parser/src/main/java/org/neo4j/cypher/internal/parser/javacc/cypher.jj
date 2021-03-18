@@ -347,6 +347,7 @@ TOKEN [IGNORE_CASE] :
     | < RBRACKET: "]" >
     | < RCURLY: "}" >
     | < REDUCE: "REDUCE" >
+    | < RENAME: "RENAME" >
     | < REGEQ: "=~" >
     | < REMOVE: "REMOVE" >
     | < REPLACE: "REPLACE" >
@@ -2517,6 +2518,7 @@ ADMINISTRATION_COMMAND AdministrationCommand(USE_CLAUSE useClause):
 {
     (
         s = DropCommand()
+        | s = RenameCommand()
         | s = GrantRole()
         | s = RevokeRole()
         | s = StartDatabase()
@@ -2629,6 +2631,39 @@ WAIT_CLAUSE WaitClause():
         return astFactory.wait(wait, -1) ;
     }
 }
+
+ADMINISTRATION_COMMAND RenameCommand():
+{
+    Token start;
+    ADMINISTRATION_COMMAND c;
+}
+{
+    start=<RENAME>
+    (
+        c=RenameRole(start)
+    )
+    {
+        return c;
+    }
+}
+
+ADMINISTRATION_COMMAND RenameRole(Token start):
+{
+    Either<String, PARAMETER> fromRoleName = null;
+    Either<String, PARAMETER> toRoleName = null;
+    boolean ifExists = false;
+}
+{
+    <ROLE>
+    fromRoleName=SymbolicNameOrStringParameter()
+    (<IF> <EXISTS> {ifExists = true;})?
+    <TO>
+    toRoleName=SymbolicNameOrStringParameter()
+    {
+        return astFactory.renameRole( pos(start), fromRoleName, toRoleName, ifExists );
+    }
+}
+
 
 ADMINISTRATION_COMMAND DropCommand():
 {
@@ -2845,6 +2880,7 @@ Token SymbolicNameString() :
     | t=<POPULATED>
     | t=<REDUCE>
     | t=<REMOVE>
+    | t=<RENAME>
     | t=<REPLACE>
     | t=<RETURN>
     | t=<REVOKE>

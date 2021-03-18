@@ -321,6 +321,119 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertJavaCCException(testName, "Invalid input 'UNION': expected \"AS\", \"IF\" or <EOF> (line 1, column 17 (offset: 16))")
   }
 
+  // Renaming role
+
+  test("RENAME ROLE foo TO bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME ROLE foo TO $bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME ROLE $foo TO bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME ROLE $foo TO $bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME ROLE foo IF EXISTS TO bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME ROLE foo IF EXISTS TO $bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME ROLE $foo IF EXISTS TO bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME ROLE $foo IF EXISTS TO $bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME ROLE foo TO ``") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME ROLE `` TO bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME ROLE foo TO") {
+    assertJavaCCException(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))")
+  }
+
+  test("RENAME ROLE TO bar") {
+    assertJavaCCException(testName, "Invalid input 'bar': expected \"IF\" or \"TO\" (line 1, column 16 (offset: 15))")
+  }
+
+  test("RENAME ROLE TO") {
+    assertJavaCCException(testName, "Invalid input '': expected \"IF\" or \"TO\" (line 1, column 15 (offset: 14))")
+  }
+
+  test("RENAME ROLE foo SET NAME TO bar") {
+    assertJavaCCException(testName, "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))")
+  }
+
+  test("RENAME ROLE foo SET NAME bar") {
+    assertJavaCCException(testName, "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))")
+  }
+
+  // TODO: update this error message to something like "Invalid input 'ROLE': expected \"USER\" (line 1, column 7 (offset: 8))"
+  //  once user commands are ported to Javacc
+  test("ALTER ROLE foo SET NAME bar") {
+    assertJavaCCException(testName,
+      s"""Invalid input 'ALTER': expected
+         |  "CALL"
+         |  "CATALOG"
+         |  "CREATE"
+         |  "DELETE"
+         |  "DETACH"
+         |  "DROP"
+         |  "FOREACH"
+         |  "GRANT"
+         |  "LOAD"
+         |  "MATCH"
+         |  "MERGE"
+         |  "OPTIONAL"
+         |  "REMOVE"
+         |  "RENAME"
+         |  "RETURN"
+         |  "REVOKE"
+         |  "SET"
+         |  "SHOW"
+         |  "START"
+         |  "STOP"
+         |  "UNWIND"
+         |  "USE"
+         |  "USING"
+         |  "WITH" (line 1, column 1 (offset: 0))""".stripMargin)
+  }
+
+  test("RENAME ROLE foo IF EXIST TO bar") {
+    assertJavaCCException(testName, "Invalid input 'EXIST': expected \"EXISTS\" (line 1, column 20 (offset: 19))")
+  }
+
+  test("RENAME ROLE foo IF NOT EXISTS TO bar") {
+    assertJavaCCException(testName, "Invalid input 'NOT': expected \"EXISTS\" (line 1, column 20 (offset: 19))")
+  }
+
+  test("RENAME ROLE foo TO bar IF EXISTS") {
+    assertJavaCCException(testName, "Invalid input 'IF': expected <EOF> (line 1, column 24 (offset: 23))")
+  }
+
+  test("RENAME IF EXISTS ROLE foo TO bar") {
+    assertJavaCCException(testName, "Invalid input 'IF': expected \"ROLE\" (line 1, column 8 (offset: 7))")
+  }
+
+  test("RENAME OR REPLACE ROLE foo TO bar") {
+    assertJavaCCException(testName, "Invalid input 'OR': expected \"ROLE\" (line 1, column 8 (offset: 7))")
+  }
+
   //  Dropping role
 
   test("DROP ROLE foo") {

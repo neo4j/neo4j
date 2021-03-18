@@ -330,6 +330,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
+    public NULL renameRole( NULL p, Either<String,Object> fromRoleName, Either<String,Object> toRoleName, boolean ifExists )
+    {
+        throw new UnsupportedOperationException( "renameRole is not a literal" );
+    }
+
+    @Override
     public NULL showRoles( NULL p, boolean withUsers, boolean showAll, NULL yieldExpr, NULL returnWithoutGraph, Object where )
     {
         throw new UnsupportedOperationException( "showRoles is not a literal" );

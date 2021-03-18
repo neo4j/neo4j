@@ -218,6 +218,8 @@ public interface ASTFactory<STATEMENT,
 
     ADMINISTRATION_COMMAND dropRole( POS p, Either<String, PARAMETER> roleName, boolean ifExists );
 
+    ADMINISTRATION_COMMAND renameRole( POS p, Either<String, PARAMETER> fromRoleName, Either<String, PARAMETER> toRoleName, boolean ifExists );
+
     ADMINISTRATION_COMMAND showRoles( POS p, boolean withUsers, boolean showAll, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, EXPRESSION where );
 
     ADMINISTRATION_COMMAND grantRoles( POS p, List<Either<String,PARAMETER>> roles, List<Either<String,PARAMETER>> users );

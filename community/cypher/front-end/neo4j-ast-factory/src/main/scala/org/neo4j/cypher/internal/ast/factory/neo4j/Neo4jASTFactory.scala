@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import java.util
-import java.util.stream.Collectors
-
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
@@ -66,6 +63,7 @@ import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemoveItem
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
+import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
@@ -197,6 +195,8 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTString
 
+import java.util
+import java.util.stream.Collectors
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.util.Either
 
@@ -858,6 +858,10 @@ class Neo4jASTFactory(query: String)
 
   override def dropRole(p: InputPosition, roleName: Either[String, Parameter], ifExists: Boolean): DropRole = {
     DropRole(roleName, ifExists)(p)
+  }
+
+  override def renameRole(p: InputPosition, fromRoleName: Either[String, Parameter], toRoleName: Either[String, Parameter], ifExists: Boolean): RenameRole = {
+    RenameRole(fromRoleName, toRoleName, ifExists)(p)
   }
 
   override def showRoles(p: InputPosition,
