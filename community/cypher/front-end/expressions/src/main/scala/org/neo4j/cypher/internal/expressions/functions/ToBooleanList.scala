@@ -17,16 +17,16 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
-import org.neo4j.cypher.internal.util.symbols.CTInteger
-import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CTList
 
-case object ToBoolean extends Function {
-  override def name = "toBoolean"
+case object ToBooleanList extends Function {
+  override def name = "toBooleanList"
 
   override val signatures = Vector(
-    TypeSignature(this, CTString, CTBoolean, "Converts a string value to a boolean value.", Category.SCALAR),
-    TypeSignature(this, CTBoolean, CTBoolean, "Converts a boolean value to a boolean value.", Category.SCALAR),
-    TypeSignature(this, CTInteger, CTBoolean, "Converts a integer value to a boolean value. 0 is defined to be FALSE and any other integer is defined to be TRUE.", Category.SCALAR)
+    TypeSignature(this, CTList(CTAny), CTList(CTBoolean),
+      "Converts a list of values to a list of boolean values. If any values are not convertible to boolean they will be null in the list returned.",
+      Category.SCALAR)
   )
 }

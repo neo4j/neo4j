@@ -92,6 +92,8 @@ import org.neo4j.cypher.internal.expressions.functions.Sum
 import org.neo4j.cypher.internal.expressions.functions.Tail
 import org.neo4j.cypher.internal.expressions.functions.Tan
 import org.neo4j.cypher.internal.expressions.functions.ToBoolean
+import org.neo4j.cypher.internal.expressions.functions.ToBooleanList
+import org.neo4j.cypher.internal.expressions.functions.ToBooleanOrNull
 import org.neo4j.cypher.internal.expressions.functions.ToFloat
 import org.neo4j.cypher.internal.expressions.functions.ToFloatList
 import org.neo4j.cypher.internal.expressions.functions.ToFloatOrNull
@@ -110,9 +112,9 @@ import org.neo4j.cypher.internal.logical.plans.PointDistanceSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PrefixSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.runtime.ast.DefaultValueLiteral
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
-import org.neo4j.cypher.internal.runtime.ast.DefaultValueLiteral
 import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.GroupingExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands
@@ -503,6 +505,8 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
         )
       case Tan => commands.expressions.TanFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToBoolean => commands.expressions.ToBooleanFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case ToBooleanList => commands.expressions.ToBooleanListFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case ToBooleanOrNull => commands.expressions.ToBooleanOrNullFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToFloat => commands.expressions.ToFloatFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToFloatList => commands.expressions.ToFloatListFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToFloatOrNull => commands.expressions.ToFloatOrNullFunction(self.toCommandExpression(id, invocation.arguments.head))

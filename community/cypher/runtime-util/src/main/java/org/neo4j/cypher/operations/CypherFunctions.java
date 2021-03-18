@@ -1181,10 +1181,42 @@ public final class CypherFunctions
                 return NO_VALUE;
             }
         }
+        else if ( in instanceof IntegralValue )
+        {
+            return ((IntegralValue) in).longValue() == 0L ? FALSE : TRUE;
+        }
         else
         {
             throw new ParameterWrongTypeException( "Expected a Boolean or String, got: " + in, null );
         }
+    }
+
+    public static Value toBooleanOrNull( AnyValue in )
+    {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( in instanceof BooleanValue || in instanceof TextValue || in instanceof IntegralValue )
+        {
+            return toBoolean( in );
+        }
+        else
+        {
+            return NO_VALUE;
+        }
+    }
+
+    public static AnyValue toBooleanList( AnyValue in )
+    {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( !(in instanceof ListValue) )
+        {
+            throw new ParameterWrongTypeException( String.format("Expected a List, got: %s in function: ToBooleanList", in), null );
+        }
+
+        ListValue lv = (ListValue) in;
+
+        return Arrays.stream( lv.asArray() )
+                     .map( entry -> entry == NO_VALUE ? NO_VALUE : toBooleanOrNull( entry ) )
+                     .collect( ListValueBuilder.collector() );
     }
 
     public static Value toFloat( AnyValue in )

@@ -103,6 +103,8 @@ object Function {
     Tail,
     Tan,
     ToBoolean,
+    ToBooleanList,
+    ToBooleanOrNull,
     ToFloat,
     ToFloatList,
     ToFloatOrNull,
