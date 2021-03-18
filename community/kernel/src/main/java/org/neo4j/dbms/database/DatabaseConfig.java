@@ -36,6 +36,7 @@ import org.neo4j.logging.Log;
 
 import static java.lang.Boolean.FALSE;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
+import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 
 public class DatabaseConfig extends Config implements Lifecycle
 {
@@ -52,9 +53,16 @@ public class DatabaseConfig extends Config implements Lifecycle
     @Override
     public <T> T get( Setting<T> setting )
     {
-        if ( read_only.equals( setting ) && namedDatabaseId.isSystemDatabase() )
+        if ( namedDatabaseId.isSystemDatabase() )
         {
-            return (T) FALSE;
+            if ( read_only.equals( setting ) )
+            {
+                return (T) FALSE;
+            }
+            else if ( record_format.equals( setting ) )
+            {
+                return (T) ""; //Latest version of the format family it is currently on. Needs to work in rolling upgrade.
+            }
         }
         return globalConfig.get( setting );
     }
