@@ -40,19 +40,19 @@ trait AdministrationCommand extends Parser
                             with Base {
 
   def AdministrationCommand: Rule1[ast.AdministrationCommand] = rule("Administration statement") {
-    optional(UseGraph) ~~ (MultiDatabaseAdministrationCommand | PrivilegeAdministrationCommand | UserAndRoleAdministrationCommand) ~~> ((use, command) => command.withGraph(use))
+    optional(UseGraph) ~~ optional(keyword("CATALOG")) ~~ (MultiDatabaseAdministrationCommand | PrivilegeAdministrationCommand | UserAndRoleAdministrationCommand) ~~> ((use, command) => command.withGraph(use))
   }
 
   def MultiDatabaseAdministrationCommand: Rule1[ast.AdministrationCommand] = rule("MultiDatabase administration statement") {
-    optional(keyword("CATALOG")) ~~ (ShowDatabase | CreateDatabase | DropDatabase | StartDatabase | StopDatabase)
+    ShowDatabase | CreateDatabase | DropDatabase | StartDatabase | StopDatabase
   }
 
   def UserAndRoleAdministrationCommand: Rule1[ast.AdministrationCommand] = rule("Security role and user administration statement") {
-    optional(keyword("CATALOG")) ~~ (ShowRoles | CreateRole | RenameRole | DropRole | ShowUsers | ShowCurrentUser | CreateUser | RenameUser | DropUser | AlterUser | SetOwnPassword)
+    ShowRoles | CreateRole | RenameRole | DropRole | ShowUsers | ShowCurrentUser | CreateUser | RenameUser | DropUser | AlterUser | SetOwnPassword
   }
 
   def PrivilegeAdministrationCommand: Rule1[ast.AdministrationCommand] = rule("Security privilege administration statement") {
-    optional(keyword("CATALOG")) ~~ (ShowPrivileges | GrantCommand | DenyCommand | RevokeCommand)
+    ShowPrivileges | GrantCommand | DenyCommand | RevokeCommand
   }
 
   def GrantCommand: Rule1[ast.AdministrationCommand] = rule("Security privilege grant statement") {
