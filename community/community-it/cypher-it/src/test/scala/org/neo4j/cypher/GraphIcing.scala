@@ -133,6 +133,23 @@ trait GraphIcing {
       getIndex(label, properties)
     }
 
+    def createIndexWithProvider(label: String, provider: String, properties: String*): IndexDefinition = {
+      withTx( tx => {
+        val query =
+          s"""CREATE INDEX
+            |FOR (n:$label)
+            |ON (${properties.map(p => s"n.`$p`").mkString(",")})
+            |OPTIONS {indexProvider: '$provider'}""".stripMargin
+        tx.execute(query)
+      } )
+
+      withTx( tx => {
+        tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      } )
+
+      getIndex(label, properties)
+    }
+
     def createIndexWithName(name: String, label: String, properties: String*): IndexDefinition = {
       withTx( tx => {
         tx.execute(s"CREATE INDEX `$name` FOR (n:$label) ON (${properties.map(p => s"n.`$p`").mkString(",")})")

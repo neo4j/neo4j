@@ -126,6 +126,29 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
+  test("should exact (multiple) seek nodes of an index with a property and return that property") {
+    val nodes = given {
+      index("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("x.prop as prop")
+      .nodeIndexOperator("x:Honey(prop = 20 OR 30)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = Seq(nodes(20).getProperty("prop"), nodes(30).getProperty("prop"))
+    runtimeResult should beColumns("prop").withRows(singleColumn(expected))
+  }
+
   test("should handle null in exact multiple seek") {
     val nodes = given {
       index("Honey", "prop")
