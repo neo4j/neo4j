@@ -23,23 +23,33 @@ object DebugSupport {
 
   /** DEBUG CONFIGURATION **/
 
-  final val PHYSICAL_PLANNING = new DebugLog(false, "")
-
-  final val TIMELINE = new DebugTimeline(false)
-
-  final val WORKERS = new DebugLog(false, "")
-  final val QUERIES = new DebugLog(false, "")
-  final val TRACKER = new DebugLog(false, Yellow)
-  final val LOCKS = new DebugLog(false, Blue)
-  final val ERROR_HANDLING = new DebugLog(false, Red)
-  final val CURSORS = new DebugLog(false, "")
-  final val BUFFERS = new DebugLog(false, Magenta)
-  final val SCHEDULING = new DebugLog(false, Cyan)
-  final val ASM = new DebugLog(false, "")
-
+  final val DEBUG_PHYSICAL_PLANNING = false
+  final val DEBUG_TIMELINE = false
+  final val DEBUG_WORKERS = false
+  final val DEBUG_QUERIES = false
+  final val DEBUG_TRACKER = false
+  final val DEBUG_LOCKS = false
+  final val DEBUG_ERROR_HANDLING = false
+  final val DEBUG_CURSORS = false
+  final val DEBUG_BUFFERS = false
+  final val DEBUG_SCHEDULING = false
+  final val DEBUG_ASM = false
   final val DEBUG_PIPELINES = false
+  final val DEBUG_GENERATED_SOURCE_CODE = false
 
-  final val DEBUG_GENERATED_SOURCE_CODE: Boolean = false
+  /** LOGS */
+
+  final val PHYSICAL_PLANNING = new DebugLog(DEBUG_PHYSICAL_PLANNING, "")
+  final val TIMELINE = new DebugTimeline(DEBUG_TIMELINE)
+  final val WORKERS = new DebugLog(DEBUG_WORKERS, "")
+  final val QUERIES = new DebugLog(DEBUG_QUERIES, "")
+  final val TRACKER = new DebugLog(DEBUG_TRACKER, Yellow)
+  final val LOCKS = new DebugLog(DEBUG_LOCKS, Blue)
+  final val ERROR_HANDLING = new DebugLog(DEBUG_ERROR_HANDLING, Red)
+  final val CURSORS = new DebugLog(DEBUG_CURSORS, "")
+  final val BUFFERS = new DebugLog(DEBUG_BUFFERS, Magenta)
+  final val SCHEDULING = new DebugLog(DEBUG_SCHEDULING, Cyan)
+  final val ASM = new DebugLog(DEBUG_ASM, "")
 
   /** COLORS AND FORMATTING **/
 
