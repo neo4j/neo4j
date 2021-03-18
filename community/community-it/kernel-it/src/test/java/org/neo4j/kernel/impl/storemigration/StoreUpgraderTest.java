@@ -93,6 +93,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -297,7 +298,7 @@ public class StoreUpgraderTest
 
         StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig,
                 new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, databaseLayout.getDatabaseName() ), pageCache, fileSystem,
-                        NullLogProvider.getInstance(), NULL );
+                NullLogProvider.getInstance(), NULL, writable() );
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             assertThat( neoStores.getMetaDataStore().getUpgradeTransaction() ).isEqualTo( neoStores.getMetaDataStore().getLastCommittedTransaction() );
@@ -629,8 +630,8 @@ public class StoreUpgraderTest
     private void verifyStoreUpgradedWithin( long duration, TimeUnit unit )
     {
         StoreFactory factory = new StoreFactory( databaseLayout, allowMigrateConfig,
-                new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, databaseLayout.getDatabaseName() ),
-                                                 pageCache, fileSystem, NullLogProvider.getInstance(), NULL );
+                new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, databaseLayout.getDatabaseName() ), pageCache, fileSystem,
+                NullLogProvider.getInstance(), NULL, writable() );
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             assertThat( neoStores.getMetaDataStore().getUpgradeTransaction() ).isEqualTo( neoStores.getMetaDataStore().getLastCommittedTransaction() );

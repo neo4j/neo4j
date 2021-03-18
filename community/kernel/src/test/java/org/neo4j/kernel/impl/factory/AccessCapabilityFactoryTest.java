@@ -21,32 +21,25 @@ package org.neo4j.kernel.impl.factory;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DatabaseConfig;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.WriteOperationsNotAllowedException;
-import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.database.TestDatabaseIdRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 
 class AccessCapabilityFactoryTest
 {
-    private final TestDatabaseIdRepository databaseIdRepository = new TestDatabaseIdRepository();
-    private final NamedDatabaseId namedDatabaseId = databaseIdRepository.getRaw( "foo" );
-
-    private final DatabaseConfig readWriteConfig = new DatabaseConfig( Config.defaults( read_only, false ), namedDatabaseId );
-    private final DatabaseConfig readOnlyConfig = new DatabaseConfig( Config.defaults( read_only, true ), namedDatabaseId );
+    private final DatabaseReadOnlyChecker readWriteChecker = DatabaseReadOnlyChecker.writable();
+    private final DatabaseReadOnlyChecker readOnlyChecker = DatabaseReadOnlyChecker.readOnly();
 
     @Test
     void shouldCreateConfigDependentFactoryForReadWriteConfig()
     {
         var factory = AccessCapabilityFactory.configDependent();
 
-        var accessCapability = factory.newAccessCapability( readWriteConfig );
+        var accessCapability = factory.newAccessCapability( readWriteChecker );
 
         assertThat( accessCapability ).isInstanceOf( CanWrite.class );
         assertDoesNotThrow( accessCapability::assertCanWrite );
@@ -57,7 +50,7 @@ class AccessCapabilityFactoryTest
     {
         var factory = AccessCapabilityFactory.configDependent();
 
-        var accessCapability = factory.newAccessCapability( readOnlyConfig );
+        var accessCapability = factory.newAccessCapability( readOnlyChecker );
 
         assertThat( accessCapability ).isInstanceOf( ReadOnly.class );
         assertThrows( WriteOperationsNotAllowedException.class, accessCapability::assertCanWrite );
@@ -66,16 +59,16 @@ class AccessCapabilityFactoryTest
     @Test
     void shouldCreateFixedFactory()
     {
-        var accessCapability1 = new CanWrite();
-        var accessCapability2 = new ReadOnly();
+        var accessCapability1 = CanWrite.INSTANCE;
+        var accessCapability2 = ReadOnly.INSTANCE;
 
         var factory1 = AccessCapabilityFactory.fixed( accessCapability1 );
         var factory2 = AccessCapabilityFactory.fixed( accessCapability2 );
 
-        assertEquals( accessCapability1, factory1.newAccessCapability( readWriteConfig ) );
-        assertEquals( accessCapability1, factory1.newAccessCapability( readOnlyConfig ) );
+        assertEquals( accessCapability1, factory1.newAccessCapability( readWriteChecker ) );
+        assertEquals( accessCapability1, factory1.newAccessCapability( readOnlyChecker ) );
 
-        assertEquals( accessCapability2, factory2.newAccessCapability( readWriteConfig ) );
-        assertEquals( accessCapability2, factory2.newAccessCapability( readOnlyConfig ) );
+        assertEquals( accessCapability2, factory2.newAccessCapability( readWriteChecker ) );
+        assertEquals( accessCapability2, factory2.newAccessCapability( readOnlyChecker ) );
     }
 }

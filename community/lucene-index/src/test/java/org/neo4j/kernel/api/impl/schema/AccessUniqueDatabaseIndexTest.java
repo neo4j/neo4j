@@ -49,6 +49,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
@@ -147,7 +148,7 @@ class AccessUniqueDatabaseIndexTest
 
     private LuceneIndexAccessor createAccessor( PartitionedIndexStorage indexStorage ) throws IOException
     {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( index, Config.defaults() )
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( index, writable(), Config.defaults() )
                 .withIndexStorage( indexStorage )
                 .build();
         luceneIndex.open();

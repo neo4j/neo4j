@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -435,8 +436,8 @@ class CommonAbstractStoreBehaviourTest
         MyStore( Config config, PageCache pageCache, MyFormat format )
         {
             super( Path.of( STORE_FILENAME ), Path.of( ID_FILENAME ), config, IdType.NODE,
-                    new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), pageCache,
-                    NullLogProvider.getInstance(), "T", format, format, "XYZ", DEFAULT_DATABASE_NAME, immutable.empty() );
+                    new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), pageCache, NullLogProvider.getInstance(), "T", format, format,
+                    "XYZ", DatabaseReadOnlyChecker.writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
         }
 
         @Override

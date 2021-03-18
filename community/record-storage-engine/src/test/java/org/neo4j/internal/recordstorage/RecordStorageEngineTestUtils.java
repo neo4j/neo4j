@@ -50,6 +50,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
@@ -65,9 +66,8 @@ public class RecordStorageEngineTestUtils
                 createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         return new RecordStorageEngine( layout, config, pageCache, fs, nullLogProvider(), tokenHolders, mock( SchemaState.class ),
                 new StandardConstraintRuleAccessor(), c -> c, NO_LOCK_SERVICE, mock( Health.class ),
-                new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ),
-                new DefaultIdController(), immediate(), PageCacheTracer.NULL, true, EmptyMemoryTracker.INSTANCE, CommandLockVerification.Factory.IGNORE,
-                LockVerificationMonitor.Factory.IGNORE );
+                new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), new DefaultIdController(), immediate(), PageCacheTracer.NULL, true,
+                EmptyMemoryTracker.INSTANCE, writable(), CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE );
     }
 
     public static void applyLogicalChanges( RecordStorageEngine storageEngine, ThrowingBiConsumer<ReadableTransactionState,TxStateVisitor,Exception> changes )

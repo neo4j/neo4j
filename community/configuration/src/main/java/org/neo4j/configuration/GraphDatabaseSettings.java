@@ -133,7 +133,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                     .setDependency( data_directory ).immutable().build();
 
     @Description( "Only allow read operations from this Neo4j instance. " +
-            "This mode still requires write access to the directory for lock purposes." )
+            "This mode still requires write access to the directory for lock purposes. " +
+            "Replaced by: dbms.databases.default_to_read_only, dbms.databases.read_only, dbms.databases.writable." )
+    @Deprecated( since = "4.3.0", forRemoval = true )
     public static final Setting<Boolean> read_only = newBuilder( "dbms.read_only", BOOL, false ).build();
 
     @Description( "Whether or not any database on this instance are read_only by default. If false, individual databases may be marked as read_only using " +

@@ -57,6 +57,7 @@ import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -90,7 +91,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         RecordFormats formats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
         nameStore = new DynamicStringStore( namesFile, namesIdFile, config, IdType.LABEL_TOKEN_NAME, generatorFactory, pageCache, logProvider,
-                TokenStore.NAME_STORE_BLOCK_SIZE, formats.dynamic(), formats.storeVersion(), DEFAULT_DATABASE_NAME, immutable.empty() );
+                TokenStore.NAME_STORE_BLOCK_SIZE, formats.dynamic(), formats.storeVersion(), writable(), DEFAULT_DATABASE_NAME, immutable.empty() );
         store = instantiateStore( file, idFile, generatorFactory, pageCache, logProvider, nameStore, formats, config );
         nameStore.initialise( true, NULL );
         store.initialise( true, NULL );

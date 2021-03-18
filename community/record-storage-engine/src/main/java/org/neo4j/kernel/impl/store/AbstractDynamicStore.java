@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.IdGenerator;
@@ -85,12 +86,13 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             int dataSizeFromConfiguration,
             RecordFormat<DynamicRecord> recordFormat,
             String storeVersion,
+            DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
                 recordFormat, new DynamicStoreHeaderFormat( dataSizeFromConfiguration, recordFormat ),
-                storeVersion, databaseName, openOptions );
+                storeVersion, readOnlyChecker, databaseName, openOptions );
     }
 
     public static void allocateRecordsFromBytes( Collection<DynamicRecord> recordList, byte[] src, DynamicRecordAllocator dynamicRecordAllocator,

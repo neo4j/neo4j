@@ -25,6 +25,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -53,7 +54,7 @@ public class GBPTreeBuilder<KEY,VALUE>
     private Layout<KEY,VALUE> layout;
     private Consumer<PageCursor> headerWriter = NO_HEADER_WRITER;
     private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
-    private boolean readOnly;
+    private DatabaseReadOnlyChecker readOnlyChecker = DatabaseReadOnlyChecker.writable();
     private PageCacheTracer pageCacheTracer = NULL;
     private ImmutableSet<OpenOption> openOptions = immutable.empty();
 
@@ -106,9 +107,9 @@ public class GBPTreeBuilder<KEY,VALUE>
         return this;
     }
 
-    public GBPTreeBuilder<KEY,VALUE> withReadOnly( boolean readOnly )
+    public GBPTreeBuilder<KEY,VALUE> with( DatabaseReadOnlyChecker readOnlyChecker )
     {
-        this.readOnly = readOnly;
+        this.readOnlyChecker = readOnlyChecker;
         return this;
     }
 
@@ -126,7 +127,7 @@ public class GBPTreeBuilder<KEY,VALUE>
 
     public GBPTree<KEY,VALUE> build()
     {
-        return new GBPTree<>( pageCache, path, layout, monitor, headerReader, headerWriter, recoveryCleanupWorkCollector, readOnly, pageCacheTracer,
+        return new GBPTree<>( pageCache, path, layout, monitor, headerReader, headerWriter, recoveryCleanupWorkCollector, readOnlyChecker, pageCacheTracer,
                 openOptions, DEFAULT_DATABASE_NAME, "test tree" );
     }
 }

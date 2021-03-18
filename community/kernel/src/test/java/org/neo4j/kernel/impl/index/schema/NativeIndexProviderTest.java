@@ -50,9 +50,9 @@ import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVID
 class NativeIndexProviderTest extends IndexProviderTests
 {
     private static final ProviderFactory factory =
-            ( pageCache, fs, dir, monitors, collector, readOnly, databaseLayout ) -> {
+            ( pageCache, fs, dir, monitors, collector, readOnlyChecker, databaseLayout ) -> {
                 DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).withMonitors( monitors )
-                        .withReadOnly( readOnly ).build();
+                        .withReadOnlyChecker( readOnlyChecker ).build();
                 return new GenericNativeIndexProvider( context, dir, collector, Config.defaults() );
             };
 

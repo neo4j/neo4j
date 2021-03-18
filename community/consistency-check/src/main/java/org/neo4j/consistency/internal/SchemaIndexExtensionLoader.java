@@ -21,6 +21,7 @@ package org.neo4j.consistency.internal;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -49,11 +50,11 @@ public class SchemaIndexExtensionLoader
                                                             LogService logService, PageCache pageCache, JobScheduler jobScheduler,
                                                             RecoveryCleanupWorkCollector recoveryCollector, DbmsInfo dbmsInfo,
                                                             Monitors monitors, TokenHolders tokenHolders,
-                                                            PageCacheTracer pageCacheTracer )
+                                                            PageCacheTracer pageCacheTracer, DatabaseReadOnlyChecker readOnlyChecker )
     {
         Dependencies deps = new Dependencies();
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors, jobScheduler, tokenHolders, pageCacheTracer,
-                databaseLayout );
+                databaseLayout, readOnlyChecker );
         @SuppressWarnings( "rawtypes" )
         Iterable extensions = Services.loadAll( ExtensionFactory.class );
         DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, dbmsInfo, deps );

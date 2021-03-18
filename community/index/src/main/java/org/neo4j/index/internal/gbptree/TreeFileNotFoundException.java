@@ -19,11 +19,9 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.nio.file.NoSuchFileException;
-
 public class TreeFileNotFoundException extends RuntimeException
 {
-    TreeFileNotFoundException( String message, NoSuchFileException cause )
+    TreeFileNotFoundException( String message, Exception cause )
     {
         super( message, cause );
     }

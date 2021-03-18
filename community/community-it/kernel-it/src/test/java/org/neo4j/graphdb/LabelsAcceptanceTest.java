@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
@@ -828,18 +829,21 @@ class LabelsAcceptanceTest
                 any -> new DefaultIdGeneratorFactory( fileSystem, immediate(), db.databaseName() )
                 {
                     @Override
-                    public IdGenerator open( PageCache pageCache, Path fileName, IdType idType, LongSupplier highId, long maxId, boolean readOnly,
-                            Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException
+                    public IdGenerator open( PageCache pageCache, Path fileName, IdType idType, LongSupplier highId, long maxId,
+                            DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+                            throws IOException
                     {
-                        return super.open( pageCache, fileName, idType, highId, maxId( idType, maxId, highId ), readOnly, config, cursorTracer, openOptions );
+                        return super.open( pageCache, fileName, idType, highId, maxId( idType, maxId, highId ), readOnlyChecker, config, cursorTracer,
+                                openOptions );
                     }
 
                     @Override
                     public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                            boolean readOnly, Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException
+                            DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+                            throws IOException
                     {
-                        return super.create( pageCache, fileName, idType, highId, throwIfFileExists, maxId( idType, maxId, () -> highId ), readOnly, config,
-                                cursorTracer, openOptions );
+                        return super.create( pageCache, fileName, idType, highId, throwIfFileExists, maxId( idType, maxId, () -> highId ), readOnlyChecker,
+                                config, cursorTracer, openOptions );
                     }
 
                     private long maxId( IdType idType, long maxId, LongSupplier highId )

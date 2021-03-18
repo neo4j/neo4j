@@ -202,7 +202,7 @@ class TestReadOnlyNeo4j
         return new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .impermanent()
-                .setConfig( GraphDatabaseSettings.read_only, true )
+                .setConfig( GraphDatabaseSettings.read_only_database_default, true )
                 .setInternalLogProvider( logProvider )
                 .build();
     }
@@ -212,7 +212,7 @@ class TestReadOnlyNeo4j
         return new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .impermanent()
-                .setConfig( GraphDatabaseSettings.read_only, true )
+                .setConfig( GraphDatabaseSettings.read_only_database_default, true )
                 .build();
     }
 

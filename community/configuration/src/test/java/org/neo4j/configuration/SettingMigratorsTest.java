@@ -408,6 +408,22 @@ class SettingMigratorsTest
         assertThat( Config.defaults().get( read_only_database_default  ) ).isFalse();
     }
 
+    @Test
+    void readOnlySettingMigration() throws IOException
+    {
+        var configuration = testDirectory.createFile( "test.conf" );
+        Files.write( configuration, List.of( "dbms.read_only=true" ) );
+
+        var logProvider = new AssertableLogProvider();
+        var config = Config.newBuilder().fromFile( configuration ).build();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        assertThat( config.get( read_only_database_default ) ).isTrue();
+        assertThat( Config.defaults().get( read_only_database_default  ) ).isFalse();
+        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN ).containsMessages(
+                "Use of deprecated setting dbms.read_only. It is replaced by dbms.databases.default_to_read_only" );
+    }
+
     private static void testQueryLogMigration( Boolean oldValue, LogQueryLevel newValue )
     {
         var setting = GraphDatabaseSettings.log_queries;

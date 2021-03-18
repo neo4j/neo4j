@@ -233,7 +233,7 @@ public class LogsUpgrader
         // Make sure to create the TransactionMetaDataStore with a `read_only` config,
         // to avoid relying on the persistent id generators.
         // We can't use those id files because at this point they haven't been migrated yet.
-        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, true );
+        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only_database_default, true );
         return storageEngineFactory.transactionMetaDataStore( fs, databaseLayout, readOnlyConfig, pageCache, tracer );
     }
 }

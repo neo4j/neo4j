@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -54,7 +55,7 @@ public final class IndexingServiceFactory
                                           PageCacheTracer pageCacheTracer,
                                           MemoryTracker memoryTracker,
                                           String databaseName,
-                                          boolean readOnly )
+                                          DatabaseReadOnlyChecker readOnlyChecker )
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         IndexMapReference indexMapRef = new IndexMapReference();
@@ -66,6 +67,6 @@ public final class IndexingServiceFactory
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
                 indexSamplingController, tokenNameLookup, scheduler, schemaState,
-                internalLogProvider, userLogProvider, monitor, indexStatisticsStore, pageCacheTracer, memoryTracker, databaseName, readOnly, config );
+                internalLogProvider, userLogProvider, monitor, indexStatisticsStore, pageCacheTracer, memoryTracker, databaseName, readOnlyChecker, config );
     }
 }

@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -238,7 +239,7 @@ class AbstractDynamicStoreTest
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME );
         AbstractDynamicStore store = new AbstractDynamicStore( storeFile, idFile, Config.defaults(), IdType.ARRAY_BLOCK,
                 idGeneratorFactory, pageCache, NullLogProvider.getInstance(), "test", BLOCK_SIZE,
-                formats.dynamic(), formats.storeVersion(), DEFAULT_DATABASE_NAME, immutable.empty() )
+                formats.dynamic(), formats.storeVersion(), DatabaseReadOnlyChecker.writable(), DEFAULT_DATABASE_NAME, immutable.empty() )
         {
             @Override
             public String getTypeDescriptor()

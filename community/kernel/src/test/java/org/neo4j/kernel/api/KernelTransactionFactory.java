@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -90,11 +90,11 @@ public final class KernelTransactionFactory
                                                      mock( InternalTransactionCommitProcess.class ), mock( TransactionMonitor.class ),
                                                      mock( Pool.class ), Clocks.nanoClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                                                      mock( DatabaseTracers.class, RETURNS_MOCKS ), storageEngine,
-                                                     new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
+                                                     any -> CanWrite.INSTANCE, EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                                                      new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                                                      mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
                                                      mock( IndexStatisticsStore.class ), dependencies, new TestDatabaseIdRepository().defaultDatabase(),
-                                                     LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, ReadOnlyDatabaseChecker.neverReadOnly() );
+                                                     LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable() );
 
         transaction.initialize( 0, 0, new NoOpClient(), KernelTransaction.Type.IMPLICIT,
                 loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME ), 0L, 1L, EMBEDDED_CONNECTION );

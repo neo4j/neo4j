@@ -94,6 +94,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
@@ -323,7 +324,7 @@ public class DatabaseCompositeIndexAccessorTest
 
         Dependencies deps = new Dependencies();
         deps.satisfyDependencies( pageCache, jobScheduler, fileSystem, new SimpleLogService( logProvider ), new Monitors(), CONFIG,
-                                  RecoveryCleanupWorkCollector.ignore(), DatabaseLayout.ofFlat( testDirectory.homePath() ), PageCacheTracer.NULL );
+                                  RecoveryCleanupWorkCollector.ignore(), DatabaseLayout.ofFlat( testDirectory.homePath() ), PageCacheTracer.NULL, writable() );
         testDirectory.prepareDirectory( DatabaseCompositeIndexAccessorTest.class, "null" );
         Config config = Config.defaults( neo4j_home, testDirectory.homePath() );
         DatabaseExtensionContext context = new DatabaseExtensionContext( DatabaseLayout.of( config ), DbmsInfo.UNKNOWN, deps );

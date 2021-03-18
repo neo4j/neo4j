@@ -56,6 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
@@ -127,7 +128,7 @@ class LuceneSchemaIndexIT
     @Test
     void updateMultiplePartitionedIndex() throws IOException
     {
-        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config )
+        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, writable(), config )
                 .withFileSystem( fileSystem )
                 .withIndexRootFolder( testDir.directory( "partitionedIndexForUpdates" ) )
                 .build() )
@@ -149,7 +150,7 @@ class LuceneSchemaIndexIT
     void createPopulateDropIndex() throws Exception
     {
         Path crudOperation = testDir.directory( "indexCRUDOperation" );
-        try ( SchemaIndex crudIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
+        try ( SchemaIndex crudIndex = LuceneSchemaIndexBuilder.create( descriptor, writable(), config )
                 .withFileSystem( fileSystem )
                 .withIndexRootFolder( crudOperation.resolve( "crudIndex" ) )
                 .build() )
@@ -172,7 +173,7 @@ class LuceneSchemaIndexIT
     @Test
     void createFailPartitionedIndex() throws Exception
     {
-        try ( SchemaIndex failedIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
+        try ( SchemaIndex failedIndex = LuceneSchemaIndexBuilder.create( descriptor, writable(), config )
                 .withFileSystem( fileSystem )
                 .withIndexRootFolder( testDir.directory( "failedIndexFolder" ).resolve( "failedIndex" ) )
                 .build() )
@@ -195,7 +196,7 @@ class LuceneSchemaIndexIT
     {
         Path indexRootFolder = testDir.directory( "reopenIndexFolder" ).resolve( "reopenIndex" );
         LuceneSchemaIndexBuilder luceneSchemaIndexBuilder =
-                LuceneSchemaIndexBuilder.create( descriptor, config ).withFileSystem( fileSystem ).withIndexRootFolder( indexRootFolder );
+                LuceneSchemaIndexBuilder.create( descriptor, writable(), config ).withFileSystem( fileSystem ).withIndexRootFolder( indexRootFolder );
         try ( SchemaIndex reopenIndex = luceneSchemaIndexBuilder.build() )
         {
             reopenIndex.open();
@@ -240,7 +241,7 @@ class LuceneSchemaIndexIT
 
     private LuceneIndexAccessor createDefaultIndexAccessor() throws IOException
     {
-        SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config )
+        SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, writable(), config )
                 .withFileSystem( fileSystem )
                 .withIndexRootFolder( testDir.directory( "testIndex" ) )
                 .build();

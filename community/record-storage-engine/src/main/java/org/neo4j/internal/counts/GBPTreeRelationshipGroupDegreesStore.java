@@ -24,6 +24,7 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Map;
 
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -48,11 +49,11 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
     static final byte TYPE_DEGREE = (byte) 3;
 
     public GBPTreeRelationshipGroupDegreesStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem,
-            RecoveryCleanupWorkCollector recoveryCollector, DegreesRebuilder rebuilder, boolean readOnly, PageCacheTracer pageCacheTracer, Monitor monitor,
-            String databaseName )
-            throws IOException
+            RecoveryCleanupWorkCollector recoveryCollector, DegreesRebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker,
+            PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName ) throws IOException
     {
-        super( pageCache, file, fileSystem, recoveryCollector, new RebuilderWrapper( rebuilder ), readOnly, NAME, pageCacheTracer, monitor, databaseName );
+        super( pageCache, file, fileSystem, recoveryCollector, new RebuilderWrapper( rebuilder ), readOnlyChecker, NAME, pageCacheTracer, monitor,
+                databaseName );
     }
 
     @Override

@@ -413,6 +413,16 @@ public final class SettingMigrators
     }
 
     @ServiceProvider
+    public static class ReadOnlyMigration implements SettingMigrator
+    {
+        @Override
+        public void migrate( Map<String,String> values, Map<String,String> defaultValues, Log log )
+        {
+            migrateSettingNameChange( values, log, "dbms.read_only", read_only_database_default );
+        }
+    }
+
+    @ServiceProvider
     public static class RefuseToBeLeaderMigration implements SettingMigrator
     {
 

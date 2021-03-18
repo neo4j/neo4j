@@ -36,7 +36,7 @@ final class CommandHelpers
                            .fromFileNoThrow( ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                            .commandExpansion( allowCommandExpansion )
                            .set( GraphDatabaseSettings.neo4j_home, ctx.homeDir() )
-                           .set( GraphDatabaseSettings.read_only, true ).build();
+                           .set( GraphDatabaseSettings.read_only_database_default, true ).build();
         ConfigUtils.disableAllConnectors( cfg );
         return cfg;
     }

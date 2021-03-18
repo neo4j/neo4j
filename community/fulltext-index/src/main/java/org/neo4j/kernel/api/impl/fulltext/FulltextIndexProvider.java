@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.FulltextSettings;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -88,22 +88,22 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
     private final FileSystemAbstraction fileSystem;
     private final Config config;
     private final TokenHolders tokenHolders;
-    private final boolean isSingleInstance;
     private final String defaultAnalyzerName;
     private final boolean defaultEventuallyConsistentSetting;
+    private final DatabaseReadOnlyChecker readOnlyChecker;
     private final Log log;
     private final IndexUpdateSink indexUpdateSink;
     private final IndexStorageFactory indexStorageFactory;
 
     public FulltextIndexProvider( IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory,
-            FileSystemAbstraction fileSystem, Config config, TokenHolders tokenHolders, DirectoryFactory directoryFactory, boolean isSingleInstance,
-            JobScheduler scheduler, Log log )
+            FileSystemAbstraction fileSystem, Config config, TokenHolders tokenHolders, DirectoryFactory directoryFactory,
+            DatabaseReadOnlyChecker readOnlyChecker, JobScheduler scheduler, Log log )
     {
         super( descriptor, directoryStructureFactory );
         this.fileSystem = fileSystem;
         this.config = config;
         this.tokenHolders = tokenHolders;
-        this.isSingleInstance = isSingleInstance;
+        this.readOnlyChecker = readOnlyChecker;
         this.log = log;
 
         defaultAnalyzerName = config.get( FulltextSettings.fulltext_default_analyzer );
@@ -120,7 +120,7 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
 
     private boolean indexIsOnline( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor ) throws IOException
     {
-        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config ).withIndexStorage( indexStorage ).build() )
+        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, readOnlyChecker, config ).withIndexStorage( indexStorage ).build() )
         {
             if ( index.exists() )
             {
@@ -220,7 +220,7 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
 
     private boolean isReadOnly()
     {
-        return isSingleInstance && config.get( GraphDatabaseSettings.read_only );
+        return readOnlyChecker.isReadOnly();
     }
 
     @Override
@@ -237,9 +237,8 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
             Analyzer analyzer = createAnalyzer( descriptor, tokenNameLookup );
             String[] propertyNames = createPropertyNames( descriptor, tokenNameLookup );
             DatabaseIndex<FulltextIndexReader> fulltextIndex = FulltextIndexBuilder
-                    .create( descriptor, config, tokenHolders.propertyKeyTokens(), analyzer, propertyNames )
+                    .create( descriptor, config, readOnlyChecker, tokenHolders.propertyKeyTokens(), analyzer, propertyNames )
                     .withFileSystem( fileSystem )
-                    .withOperationalMode( isSingleInstance )
                     .withIndexStorage( indexStorage )
                     .withPopulatingMode( true )
                     .build();
@@ -263,9 +262,8 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
         Analyzer analyzer = createAnalyzer( index, tokenHolders );
         String[] propertyNames = createPropertyNames( index, tokenHolders );
         FulltextIndexBuilder fulltextIndexBuilder = FulltextIndexBuilder
-                .create( index, config, tokenHolders.propertyKeyTokens(), analyzer, propertyNames )
+                .create( index, config, readOnlyChecker, tokenHolders.propertyKeyTokens(), analyzer, propertyNames )
                 .withFileSystem( fileSystem )
-                .withOperationalMode( isSingleInstance )
                 .withIndexStorage( indexStorage )
                 .withPopulatingMode( false );
         if ( isEventuallyConsistent( index ) )

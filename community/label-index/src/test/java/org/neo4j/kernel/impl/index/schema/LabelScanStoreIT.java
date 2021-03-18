@@ -55,6 +55,8 @@ import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFac
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
@@ -297,7 +299,7 @@ class LabelScanStoreIT
 
     private GBPTree<TokenScanKey,TokenScanValue> openReadOnlyGBPTree( TokenScanLayout labelScanLayout )
     {
-        return new GBPTree<>( pageCache, databaseLayout.labelScanStore(), labelScanLayout, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), true,
+        return new GBPTree<>( pageCache, databaseLayout.labelScanStore(), labelScanLayout, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), readOnly(),
                 PageCacheTracer.NULL, Sets.immutable.empty(), DEFAULT_DATABASE_NAME, "test tree" );
     }
 
@@ -307,7 +309,7 @@ class LabelScanStoreIT
         {
             store.shutdown();
         }
-        store = life.add( TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(),
+        store = life.add( TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(), new Monitors(),
                 immediate(), Config.defaults(), cacheTracer, INSTANCE ) );
     }
 
@@ -380,7 +382,7 @@ class LabelScanStoreIT
 
     static long flipRandom( long existingLabels, int highLabelId, Random random )
     {
-        return existingLabels ^ (1 << random.nextInt( highLabelId ));
+        return existingLabels ^ (1L << random.nextInt( highLabelId ));
     }
 
     public static long[] getLabels( long bits )

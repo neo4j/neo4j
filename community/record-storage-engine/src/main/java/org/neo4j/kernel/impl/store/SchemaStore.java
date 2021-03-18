@@ -35,6 +35,7 @@ import java.util.OptionalLong;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
@@ -132,11 +133,12 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             LogProvider logProvider,
             PropertyStore propertyStore,
             RecordFormats recordFormats,
+            DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.schema(),
-                getStoreHeaderFormat( recordFormats ), recordFormats.storeVersion(), databaseName, openOptions );
+                getStoreHeaderFormat( recordFormats ), recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
         this.propertyStore = propertyStore;
     }
 

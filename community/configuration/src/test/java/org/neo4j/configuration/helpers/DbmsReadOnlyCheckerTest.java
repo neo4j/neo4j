@@ -33,12 +33,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_databases;
 import static org.neo4j.configuration.GraphDatabaseSettings.writable_databases;
 
-class ReadOnlyDatabaseCheckerTest
+class DbmsReadOnlyCheckerTest
 {
     @Test
     void globalReadOnlyConfigHasHigherPriorityThanReadOnlyDatabaseList()
@@ -47,10 +46,10 @@ class ReadOnlyDatabaseCheckerTest
         var configValues = Map.of( read_only_database_default, true,
                                    read_only_databases, Set.of() );
         var config = Config.defaults( configValues );
-        var checker = new ReadOnlyDatabaseChecker.Default( config );
+        var checker = new DbmsReadOnlyChecker.Default( config );
 
         //when/then
-        assertTrue( checker.test( "foo1234" ) );
+        assertTrue( checker.isReadOnly( "foo1234" ) );
     }
 
     @Test
@@ -61,11 +60,11 @@ class ReadOnlyDatabaseCheckerTest
         var configValues = Map.of( read_only_database_default, false,
                                    read_only_databases, Set.of( fooDb ) );
         var config = Config.defaults( configValues );
-        var checker = new ReadOnlyDatabaseChecker.Default( config );
+        var checker = new DbmsReadOnlyChecker.Default( config );
 
         //when/then
-        assertTrue( checker.test( fooDb ) );
-        assertFalse( checker.test( "test12356" ) );
+        assertTrue( checker.isReadOnly( fooDb ) );
+        assertFalse( checker.isReadOnly( "test12356" ) );
     }
 
     @Test
@@ -87,35 +86,17 @@ class ReadOnlyDatabaseCheckerTest
                                    read_only_databases, Set.of( DEFAULT_DATABASE_NAME ) );
 
         var config = Config.defaults( configValues );
-        var checker = new ReadOnlyDatabaseChecker.Default( config );
+        var checker = new DbmsReadOnlyChecker.Default( config );
 
         // when/then
-        assertFalse( checker.test( SYSTEM_DATABASE_NAME ) );
+        assertFalse( checker.isReadOnly( SYSTEM_DATABASE_NAME ) );
 
         // when configs are changed
         assertThrows( IllegalArgumentException.class,
                       () -> config.setDynamic( read_only_databases, Set.of( DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME ), getClass().getSimpleName() ) );
 
         // then
-        assertFalse( checker.test( SYSTEM_DATABASE_NAME ) );
-    }
-
-    @Test
-    void distinguishesBetweenFixedAndDynamicReadOnly()
-    {
-        // given
-        var fixedGlobalReadOnly = Map.<Setting<?>, Object>of( read_only, true );
-        var dynamicGlobalReadOnly = Map.<Setting<?>, Object>of( read_only_database_default, true );
-
-        var fixedChecker = new ReadOnlyDatabaseChecker.Default( Config.defaults( fixedGlobalReadOnly ) );
-        var dynamicChecker = new ReadOnlyDatabaseChecker.Default( Config.defaults( dynamicGlobalReadOnly ) );
-
-        // when/then
-        assertTrue( fixedChecker.test( "foo" ) );
-        assertTrue( dynamicChecker.test( "foo" ) );
-
-        assertTrue( fixedChecker.readOnlyFixed() );
-        assertFalse( dynamicChecker.readOnlyFixed() );
+        assertFalse( checker.isReadOnly( SYSTEM_DATABASE_NAME ) );
     }
 
     @Test
@@ -149,11 +130,11 @@ class ReadOnlyDatabaseCheckerTest
                 writable_databases, Set.of( "foo"  ) );
 
         var config = Config.defaults( configValues );
-        var checker = new ReadOnlyDatabaseChecker.Default( config );
+        var checker = new DbmsReadOnlyChecker.Default( config );
 
         // when/then
-        assertTrue( checker.test( "bar" ) );
-        assertFalse( checker.test( "foo" ) );
+        assertTrue( checker.isReadOnly( "bar" ) );
+        assertFalse( checker.isReadOnly( "foo" ) );
     }
 
     @Test
@@ -165,10 +146,10 @@ class ReadOnlyDatabaseCheckerTest
                 writable_databases, Set.of( "bar", "baz" ) );
 
         var config = Config.defaults( configValues );
-        var checker = new ReadOnlyDatabaseChecker.Default( config );
+        var checker = new DbmsReadOnlyChecker.Default( config );
 
         // when/then
-        assertTrue( checker.test( "bar" ) );
-        assertFalse( checker.test( "baz" ) );
+        assertTrue( checker.isReadOnly( "bar" ) );
+        assertFalse( checker.isReadOnly( "baz" ) );
     }
 }

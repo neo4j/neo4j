@@ -22,6 +22,7 @@ package org.neo4j.test.rule;
 import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.DefaultIdController;
@@ -243,7 +244,8 @@ public class RecordStorageEngineRule extends ExternalResource
         {
             super( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics, indexConfigCompleter, lockService,
                     databaseHealth, idGeneratorFactory, idController, RecoveryCleanupWorkCollector.immediate(), PageCacheTracer.NULL, true,
-                    EmptyMemoryTracker.INSTANCE, CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE );
+                    EmptyMemoryTracker.INSTANCE, DatabaseReadOnlyChecker.writable(), CommandLockVerification.Factory.IGNORE,
+                    LockVerificationMonitor.Factory.IGNORE );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

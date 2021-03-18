@@ -81,7 +81,6 @@ import org.neo4j.server.security.systemgraph.UserSecurityGraphComponent;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.DelegatingTokenHolder;
-import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 
@@ -140,7 +139,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
     protected Function<NamedDatabaseId,TokenHolders> createTokenHolderProvider( GlobalModule platform )
     {
-        Config globalConfig = platform.getGlobalConfig();
         return databaseId -> {
             DatabaseManager<?> databaseManager = platform.getGlobalDependencies().resolveDependency( DefaultDatabaseManager.class );
             Supplier<Kernel> kernelSupplier = () ->
@@ -150,9 +148,9 @@ public class CommunityEditionModule extends StandaloneEditionModule
                 return databaseContext.dependencies().resolveDependency( Kernel.class );
             };
             return new TokenHolders(
-                    new DelegatingTokenHolder( createPropertyKeyCreator( globalConfig, databaseId, kernelSupplier ), TYPE_PROPERTY_KEY ),
-                    new DelegatingTokenHolder( createLabelIdCreator( globalConfig, databaseId, kernelSupplier ), TYPE_LABEL ),
-                    new DelegatingTokenHolder( createRelationshipTypeCreator( globalConfig, databaseId, kernelSupplier ), TYPE_RELATIONSHIP_TYPE ) );
+                    new DelegatingTokenHolder( createPropertyKeyCreator( kernelSupplier ), TYPE_PROPERTY_KEY ),
+                    new DelegatingTokenHolder( createLabelIdCreator( kernelSupplier ), TYPE_LABEL ),
+                    new DelegatingTokenHolder( createRelationshipTypeCreator( kernelSupplier ), TYPE_RELATIONSHIP_TYPE ) );
         };
     }
 
@@ -177,19 +175,19 @@ public class CommunityEditionModule extends StandaloneEditionModule
         return new StandardConstraintSemantics();
     }
 
-    protected static TokenCreator createRelationshipTypeCreator( Config config, NamedDatabaseId namedDatabaseId, Supplier<Kernel> kernelSupplier )
+    protected static TokenCreator createRelationshipTypeCreator( Supplier<Kernel> kernelSupplier )
     {
-        return createReadOnlyTokens( config, namedDatabaseId ) ? new ReadOnlyTokenCreator() : new DefaultRelationshipTypeCreator( kernelSupplier );
+        return new DefaultRelationshipTypeCreator( kernelSupplier );
     }
 
-    protected static TokenCreator createPropertyKeyCreator( Config config, NamedDatabaseId namedDatabaseId, Supplier<Kernel> kernelSupplier )
+    protected static TokenCreator createPropertyKeyCreator( Supplier<Kernel> kernelSupplier )
     {
-        return createReadOnlyTokens( config, namedDatabaseId ) ? new ReadOnlyTokenCreator() : new DefaultPropertyTokenCreator( kernelSupplier );
+        return new DefaultPropertyTokenCreator( kernelSupplier );
     }
 
-    protected static TokenCreator createLabelIdCreator( Config config, NamedDatabaseId namedDatabaseId, Supplier<Kernel> kernelSupplier )
+    protected static TokenCreator createLabelIdCreator( Supplier<Kernel> kernelSupplier )
     {
-        return createReadOnlyTokens( config, namedDatabaseId ) ? new ReadOnlyTokenCreator() : new DefaultLabelIdCreator( kernelSupplier );
+        return new DefaultLabelIdCreator( kernelSupplier );
     }
 
     @Override
@@ -301,11 +299,6 @@ public class CommunityEditionModule extends StandaloneEditionModule
     public static <T> T tryResolveOrCreate( Class<T> clazz, DependencyResolver dependencies, Supplier<T> newInstanceMethod )
     {
         return dependencies.containsDependency( clazz ) ? dependencies.resolveDependency( clazz ) : newInstanceMethod.get();
-    }
-
-    private static boolean createReadOnlyTokens( Config config, NamedDatabaseId namedDatabaseId )
-    {
-        return !namedDatabaseId.isSystemDatabase() && config.get( GraphDatabaseSettings.read_only );
     }
 
     @Override

@@ -37,6 +37,7 @@ import java.util.function.LongConsumer;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.collection.PrimitiveLongArrayQueue;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.counts.CountsStorage;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -52,12 +53,12 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.util.Preconditions;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.internal.counts.CountsChanges.ABSENT;
 import static org.neo4j.internal.counts.CountsKey.MAX_STRAY_TX_ID;
 import static org.neo4j.internal.counts.CountsKey.MIN_STRAY_TX_ID;
@@ -65,6 +66,7 @@ import static org.neo4j.internal.counts.CountsKey.strayTxId;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.util.Preconditions.checkState;
 
 /**
  * A "counts store" backed by {@link GBPTree}. It solves the problem of incrementing/decrementing counts for arbitrary keys, while at the same time
@@ -94,7 +96,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
     protected final CountsLayout layout = new CountsLayout();
     private final Rebuilder rebuilder;
-    private final boolean readOnly;
+    private final DatabaseReadOnlyChecker readOnlyChecker;
     private final String name;
     private final Monitor monitor;
     private final String databaseName;
@@ -103,9 +105,10 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     private volatile boolean started;
 
     public GBPTreeGenericCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-            Rebuilder rebuilder, boolean readOnly, String name, PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName ) throws IOException
+            Rebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker, String name, PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName )
+            throws IOException
     {
-        this.readOnly = readOnly;
+        this.readOnlyChecker = readOnlyChecker;
         this.name = name;
         this.monitor = monitor;
         this.databaseName = databaseName;
@@ -115,14 +118,14 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         GBPTree<CountsKey,CountsValue> instantiatedTree;
         try
         {
-            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnly, header, pageCacheTracer );
+            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, pageCacheTracer );
         }
         catch ( MetadataMismatchException e )
         {
             // Corrupt, delete and rebuild
             fileSystem.deleteFileOrThrow( file );
             header = new CountsHeader( NEEDS_REBUILDING_HIGH_ID );
-            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnly, header, pageCacheTracer );
+            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, pageCacheTracer );
         }
         this.tree = instantiatedTree;
         boolean successful = false;
@@ -146,12 +149,12 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         }
     }
 
-    private GBPTree<CountsKey,CountsValue> instantiateTree( PageCache pageCache, Path file, RecoveryCleanupWorkCollector recoveryCollector, boolean readOnly,
-            CountsHeader header, PageCacheTracer pageCacheTracer )
+    private GBPTree<CountsKey,CountsValue> instantiateTree( PageCache pageCache, Path file, RecoveryCleanupWorkCollector recoveryCollector,
+            DatabaseReadOnlyChecker readOnlyChecker, CountsHeader header, PageCacheTracer pageCacheTracer )
     {
         try
         {
-            return new GBPTree<>( pageCache, file, layout, GBPTree.NO_MONITOR, header, header, recoveryCollector, readOnly, pageCacheTracer,
+            return new GBPTree<>( pageCache, file, layout, GBPTree.NO_MONITOR, header, header, recoveryCollector, readOnlyChecker, pageCacheTracer,
                     immutable.empty(), databaseName, name );
         }
         catch ( TreeFileNotFoundException e )
@@ -169,7 +172,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         // Execute the initial counts building if we need to, i.e. if instantiation of this counts store had to create it
         if ( rebuilder != null )
         {
-            Preconditions.checkState( !readOnly, "Counts store needs rebuilding, most likely this database needs to be recovered." );
+            checkState( !readOnlyChecker.isReadOnly(), "Counts store needs rebuilding, most likely this database needs to be recovered." );
             try ( CountUpdater updater = directUpdater( cursorTracer ) )
             {
                 rebuilder.rebuild( updater, cursorTracer, memoryTracker );
@@ -192,7 +195,6 @@ public class GBPTreeGenericCountsStore implements CountsStorage
 
     protected CountUpdater updater( long txId, PageCursorTracer cursorTracer )
     {
-        Preconditions.checkState( !readOnly, "This counts store is read-only" );
         Lock lock = lock( this.lock.readLock() );
 
         boolean alreadyApplied = txIdInformation.txIdIsAlreadyApplied( txId );
@@ -226,7 +228,6 @@ public class GBPTreeGenericCountsStore implements CountsStorage
      */
     protected CountUpdater directUpdater( PageCursorTracer cursorTracer ) throws IOException
     {
-        Preconditions.checkState( !readOnly, "This counts store is read-only" );
         boolean success = false;
         Lock lock = this.lock.writeLock();
         lock.lock();
@@ -248,11 +249,6 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     @Override
     public void checkpoint( PageCursorTracer cursorTracer ) throws IOException
     {
-        if ( readOnly )
-        {
-            return;
-        }
-
         // First acquire the write lock. This is a fair lock and will wait for currently applying transactions to finish.
         // This could potentially block appliers around this point since they will respect the fairness too.
         // The good thing is that the lock is held very very briefly.
@@ -286,7 +282,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
 
     private void writeCountsChanges( CountsChanges changes, PageCursorTracer cursorTracer ) throws IOException
     {
-        try ( TreeWriter writer = new TreeWriter( tree.writer( cursorTracer ) ) )
+        try ( TreeWriter writer = new TreeWriter( tree.unsafeWriter( cursorTracer ) ) )
         {
             // Sort the entries in the natural tree order to get more performance in the writer
             changes.sortedChanges( layout ).forEach( entry -> writer.write( entry.getKey(), entry.getValue().get() ) );
@@ -298,7 +294,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         PrimitiveLongArrayQueue strayIds = new PrimitiveLongArrayQueue();
         visitStrayTxIdsInTree( strayIds::enqueue, cursorTracer );
 
-        try ( Writer<CountsKey,CountsValue> writer = tree.writer( cursorTracer ) )
+        try ( Writer<CountsKey,CountsValue> writer = tree.unsafeWriter( cursorTracer ) )
         {
             // First clear all the stray ids from the previous checkpoint
             CountsValue value = new CountsValue();
@@ -444,7 +440,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
 
         // Now open it and dump its contents
         try ( GBPTree<CountsKey,CountsValue> tree = new GBPTree<>( pageCache, file, new CountsLayout(), GBPTree.NO_MONITOR, header, GBPTree.NO_HEADER_WRITER,
-                RecoveryCleanupWorkCollector.ignore(), true, NULL, immutable.empty(), databaseName, name ) )
+                RecoveryCleanupWorkCollector.ignore(), readOnly(), NULL, immutable.empty(), databaseName, name ) )
         {
             out.printf( "Highest gap-free txId: %d%n", header.highestGapFreeTxId() );
             tree.visit( new GBPTreeVisitor.Adaptor<>()

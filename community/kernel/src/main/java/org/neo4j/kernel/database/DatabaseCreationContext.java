@@ -24,6 +24,7 @@ import java.util.function.LongFunction;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DbmsReadOnlyChecker;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.function.Factory;
 import org.neo4j.internal.id.IdController;
@@ -139,4 +140,6 @@ public interface DatabaseCreationContext
     GlobalMemoryGroupTracker getTransactionsMemoryPool();
 
     GlobalMemoryGroupTracker getOtherMemoryPool();
+
+    DbmsReadOnlyChecker getDbmsReadOnlyChecker();
 }

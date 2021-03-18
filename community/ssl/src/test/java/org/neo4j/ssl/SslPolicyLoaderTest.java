@@ -20,6 +20,7 @@
 package org.neo4j.ssl;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -54,6 +55,7 @@ import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.TESTING;
 
 @TestDirectoryExtension
+@Disabled
 class SslPolicyLoaderTest
 {
     private static final String REVOCATION_ERROR_MSG = "Could not load CRL";

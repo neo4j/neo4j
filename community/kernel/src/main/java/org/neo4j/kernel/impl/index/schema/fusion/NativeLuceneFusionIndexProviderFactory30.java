@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -34,7 +35,6 @@ import org.neo4j.kernel.api.impl.schema.IndexProviderFactoryUtil;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
@@ -70,33 +70,31 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
 
     @Override
     protected IndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors, String monitorTag,
-            Config config, OperationalMode operationalMode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            Config config, DatabaseReadOnlyChecker readOnlyChecker, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer )
     {
-        return create( pageCache, storeDir, fs, monitors, monitorTag, config, operationalMode, recoveryCleanupWorkCollector, pageCacheTracer,
+        return create( pageCache, storeDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, pageCacheTracer,
                 databaseLayout.getDatabaseName() );
     }
 
     @VisibleForTesting
     public static FusionIndexProvider create( PageCache pageCache, Path databaseDirectory, FileSystemAbstraction fs,
-                                              Monitors monitors, String monitorTag, Config config, OperationalMode operationalMode,
+                                              Monitors monitors, String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker,
                                               RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer, String databaseName )
     {
         IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( databaseDirectory );
-        boolean isSingleInstance = operationalMode == OperationalMode.SINGLE;
-        boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, isSingleInstance );
         boolean archiveFailedIndex = config.get( GraphDatabaseInternalSettings.archive_failed_index );
 
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, databaseName ).withMonitors( monitors ).withTag( monitorTag )
-                                                                        .withReadOnly( readOnly ).withPageCacheTracer( pageCacheTracer )
+                                                                        .withReadOnlyChecker( readOnlyChecker ).withPageCacheTracer( pageCacheTracer )
                                                                         .build();
         GenericNativeIndexProvider generic =
                 new GenericNativeIndexProvider( databaseIndexContext, childDirectoryStructure,
                         recoveryCleanupWorkCollector, config );
-        LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitors, monitorTag, config, isSingleInstance );
+        LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitors, monitorTag, config, readOnlyChecker );
 
         return new FusionIndexProvider( generic, lucene, new FusionSlotSelector30(),
-                DESCRIPTOR, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex, readOnly );
+                DESCRIPTOR, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex, readOnlyChecker );
     }
 
     @VisibleForTesting

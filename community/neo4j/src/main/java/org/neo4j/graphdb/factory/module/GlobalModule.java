@@ -30,6 +30,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.helpers.DbmsReadOnlyChecker;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
@@ -151,6 +152,7 @@ public class GlobalModule
     private final SystemGraphComponents systemGraphComponents;
     private final CentralBufferMangerHolder centralBufferMangerHolder;
     private final IOControllerService ioControllerService;
+    private final DbmsReadOnlyChecker dbmsReadOnlyChecker;
 
     /**
      * @param globalConfig configuration affecting global aspects of the system.
@@ -265,6 +267,8 @@ public class GlobalModule
         // we have neither figured out the surface, use cases nor other storage engines.
         storageEngineFactory = StorageEngineFactory.selectStorageEngine();
         globalDependencies.satisfyDependency( storageEngineFactory );
+
+        dbmsReadOnlyChecker = new DbmsReadOnlyChecker.Default( globalConfig );
 
         checkLegacyDefaultDatabase();
     }
@@ -586,5 +590,10 @@ public class GlobalModule
     public IOControllerService getIoControllerService()
     {
         return ioControllerService;
+    }
+
+    public DbmsReadOnlyChecker getDbmsReadOnlyChecker()
+    {
+        return dbmsReadOnlyChecker;
     }
 }

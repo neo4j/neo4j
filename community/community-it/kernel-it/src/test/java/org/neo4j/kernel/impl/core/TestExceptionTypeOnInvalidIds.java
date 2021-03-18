@@ -38,7 +38,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
+import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_default;
 
 @EphemeralTestDirectoryExtension
 public class TestExceptionTypeOnInvalidIds
@@ -71,7 +71,7 @@ public class TestExceptionTypeOnInvalidIds
         TestDatabaseManagementServiceBuilder readOnlyBuilder = new TestDatabaseManagementServiceBuilder( readOnlyLayout );
         //Create database
         readOnlyBuilder.build().shutdown();
-        readOnlyService = readOnlyBuilder.setConfig( read_only, true ).build();
+        readOnlyService = readOnlyBuilder.setConfig( read_only_database_default, true ).build();
         readOnlyDb = readOnlyService.database( DEFAULT_DATABASE_NAME );
     }
 

@@ -183,7 +183,7 @@ class Neo4jCommandTest
         @Test
         void shouldOnlyPrintStacktraceOnVerbose()
         {
-            addConf( GraphDatabaseSettings.read_only, "foo" );
+            addConf( GraphDatabaseSettings.read_only_database_default, "foo" );
             assertThat( execute( "start" ) ).isEqualTo( 1 );
             assertThat( err.toString() ).contains( "Run with '--verbose' for a more detailed error message." );
             assertThat( err.toString() ).doesNotContain( "Exception" );

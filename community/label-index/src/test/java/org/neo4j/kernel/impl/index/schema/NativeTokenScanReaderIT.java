@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.index.schema.FullStoreChangeStream.EMPTY;
@@ -88,7 +89,7 @@ class NativeTokenScanReaderIT
     private void shouldStartFromGivenId( int sparsity ) throws IOException
     {
         // given
-        LabelScanStore store = life.add( TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(),
+        LabelScanStore store = life.add( TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(), new Monitors(),
                 immediate(), Config.defaults(), PageCacheTracer.NULL, INSTANCE ) );
         int labelId = 1;
         int highNodeId = 100_000;

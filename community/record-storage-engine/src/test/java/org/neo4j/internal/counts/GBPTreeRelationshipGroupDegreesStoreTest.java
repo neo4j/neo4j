@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore.Updater;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -44,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.EMPTY_REBUILD;
@@ -220,14 +222,15 @@ class GBPTreeRelationshipGroupDegreesStoreTest
 
     private void openCountsStore( DegreesRebuilder builder ) throws IOException
     {
-        instantiateCountsStore( builder, false, NO_MONITOR );
+        instantiateCountsStore( builder, writable(), NO_MONITOR );
         countsStore.start( NULL, INSTANCE );
     }
 
-    private void instantiateCountsStore( DegreesRebuilder builder, boolean readOnly, GBPTreeCountsStore.Monitor monitor ) throws IOException
+    private void instantiateCountsStore( DegreesRebuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeCountsStore.Monitor monitor )
+            throws IOException
     {
-        countsStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnly, PageCacheTracer.NULL, monitor,
-                DEFAULT_DATABASE_NAME );
+        countsStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker, PageCacheTracer.NULL,
+                monitor, DEFAULT_DATABASE_NAME );
     }
 
     private static class TestableCountsBuilder implements DegreesRebuilder

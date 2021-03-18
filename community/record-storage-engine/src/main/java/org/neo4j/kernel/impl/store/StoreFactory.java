@@ -26,6 +26,7 @@ import java.nio.file.OpenOption;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -54,19 +55,20 @@ public class StoreFactory
     private final PageCache pageCache;
     private final RecordFormats recordFormats;
     private final PageCacheTracer cacheTracer;
+    private final DatabaseReadOnlyChecker readOnlyChecker;
     private final ImmutableSet<OpenOption> openOptions;
 
     public StoreFactory( DatabaseLayout directoryStructure, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider, PageCacheTracer cacheTracer )
+            FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider, PageCacheTracer cacheTracer, DatabaseReadOnlyChecker readOnlyChecker )
     {
         this( directoryStructure, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 selectForStoreOrConfig( config, directoryStructure, fileSystemAbstraction, pageCache, logProvider, cacheTracer ),
-                logProvider, cacheTracer, immutable.empty() );
+                logProvider, cacheTracer, readOnlyChecker, immutable.empty() );
     }
 
     public StoreFactory( DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, LogProvider logProvider, PageCacheTracer cacheTracer,
-            ImmutableSet<OpenOption> openOptions )
+            DatabaseReadOnlyChecker readOnlyChecker, ImmutableSet<OpenOption> openOptions )
     {
         this.databaseLayout = databaseLayout;
         this.config = config;
@@ -74,6 +76,7 @@ public class StoreFactory
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.recordFormats = recordFormats;
         this.cacheTracer = cacheTracer;
+        this.readOnlyChecker = readOnlyChecker;
         this.openOptions = buildOpenOptions( config, recordFormats, openOptions );
         this.logProvider = logProvider;
         this.pageCache = pageCache;
@@ -133,7 +136,7 @@ public class StoreFactory
             }
         }
         return new NeoStores( fileSystemAbstraction, databaseLayout, config, idGeneratorFactory, pageCache, logProvider, recordFormats, createStoreIfNotExists,
-                cacheTracer, storeTypes, openOptions );
+                cacheTracer, readOnlyChecker, storeTypes, openOptions );
     }
 
     private static ImmutableSet<OpenOption> buildOpenOptions( Config config, RecordFormats recordFormats, ImmutableSet<OpenOption> openOptions )

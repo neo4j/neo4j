@@ -33,6 +33,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -103,7 +104,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     /**
      * Whether or not this token scan store is read-only.
      */
-    private final boolean readOnly;
+    private final DatabaseReadOnlyChecker readOnlyChecker;
 
     /**
      * Monitoring internal events.
@@ -190,8 +191,8 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     private static final Consumer<PageCursor> writeClean = pageCursor -> pageCursor.putByte( CLEAN );
 
     NativeTokenScanStore( PageCache pageCache, DatabaseLayout databaseLayout, FileSystemAbstraction fs, FullStoreChangeStream fullStoreChangeStream,
-            boolean readOnly, Config config, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, EntityType entityType,
-            PageCacheTracer cacheTracer, MemoryTracker memoryTracker, String tokenStoreName )
+            DatabaseReadOnlyChecker readOnlyChecker, Config config, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            EntityType entityType, PageCacheTracer cacheTracer, MemoryTracker memoryTracker, String tokenStoreName )
     {
         this.pageCache = pageCache;
         this.fs = fs;
@@ -202,7 +203,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         this.memoryTracker = memoryTracker;
         boolean isLabelScanStore = entityType == EntityType.NODE;
         this.storeFile = isLabelScanStore ? databaseLayout.labelScanStore() : databaseLayout.relationshipTypeScanStore();
-        this.readOnly = readOnly;
+        this.readOnlyChecker = readOnlyChecker;
         this.monitors = monitors;
         String monitorTag = isLabelScanStore ? TokenScanStore.LABEL_SCAN_STORE_MONITOR_TAG : TokenScanStore.RELATIONSHIP_TYPE_SCAN_STORE_MONITOR_TAG;
         this.monitor = monitors.newMonitor( Monitor.class, monitorTag );
@@ -241,7 +242,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     @Override
     public TokenScanWriter newWriter( PageCursorTracer cursorTracer )
     {
-        assertWritable();
+//        assertWritable();
 
         try
         {
@@ -277,7 +278,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
 
     private void assertWritable()
     {
-        if ( readOnly )
+        if ( readOnlyChecker.isReadOnly() )
         {
             throw new UnsupportedOperationException( "Can't create index writer in read only mode." );
         }
@@ -400,7 +401,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         if ( isDirty )
         {
             monitor.notValidIndex();
-            if ( !readOnly )
+            if ( !readOnlyChecker.isReadOnly() )
             {
                 dropStrict();
                 instantiateTree();
@@ -427,7 +428,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
         try
         {
             index = new GBPTree<>( pageCache, storeFile, new TokenScanLayout(), monitor, readRebuilding, needsRebuildingWriter, recoveryCleanupWorkCollector,
-                    readOnly, cacheTracer, immutable.empty(), databaseLayout.getDatabaseName(), tokenStoreName );
+                readOnlyChecker, cacheTracer, immutable.empty(), databaseLayout.getDatabaseName(), tokenStoreName );
             return isRebuilding.getValue();
         }
         catch ( TreeFileNotFoundException e )
@@ -475,7 +476,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     @Override
     public void start() throws IOException
     {
-        if ( needsRebuild && !readOnly )
+        if ( needsRebuild && !readOnlyChecker.isReadOnly() )
         {
             monitor.rebuilding();
             long numberOfEntities;
@@ -528,12 +529,6 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
             index = null;
             writeMonitor.close();
         }
-    }
-
-    @Override
-    public boolean isReadOnly()
-    {
-        return readOnly;
     }
 
     @Override

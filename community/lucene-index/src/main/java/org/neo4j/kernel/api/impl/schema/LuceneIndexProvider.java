@@ -25,6 +25,7 @@ import java.io.IOException;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -46,7 +47,6 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -63,27 +63,26 @@ public class LuceneIndexProvider extends IndexProvider
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "lucene", "2.0" );
     private final IndexStorageFactory indexStorageFactory;
     private final Config config;
-    private final boolean isSingleInstance;
+    private final DatabaseReadOnlyChecker readOnlyChecker;
     private final FileSystemAbstraction fileSystem;
     private final Monitor monitor;
 
     public LuceneIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
             IndexDirectoryStructure.Factory directoryStructureFactory, Monitors monitors, Config config,
-            boolean isSingleInstance )
+            DatabaseReadOnlyChecker readOnlyChecker )
     {
-        this( fileSystem, directoryFactory, directoryStructureFactory, monitors, DESCRIPTOR.toString(), config, isSingleInstance );
+        this( fileSystem, directoryFactory, directoryStructureFactory, monitors, DESCRIPTOR.toString(), config, readOnlyChecker );
     }
 
-    public LuceneIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
-            IndexDirectoryStructure.Factory directoryStructureFactory, Monitors monitors, String monitorTag, Config config,
-            boolean isSingleInstance )
+    public LuceneIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory, IndexDirectoryStructure.Factory directoryStructureFactory,
+            Monitors monitors, String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker )
     {
         super( DESCRIPTOR, directoryStructureFactory );
         this.monitor = monitors.newMonitor( Monitor.class, monitorTag );
         this.indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory );
         this.fileSystem = fileSystem;
         this.config = config;
-        this.isSingleInstance = isSingleInstance;
+        this.readOnlyChecker = readOnlyChecker;
     }
 
     /**
@@ -107,9 +106,8 @@ public class LuceneIndexProvider extends IndexProvider
     public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
             MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
     {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, readOnlyChecker, config )
                                         .withFileSystem( fileSystem )
-                                        .withOperationalMode( isSingleInstance )
                                         .withSamplingConfig( samplingConfig )
                                         .withIndexStorage( getIndexStorage( descriptor.getId() ) )
                                         .withWriterConfig( () -> IndexWriterConfigs.population( config ) )
@@ -126,8 +124,7 @@ public class LuceneIndexProvider extends IndexProvider
     @Override
     public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup ) throws IOException
     {
-        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, config )
-                                            .withOperationalMode( isSingleInstance )
+        SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, readOnlyChecker, config )
                                             .withSamplingConfig( samplingConfig )
                                             .withIndexStorage( getIndexStorage( descriptor.getId() ) )
                                             .build();
@@ -174,7 +171,7 @@ public class LuceneIndexProvider extends IndexProvider
 
     private boolean indexIsOnline( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor ) throws IOException
     {
-        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config ).withIndexStorage( indexStorage ).build() )
+        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, readOnlyChecker, config ).withIndexStorage( indexStorage ).build() )
         {
             if ( index.exists() )
             {

@@ -41,6 +41,7 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.CursorException;
@@ -54,7 +55,9 @@ import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.CREATE;
+import static java.util.Arrays.asList;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.neo4j.index.internal.gbptree.GBPTreeOpenOptions.NO_FLUSH_ON_CLOSE;
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
@@ -461,7 +464,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     /**
      * If this tree is read only, no changes will be made to it. No generation bumping, no checkpointing, no nothing.
      */
-    private final boolean readOnly;
+    private final DatabaseReadOnlyChecker readOnlyChecker;
 
     /**
      * Underlying page cache tracer. Should be used to create page cursors tracers
@@ -567,19 +570,19 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * or {@link #close()}
      * @param headerWriter writes header data if indexFile is created as a result of this call.
      * @param recoveryCleanupWorkCollector collects recovery cleanup jobs for execution after recovery.
-     * @param readOnly Opening tree in readOnly mode will prevent any modifications to it.
+     * @param readOnlyChecker database readonly mode checker.
      * @param databaseName name of the database this tree belongs to.
      * @param name name of the tree that will be used when describing work related to this tree.
      * @throws UncheckedIOException on page cache error
      * @throws MetadataMismatchException if meta information does not match constructor parameters or meta page is missing
      */
     public GBPTree( PageCache pageCache, Path indexFile, Layout<KEY,VALUE> layout, Monitor monitor, Header.Reader headerReader,
-            Consumer<PageCursor> headerWriter, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, PageCacheTracer pageCacheTracer,
-            ImmutableSet<OpenOption> openOptions, String databaseName, String name ) throws MetadataMismatchException
+            Consumer<PageCursor> headerWriter, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker,
+            PageCacheTracer pageCacheTracer, ImmutableSet<OpenOption> openOptions, String databaseName, String name ) throws MetadataMismatchException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
-        this.readOnly = readOnly;
+        this.readOnlyChecker = readOnlyChecker;
         this.pageCacheTracer = pageCacheTracer;
         this.openOptions = openOptions;
         this.databaseName = databaseName;
@@ -627,15 +630,8 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
                 dirtyOnStartup = !clean;
                 clean = false;
                 bumpUnstableGeneration();
-                if ( !readOnly )
-                {
-                    forceState( cursorTracer );
-                    cleaning = createCleanupJob( recoveryCleanupWorkCollector, dirtyOnStartup, name );
-                }
-                else
-                {
-                    cleaning = CleanupJob.CLEAN;
-                }
+                forceState( cursorTracer );
+                cleaning = createCleanupJob( recoveryCleanupWorkCollector, dirtyOnStartup, name );
             }
             catch ( IOException e )
             {
@@ -695,15 +691,20 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     {
         try
         {
-            return openExistingIndexFile( pageCache, indexFile, cursorTracer, databaseName, openOptions );
+            var pageCacheOptions = openOptions.newWithoutAll( asList( GBPTreeOpenOptions.values() ) );
+            return openExistingIndexFile( pageCache, indexFile, cursorTracer, databaseName, pageCacheOptions );
         }
         catch ( NoSuchFileException e )
         {
-            if ( !readOnly )
+            try
             {
-                return createNewIndexFile( pageCache, indexFile );
+                readOnlyChecker.check();
             }
-            throw new TreeFileNotFoundException( "Can not create new tree file in read only mode.", e );
+            catch ( Exception roe )
+            {
+                throw new TreeFileNotFoundException( "Can not create new tree file in read only mode.", e );
+            }
+            return createNewIndexFile( pageCache, indexFile );
         }
     }
 
@@ -1235,10 +1236,6 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
     private void checkpoint( Header.Writer headerWriter, PageCursorTracer cursorTracer ) throws IOException
     {
-        if ( readOnly )
-        {
-            return;
-        }
         // Flush dirty pages of the tree, do this before acquiring the lock so that writers won't be
         // blocked while we do this
         pagedFile.flushAndForce();
@@ -1287,7 +1284,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
     private void assertNotReadOnly( String operationDescription )
     {
-        if ( readOnly )
+        if ( readOnlyChecker.isReadOnly() )
         {
             throw new UnsupportedOperationException( "GBPTree was opened in read only mode and can not finish operation: " + operationDescription );
         }
@@ -1304,7 +1301,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     {
         try ( var cursorTracer = pageCacheTracer.createPageCursorTracer( INDEX_INTERNAL_TAG ) )
         {
-            if ( readOnly )
+            if ( openOptions.contains( NO_FLUSH_ON_CLOSE ) )
             {
                 // Close without forcing state
                 doClose();
@@ -1397,6 +1394,16 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     public Writer<KEY,VALUE> writer( double ratioToKeepInLeftOnSplit, PageCursorTracer cursorTracer ) throws IOException
     {
         assertNotReadOnly( "Open tree writer." );
+        return unsafeWriter( ratioToKeepInLeftOnSplit, cursorTracer );
+    }
+
+    public Writer<KEY,VALUE> unsafeWriter(  PageCursorTracer cursorTracer ) throws IOException
+    {
+        return unsafeWriter( InternalTreeLogic.DEFAULT_SPLIT_RATIO, cursorTracer );
+    }
+
+    public Writer<KEY,VALUE> unsafeWriter( double ratioToKeepInLeftOnSplit, PageCursorTracer cursorTracer ) throws IOException
+    {
         writer.initialize( ratioToKeepInLeftOnSplit, cursorTracer );
         changesSinceLastCheckpoint = true;
         return writer;
@@ -1419,7 +1426,6 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
     private void forceState( PageCursorTracer cursorTracer ) throws IOException
     {
-        assertNotReadOnly( "Force tree state." );
         if ( changesSinceLastCheckpoint )
         {
             throw new IllegalStateException( "It seems that this method has been called in the wrong state. " +

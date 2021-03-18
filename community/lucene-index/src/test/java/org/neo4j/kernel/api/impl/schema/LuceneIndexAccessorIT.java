@@ -62,6 +62,7 @@ import org.neo4j.values.storable.Value;
 import static java.lang.Math.toIntExact;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.PERSISTENT;
@@ -89,7 +90,7 @@ public class LuceneIndexAccessorIT
     {
         Path path = directory.directory( "db" );
         Config config = Config.defaults();
-        indexProvider = new LuceneIndexProvider( directory.getFileSystem(), PERSISTENT, directoriesByProvider( path ), new Monitors(), config, true );
+        indexProvider = new LuceneIndexProvider( directory.getFileSystem(), PERSISTENT, directoriesByProvider( path ), new Monitors(), config, writable() );
         life.add( indexProvider );
         life.start();
         samplingConfig = new IndexSamplingConfig( config );

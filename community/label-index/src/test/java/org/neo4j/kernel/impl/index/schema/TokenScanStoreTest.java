@@ -47,6 +47,7 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
@@ -81,6 +82,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.ignore;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
@@ -132,7 +135,7 @@ public class TokenScanStoreTest
         when( monitors.newMonitor( LabelScanStore.Monitor.class, LABEL_SCAN_STORE_MONITOR_TAG ) ).thenReturn( TokenScanStore.Monitor.EMPTY );
         doThrow( new RuntimeException( expectedMessage ) ).when( monitors ).addMonitorListener( any() );
 
-        LabelScanStore scanStore = getLabelScanStore( fileSystem, databaseLayout, EMPTY, true, monitors );
+        LabelScanStore scanStore = getLabelScanStore( fileSystem, databaseLayout, EMPTY, readOnly(), monitors );
         RuntimeException exception = assertThrows( RuntimeException.class, scanStore::init );
         assertEquals( expectedMessage, exception.getMessage() );
         scanStore.shutdown();
@@ -145,7 +148,7 @@ public class TokenScanStoreTest
         // label scan store init but no start
         LifeSupport life = new LifeSupport();
         TrackingMonitor monitor = new TrackingMonitor();
-        life.add( createLabelScanStore( fileSystem, databaseLayout, EMPTY, false, monitor ) );
+        life.add( createLabelScanStore( fileSystem, databaseLayout, EMPTY, writable(), monitor ) );
         life.init();
         assertTrue( monitor.noIndexCalled );
         monitor.reset();
@@ -154,7 +157,7 @@ public class TokenScanStoreTest
         // when
         // starting label scan store again
         life = new LifeSupport();
-        life.add( createLabelScanStore( fileSystem, databaseLayout, EMPTY, false, monitor ) );
+        life.add( createLabelScanStore( fileSystem, databaseLayout, EMPTY, writable(), monitor ) );
         life.init();
 
         // then
@@ -176,7 +179,7 @@ public class TokenScanStoreTest
         LifeSupport life = new LifeSupport();
 
         // when
-        life.add( createLabelScanStore( fileSystem, databaseLayout, EMPTY, false, monitor ) );
+        life.add( createLabelScanStore( fileSystem, databaseLayout, EMPTY, writable(), monitor ) );
         life.start();
 
         // then
@@ -203,7 +206,7 @@ public class TokenScanStoreTest
     void shouldNotStartIfLabelScanStoreIndexDoesNotExistInReadOnlyMode()
     {
         // WHEN
-        final Exception exception = assertThrows( Exception.class, () -> start( true ) );
+        final Exception exception = assertThrows( Exception.class, () -> start( readOnly() ) );
         assertTrue( Exceptions.contains( exception, t -> t instanceof NoSuchFileException ) );
         assertTrue( Exceptions.contains( exception, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( exception, t -> t instanceof IllegalStateException ) );
@@ -215,8 +218,9 @@ public class TokenScanStoreTest
     {
         // WHEN
         life = new LifeSupport();
-        RelationshipTypeScanStore store = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore(),
-                Config.defaults(), PageCacheTracer.NULL, INSTANCE );
+        RelationshipTypeScanStore store =
+                relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnly(), new Monitors(), ignore(), Config.defaults(),
+                        PageCacheTracer.NULL, INSTANCE );
         life.add( store );
 
         final Exception exception = assertThrows( Exception.class, () -> life.start() );
@@ -229,7 +233,7 @@ public class TokenScanStoreTest
     @Test
     void shouldUseLabelScanStoreFile()
     {
-        LabelScanStore store = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore(), Config.defaults(),
+        LabelScanStore store = labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnly(), new Monitors(), ignore(), Config.defaults(),
                 PageCacheTracer.NULL, INSTANCE );
         ResourceIterator<Path> files = store.snapshotStoreFiles();
         assertTrue( files.hasNext() );
@@ -241,7 +245,7 @@ public class TokenScanStoreTest
     @Test
     void shouldUseRelationshipTypeScanStoreFile()
     {
-        RelationshipTypeScanStore store = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(), ignore(),
+        RelationshipTypeScanStore store = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnly(), new Monitors(), ignore(),
                 Config.defaults(), PageCacheTracer.NULL, INSTANCE );
         ResourceIterator<Path> files = store.snapshotStoreFiles();
         assertTrue( files.hasNext() );
@@ -477,7 +481,7 @@ public class TokenScanStoreTest
         List<EntityTokenUpdate> data = asList(
                 EntityTokenUpdate.tokenChanges( 1, NO_LABELS, new long[]{1} ),
                 EntityTokenUpdate.tokenChanges( 2, NO_LABELS, new long[]{1, 2} ) );
-        start( data, false );
+        start( data, writable() );
 
         // WHEN the index is corrupted and then started again
         scrambleIndexFilesAndRestart( data );
@@ -595,7 +599,7 @@ public class TokenScanStoreTest
     void shouldReportNodeEntityIfLabelScanStore()
     {
         // When
-        LabelScanStore scanStore = getLabelScanStore( fileSystem, databaseLayout, EMPTY, false, new Monitors() );
+        LabelScanStore scanStore = getLabelScanStore( fileSystem, databaseLayout, EMPTY, writable(), new Monitors() );
 
         // Then
         assertThat( scanStore.entityType() ).isEqualTo( EntityType.NODE );
@@ -605,7 +609,7 @@ public class TokenScanStoreTest
     void shouldReportRelationshipEntityIfRelationshipTypeScanStore()
     {
         // When
-        RelationshipTypeScanStore relationshipTypeScanStore = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false,
+        RelationshipTypeScanStore relationshipTypeScanStore = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(),
                 new Monitors(), ignore(), Config.defaults(), PageCacheTracer.NULL, INSTANCE );
 
         // When
@@ -616,7 +620,7 @@ public class TokenScanStoreTest
     void toggledRelationshipTypeScanStoreShouldBeOffByDefault()
     {
         RelationshipTypeScanStore relationshipTypeScanStore =
-        toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), ignore(), Config.defaults(),
+        toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(), new Monitors(), ignore(), Config.defaults(),
                 PageCacheTracer.NULL, INSTANCE );
 
         assertThat( relationshipTypeScanStore ).isInstanceOf( EmptyingTokenScanStore.class );
@@ -628,7 +632,7 @@ public class TokenScanStoreTest
         Config config = Config.defaults();
         config.set( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
 
-        RelationshipTypeScanStore relationshipTypeScanStore = toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false,
+        RelationshipTypeScanStore relationshipTypeScanStore = toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(),
                 new Monitors(), ignore(), config, PageCacheTracer.NULL, INSTANCE );
 
         assertThat( relationshipTypeScanStore ).isInstanceOf( NativeTokenScanStore.class );
@@ -638,7 +642,7 @@ public class TokenScanStoreTest
     void startingEmptyRelationshipTypeScanStoreInReadOnlyModeMustThrowAndLeaveFileIntact() throws IOException
     {
         // given
-        RelationshipTypeScanStore relationshipTypeScanStore = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false,
+        RelationshipTypeScanStore relationshipTypeScanStore = relationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(),
                 new Monitors(), ignore(), Config.defaults(), PageCacheTracer.NULL, INSTANCE );
         relationshipTypeScanStore.init();
         relationshipTypeScanStore.start();
@@ -647,8 +651,8 @@ public class TokenScanStoreTest
 
         // when
         Config config = Config.defaults();
-        config.set( GraphDatabaseSettings.read_only, true );
-        RelationshipTypeScanStore emptyRTSS = toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, new Monitors(),
+        config.set( GraphDatabaseSettings.read_only_database_default, true );
+        RelationshipTypeScanStore emptyRTSS = toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnly(), new Monitors(),
                 ignore(), config, PageCacheTracer.NULL, INSTANCE );
 
         // then
@@ -664,22 +668,22 @@ public class TokenScanStoreTest
     }
 
     private LabelScanStore createLabelScanStore( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout,
-                                                 FullStoreChangeStream fullStoreChangeStream, boolean readOnly,
+                                                 FullStoreChangeStream fullStoreChangeStream, DatabaseReadOnlyChecker readOnlyChecker,
                                                  LabelScanStore.Monitor monitor )
     {
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( monitor );
-        return getLabelScanStore( fileSystemAbstraction, databaseLayout, fullStoreChangeStream, readOnly, monitors );
+        return getLabelScanStore( fileSystemAbstraction, databaseLayout, fullStoreChangeStream, readOnlyChecker, monitors );
     }
 
     private LabelScanStore getLabelScanStore( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout,
-            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors )
+            FullStoreChangeStream fullStoreChangeStream, DatabaseReadOnlyChecker readOnlyChecker, Monitors monitors )
     {
-        return labelScanStore( pageCache, databaseLayout, fileSystemAbstraction, fullStoreChangeStream, readOnly, monitors, immediate(), Config.defaults(),
-                PageCacheTracer.NULL, INSTANCE );
+        return labelScanStore( pageCache, databaseLayout, fileSystemAbstraction, fullStoreChangeStream, readOnlyChecker, monitors, immediate(),
+                Config.defaults(), PageCacheTracer.NULL, INSTANCE );
     }
 
-    private void corruptIndex( DatabaseLayout databaseLayout ) throws IOException
+    private void corruptIndex( DatabaseLayout databaseLayout )
     {
         Path lssFile = databaseLayout.labelScanStore();
         scrambleFile( lssFile );
@@ -762,31 +766,31 @@ public class TokenScanStoreTest
         start();
         life.shutdown();
 
-        start( true );
+        start( readOnly() );
     }
 
     private void start()
     {
-        start( false );
+        start( writable() );
     }
 
-    private void start( boolean readOnly )
+    private void start( DatabaseReadOnlyChecker readOnlyChecker )
     {
-        start( Collections.emptyList(), readOnly );
+        start( Collections.emptyList(), readOnlyChecker );
     }
 
     private void start( List<EntityTokenUpdate> existingData )
     {
-        start( existingData, false );
+        start( existingData, writable() );
     }
 
     private void start( List<EntityTokenUpdate> existingData,
-                        boolean readOnly )
+                        DatabaseReadOnlyChecker readOnlyChecker )
     {
         life = new LifeSupport();
         monitor = new TrackingMonitor();
 
-        store = createLabelScanStore( fileSystem, databaseLayout, asStream( existingData ), readOnly,
+        store = createLabelScanStore( fileSystem, databaseLayout, asStream( existingData ), readOnlyChecker,
                                       monitor );
         life.add( store );
 
@@ -798,10 +802,10 @@ public class TokenScanStoreTest
     {
         shutdown();
         corruptIndex( databaseLayout );
-        start( data, false );
+        start( data, writable() );
     }
 
-    void scrambleFile( Path file ) throws IOException
+    void scrambleFile( Path file )
     {
         scrambleFile( random.random(), file );
     }

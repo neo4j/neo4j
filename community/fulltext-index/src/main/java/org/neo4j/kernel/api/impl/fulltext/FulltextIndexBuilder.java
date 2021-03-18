@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
@@ -41,11 +42,13 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
     private final String[] propertyNames;
     private boolean populating;
     private IndexUpdateSink indexUpdateSink = NullIndexUpdateSink.INSTANCE;
+    private final Config config;
 
-    private FulltextIndexBuilder( IndexDescriptor descriptor, Config config, TokenHolder propertyKeyTokenHolder, Analyzer analyzer,
-            String[] propertyNames )
+    private FulltextIndexBuilder( IndexDescriptor descriptor, Config config, DatabaseReadOnlyChecker readOnlyChecker, TokenHolder propertyKeyTokenHolder,
+            Analyzer analyzer, String[] propertyNames )
     {
-        super( config );
+        super( readOnlyChecker );
+        this.config = config;
         this.descriptor = descriptor;
         this.analyzer = analyzer;
         this.propertyNames = propertyNames;
@@ -59,10 +62,10 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
      * @param propertyKeyTokenHolder A token holder used to look up property key token names by id.
      * @return new FulltextIndexBuilder
      */
-    public static FulltextIndexBuilder create( IndexDescriptor descriptor, Config config, TokenHolder propertyKeyTokenHolder, Analyzer analyzer,
-            String[] propertyNames )
+    public static FulltextIndexBuilder create( IndexDescriptor descriptor, Config config, DatabaseReadOnlyChecker readOnlyChecker,
+            TokenHolder propertyKeyTokenHolder, Analyzer analyzer, String[] propertyNames )
     {
-        return new FulltextIndexBuilder( descriptor, config, propertyKeyTokenHolder, analyzer, propertyNames );
+        return new FulltextIndexBuilder( descriptor, config, readOnlyChecker, propertyKeyTokenHolder, analyzer, propertyNames );
     }
 
     /**

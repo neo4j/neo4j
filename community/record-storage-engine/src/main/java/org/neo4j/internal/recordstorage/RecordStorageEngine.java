@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
@@ -161,6 +162,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             PageCacheTracer cacheTracer,
             boolean createStoreIfNotExists,
             MemoryTracker otherMemoryTracker,
+            DatabaseReadOnlyChecker readOnlyChecker,
             CommandLockVerification.Factory commandLockVerificationFactory,
             LockVerificationMonitor.Factory lockVerificationFactory
     )
@@ -178,7 +180,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.lockVerificationFactory = lockVerificationFactory;
         this.usingTokenIndexes = config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes );
 
-        StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, logProvider, cacheTracer );
+        StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, logProvider, cacheTracer, readOnlyChecker );
         neoStores = factory.openAllNeoStores( createStoreIfNotExists );
         for ( IdType idType : IdType.values() )
         {
@@ -195,9 +197,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
 
-            countsStore = openCountsStore( pageCache, fs, databaseLayout, config, logProvider, recoveryCleanupWorkCollector, cacheTracer );
+            countsStore = openCountsStore( pageCache, fs, databaseLayout, logProvider, recoveryCleanupWorkCollector, readOnlyChecker, cacheTracer );
 
-            groupDegreesStore = openDegreesStore( pageCache, fs, databaseLayout, config, recoveryCleanupWorkCollector, cacheTracer );
+            groupDegreesStore = openDegreesStore( pageCache, fs, databaseLayout, recoveryCleanupWorkCollector, readOnlyChecker, cacheTracer );
 
             consistencyCheckApply = config.get( GraphDatabaseInternalSettings.consistency_check_on_apply );
         }
@@ -246,12 +248,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         return new TransactionApplierFactoryChain( listenerSupplier, appliers.toArray( new TransactionApplierFactory[0] ) );
     }
 
-    private GBPTreeCountsStore openCountsStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout layout, Config config, LogProvider logProvider,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer )
+    private GBPTreeCountsStore openCountsStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout layout, LogProvider logProvider,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, PageCacheTracer pageCacheTracer )
     {
         try
         {
-            boolean readOnly = config.get( GraphDatabaseSettings.read_only );
             return new GBPTreeCountsStore( pageCache, layout.countStore(), fs, recoveryCleanupWorkCollector, new CountsBuilder()
             {
                 private final Log log = logProvider.getLog( MetaDataStore.class );
@@ -269,7 +270,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 {
                     return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                 }
-            }, readOnly, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName() );
+            }, readOnlyChecker, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName() );
         }
         catch ( IOException e )
         {
@@ -277,13 +278,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         }
     }
 
-    private RelationshipGroupDegreesStore openDegreesStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout layout, Config config,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer pageCacheTracer )
+    private RelationshipGroupDegreesStore openDegreesStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout layout,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, PageCacheTracer pageCacheTracer )
     {
         try
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, layout.relationshipGroupDegreesStore(), fs, recoveryCleanupWorkCollector,
-                    new DegreesRebuildFromStore( neoStores ), config.get( GraphDatabaseSettings.read_only ), pageCacheTracer,
+                    new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer,
                     GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName() );
         }
         catch ( IOException e )

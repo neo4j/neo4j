@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.function.LongPredicate;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
@@ -85,6 +85,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     final Path storageFile;
     private final Path idFile;
     private final String typeDescriptor;
+    protected final DatabaseReadOnlyChecker readOnlyChecker;
     protected PagedFile pagedFile;
     protected int recordSize;
     private int filePageSize;
@@ -126,6 +127,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             RecordFormat<RECORD> recordFormat,
             StoreHeaderFormat<HEADER> storeHeaderFormat,
             String storeVersion,
+            DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
@@ -141,6 +143,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         this.storeVersion = storeVersion;
         this.databaseName = databaseName;
         this.openOptions = openOptions;
+        this.readOnlyChecker = readOnlyChecker;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -229,9 +232,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     determineRecordSize( storeHeaderFormat.generateHeader() );
 
                     // Create the id generator, and also open it because some stores may need the id generator when initializing their store
-                    boolean readOnly = configuration.get( GraphDatabaseSettings.read_only );
                     idGenerator = idGeneratorFactory.create( pageCache, idFile, idType, getNumberOfReservedLowIds(), false, recordFormat.getMaxId(),
-                            readOnly, configuration, cursorTracer, openOptions );
+                            readOnlyChecker, configuration, cursorTracer, openOptions );
 
                     // Map the file (w/ the CREATE flag) and initialize the header
                     pagedFile = pageCache.map( storageFile, filePageSize, databaseName, openOptions.newWith( CREATE ) );
@@ -619,10 +621,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      */
     private void openIdGenerator( PageCursorTracer cursorTracer ) throws IOException
     {
-        boolean readOnly = configuration.get( GraphDatabaseSettings.read_only );
-        idGenerator =
-                idGeneratorFactory.open( pageCache, idFile, getIdType(), () -> scanForHighId( cursorTracer ), recordFormat.getMaxId(), readOnly, configuration,
-                        cursorTracer, openOptions );
+        idGenerator = idGeneratorFactory.open( pageCache, idFile, getIdType(), () -> scanForHighId( cursorTracer ), recordFormat.getMaxId(), readOnlyChecker,
+                configuration, cursorTracer, openOptions );
     }
 
     /**

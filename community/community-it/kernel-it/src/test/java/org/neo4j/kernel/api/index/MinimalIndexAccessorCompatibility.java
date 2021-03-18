@@ -30,7 +30,6 @@ import java.util.Map;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 
@@ -112,7 +111,7 @@ public class MinimalIndexAccessorCompatibility extends IndexProviderCompatibilit
         @Override
         public void additionalConfig( Config.Builder configBuilder )
         {
-            configBuilder.set( GraphDatabaseSettings.read_only, true );
+            configBuilder.set( GraphDatabaseSettings.read_only_database_default, true );
         }
 
         @Test

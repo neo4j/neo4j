@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore.Rebuilder;
 import org.neo4j.internal.helpers.Exceptions;
@@ -63,6 +64,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -73,6 +75,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.NO_MONITOR;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
@@ -130,7 +134,7 @@ class GBPTreeGenericCountsStoreTest
 
         assertZeroGlobalTracer( pageCacheTracer );
 
-        try ( var counts = new GBPTreeCountsStore( pageCache, file, directory.getFileSystem(), immediate(), CountsBuilder.EMPTY, false, pageCacheTracer,
+        try ( var counts = new GBPTreeCountsStore( pageCache, file, directory.getFileSystem(), immediate(), CountsBuilder.EMPTY, writable(), pageCacheTracer,
                 NO_MONITOR, DEFAULT_DATABASE_NAME ) )
         {
             assertThat( pageCacheTracer.pins() ).isEqualTo( 14 );
@@ -403,7 +407,7 @@ class GBPTreeGenericCountsStoreTest
             {
                 return BASE_TX_ID + 2;
             }
-        }, false, monitor );
+        }, writable(), monitor );
 
         // when doing recovery of the last transaction (since this is on an empty counts store then making the count negative, i.e. 0 - 2)
         // applying this negative delta would have failed in the updater.
@@ -482,7 +486,7 @@ class GBPTreeGenericCountsStoreTest
     {
         final Path file = directory.file( "non-existing" );
         final IllegalStateException e = assertThrows( IllegalStateException.class,
-                () -> new GBPTreeCountsStore( pageCache, file, fs, immediate(), CountsBuilder.EMPTY, true, PageCacheTracer.NULL, NO_MONITOR,
+                () -> new GBPTreeCountsStore( pageCache, file, fs, immediate(), CountsBuilder.EMPTY, readOnly(), PageCacheTracer.NULL, NO_MONITOR,
                         DEFAULT_DATABASE_NAME ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
@@ -490,16 +494,16 @@ class GBPTreeGenericCountsStoreTest
     }
 
     @Test
-    void shouldFailApplyInReadOnlyMode() throws IOException
+    void shouldAllowToCreateUpdatedEvenInReadOnlyMode() throws IOException
     {
         // given
         countsStore.checkpoint( NULL );
         closeCountsStore();
-        instantiateCountsStore( EMPTY_REBUILD, true, NO_MONITOR );
+        instantiateCountsStore( EMPTY_REBUILD, readOnly(), NO_MONITOR );
         countsStore.start( NULL, INSTANCE );
 
         // then
-        assertThrows( IllegalStateException.class, () -> countsStore.updater( BASE_TX_ID + 1, NULL ) );
+        assertDoesNotThrow( () -> countsStore.updater( BASE_TX_ID + 1, NULL ) );
     }
 
     @Test
@@ -508,7 +512,7 @@ class GBPTreeGenericCountsStoreTest
         // given
         countsStore.checkpoint( NULL );
         closeCountsStore();
-        instantiateCountsStore( EMPTY_REBUILD, true, NO_MONITOR );
+        instantiateCountsStore( EMPTY_REBUILD, readOnly(), NO_MONITOR );
         countsStore.start( NULL, INSTANCE );
 
         // then it's fine to call checkpoint, because no changes can actually be made on a read-only counts store anyway
@@ -700,14 +704,16 @@ class GBPTreeGenericCountsStoreTest
 
     private void openCountsStore( Rebuilder builder ) throws IOException
     {
-        instantiateCountsStore( builder, false, NO_MONITOR );
+        instantiateCountsStore( builder, writable(), NO_MONITOR );
         countsStore.start( NULL, INSTANCE );
     }
 
-    private void instantiateCountsStore( Rebuilder builder, boolean readOnly, GBPTreeGenericCountsStore.Monitor monitor ) throws IOException
+    private void instantiateCountsStore( Rebuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeGenericCountsStore.Monitor monitor )
+            throws IOException
     {
-        countsStore = new GBPTreeGenericCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnly, "test", PageCacheTracer.NULL, monitor,
-                DEFAULT_DATABASE_NAME );
+        countsStore =
+                new GBPTreeGenericCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker, "test", PageCacheTracer.NULL, monitor,
+                        DEFAULT_DATABASE_NAME );
     }
 
     private void assertZeroGlobalTracer( PageCacheTracer pageCacheTracer )

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -33,7 +34,6 @@ import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
@@ -58,11 +58,11 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
         String monitorTag = descriptor().toString();
         monitors.addMonitorListener( new LoggingMonitor( log ), monitorTag );
         Config config = dependencies.getConfig();
-        OperationalMode operationalMode = context.dbmsInfo().operationalMode;
+        var readOnlyChecker = dependencies.readOnlyChecker();
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
         PageCacheTracer pageCacheTracer = dependencies.pageCacheTracer();
         DatabaseLayout databaseLayout = dependencies.databaseLayout();
-        return internalCreate( pageCache, databaseDir, fs, monitors, monitorTag, config, operationalMode, recoveryCleanupWorkCollector, databaseLayout,
+        return internalCreate( pageCache, databaseDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, databaseLayout,
                 pageCacheTracer );
     }
 
@@ -71,7 +71,7 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
     public abstract IndexProviderDescriptor descriptor();
 
     protected abstract IndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs,
-            Monitors monitors, String monitorTag, Config config, OperationalMode operationalMode,
+            Monitors monitors, String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer );
 
     public interface Dependencies
@@ -91,5 +91,7 @@ public abstract class AbstractIndexProviderFactory extends ExtensionFactory<Abst
         DatabaseLayout databaseLayout();
 
         PageCacheTracer pageCacheTracer();
+
+        DatabaseReadOnlyChecker readOnlyChecker();
     }
 }

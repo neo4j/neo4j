@@ -24,6 +24,7 @@ import java.nio.file.Path;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -52,31 +53,31 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
      * Create a new {@link LabelScanStore}.
      */
     static LabelScanStore labelScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
-            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            Config config, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            FullStoreChangeStream fullStoreChangeStream, DatabaseReadOnlyChecker readOnlyChecker, Monitors monitors,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Config config, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         if ( config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
         {
-            return EmptyingTokenScanStore.emptyLss( fs, directoryStructure, readOnly );
+            return EmptyingTokenScanStore.emptyLss( fs, directoryStructure, readOnlyChecker );
         }
-        return new NativeLabelScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, config, monitors, recoveryCleanupWorkCollector,
-                NODE, cacheTracer, memoryTracker );
+        return new NativeLabelScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnlyChecker, config, monitors,
+                recoveryCleanupWorkCollector, NODE, cacheTracer, memoryTracker );
     }
 
     /**
      * Create a new {@link RelationshipTypeScanStore}.
      */
     static RelationshipTypeScanStore relationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
-            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            Config config, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            FullStoreChangeStream fullStoreChangeStream, DatabaseReadOnlyChecker readOnlyChecker, Monitors monitors,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Config config, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        return new NativeRelationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, config, monitors,
+        return new NativeRelationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnlyChecker, config, monitors,
                 recoveryCleanupWorkCollector, RELATIONSHIP, cacheTracer, memoryTracker );
     }
 
     static RelationshipTypeScanStore toggledRelationshipTypeScanStore( PageCache pageCache, DatabaseLayout directoryStructure, FileSystemAbstraction fs,
-            FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            Config config, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            FullStoreChangeStream fullStoreChangeStream, DatabaseReadOnlyChecker readOnlyChecker, Monitors monitors,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Config config, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         if ( config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes )
              && config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
@@ -86,10 +87,10 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
         }
         if ( config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
         {
-            return relationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
+            return relationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnlyChecker, monitors, recoveryCleanupWorkCollector,
                     config, cacheTracer, memoryTracker );
         }
-        return EmptyingTokenScanStore.emptyRtss( fs, directoryStructure, readOnly, true );
+        return EmptyingTokenScanStore.emptyRtss( fs, directoryStructure, readOnlyChecker, true );
     }
 
     /**
@@ -184,11 +185,6 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
      * @throws IOException on I/O error.
      */
     void drop() throws IOException;
-
-    /**
-     * @return whether or not this index is read-only.
-     */
-    boolean isReadOnly();
 
     interface Monitor
     {

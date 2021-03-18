@@ -40,6 +40,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
@@ -190,6 +191,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.NO_MONITOR;
@@ -256,6 +258,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private final LabelTokenStore labelTokenStore;
     private final long maxNodeId;
+    private final DatabaseReadOnlyChecker readOnlyChecker;
 
     public BatchInserterImpl( final DatabaseLayout databaseLayout, final FileSystemAbstraction fileSystem,
                        Config fromConfig, Iterable<ExtensionFactory<?>> extensions, DatabaseTracers tracers ) throws IOException
@@ -299,8 +302,9 @@ public class BatchInserterImpl implements BatchInserter
             LogProvider internalLogProvider = logService.getInternalLogProvider();
             RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, this.databaseLayout, fileSystem,
                 pageCache, internalLogProvider, pageCacheTracer );
+            readOnlyChecker = writable();
             StoreFactory sf = new StoreFactory( this.databaseLayout, config, idGeneratorFactory, pageCache, fileSystem,
-                recordFormats, internalLogProvider, pageCacheTracer, immutable.empty() );
+                recordFormats, internalLogProvider, pageCacheTracer, readOnlyChecker, immutable.empty() );
 
             maxNodeId = recordFormats.node().getMaxId();
 
@@ -324,7 +328,7 @@ public class BatchInserterImpl implements BatchInserter
             labelTokenStore = neoStores.getLabelTokenStore();
 
             groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
-                    new DegreesRebuildFromStore( neoStores ), config.get( GraphDatabaseSettings.read_only ), pageCacheTracer, NO_MONITOR,
+                    new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer, NO_MONITOR,
                     databaseLayout.getDatabaseName() );
             groupDegreesStore.start( cursorTracer, memoryTracker );
 
@@ -352,7 +356,7 @@ public class BatchInserterImpl implements BatchInserter
             storeIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ), config, jobScheduler );
             Dependencies deps = new Dependencies();
             deps.satisfyDependencies( fileSystem, jobScheduler, config, logService, storeIndexStoreView, tokenHolders, pageCache, monitors, immediate(),
-                                      pageCacheTracer, databaseLayout );
+                                      pageCacheTracer, databaseLayout, readOnlyChecker );
 
             DatabaseExtensions databaseExtensions = life.add( new DatabaseExtensions(
                 new DatabaseExtensionContext( this.databaseLayout, DbmsInfo.TOOL, deps ),
@@ -596,11 +600,11 @@ public class BatchInserterImpl implements BatchInserter
         IndexStoreView indexStoreView = new DynamicIndexStoreView( storeIndexStoreView, labelIndex, relationshipTypeIndex,
                 NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ), logProvider, config );
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
-                immediate(), false, databaseLayout.getDatabaseName(), cacheTracer );
+                immediate(), readOnlyChecker, databaseLayout.getDatabaseName(), cacheTracer );
         IndexingService indexingService = IndexingServiceFactory
                 .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView, tokenHolders, emptyList(), logProvider, userLogProvider,
                         IndexingService.NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, cacheTracer, memoryTracker,
-                        databaseLayout.getDatabaseName(), false );
+                        databaseLayout.getDatabaseName(), readOnlyChecker );
         life.add( indexingService );
         try
         {
@@ -649,7 +653,7 @@ public class BatchInserterImpl implements BatchInserter
         CountsComputer initialCountsBuilder =
                 new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker, logService.getInternalLog( getClass() ) );
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
-                initialCountsBuilder, false, cacheTracer, NO_MONITOR, databaseLayout.getDatabaseName() ) )
+                initialCountsBuilder, readOnlyChecker, cacheTracer, NO_MONITOR, databaseLayout.getDatabaseName() ) )
         {
             countsStore.start( PageCursorTracer.NULL, memoryTracker );
             countsStore.checkpoint( PageCursorTracer.NULL );
@@ -1152,7 +1156,7 @@ public class BatchInserterImpl implements BatchInserter
     private LabelScanStore buildLabelIndex() throws IOException
     {
         FullLabelStream labelStream = new FullLabelStream( storeIndexStoreView );
-        LabelScanStore labelIndex = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, labelStream, false, monitors, immediate(),
+        LabelScanStore labelIndex = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, labelStream, readOnlyChecker, monitors, immediate(),
                 config, pageCacheTracer, memoryTracker );
         if ( labelsTouched )
         {
@@ -1166,9 +1170,9 @@ public class BatchInserterImpl implements BatchInserter
     private RelationshipTypeScanStore buildRelationshipTypeIndex() throws IOException
     {
         FullRelationshipTypeStream fullRelationshipTypeStream = new FullRelationshipTypeStream( storeIndexStoreView );
-        RelationshipTypeScanStore relationshipTypeIndex = TokenScanStore
-                .toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, fullRelationshipTypeStream, false, monitors, immediate(), config,
-                        pageCacheTracer, memoryTracker );
+        RelationshipTypeScanStore relationshipTypeIndex =
+                TokenScanStore.toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, fullRelationshipTypeStream, readOnlyChecker, monitors,
+                        immediate(), config, pageCacheTracer, memoryTracker );
         if ( relationshipTypesTouched )
         {
             relationshipTypeIndex.drop();

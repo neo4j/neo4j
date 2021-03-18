@@ -30,6 +30,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -77,9 +78,9 @@ public class TokenIndex implements ConsistencyCheckable
     static final byte FAILED = (byte) 0x02;
 
     /**
-     * Whether or not this token index is read-only.
+     * Checker to verify if this token index is read-only.
      */
-    private final boolean readOnly;
+    private final DatabaseReadOnlyChecker readOnlyChecker;
 
     /**
      * Monitors used to pass down monitor to underlying {@link GBPTree}
@@ -135,7 +136,7 @@ public class TokenIndex implements ConsistencyCheckable
 
     public TokenIndex( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexDescriptor descriptor )
     {
-        this.readOnly = databaseIndexContext.readOnly;
+        this.readOnlyChecker = databaseIndexContext.readOnlyChecker;
         this.monitors = databaseIndexContext.monitors;
         this.monitorTag = databaseIndexContext.monitorTag;
         this.pageCache = databaseIndexContext.pageCache;
@@ -150,7 +151,7 @@ public class TokenIndex implements ConsistencyCheckable
     {
         GBPTree.Monitor monitor = treeMonitor();
         index = new GBPTree<>( pageCache, indexFiles.getStoreFile(), new TokenScanLayout(), monitor, NO_HEADER_READER,
-                headerWriter, recoveryCleanupWorkCollector, readOnly, cacheTracer, immutable.empty(), databaseName, tokenStoreName );
+                headerWriter, recoveryCleanupWorkCollector, readOnlyChecker, cacheTracer, immutable.empty(), databaseName, tokenStoreName );
     }
 
     void instantiateUpdater( Config config, DatabaseLayout directoryStructure, EntityType entityType )

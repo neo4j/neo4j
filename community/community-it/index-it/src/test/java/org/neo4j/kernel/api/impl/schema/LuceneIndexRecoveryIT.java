@@ -44,7 +44,6 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -345,9 +344,8 @@ class LuceneIndexRecoveryIT
         @Override
         public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
         {
-            boolean isSingleInstance = context.dbmsInfo().operationalMode == OperationalMode.SINGLE;
             return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( context.directory() ), new Monitors(),
-                    dependencies.getConfig(), isSingleInstance );
+                    dependencies.getConfig(), dependencies.readOnlyChecker() );
         }
     }
 
@@ -362,9 +360,8 @@ class LuceneIndexRecoveryIT
         @Override
         public Lifecycle newInstance( ExtensionContext context, AbstractIndexProviderFactory.Dependencies dependencies )
         {
-            boolean isSingleInstance = context.dbmsInfo().operationalMode == OperationalMode.SINGLE;
             return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( context.directory() ),
-                    new Monitors(), dependencies.getConfig(), isSingleInstance )
+                    new Monitors(), dependencies.getConfig(), dependencies.readOnlyChecker() )
             {
                 @Override
                 public InternalIndexState getInitialState( IndexDescriptor descriptor, PageCursorTracer cursorTracer )

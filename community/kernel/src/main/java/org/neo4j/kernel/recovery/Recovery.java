@@ -30,6 +30,7 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -111,6 +112,7 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
@@ -289,6 +291,7 @@ public final class Recovery
         DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, EmptyVersionContextSupplier.EMPTY, IOController.DISABLED );
         SimpleLogService logService = new SimpleLogService( logProvider );
         VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
+        DatabaseReadOnlyChecker readOnlyChecker = writable();
 
         DatabaseSchemaState schemaState = new DatabaseSchemaState( logProvider );
         JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
@@ -302,40 +305,40 @@ public final class Recovery
         RecoveryCleanupWorkCollector recoveryCleanupCollector =
                 new GroupingRecoveryCleanupWorkCollector( scheduler, INDEX_CLEANUP, INDEX_CLEANUP_WORK, databaseLayout.getDatabaseName() );
         DatabaseExtensions extensions = instantiateRecoveryExtensions( databaseLayout, fs, config, logService, databasePageCache, scheduler,
-                                                                       recoveryCleanupCollector, DbmsInfo.TOOL, monitors, tokenHolders,
-                                                                       recoveryCleanupCollector, extensionFactories, tracers.getPageCacheTracer() );
+                                                                       DbmsInfo.TOOL, monitors, tokenHolders, recoveryCleanupCollector, readOnlyChecker,
+                                                                       extensionFactories, tracers.getPageCacheTracer() );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );
 
         StorageEngine storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, config, databasePageCache, tokenHolders, schemaState,
                 getConstraintSemantics(), indexProviderMap, NO_LOCK_SERVICE,
                 new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector, databaseLayout.getDatabaseName() ),
                 new DefaultIdController(), databaseHealth, logService.getInternalLogProvider(), recoveryCleanupCollector, tracers.getPageCacheTracer(),
-                true, memoryTracker );
+                true, readOnlyChecker, memoryTracker );
 
         // Label index
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, storageEngine::newReader, config, scheduler );
         LabelScanStore labelScanStore = Database.buildLabelIndex( recoveryCleanupCollector, storageEngine, neoStoreIndexStoreView, monitors,
-                logProvider, databasePageCache, databaseLayout, fs, false, config, tracers.getPageCacheTracer(), memoryTracker );
+                logProvider, databasePageCache, databaseLayout, fs, readOnlyChecker, config, tracers.getPageCacheTracer(), memoryTracker );
         RelationshipTypeScanStore relationshipTypeScanStore =
                 Database.buildRelationshipTypeIndex( recoveryCleanupCollector, storageEngine, neoStoreIndexStoreView, monitors, logProvider, databasePageCache,
-                        databaseLayout, fs, false, config, tracers.getPageCacheTracer(), memoryTracker );
+                        databaseLayout, fs, readOnlyChecker, config, tracers.getPageCacheTracer(), memoryTracker );
 
         // Schema indexes
         DynamicIndexStoreView indexStoreView =
                 new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, NO_LOCK_SERVICE, storageEngine::newReader,
                         logProvider, config );
         IndexStatisticsStore indexStatisticsStore =
-                new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, false, tracers.getPageCacheTracer() );
+                new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, readOnlyChecker, tracers.getPageCacheTracer() );
         IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreView, indexStatisticsStore,
                 config, scheduler, indexProviderMap, tokenHolders, logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ),
-                tracers.getPageCacheTracer(), memoryTracker, databaseLayout.getDatabaseName(), false );
+                tracers.getPageCacheTracer(), memoryTracker, databaseLayout.getDatabaseName(), readOnlyChecker );
 
         MetadataProvider metadataProvider = storageEngine.metadataProvider();
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( databaseLayout, config, databasePageCache, fs, logProvider, tokenHolders, schemaState, getConstraintSemantics(),
                 NO_LOCK_SERVICE, databaseHealth, new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector, databaseLayout.getDatabaseName() ),
-                new DefaultIdController(),
+                new DefaultIdController(), readOnlyChecker,
                 EmptyVersionContextSupplier.EMPTY, logService, metadataProvider );
 
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
@@ -444,9 +447,9 @@ public final class Recovery
 
     private static DatabaseExtensions instantiateRecoveryExtensions( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, Config config,
                                                                      LogService logService, PageCache pageCache, JobScheduler jobScheduler,
-                                                                     RecoveryCleanupWorkCollector recoveryCollector, DbmsInfo dbmsInfo,
-                                                                     Monitors monitors, TokenHolders tokenHolders,
+                                                                     DbmsInfo dbmsInfo, Monitors monitors, TokenHolders tokenHolders,
                                                                      RecoveryCleanupWorkCollector recoveryCleanupCollector,
+                                                                     DatabaseReadOnlyChecker readOnlyChecker,
                                                                      Iterable<ExtensionFactory<?>> extensionFactories,
                                                                      PageCacheTracer pageCacheTracer )
     {
@@ -456,8 +459,8 @@ public final class Recovery
 
         Dependencies deps = new Dependencies();
         NonListenableMonitors nonListenableMonitors = new NonListenableMonitors( monitors, logService.getInternalLogProvider() );
-        deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, nonListenableMonitors, jobScheduler,
-                tokenHolders, recoveryCleanupCollector, pageCacheTracer, databaseLayout );
+        deps.satisfyDependencies( fileSystem, config, logService, pageCache, nonListenableMonitors, jobScheduler,
+                tokenHolders, recoveryCleanupCollector, pageCacheTracer, databaseLayout, readOnlyChecker );
         DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, dbmsInfo, deps );
         return new DatabaseExtensions( extensionContext, recoveryExtensions, deps, ExtensionFailureStrategies.fail() );
     }

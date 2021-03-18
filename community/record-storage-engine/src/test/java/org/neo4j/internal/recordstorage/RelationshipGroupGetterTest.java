@@ -51,6 +51,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RelationshipGroupGetter.RelationshipGroupMonitor.EMPTY;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -78,8 +79,9 @@ class RelationshipGroupGetterTest
     void openStore()
     {
         LogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(),
-                new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs, logProvider, PageCacheTracer.NULL );
+        StoreFactory storeFactory =
+                new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
+                        pageCache, fs, logProvider, PageCacheTracer.NULL, writable() );
         stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP, StoreType.NODE, StoreType.NODE_LABEL );
         groupStore = spy( stores.getRelationshipGroupStore() );
         NodeStore nodeStore = stores.getNodeStore();
@@ -184,7 +186,7 @@ class RelationshipGroupGetterTest
         long groupId = node.getNextRel();
         RelationshipGroupRecord prev = null;
         int count = 0;
-        for ( ; !NULL_REFERENCE.is( groupId ); count++ )
+        while ( !NULL_REFERENCE.is( groupId ) )
         {
             RelationshipGroupRecord group = groupRecords.getOrLoad( groupId, null, NULL ).forReadingLinkage();
             if ( count > 0 )
@@ -201,6 +203,7 @@ class RelationshipGroupGetterTest
             }
             prev = group;
             groupId = group.getNext();
+            count++;
         }
         assertThat( prev.getNext() ).isEqualTo( NULL_REFERENCE.longValue() );
         assertThat( count ).isEqualTo( expectedChainLength );

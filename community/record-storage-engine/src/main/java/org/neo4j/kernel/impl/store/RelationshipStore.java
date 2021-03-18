@@ -25,6 +25,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
@@ -49,11 +50,12 @@ public class RelationshipStore extends CommonAbstractStore<RelationshipRecord,No
             PageCache pageCache,
             LogProvider logProvider,
             RecordFormats recordFormats,
+            DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
                 pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.relationship(), NO_STORE_HEADER_FORMAT,
-                recordFormats.storeVersion(), databaseName, openOptions );
+                recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
     }
 }

@@ -28,6 +28,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.common.EntityType;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexOrder;
@@ -51,29 +52,29 @@ public class EmptyingTokenScanStore implements TokenScanStore
 {
     private final FileSystemAbstraction fileSystem;
     private final DatabaseLayout directoryStructure;
-    private final boolean readOnly;
+    private final DatabaseReadOnlyChecker readOnlyChecker;
     private final EntityType entityType;
     private final boolean shouldDeleteExistingStore;
 
-    private EmptyingTokenScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly,
+    private EmptyingTokenScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, DatabaseReadOnlyChecker readOnlyChecker,
             EntityType entityType, boolean shouldDeleteExistingStore )
     {
         this.fileSystem = fileSystem;
         this.directoryStructure = directoryStructure;
-        this.readOnly = readOnly;
+        this.readOnlyChecker = readOnlyChecker;
         this.entityType = entityType;
         this.shouldDeleteExistingStore = shouldDeleteExistingStore;
     }
 
-    public static LabelScanStore emptyLss( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
+    public static LabelScanStore emptyLss( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, DatabaseReadOnlyChecker readOnlyChecker )
     {
-        return new EmptyingLabelScanStore( fileSystem, directoryStructure, readOnly );
+        return new EmptyingLabelScanStore( fileSystem, directoryStructure, readOnlyChecker );
     }
 
-    public static RelationshipTypeScanStore emptyRtss( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly,
-            boolean shouldDeleteExistingStore )
+    public static RelationshipTypeScanStore emptyRtss( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure,
+            DatabaseReadOnlyChecker readOnlyChecker, boolean shouldDeleteExistingStore )
     {
-        return new EmptyingRelationshipTypeScanStore( fileSystem, directoryStructure, readOnly, shouldDeleteExistingStore );
+        return new EmptyingRelationshipTypeScanStore( fileSystem, directoryStructure, readOnlyChecker, shouldDeleteExistingStore );
     }
 
     @Override
@@ -140,7 +141,7 @@ public class EmptyingTokenScanStore implements TokenScanStore
     {
         if ( shouldDeleteExistingStore )
         {
-            if ( readOnly && fileSystem.fileExists( directoryStructure.relationshipTypeScanStore() ) )
+            if ( readOnlyChecker.isReadOnly() && fileSystem.fileExists( directoryStructure.relationshipTypeScanStore() ) )
             {
                 throw new IllegalStateException(
                         "Database was started in read only mode and with relationship type scan store turned OFF, " +
@@ -175,12 +176,6 @@ public class EmptyingTokenScanStore implements TokenScanStore
     @Override
     public void drop()
     {   // no-op
-    }
-
-    @Override
-    public boolean isReadOnly()
-    {
-        return false;
     }
 
     @Override
@@ -269,18 +264,18 @@ public class EmptyingTokenScanStore implements TokenScanStore
 
     private static class EmptyingLabelScanStore extends EmptyingTokenScanStore implements LabelScanStore
     {
-        EmptyingLabelScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
+        EmptyingLabelScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, DatabaseReadOnlyChecker readOnlyChecker )
         {
-            super( fileSystem, directoryStructure, readOnly, EntityType.NODE, false );
+            super( fileSystem, directoryStructure, readOnlyChecker, EntityType.NODE, false );
         }
     }
 
     private static class EmptyingRelationshipTypeScanStore extends EmptyingTokenScanStore implements RelationshipTypeScanStore
     {
-        EmptyingRelationshipTypeScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly,
+        EmptyingRelationshipTypeScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, DatabaseReadOnlyChecker readOnlyChecker,
                 boolean shouldDeleteExistingStore )
         {
-            super( fileSystem, directoryStructure, readOnly, EntityType.RELATIONSHIP, shouldDeleteExistingStore );
+            super( fileSystem, directoryStructure, readOnlyChecker, EntityType.RELATIONSHIP, shouldDeleteExistingStore );
         }
     }
 }

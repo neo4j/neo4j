@@ -57,6 +57,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
 import org.neo4j.io.ByteUnit;
@@ -72,7 +75,6 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -98,6 +100,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
@@ -1648,10 +1651,8 @@ class GBPTreeTest
         }
     }
 
-    /* ReadOnly */
-
     @Test
-    void mustNotMakeAnyChangesInReadOnlyMode() throws IOException
+    void preserveChangesEvenInReadOnlyMode() throws IOException
     {
         // given
         PageCache pageCache = createPageCache( defaultPageSize );
@@ -1668,25 +1669,15 @@ class GBPTreeTest
         }
         byte[] before = fileContent( indexFile );
 
-        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).withReadOnly( true ).build() )
+        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).with( readOnly() ).build() )
         {
             UnsupportedOperationException e = assertThrows( UnsupportedOperationException.class, () -> tree.writer( NULL ) );
             assertThat( e.getMessage() ).contains( "GBPTree was opened in read only mode and can not finish operation: " );
 
-            MutableBoolean pagePinned = new MutableBoolean();
-            tree.checkpoint( new DefaultPageCursorTracer( PageCacheTracer.NULL, "Test" )
-            {
-                @Override
-                public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
-                {
-                    pagePinned.setTrue();
-                    return super.beginPin( writeLock, filePageId, swapper );
-                }
-            } );
-            assertFalse( pagePinned.getValue(), "Expected checkpoint to be a no-op in read only mode." );
+            tree.checkpoint( NULL );
         }
         byte[] after = fileContent( indexFile );
-        assertArrayEquals( before, after, "Expected file content to be identical before and after opening GBPTree in read only mode." );
+        assertThat( after ).isNotEqualTo( before ).describedAs( "Expected file content to be diff since even read only mode can do checkpoints." );
     }
 
     @Test
@@ -1694,7 +1685,7 @@ class GBPTreeTest
     {
         // given
         PageCache pageCache = createPageCache( defaultPageSize );
-        TreeFileNotFoundException e = assertThrows( TreeFileNotFoundException.class, () -> index( pageCache ).withReadOnly( true ).build() );
+        TreeFileNotFoundException e = assertThrows( TreeFileNotFoundException.class, () -> index( pageCache ).with( readOnly() ).build() );
         assertThat( e.getMessage() ).contains( "Can not create new tree file in read only mode" );
         assertThat( e.getMessage() ).contains( indexFile.toAbsolutePath().toString() );
     }
@@ -1760,6 +1751,38 @@ class GBPTreeTest
             assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
             assertThat( cursorTracer.pins() ).isEqualTo( 1 );
             assertThat( cursorTracer.faults() ).isEqualTo( 0 );
+        }
+    }
+
+    @Test
+    void readOnlyTreeStillFlushesStateWhenReadOnly() throws IOException
+    {
+        var config = Config.defaults();
+        var readOnlyChecker = new DatabaseReadOnlyChecker.Default( config, DEFAULT_DATABASE_NAME );
+        var cursorTracer = NULL;
+        try ( var tree = index( defaultPageSize ).with( readOnlyChecker ).build() )
+        {
+            try ( var writer = tree.writer( cursorTracer ) )
+            {
+                writer.put( new MutableLong( 1 ), new MutableLong( 42 ) );
+            }
+            config.set( GraphDatabaseSettings.read_only_databases, Set.of( DEFAULT_DATABASE_NAME ) );
+
+            assertThrows( Exception.class, () -> tree.writer( cursorTracer ) );
+
+            tree.checkpoint( cursorTracer );
+        }
+
+        try ( var reopenedTree = index( defaultPageSize ).with( readOnlyChecker ).build() )
+        {
+            assertThrows( Exception.class, () -> reopenedTree.writer( cursorTracer ) );
+
+            try ( Seeker<MutableLong,MutableLong> seeker = reopenedTree.seek( new MutableLong( 0 ), new MutableLong( 77 ), cursorTracer ) )
+            {
+                assertTrue( seeker.next() );
+                assertEquals( 1, seeker.key().longValue() );
+                assertEquals( 42, seeker.value().longValue() );
+            }
         }
     }
 

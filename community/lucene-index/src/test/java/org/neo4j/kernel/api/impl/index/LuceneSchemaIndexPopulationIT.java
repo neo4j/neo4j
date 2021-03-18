@@ -51,6 +51,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -83,7 +84,7 @@ class LuceneSchemaIndexPopulationIT
     void partitionedIndexPopulation( int affectedNodes ) throws Exception
     {
         Path rootFolder = testDir.directory( "partitionIndex" + affectedNodes ).resolve( "uniqueIndex" + affectedNodes );
-        try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
+        try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create( descriptor, writable(), Config.defaults() )
                 .withFileSystem( fileSystem )
                 .withIndexRootFolder( rootFolder ).build() )
         {

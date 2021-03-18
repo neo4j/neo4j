@@ -26,6 +26,7 @@ import java.util.EnumMap;
 import java.util.List;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexCapability;
@@ -66,7 +67,7 @@ public class FusionIndexProvider extends IndexProvider
     private final boolean archiveFailedIndex;
     private final InstanceSelector<IndexProvider> providers;
     private final SlotSelector slotSelector;
-    private final boolean readOnly;
+    private final DatabaseReadOnlyChecker readOnlyChecker;
     private final FileSystemAbstraction fs;
 
     public FusionIndexProvider(
@@ -77,12 +78,12 @@ public class FusionIndexProvider extends IndexProvider
             IndexProviderDescriptor descriptor,
             IndexDirectoryStructure.Factory directoryStructure,
             FileSystemAbstraction fs,
-            boolean archiveFailedIndex, boolean readOnly )
+            boolean archiveFailedIndex, DatabaseReadOnlyChecker readOnlyChecker )
     {
         super( descriptor, directoryStructure );
         this.archiveFailedIndex = archiveFailedIndex;
         this.slotSelector = slotSelector;
-        this.readOnly = readOnly;
+        this.readOnlyChecker = readOnlyChecker;
         this.providers = new InstanceSelector<>();
         this.fs = fs;
         fillProvidersSelector( providers, genericProvider, luceneProvider );
@@ -126,7 +127,7 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
     {
-        return new NativeMinimalIndexAccessor( descriptor, indexFiles( descriptor ), readOnly );
+        return new NativeMinimalIndexAccessor( descriptor, indexFiles( descriptor ), readOnlyChecker );
     }
 
     @Override

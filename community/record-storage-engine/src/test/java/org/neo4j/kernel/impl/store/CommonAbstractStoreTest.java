@@ -66,7 +66,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -74,6 +73,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.IdValidator.INTEGER_MINUS_ONE;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -113,7 +113,7 @@ class CommonAbstractStoreTest
     void setUpMocks() throws IOException
     {
         when( recordFormat.getPageSize( anyInt(), anyInt() ) ).thenReturn( Long.SIZE );
-        when( idGeneratorFactory.open( any(), any( Path.class ), eq( idType ), any( LongSupplier.class ), anyLong(), anyBoolean(), any(), any(), any() ) )
+        when( idGeneratorFactory.open( any(), any( Path.class ), eq( idType ), any( LongSupplier.class ), anyLong(), any(), any(), any(), any() ) )
                 .thenReturn( idGenerator );
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );
         when( pageFile.io( anyLong(), anyInt(), any() ) ).thenReturn( pageCursor );
@@ -151,8 +151,8 @@ class CommonAbstractStoreTest
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
 
         try ( DynamicArrayStore dynamicArrayStore = new DynamicArrayStore( storeFile, idFile, config, IdType.NODE_LABELS, idGeneratorFactory, pageCache,
-                NullLogProvider.getInstance(), GraphDatabaseInternalSettings.label_block_size.defaultValue(), recordFormats, databaseLayout.getDatabaseName(),
-                immutable.empty() ) )
+                NullLogProvider.getInstance(), GraphDatabaseInternalSettings.label_block_size.defaultValue(), recordFormats, writable(),
+                databaseLayout.getDatabaseName(), immutable.empty() ) )
         {
             StoreNotFoundException storeNotFoundException = assertThrows( StoreNotFoundException.class, () -> dynamicArrayStore.initialise( false, NULL ) );
             assertEquals( "Fail to read header record of store file: " + storeFile.toAbsolutePath(), storeNotFoundException.getMessage() );
@@ -263,7 +263,7 @@ class CommonAbstractStoreTest
                 LogProvider logProvider, RecordFormat<TheRecord> recordFormat, ImmutableSet<OpenOption> openOptions )
         {
             super( file, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormat,
-                    NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, STORE_VERSION, DEFAULT_DATABASE_NAME, openOptions );
+                    NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, STORE_VERSION, writable(), DEFAULT_DATABASE_NAME, openOptions );
         }
 
         @Override

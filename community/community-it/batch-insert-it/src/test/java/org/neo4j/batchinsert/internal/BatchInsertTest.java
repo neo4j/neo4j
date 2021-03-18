@@ -128,6 +128,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
@@ -1506,7 +1507,7 @@ class BatchInsertTest
                         {
                             return 0;
                         }
-                    }, true, PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName() ) )
+                    }, readOnly(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName() ) )
             {
                 countsStore.start( NULL, INSTANCE );
                 assertEquals( (r + 1) * 100, countsStore.nodeCount( 0, NULL ) );
@@ -1555,8 +1556,8 @@ class BatchInsertTest
 
     private LabelScanStore getLabelScanStore()
     {
-        return TokenScanStore.labelScanStore( pageCache, databaseLayout, fs, EMPTY, true, new Monitors(), immediate(), Config.defaults(), PageCacheTracer.NULL,
-                INSTANCE );
+        return TokenScanStore.labelScanStore( pageCache, databaseLayout, fs, EMPTY, readOnly(), new Monitors(), immediate(), Config.defaults(),
+                PageCacheTracer.NULL, INSTANCE );
     }
 
     private static void assertLabelScanStoreContains( LabelScanStore labelScanStore, int labelId, long... nodes )

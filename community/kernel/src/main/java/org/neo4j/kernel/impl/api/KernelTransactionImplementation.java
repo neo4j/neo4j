@@ -34,7 +34,7 @@ import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -68,7 +68,6 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -85,6 +84,7 @@ import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrac
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.AccessCapability;
+import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.locking.FrozenLockClient;
@@ -165,15 +165,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final CommandCreationContext commandCreationContext;
     private final NamedDatabaseId namedDatabaseId;
     private final ClockContext clocks;
-    private final AccessCapability accessCapability;
+    private final AccessCapabilityFactory accessCapabilityFactory;
     private final ConstraintSemantics constraintSemantics;
     private final PageCursorTracer pageCursorTracer;
-    private final ReadOnlyDatabaseChecker readOnlyDatabaseChecker;
+    private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
     private TxState txState;
     private volatile TransactionWriteState writeState;
+    private AccessCapability accessCapability;
     private final KernelStatement currentStatement;
     private SecurityContext securityContext;
     private volatile Locks.Client lockClient;
@@ -221,15 +222,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor,
             Pool<KernelTransactionImplementation> pool, SystemNanoClock clock,
             AtomicReference<CpuClock> cpuClockRef, DatabaseTracers tracers,
-            StorageEngine storageEngine, AccessCapability accessCapability,
+            StorageEngine storageEngine, AccessCapabilityFactory accessCapabilityFactory,
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
             LabelScanStore labelScanStore, RelationshipTypeScanStore relationshipTypeScanStore,
             IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
             NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool,
-            ReadOnlyDatabaseChecker readOnlyDatabaseChecker )
+            DatabaseReadOnlyChecker readOnlyDatabaseChecker )
     {
         this.pageCursorTracer = tracers.getPageCacheTracer().createPageCursorTracer( TRANSACTION_TAG );
+        this.accessCapabilityFactory = accessCapabilityFactory;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
         long heapGrabSize = config.get( GraphDatabaseInternalSettings.initial_transaction_heap_grab_size );
         this.memoryTracker = config.get( memory_tracking ) ?
@@ -249,7 +251,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.versionContextSupplier = versionContextSupplier;
         this.leaseService = leaseService;
         this.currentStatement = new KernelStatement( this, tracers.getLockTracer(), this.clocks, versionContextSupplier, cpuClockRef, namedDatabaseId, config );
-        this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, config.get( GraphDatabaseInternalSettings.enable_transaction_heap_allocation_tracking ) );
         this.userMetaData = emptyMap();
         this.constraintSemantics = constraintSemantics;
@@ -283,6 +284,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp, Locks.Client lockClient, Type type,
             SecurityContext frozenSecurityContext, long transactionTimeout, long userTransactionId, ClientConnectionInfo clientInfo )
     {
+        this.accessCapability = accessCapabilityFactory.newAccessCapability( readOnlyDatabaseChecker );
         this.kernelTransactionMonitor = KernelTransaction.NO_MONITOR;
         this.type = type;
         this.lockClient = lockClient;
@@ -546,10 +548,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( txState == null )
         {
             leaseClient.ensureValid();
-            if ( readOnlyDatabaseChecker.test( namedDatabaseId.name() ) )
-            {
-                throw new RuntimeException( new ReadOnlyDbException( namedDatabaseId.name() ) );
-            }
+            readOnlyDatabaseChecker.check();
             transactionMonitor.upgradeToWriteTransaction();
             txState = new TxState( collectionsFactory, memoryTracker );
         }

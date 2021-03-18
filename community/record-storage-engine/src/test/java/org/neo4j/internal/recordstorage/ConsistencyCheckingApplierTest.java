@@ -49,6 +49,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 
 @PageCacheExtension
@@ -77,7 +78,7 @@ class ConsistencyCheckingApplierTest
         Config config = Config.defaults( neo4j_home, directory.homePath() );
         DatabaseLayout layout = DatabaseLayout.of( config );
         neoStores = new StoreFactory( layout, config, new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate(), DEFAULT_DATABASE_NAME ), pageCache,
-                directory.getFileSystem(), NullLogProvider.getInstance(), PageCacheTracer.NULL ).openAllNeoStores( true );
+                directory.getFileSystem(), NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() ).openAllNeoStores( true );
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         checker = new ConsistencyCheckingApplier( relationshipStore, PageCursorTracer.NULL );
         BatchContext batchContext = mock( BatchContext.class );

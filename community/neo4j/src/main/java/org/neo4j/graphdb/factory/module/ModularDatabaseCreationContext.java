@@ -25,6 +25,7 @@ import java.util.function.LongFunction;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DbmsReadOnlyChecker;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
@@ -109,6 +110,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseStartupController startupController;
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final GlobalMemoryGroupTracker otherMemoryPool;
+    private final DbmsReadOnlyChecker dbmsReadOnlyChecker;
 
     public ModularDatabaseCreationContext( NamedDatabaseId namedDatabaseId, GlobalModule globalModule, Dependencies globalDependencies,
                                            Monitors parentMonitors, EditionDatabaseComponents editionComponents, GlobalProcedures globalProcedures,
@@ -156,6 +158,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.accessCapabilityFactory = editionComponents.getAccessCapabilityFactory();
         this.leaseService = leaseService;
         this.startupController = editionComponents.getStartupController();
+        this.dbmsReadOnlyChecker = globalModule.getDbmsReadOnlyChecker();
     }
 
     @Override
@@ -390,6 +393,12 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public GlobalMemoryGroupTracker getOtherMemoryPool()
     {
         return otherMemoryPool;
+    }
+
+    @Override
+    public DbmsReadOnlyChecker getDbmsReadOnlyChecker()
+    {
+        return dbmsReadOnlyChecker;
     }
 
     private DatabaseAvailabilityGuard databaseAvailabilityGuardFactory( NamedDatabaseId namedDatabaseId, GlobalModule globalModule, long databaseTimeoutMillis )

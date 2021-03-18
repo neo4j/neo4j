@@ -50,6 +50,7 @@ import static java.util.Collections.singletonList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -131,7 +132,7 @@ class LuceneSchemaIndexCorruptionTest
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( monitor );
         return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( indexRootFolder ), monitors,
-                Config.defaults(), true )
+                Config.defaults(), readOnly() )
         {
             @Override
             protected IndexStorageFactory buildIndexStorageFactory( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory )

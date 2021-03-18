@@ -60,7 +60,7 @@ class LockerLifecycleAdapterTest
     @Test
     void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode()
     {
-        shouldNotAllowDatabasesToUseFilesetsConcurrently( Map.of( GraphDatabaseSettings.read_only, true ) );
+        shouldNotAllowDatabasesToUseFilesetsConcurrently( Map.of( GraphDatabaseSettings.read_only_database_default, true ) );
     }
 
     private void shouldNotAllowDatabasesToUseFilesetsConcurrently( Map<Setting<?>,Object> config )

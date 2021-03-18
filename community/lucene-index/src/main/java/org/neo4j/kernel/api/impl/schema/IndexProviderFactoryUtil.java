@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -31,16 +31,11 @@ import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directory
 
 public class IndexProviderFactoryUtil
 {
-    public static boolean isReadOnly( Config config, boolean isSingleInstance )
-    {
-        return config.get( GraphDatabaseSettings.read_only ) && isSingleInstance;
-    }
-
     public static LuceneIndexProvider luceneProvider( FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure,
-            Monitors monitors, String monitorTag, Config config, boolean isSingleInstance )
+            Monitors monitors, String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker )
     {
         boolean ephemeral = config.get( GraphDatabaseInternalSettings.ephemeral_lucene );
         DirectoryFactory directoryFactory = directoryFactory( ephemeral );
-        return new LuceneIndexProvider( fs, directoryFactory, directoryStructure, monitors, monitorTag, config, isSingleInstance );
+        return new LuceneIndexProvider( fs, directoryFactory, directoryStructure, monitors, monitorTag, config, readOnlyChecker );
     }
 }

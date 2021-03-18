@@ -39,6 +39,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 @TestDirectoryExtension
@@ -140,7 +141,7 @@ class LuceneSchemaIndexTest
 
     private SchemaIndex newSchemaIndex()
     {
-        LuceneSchemaIndexBuilder builder = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() );
+        LuceneSchemaIndexBuilder builder = LuceneSchemaIndexBuilder.create( descriptor, writable(), Config.defaults() );
         return builder
                 .withIndexRootFolder( testDir.directory( "index" ).resolve( "testIndex" ) )
                 .withDirectoryFactory( dirFactory )

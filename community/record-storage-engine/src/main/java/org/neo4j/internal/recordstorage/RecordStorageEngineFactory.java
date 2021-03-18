@@ -29,7 +29,8 @@ import java.util.Set;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
+import org.neo4j.configuration.helpers.DbmsReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -88,6 +89,7 @@ import org.neo4j.token.api.TokenHolder;
 
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
@@ -132,11 +134,11 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, LockService lockService,
             IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth, LogProvider logProvider,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, PageCacheTracer cacheTracer, boolean createStoreIfNotExists,
-            MemoryTracker memoryTracker )
+            DatabaseReadOnlyChecker readOnlyChecker, MemoryTracker memoryTracker )
     {
         return new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics,
                 indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, idController, recoveryCleanupWorkCollector, cacheTracer,
-                createStoreIfNotExists, memoryTracker, new CommandLockVerification.Factory.RealFactory( config ),
+                createStoreIfNotExists, memoryTracker, readOnlyChecker, new CommandLockVerification.Factory.RealFactory( config ),
                 LockVerificationMonitor.Factory.defaultFactory( config ) );
     }
 
@@ -178,17 +180,11 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             PageCacheTracer cacheTracer )
     {
         RecordFormats recordFormats = selectForStoreOrConfig( Config.defaults(), databaseLayout, fs, pageCache, NullLogProvider.getInstance(), cacheTracer );
-        IdGeneratorFactory factory;
-        if ( config.get( GraphDatabaseSettings.read_only ) )
-        {
-            factory = new ScanOnOpenReadOnlyIdGeneratorFactory();
-        }
-        else
-        {
-            factory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
-        }
-        return new StoreFactory( databaseLayout, config, factory, pageCache, fs, recordFormats, NullLogProvider.getInstance(), cacheTracer, immutable.empty() )
-                .openNeoStores( META_DATA ).getMetaDataStore();
+        var readOnlyChecker = new DatabaseReadOnlyChecker.Default( new DbmsReadOnlyChecker.Default( config ), databaseLayout.getDatabaseName() );
+        var idGeneratorFactory = readOnlyChecker.isReadOnly() ? new ScanOnOpenReadOnlyIdGeneratorFactory()
+                                                              : new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, NullLogProvider.getInstance(), cacheTracer,
+                readOnlyChecker, immutable.empty() ).openNeoStores( META_DATA ).getMetaDataStore();
     }
 
     @Override
@@ -204,7 +200,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         RecordFormats formats = selectForVersion( recordFormats );
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
-                        formats, logService.getInternalLogProvider(), cacheTracer, immutable.empty() );
+                        formats, logService.getInternalLogProvider(), cacheTracer, writable(), immutable.empty() );
         NeoStores stores = factory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
         try
         {

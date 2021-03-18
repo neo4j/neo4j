@@ -26,6 +26,7 @@ import java.util.Date;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.consistency.checker.NodeBasedMemoryLimiter;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -83,6 +84,7 @@ import org.neo4j.token.api.TokenHolder;
 
 import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -201,13 +203,13 @@ public class ConsistencyCheckService
     {
         assertRecovered( databaseLayout, config, fileSystem, memoryTracker );
         Log log = logProvider.getLog( getClass() );
-        config.set( GraphDatabaseSettings.read_only, true );
         config.set( GraphDatabaseSettings.pagecache_warmup_enabled, false );
 
         LifeSupport life = new LifeSupport();
         final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() );
+        DatabaseReadOnlyChecker readOnlyChecker = readOnly();
         StoreFactory factory =
-                new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, logProvider, pageCacheTracer );
+                new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, logProvider, pageCacheTracer, readOnlyChecker );
         // Don't start the counts stores here as part of life, instead only shut down. This is because it's better to let FullCheck
         // start it and add its missing/broken detection where it can report to user.
         CountsStoreManager countsStoreManager = life.add( new CountsStoreManager( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker ) );
@@ -232,7 +234,7 @@ public class ConsistencyCheckService
                 fileSystem, config, new SimpleLogService( logProvider ), pageCache, jobScheduler,
                 workCollector,
                 TOOL, // We use TOOL context because it's true, and also because it uses the 'single' operational mode, which is important.
-                monitors, tokenHolders, pageCacheTracer ) );
+                monitors, tokenHolders, pageCacheTracer, readOnlyChecker ) );
         DefaultIndexProviderMap indexes = life.add( new DefaultIndexProviderMap( extensions, config ) );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
@@ -245,13 +247,15 @@ public class ConsistencyCheckService
 
             life.start();
 
-            LabelScanStore labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, true, monitors, workCollector,
-                    config, pageCacheTracer, memoryTracker );
-            RelationshipTypeScanStore relationshipTypeScanstore = TokenScanStore.toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem,
-                    EMPTY, true, monitors, workCollector, config, pageCacheTracer, memoryTracker );
+            LabelScanStore labelScanStore =
+                    TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnlyChecker, monitors, workCollector, config,
+                            pageCacheTracer, memoryTracker );
+            RelationshipTypeScanStore relationshipTypeScanstore =
+                    TokenScanStore.toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, readOnlyChecker, monitors, workCollector,
+                            config, pageCacheTracer, memoryTracker );
             life.add( labelScanStore );
             life.add( relationshipTypeScanstore );
-            IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, workCollector, true, pageCacheTracer );
+            IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, workCollector, readOnlyChecker, pageCacheTracer );
             life.add( indexStatisticsStore );
 
             int numberOfThreads = defaultConsistencyCheckThreadsNumber();
@@ -440,7 +444,7 @@ public class ConsistencyCheckService
         protected CountsStore open() throws IOException
         {
             return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, RecoveryCleanupWorkCollector.ignore(),
-                    new RebuildPreventingCountsInitializer(), true, pageCacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName() );
+                    new RebuildPreventingCountsInitializer(), readOnly(), pageCacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName() );
         }
     }
 
@@ -456,8 +460,8 @@ public class ConsistencyCheckService
         protected RelationshipGroupDegreesStore open() throws IOException
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem,
-                    RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingDegreesInitializer(), true, pageCacheTracer, GBPTreeCountsStore.NO_MONITOR,
-                    databaseLayout.getDatabaseName() );
+                    RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingDegreesInitializer(), readOnly(), pageCacheTracer,
+                    GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName() );
         }
     }
 }

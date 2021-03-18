@@ -37,6 +37,7 @@ import java.util.function.LongSupplier;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
@@ -116,6 +117,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_rotation_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.AUTH_DISABLED;
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
@@ -461,7 +463,7 @@ public class NeoStoresTest
         // given
         Config config = Config.defaults();
         StoreFactory sf = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
-                pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL );
+                pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL, writable() );
 
         // when
         NeoStores neoStores = sf.openAllNeoStores( true );
@@ -661,7 +663,7 @@ public class NeoStoresTest
         Config defaults = Config.defaults( counts_store_rotation_timeout, Duration.ofMinutes( 60 ) );
         String errorMessage = "Failing for the heck of it";
         StoreFactory factory = new StoreFactory( databaseLayout, defaults, new CloseFailingDefaultIdGeneratorFactory( fs, errorMessage ), pageCache,
-                fs, NullLogProvider.getInstance(), PageCacheTracer.NULL );
+                fs, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() );
         NeoStores neoStore = factory.openAllNeoStores( true );
 
         var ex = assertThrows( UnderlyingStorageException.class, neoStore::close );
@@ -674,7 +676,7 @@ public class NeoStoresTest
         // given
         fs.deleteRecursively( databaseLayout.databaseDirectory() );
         DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
-        StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL );
+        StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL, writable() );
 
         // when
         try ( NeoStores ignore = factory.openAllNeoStores( true ) )
@@ -690,7 +692,7 @@ public class NeoStoresTest
         // given
         fs.deleteRecursively( databaseLayout.databaseDirectory() );
         DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
-        StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL );
+        StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fs, LOG_PROVIDER, PageCacheTracer.NULL, writable() );
         StoreType[] allStoreTypes = StoreType.values();
         StoreType[] allButLastStoreTypes = Arrays.copyOf( allStoreTypes, allStoreTypes.length - 1 );
 
@@ -712,7 +714,7 @@ public class NeoStoresTest
         RecordFormats recordFormats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
-        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, LOG_PROVIDER, PageCacheTracer.NULL,
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, LOG_PROVIDER, PageCacheTracer.NULL, writable(),
                 immutable.empty() );
     }
 
@@ -731,7 +733,8 @@ public class NeoStoresTest
         storageEngine =
                 new RecordStorageEngine( databaseLayout, config, pageCache, fs, nullLogProvider(), tokenHolders, new DatabaseSchemaState( nullLogProvider() ),
                         new StandardConstraintRuleAccessor(), i -> i, NO_LOCK_SERVICE, mock( Health.class ), idGeneratorFactory, new DefaultIdController(),
-                        immediate(), PageCacheTracer.NULL, true, INSTANCE, CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE );
+                        immediate(), PageCacheTracer.NULL, true, INSTANCE, writable(), CommandLockVerification.Factory.IGNORE,
+                        LockVerificationMonitor.Factory.IGNORE );
         storageEngine.addRelationshipTypeUpdateListener( mock( EntityTokenUpdateListener.class ) );
         life = new LifeSupport();
         life.add( storageEngine );
@@ -851,7 +854,7 @@ public class NeoStoresTest
             NullLogProvider logProvider )
     {
         return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
-                logProvider, PageCacheTracer.NULL );
+                logProvider, PageCacheTracer.NULL, writable() );
     }
 
     private static class CloseFailingDefaultIdGeneratorFactory extends DefaultIdGeneratorFactory
@@ -866,13 +869,13 @@ public class NeoStoresTest
 
         @Override
         protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, boolean readOnly, Config config, PageCursorTracer cursorTracer,
-                String databaseName, ImmutableSet<OpenOption> openOptions )
+                Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, DatabaseReadOnlyChecker readOnlyChecker, Config config,
+                PageCursorTracer cursorTracer, String databaseName, ImmutableSet<OpenOption> openOptions )
         {
             if ( idType == IdType.NODE )
             {
                 // Return a special id generator which will throw exception on close
-                return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, allowLargeIdCaches, () -> 6 * 7, maxValue, readOnly, config,
+                return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, allowLargeIdCaches, () -> 6 * 7, maxValue, readOnlyChecker, config,
                         databaseName, cursorTracer )
                 {
                     @Override
@@ -883,8 +886,8 @@ public class NeoStoresTest
                     }
                 };
             }
-            return super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnly, config, cursorTracer,
-                    databaseName, openOptions );
+            return super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnlyChecker, config,
+                    cursorTracer, databaseName, openOptions );
         }
     }
 }

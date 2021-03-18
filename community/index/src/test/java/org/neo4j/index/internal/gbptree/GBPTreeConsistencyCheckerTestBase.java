@@ -47,8 +47,10 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.GBPTreeOpenOptions.NO_FLUSH_ON_CLOSE;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
@@ -452,8 +454,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             index.checkpoint( NULL );
         }
 
-        // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.
-        try ( GBPTree<KEY,VALUE> index = index().withReadOnly( true ).build() )
+        // When tree is closed we will overwrite treeState with in memory state so we need to open tree in special mode for our state corruption to persist.
+        try ( GBPTree<KEY,VALUE> index = index().with( immutable.with( NO_FLUSH_ON_CLOSE ) ).build() )
         {
             GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             int lastIndex = inspection.getAllFreelistEntries().size() - 1;
@@ -490,8 +492,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             index.checkpoint( NULL );
         }
 
-        // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.
-        try ( GBPTree<KEY,VALUE> index = index().withReadOnly( true ).build() )
+        // When tree is closed we will overwrite treeState with in memory state so we need to open tree in special mode for our state corruption to persist.
+        try ( GBPTree<KEY,VALUE> index = index().with( immutable.with( NO_FLUSH_ON_CLOSE ) ).build() )
         {
             GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             targetNode = randomAmong( inspection.getAllNodes() );
@@ -526,8 +528,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             index.checkpoint( NULL );
         }
 
-        // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.
-        try ( GBPTree<KEY,VALUE> index = index().withReadOnly( true ).build() )
+        // When tree is closed we will overwrite treeState with in memory state so we need to open tree in special mode for our state corruption to persist.
+        try ( GBPTree<KEY,VALUE> index = index().with( immutable.with( NO_FLUSH_ON_CLOSE ) ).build() )
         {
             GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             TreeState treeState = inspection.getTreeState();
@@ -565,8 +567,8 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
             index.checkpoint( NULL );
         }
 
-        // When tree is closed we will overwrite treeState with in memory state so we need to open tree in read only mode for our state corruption to persist.
-        try ( GBPTree<KEY,VALUE> index = index().withReadOnly( true ).build() )
+        // When tree is closed we will overwrite treeState with in memory state so we need to open tree in special mode for our state corruption to persist.
+        try ( GBPTree<KEY,VALUE> index = index().with( immutable.with( NO_FLUSH_ON_CLOSE ) ).build() )
         {
             GBPTreeInspection<KEY,VALUE> inspection = inspect( index );
             TreeState treeState = inspection.getTreeState();

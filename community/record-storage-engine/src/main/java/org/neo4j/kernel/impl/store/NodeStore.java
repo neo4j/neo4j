@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
@@ -74,11 +75,12 @@ public class NodeStore extends CommonAbstractStore<NodeRecord,NoStoreHeader>
             LogProvider logProvider,
             DynamicArrayStore dynamicLabelStore,
             RecordFormats recordFormats,
+            DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, config, IdType.NODE, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.node(),
-                NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), databaseName, openOptions );
+                NO_STORE_HEADER_FORMAT, recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 

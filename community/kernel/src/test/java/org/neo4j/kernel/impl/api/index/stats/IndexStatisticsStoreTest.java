@@ -25,17 +25,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -50,12 +46,13 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.annotations.documented.ReporterFactories.noopReporterFactory;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.test.Race.throwing;
 
@@ -92,7 +89,8 @@ class IndexStatisticsStoreTest
 
     private IndexStatisticsStore openStore( PageCacheTracer pageCacheTracer, String fileName )
     {
-        var statisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( fileName ), immediate(), false, DEFAULT_DATABASE_NAME, pageCacheTracer );
+        var statisticsStore =
+                new IndexStatisticsStore( pageCache, testDirectory.file( fileName ), immediate(), writable(), DEFAULT_DATABASE_NAME, pageCacheTracer );
         return lifeSupport.add( statisticsStore );
     }
 
@@ -283,81 +281,12 @@ class IndexStatisticsStoreTest
     void shouldNotStartWithoutFileIfReadOnly()
     {
         final IndexStatisticsStore indexStatisticsStore =
-                new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), true, DEFAULT_DATABASE_NAME, PageCacheTracer.NULL );
+                new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), readOnly(), DEFAULT_DATABASE_NAME,
+                        PageCacheTracer.NULL );
         final Exception e = assertThrows( Exception.class, indexStatisticsStore::init );
         assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
-    }
-
-    @Test
-    void shouldNotWriteAnythingInReadOnlyMode() throws IOException
-    {
-        final Path file = testDirectory.file( "existing" );
-
-        // Create store
-        IndexStatisticsStore store = new IndexStatisticsStore( pageCache, file, immediate(), false, DEFAULT_DATABASE_NAME, PageCacheTracer.NULL );
-        randomActions( store, 1000 );
-        byte[] data = readAll( file );
-
-        // Start in readOnly mode
-        IndexStatisticsStore readOnlyStore = new IndexStatisticsStore( pageCache, file, immediate(), true, DEFAULT_DATABASE_NAME, PageCacheTracer.NULL );
-        randomActions( readOnlyStore, 10000 );
-
-        assertArrayEquals( data, readAll( file ) );
-    }
-
-    void randomActions( IndexStatisticsStore store, int numActions ) throws IOException
-    {
-        try
-        {
-            store.init();
-            for ( int i = 0; i < numActions; i++ )
-            {
-                randomAction( store );
-            }
-            store.checkpoint( PageCursorTracer.NULL );
-        }
-        finally
-        {
-            store.shutdown();
-        }
-    }
-
-    void randomAction( IndexStatisticsStore store ) throws IOException
-    {
-        long indexId = randomRule.nextLong( 5 );
-        switch ( randomRule.nextInt( 5 ) )
-        {
-        case 0:
-            store.checkpoint( PageCursorTracer.NULL );
-            break;
-        case 1:
-            store.indexSample( indexId );
-            break;
-        case 2:
-            store.replaceStats(indexId,
-                    new IndexSample( randomRule.nextLong( 100 ), randomRule.nextLong( 100 ), randomRule.nextLong( 100 ), randomRule.nextLong( 100 ) ) );
-            break;
-        case 3:
-            store.incrementIndexUpdates( indexId, randomRule.nextLong( 100 ) );
-            break;
-        case 4:
-            store.removeIndex( indexId );
-            break;
-        default:
-            throw new UnsupportedOperationException( "Unknown Action" );
-        }
-    }
-
-    byte[] readAll( Path file ) throws IOException
-    {
-        ByteBuffer buffer = ByteBuffer.wrap( new byte[(int) (fs.getFileSize( file ) + ByteUnit.mebiBytes( 1 ))] );
-        try ( StoreChannel channel = fs.read( file ) )
-        {
-            channel.read( buffer );
-        }
-        return buffer.array();
     }
 
     private void replaceAndVerifySample( long indexId, IndexSample indexSample )

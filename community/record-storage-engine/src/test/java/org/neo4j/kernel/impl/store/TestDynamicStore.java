@@ -49,6 +49,7 @@ import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -72,7 +73,7 @@ class TestDynamicStore
     void setUp()
     {
         storeFactory = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
-                pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL );
+                pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() );
     }
 
     @AfterEach

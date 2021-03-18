@@ -22,9 +22,7 @@ package org.neo4j.kernel.api.impl.index.builder;
 import java.nio.file.Path;
 import java.util.Objects;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.graphdb.config.Setting;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
@@ -37,12 +35,11 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBuilder<T>>
 {
     protected LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
-    protected final Config config;
-    private boolean isSingleInstance = true;
+    protected final DatabaseReadOnlyChecker readOnlyChecker;
 
-    public AbstractLuceneIndexBuilder( Config config )
+    public AbstractLuceneIndexBuilder( DatabaseReadOnlyChecker readOnlyChecker )
     {
-        this.config = Objects.requireNonNull( config );
+        this.readOnlyChecker = Objects.requireNonNull( readOnlyChecker );
     }
 
     /**
@@ -94,33 +91,11 @@ public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBu
     }
 
     /**
-     * Specify if the db is in a SINGLE INSTANCE operational mode.
-     * @param isSingleInstance operational mode
-     * @return index builder
-     */
-    public T withOperationalMode( boolean isSingleInstance )
-    {
-        this.isSingleInstance = isSingleInstance;
-        return (T) this;
-    }
-
-    /**
      * Check if index should be read only
      * @return true if index should be read only
      */
     protected boolean isReadOnly()
     {
-        return getConfig( GraphDatabaseSettings.read_only ) && isSingleInstance;
-    }
-
-    /**
-     * Lookup a config parameter.
-     * @param flag the parameter to look up.
-     * @param <F> the type of the parameter.
-     * @return the value of the parameter.
-     */
-    protected  <F> F getConfig( Setting<F> flag )
-    {
-        return config.get( flag );
+        return readOnlyChecker.isReadOnly();
     }
 }

@@ -19,18 +19,16 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-import org.neo4j.dbms.database.DatabaseConfig;
-
-import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 
 @FunctionalInterface
 public interface AccessCapabilityFactory
 {
-    AccessCapability newAccessCapability( DatabaseConfig databaseConfig );
+    AccessCapability newAccessCapability( DatabaseReadOnlyChecker databaseReadOnlyChecker );
 
     static AccessCapabilityFactory configDependent()
     {
-        return databaseConfig -> databaseConfig.get( read_only ) ? new ReadOnly() : new CanWrite();
+        return checker -> checker.isReadOnly() ? ReadOnly.INSTANCE : CanWrite.INSTANCE;
     }
 
     static AccessCapabilityFactory fixed( AccessCapability accessCapability )

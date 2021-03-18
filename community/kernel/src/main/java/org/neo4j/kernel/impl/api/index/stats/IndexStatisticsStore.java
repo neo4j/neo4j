@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 import org.neo4j.annotations.documented.ReporterFactory;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -67,14 +68,14 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     private final String databaseName;
     private final PageCacheTracer pageCacheTracer;
     private final IndexStatisticsLayout layout;
-    private final boolean readOnly;
+    private final DatabaseReadOnlyChecker readOnlyChecker;
     private GBPTree<IndexStatisticsKey,IndexStatisticsValue> tree;
     // Let IndexStatisticsValue be immutable in this map so that checkpoint doesn't have to coordinate with concurrent writers
     // It's assumed that the data in this map will be so small that everything can just be in it always.
     private final ConcurrentHashMap<Long,ImmutableIndexStatistics> cache = new ConcurrentHashMap<>();
 
-    public IndexStatisticsStore( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly,
-            String databaseName, PageCacheTracer pageCacheTracer )
+    public IndexStatisticsStore( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseReadOnlyChecker readOnlyChecker, String databaseName, PageCacheTracer pageCacheTracer )
     {
         this.pageCache = pageCache;
         this.path = path;
@@ -82,13 +83,14 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         this.databaseName = databaseName;
         this.pageCacheTracer = pageCacheTracer;
         this.layout = new IndexStatisticsLayout();
-        this.readOnly = readOnly;
+        this.readOnlyChecker = readOnlyChecker;
     }
 
     public IndexStatisticsStore( PageCache pageCache, DatabaseLayout databaseLayout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            boolean readOnly, PageCacheTracer pageCacheTracer )
+            DatabaseReadOnlyChecker readOnlyChecker, PageCacheTracer pageCacheTracer )
     {
-        this( pageCache, databaseLayout.indexStatisticsStore(), recoveryCleanupWorkCollector, readOnly, databaseLayout.getDatabaseName(), pageCacheTracer );
+        this( pageCache, databaseLayout.indexStatisticsStore(), recoveryCleanupWorkCollector, readOnlyChecker, databaseLayout.getDatabaseName(),
+                pageCacheTracer );
     }
 
     @Override
@@ -97,7 +99,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         try
         {
             tree = new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, GBPTree.NO_HEADER_READER, GBPTree.NO_HEADER_WRITER,
-                    recoveryCleanupWorkCollector, readOnly, pageCacheTracer, immutable.empty(), databaseName, "Statistics store" );
+                    recoveryCleanupWorkCollector, readOnlyChecker, pageCacheTracer, immutable.empty(), databaseName, "Statistics store" );
         }
         catch ( TreeFileNotFoundException e )
         {
@@ -148,13 +150,10 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
 
     public void checkpoint( PageCursorTracer cursorTracer ) throws IOException
     {
-        if ( !readOnly )
-        {
-            // There's an assumption that there will never be concurrent calls to checkpoint. This is guarded outside.
-            clearTree( cursorTracer );
-            writeCacheContentsIntoTree( cursorTracer );
-            tree.checkpoint( cursorTracer );
-        }
+        // There's an assumption that there will never be concurrent calls to checkpoint. This is guarded outside.
+        clearTree( cursorTracer );
+        writeCacheContentsIntoTree( cursorTracer );
+        tree.checkpoint( cursorTracer );
     }
 
     @Override
@@ -195,7 +194,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         scanTree( ( key, value ) -> keys.add( key ), cursorTracer );
 
         // Remove all those read keys
-        try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.writer( cursorTracer ) )
+        try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.unsafeWriter( cursorTracer ) )
         {
             for ( IndexStatisticsKey key : keys )
             {
@@ -207,7 +206,7 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
 
     private void writeCacheContentsIntoTree( PageCursorTracer cursorTracer ) throws IOException
     {
-        try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.writer( cursorTracer ) )
+        try ( Writer<IndexStatisticsKey,IndexStatisticsValue> writer = tree.unsafeWriter( cursorTracer ) )
         {
             for ( Map.Entry<Long,ImmutableIndexStatistics> entry : cache.entrySet() )
             {

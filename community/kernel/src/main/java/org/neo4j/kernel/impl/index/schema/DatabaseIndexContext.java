@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -30,18 +31,18 @@ public class DatabaseIndexContext
     final FileSystemAbstraction fileSystem;
     final Monitors monitors;
     final String monitorTag;
-    final boolean readOnly;
+    final DatabaseReadOnlyChecker readOnlyChecker;
     final PageCacheTracer pageCacheTracer;
     final String databaseName;
 
-    private DatabaseIndexContext( PageCache pageCache, FileSystemAbstraction fileSystem, Monitors monitors, String monitorTag, boolean readOnly,
-                                  PageCacheTracer pageCacheTracer, String databaseName )
+    private DatabaseIndexContext( PageCache pageCache, FileSystemAbstraction fileSystem, Monitors monitors, String monitorTag,
+            DatabaseReadOnlyChecker readOnlyChecker, PageCacheTracer pageCacheTracer, String databaseName )
     {
         this.pageCache = pageCache;
         this.fileSystem = fileSystem;
         this.monitors = monitors;
         this.monitorTag = monitorTag;
-        this.readOnly = readOnly;
+        this.readOnlyChecker = readOnlyChecker;
         this.pageCacheTracer = pageCacheTracer;
         this.databaseName = databaseName;
     }
@@ -66,7 +67,7 @@ public class DatabaseIndexContext
     public static Builder builder( DatabaseIndexContext copy )
     {
         return new Builder( copy.pageCache, copy.fileSystem, copy.databaseName )
-                .withReadOnly( copy.readOnly )
+                .withReadOnlyChecker( copy.readOnlyChecker )
                 .withMonitors( copy.monitors )
                 .withTag( copy.monitorTag )
                 .withPageCacheTracer( copy.pageCacheTracer );
@@ -79,7 +80,7 @@ public class DatabaseIndexContext
         private final String databaseName;
         private Monitors monitors;
         private String monitorTag;
-        private boolean readOnly;
+        private DatabaseReadOnlyChecker readOnlyChecker;
         private PageCacheTracer pageCacheTracer;
 
         private Builder( PageCache pageCache, FileSystemAbstraction fileSystem, String databaseName )
@@ -89,19 +90,19 @@ public class DatabaseIndexContext
             this.databaseName = databaseName;
             this.monitors = new Monitors();
             this.monitorTag = "";
-            this.readOnly = false;
+            this.readOnlyChecker = DatabaseReadOnlyChecker.writable();
             this.pageCacheTracer = PageCacheTracer.NULL;
         }
 
         /**
          * Default is false
          *
-         * @param readOnly true no writes allowed.
+         * @param readOnlyChecker checks if underlying database is readonly.
          * @return {@link Builder this builder}
          */
-        public Builder withReadOnly( boolean readOnly )
+        public Builder withReadOnlyChecker( DatabaseReadOnlyChecker readOnlyChecker )
         {
-            this.readOnly = readOnly;
+            this.readOnlyChecker = readOnlyChecker;
             return this;
         }
 
@@ -143,7 +144,7 @@ public class DatabaseIndexContext
 
         public DatabaseIndexContext build()
         {
-            return new DatabaseIndexContext( pageCache, fileSystem, monitors, monitorTag, readOnly, pageCacheTracer, databaseName );
+            return new DatabaseIndexContext( pageCache, fileSystem, monitors, monitorTag, readOnlyChecker, pageCacheTracer, databaseName );
         }
     }
 }

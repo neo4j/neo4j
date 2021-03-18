@@ -106,6 +106,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
@@ -292,7 +293,7 @@ class BatchingNeoStoresTest
     {
         // given
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
-                RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, false, PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR,
+                RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR,
                 DEFAULT_DATABASE_NAME ) )
         {
             countsStore.start( NULL, INSTANCE );
@@ -326,7 +327,7 @@ class BatchingNeoStoresTest
 
         // then
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
-                RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, false, PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR,
+                RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR,
                 DEFAULT_DATABASE_NAME ) )
         {
             assertEquals( 10, countsStore.nodeCount( 1, NULL ) );
@@ -402,7 +403,7 @@ class BatchingNeoStoresTest
                             new StandardConstraintSemantics(), indexConfigCompleter, LockService.NO_LOCK_SERVICE,
                             new DatabaseHealth( PanicEventGenerator.NO_OP, nullLog ),
                             new DefaultIdGeneratorFactory( fileSystem, immediate(), DEFAULT_DATABASE_NAME ), new DefaultIdController(),
-                            recoveryCleanupWorkCollector, PageCacheTracer.NULL, true, INSTANCE, CommandLockVerification.Factory.IGNORE,
+                            recoveryCleanupWorkCollector, PageCacheTracer.NULL, true, INSTANCE, writable(), CommandLockVerification.Factory.IGNORE,
                             LockVerificationMonitor.Factory.IGNORE ) );
             // Create the relationship type token
             TxState txState = new TxState();
@@ -414,7 +415,7 @@ class BatchingNeoStoresTest
             relationshipTypeTokenCreator.initialize( neoStores.getRelationshipTypeTokenStore(), txState );
             int relTypeId = tokenHolders.relationshipTypeTokens().getOrCreateId( RELTYPE.name() );
             RelationshipTypeScanStore relationshipTypeScanStore = life.add(
-                    toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY, false, monitors,
+                    toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY, writable(), monitors,
                             recoveryCleanupWorkCollector, config, PageCacheTracer.NULL, INSTANCE ) );
             storageEngine.addRelationshipTypeUpdateListener( relationshipTypeScanStore.updateListener() );
             apply( txState, commandCreationContext, storageEngine );

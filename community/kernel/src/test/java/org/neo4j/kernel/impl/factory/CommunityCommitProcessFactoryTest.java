@@ -21,60 +21,27 @@ package org.neo4j.kernel.impl.factory;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
 import org.neo4j.kernel.impl.api.DatabaseTransactionCommitProcess;
-import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
-import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.StorageEngine;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.kernel.database.TestDatabaseIdRepository.randomNamedDatabaseId;
 
 class CommunityCommitProcessFactoryTest
 {
     @Test
-    void createReadOnlyCommitProcessWhenFixedReadOnly()
-    {
-        var factory = new CommunityCommitProcessFactory();
-
-        var alwaysReadOnly = new ReadOnlyDatabaseChecker()
-        {
-            @Override
-            public boolean test( String databaseName )
-            {
-                return true;
-            }
-
-            @Override
-            public boolean readOnlyFixed()
-            {
-                return true;
-            }
-        };
-
-        var commitProcess = factory.create( mock( TransactionAppender.class ),
-                                            mock( StorageEngine.class ),
-                                            randomNamedDatabaseId(),
-                                            alwaysReadOnly );
-
-        assertThat( commitProcess ).isInstanceOf( ReadOnlyTransactionCommitProcess.class );
-    }
-
-    @Test
     void createRegularCommitProcessWhenWritable()
     {
         var factory = new CommunityCommitProcessFactory();
-        ReadOnlyDatabaseChecker neverReadOnly = databaseName -> false;
 
         var commitProcess = factory.create( mock( TransactionAppender.class ),
                                                                  mock( StorageEngine.class ),
                                                                  randomNamedDatabaseId(),
-                                                                 neverReadOnly );
+                                                                 writable() );
 
         assertThat( commitProcess ).isInstanceOf( DatabaseTransactionCommitProcess.class );
     }
@@ -83,12 +50,11 @@ class CommunityCommitProcessFactoryTest
     void createRegularCommitProcessWhenDynamicallyReadOnly()
     {
         var factory = new CommunityCommitProcessFactory();
-        ReadOnlyDatabaseChecker readOnly = databaseName -> true;
 
         var commitProcess = factory.create( mock( TransactionAppender.class ),
                                             mock( StorageEngine.class ),
                                             randomNamedDatabaseId(),
-                                            readOnly );
+                                            readOnly() );
 
         assertThat( commitProcess ).isInstanceOf( DatabaseTransactionCommitProcess.class );
     }

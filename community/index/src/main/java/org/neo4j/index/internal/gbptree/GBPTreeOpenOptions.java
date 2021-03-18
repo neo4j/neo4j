@@ -17,24 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.factory;
+package org.neo4j.index.internal.gbptree;
 
-import org.neo4j.graphdb.WriteOperationsNotAllowedException;
-import org.neo4j.kernel.api.exceptions.Status;
+import java.nio.file.OpenOption;
 
-public class ReadOnly implements AccessCapability
+/**
+ * Additional open options for GBPTree page files.
+ */
+public enum GBPTreeOpenOptions implements OpenOption
 {
-    public static final ReadOnly INSTANCE = new ReadOnly();
-
-    private ReadOnly()
-    {
-    }
-
-    @Override
-    public void assertCanWrite()
-    {
-        throw new WriteOperationsNotAllowedException(
-                "No write operations are allowed on this database. This is a read only Neo4j instance.",
-                Status.General.ForbiddenOnReadOnlyDatabase );
-    }
+    // do not flush index file on close
+    NO_FLUSH_ON_CLOSE
 }

@@ -129,6 +129,7 @@ import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
@@ -412,7 +413,7 @@ class IndexingServiceTest
         life.add( IndexingServiceFactory.createIndexingService( config, mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreView.class ), nameLookup, asList( onlineIndex, populatingIndex, failedIndex ),
                 internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "",
-                false ) );
+                writable() ) );
 
         when( provider.getInitialState( onlineIndex, NULL ) ).thenReturn( ONLINE );
         when( provider.getInitialState( populatingIndex, NULL ) ).thenReturn( POPULATING );
@@ -449,7 +450,7 @@ class IndexingServiceTest
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeView, nameLookup,
                 asList( onlineIndex, populatingIndex, failedIndex ), internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
-                schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "", false );
+                schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "", writable() );
 
         when( provider.getInitialState( onlineIndex, NULL ) ).thenReturn( ONLINE );
         when( provider.getInitialState( populatingIndex, NULL ) ).thenReturn( POPULATING );
@@ -508,7 +509,7 @@ class IndexingServiceTest
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeView, nameLookup,
                 indexDescriptors, internalLogProvider, userLogProvider,
-                IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "",false );
+                IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "",writable() );
 
         // when starting IndexingService
         indexingService.init();
@@ -1128,7 +1129,7 @@ class IndexingServiceTest
 
         life.add( IndexingServiceFactory.createIndexingService( config, mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreView.class ), nameLookup, indexes, internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
-                schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "", false ) );
+                schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "", writable() ) );
 
         nameLookup.propertyKey( 1, "prop" );
 
@@ -1175,7 +1176,7 @@ class IndexingServiceTest
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeView, nameLookup, indexes,
                 internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, schemaState, indexStatisticsStore, PageCacheTracer.NULL, INSTANCE, "",
-                false );
+                writable() );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample( 100, 32, 32 ) );
         nameLookup.propertyKey( 1, "prop" );
 
@@ -1308,7 +1309,7 @@ class IndexingServiceTest
         IndexingService indexingService =
                 new IndexingService( indexProxyCreator, indexProviderMap, indexMapReference, mock( IndexStoreView.class ), schemaRules, samplingController,
                         nameLookup, scheduler, null, logProvider, logProvider, monitor, mock( IndexStatisticsStore.class ),
-                        PageCacheTracer.NULL, INSTANCE, "", false, Config.defaults() );
+                        PageCacheTracer.NULL, INSTANCE, "", writable(), Config.defaults() );
         // and where index population starts
         indexingService.init();
 
@@ -1483,7 +1484,7 @@ class IndexingServiceTest
                         PageCacheTracer.NULL,
                         INSTANCE,
                         "",
-                        false )
+                        writable() )
         );
     }
 
@@ -1616,7 +1617,7 @@ class IndexingServiceTest
                 mock( IndexSamplingController.class ), nameLookup,
                 mock( JobScheduler.class ), mock( SchemaState.class ),
                 internalLogProvider, userLogProvider, IndexingService.NO_MONITOR, mock( IndexStatisticsStore.class ), PageCacheTracer.NULL, INSTANCE, "",
-                false, Config.defaults() );
+                writable(), Config.defaults() );
     }
 
     private static DependencyResolver buildIndexDependencies( IndexProvider... providers )

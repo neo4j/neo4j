@@ -45,6 +45,7 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
 @TestDirectoryExtension
@@ -118,7 +119,7 @@ class GBPTreeBootstrapperTest
 
         LayoutBootstrapper layoutBootstrapper = ( indexFile, pageCache, meta ) -> layout;
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler();
-              GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( fs, scheduler, layoutBootstrapper, true, PageCacheTracer.NULL ) )
+              GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( fs, scheduler, layoutBootstrapper, readOnly(), PageCacheTracer.NULL ) )
         {
             GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( storeFile );
             assertTrue( bootstrap.isTree() );

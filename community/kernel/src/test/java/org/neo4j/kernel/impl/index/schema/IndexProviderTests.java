@@ -28,6 +28,7 @@ import java.util.List;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -51,6 +52,8 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -315,19 +318,19 @@ abstract class IndexProviderTests
         assertEquals( InternalIndexState.ONLINE, state );
     }
 
-    private IndexProvider newProvider( boolean readOnly )
+    private IndexProvider newProvider( DatabaseReadOnlyChecker readOnlyChecker )
     {
-        return factory.create( pageCache, fs, directoriesByProvider( testDirectory.absolutePath() ), monitors, immediate(), readOnly, databaseLayout );
+        return factory.create( pageCache, fs, directoriesByProvider( testDirectory.absolutePath() ), monitors, immediate(), readOnlyChecker, databaseLayout );
     }
 
     IndexProvider newProvider()
     {
-        return newProvider( false );
+        return newProvider( writable() );
     }
 
     private IndexProvider newReadOnlyProvider()
     {
-        return newProvider( true );
+        return newProvider( readOnly() );
     }
 
     static IndexSamplingConfig samplingConfig()
@@ -344,6 +347,6 @@ abstract class IndexProviderTests
     interface ProviderFactory
     {
         IndexProvider create( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-                Monitors monitors, RecoveryCleanupWorkCollector collector, boolean readOnly, DatabaseLayout databaseLayout );
+                Monitors monitors, RecoveryCleanupWorkCollector collector, DatabaseReadOnlyChecker readOnlyChecker, DatabaseLayout databaseLayout );
     }
 }

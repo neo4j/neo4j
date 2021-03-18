@@ -49,6 +49,7 @@ import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingConsumer;
@@ -124,7 +125,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final PageCacheTracer pageCacheTracer;
     private final MemoryTracker memoryTracker;
     private final String databaseName;
-    private final boolean readOnly;
+    private final DatabaseReadOnlyChecker readOnlyChecker;
     private final Config config;
     private final TokenNameLookup tokenNameLookup;
     private final JobScheduler jobScheduler;
@@ -224,7 +225,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
             String databaseName,
-            boolean readOnly,
+            DatabaseReadOnlyChecker readOnlyChecker,
             Config config )
     {
         this.indexProxyCreator = indexProxyCreator;
@@ -245,7 +246,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.pageCacheTracer = pageCacheTracer;
         this.memoryTracker = memoryTracker;
         this.databaseName = databaseName;
-        this.readOnly = readOnly;
+        this.readOnlyChecker = readOnlyChecker;
         this.config = config;
     }
 
@@ -408,7 +409,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private void dontRebuildIndexesInReadOnlyMode( MutableLongObjectMap<IndexDescriptor> rebuildingDescriptors )
     {
-        if ( readOnly && rebuildingDescriptors.notEmpty() )
+        if ( readOnlyChecker.isReadOnly() && rebuildingDescriptors.notEmpty() )
         {
             String indexString = rebuildingDescriptors.values().stream()
                     .map( String::valueOf )

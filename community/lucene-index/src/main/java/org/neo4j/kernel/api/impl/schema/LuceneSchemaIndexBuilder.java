@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.function.Factory;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
@@ -48,9 +49,9 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
     private IndexSamplingConfig samplingConfig;
     private Supplier<IndexWriterConfig> writerConfigFactory;
 
-    private LuceneSchemaIndexBuilder( IndexDescriptor descriptor, Config config )
+    private LuceneSchemaIndexBuilder( IndexDescriptor descriptor, DatabaseReadOnlyChecker readOnlyChecker, Config config )
     {
-        super( config );
+        super( readOnlyChecker );
         this.descriptor = descriptor;
         this.samplingConfig = new IndexSamplingConfig( config );
         this.writerConfigFactory = () -> IndexWriterConfigs.standard( config );
@@ -62,9 +63,9 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
      * @return new LuceneSchemaIndexBuilder
      * @param descriptor The descriptor for this index
      */
-    public static LuceneSchemaIndexBuilder create( IndexDescriptor descriptor, Config config )
+    public static LuceneSchemaIndexBuilder create( IndexDescriptor descriptor, DatabaseReadOnlyChecker readOnlyChecker, Config config )
     {
-        return new LuceneSchemaIndexBuilder( descriptor, config );
+        return new LuceneSchemaIndexBuilder( descriptor, readOnlyChecker, config );
     }
 
     /**

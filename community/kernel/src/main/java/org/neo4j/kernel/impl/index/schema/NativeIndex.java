@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.function.Consumer;
 
 import org.neo4j.annotations.documented.ReporterFactory;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -50,7 +51,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     final IndexDescriptor descriptor;
     private final Monitors monitors;
     private final String monitorTag;
-    private final boolean readOnly;
+    private final DatabaseReadOnlyChecker readOnlyChecker;
     private final PageCacheTracer pageCacheTracer;
     private final String databaseName;
 
@@ -62,7 +63,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         this.fileSystem = databaseIndexContext.fileSystem;
         this.monitors = databaseIndexContext.monitors;
         this.monitorTag = databaseIndexContext.monitorTag;
-        this.readOnly = databaseIndexContext.readOnly;
+        this.readOnlyChecker = databaseIndexContext.readOnlyChecker;
         this.pageCacheTracer = databaseIndexContext.pageCacheTracer;
         this.databaseName = databaseIndexContext.databaseName;
         this.indexFiles = indexFiles;
@@ -75,8 +76,8 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
         Path storeFile = indexFiles.getStoreFile();
-        tree = new GBPTree<>( pageCache, storeFile, layout, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnly, pageCacheTracer,
-                immutable.empty(), databaseName, descriptor.getName() );
+        tree = new GBPTree<>( pageCache, storeFile, layout, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnlyChecker,
+                pageCacheTracer, immutable.empty(), databaseName, descriptor.getName() );
         afterTreeInstantiation( tree );
     }
 

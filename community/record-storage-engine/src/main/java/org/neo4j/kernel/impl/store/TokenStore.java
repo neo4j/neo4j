@@ -30,6 +30,7 @@ import java.util.List;
 
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
@@ -67,11 +68,12 @@ public abstract class TokenStore<RECORD extends TokenRecord>
             String typeDescriptor,
             RecordFormat<RECORD> recordFormat,
             String storeVersion,
+            DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, configuration, idType, idGeneratorFactory, pageCache, logProvider, typeDescriptor,
-                recordFormat, NO_STORE_HEADER_FORMAT, storeVersion, databaseName, openOptions );
+                recordFormat, NO_STORE_HEADER_FORMAT, storeVersion, readOnlyChecker, databaseName, openOptions );
         this.nameStore = nameStore;
     }
 

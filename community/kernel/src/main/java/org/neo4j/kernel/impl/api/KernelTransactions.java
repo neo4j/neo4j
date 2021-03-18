@@ -33,7 +33,7 @@ import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -54,7 +54,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.factory.AccessCapability;
+import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -95,13 +95,13 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final GlobalProcedures globalProcedures;
     private final TransactionIdStore transactionIdStore;
     private final AtomicReference<CpuClock> cpuClockRef;
-    private final AccessCapability accessCapability;
+    private final AccessCapabilityFactory accessCapabilityFactory;
     private final SystemNanoClock clock;
     private final VersionContextSupplier versionContextSupplier;
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
     private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
     private final TokenHolders tokenHolders;
-    private final ReadOnlyDatabaseChecker readOnlyDatabaseChecker;
+    private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
     private final NamedDatabaseId namedDatabaseId;
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
@@ -146,12 +146,12 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             TransactionCommitProcess transactionCommitProcess,
             DatabaseTransactionEventListeners eventListeners, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard,
             StorageEngine storageEngine, GlobalProcedures globalProcedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
-            AtomicReference<CpuClock> cpuClockRef, AccessCapability accessCapability,
+            AtomicReference<CpuClock> cpuClockRef, AccessCapabilityFactory accessCapabilityFactory,
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
             SchemaState schemaState, TokenHolders tokenHolders, NamedDatabaseId namedDatabaseId, IndexingService indexingService, LabelScanStore labelScanStore,
             RelationshipTypeScanStore relationshipTypeScanStore, IndexStatisticsStore indexStatisticsStore,
             Dependencies databaseDependencies, DatabaseTracers tracers, LeaseService leaseService,
-            GlobalMemoryGroupTracker transactionsMemoryPool, ReadOnlyDatabaseChecker readOnlyDatabaseChecker )
+            GlobalMemoryGroupTracker transactionsMemoryPool, DatabaseReadOnlyChecker readOnlyDatabaseChecker )
     {
         this.config = config;
         this.locks = locks;
@@ -164,7 +164,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.globalProcedures = globalProcedures;
         this.transactionIdStore = transactionIdStore;
         this.cpuClockRef = cpuClockRef;
-        this.accessCapability = accessCapability;
+        this.accessCapabilityFactory = accessCapabilityFactory;
         this.tokenHolders = tokenHolders;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
         this.tokenHoldersIdLookup = new TokenHoldersIdLookup( tokenHolders, globalProcedures );
@@ -397,7 +397,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                     new KernelTransactionImplementation( config, eventListeners,
                             constraintIndexCreator, globalProcedures,
                             transactionCommitProcess, transactionMonitor, localTxPool, clock, cpuClockRef,
-                            tracers, storageEngine, accessCapability,
+                            tracers, storageEngine, accessCapabilityFactory,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                             schemaState, tokenHolders, indexingService, labelScanStore, relationshipTypeScanStore, indexStatisticsStore,
                             databaseDependendies, namedDatabaseId, leaseService, transactionMemoryPool, readOnlyDatabaseChecker );

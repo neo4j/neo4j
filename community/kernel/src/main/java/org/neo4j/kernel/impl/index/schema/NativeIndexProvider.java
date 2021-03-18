@@ -84,14 +84,14 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     @Override
     public MinimalIndexAccessor getMinimalIndexAccessor( IndexDescriptor descriptor )
     {
-        return new NativeMinimalIndexAccessor( descriptor, indexFiles( descriptor ), databaseIndexContext.readOnly );
+        return new NativeMinimalIndexAccessor( descriptor, indexFiles( descriptor ), databaseIndexContext.readOnlyChecker );
     }
 
     @Override
     public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
             MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
     {
-        if ( databaseIndexContext.readOnly )
+        if ( databaseIndexContext.readOnlyChecker.isReadOnly() )
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }

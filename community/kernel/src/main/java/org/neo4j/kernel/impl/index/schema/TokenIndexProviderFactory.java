@@ -23,7 +23,7 @@ import java.nio.file.Path;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -31,7 +31,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.monitoring.Monitors;
 
 @ServiceProvider
@@ -56,24 +55,23 @@ public class TokenIndexProviderFactory extends AbstractIndexProviderFactory
 
     @Override
     protected TokenIndexProvider internalCreate( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,
-            String monitorTag, Config config, OperationalMode operationalMode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer )
     {
-        return create( pageCache, storeDir, fs, monitors, monitorTag, config, operationalMode, recoveryCleanupWorkCollector, databaseLayout, pageCacheTracer );
+        return create( pageCache, storeDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector, databaseLayout, pageCacheTracer );
     }
 
     public static TokenIndexProvider create( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,
-            String monitorTag, Config config, OperationalMode mode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseLayout databaseLayout, PageCacheTracer pageCacheTracer )
     {
         // Token indexes are directly in the store directory (because that's where the scan stores resided, and switching the scan stores
         // to be indexes shouldn't require any rebuilding/moving).
         IndexDirectoryStructure.Factory directoryStructure = IndexDirectoryStructure.noSubDirectory( storeDir );
 
-        boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.SINGLE == mode);
         DatabaseIndexContext databaseIndexContext =
-                DatabaseIndexContext.builder( pageCache, fs, databaseLayout.getDatabaseName() ).withMonitors( monitors ).withTag( monitorTag ).withReadOnly(
-                        readOnly ).withPageCacheTracer( pageCacheTracer ).build();
+                DatabaseIndexContext.builder( pageCache, fs, databaseLayout.getDatabaseName() ).withMonitors( monitors ).withTag( monitorTag )
+                        .withReadOnlyChecker( readOnlyChecker ).withPageCacheTracer( pageCacheTracer ).build();
         return new TokenIndexProvider( databaseIndexContext, directoryStructure, recoveryCleanupWorkCollector, config, databaseLayout );
     }
 }

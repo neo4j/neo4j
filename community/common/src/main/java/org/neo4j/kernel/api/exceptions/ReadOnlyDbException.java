@@ -23,7 +23,7 @@ import org.neo4j.exceptions.KernelException;
 
 /**
  * This exception is thrown when committing an updating transaction in a read only database. Can also be thrown when
- * trying to create tokens (like new property names) in a read only database.
+ * trying to create tokens (like new property names), ids, indexes files in a read only database.
  */
 public class ReadOnlyDbException extends KernelException
 {

@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -57,11 +58,12 @@ public class SchemaStore35 extends AbstractDynamicStore
             PageCache pageCache,
             LogProvider logProvider,
             RecordFormats recordFormats,
+            DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( path, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, BLOCK_SIZE,
-                recordFormats.dynamic(), recordFormats.storeVersion(), databaseName, openOptions );
+                recordFormats.dynamic(), recordFormats.storeVersion(), readOnlyChecker, databaseName, openOptions );
     }
 
     @VisibleForTesting

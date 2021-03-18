@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
@@ -32,7 +33,6 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.logging.Log;
@@ -61,6 +61,8 @@ public class FulltextIndexProviderFactory extends ExtensionFactory<FulltextIndex
         TokenHolders tokenHolders();
 
         LogService getLogService();
+
+        DatabaseReadOnlyChecker readOnlyChecker();
     }
 
     public FulltextIndexProviderFactory()
@@ -80,15 +82,14 @@ public class FulltextIndexProviderFactory extends ExtensionFactory<FulltextIndex
         boolean ephemeral = config.get( GraphDatabaseInternalSettings.ephemeral_lucene );
         FileSystemAbstraction fileSystemAbstraction = dependencies.fileSystem();
         DirectoryFactory directoryFactory = directoryFactory( ephemeral );
-        OperationalMode operationalMode = context.dbmsInfo().operationalMode;
-        boolean isSingleInstance = operationalMode == OperationalMode.SINGLE;
         JobScheduler scheduler = dependencies.scheduler();
         IndexDirectoryStructure.Factory directoryStructureFactory = subProviderDirectoryStructure( context.directory() );
         TokenHolders tokenHolders = dependencies.tokenHolders();
         Log log = dependencies.getLogService().getInternalLog( FulltextIndexProvider.class );
+        var readOnlyChecker = dependencies.readOnlyChecker();
 
         return new FulltextIndexProvider(
                 DESCRIPTOR, directoryStructureFactory, fileSystemAbstraction, config, tokenHolders,
-                directoryFactory, isSingleInstance, scheduler, log );
+                directoryFactory, readOnlyChecker, scheduler, log );
     }
 }

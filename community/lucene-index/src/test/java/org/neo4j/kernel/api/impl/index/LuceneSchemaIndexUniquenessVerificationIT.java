@@ -57,6 +57,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 
 @TestDirectoryExtension
@@ -80,7 +81,7 @@ class LuceneSchemaIndexUniquenessVerificationIT
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", String.valueOf( DOCS_PER_PARTITION ) );
 
         Supplier<IndexWriterConfig> configFactory = new TestConfigFactory( Config.defaults() );
-        index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
+        index = LuceneSchemaIndexBuilder.create( descriptor, writable(), Config.defaults() )
                 .withFileSystem( fileSystem )
                 .withIndexRootFolder( testDir.directory( "uniquenessVerification" ).resolve( "index" ) )
                 .withWriterConfig( configFactory )

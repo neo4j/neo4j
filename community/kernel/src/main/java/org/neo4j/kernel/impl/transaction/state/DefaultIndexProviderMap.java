@@ -143,7 +143,7 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
         String providerName = config.get( GraphDatabaseSettings.default_schema_provider );
         IndexProvider configuredDefaultProvider = indexProvidersByName.get( providerName );
         requireNonNull( configuredDefaultProvider, () -> format( "Configured default provider: `%s` not found. Available index providers: %s.", providerName,
-                indexProvidersByName.keySet().toString() ) );
+                indexProvidersByName.keySet() ) );
         defaultIndexProvider = configuredDefaultProvider;
 
         String fulltextProviderName = config.get( GraphDatabaseInternalSettings.default_fulltext_provider );

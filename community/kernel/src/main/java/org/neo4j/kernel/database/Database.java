@@ -42,7 +42,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
-import org.neo4j.configuration.helpers.ReadOnlyDatabaseChecker;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.dbms.database.DatabasePageCache;
@@ -97,7 +97,6 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.factory.FacadeKernelTransactionFactory;
@@ -184,7 +183,6 @@ import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
-import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
@@ -239,12 +237,10 @@ public class Database extends LifecycleAdapter
     private final DatabaseConfig databaseConfig;
     private final NamedDatabaseId namedDatabaseId;
     private final DatabaseLayout databaseLayout;
-    private final boolean readOnly;
-    private final ReadOnlyDatabaseChecker readOnlyDatabaseChecker;
+    private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
     private final IdController idController;
     private final DbmsInfo dbmsInfo;
     private final VersionContextSupplier versionContextSupplier;
-    private AccessCapability accessCapability;
 
     private final StorageEngineFactory storageEngineFactory;
     private StorageEngine storageEngine;
@@ -300,7 +296,6 @@ public class Database extends LifecycleAdapter
         this.eventListeners = context.getDatabaseEventListeners();
         this.accessCapabilityFactory = context.getAccessCapabilityFactory();
 
-        this.readOnly = databaseConfig.get( read_only );
         this.idController = context.getIdController();
         this.dbmsInfo = context.getDbmsInfo();
         this.versionContextSupplier = context.getVersionContextSupplier();
@@ -321,7 +316,7 @@ public class Database extends LifecycleAdapter
         this.fileLockerService = context.getFileLockerService();
         this.leaseService = context.getLeaseService();
         this.startupController = context.getStartupController();
-        this.readOnlyDatabaseChecker = new ReadOnlyDatabaseChecker.Default( databaseConfig );
+        this.readOnlyDatabaseChecker = new DatabaseReadOnlyChecker.Default( context.getDbmsReadOnlyChecker(), namedDatabaseId.name() );
     }
 
     /**
@@ -347,12 +342,12 @@ public class Database extends LifecycleAdapter
             life.add( databaseConfig );
 
             databaseHealth = databaseHealthFactory.newInstance();
-            accessCapability = accessCapabilityFactory.newAccessCapability( databaseConfig );
             databaseAvailability = new DatabaseAvailability(
                     databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
 
             databaseDependencies.satisfyDependency( this );
             databaseDependencies.satisfyDependency( ioController );
+            databaseDependencies.satisfyDependency( readOnlyDatabaseChecker );
             databaseDependencies.satisfyDependency( databaseLayout );
             databaseDependencies.satisfyDependency( startupController );
             databaseDependencies.satisfyDependency( databaseConfig );
@@ -446,7 +441,7 @@ public class Database extends LifecycleAdapter
 
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
                     constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider,
-                    recoveryCleanupWorkCollector, pageCacheTracer, !storageExists, otherDatabaseMemoryTracker );
+                    recoveryCleanupWorkCollector, pageCacheTracer, !storageExists, readOnlyDatabaseChecker, otherDatabaseMemoryTracker );
 
             MetadataProvider metadataProvider = storageEngine.metadataProvider();
             databaseDependencies.satisfyDependency( metadataProvider );
@@ -472,7 +467,7 @@ public class Database extends LifecycleAdapter
                     new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, lockService, storageEngine::newReader,
                             internalLogProvider, databaseConfig );
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector,
-                    readOnly, pageCacheTracer );
+                    readOnlyDatabaseChecker, pageCacheTracer );
             IndexingService indexingService = buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore,
                     pageCacheTracer, otherDatabaseMemoryTracker );
 
@@ -699,7 +694,7 @@ public class Database extends LifecycleAdapter
     {
         return life.add( buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore, databaseConfig, scheduler,
                 indexProviderMap, tokenHolders, internalLogProvider, userLogProvider, databaseMonitors.newMonitor( IndexingService.Monitor.class ),
-                pageCacheTracer, memoryTracker, namedDatabaseId.name(), readOnly ) );
+                pageCacheTracer, memoryTracker, namedDatabaseId.name(), readOnlyDatabaseChecker ) );
     }
 
     /**
@@ -720,11 +715,11 @@ public class Database extends LifecycleAdapter
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
             String databaseName,
-            boolean readOnly )
+            DatabaseReadOnlyChecker readOnlyChecker )
     {
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView,
                 tokenNameLookup, initialSchemaRulesLoader( storageEngine ), internalLogProvider, userLogProvider, indexingServiceMonitor,
-                databaseSchemaState, indexStatisticsStore, pageCacheTracer, memoryTracker, databaseName, readOnly );
+                databaseSchemaState, indexStatisticsStore, pageCacheTracer, memoryTracker, databaseName, readOnlyChecker );
         storageEngine.addIndexUpdateListener( indexingService );
         return indexingService;
     }
@@ -741,7 +736,7 @@ public class Database extends LifecycleAdapter
             NeoStoreIndexStoreView neoStoreIndexStoreView, Monitors monitors, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         return life.add( buildLabelIndex( recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, monitors, internalLogProvider,
-                pageCache, databaseLayout, fs, readOnly, databaseConfig, pageCacheTracer, memoryTracker ) );
+                pageCache, databaseLayout, fs, readOnlyDatabaseChecker, databaseConfig, pageCacheTracer, memoryTracker ) );
     }
 
     /**
@@ -757,7 +752,7 @@ public class Database extends LifecycleAdapter
             MemoryTracker memoryTracker )
     {
         return life.add( buildRelationshipTypeIndex( recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, monitors, internalLogProvider,
-                pageCache, databaseLayout, fs, readOnly, config, tracers.getPageCacheTracer(), memoryTracker ) );
+                pageCache, databaseLayout, fs, readOnlyDatabaseChecker, config, tracers.getPageCacheTracer(), memoryTracker ) );
     }
 
     /**
@@ -772,14 +767,14 @@ public class Database extends LifecycleAdapter
             PageCache pageCache,
             DatabaseLayout databaseLayout,
             FileSystemAbstraction fs,
-            boolean readOnly,
+            DatabaseReadOnlyChecker readOnlyChecker,
             Config config,
             PageCacheTracer cacheTracer,
             MemoryTracker memoryTracker )
     {
         monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( LabelScanStore.class ), EntityType.NODE ), LABEL_SCAN_STORE_MONITOR_TAG );
         FullStoreChangeStream labelStream = new FullLabelStream( indexStoreView );
-        LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fs, labelStream, readOnly, monitors, recoveryCleanupWorkCollector,
+        LabelScanStore labelScanStore = labelScanStore( pageCache, databaseLayout, fs, labelStream, readOnlyChecker, monitors, recoveryCleanupWorkCollector,
                 config, cacheTracer, memoryTracker );
         storageEngine.addNodeLabelUpdateListener( labelScanStore.updateListener() );
         return labelScanStore;
@@ -797,7 +792,7 @@ public class Database extends LifecycleAdapter
             PageCache pageCache,
             DatabaseLayout databaseLayout,
             FileSystemAbstraction fs,
-            boolean readOnly,
+            DatabaseReadOnlyChecker readOnlyChecker,
             Config config,
             PageCacheTracer cacheTracer,
             MemoryTracker memoryTracker )
@@ -805,9 +800,8 @@ public class Database extends LifecycleAdapter
         monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( RelationshipTypeScanStore.class ), EntityType.RELATIONSHIP ),
                 RELATIONSHIP_TYPE_SCAN_STORE_MONITOR_TAG );
         FullStoreChangeStream relationshipTypeStream = new FullRelationshipTypeStream( indexStoreView );
-        RelationshipTypeScanStore relationshipTypeScanStore =
-                toggledRelationshipTypeScanStore( pageCache, databaseLayout, fs, relationshipTypeStream, readOnly, monitors, recoveryCleanupWorkCollector,
-                        config, cacheTracer, memoryTracker );
+        RelationshipTypeScanStore relationshipTypeScanStore = toggledRelationshipTypeScanStore( pageCache, databaseLayout, fs, relationshipTypeStream,
+                readOnlyChecker, monitors, recoveryCleanupWorkCollector, config, cacheTracer, memoryTracker );
         storageEngine.addRelationshipTypeUpdateListener( relationshipTypeScanStore.updateListener() );
         return relationshipTypeScanStore;
     }
@@ -872,7 +866,7 @@ public class Database extends LifecycleAdapter
                         transactionCommitProcess, databaseTransactionEventListeners, transactionStats,
                         databaseAvailabilityGuard,
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
-                        accessCapability, versionContextSupplier, collectionsFactorySupplier,
+                        accessCapabilityFactory, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService, labelScanStore,
                         relationshipTypeScanStore, indexStatisticsStore, databaseDependencies,
                         tracers, leaseService, transactionsMemoryPool, readOnlyDatabaseChecker ) );
@@ -1063,11 +1057,6 @@ public class Database extends LifecycleAdapter
     public Monitors getMonitors()
     {
         return databaseMonitors;
-    }
-
-    public boolean isReadOnly()
-    {
-        return readOnly;
     }
 
     public QueryExecutionEngine getExecutionEngine()

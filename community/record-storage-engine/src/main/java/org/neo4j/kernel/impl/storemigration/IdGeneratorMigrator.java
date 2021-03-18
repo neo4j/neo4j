@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
@@ -53,6 +54,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.RecordStorageCapability.GBPTREE_ID_FILES;
@@ -118,16 +120,17 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         IdGeneratorFactory rebuiltIdGeneratorsFromOldStore = new DefaultIdGeneratorFactory( fileSystem, immediate(), directoryLayout.getDatabaseName() )
         {
             @Override
-            public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, boolean readOnly,
-                    Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException
+            public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId,
+                    DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCursorTracer cursorTracer,
+                    ImmutableSet<OpenOption> openOptions ) throws IOException
             {
                 Path redirectedFilename = migrationLayout.databaseDirectory().resolve( filename.getFileName().toString() );
-                return super.open( pageCache, redirectedFilename, idType, highIdScanner, maxId, readOnly, config, cursorTracer, openOptions );
+                return super.open( pageCache, redirectedFilename, idType, highIdScanner, maxId, readOnlyChecker, config, cursorTracer, openOptions );
             }
 
             @Override
-            public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId, boolean readOnly,
-                    Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
+            public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
+                    DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions )
             {
                 throw new IllegalStateException( "The store file should exist and therefore all calls should be to open, not create" );
             }
@@ -183,7 +186,7 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
     private StoreFactory createStoreFactory( DatabaseLayout databaseLayout, RecordFormats formats, IdGeneratorFactory idGeneratorFactory )
     {
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, NullLogProvider.getInstance(), cacheTracer,
-                immutable.empty() );
+                writable(), immutable.empty() );
     }
 
     @Override

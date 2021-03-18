@@ -80,6 +80,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_limit;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.IOUtils.uncheckedConsumer;
@@ -246,11 +247,11 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         life = new LifeSupport();
         life.start();
-        labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate(),
+        labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(), new Monitors(), immediate(),
                 neo4jConfig, pageCacheTracer, memoryTracker );
         life.add( labelScanStore );
         relationshipTypeScanStore = TokenScanStore
-                .toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, false, new Monitors(), immediate(), neo4jConfig,
+                .toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(), new Monitors(), immediate(), neo4jConfig,
                         pageCacheTracer, memoryTracker );
         life.add( relationshipTypeScanStore );
     }
@@ -326,7 +327,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private StoreFactory newStoreFactory( DatabaseLayout databaseLayout, IdGeneratorFactory idGeneratorFactory, PageCacheTracer cacheTracer,
             ImmutableSet<OpenOption> openOptions )
     {
-        return new StoreFactory( databaseLayout, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider, cacheTracer, openOptions );
+        return new StoreFactory( databaseLayout, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider, cacheTracer, writable(),
+                openOptions );
     }
 
     /**
@@ -396,7 +398,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             throw new UncheckedIOException( e );
         }
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
-                RecoveryCleanupWorkCollector.immediate(), builder, false, cacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseName ) )
+                RecoveryCleanupWorkCollector.immediate(), builder, writable(), cacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseName ) )
         {
             countsStore.start( cursorTracer, memoryTracker );
             countsStore.checkpoint( cursorTracer );

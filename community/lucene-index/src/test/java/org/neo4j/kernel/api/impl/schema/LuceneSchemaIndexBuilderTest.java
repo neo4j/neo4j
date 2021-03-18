@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.schema;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -33,6 +32,8 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 
 @TestDirectoryExtension
 class LuceneSchemaIndexBuilderTest
@@ -47,9 +48,8 @@ class LuceneSchemaIndexBuilderTest
     @Test
     void readOnlyIndexCreation() throws Exception
     {
-        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor, getReadOnlyConfig() )
+        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor, readOnly(), getDefaultConfig() )
                 .withFileSystem( fileSystemRule )
-                .withOperationalMode( true )
                 .withIndexRootFolder( testDir.directory( "a" ) )
                 .build() )
         {
@@ -60,9 +60,8 @@ class LuceneSchemaIndexBuilderTest
     @Test
     void writableIndexCreation() throws Exception
     {
-        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor, getDefaultConfig() )
+        try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor, writable(), getDefaultConfig() )
                 .withFileSystem( fileSystemRule )
-                .withOperationalMode( true )
                 .withIndexRootFolder( testDir.directory( "b" ) )
                 .build() )
         {
@@ -73,10 +72,5 @@ class LuceneSchemaIndexBuilderTest
     private static Config getDefaultConfig()
     {
         return Config.defaults();
-    }
-
-    private static Config getReadOnlyConfig()
-    {
-        return Config.defaults( GraphDatabaseSettings.read_only, true );
     }
 }
