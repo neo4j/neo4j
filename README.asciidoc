@@ -4,6 +4,8 @@ https://neo4j.com[Neo4j] is the world's leading Graph Database. It is a high per
 
 Learn more on the https://neo4j.com[Neo4j website].
 
+https://discord.gg/neo4j[image:https://img.shields.io/discord/787399249741479977?label=Chat&logo=discord&style=for-the-badge[Discord]]
+
 == Using Neo4j ==
 
 Neo4j is available both as a standalone server, or an embeddable component. You can https://neo4j.com/download/[download] or https://neo4j.com/sandbox/[try online].
