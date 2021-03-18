@@ -18,21 +18,15 @@ package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AllConstraints
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.UniqueConstraints
-import org.parboiled.scala.Rule1
 
-class ShowSchemaCommandParserTest
-  extends ParserAstTest[ast.Statement]
-    with Statement
-    with AstConstructionTestSupport {
-
-  implicit val parser: Rule1[ast.Statement] = Statement
+/* Tests for listing indexes and constraints */
+class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
 
   // Show indexes
 
