@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.query._
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
 import org.neo4j.kernel.impl.util.ValueUtils
 
+import java.util.UUID
 import scala.collection.JavaConverters._
 
 trait GraphIcing {
@@ -114,6 +115,17 @@ trait GraphIcing {
       withTx( tx => {
         tx.execute(s"CREATE INDEX FOR (n:$label) ON (${properties.map(p => s"n.`$p`").mkString(",")})")
       })
+
+      withTx( tx => {
+        tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      } )
+
+      getIndex(label, properties)
+    }
+
+    def createIndexWithProvider(label: String, provider: String, properties: String*): IndexDefinition = {
+      val query = s"CALL db.createIndex('some-index-${UUID.randomUUID().toString}', ['$label'], ${properties.mkString("['","','","']")}, '$provider')"
+      graph.executeTransactionally(query)
 
       withTx( tx => {
         tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)

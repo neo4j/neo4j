@@ -998,37 +998,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       current
     }
   }
-
-  class ValuedNodeIndexCursor(inner: NodeValueIndexCursor, values: Array[Value]) extends DefaultCloseListenable with NodeValueIndexCursor {
-
-    override def numberOfProperties(): Int = values.length
-
-    override def propertyKey(offset: Int): Int = inner.propertyKey(offset)
-
-    override def hasValue: Boolean = true
-
-    override def propertyValue(offset: Int): Value = values(offset)
-
-    override def node(cursor: NodeCursor): Unit = inner.node(cursor)
-
-    override def nodeReference(): Long = inner.nodeReference()
-
-    override def next(): Boolean = inner.next()
-
-    override def closeInternal(): Unit = inner.close()
-
-    // We do not call getCloseListener.onClosed(inner) here since
-    // that will already happen in closeInternal.
-    override def close(): Unit = closeInternal()
-
-    override def isClosed: Boolean = inner.isClosed
-
-    override def score(): Float = inner.score()
-
-    override def setTracer(tracer: KernelReadTracer): Unit = inner.setTracer(tracer)
-
-    override def removeTracer(): Unit = inner.removeTracer()
-  }
 }
 
 object TransactionBoundQueryContext {
