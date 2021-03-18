@@ -55,6 +55,7 @@ import org.neo4j.scheduler.JobScheduler;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.backgroundRebuildUpdated;
 
 public class IndexSamplingController
@@ -253,7 +254,7 @@ public class IndexSamplingController
     private IndexSamplingJob createSamplingJob( IndexMap indexMap, long indexId )
     {
         IndexProxy proxy = indexMap.getIndexProxy( indexId );
-        if ( proxy == null || proxy.getState() != InternalIndexState.ONLINE )
+        if ( proxy == null || proxy.getState() != InternalIndexState.ONLINE || proxy.getDescriptor().getIndexType() == LOOKUP )
         {
             return null;
         }

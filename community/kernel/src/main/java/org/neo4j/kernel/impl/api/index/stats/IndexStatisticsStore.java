@@ -225,7 +225,10 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     @Override
     public void shutdown() throws IOException
     {
-        tree.close();
+        if ( tree != null )
+        {
+            tree.close();
+        }
     }
 
     private static class ImmutableIndexStatistics
