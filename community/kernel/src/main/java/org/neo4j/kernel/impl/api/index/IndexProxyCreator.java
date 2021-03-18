@@ -65,7 +65,7 @@ class IndexProxyCreator
 
         IndexPopulator populator = populatorFromProvider( index, samplingConfig, populationJob.bufferFactory(), populationJob.getMemoryTracker() );
 
-        IndexRepresentation indexRepresentation = createIndexProxyInfo( index );
+        IndexRepresentation indexRepresentation = createIndexRepresentation( index );
         FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory( indexRepresentation,
                 populator,
                 logProvider );
@@ -94,7 +94,7 @@ class IndexProxyCreator
 
     IndexProxy createRecoveringIndexProxy( IndexDescriptor descriptor )
     {
-        IndexRepresentation indexRepresentation = createIndexProxyInfo( descriptor );
+        IndexRepresentation indexRepresentation = createIndexRepresentation( descriptor );
         IndexProxy proxy = new RecoveringIndexProxy( indexRepresentation );
         return new ContractCheckingIndexProxy( proxy );
     }
@@ -104,7 +104,7 @@ class IndexProxyCreator
         try
         {
             IndexAccessor onlineAccessor = onlineAccessorFromProvider( descriptor, samplingConfig );
-            IndexRepresentation indexRepresentation = createIndexProxyInfo( descriptor );
+            IndexRepresentation indexRepresentation = createIndexRepresentation( descriptor );
             IndexProxy proxy = new OnlineIndexProxy( indexRepresentation, onlineAccessor, false );
             // it will be started later, when recovery is completed
             return new ContractCheckingIndexProxy( proxy );
@@ -118,7 +118,7 @@ class IndexProxyCreator
         }
     }
 
-    private IndexRepresentation createIndexProxyInfo( IndexDescriptor descriptor )
+    private IndexRepresentation createIndexRepresentation( IndexDescriptor descriptor )
     {
         if ( descriptor.getIndexType() == LOOKUP )
         {
@@ -136,7 +136,7 @@ class IndexProxyCreator
         // Note about the buffer factory instantiation here. Question is why an index populator is instantiated for a failed index proxy to begin with.
         // The byte buffer factory should not be used here anyway so the buffer size doesn't actually matter.
         MinimalIndexAccessor minimalIndexAccessor = minimalIndexAccessorFromProvider( descriptor );
-        IndexRepresentation indexRepresentation = createIndexProxyInfo( descriptor );
+        IndexRepresentation indexRepresentation = createIndexRepresentation( descriptor );
         IndexProxy proxy;
         proxy = new FailedIndexProxy( indexRepresentation,
                 minimalIndexAccessor,

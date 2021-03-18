@@ -24,13 +24,13 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 
-public class ValueIndexRepresentation implements IndexRepresentation
+class ValueIndexRepresentation implements IndexRepresentation
 {
     private final IndexDescriptor indexDescriptor;
     private final IndexStatisticsStore statisticsStore;
     private final String indexUserDescription;
 
-    public ValueIndexRepresentation( IndexDescriptor indexDescriptor, IndexStatisticsStore statisticsStore, TokenNameLookup tokenNameLookup )
+    ValueIndexRepresentation( IndexDescriptor indexDescriptor, IndexStatisticsStore statisticsStore, TokenNameLookup tokenNameLookup )
     {
         this.indexDescriptor = indexDescriptor;
         this.statisticsStore = statisticsStore;

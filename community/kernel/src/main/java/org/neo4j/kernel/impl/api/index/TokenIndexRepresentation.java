@@ -26,6 +26,8 @@ import org.neo4j.kernel.api.index.IndexSample;
 /**
  * Method {@link #changeIndexDescriptor} allows changing the descriptor.
  * However this is a very special operation and should be used with care.
+ * <p>
+ * Also collecting statistics on token indexes is not needed and therefore not supported.
  */
 class TokenIndexRepresentation implements IndexRepresentation
 {

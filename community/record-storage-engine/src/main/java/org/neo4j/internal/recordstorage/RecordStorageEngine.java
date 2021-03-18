@@ -442,7 +442,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             SchemaStore schemaStore = neoStores.getSchemaStore();
             long nliId = schemaStore.nextId( tracer );
 
-            // TODO read from storage before? ask someone
             var before = schemaStore.newRecord();
             before.setId( nliId );
             before.initialize( false, Record.NO_NEXT_PROPERTY.longValue() );

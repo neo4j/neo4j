@@ -1094,7 +1094,8 @@ class IndexingServiceTest
             flippableIndexProxy.flipTo(
                     new FailedIndexProxy( new ValueIndexRepresentation( indexRule, mock( IndexStatisticsStore.class ), nameLookup ),
                             mock( IndexPopulator.class ),
-                            indexFailure, internalLogProvider )
+                            indexFailure,
+                            internalLogProvider )
             );
             barrier.release();
             exceptionBarrier.await();

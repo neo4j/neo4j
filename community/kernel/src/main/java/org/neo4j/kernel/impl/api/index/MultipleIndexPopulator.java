@@ -715,7 +715,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
         @Override
         public String userDescription( TokenNameLookup tokenNameLookup )
         {
-            return indexRepresentation.getIndexDescriptor().userDescription( tokenNameLookup );
+            return indexRepresentation.getIndexUserDescription();
         }
 
         String getUserDescription()
