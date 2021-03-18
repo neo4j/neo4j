@@ -78,7 +78,7 @@ object DebugSupport {
     }
   }
 
-  final class DebugLog(val enabled: Boolean, val color: String) {
+  final class DebugLog(private[this] val enabled: Boolean, val color: String) {
 
     // Not using println because that is synchronized and can hide
     // parallel problems.
@@ -110,7 +110,7 @@ object DebugSupport {
     }
   }
 
-  final class DebugTimeline(val enabled: Boolean) {
+  final class DebugTimeline(private[this] val enabled: Boolean) {
 
     private var t0: Long = 0L
     private var tn: Long = 0L
