@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityMod
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator
+import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -56,7 +57,8 @@ object Metrics {
   }
 
   case class QueryGraphSolverInput(labelInfo: LabelInfo,
-                                   limitSelectivity: Selectivity = Selectivity.ONE) {
+                                   limitSelectivityConfig: LimitSelectivityConfig = LimitSelectivityConfig.default,
+                                   activePlanner: PlannerType = PlannerType.Match) {
 
     def withUpdatedLabelInfo(fromPlan: LogicalPlan, solveds: Solveds): QueryGraphSolverInput = {
       val newLabels = (labelInfo fuse solveds.get(fromPlan.id).asSinglePlannerQuery.lastLabelInfo) (_ ++ _)
@@ -66,8 +68,13 @@ object Metrics {
     def withFusedLabelInfo(newLabelInfo: LabelInfo): QueryGraphSolverInput =
       copy(labelInfo = labelInfo.fuse(newLabelInfo)(_ ++ _))
 
-    def withLimitSelectivity(s: Selectivity): QueryGraphSolverInput =
-      copy(limitSelectivity = s)
+    def withLimitSelectivityConfig(cfg: LimitSelectivityConfig): QueryGraphSolverInput =
+      copy(limitSelectivityConfig = cfg)
+
+    def limitSelectivity: Selectivity = activePlanner match {
+      case PlannerType.Match   => limitSelectivityConfig.forMatch
+      case PlannerType.Horizon => limitSelectivityConfig.forHorizon
+    }
   }
 
   trait CostModel {

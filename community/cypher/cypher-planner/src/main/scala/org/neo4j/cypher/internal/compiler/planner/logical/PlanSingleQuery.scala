@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
+import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.attribution.Attributes
 
 import scala.language.implicitConversions
@@ -43,12 +43,12 @@ case class PlanSingleQuery(planHead: HeadPlanner = PlanHead(),
     // to enable for-comprehension syntax
     implicit def stepResult2Some(t: StepResult): Some[StepResult] = Some(t)
 
-    val limitSelectivities = LimitSelectivity.forAllParts(query, context)
+    val limitSelectivityConfigs = LimitSelectivityConfig.forAllParts(query, context)
 
     val Some(bestPlan) = for {
-      (plans, context) <- planHead(query, context.withLimitSelectivity(limitSelectivities.head))
-      (plans, context) <- planRemainingParts(plans, query, context, limitSelectivities)
-      (plans, context) <- unnestEager(plans, context)
+      (plans, context) <- planHead(query, context.withLimitSelectivityConfig(limitSelectivityConfigs.head))
+      (plans, context) <- planRemainingParts(plans, query, context, limitSelectivityConfigs)
+      (plans, context) <- unnestEager(plans, context.withLimitSelectivityConfig(LimitSelectivityConfig.default))
       pickBest = context.config.pickBestCandidate(context)
       bestPlan <- pickBest(plans.allResults.toIterable, s"best finalized plan for ${query.queryGraph}")
     } yield {
@@ -61,16 +61,16 @@ case class PlanSingleQuery(planHead: HeadPlanner = PlanHead(),
   private def planRemainingParts(plans: BestPlans,
                                  query: SinglePlannerQuery,
                                  context: LogicalPlanningContext,
-                                 limitSelectivities: List[Selectivity]): StepResult = {
+                                 limitSelectivityConfigs: List[LimitSelectivityConfig]): StepResult = {
     val remainingPartsWithExtras = {
       val allParts = query.allPlannerQueries
-      assert(allParts.length == limitSelectivities.length, "We should have limit selectivities for all query parts.")
-      (allParts.tail, limitSelectivities.tail, allParts.map(_.interestingOrder)).zipped
+      assert(allParts.length == limitSelectivityConfigs.length, "We should have limit selectivities for all query parts.")
+      (allParts.tail, limitSelectivityConfigs.tail, allParts.map(_.interestingOrder)).zipped
     }
 
     remainingPartsWithExtras.foldLeft((plans, context)) {
-      case ((plans, context), (queryPart, limitSelectivity, previousInterestingOrder)) =>
-        planWithTail(plans, queryPart, previousInterestingOrder, context.withLimitSelectivity(limitSelectivity))
+      case ((plans, context), (queryPart, limitSelectivityConfig, previousInterestingOrder)) =>
+        planWithTail(plans, queryPart, previousInterestingOrder, context.withLimitSelectivityConfig(limitSelectivityConfig))
     }
   }
 
@@ -87,15 +87,30 @@ case class PlanSingleQuery(planHead: HeadPlanner = PlanHead(),
   }
 }
 
+sealed trait PlannerType
+object PlannerType {
+  case object Match extends PlannerType
+  case object Horizon extends PlannerType
+}
+
 trait MatchPlanner {
-  def apply(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): BestPlans
+  protected def doPlan(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean): BestPlans
+
+  final def apply(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): BestPlans =
+    doPlan(query, context.withActivePlanner(PlannerType.Match), rhsPart)
 }
 
 trait EventHorizonPlanner {
-  def planHorizon(plannerQuery: SinglePlannerQuery,
-                  incomingPlans: BestResults[LogicalPlan],
-                  prevInterestingOrder: Option[InterestingOrder],
-                  context: LogicalPlanningContext): BestResults[LogicalPlan]
+  protected def doPlanHorizon(plannerQuery: SinglePlannerQuery,
+                              incomingPlans: BestResults[LogicalPlan],
+                              prevInterestingOrder: Option[InterestingOrder],
+                              context: LogicalPlanningContext): BestResults[LogicalPlan]
+
+  final def planHorizon(plannerQuery: SinglePlannerQuery,
+                        incomingPlans: BestResults[LogicalPlan],
+                        prevInterestingOrder: Option[InterestingOrder],
+                        context: LogicalPlanningContext): BestResults[LogicalPlan] =
+    doPlanHorizon(plannerQuery, incomingPlans, prevInterestingOrder, context.withActivePlanner(PlannerType.Horizon))
 }
 
 trait HeadPlanner {

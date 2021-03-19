@@ -46,7 +46,7 @@ case class PlanHead(planPart: MatchPlanner = planMatch,
       case Some(plan) =>
         BestResults(plan, None)
       case None =>
-        val matchPlans = planMatch(headQuery, updatedContext)
+        val matchPlans = planPart(headQuery, updatedContext)
         // We take all plans solving the MATCH part. This could be two, if we have a required order.
         val plansWithInput: BestResults[LogicalPlan] = matchPlans.map(planUpdatesAndInput(_, headQuery, updatedContext))
 

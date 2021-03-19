@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityMod
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.expressions.Variable
@@ -36,7 +37,6 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
-import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 case class LogicalPlanningContext(planContext: PlanContext,
@@ -69,8 +69,8 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   executionModel: ExecutionModel,
                                   debugOptions: CypherDebugOptions) {
 
-  def withLimitSelectivity(s: Selectivity): LogicalPlanningContext =
-    copy(input = input.withLimitSelectivity(s))
+  def withLimitSelectivityConfig(cfg: LimitSelectivityConfig): LogicalPlanningContext =
+    copy(input = input.withLimitSelectivityConfig(cfg))
 
   def withAggregationProperties(properties: Set[(String, String)]): LogicalPlanningContext =
     copy(aggregatingProperties = properties)
@@ -100,6 +100,9 @@ case class LogicalPlanningContext(planContext: PlanContext,
   def withOuterPlan(outerPlan: LogicalPlan): LogicalPlanningContext = {
     copy(outerPlan= Some(outerPlan))
   }
+
+  def withActivePlanner(planner: PlannerType): LogicalPlanningContext =
+    copy(input = input.copy(activePlanner = planner))
 
   def statistics: GraphStatistics = planContext.statistics
 

@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.D
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.LABEL_CHECK_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROPERTY_ACCESS_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -126,7 +127,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       .build()
 
     val withoutLimit = QueryGraphSolverInput.empty
-    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivity(Selectivity.of(0.5).get)
+    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivityConfig(LimitSelectivityConfig(Selectivity.of(0.5).get, Selectivity.ONE))
 
     costFor(plan, withLimit, builder.getSemanticTable, builder.cardinalities, new StubProvidedOrders) should be < costFor(plan, withoutLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders)
   }
@@ -143,7 +144,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       .build()
 
     val withoutLimit = QueryGraphSolverInput.empty
-    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivity(Selectivity.of(0.5).get)
+    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivityConfig(LimitSelectivityConfig(Selectivity.of(0.5).get, Selectivity.ONE))
 
     costFor(plan, withLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) should be < costFor(plan, withoutLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders)
   }
@@ -156,7 +157,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       .build()
 
     val withoutLimit = QueryGraphSolverInput.empty
-    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivity(Selectivity.of(0.5).get)
+    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivityConfig(LimitSelectivityConfig(Selectivity.of(0.5).get, Selectivity.ONE))
 
     costFor(plan, withLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders) should equal(costFor(plan, withoutLimit, builder.getSemanticTable, builder.cardinalities, builder.providedOrders))
   }
@@ -422,7 +423,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       .build()
     val semanticTable = SemanticTable().addNode(varFor("n"))
     val withoutLimit = QueryGraphSolverInput.empty
-    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivity(Selectivity.of(0.5).get)
+    val withLimit = QueryGraphSolverInput.empty.withLimitSelectivityConfig(LimitSelectivityConfig(Selectivity.of(0.5).get, Selectivity.ONE))
     val unlimited = costFor(plan, withLimit, semanticTable, builder.cardinalities, builder.providedOrders)
     val limited = costFor(plan, withoutLimit, semanticTable, builder.cardinalities, builder.providedOrders)
     unlimited should equal(limited)

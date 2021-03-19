@@ -48,10 +48,10 @@ aggregation and UNWIND.
  */
 case object PlanEventHorizon extends EventHorizonPlanner {
 
-  override def planHorizon(plannerQuery: SinglePlannerQuery,
-                           incomingPlans: BestResults[LogicalPlan],
-                           prevInterestingOrder: Option[InterestingOrder],
-                           context: LogicalPlanningContext): BestResults[LogicalPlan] = {
+  protected override def doPlanHorizon(plannerQuery: SinglePlannerQuery,
+                                       incomingPlans: BestResults[LogicalPlan],
+                                       prevInterestingOrder: Option[InterestingOrder],
+                                       context: LogicalPlanningContext): BestResults[LogicalPlan] = {
     val pickBest: CandidateSelector = context.config.pickBestCandidate(context)
     // This config will only plan Sort if there is a required order in this plannerQuery
     val sortIfSelfRequiredConfig = InterestingOrderConfig(plannerQuery.interestingOrder)

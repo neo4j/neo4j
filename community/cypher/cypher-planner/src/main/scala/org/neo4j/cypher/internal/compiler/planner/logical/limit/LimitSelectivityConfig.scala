@@ -17,24 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.planner.logical
+package org.neo4j.cypher.internal.compiler.planner.logical.limit
 
-import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.util.Selectivity
 
-case object planMatch extends MatchPlanner {
+final case class LimitSelectivityConfig(forMatch: Selectivity, forHorizon: Selectivity)
 
-  protected override def doPlan(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean): BestPlans = {
-    val interestingOrderConfig = InterestingOrderConfig.interestingOrderForPart(
-      query = query,
-      isRhs = rhsPart,
-      isHorizon = false,
-      disallowSplittingTop = context.debugOptions.disallowSplittingTopEnabled
-    )
-    context.strategy.plan(
-      query.queryGraph,
-      interestingOrderConfig,
-      context)
+object LimitSelectivityConfig {
+
+  val default: LimitSelectivityConfig = LimitSelectivityConfig(Selectivity.ONE, Selectivity.ONE)
+
+  def forAllParts(query: SinglePlannerQuery, context: LogicalPlanningContext): List[LimitSelectivityConfig] = {
+    val allParts = LimitSelectivity.forAllParts(query, context)
+    allParts.zip(allParts.tail :+ Selectivity.ONE).map { case (forMatch, forHorizon) =>
+      LimitSelectivityConfig(forMatch = forMatch, forHorizon = forHorizon)
+    }
   }
 }
