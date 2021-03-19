@@ -64,7 +64,7 @@ class ToBooleanListFunctionTest extends CypherFunSuite with GeneratorDrivenPrope
     assert(toBooleanList(Seq(0, true, "false")) === VirtualValues.list(Values.FALSE, Values.TRUE, Values.FALSE))
   }
 
-  test("should convert a mixed list with invalid strings to a list of booleans") {
+  test("should convert a mixed list that also include invalid strings to a list of booleans") {
     val expected = VirtualValues.list(Values.TRUE, Values.TRUE, NO_VALUE, Values.FALSE)
     assert(toBooleanList(Seq(123, "trUE", "foo", false)) === expected)
   }
@@ -73,7 +73,7 @@ class ToBooleanListFunctionTest extends CypherFunSuite with GeneratorDrivenPrope
     assert(toBooleanList(Seq("0000123", "-456", "false")) === VirtualValues.list(NO_VALUE, NO_VALUE, Values.FALSE))
   }
 
-  test("should not convert a list of booleans to a list of booleans") {
+  test("should convert a list of booleans to a list of booleans") {
     assert(toBooleanList(Seq(true, false)) === VirtualValues.list(Values.TRUE, Values.FALSE))
   }
 
