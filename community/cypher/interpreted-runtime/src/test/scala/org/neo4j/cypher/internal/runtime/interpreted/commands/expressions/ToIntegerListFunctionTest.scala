@@ -24,16 +24,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.ParameterWrongTypeException
-import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.longValue
-import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
-import org.neo4j.values.virtual.VirtualValues.list
 import org.scalacheck.Gen
 import org.scalatest.Inspectors
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
@@ -85,7 +82,7 @@ class ToIntegerListFunctionTest extends CypherFunSuite with GeneratorDrivenPrope
     assert(toIntegerList(Seq("1", "10508455564958384115", "8589934592.0")) == VirtualValues.list(longValue(1), NO_VALUE, longValue(8589934592L)))
   }
 
-  test("should throw an exception if the list argument contains an object which cannot be converted to integer") {
+  test("should not throw an exception if the list argument contains an object which cannot be converted to integer") {
     assert(toIntegerList(Seq("1234", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 0))) === VirtualValues.list(longValue(1234), NO_VALUE))
   }
 
@@ -100,8 +97,7 @@ class ToIntegerListFunctionTest extends CypherFunSuite with GeneratorDrivenPrope
       import scala.collection.JavaConverters.iterableAsScalaIterableConverter
       val result = toIntegerList(s)
       Inspectors.forAll(result.asInstanceOf[ListValue].asScala) {  _ should (be (a [LongValue]) or equal(NO_VALUE)) }
-    }
-    }
+    }}
   }
 
   private def toIntegerList(orig: Any) = {

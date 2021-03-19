@@ -138,7 +138,7 @@ class ToIntegerFunctionTest extends CypherFunSuite with GeneratorDrivenPropertyC
     toIntegerOrNull(Map("a" -> "b")) should equal(NO_VALUE)
   }
 
-  test("toIntegerOrNull can handle empty string") {
+  test("toIntegerOrNull can handle empty string as null") {
     toIntegerOrNull("") should equal(NO_VALUE)
   }
 
@@ -146,19 +146,19 @@ class ToIntegerFunctionTest extends CypherFunSuite with GeneratorDrivenPropertyC
     toIntegerOrNull(true) should equal(longValue(1))
   }
 
-  test("toIntegerOrNull can handle unrecognised string") {
+  test("toIntegerOrNull can handle unrecognised string as null") {
     toIntegerOrNull("foo bar") should equal(NO_VALUE)
   }
 
-  test("toIntegerOrNull can handle list types") {
+  test("toIntegerOrNull can handle list types as null") {
     toIntegerOrNull(List("a", "b")) should equal(NO_VALUE)
   }
 
-  test("toIntegerOrNull can handle empty map") {
+  test("toIntegerOrNull can handle empty map as null") {
     toIntegerOrNull(Map.empty) should equal(NO_VALUE)
   }
 
-  test("toIntegerOrNull can handle empty list") {
+  test("toIntegerOrNull can handle empty list as null") {
     toIntegerOrNull(List.empty) should equal(NO_VALUE)
   }
 
@@ -181,8 +181,7 @@ class ToIntegerFunctionTest extends CypherFunSuite with GeneratorDrivenPropertyC
 
     forAll(generator) { s => {
         toIntegerOrNull(s) should (be (a [LongValue]) or equal(NO_VALUE))
-    }
-    }
+    }}
   }
 
   private def toInteger(orig: Any) = {

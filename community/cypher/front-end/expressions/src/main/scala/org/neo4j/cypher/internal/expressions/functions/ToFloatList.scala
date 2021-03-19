@@ -27,6 +27,6 @@ case object ToFloatList extends Function {
   override val signatures = Vector(
     TypeSignature(this, CTList(CTAny), CTList(CTFloat),
       "Converts a list of values to a list of float values. If any values are not convertible to float they will be null in the list returned.",
-      Category.SCALAR)
+      Category.LIST)
   )
 }

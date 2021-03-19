@@ -88,27 +88,27 @@ class ToFloatFunctionTest extends CypherFunSuite with GeneratorDrivenPropertyChe
     toFloatOrNull(Map("a" -> "b")) should equal(NO_VALUE)
   }
 
-  test("toFloatOrNull can handle empty string") {
+  test("toFloatOrNull can handle empty string as null") {
     toFloatOrNull("") should equal(NO_VALUE)
   }
 
-  test("toFloatOrNull can handle boolean") {
+  test("toFloatOrNull can handle boolean as null") {
     toFloatOrNull(true) should equal(NO_VALUE)
   }
 
-  test("toFloatOrNull can handle unrecognised string") {
+  test("toFloatOrNull can handle unrecognised string as null") {
     toFloatOrNull("foo bar") should equal(NO_VALUE)
   }
 
-  test("toFloatOrNull can handle list types") {
+  test("toFloatOrNull can handle list types as null") {
     toFloatOrNull(List("a", "b")) should equal(NO_VALUE)
   }
 
-  test("toFloatOrNull can handle empty map") {
+  test("toFloatOrNull can handle empty map as null") {
     toFloatOrNull(Map.empty) should equal(NO_VALUE)
   }
 
-  test("toFloatOrNull can handle empty list") {
+  test("toFloatOrNull can handle empty list as null") {
     toFloatOrNull(List.empty) should equal(NO_VALUE)
   }
 
@@ -131,8 +131,7 @@ class ToFloatFunctionTest extends CypherFunSuite with GeneratorDrivenPropertyChe
 
     forAll(generator) { s => {
       toFloatOrNull(s) should (be(a[DoubleValue]) or equal(NO_VALUE))
-    }
-    }
+    }}
   }
 
   private def toFloat(orig: Any) = {

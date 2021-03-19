@@ -83,7 +83,7 @@ class ToFloatListFunctionTest extends CypherFunSuite with GeneratorDrivenPropert
     assert(toFloatList(Seq("1", tooBigFloat.toString(), "8589934592.0")) == VirtualValues.list(doubleValue(1), doubleValue(tooBigFloat.toDouble), doubleValue(8589934592L)))
   }
 
-  test("should throw an exception if the list argument contains an object which cannot be converted to float") {
+  test("should not throw an exception if the list argument contains an object which cannot be converted to float") {
     assert(toFloatList(Seq("1234", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 0))) === VirtualValues.list(doubleValue(1234), NO_VALUE))
   }
 
@@ -98,8 +98,7 @@ class ToFloatListFunctionTest extends CypherFunSuite with GeneratorDrivenPropert
       import scala.collection.JavaConverters.iterableAsScalaIterableConverter
       val result = toFloatList(s)
       Inspectors.forAll(result.asInstanceOf[ListValue].asScala) {  _ should (be (a [DoubleValue]) or equal(NO_VALUE)) }
-    }
-    }
+    }}
   }
 
   private def toFloatList(orig: Any) = {
