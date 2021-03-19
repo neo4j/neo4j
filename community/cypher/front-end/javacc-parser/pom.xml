@@ -90,18 +90,6 @@
             <groupId>org.scala-lang</groupId>
         </dependency>
 
-        <!-- scala test dependencies -->
-
-        <dependency>
-            <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_${scala.binary.version}</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.scalacheck</groupId>
-            <artifactId>scalacheck_${scala.binary.version}</artifactId>
-        </dependency>
-
         <!-- shared versions are defined in the parent pom -->
 
         <dependency>
