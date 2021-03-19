@@ -92,8 +92,7 @@ class ToBooleanListFunctionTest extends CypherFunSuite with GeneratorDrivenPrope
       import scala.collection.JavaConverters.iterableAsScalaIterableConverter
       val result = toBooleanList(s)
       Inspectors.forAll(result.asInstanceOf[ListValue].asScala) {  _ should (be (a [BooleanValue]) or equal(NO_VALUE)) }
-    }
-    }
+    }}
   }
 
   private def toBooleanList(orig: Any): Any = {

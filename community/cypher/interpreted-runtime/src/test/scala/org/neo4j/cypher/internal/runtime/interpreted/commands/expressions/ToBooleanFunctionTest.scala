@@ -91,31 +91,31 @@ class ToBooleanFunctionTest extends CypherFunSuite with GeneratorDrivenPropertyC
     toBooleanOrNull(Map("a" -> "b")) should equal(NO_VALUE)
   }
 
-  test("toBooleanOrNull can handle empty string") {
+  test("toBooleanOrNull can handle empty string as null") {
     toBooleanOrNull("") should equal(NO_VALUE)
   }
 
-  test("toBooleanOrNull can handle float") {
+  test("toBooleanOrNull can handle float as null") {
     toBooleanOrNull(4.3f) should equal(NO_VALUE)
   }
 
-  test("toBooleanOrNull can handle double") {
+  test("toBooleanOrNull can handle double as null") {
     toBooleanOrNull(4.3d) should equal(NO_VALUE)
   }
 
-  test("toBooleanOrNull can handle unrecognised string") {
+  test("toBooleanOrNull can handle unrecognised string as null") {
     toBooleanOrNull("foo bar") should equal(NO_VALUE)
   }
 
-  test("toBooleanOrNull can handle list types") {
+  test("toBooleanOrNull can handle list types as null") {
     toBooleanOrNull(List("a", "b")) should equal(NO_VALUE)
   }
 
-  test("toBooleanOrNull can handle empty map") {
+  test("toBooleanOrNull can handle empty map as null") {
     toBooleanOrNull(Map.empty) should equal(NO_VALUE)
   }
 
-  test("toBooleanOrNull can handle empty list") {
+  test("toBooleanOrNull can handle empty list as null") {
     toBooleanOrNull(List.empty) should equal(NO_VALUE)
   }
 
@@ -126,8 +126,7 @@ class ToBooleanFunctionTest extends CypherFunSuite with GeneratorDrivenPropertyC
 
     forAll(generator) { s => {
       toBooleanOrNull(s) should (be(a[BooleanValue]) or equal(NO_VALUE))
-    }
-    }
+    }}
   }
 
   private def toBoolean(orig: Any) = {

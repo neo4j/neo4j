@@ -27,6 +27,6 @@ case object ToBooleanList extends Function {
   override val signatures = Vector(
     TypeSignature(this, CTList(CTAny), CTList(CTBoolean),
       "Converts a list of values to a list of boolean values. If any values are not convertible to boolean they will be null in the list returned.",
-      Category.SCALAR)
+      Category.LIST)
   )
 }
