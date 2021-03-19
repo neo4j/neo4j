@@ -115,6 +115,7 @@ class Bootloader
         ctx.out.println( "import:       " + config.get( GraphDatabaseSettings.load_csv_file_url_root ).toAbsolutePath() );
         ctx.out.println( "data:         " + config.get( GraphDatabaseSettings.data_directory ).toAbsolutePath() );
         ctx.out.println( "certificates: " + ctx.home().resolve( "certificates" ).toAbsolutePath() ); //this is no longer an individual setting
+        ctx.out.println( "licenses:     " + config.get( GraphDatabaseSettings.licenses_directory ).toAbsolutePath() );
         ctx.out.println( "run:          " + config.get( BootloaderSettings.run_directory ).toAbsolutePath() );
     }
 

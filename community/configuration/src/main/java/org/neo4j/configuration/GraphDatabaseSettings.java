@@ -95,6 +95,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final String DEFAULT_TX_LOGS_ROOT_DIR_NAME = "transactions";
     public static final String DEFAULT_SCRIPT_FOLDER = "scripts";
     public static final String DEFAULT_DUMPS_DIR_NAME = "dumps";
+    public static final String DEFAULT_LICENSES_DIR_NAME = "licenses";
 
     public static final int DEFAULT_ROUTING_CONNECTOR_PORT = 7688;
 
@@ -681,6 +682,12 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     @Description( "Path to the debug log file." )
     public static final Setting<Path> store_internal_log_path = newBuilder( "dbms.logs.debug.path", PATH, Path.of( "debug.log" ) )
             .setDependency( logs_directory )
+            .immutable()
+            .build();
+
+    @Description( "Path of the licenses directory." )
+    public static final Setting<Path> licenses_directory = newBuilder( "dbms.directories.licenses", PATH, Path.of( DEFAULT_LICENSES_DIR_NAME ) )
+            .setDependency( neo4j_home )
             .immutable()
             .build();
 

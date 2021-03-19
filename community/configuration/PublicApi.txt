@@ -62,6 +62,7 @@ org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_DATABASE_NAME java.lang.S
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_DATA_DIR_NAME java.lang.String public static final = data
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_DUMPS_DIR_NAME java.lang.String public static final = dumps
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_LABEL_BLOCK_SIZE int public static final = 64
+org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_LICENSES_DIR_NAME java.lang.String public static final = licenses
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_ROUTING_CONNECTOR_PORT int public static final = 7688
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_SCRIPT_FOLDER java.lang.String public static final = scripts
 org.neo4j.configuration.GraphDatabaseSettings::DEFAULT_TX_LOGS_ROOT_DIR_NAME java.lang.String public static final = transactions
@@ -106,6 +107,7 @@ org.neo4j.configuration.GraphDatabaseSettings::index_background_sampling_enabled
 org.neo4j.configuration.GraphDatabaseSettings::index_sample_size_limit org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::index_sampling_update_percentage org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::keep_logical_logs org.neo4j.graphdb.config.Setting<java.lang.String> public static final
+org.neo4j.configuration.GraphDatabaseSettings::licenses_directory org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::load_csv_file_url_root org.neo4j.graphdb.config.Setting<java.nio.file.Path> public static final
 org.neo4j.configuration.GraphDatabaseSettings::lock_acquisition_timeout org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::log_queries org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel> public static final
