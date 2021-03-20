@@ -75,6 +75,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     private final int leafMaxKeyCount;
     private final int keySize;
     private final int valueSize;
+    private final int maxKeyCount;
 
     TreeNodeFixedSize( int pageSize, Layout<KEY,VALUE> layout )
     {
@@ -84,6 +85,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         this.internalMaxKeyCount = Math.floorDiv( pageSize - (BASE_HEADER_LENGTH + SIZE_PAGE_REFERENCE),
                 keySize + SIZE_PAGE_REFERENCE);
         this.leafMaxKeyCount = Math.floorDiv( pageSize - BASE_HEADER_LENGTH, keySize + valueSize );
+        this.maxKeyCount = Math.max( internalMaxKeyCount, leafMaxKeyCount );
 
         if ( internalMaxKeyCount < 2 )
         {
@@ -217,7 +219,7 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     @Override
     boolean reasonableKeyCount( int keyCount )
     {
-        return keyCount >= 0 && keyCount <= Math.max( internalMaxKeyCount(), leafMaxKeyCount() );
+        return keyCount >= 0 && keyCount <= maxKeyCount;
     }
 
     @Override
@@ -595,7 +597,11 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
     private void copyKeysAndValues( PageCursor fromCursor, int fromPos, PageCursor toCursor, int toPos, int count )
     {
         fromCursor.copyTo( keyOffset( fromPos ), toCursor, keyOffset( toPos ), count * keySize() );
-        fromCursor.copyTo( valueOffset( fromPos ), toCursor, valueOffset( toPos ),count * valueSize() );
+        int valueLength = count * valueSize();
+        if ( valueLength > 0 )
+        {
+            fromCursor.copyTo( valueOffset( fromPos ), toCursor, valueOffset( toPos ), valueLength );
+        }
     }
 
     @Override

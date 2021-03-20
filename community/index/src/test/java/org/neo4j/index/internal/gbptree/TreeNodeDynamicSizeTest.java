@@ -33,7 +33,7 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
     private static final long STABLE_GENERATION = 3;
     private static final long UNSTABLE_GENERATION = 4;
 
-    private SimpleByteArrayLayout layout = new SimpleByteArrayLayout();
+    private final SimpleByteArrayLayout layout = new SimpleByteArrayLayout();
 
     @Override
     protected TestLayout<RawBytes,RawBytes> getLayout()
@@ -52,7 +52,7 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
     void assertAdditionalHeader( PageCursor cursor, TreeNode<RawBytes,RawBytes> node, int pageSize )
     {
         // When
-        int currentAllocSpace = ((TreeNodeDynamicSize) node).getAllocOffset( cursor );
+        int currentAllocSpace = ((TreeNodeDynamicSize<RawBytes,RawBytes>) node).getAllocOffset( cursor );
 
         // Then
         assertEquals( pageSize, currentAllocSpace, "allocSpace point to end of page" );

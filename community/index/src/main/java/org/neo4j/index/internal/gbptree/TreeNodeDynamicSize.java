@@ -34,7 +34,8 @@ import org.neo4j.util.VisibleForTesting;
 import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.DynamicSizeOffsetFormat.OFFSET_2B;
 import static org.neo4j.index.internal.gbptree.DynamicSizeOffsetFormat.OFFSET_3B;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.SIZE_KEY_VALUE_SIZE;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.MAX_SIZE_KEY_VALUE_SIZE;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.MIN_SIZE_KEY_VALUE_SIZE;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractKeySize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractOffload;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractTombstone;
@@ -114,19 +115,19 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private final KEY tmpKeyLeft;
     private final KEY tmpKeyRight;
     private final OffloadStore<KEY,VALUE> offloadStore;
+    private final int maxKeyCount;
 
     TreeNodeDynamicSize( int pageSize, Layout<KEY,VALUE> layout, OffloadStore<KEY,VALUE> offloadStore )
     {
         super( pageSize, layout );
 
         this.offsetFormat = selectOffsetFormat( pageSize );
-        int maxKeyCount = pageSize / (getTotalOverhead( offsetFormat ) + SIZE_KEY_VALUE_SIZE);
+        this.totalSpace = pageSize - offsetFormat.getHeaderLength();
+        this.maxKeyCount = totalSpace / getTotalEntryOverheadMin( offsetFormat );
         this.oldOffset = new int[maxKeyCount];
         this.newOffset = new int[maxKeyCount];
-
         this.offloadStore = offloadStore;
-        totalSpace = pageSize - offsetFormat.getHeaderLength();
-        halfSpace = totalSpace >> 1;
+        this.halfSpace = totalSpace >> 1;
 
         /*
         The page size will affect how large entries (key-value pairs) we can fit.
@@ -224,14 +225,19 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     public static int inlineKeyValueSizeCap( int pageSize )
     {
         DynamicSizeOffsetFormat offsetFormat = selectOffsetFormat( pageSize );
-        int totalOverhead = getTotalOverhead( offsetFormat );
+        int totalOverhead = getTotalEntryOverheadMax( offsetFormat );
         int capToFitNumberOfEntriesPerPage = (pageSize - offsetFormat.getHeaderLength()) / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - totalOverhead;
         return Math.min( FIXED_MAX_KEY_VALUE_SIZE_CAP, capToFitNumberOfEntriesPerPage );
     }
 
-    private static int getTotalOverhead( DynamicSizeOffsetFormat offsetFormat )
+    private static int getTotalEntryOverheadMin( DynamicSizeOffsetFormat offsetFormat )
     {
-        return offsetFormat.offsetSize() + SIZE_KEY_VALUE_SIZE;
+        return offsetFormat.offsetSize() + MIN_SIZE_KEY_VALUE_SIZE;
+    }
+
+    private static int getTotalEntryOverheadMax( DynamicSizeOffsetFormat offsetFormat )
+    {
+        return offsetFormat.offsetSize() + MAX_SIZE_KEY_VALUE_SIZE;
     }
 
     @Override
@@ -612,7 +618,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     boolean reasonableKeyCount( int keyCount )
     {
-        return keyCount >= 0 && keyCount <= totalSpace / getTotalOverhead( offsetFormat );
+        return keyCount >= 0 && keyCount <= maxKeyCount;
     }
 
     @Override
