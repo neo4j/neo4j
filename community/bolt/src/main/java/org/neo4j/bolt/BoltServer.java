@@ -79,13 +79,15 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 import static org.neo4j.configuration.ssl.SslPolicyScope.CLUSTER;
 
 public class BoltServer extends LifecycleAdapter
 {
-    private static final PooledByteBufAllocator NETTY_BUF_ALLOCATOR = new PooledByteBufAllocator( PlatformDependent.directBufferPreferred() );
+    @VisibleForTesting
+    public static final PooledByteBufAllocator NETTY_BUF_ALLOCATOR = new PooledByteBufAllocator( PlatformDependent.directBufferPreferred() );
     private final BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI;
     private final JobScheduler jobScheduler;
     private final ConnectorPortRegister connectorPortRegister;
