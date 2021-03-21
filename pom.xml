@@ -68,6 +68,7 @@
     <ThreadLeakageGuardExtension.MAXIMUM_WAIT_TIME_MILLIS>90000</ThreadLeakageGuardExtension.MAXIMUM_WAIT_TIME_MILLIS>
     <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
+    <jdk.custom.options/>
     <test.runner.jvm/>
     <test.runner.jvm.settings.additional/>
     <test.runner.jvm.settings>
@@ -98,6 +99,7 @@
       -XX:FlightRecorderOptions=stackdepth=256
       -XX:+UnlockDiagnosticVMOptions
       -XX:+DebugNonSafepoints
+      ${jdk.custom.options}
       ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
     <default.jupiter.test.timeout>20m</default.jupiter.test.timeout>
@@ -814,6 +816,26 @@
   </build>
 
   <profiles>
+    <profile>
+      <id>java16AndLater</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <jdk>[16, )</jdk>
+      </activation>
+      <properties>
+        <licensing.skip>true</licensing.skip>
+        <jdk.custom.options>
+          --add-opens java.base/java.lang=ALL-UNNAMED
+          --add-opens java.base/java.nio=ALL-UNNAMED
+          --add-opens java.base/java.io=ALL-UNNAMED
+          --add-opens java.base/java.util=ALL-UNNAMED
+          --add-opens java.base/java.util.concurrent=ALL-UNNAMED
+          --add-opens java.base/sun.net.www.protocol.http=ALL-UNNAMED
+          --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+        </jdk.custom.options>
+      </properties>
+    </profile>
+
     <profile>
       <id>errorprone</id>
       <activation>

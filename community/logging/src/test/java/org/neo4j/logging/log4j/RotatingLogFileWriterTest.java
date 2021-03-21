@@ -124,7 +124,7 @@ class RotatingLogFileWriterTest
 
         assertThat( Files.readAllLines( targetFile ) ).containsExactly( "test string 2" );
 
-        try ( FileSystem fileSystem = FileSystems.newFileSystem( targetFile1, null ) )
+        try ( FileSystem fileSystem = FileSystems.newFileSystem( targetFile1, this.getClass().getClassLoader() ) )
         {
             assertThat( Files.readAllLines( fileSystem.getPath( "test.log.1" ) ) ).containsExactly( "test string 1" );
         }
