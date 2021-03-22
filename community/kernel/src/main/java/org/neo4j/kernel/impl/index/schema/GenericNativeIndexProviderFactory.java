@@ -72,9 +72,8 @@ public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFact
     {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
         boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.SINGLE == mode);
-        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).withMonitors( monitors ).withTag( monitorTag )
+        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, databaseName ).withMonitors( monitors ).withTag( monitorTag )
                                                                         .withReadOnly( readOnly ).withPageCacheTracer( pageCacheTracer )
-                                                                        .withDatabaseName( databaseName )
                                                                         .build();
         return new GenericNativeIndexProvider( databaseIndexContext, directoryStructure, recoveryCleanupWorkCollector, config );
     }

@@ -49,11 +49,12 @@ public class DatabaseIndexContext
     /**
      * @param pageCache global {@link PageCache}
      * @param fileSystem global {@link FileSystemAbstraction}
+     * @param databaseName database name
      * @return {@link Builder} to use for creating {@link DatabaseIndexContext}.
      */
-    public static Builder builder( PageCache pageCache, FileSystemAbstraction fileSystem )
+    public static Builder builder( PageCache pageCache, FileSystemAbstraction fileSystem, String databaseName )
     {
-        return new Builder( pageCache, fileSystem );
+        return new Builder( pageCache, fileSystem, databaseName );
     }
 
     /**
@@ -64,11 +65,10 @@ public class DatabaseIndexContext
      */
     public static Builder builder( DatabaseIndexContext copy )
     {
-        return new Builder( copy.pageCache, copy.fileSystem )
+        return new Builder( copy.pageCache, copy.fileSystem, copy.databaseName )
                 .withReadOnly( copy.readOnly )
                 .withMonitors( copy.monitors )
                 .withTag( copy.monitorTag )
-                .withDatabaseName(copy.databaseName)
                 .withPageCacheTracer( copy.pageCacheTracer );
     }
 
@@ -76,16 +76,17 @@ public class DatabaseIndexContext
     {
         private final PageCache pageCache;
         private final FileSystemAbstraction fileSystem;
+        private final String databaseName;
         private Monitors monitors;
         private String monitorTag;
         private boolean readOnly;
         private PageCacheTracer pageCacheTracer;
-        private String databaseName;
 
-        private Builder( PageCache pageCache, FileSystemAbstraction fileSystem )
+        private Builder( PageCache pageCache, FileSystemAbstraction fileSystem, String databaseName )
         {
             this.pageCache = pageCache;
             this.fileSystem = fileSystem;
+            this.databaseName = databaseName;
             this.monitors = new Monitors();
             this.monitorTag = "";
             this.readOnly = false;
@@ -137,12 +138,6 @@ public class DatabaseIndexContext
         public Builder withPageCacheTracer( PageCacheTracer tracer )
         {
             this.pageCacheTracer = tracer;
-            return this;
-        }
-
-        public Builder withDatabaseName( String databaseName )
-        {
-            this.databaseName = databaseName;
             return this;
         }
 

@@ -36,6 +36,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
@@ -60,7 +61,7 @@ class GenericNativeIndexAccessorTest
         IndexDescriptor descriptor = forSchema( SchemaDescriptor.forLabel( 1, 1 ) ).withName( "index" ).materialise( indexId );
         IndexSpecificSpaceFillingCurveSettings spatialSettings = mock( IndexSpecificSpaceFillingCurveSettings.class );
         IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure, descriptor.getId() );
-        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).build();
+        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).build();
         GenericNativeIndexAccessor accessor =
                 new GenericNativeIndexAccessor( databaseIndexContext, indexFiles, new GenericLayout( 1, spatialSettings ), immediate(), descriptor,
                         spatialSettings, mock( SpaceFillingCurveConfiguration.class ), SIMPLE_NAME_LOOKUP );

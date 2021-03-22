@@ -103,8 +103,8 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
     private TokenIndexPopulator createPopulator( PageCache pageCache, Monitors monitors, String monitorTag )
     {
         DatabaseIndexContext context =
-                DatabaseIndexContext.builder( pageCache, fs ).withMonitors( monitors ).withTag( monitorTag ).withReadOnly( false )
-                        .withDatabaseName( DEFAULT_DATABASE_NAME ).build();
+                DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).withMonitors( monitors ).withTag( monitorTag ).withReadOnly( false )
+                        .build();
         return new TokenIndexPopulator( context, DatabaseLayout.ofFlat( directory.homePath() ), indexFiles, Config.defaults(), indexDescriptor );
     }
 

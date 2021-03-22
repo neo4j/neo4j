@@ -51,8 +51,8 @@ class NativeIndexProviderTest extends IndexProviderTests
 {
     private static final ProviderFactory factory =
             ( pageCache, fs, dir, monitors, collector, readOnly, databaseLayout ) -> {
-                DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs ).withMonitors( monitors )
-                        .withReadOnly( readOnly ).withDatabaseName( DEFAULT_DATABASE_NAME ).build();
+                DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, DEFAULT_DATABASE_NAME ).withMonitors( monitors )
+                        .withReadOnly( readOnly ).build();
                 return new GenericNativeIndexProvider( context, dir, collector, Config.defaults() );
             };
 

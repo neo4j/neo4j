@@ -39,6 +39,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.schema.IndexSettingUtil.spatialMaxSettingForCrs;
 import static org.neo4j.graphdb.schema.IndexSettingUtil.spatialMinSettingForCrs;
 
@@ -48,7 +49,7 @@ class GenericNativeIndexProviderTest
     void mustCompleteIndexDescriptorConfigurationsWithSpatialConfig()
     {
         // Given
-        DatabaseIndexContext context = DatabaseIndexContext.builder( null, null ).build();
+        DatabaseIndexContext context = DatabaseIndexContext.builder( null, null, DEFAULT_DATABASE_NAME ).build();
         GenericNativeIndexProvider provider = new GenericNativeIndexProvider( context, IndexDirectoryStructure.NONE, null, Config.defaults() );
         LabelSchemaDescriptor incompleteSchema = SchemaDescriptor.forLabel( 1, 1 );
         IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema( incompleteSchema, IndexProviderDescriptor.UNDECIDED )
@@ -72,7 +73,7 @@ class GenericNativeIndexProviderTest
     void completeConfigurationMustNotOverrideExistingSettings()
     {
         // Given
-        DatabaseIndexContext context = DatabaseIndexContext.builder( null, null ).build();
+        DatabaseIndexContext context = DatabaseIndexContext.builder( null, null, DEFAULT_DATABASE_NAME ).build();
         GenericNativeIndexProvider provider = new GenericNativeIndexProvider( context, IndexDirectoryStructure.NONE, null, Config.defaults() );
         Map<String,Value> existingSettings = new HashMap<>();
         CoordinateReferenceSystem existingCrs = CoordinateReferenceSystem.Cartesian;

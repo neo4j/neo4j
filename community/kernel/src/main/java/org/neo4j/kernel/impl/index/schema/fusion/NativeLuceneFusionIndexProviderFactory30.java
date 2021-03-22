@@ -87,9 +87,8 @@ public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProvi
         boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, isSingleInstance );
         boolean archiveFailedIndex = config.get( GraphDatabaseInternalSettings.archive_failed_index );
 
-        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs ).withMonitors( monitors ).withTag( monitorTag )
+        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, databaseName ).withMonitors( monitors ).withTag( monitorTag )
                                                                         .withReadOnly( readOnly ).withPageCacheTracer( pageCacheTracer )
-                                                                        .withDatabaseName( databaseName )
                                                                         .build();
         GenericNativeIndexProvider generic =
                 new GenericNativeIndexProvider( databaseIndexContext, childDirectoryStructure,
