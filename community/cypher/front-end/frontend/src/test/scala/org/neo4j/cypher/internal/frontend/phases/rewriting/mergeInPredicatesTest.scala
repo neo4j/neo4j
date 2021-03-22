@@ -54,6 +54,14 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
     )
   }
 
+  test("should collapse collections containing same nonConstValues for property") {
+    shouldRewrite(
+      "MATCH (a) WHERE a.prop IN [rand()] OR a.prop IN [rand()] RETURN a",
+      "MATCH (a) WHERE a.prop IN [rand()] RETURN a"
+    )
+  }
+
+
   test("MATCH (a) WHERE a.prop IN [1,2,3] AND a.prop IN [2,3,4] RETURN *") {
     shouldRewrite(
       "MATCH (a) WHERE a.prop IN [1,2,3] AND a.prop IN [2,3,4] RETURN *",

@@ -108,7 +108,7 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
   })
 
   private def containIns(expressions: Expression*): Boolean = expressions.forall(_.treeExists {
-    case In(_, _) => true
+    case _: In => true
   })
 
   //Takes a binary operator a merge operator and a copy constructor
@@ -119,8 +119,10 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
     val rewriter = inRewriter(collectInPredicates(merge)(binary.lhs, binary.rhs))
     val newLhs = binary.lhs.endoRewrite(rewriter)
     val newRhs = binary.rhs.endoRewrite(rewriter)
-    if (newLhs == newRhs) newLhs
-    else copy(newLhs, newRhs)
+    if (newLhs == newRhs)
+      newLhs
+    else
+      copy(newLhs, newRhs)
   }
 
   //Rewrites a IN [] by using the the provided map of precomputed lists
@@ -128,8 +130,10 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
   private def inRewriter(inPredicates: Map[Expression, Seq[Expression]]) = bottomUp(Rewriter.lift({
     case in@In(a, list@ListLiteral(_)) =>
       val expressions = inPredicates(a)
-      if (expressions.nonEmpty) in.copy(rhs = list.copy(expressions)(list.position))(in.position)
-      else False()(in.position)
+      if (expressions.nonEmpty)
+        in.copy(rhs = list.copy(expressions)(list.position))(in.position)
+      else
+        False()(in.position)
   }))
 
   //Given `a IN A ... b IN B ... a IN C` and use `merge` to merge all the lists with the same key.
