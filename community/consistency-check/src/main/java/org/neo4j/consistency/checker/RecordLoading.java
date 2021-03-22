@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -149,6 +150,19 @@ class RecordLoading
         }
         // else this entity should not be in this index. This check is done in a sequential manner elsewhere
         return valueArray;
+    }
+
+    <T extends PrimitiveRecord> T entity( T entityCursor, PageCursorTracer cursorTracer )
+    {
+        if ( entityCursor instanceof NodeRecord )
+        {
+            return (T) node( entityCursor.getId(), cursorTracer );
+        }
+        else if ( entityCursor instanceof RelationshipRecord )
+        {
+            return (T) relationship( entityCursor.getId(), cursorTracer );
+        }
+        throw new IllegalArgumentException( "Was expecting either node cursor or relationship cursor, got " + entityCursor );
     }
 
     NodeRecord node( long id, PageCursorTracer cursorTracer )

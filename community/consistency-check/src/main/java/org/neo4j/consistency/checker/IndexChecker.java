@@ -275,7 +275,7 @@ public class IndexChecker implements Checker
                                 if ( !nodeIsInIndex )
                                 {
                                     // It wasn't, report it
-                                    getReporter( nodeCursor ).notIndexed( descriptor, Values.asObjects( values ) );
+                                    getReporter( context.recordLoader.node( entityId, cursorTracer ) ).notIndexed( descriptor, Values.asObjects( values ) );
                                 }
                                 else if ( index.hasValues )
                                 {
@@ -283,7 +283,7 @@ public class IndexChecker implements Checker
                                     int actualChecksum = checksum( values );
                                     if ( cachedChecksum != actualChecksum )
                                     {
-                                        getReporter( nodeCursor ).notIndexed( descriptor, Values.asObjects( values ) );
+                                        getReporter( context.recordLoader.node( entityId, cursorTracer ) ).notIndexed( descriptor, Values.asObjects( values ) );
                                     }
                                 }
                             }

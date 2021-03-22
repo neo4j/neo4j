@@ -56,6 +56,7 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 class SchemaComplianceChecker implements AutoCloseable
 {
+    private final CheckerContext context;
     private final IntObjectMap<MutableIntSet> mandatoryProperties;
     private final MutableIntSet reportedMissingMandatoryPropertyKeys = new IntHashSet();
     private final IndexAccessors.IndexReaders indexReaders;
@@ -66,6 +67,7 @@ class SchemaComplianceChecker implements AutoCloseable
     SchemaComplianceChecker( CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties, Iterable<IndexDescriptor> indexes,
             PageCursorTracer cursorTracer, MemoryTracker memoryTracker )
     {
+        this.context = context;
         this.mandatoryProperties = mandatoryProperties;
         this.indexReaders = context.indexAccessors.readers();
         this.indexes = indexes;
@@ -170,12 +172,13 @@ class SchemaComplianceChecker implements AutoCloseable
             // Fulltext indexes only index text values, so if the entity only have non-string properties it is correct to not find it in the index.
             if ( !(indexRule.getIndexType() == IndexType.FULLTEXT && !valuesContainTextProperty( propertyValues ) ) )
             {
-                reportSupplier.apply( entity ).notIndexed( indexRule, Values.asObjects( propertyValues ) );
+                reportSupplier.apply( context.recordLoader.entity( entity, cursorTracer ) ).notIndexed( indexRule, Values.asObjects( propertyValues ) );
             }
         }
         else if ( count != 1 )
         {
-            reportSupplier.apply( entity ).indexedMultipleTimes( indexRule, Values.asObjects( propertyValues ), count );
+            reportSupplier.apply( context.recordLoader.entity( entity, cursorTracer ) )
+                    .indexedMultipleTimes( indexRule, Values.asObjects( propertyValues ), count );
         }
     }
 

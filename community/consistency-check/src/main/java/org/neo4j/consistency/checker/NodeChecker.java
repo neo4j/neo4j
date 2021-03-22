@@ -198,7 +198,7 @@ class NodeChecker implements Checker
                     // gets checked this way, larger indexes will be checked in IndexChecker
                     if ( context.consistencyFlags.isCheckIndexes() )
                     {
-                        schemaComplianceChecker.checkCorrectlyIndexed( nodeCursor, labels, propertyValues, reporter::forNode );
+                        schemaComplianceChecker.checkCorrectlyIndexed( (NodeRecord) nodeCursor, labels, propertyValues, reporter::forNode );
                     }
                 }
                 // Large indexes are checked elsewhere, more efficiently than per-entity

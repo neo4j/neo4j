@@ -188,7 +188,8 @@ class RelationshipChecker implements Checker
                         // gets checked this way, larger indexes will be checked in IndexChecker
                         if ( context.consistencyFlags.isCheckIndexes() )
                         {
-                            schemaComplianceChecker.checkCorrectlyIndexed( relationshipCursor, typeHolder, propertyValues, reporter::forRelationship );
+                            schemaComplianceChecker.checkCorrectlyIndexed( (RelationshipRecord) relationshipCursor, typeHolder, propertyValues,
+                                    reporter::forRelationship );
                         }
                     }
 
