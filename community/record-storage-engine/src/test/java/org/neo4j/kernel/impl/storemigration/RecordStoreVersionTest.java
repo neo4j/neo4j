@@ -35,15 +35,20 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
+import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
+import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_1;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
+import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -61,6 +66,21 @@ class RecordStoreVersionTest
     private DatabaseLayout databaseLayout;
     @Inject
     private PageCache pageCache;
+
+    @Test
+    void shouldFindLatestOfFormats()
+    {
+        assertVersionFindsLatest( StandardV4_0.RECORD_FORMATS, Standard.LATEST_RECORD_FORMATS );
+        assertVersionFindsLatest( StandardV3_4.RECORD_FORMATS, Standard.LATEST_RECORD_FORMATS );
+        assertVersionFindsLatest( PageAlignedV4_1.RECORD_FORMATS, PageAligned.LATEST_RECORD_FORMATS );
+        assertVersionFindsLatest( PageAligned.LATEST_RECORD_FORMATS, PageAligned.LATEST_RECORD_FORMATS );
+        assertVersionFindsLatest( Standard.LATEST_RECORD_FORMATS, Standard.LATEST_RECORD_FORMATS );
+    }
+
+    private static void assertVersionFindsLatest( RecordFormats format, RecordFormats latest )
+    {
+        assertThat( new RecordStoreVersion( format ).latest().storeVersion() ).isEqualTo( latest.storeVersion() );
+    }
 
     @Nested
     class SupportedVersions
