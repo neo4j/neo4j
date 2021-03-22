@@ -454,10 +454,14 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
                 if ( update != null && update.getEntityId() <= currentlyIndexedNodeId )
                 {
                     updater.process( update );
+                    if ( printDebug )
+                    {
+                        log.info( "Applied %s from queue", update.describe( tokenNameLookup ) );
+                    }
                 }
-                if ( printDebug )
+                else if ( printDebug )
                 {
-                    log.info( "Applied %s from queue" + (update == null ? null : update.describe( tokenNameLookup ) ) );
+                    log.info( "Skipped %s from queue", update == null ? null : update.describe( tokenNameLookup ) );
                 }
             }
             while ( !concurrentUpdateQueue.isEmpty() );
