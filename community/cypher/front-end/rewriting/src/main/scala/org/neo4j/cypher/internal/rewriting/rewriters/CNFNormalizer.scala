@@ -19,9 +19,12 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
@@ -30,7 +33,10 @@ import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
+import org.neo4j.cypher.internal.rewriting.rewriters.simplifyPredicates.coerceInnerExpressionToBooleanIfNecessary
+import org.neo4j.cypher.internal.rewriting.rewriters.simplifyPredicates.needsToBeExplicitlyCoercedToBoolean
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -42,8 +48,6 @@ import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.topDown
-
-case object AndRewrittenToAnds extends StepSequencer.Condition
 
 case class deMorganRewriter()(implicit monitor: AstRewritingMonitor) extends Rewriter {
 
@@ -90,6 +94,34 @@ case class distributeLawsRewriter()(implicit monitor: AstRewritingMonitor) exten
   private val instance: Rewriter = repeatWithSizeLimit(bottomUp(step))(monitor)
 }
 
+case class mergeDuplicateBooleanOperators(semanticState: SemanticState) extends Rewriter {
+
+  private val instance = fixedPoint(topDown(Rewriter.lift {
+    case p@And(lhs, rhs) if (lhs == rhs) => coerceInnerExpressionToBooleanIfNecessary(semanticState, p, lhs)
+    case p@Or(lhs, rhs)  if (lhs == rhs) => coerceInnerExpressionToBooleanIfNecessary(semanticState, p, lhs)
+  }))
+
+  def apply(that: AnyRef): AnyRef = instance.apply(that)
+
+}
+
+case object NoDuplicateNeighbouringBooleanOperands extends StepSequencer.Condition
+
+case object mergeDuplicateBooleanOperators extends StepSequencer.Step with ASTRewriterFactory {
+  override def preConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(NoDuplicateNeighbouringBooleanOperands)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def getRewriter(innerVariableNamer: InnerVariableNamer,
+                           semanticState: SemanticState,
+                           parameterTypeMapping: Map[String, CypherType],
+                           cypherExceptionFactory: CypherExceptionFactory): Rewriter = mergeDuplicateBooleanOperators(semanticState)
+}
+
+case object AndRewrittenToAnds extends StepSequencer.Condition
+
 case object flattenBooleanOperators extends Rewriter with StepSequencer.Step {
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
@@ -122,22 +154,18 @@ case class simplifyPredicates(semanticState: SemanticState) extends Rewriter {
   private val T = True()(null)
   private val F = False()(null)
 
-  private val step: Rewriter = Rewriter.lift({ case e: Expression => computeReplacement(e) })
+  private val step: Rewriter = Rewriter.lift { case e: Expression => computeReplacement(e) }
 
   private val instance = fixedPoint(topDown(step))
 
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
-  private def computeReplacement(e: Expression): Expression = e match {
-    case n@Not(Not(innerExpression))  => {
-      val newExp = computeReplacement(innerExpression)
-      if (needsToBeExplicitlyCoercedToBoolean(n, newExp))
-        CoerceToPredicate(newExp)
-      else
-        newExp
-    }
-    case Ands(exps) if exps.isEmpty     =>  throw new IllegalStateException("Found an instance of Ands with empty expressions")
-    case Ors(exps) if exps.isEmpty      =>  throw new IllegalStateException("Found an instance of Ors with empty expressions")
+  private def computeReplacement: Expression => Expression = {
+    case n@Not(Not(innerExpression))      => simplifyToInnerExpression(n, innerExpression)
+    case Ands(exps)   if exps.isEmpty     => throw new IllegalStateException("Found an instance of Ands with empty expressions")
+    case Ors(exps)    if exps.isEmpty     => throw new IllegalStateException("Found an instance of Ors with empty expressions")
+    case p@Ands(exps) if exps.size == 1   => simplifyToInnerExpression(p, exps.head)
+    case p@Ors(exps)  if exps.size == 1   => simplifyToInnerExpression(p, exps.head)
     case p@Ands(exps) if exps.contains(T) =>
       val nonTrue = exps.filterNot(T == _)
       if (nonTrue.isEmpty) True()(p.position) else Ands(nonTrue)(p.position)
@@ -146,26 +174,50 @@ case class simplifyPredicates(semanticState: SemanticState) extends Rewriter {
       if (nonFalse.isEmpty) False()(p.position) else Ors(nonFalse)(p.position)
     case p@Ors(exps) if exps.contains(T)  => True()(p.position)
     case p@Ands(exps) if exps.contains(F) => False()(p.position)
-    case a => a
+    case expression => expression
   }
 
-  /**
-   * We intend to remove {@code not} from the AST and replace it with {@code exp}.
-   *
-   * While {@code not} would have converted the value to boolean, we check here whether that information would be lost.
-   */
-  private def needsToBeExplicitlyCoercedToBoolean(not: Not, exp: Expression) = {
-    val expectedToBeBoolean = semanticState.expressionType(not).expected.exists(_.contains(CTBoolean))
-    val specifiedToBeBoolean = semanticState.expressionType(exp).specified.contains(CTBoolean)
-    !expectedToBeBoolean && !specifiedToBeBoolean
+  private def simplifyToInnerExpression(outerExpression: BooleanExpression,
+                                        innerExpression: Expression) = {
+    val newExpression = computeReplacement(innerExpression)
+    coerceInnerExpressionToBooleanIfNecessary(semanticState, outerExpression, newExpression)
   }
 }
 
-object simplifyPredicates extends ASTRewriterFactory {
+case object PredicatesSimplified extends StepSequencer.Condition
+
+object simplifyPredicates extends ASTRewriterFactory with StepSequencer.Step {
   override def getRewriter(innerVariableNamer: InnerVariableNamer,
                            semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
                            cypherExceptionFactory: CypherExceptionFactory): Rewriter = simplifyPredicates(semanticState)
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(AndRewrittenToAnds) ++ SemanticInfoAvailable
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(PredicatesSimplified)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  def coerceInnerExpressionToBooleanIfNecessary(semanticState: SemanticState,
+                                                outerExpression: BooleanExpression,
+                                                innerExpression: Expression) = {
+    if (needsToBeExplicitlyCoercedToBoolean(semanticState, outerExpression, innerExpression)) {
+      CoerceToPredicate(innerExpression)
+    } else {
+      innerExpression
+    }
+  }
+
+  /**
+   * We intend to remove {@code outerExpression} from the AST and replace it with {@code innerExpression}.
+   *
+   * While {@code outerExpression} would have converted the value to boolean, we check here whether that information would be lost.
+   */
+  private def needsToBeExplicitlyCoercedToBoolean(semanticState: SemanticState, outerExpression: BooleanExpression, innerExpression: Expression) = {
+    val expectedToBeBoolean = semanticState.expressionType(outerExpression).expected.exists(_.contains(CTBoolean))
+    val specifiedToBeBoolean = semanticState.expressionType(innerExpression).specified.contains(CTBoolean)
+    !expectedToBeBoolean && !specifiedToBeBoolean
+  }
 }
 
 case object NoInequalityInsideNot extends StepSequencer.Condition

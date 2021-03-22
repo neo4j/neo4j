@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.rewriting.rewriters.foldConstants
 import org.neo4j.cypher.internal.rewriting.rewriters.inlineNamedPathsInPatternComprehensions
+import org.neo4j.cypher.internal.rewriting.rewriters.mergeDuplicateBooleanOperators
 import org.neo4j.cypher.internal.rewriting.rewriters.moveWithPastMatch
 import org.neo4j.cypher.internal.rewriting.rewriters.nameAllPatternElements
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeArgumentOrder
@@ -56,6 +57,7 @@ class ASTRewriter(innerVariableNamer: InnerVariableNamer) {
     moveWithPastMatch,
     normalizeComparisons,
     foldConstants,
+    mergeDuplicateBooleanOperators,
     normalizeExistsPatternExpressions,
     nameAllPatternElements,
     normalizeMatchPredicates,
