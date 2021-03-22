@@ -1,0 +1,795 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.runtime.spec.tests
+
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.RelationshipType
+import org.neo4j.internal.helpers.collection.Iterables
+import org.neo4j.internal.helpers.collection.Iterators
+
+import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+
+abstract class MergeTestBase[CONTEXT <: RuntimeContext](
+                                                               edition: Edition[CONTEXT],
+                                                               runtime: CypherRuntime[CONTEXT],
+                                                               sizeHint: Int
+                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  test("merge should create node with empty all node scan") {
+    // given no nodes
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(nodes = Seq(createNode("n")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val node = Iterables.single(tx.getAllNodes)
+    runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1)
+  }
+
+  test("merge should not create node with non-empty all node scan") {
+    val nodes = given(nodeGraph(sizeHint))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(nodes = Seq(createNode("n")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("n").withRows(singleColumn(nodes)).withNoUpdates()
+  }
+
+  test("merge should create node with empty label scan") {
+    given {
+      nodeGraph(sizeHint, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(nodes = Seq(createNode("n", "M")))
+      .nodeByLabelScan("n", "M")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val node = Iterators.single(tx.findNodes(Label.label("M")))
+    runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 1)
+  }
+
+  test("merge should not create node with non-empty label scan") {
+    val nodes = given(
+      nodeGraph(sizeHint, "L")
+    )
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(nodes = Seq(createNode("n")))
+      .nodeByLabelScan("n", "L")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("n").withRows(singleColumn(nodes)).withNoUpdates()
+  }
+
+
+  test("merge should not create node with non-empty index scan") {
+    val nodes = given {
+      nodeIndex("L", "prop")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: 42}")))
+      .nodeIndexOperator("n:L(prop)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("n").withRows(singleColumn(nodes)).withNoUpdates()
+  }
+
+  test("merge should create node with empty index scan") {
+    given {
+      nodeIndex("L", "prop")
+      nodeGraph(sizeHint, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: 42}")))
+      .nodeIndexOperator("n:L(prop)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val node = Iterators.single(tx.findNodes(Label.label("L")).stream().filter(n => n.hasProperty("prop")).iterator())
+    runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
+  }
+
+  test("merge should not create node with non-empty index seek") {
+    val nodes = given {
+      nodeIndex("L", "prop")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: 42}")))
+      .nodeIndexOperator("n:L(prop=42)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("n").withSingleRow(nodes(42)).withNoUpdates()
+  }
+
+  test("merge should create node with empty index seek") {
+    given {
+      nodeIndex("L", "prop")
+      nodePropertyGraph(sizeHint, {
+        case i => Map("prop" -> i)
+      }, "L")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: 'hello'}")))
+      .nodeIndexOperator("n:L(prop = 'hello')")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val node = Iterators.single(tx.findNodes(Label.label("L"), "prop", "hello"))
+    runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
+  }
+
+  test("merge should not create node nor relationships with non-empty relationship index seek") {
+    val rels = given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("prop", i)
+      }
+      rels
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+              relationships = Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop:42}"))))
+      .relationshipIndexOperator("(n)-[r:R(prop=42)]->(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("r").withSingleRow(rels(42)).withNoUpdates()
+  }
+
+  test("merge should create nodes and relationship with empty relationship index seek") {
+    given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("prop", i)
+      }
+      rels
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop:'hello'}"))))
+      .relationshipIndexOperator("(n)-[r:R(prop='hello')]->(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val r = tx.findRelationship(RelationshipType.withName("R"), "prop", "hello")
+    runtimeResult should beColumns("r").withSingleRow(r).withStatistics(nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 1)
+  }
+
+  test("merge should not create node nor relationships with non-empty relationship index scan") {
+    val rels = given {
+      relationshipIndex("R", "prop")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("prop", i)
+      }
+      rels
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .relationshipIndexOperator("(n)-[r:R(prop)]->(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("r").withRows(singleColumn(rels)).withNoUpdates()
+  }
+
+  test("merge should create nodes and relationship with empty relationship index scan") {
+    given {
+      relationshipIndex("S", "prop")
+      circleGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "S", "m")))
+      .relationshipIndexOperator("(n)-[r:S(prop)]->(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val r = Iterators.single(tx.getAllRelationships.stream().filter(r => r.isType(RelationshipType.withName("S"))).iterator())
+    runtimeResult should beColumns("r").withSingleRow(r).withStatistics(nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("merge should create nodes and relationships when there are nodes but no relationships, all node scan + expand") {
+    // given nodes with no relationships
+    given(nodeGraph(sizeHint))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .expand("(n)-[r:R]->(m)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rel = Iterables.single(tx.getAllRelationships)
+    runtimeResult should beColumns("n", "r", "m").withSingleRow(rel.getStartNode, rel, rel.getEndNode).withStatistics(nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("merge should create nodes and relationships when there are no nodes nor relationships, all node scan + expand") {
+    // given empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .expand("(n)-[r:R]->(m)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rel = Iterables.single(tx.getAllRelationships)
+    runtimeResult should beColumns("n", "r", "m").withSingleRow(rel.getStartNode, rel, rel.getEndNode).withStatistics(nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("merge should not create nodes nor relationships when there are nodes with relationships, all node scan + expand") {
+    given {
+      circleGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .expand("(n)-[r:R]->(m)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rels = tx.getAllRelationships.asScala
+    runtimeResult should beColumns("n", "r", "m")
+      .withRows(rels.map(rel => Array(rel.getStartNode, rel, rel.getEndNode))).withNoUpdates()
+  }
+
+  test("merge should create nodes and relationships when there are nodes but no relationships, expand into") {
+    // given nodes with no relationships
+    given(nodeGraph(sizeHint))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r")
+      .merge(nodes = Seq(createNode("n")),
+        relationships = Seq(createRelationship("r", "n", "R", "n")))
+      .expandInto("(n)-[r:R]->(n)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rel = Iterables.single(tx.getAllRelationships)
+    runtimeResult should beColumns("n", "r").withSingleRow(rel.getStartNode, rel).withStatistics(nodesCreated = 1, relationshipsCreated = 1)
+  }
+
+  test("merge should create nodes and relationships when there are no nodes nor relationships, expand into") {
+    // given empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r")
+      .merge(nodes = Seq(createNode("n")),
+        relationships = Seq(createRelationship("r", "n", "R", "n")))
+      .expandInto("(n)-[r:R]->(n)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rel = Iterables.single(tx.getAllRelationships)
+    runtimeResult should beColumns("n", "r").withSingleRow(rel.getStartNode, rel).withStatistics(nodesCreated = 1, relationshipsCreated = 1)
+  }
+
+  test("merge should not create nodes nor relationships when there are nodes with relationships, expand into") {
+    given {
+      val nodes = nodeGraph(sizeHint)
+      nodes.foreach(n => n.createRelationshipTo(n, RelationshipType.withName("R")))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r")
+      .merge(nodes = Seq(createNode("n")),
+        relationships = Seq(createRelationship("r", "n", "R", "n")))
+      .expand("(n)-[r:R]->(n)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rels = tx.getAllRelationships.asScala
+    runtimeResult should beColumns("n", "r")
+      .withRows(rels.map(rel => Array(rel.getStartNode, rel))).withNoUpdates()
+  }
+
+  test("merge should create nodes and relationships when there are nodes but no relationships, all node scan + expand + project endpoints (start in scope)") {
+    // given nodes with no relationships
+    given(nodeGraph(sizeHint))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .projectEndpoints("(n)-[r]->(m)", startInScope = true, endInScope = false)
+      .expandAll("(n)-[r:R]->()")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rel = Iterables.single(tx.getAllRelationships)
+    runtimeResult should beColumns("n", "r", "m").withSingleRow(rel.getStartNode, rel, rel.getEndNode).withStatistics(nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("merge should create nodes and relationships when there are no nodes nor relationships, all node scan + expand + project endpoints (start in scope)") {
+    // given empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .projectEndpoints("(n)-[r]->(m)", startInScope = true, endInScope = false)
+      .expandAll("(n)-[r:R]->()")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rel = Iterables.single(tx.getAllRelationships)
+    runtimeResult should beColumns("n", "r", "m").withSingleRow(rel.getStartNode, rel, rel.getEndNode).withStatistics(nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("merge should not create nodes nor relationships when there are nodes with relationships, all node scan + expand + project endpoints (start in scope)") {
+    given {
+      circleGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .projectEndpoints("(n)-[r]->(m)", startInScope = true, endInScope = false)
+      .expand("(n)-[r:R]->()")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rels = tx.getAllRelationships.asScala
+    runtimeResult should beColumns("n", "r", "m")
+      .withRows(rels.map(rel => Array(rel.getStartNode, rel, rel.getEndNode))).withNoUpdates()
+  }
+
+  test("merge should create nodes and relationships when there are nodes but no relationships, all node scan + expand + project endpoints (end in scope)") {
+    // given nodes with no relationships
+    given(nodeGraph(sizeHint))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .projectEndpoints("(m)-[r]->(n)", startInScope = false, endInScope = true)
+      .expandAll("(n)<-[r:R]-()")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rel = Iterables.single(tx.getAllRelationships)
+    runtimeResult should beColumns("n", "r", "m").withSingleRow(rel.getStartNode, rel, rel.getEndNode).withStatistics(nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("merge should create nodes and relationships when there are no nodes nor relationships, all node scan + expand + project endpoints (end in scope)") {
+    // given empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .projectEndpoints("(m)-[r]->(n)", startInScope = false, endInScope = true)
+      .expandAll("(n)<-[r:R]-()")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rel = Iterables.single(tx.getAllRelationships)
+    runtimeResult should beColumns("n", "r", "m").withSingleRow(rel.getStartNode, rel, rel.getEndNode).withStatistics(nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("merge should not create nodes nor relationships when there are nodes with relationships, all node scan + expand + project endpoints (end in scope)") {
+    given {
+      circleGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .projectEndpoints("(m)-[r]->(n)", startInScope = false, endInScope = true)
+      .expand("(n)<-[r:R]-()")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rels = tx.getAllRelationships.asScala
+    runtimeResult should beColumns("n", "r", "m")
+      .withRows(rels.map(rel => Array(rel.getEndNode, rel, rel.getStartNode))).withNoUpdates()
+  }
+
+  test("merge should create nodes and relationships when there are nodes but no relationships, all node scan + expand + project endpoints (nothing in scope)") {
+    // given nodes with no relationships
+    given(nodeGraph(sizeHint))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .projectEndpoints("(n)-[r]->(m)", startInScope = false, endInScope = false)
+      .expandAll("(x)-[r:R]->()")
+      .allNodeScan("x")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rel = Iterables.single(tx.getAllRelationships)
+    runtimeResult should beColumns("n", "r", "m").withSingleRow(rel.getStartNode, rel, rel.getEndNode).withStatistics(nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("merge should create nodes and relationships when there are no nodes nor relationships, all node scan + expand + project endpoints (nothing in scope)") {
+    // given empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .projectEndpoints("(n)-[r]->(m)", startInScope = false, endInScope = false)
+      .expandAll("(x)-[r:R]->()")
+      .allNodeScan("x")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rel = Iterables.single(tx.getAllRelationships)
+    runtimeResult should beColumns("n", "r", "m").withSingleRow(rel.getStartNode, rel, rel.getEndNode).withStatistics(nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("merge should not create nodes nor relationships when there are nodes with relationships, all node scan + expand + project endpoints (nothing in scope)") {
+    given {
+      circleGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .projectEndpoints("(n)-[r]->(m)", startInScope = false, endInScope = false)
+      .expand("(x)-[r:R]->()")
+      .allNodeScan("x")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rels = tx.getAllRelationships.asScala
+    runtimeResult should beColumns("n", "r", "m")
+      .withRows(rels.map(rel => Array(rel.getStartNode, rel, rel.getEndNode))).withNoUpdates()
+  }
+
+  test("merge and project endpoints with empty input") {
+    // given empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .projectEndpoints("(n)-[r]->(m)", startInScope = false, endInScope = false)
+      .input(relationships = Seq("r"))
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, inputValues())
+    consume(runtimeResult)
+    val rel = Iterables.single(tx.getAllRelationships)
+    runtimeResult should beColumns("n", "r", "m").withSingleRow(rel.getStartNode, rel, rel.getEndNode).withStatistics(nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("merge and project endpoints with non-matching type input") {
+
+    val (_, rels) = given {
+      circleGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "S", "m")))
+      .projectEndpoints("(n)-[r:S]->(m)", startInScope = false, endInScope = false)
+      .input(relationships = Seq("r"))
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, inputValues(rels.map(r => Array[Any](r)):_*))
+    consume(runtimeResult)
+    val rel = Iterators.single(tx.getAllRelationships.stream().filter(r => r.isType(RelationshipType.withName("S"))).iterator())
+    runtimeResult should beColumns("n", "r", "m").withSingleRow(rel.getStartNode, rel, rel.getEndNode).withStatistics(nodesCreated = 2, relationshipsCreated = 1)
+  }
+
+  test("merge and project endpoints with matching type input") {
+
+    val (_, rels) = given {
+      circleGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .projectEndpoints("(n)-[r:R]->(m)", startInScope = false, endInScope = false)
+      .input(relationships = Seq("r"))
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, inputValues(rels.map(r => Array[Any](r)):_*))
+    consume(runtimeResult)
+    runtimeResult should beColumns("n", "r", "m").withRows(rels.map(r => Array(r.getStartNode, r, r.getEndNode))).withNoUpdates()
+  }
+
+    test("merge should create node with multiple labels when no nodes") {
+      // given no nodes
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("n")
+        .merge(nodes = Seq(createNode("n", "L", "M")))
+        .filter("n:M")
+        .nodeByLabelScan("n", "L")
+        .build(readOnly = false)
+
+      // then
+      val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+      consume(runtimeResult)
+      val node = Iterables.single(tx.getAllNodes)
+      runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 2)
+    }
+
+  test("merge should create node with multiple labels when no nodes with both types") {
+    given(
+      nodeGraph(sizeHint, "L")
+    )
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(nodes = Seq(createNode("n", "L", "M")))
+      .filter("n:M")
+      .nodeByLabelScan("n", "L")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val node = Iterators.single(tx.findNodes(Label.label("M")))
+    runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 2)
+  }
+
+  test("merge scan + filter + expand + filter") {
+    // given no nodes
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "r", "m")
+      .merge(nodes = Seq(createNode("n", "L"), createNode("m", "M")),
+            relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .filter("m:M")
+      .expand("(n)-[r:R]->(m)")
+      .filter("n:L")
+      .nodeByLabelScan("n", "L")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val rel = Iterables.single(tx.getAllRelationships)
+    runtimeResult should beColumns("n", "r", "m").withSingleRow(rel.getStartNode, rel, rel.getEndNode).withStatistics(nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1)
+  }
+
+  test("merge on the RHS of an apply") {
+    val nodes = given(nodePropertyGraph(sizeHint, {
+      case i if i % 2 == 0 => Map("prop" -> i)
+    }, "L"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res")
+      .projection("n.prop AS res")
+      .apply()
+      .|.merge(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: x}")))
+      .|.filter("n.prop = x")
+      .|.nodeByLabelScan("n", "L", "x")
+      .input(variables = Seq("x"))
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(i => Array[Any](i)):_*))
+    consume(runtimeResult)
+    runtimeResult should beColumns("res").withRows(singleColumn(1 to 10)).withStatistics(nodesCreated = 5, labelsAdded = 5, propertiesSet = 5)
+  }
+
+  test("merge should perform on create side effect") {
+    // given no nodes
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(nodes = Seq(createNode("n")), onCreate = Seq(setLabel("n", "L", "M"), setNodeProperty("n", "prop", "42")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val node = Iterables.single(tx.getAllNodes)
+    node.hasLabel(Label.label("L")) shouldBe true
+    node.hasLabel(Label.label("M")) shouldBe true
+    node.getProperty("prop") should equal(42)
+    runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 2, propertiesSet = 1)
+  }
+
+  test("merge should perform on match side effect") {
+    val nodes = given(nodeGraph(sizeHint))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .merge(nodes = Seq(createNode("n")), onMatch = Seq(setLabel("n", "L", "M"), setNodeProperty("n", "prop", "42")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    nodes.foreach(node => {
+      node.hasLabel(Label.label("L")) shouldBe true
+      node.hasLabel(Label.label("M")) shouldBe true
+      node.getProperty("prop") should equal(42)
+    })
+    runtimeResult should beColumns("n").withRows(singleColumn(nodes)).withStatistics(labelsAdded = 2 * sizeHint, propertiesSet = sizeHint)
+  }
+}
+
+

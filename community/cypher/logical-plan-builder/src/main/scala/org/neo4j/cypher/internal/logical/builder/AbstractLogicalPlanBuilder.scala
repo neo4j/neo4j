@@ -68,7 +68,9 @@ import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
+import org.neo4j.cypher.internal.logical.plans.CreatRelationshipSideEffect
 import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.CreateNodeSideEffect
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
@@ -107,6 +109,7 @@ import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
+import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
 import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
@@ -151,12 +154,16 @@ import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
+import org.neo4j.cypher.internal.logical.plans.SetLabelsSideEffect
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetNodePropertySideEffect
 import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertySideEffect
+import org.neo4j.cypher.internal.logical.plans.SetSideEffect
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
@@ -938,6 +945,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(source => Create(source, nodes, relationships)(_)))
   }
 
+  def merge(nodes: Seq[CreateNode] = Seq.empty,
+            relationships: Seq[CreateRelationship] = Seq.empty,
+            onMatch: Seq[SetSideEffect] = Seq.empty,
+            onCreate : Seq[SetSideEffect] = Seq.empty): IMPL = {
+
+    val nodesToCreate = nodes.map(cn => CreateNodeSideEffect(cn.idName, cn.labels, cn.properties))
+    val relationshipsToCreate = relationships.map(cr => CreatRelationshipSideEffect(cr.idName, cr.startNode, cr.relType, cr.endNode, cr.properties))
+    appendAtCurrentIndent(UnaryOperator(source => Merge(source, nodesToCreate ++ relationshipsToCreate, onMatch, onCreate)(_)))
+  }
+
   def mergeCreateNode(node: CreateNode): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source => MergeCreateNode(source, node.idName, node.labels, node.properties)(_)))
   }
@@ -1143,4 +1160,13 @@ object AbstractLogicalPlanBuilder {
                          direction: SemanticDirection = OUTGOING,
                          properties: Option[String] = None): CreateRelationship =
     CreateRelationship(relationship, left, RelTypeName(typ)(pos), right, direction, properties.map(Parser.parseExpression))
+
+  def setNodeProperty(node: String, key: String, value: String): SetNodePropertySideEffect =
+    SetNodePropertySideEffect(node, PropertyKeyName(key)(InputPosition.NONE), Parser.parseExpression(value))
+
+  def setRelationshipProperty(relationship: String, key: String, value: String): SetRelationshipPropertySideEffect =
+    SetRelationshipPropertySideEffect(relationship, PropertyKeyName(key)(InputPosition.NONE), Parser.parseExpression(value))
+
+  def setLabel(node: String, labels: String*): SetLabelsSideEffect =
+    SetLabelsSideEffect(node, labels.map(l => LabelName(l)(InputPosition.NONE)))
 }

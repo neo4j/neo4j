@@ -161,6 +161,26 @@ object LogicalPlanToPlanBuilderString {
         nodes.map(createNodeToString).mkString(", ")
       case Create(_, nodes, relationships) =>
         s"Seq(${nodes.map(createNodeToString).mkString(", ")}), Seq(${relationships.map(createRelationshipToString).mkString(", ")})"
+      case Merge(_, creates, onMatch, onCreate) =>
+        def setOpToString(op: SetSideEffect): String = op match {
+          case SetLabelsSideEffect(node, labelNames) =>
+            s"setLabel(${wrapInQuotationsAndMkString(node +: labelNames.map(_.name))})"
+          case SetNodePropertySideEffect(node, propertyKey, value) =>
+            s"setNodeProperty(${wrapInQuotationsAndMkString(Seq(node, propertyKey.name, expressionStringifier(value)))})"
+          case SetRelationshipPropertySideEffect(relationship, propertyKey, value) =>
+            s"setRelationshipProperty(${wrapInQuotationsAndMkString(Seq(relationship, propertyKey.name, expressionStringifier(value)))})"
+        }
+
+        val nodesToCreate = creates.collect {
+          case CreateNodeSideEffect(node, labels, properties) => createNodeToString(CreateNode(node, labels, properties))
+        }
+        val relsToCreate = creates.collect {
+          case CreatRelationshipSideEffect(relationship, startNode, typ, endNode, properties) => createRelationshipToString(CreateRelationship(relationship, startNode, typ, endNode, SemanticDirection.OUTGOING, properties))
+        }
+        val onMatchString = onMatch.map(setOpToString)
+        val onCreateString = onCreate.map(setOpToString)
+
+        s"Seq(${nodesToCreate.mkString(", ")}), Seq(${relsToCreate.mkString(", ")}), Seq(${onMatchString.mkString(", ")}), Seq(${onCreateString.mkString(", ")})"
       case MergeCreateNode(_, idName, labels, properties) =>
         createNodeToString(CreateNode(idName, labels, properties))
       case MergeCreateRelationship(_, idName, startNode, typ, endNode, properties) =>
@@ -218,9 +238,13 @@ object LogicalPlanToPlanBuilderString {
         val predStr = predicate.fold("")(p => s""", Some("${expressionStringifier(p)}")""")
         s""" "($from)$dirStrA[$relName$typeStr]$dirStrB($to)"$predStr""".trim
       case ProcedureCall(_, ResolvedCall(ProcedureSignature(QualifiedName(namespace, name), _, _, _, _, _, _, _, _, _, _), callArguments, callResults, _, _, yieldAll)) =>
-        val yielding = if (yieldAll) " YIELD *"
-                       else if (callResults.isEmpty) ""
-                       else callResults.map(i => expressionStringifier(i.variable)).mkString(" YIELD ", ",", "")
+        val yielding = if (yieldAll) {
+          " YIELD *"
+        } else if (callResults.isEmpty) {
+          ""
+        } else {
+          callResults.map(i => expressionStringifier(i.variable)).mkString(" YIELD ", ",", "")
+        }
         s""" "${namespace.mkString(".")}.$name(${callArguments.map(expressionStringifier(_)).mkString(", ")})$yielding" """.trim
       case ProduceResult(_, columns) =>
         wrapInQuotationsAndMkString(columns)
