@@ -137,4 +137,25 @@ public final class SchemaUserDescription
     {
         joiner.add( "schema=" + schema.userDescription( tokenNameLookup ) );
     }
+
+    static final TokenNameLookup TOKEN_ID_NAME_LOOKUP = new TokenNameLookup()
+    {
+        @Override
+        public String labelGetName( int labelId )
+        {
+            return "Label[" + labelId + "]";
+        }
+
+        @Override
+        public String relationshipTypeGetName( int relationshipTypeId )
+        {
+            return "RelationshipType[" + relationshipTypeId + "]";
+        }
+
+        @Override
+        public String propertyKeyGetName( int propertyKeyId )
+        {
+            return "PropertyKey[" + propertyKeyId + "]";
+        }
+    };
 }

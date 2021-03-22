@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import org.neo4j.common.TokenNameLookup;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
 
 public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaRule
 {
@@ -272,6 +273,12 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     public int hashCode()
     {
         return Long.hashCode( id );
+    }
+
+    @Override
+    public String toString()
+    {
+        return userDescription( TOKEN_ID_NAME_LOOKUP );
     }
 
     /**

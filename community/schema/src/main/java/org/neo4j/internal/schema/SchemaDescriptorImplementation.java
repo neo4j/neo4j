@@ -36,6 +36,7 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.internal.schema.PropertySchemaType.ENTITY_TOKENS;
 import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
+import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
 
 public final class SchemaDescriptorImplementation implements SchemaDescriptor, LabelSchemaDescriptor, RelationTypeSchemaDescriptor, FulltextSchemaDescriptor,
         AnyTokenSchemaDescriptor
@@ -348,5 +349,11 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
         result = 31 * result + Arrays.hashCode( entityTokens );
         result = 31 * result + Arrays.hashCode( propertyKeyIds );
         return result;
+    }
+
+    @Override
+    public String toString()
+    {
+        return userDescription( TOKEN_ID_NAME_LOOKUP );
     }
 }
