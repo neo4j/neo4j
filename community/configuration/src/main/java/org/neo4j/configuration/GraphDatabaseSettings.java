@@ -838,7 +838,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     @Description( "The maximum amount of time to wait for the database state represented by the bookmark." )
     public static final Setting<Duration> bookmark_ready_timeout =
-            newBuilder( "dbms.transaction.bookmark_ready_timeout", DURATION, ofSeconds( 30 ) ).addConstraint( min( ofSeconds( 1 ) ) ).build();
+            newBuilder( "dbms.transaction.bookmark_ready_timeout", DURATION, ofSeconds( 30 ) )
+                    .addConstraint( min( ofSeconds( 1 ) ) )
+                    .dynamic()
+                    .build();
 
     @Description( "How long callers should cache the response of the routing procedure `dbms.routing.getRoutingTable()`" )
     public static final Setting<Duration> routing_ttl =

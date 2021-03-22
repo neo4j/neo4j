@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.neo4j.bolt.txtracking.TransactionIdTracker;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.database.DatabaseIdFactory;
@@ -36,18 +38,20 @@ public class LocalGraphTransactionIdTracker
 {
     private final TransactionIdTracker transactionIdTracker;
     private final DatabaseIdRepository databaseIdRepository;
-    private final Duration bookmarkTimeout;
+    private volatile Duration bookmarkTimeout;
 
-    public LocalGraphTransactionIdTracker( TransactionIdTracker transactionIdTracker, DatabaseIdRepository databaseIdRepository, Duration bookmarkTimeout )
+    public LocalGraphTransactionIdTracker( TransactionIdTracker transactionIdTracker, DatabaseIdRepository databaseIdRepository, Config config )
     {
         this.transactionIdTracker = transactionIdTracker;
         this.databaseIdRepository = databaseIdRepository;
-        this.bookmarkTimeout = bookmarkTimeout;
+
+        bookmarkTimeout = config.get( GraphDatabaseSettings.bookmark_ready_timeout );
+        config.addListener( GraphDatabaseSettings.bookmark_ready_timeout, ( before, after ) -> bookmarkTimeout = after );
     }
 
     public void awaitSystemGraphUpToDate( long transactionId )
     {
-        transactionIdTracker.awaitUpToDate( NAMED_SYSTEM_DATABASE_ID, transactionId, bookmarkTimeout );
+        awaitGraphUpToDate( NAMED_SYSTEM_DATABASE_ID, transactionId );
     }
 
     /**
@@ -67,6 +71,11 @@ public class LocalGraphTransactionIdTracker
     public void awaitGraphUpToDate( Location.Local location, long transactionId )
     {
         var namedDatabaseId = getNamedDatabaseId( location );
+        awaitGraphUpToDate( namedDatabaseId, transactionId );
+    }
+
+    private void awaitGraphUpToDate( NamedDatabaseId namedDatabaseId, long transactionId )
+    {
         transactionIdTracker.awaitUpToDate( namedDatabaseId, transactionId, bookmarkTimeout );
     }
 

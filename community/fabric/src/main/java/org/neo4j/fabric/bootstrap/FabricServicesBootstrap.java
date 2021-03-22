@@ -163,7 +163,6 @@ public abstract class FabricServicesBootstrap
         FabricDatabaseManager fabricDatabaseManager = dependencies.resolveDependency( FabricDatabaseManager.class );
 
         var serverConfig = dependencies.resolveDependency( Config.class );
-        var bookmarkTimeout = serverConfig.get( GraphDatabaseSettings.bookmark_ready_timeout );
 
         var transactionIdTracker = new TransactionIdTracker( managementService, monitors, clock );
 
@@ -171,7 +170,7 @@ public abstract class FabricServicesBootstrap
         var databaseIdRepository = databaseManager.databaseIdRepository();
         var transactionBookmarkManagerFactory = dependencies.resolveDependency( TransactionBookmarkManagerFactory.class );
 
-        var localGraphTransactionIdTracker = new LocalGraphTransactionIdTracker( transactionIdTracker, databaseIdRepository, bookmarkTimeout );
+        var localGraphTransactionIdTracker = new LocalGraphTransactionIdTracker( transactionIdTracker, databaseIdRepository, serverConfig );
         var fabricDatabaseManagementService = dependencies.satisfyDependency(
                 new BoltFabricDatabaseManagementService( fabricExecutor, fabricConfig, transactionManager, fabricDatabaseManager,
                                                          localGraphTransactionIdTracker, transactionBookmarkManagerFactory ) );
