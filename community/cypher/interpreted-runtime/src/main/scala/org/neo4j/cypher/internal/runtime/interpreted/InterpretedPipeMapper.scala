@@ -36,7 +36,9 @@ import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
+import org.neo4j.cypher.internal.logical.plans.CreatRelationshipSideEffect
 import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.CreateNodeSideEffect
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
@@ -71,6 +73,7 @@ import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
 import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
@@ -109,13 +112,17 @@ import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetLabels
+import org.neo4j.cypher.internal.logical.plans.SetLabelsSideEffect
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetNodePropertySideEffect
 import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
+import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertySideEffect
+import org.neo4j.cypher.internal.logical.plans.SetSideEffect
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
@@ -143,6 +150,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.InterpretedCommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters.ShortestPathsConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CreateNode
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CreateRelationship
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
@@ -193,6 +202,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCSVPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LockNodesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.MergeCreateNodePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.MergeCreateRelationshipPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.MergePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByIdSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByLabelScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeCountFromCountStorePipe
@@ -232,6 +242,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.SemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetLabelsOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetNodePropertyFromMapOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetNodePropertyOperation
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPropertyFromMapOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPropertyOperation
@@ -633,6 +644,27 @@ case class InterpretedPipeMapper(readOnly: Boolean,
             CreateRelationshipCommand(r.idName, r.startNode, LazyType(r.relType.name), r.endNode, r.properties.map(buildExpression))
           ).toArray
         )(id = id)
+
+      case Merge(_, createOps, onMatch, onCreate) =>
+        def compileEffect(sideEffect: SetSideEffect): SetOperation = sideEffect match {
+          case SetLabelsSideEffect(node, labelNames) => SetLabelsOperation(node, labelNames.map(LazyLabel.apply))
+          case SetNodePropertySideEffect(node, propertyKey, value) =>
+            val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(node, value, propertyKey)
+            SetNodePropertyOperation(node, LazyPropertyKey(propertyKey),
+              buildExpression(value), needsExclusiveLock)
+          case SetRelationshipPropertySideEffect(relationship, propertyKey, value) =>
+            val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(relationship, value, propertyKey)
+              SetRelationshipPropertyOperation(relationship, LazyPropertyKey(propertyKey), buildExpression(value), needsExclusiveLock)
+        }
+
+        val creates = createOps.map {
+          case CreateNodeSideEffect(node, labels, properties) =>
+            CreateNode(CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)))
+          case CreatRelationshipSideEffect(relationship, startNode, typ, endNode, properties) =>
+            CreateRelationship(CreateRelationshipCommand(relationship, startNode, LazyType(typ)(semanticTable), endNode, properties.map(buildExpression)))
+        }
+
+        new MergePipe(source, creates, onMatch.map(compileEffect), onCreate.map(compileEffect))(id = id)
 
       case MergeCreateNode(_, idName, labels, props) =>
         MergeCreateNodePipe(source,

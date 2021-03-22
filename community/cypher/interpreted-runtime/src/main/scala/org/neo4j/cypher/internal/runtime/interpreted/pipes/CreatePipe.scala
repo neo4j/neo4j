@@ -187,13 +187,14 @@ case class MergeCreateNodePipe(src: Pipe, data: CreateNodeCommand)
     })
 
   override protected def handleNoValue(key: String): Unit = {
-    val labels = data.labels.map(l => l.name).mkString(":")
-    val colon = if (labels.length > 0) {
-      ":"
-    } else {
-      ""
-    }
-    throw new InvalidSemanticsException(s"Cannot merge the following node because of null property value for '$key': ($colon$labels {$key: null})")
+    MergeCreateNodePipe.handleNoValue(data.labels.map(_.name), key)
+  }
+}
+
+object MergeCreateNodePipe {
+  def handleNoValue(labels: Seq[String], key: String): Unit = {
+    val labelsString = if (labels.nonEmpty) ":" + labels.mkString(":") else ""
+    throw new InvalidSemanticsException(s"Cannot merge the following node because of null property value for '$key': ($labelsString {$key: null})")
   }
 }
 
@@ -213,23 +214,12 @@ case class MergeCreateRelationshipPipe(src: Pipe, data: CreateRelationshipComman
     inRow.copyWith(idName, relationship)
     })
 
-  override protected def handleNoValue(key: String): Unit = {
-    val startVariableName = data.startNode
-    val endVariableName = data.endNode
-    val startVarPart =
-      if (startVariableName.startsWith(" ")) {
-        ""
-      } else {
-        startVariableName
-      }
-    val endVarPart =
-      if (endVariableName.startsWith(" ")) {
-        ""
-      } else {
-        endVariableName
-      }
-    val relType = data.relType.name // this is always available
+  override protected def handleNoValue(key: String): Unit = MergeCreateRelationshipPipe.handleNoValue(data.startNode, data.relType.name, data.endNode, key)
+}
+
+object MergeCreateRelationshipPipe {
+  def handleNoValue(startVariableName: String, relTypeName:String, endVariableName:String, key: String): Unit = {
     throw new InvalidSemanticsException(
-      s"Cannot merge the following relationship because of null property value for '$key': ($startVarPart)-[:$relType {$key: null}]->($endVarPart)")
+      s"Cannot merge the following relationship because of null property value for '$key': ($startVariableName)-[:$relTypeName {$key: null}]->($endVariableName)")
   }
 }
