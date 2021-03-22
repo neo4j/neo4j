@@ -96,6 +96,7 @@ public class ReadEntityIdsStep extends PullingProducerStep
                 INCREMENTAL_BACKOFF.apply( i );
             }
             externalUpdatesCheck.applyExternalUpdates( lastEntityId );
+            entityIdIterator.invalidateCache();
         }
     }
 
