@@ -855,6 +855,70 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin(newUsername, newPassword, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
+   test( "should create user with old name after rename")
+  {
+    // GIVEN
+    prepareUser()
+
+    // WHEN
+    execute(s"RENAME USER $username TO $newUsername")
+    execute(s"CREATE USER $username SET PASSWORD '$newPassword'")
+
+    // THEN
+    testUserLogin(username, password, AuthenticationResult.FAILURE)
+    testUserLogin(newUsername, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+    testUserLogin(username, newPassword, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test( "should rename user to old name after rename")
+  {
+    // GIVEN
+    execute(s"CREATE USER alice SET PASSWORD '$password'")
+    execute(s"CREATE USER charlie SET PASSWORD '$newPassword'")
+
+    // WHEN
+    execute("RENAME USER alice TO bob")
+    execute("RENAME USER charlie TO alice")
+
+    // THEN
+    testUserLogin("alice", password, AuthenticationResult.FAILURE)
+    testUserLogin("bob", password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+
+    testUserLogin("charlie", newPassword, AuthenticationResult.FAILURE)
+    testUserLogin("alice", newPassword, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
+  test( "should not create user with new name after rename")
+  {
+    // GIVEN
+    prepareUser()
+    execute(s"RENAME USER $username TO $newUsername")
+
+    // WHEN .. THEN
+    val exception = the[InvalidArgumentException] thrownBy execute(s"CREATE USER $newUsername SET PASSWORD '$newPassword'")
+    exception.getMessage should startWith(s"Failed to create the specified user '$newUsername': User already exists.")
+
+    testUserLogin(username, password, AuthenticationResult.FAILURE)
+    testUserLogin(newUsername, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+    testUserLogin(newUsername, newPassword, AuthenticationResult.FAILURE)
+  }
+
+  test("should rename current user") {
+    // GIVEN
+    execute(alterDefaultUserQuery)
+
+    // WHEN
+    executeOnSystem(defaultUsername, password, s"RENAME USER $defaultUsername TO $newUsername")
+
+    // THEN
+    an[AuthorizationViolationException] should be thrownBy {
+      executeOn(DEFAULT_DATABASE_NAME, defaultUsername, password, "RETURN 1")
+    }
+
+    testUserLogin(defaultUsername, password, AuthenticationResult.FAILURE)
+    testUserLogin(newUsername, password, AuthenticationResult.SUCCESS)
+  }
+
   // Tests for dropping users
 
   test("should drop user") {
