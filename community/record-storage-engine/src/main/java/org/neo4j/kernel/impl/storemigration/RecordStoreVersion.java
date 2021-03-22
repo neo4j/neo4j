@@ -67,6 +67,12 @@ public class RecordStoreVersion implements StoreVersion
     }
 
     @Override
+    public StoreVersion latest()
+    {
+        return RecordFormatSelector.findLatestFormatInFamily( format ).map( RecordStoreVersion::new ).orElse( this );
+    }
+
+    @Override
     public boolean isCompatibleWith( StoreVersion otherVersion )
     {
         if ( !(otherVersion instanceof RecordStoreVersion) )
@@ -91,5 +97,11 @@ public class RecordStoreVersion implements StoreVersion
             return true;
         }
         return RecordFormatSelector.isStoreFormatsCompatibleIncludingMinorUpgradable( this.format, otherFormat );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "RecordStoreVersion{" + "format=" + format + '}';
     }
 }

@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -99,6 +102,12 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     {
         configureRecordFormat( configuredFormat, config );
         return configuredFormat.storeVersion();
+    }
+
+    @Override
+    public boolean isVersionConfigured()
+    {
+        return StringUtils.isNotEmpty( config.get( GraphDatabaseSettings.record_format ) );
     }
 
     @Override

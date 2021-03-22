@@ -33,10 +33,16 @@ public interface StoreVersionCheck
     Optional<String> storeVersion( PageCursorTracer cursorTracer );
 
     /**
-     * Store version as dictated by configuration.
-     * @return store version that configuration says is the version to use.
+     * Store version as dictated by configuration if specified, otherwise latest of current store, or default version if no store is available.
+     * @return store version that is specified in the order 'config->store->default'.
      */
     String configuredVersion();
+
+    /**
+     * Check if the store version is explicitly configured or relying on current store or default value.
+     * @return {@code true} if it is explicitly configured, {@code false} otherwise
+     */
+    boolean isVersionConfigured();
 
     StoreVersion versionInformation( String storeVersion );
 
