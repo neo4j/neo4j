@@ -97,6 +97,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
@@ -112,7 +113,6 @@ import static org.neo4j.test.rule.PageCacheConfig.config;
 class GBPTreeTest
 {
     private static final Layout<MutableLong,MutableLong> layout = longLayout().build();
-    private static final String DATABASE_NAME = "neo4j";
 
     @RegisterExtension
     static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( config().withAccessChecks( true ) );
@@ -243,7 +243,7 @@ class GBPTreeTest
         PageCache pageCache = createPageCache( pageSize );
         index( pageCache ).build().close();
 
-        try ( PagedFile pagedFile = pageCache.map( indexFile, pageSize, "neo4j" );
+        try ( PagedFile pagedFile = pageCache.map( indexFile, pageSize, DEFAULT_DATABASE_NAME );
               PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PF_SHARED_WRITE_LOCK, NULL ) )
         {
             assertTrue( cursor.next() );
@@ -521,7 +521,7 @@ class GBPTreeTest
 
         byte[] newHeader = new byte[random.nextInt( 100 )];
         random.nextBytes( newHeader );
-        GBPTree.overwriteHeader( pageCache, indexFile, pc -> pc.putBytes( newHeader ), DATABASE_NAME, NULL );
+        GBPTree.overwriteHeader( pageCache, indexFile, pc -> pc.putBytes( newHeader ), DEFAULT_DATABASE_NAME, NULL );
 
         Pair<TreeState,TreeState> treeStatesAfterOverwrite = readTreeStates( pageCache );
 
@@ -538,7 +538,7 @@ class GBPTreeTest
     private Pair<TreeState,TreeState> readTreeStates( PageCache pageCache ) throws IOException
     {
         Pair<TreeState,TreeState> treeStatesBeforeOverwrite;
-        try ( PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), DATABASE_NAME );
+        try ( PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), DEFAULT_DATABASE_NAME );
               PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
             treeStatesBeforeOverwrite = TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
@@ -598,7 +598,7 @@ class GBPTreeTest
 
         // WHEN
         // Read separate
-        GBPTree.readHeader( pageCache, indexFile, headerReader, DATABASE_NAME, NULL );
+        GBPTree.readHeader( pageCache, indexFile, headerReader, DEFAULT_DATABASE_NAME, NULL );
 
         assertEquals( expectedHeader.length, length.get() );
         assertArrayEquals( expectedHeader, readHeader );
@@ -610,13 +610,14 @@ class GBPTreeTest
         // given
         Path doesNotExist = Path.of( "Does not exist" );
         assertThrows( NoSuchFileException.class,
-                () -> GBPTree.readHeader( createPageCache( defaultPageSize ), doesNotExist, NO_HEADER_READER, DATABASE_NAME, NULL ) );
+                () -> GBPTree.readHeader( createPageCache( defaultPageSize ), doesNotExist, NO_HEADER_READER, DEFAULT_DATABASE_NAME, NULL ) );
     }
 
     @Test
     void openWithReadHeaderMustThrowMetadataMismatchExceptionIfFileIsEmpty() throws Exception
     {
-        openMustThrowMetadataMismatchExceptionIfFileIsEmpty( pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, DATABASE_NAME, NULL ) );
+        openMustThrowMetadataMismatchExceptionIfFileIsEmpty( pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER,
+                DEFAULT_DATABASE_NAME, NULL ) );
     }
 
     @Test
@@ -629,7 +630,7 @@ class GBPTreeTest
     {
         // given an existing empty file
         PageCache pageCache = createPageCache( defaultPageSize );
-        pageCache.map( indexFile, pageCache.pageSize(), DATABASE_NAME, immutable.of( CREATE ) ).close();
+        pageCache.map( indexFile, pageCache.pageSize(), DEFAULT_DATABASE_NAME, immutable.of( CREATE ) ).close();
 
         assertThrows( MetadataMismatchException.class, () -> opener.accept( pageCache ) );
     }
@@ -638,7 +639,7 @@ class GBPTreeTest
     void readHeaderMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing() throws Exception
     {
         openMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing(
-                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, DATABASE_NAME, NULL ) );
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, DEFAULT_DATABASE_NAME, NULL ) );
     }
 
     @Test
@@ -662,7 +663,7 @@ class GBPTreeTest
     void readHeaderMustThrowIOExceptionIfStatePagesAreAllZeros() throws Exception
     {
         openMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros(
-                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, DATABASE_NAME, NULL ) );
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, DEFAULT_DATABASE_NAME, NULL ) );
     }
 
     @Test
@@ -707,7 +708,7 @@ class GBPTreeTest
                 length.set( headerData.limit() );
                 headerData.get( readHeader );
             };
-            GBPTree.readHeader( pageCache, indexFile, headerReader, DATABASE_NAME, NULL );
+            GBPTree.readHeader( pageCache, indexFile, headerReader, DEFAULT_DATABASE_NAME, NULL );
 
             // THEN
             assertEquals( headerBytes.length, length.get() );
@@ -1366,7 +1367,7 @@ class GBPTreeTest
             index( specificPageCache ).build().close();
 
             // a tree state pointing to root with valid successor
-            try ( PagedFile pagedFile = specificPageCache.map( indexFile, specificPageCache.pageSize(), DATABASE_NAME );
+            try ( PagedFile pagedFile = specificPageCache.map( indexFile, specificPageCache.pageSize(), DEFAULT_DATABASE_NAME );
                   PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
             {
                 Pair<TreeState,TreeState> treeStates =
@@ -1798,7 +1799,7 @@ class GBPTreeTest
 
     private void corruptTheChild( PageCache pageCache, long corruptChild ) throws IOException
     {
-        try ( PagedFile pagedFile = pageCache.map( indexFile, defaultPageSize, DATABASE_NAME );
+        try ( PagedFile pagedFile = pageCache.map( indexFile, defaultPageSize, DEFAULT_DATABASE_NAME );
               PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL ) )
         {
             assertTrue( cursor.next( corruptChild ) );

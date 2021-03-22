@@ -106,7 +106,7 @@ public interface PageCache extends AutoCloseable
      * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide
      * @param pageSize The file page size to use for this mapping. If the file is already mapped with a different page
      * size, an exception will be thrown.
-     * @param databaseName an optional name of the database the mapped file belongs to. This option associates the mapped file with a database.
+     * @param databaseName an name of the database the mapped file belongs to. This option associates the mapped file with a database.
      * @param openOptions The set of open options to use for mapping this file.
      * The {@link StandardOpenOption#READ} and {@link StandardOpenOption#WRITE} options always implicitly specified.
      * The {@link StandardOpenOption#CREATE} open option will create the given file if it does not already exist, and

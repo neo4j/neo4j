@@ -479,7 +479,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     private final ImmutableSet<OpenOption> openOptions;
 
     // Name of the database this tree belongs to.
-    private String databaseName;
+    private final String databaseName;
 
     /**
      * Whether or not this tree has been closed. Accessed and changed solely in

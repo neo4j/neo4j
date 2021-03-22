@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
 import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
@@ -126,6 +127,6 @@ public class GBPTreeBuilder<KEY,VALUE>
     public GBPTree<KEY,VALUE> build()
     {
         return new GBPTree<>( pageCache, path, layout, monitor, headerReader, headerWriter, recoveryCleanupWorkCollector, readOnly, pageCacheTracer,
-                openOptions, "test", "test tree" );
+                openOptions, DEFAULT_DATABASE_NAME, "test tree" );
     }
 }

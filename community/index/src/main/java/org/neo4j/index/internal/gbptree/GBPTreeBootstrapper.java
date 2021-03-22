@@ -35,6 +35,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
@@ -89,7 +90,7 @@ public class GBPTreeBootstrapper implements Closeable
             // Create layout and treeNode from meta
             Layout<?,?> layout = layoutBootstrapper.create( file, pageCache, meta );
             GBPTree<?,?> tree = new GBPTree<>( pageCache, file, layout, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), readOnly,
-                    pageCacheTracer, Sets.immutable.empty(), file.getFileName().toString(), file.getFileName().toString() );
+                    pageCacheTracer, Sets.immutable.empty(), DEFAULT_DATABASE_NAME, file.getFileName().toString() );
             return new SuccessfulBootstrap( tree, layout, state, meta );
         }
         catch ( Exception e )

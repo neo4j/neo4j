@@ -75,8 +75,8 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
         Path storeFile = indexFiles.getStoreFile();
-        tree = new GBPTree<>( pageCache, storeFile, layout, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector,
-                readOnly, pageCacheTracer, immutable.empty(), descriptor.getName(), databaseName );
+        tree = new GBPTree<>( pageCache, storeFile, layout, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnly, pageCacheTracer,
+                immutable.empty(), databaseName, descriptor.getName() );
         afterTreeInstantiation( tree );
     }
 
