@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -85,11 +86,11 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
  */
 public class IndexStatisticsTest
 {
-    private static final double UNIQUE_NAMES = 10.0;
     private static final String[] NAMES = new String[]{
             "Andres", "Davide", "Jakub", "Chris", "Tobias", "Stefan", "Petra", "Rickard", "Mattias", "Emil", "Chris",
             "Chris"
     };
+    private static final double UNIQUE_NAMES = Arrays.stream( NAMES ).distinct().count();
 
     private static final int CREATION_MULTIPLIER =
             Integer.getInteger( IndexStatisticsTest.class.getName() + ".creationMultiplier", 1_000 );
