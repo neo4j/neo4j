@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProp
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
-import org.neo4j.cypher.internal.frontend.phases.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.phases.ExpandStarRewriter
 import org.neo4j.cypher.internal.frontend.phases.If
 import org.neo4j.cypher.internal.frontend.phases.LiteralExtraction
@@ -52,7 +51,8 @@ import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.isolateAggregation
-import org.neo4j.cypher.internal.frontend.phases.rewriteEqualityToInPredicate
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.frontend.phases.transitiveClosure
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.rewriting.Additions
@@ -74,24 +74,27 @@ object CompilationPhases {
     CorrelatedSubQueries,
   )
 
-  private val AccumulatedSteps(orderedPlanPipelineSteps, _) = StepSequencer(ListStepAccumulator[StepSequencer.Step with PlanPipelineTransformerFactory]()).orderSteps(Set(
-    SemanticAnalysis,
-    Namespacer,
-    isolateAggregation,
-    transitiveClosure,
-    rewriteEqualityToInPredicate,
-    CNFNormalizer,
-    collapseMultipleInPredicates,
-    ResolveTokens,
-    CreatePlannerQuery,
-    OptionalMatchRemover,
-    QueryPlanner,
-    PlanRewriter,
-    InsertCachedProperties,
-    CardinalityRewriter,
-    CompressPlanIDs,
-    CheckForUnresolvedTokens,
-  ), initialConditions = Set(StatementCondition(containsNoReturnAll), StatementCondition(containsNamedPathOnlyForShortestPath)))
+  private val AccumulatedSteps(orderedPlanPipelineSteps, _) = StepSequencer(ListStepAccumulator[StepSequencer.Step with PlanPipelineTransformerFactory]())
+    .orderSteps(
+      Set(
+        SemanticAnalysis,
+        Namespacer,
+        isolateAggregation,
+        transitiveClosure,
+        rewriteEqualityToInPredicate,
+        collapseMultipleInPredicates,
+        ResolveTokens,
+        CreatePlannerQuery,
+        OptionalMatchRemover,
+        QueryPlanner,
+        PlanRewriter,
+        InsertCachedProperties,
+        CardinalityRewriter,
+        CompressPlanIDs,
+        CheckForUnresolvedTokens,
+      ) ++ CNFNormalizer.steps,
+      initialConditions = Set(StatementCondition(containsNoReturnAll), StatementCondition(containsNamedPathOnlyForShortestPath))
+    )
 
   case class ParsingConfig(
                             innerVariableNamer: InnerVariableNamer,

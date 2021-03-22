@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.phases
+package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.Equals
@@ -24,6 +24,11 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions
+import org.neo4j.cypher.internal.frontend.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.frontend.phases.EqualityRewrittenToIn
+import org.neo4j.cypher.internal.frontend.phases.StatementRewriter
+import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.Rewriter
@@ -42,7 +47,7 @@ case object rewriteEqualityToInPredicate extends StatementRewriter with StepSequ
       In(func, ListLiteral(Seq(idValueExpr))(idValueExpr.position))(predicate.position)
 
     // Equality between two property lookups should not be rewritten
-    case predicate@Equals(_:Property, _:Property) =>
+    case predicate@Equals(_: Property, _: Property) =>
       predicate
 
     // a.prop = value => a.prop IN [value]

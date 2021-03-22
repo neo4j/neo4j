@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer.PredicatesInCNF
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -69,7 +70,7 @@ case object collapseMultipleInPredicates extends StatementRewriter with StepSequ
       }
   })
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(EqualityRewrittenToIn, BooleanPredicatesInCNF)
+  override def preConditions: Set[StepSequencer.Condition] = Set(EqualityRewrittenToIn) ++ PredicatesInCNF
 
   override def postConditions: Set[StepSequencer.Condition] = Set(InPredicatesCollapsed)
 

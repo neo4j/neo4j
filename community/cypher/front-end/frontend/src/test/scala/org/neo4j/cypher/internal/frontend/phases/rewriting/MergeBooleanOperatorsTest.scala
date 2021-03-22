@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.neo4j.cypher.internal.rewriting
+package org.neo4j.cypher.internal.frontend.phases.rewriting
 
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.mergeDuplicateBooleanOperators
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
-import org.neo4j.cypher.internal.rewriting.rewriters.mergeDuplicateBooleanOperators
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
@@ -81,6 +81,7 @@ class MergeBooleanOperatorsTest extends CypherFunSuite {
   }
 
   test("Simplify AND of identical expressions with function") {
+    // For expressions that are non-idempotent (or not referentially transparent) like rand(), this rewrite can affect semantics
     assertRewrittenMatches("rand() = 1 AND rand() = 1", { case Equals(_, _) => () })
   }
 

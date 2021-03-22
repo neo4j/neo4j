@@ -18,10 +18,13 @@ package org.neo4j.cypher.internal.frontend.phases.rewriting
 
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.frontend.phases.CNFNormalizer
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.TestContext
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.rewriting.AstRewritingTestSupport
 import org.neo4j.cypher.internal.rewriting.rewriters.mergeInPredicates
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport {
@@ -197,8 +200,7 @@ class mergeInPredicatesTest extends CypherFunSuite with AstRewritingTestSupport 
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val original = parser.parse(from, exceptionFactory).asInstanceOf[Query]
     val expected = parser.parse(to, exceptionFactory).asInstanceOf[Query]
-    val checkResults = original.semanticCheck(SemanticState.clean)
-    val common = CNFNormalizer.instance(checkResults.state, TestContext())
+    val common:Rewriter = flattenBooleanOperators
     val result = mergeInPredicates(original)
 
     common(result) should equal(common(expected))

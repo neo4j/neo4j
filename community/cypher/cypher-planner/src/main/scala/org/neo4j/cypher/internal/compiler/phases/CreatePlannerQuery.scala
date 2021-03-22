@@ -29,10 +29,12 @@ import org.neo4j.cypher.internal.frontend.phases.AmbiguousNamesDisambiguated
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.frontend.phases.InPredicatesCollapsed
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.StatementCondition
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer.PredicatesInCNF
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
@@ -66,7 +68,12 @@ case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlan
     StatementCondition(containsNoNodesOfType[UnionDistinct]),
     // The PlannerQuery we create should already contain disambiguated names
     AmbiguousNamesDisambiguated,
-  ) ++ SemanticInfoAvailable // We look up semantic info during PlannerQuery building
+    InPredicatesCollapsed
+  ) ++
+    // The PlannerQuery should be created based on normalised predicates
+    PredicatesInCNF ++
+    // We look up semantic info during PlannerQuery building
+    SemanticInfoAvailable
 
   override def postConditions = Set(CompilationContains[UnionQuery])
 

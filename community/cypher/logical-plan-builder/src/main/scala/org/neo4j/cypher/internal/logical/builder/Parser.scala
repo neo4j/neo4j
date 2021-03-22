@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.parser.Expressions
 import org.neo4j.cypher.internal.parser.ProcedureCalls
-import org.neo4j.cypher.internal.rewriting.rewriters.flattenBooleanOperators
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.inSequence
