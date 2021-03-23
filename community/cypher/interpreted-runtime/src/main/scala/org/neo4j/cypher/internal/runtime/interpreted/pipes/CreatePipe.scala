@@ -219,7 +219,19 @@ case class MergeCreateRelationshipPipe(src: Pipe, data: CreateRelationshipComman
 
 object MergeCreateRelationshipPipe {
   def handleNoValue(startVariableName: String, relTypeName:String, endVariableName:String, key: String): Unit = {
+    val startVarPart =
+      if (startVariableName.startsWith(" ")) {
+        ""
+      } else {
+        startVariableName
+      }
+    val endVarPart =
+      if (endVariableName.startsWith(" ")) {
+        ""
+      } else {
+        endVariableName
+      }
     throw new InvalidSemanticsException(
-      s"Cannot merge the following relationship because of null property value for '$key': ($startVariableName)-[:$relTypeName {$key: null}]->($endVariableName)")
+      s"Cannot merge the following relationship because of null property value for '$key': ($startVarPart)-[:$relTypeName {$key: null}]->($endVarPart)")
   }
 }
