@@ -23,7 +23,12 @@ import java.io.PrintStream;
 import java.util.function.Consumer;
 import java.util.function.LongFunction;
 
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.RelationshipDirection;
@@ -48,6 +53,28 @@ public class RelationshipChainVisitor
         this.nodeStore = nodeStore;
         this.relationshipStore = relationshipStore;
         this.groupStore = groupStore;
+    }
+
+    public RelationshipChainVisitor( NeoStores neoStores )
+    {
+        this( recordLoader( neoStores.getNodeStore() ), recordLoader( neoStores.getRelationshipStore() ),
+                recordLoader( neoStores.getRelationshipGroupStore() ) );
+    }
+
+    /**
+     * Convenience method for quickly printing a node's relationship chain w/ relationship groups if it's dense.
+     * @param neoStores store to read from.
+     * @param out where to print.
+     * @param nodeId the node id to print.
+     */
+    public static void printRelationshipChain( NeoStores neoStores, PrintStream out, long nodeId )
+    {
+        new RelationshipChainVisitor( neoStores ).visit( nodeId, printer( out ) );
+    }
+
+    private static <R extends AbstractBaseRecord> LongFunction<R> recordLoader( RecordStore<R> store )
+    {
+        return id -> store.getRecord( id, store.newRecord(), RecordLoad.NORMAL, PageCursorTracer.NULL );
     }
 
     public void visit( long nodeId, Visitor visitor )
