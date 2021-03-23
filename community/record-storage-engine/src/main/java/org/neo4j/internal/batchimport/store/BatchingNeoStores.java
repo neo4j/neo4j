@@ -78,6 +78,7 @@ import org.neo4j.scheduler.JobScheduler;
 import static java.lang.String.valueOf;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_limit;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAll;
@@ -304,6 +305,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private static Config getNeo4jConfig( Configuration config, Config dbConfig )
     {
         dbConfig.set( pagecache_memory, valueOf( config.pageCacheMemory() ) );
+        dbConfig.set( check_point_iops_limit, -1 );
         return dbConfig;
     }
 
