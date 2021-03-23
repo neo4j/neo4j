@@ -100,7 +100,6 @@ public class DatabasePageCache implements PageCache
     @Override
     public synchronized void close()
     {
-        //TODO: this called on shutdown of the db?
         if ( closed )
         {
             throw new IllegalStateException( "Database page cache was already closed" );
