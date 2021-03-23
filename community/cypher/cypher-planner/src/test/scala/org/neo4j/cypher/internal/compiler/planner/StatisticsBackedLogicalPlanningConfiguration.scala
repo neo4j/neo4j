@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.cypherCompilerConfig
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Cardinalities
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition.EntityType
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.Options
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.RelDef
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
@@ -107,7 +108,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
   }
 
   case class RelDef(fromLabel: Option[String], relType: Option[String], toLabel: Option[String]) {
-    override def toString(): String = {
+    override def toString: String = {
       val f = fromLabel.fold("")(l => ":" + l)
       val r = relType.fold("")(l => ":" + l)
       val t = toLabel.fold("")(l => ":" + l)
@@ -115,15 +116,21 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     }
   }
 
-  case class IndexDefinition(
-                       label: String,
-                       propertyKeys: Seq[String],
-                       uniqueValueSelectivity: Double,
-                       propExistsSelectivity: Double,
-                       isUnique: Boolean = false,
-                       withValues: Boolean = false,
-                       withOrdering: IndexOrderCapability = IndexOrderCapability.NONE
-                     )
+  case class IndexDefinition(entityType: IndexDefinition.EntityType,
+                             propertyKeys: Seq[String],
+                             uniqueValueSelectivity: Double,
+                             propExistsSelectivity: Double,
+                             isUnique: Boolean = false,
+                             withValues: Boolean = false,
+                             withOrdering: IndexOrderCapability = IndexOrderCapability.NONE)
+
+  object IndexDefinition {
+    sealed trait EntityType
+    object EntityType {
+      final case class Node(label: String) extends EntityType
+      final case class Relationship(relType: String) extends EntityType
+    }
+  }
 }
 
 case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
@@ -200,7 +207,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     val withProperties = properties.foldLeft(withLabel) {
       case (builder, prop) => builder.addProperty(prop)
     }
-    val indexDef = IndexDefinition(label, properties, uniqueSelectivity, existsSelectivity, isUnique, withValues, providesOrder)
+    val indexDef = IndexDefinition(IndexDefinition.EntityType.Node(label), properties, uniqueSelectivity, existsSelectivity, isUnique, withValues, providesOrder)
     withProperties
       .copy(indexes = indexes :+ indexDef)
   }
@@ -275,16 +282,23 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {
         indexes.find { indexDef =>
-          indexDef.label == resolver.getLabelName(index.label) &&
+          indexDef.entityType == resolveEntityType(index) &&
             indexDef.propertyKeys == index.properties.map(_.id).map(resolver.getPropertyKeyName)
         }.flatMap(indexDef => Selectivity.of(indexDef.uniqueValueSelectivity))
       }
 
       override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] = {
         indexes.find { indexDef =>
-          indexDef.label == resolver.getLabelName(index.label) &&
+          indexDef.entityType == resolveEntityType(index) &&
             indexDef.propertyKeys == index.properties.map(_.id).map(resolver.getPropertyKeyName)
         }.flatMap(indexDef => Selectivity.of(indexDef.propExistsSelectivity))
+      }
+
+      private def resolveEntityType(index: IndexDescriptor): IndexDefinition.EntityType = index.entityType match {
+        case IndexDescriptor.EntityType.Node(label) =>
+          IndexDefinition.EntityType.Node(resolver.getLabelName(label.id))
+        case IndexDescriptor.EntityType.Relationship(relType) =>
+          IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relType.id))
       }
     }
 
@@ -293,17 +307,17 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         InstrumentedGraphStatistics(graphStatistics, new MutableGraphStatisticsSnapshot())
 
       override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-        val labelName = resolver.getLabelName(labelId)
+        val labelName = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
         indexes.collect {
-          case indexDef if labelName == indexDef.label =>
+          case indexDef if labelName == indexDef.entityType =>
             newIndexDescriptor(indexDef)
         }
       }.iterator
 
       override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-        val labelName = resolver.getLabelName(labelId)
+        val labelName = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
         indexes.collect {
-          case indexDef if labelName == indexDef.label && indexDef.isUnique =>
+          case indexDef if labelName == indexDef.entityType && indexDef.isUnique =>
             newIndexDescriptor(indexDef)
         }
       }.iterator
@@ -318,23 +332,25 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       }
 
       override def indexExistsForLabel(labelId: Int): Boolean = {
-        val labelName = resolver.getLabelName(labelId)
+        val labelName = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
         indexes.exists {
-          case indexDef if labelName == indexDef.label => true
+          case indexDef if labelName == indexDef.entityType => true
           case _ => false
         }
       }
 
       override def indexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = {
+        val entityType = IndexDefinition.EntityType.Node(labelName)
         indexes.exists {
-          case indexDef if indexDef.label == labelName && indexDef.propertyKeys == propertyKeys => true
+          case indexDef if indexDef.entityType == entityType && indexDef.propertyKeys == propertyKeys => true
           case _ => false
         }
       }
 
       override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+        val entityType = IndexDefinition.EntityType.Node(labelName)
         indexes.collectFirst {
-          case indexDef if indexDef.label == labelName && indexDef.propertyKeys == propertyKeys => newIndexDescriptor(indexDef)
+          case indexDef if indexDef.entityType == entityType && indexDef.propertyKeys == propertyKeys => newIndexDescriptor(indexDef)
         }
       }
 
@@ -358,10 +374,16 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         val orderCapability: OrderCapability = _ => indexDef.withOrdering
 
         val props = indexDef.propertyKeys.map(p => PropertyKeyId(resolver.getPropertyKeyId(p)))
-        val label = LabelId(resolver.getLabelId(indexDef.label))
+
+        val entityType = indexDef.entityType match {
+          case EntityType.Node(label) =>
+            IndexDescriptor.EntityType.Node(LabelId(resolver.getLabelId(label)))
+          case EntityType.Relationship(relType) =>
+            IndexDescriptor.EntityType.Relationship(RelTypeId(resolver.getRelTypeId(relType)))
+        }
 
         IndexDescriptor(
-          label,
+          entityType,
           props,
           valueCapability = valueCapability,
           orderCapability = orderCapability,

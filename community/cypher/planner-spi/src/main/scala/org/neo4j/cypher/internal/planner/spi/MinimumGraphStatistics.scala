@@ -29,10 +29,10 @@ object MinimumGraphStatistics {
   val MIN_NODES_WITH_LABEL: Int = 10
   val MIN_PATTERN_STEP: Int = 1
 
-  val MIN_NODES_ALL_CARDINALITY = Cardinality(MIN_NODES_ALL)
-  val MIN_NODES_WITH_LABEL_CARDINALITY = Cardinality(MIN_NODES_WITH_LABEL)
-  val MIN_PATTERN_STEP_CARDINALITY = Cardinality(MIN_PATTERN_STEP)
-  val MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY = Selectivity.of(0.1d)
+  val MIN_NODES_ALL_CARDINALITY: Cardinality = Cardinality(MIN_NODES_ALL)
+  val MIN_NODES_WITH_LABEL_CARDINALITY: Cardinality = Cardinality(MIN_NODES_WITH_LABEL)
+  val MIN_PATTERN_STEP_CARDINALITY: Cardinality = Cardinality(MIN_PATTERN_STEP)
+  val MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY: Option[Selectivity] = Selectivity.of(0.1d)
 }
 
 /**
@@ -51,12 +51,19 @@ class MinimumGraphStatistics(delegate: GraphStatistics) extends DelegatingGraphS
     atLeast(delegate.nodesWithLabelCardinality(maybeLabelId), MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY)
   }
 
-  override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
-    nodesWithLabelCardinality(Some(index.label)) match {
-      case MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY => MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY
-      case _ => delegate.indexPropertyExistsSelectivity(index)
-    }
+  override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] = index.entityType match {
+    case IndexDescriptor.EntityType.Node(label) =>
+      nodesWithLabelCardinality(Some(label)) match {
+        case MinimumGraphStatistics.MIN_NODES_WITH_LABEL_CARDINALITY => MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY
+        case _ => delegate.indexPropertyExistsSelectivity(index)
+      }
 
+    case IndexDescriptor.EntityType.Relationship(relType) =>
+      patternStepCardinality(None, Some(relType), None) match {
+        case MinimumGraphStatistics.MIN_PATTERN_STEP_CARDINALITY => MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY
+        case _ => delegate.indexPropertyExistsSelectivity(index)
+      }
+  }
 
   override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality = {
     val emulatedCompleteCardinality =

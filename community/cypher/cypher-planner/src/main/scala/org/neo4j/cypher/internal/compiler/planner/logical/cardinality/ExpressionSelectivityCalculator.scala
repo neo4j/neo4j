@@ -176,7 +176,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       labelName =>
         (semanticTable.id(labelName), semanticTable.id(propertyKey)) match {
           case (Some(labelId), Some(propertyKeyId)) =>
-            val descriptor = IndexDescriptor(labelId, Seq(propertyKeyId))
+            val descriptor = IndexDescriptor.forLabel(labelId, Seq(propertyKeyId))
             stats.indexPropertyExistsSelectivity(descriptor)
 
           case _ =>
@@ -195,7 +195,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       labelName =>
         (semanticTable.id(labelName), semanticTable.id(propertyKey)) match {
           case (Some(labelId), Some(propertyKeyId)) =>
-            val descriptor = IndexDescriptor(labelId, Seq(propertyKeyId))
+            val descriptor = IndexDescriptor.forLabel(labelId, Seq(propertyKeyId))
             for {
               propExists <- stats.indexPropertyExistsSelectivity(descriptor)
               propEqualsValue <- stats.uniqueValueSelectivity(descriptor)
@@ -235,7 +235,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       labelName =>
         (semanticTable.id(labelName), semanticTable.id(seekable.expr.property.propertyKey)) match {
           case (Some(labelId), Some(propertyKeyId)) =>
-            val descriptor = IndexDescriptor(labelId, Seq(propertyKeyId))
+            val descriptor = IndexDescriptor.forLabel(labelId, Seq(propertyKeyId))
 
             for {
               propertyExistsSelectivity <- stats.indexPropertyExistsSelectivity(descriptor)

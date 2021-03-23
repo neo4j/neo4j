@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.util.concurrent.TimeUnit.SECONDS
-
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.spi.IndexBehaviour
@@ -45,6 +43,8 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
+
+import java.util.concurrent.TimeUnit.SECONDS
 
 class TransactionBoundPlanContextTest extends CypherFunSuite {
 
@@ -133,7 +133,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
       tx.schema().awaitIndexesOnline(30, SECONDS)
       val l1id = planContext.getLabelId("L1")
       val prop1id = planContext.getPropertyKeyId("prop")
-      val index = IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop1id)))
+      val index = IndexDescriptor.forLabel(LabelId(l1id), Seq(PropertyKeyId(prop1id)))
       planContext.statistics.indexPropertyExistsSelectivity(index) should be(MinimumGraphStatistics.MIN_INDEX_PROPERTY_EXISTS_SELECTIVITY)
     })
   }
@@ -151,7 +151,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
       tx.schema().awaitIndexesOnline(30, SECONDS)
       val l1id = planContext.getLabelId("L1")
       val prop1id = planContext.getPropertyKeyId("prop")
-      val index = IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop1id)))
+      val index = IndexDescriptor.forLabel(LabelId(l1id), Seq(PropertyKeyId(prop1id)))
       planContext.statistics.uniqueValueSelectivity(index) should be(Some(Selectivity.ZERO))
     })
   }
@@ -171,8 +171,8 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
       val prop1id = planContext.getPropertyKeyId("prop")
       val prop2id = planContext.getPropertyKeyId("prop2")
       planContext.indexesGetForLabel(l1id).toSet should equal(Set(
-        IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop1id)), Set[IndexBehaviour](SlowContains)),
-        IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop2id)), Set[IndexBehaviour](SlowContains))
+        IndexDescriptor.forLabel(LabelId(l1id), Seq(PropertyKeyId(prop1id))).withBehaviours(Set[IndexBehaviour](SlowContains)),
+        IndexDescriptor.forLabel(LabelId(l1id), Seq(PropertyKeyId(prop2id))).withBehaviours(Set[IndexBehaviour](SlowContains)).unique()
       ))
     })
   }
@@ -190,7 +190,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
       val l1id = planContext.getLabelId("L1")
       val prop2id = planContext.getPropertyKeyId("prop2")
       planContext.uniqueIndexesGetForLabel(l1id).toSet should equal(Set(
-        IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop2id)), Set[IndexBehaviour](SlowContains))
+        IndexDescriptor.forLabel(LabelId(l1id), Seq(PropertyKeyId(prop2id))).withBehaviours(Set[IndexBehaviour](SlowContains)).unique()
       ))
     })
   }
@@ -237,7 +237,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
   }
 
-  def inTx(f: (TransactionBoundPlanContext,InternalTransaction) => Unit) = {
+  def inTx(f: (TransactionBoundPlanContext,InternalTransaction) => Unit): Unit = {
     val tx = graph.beginTransaction(EXPLICIT, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, tx)
     val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger, null)

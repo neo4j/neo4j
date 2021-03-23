@@ -35,14 +35,26 @@ class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatist
   override def patternStepCardinality(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId] ): Cardinality =
     Cardinality(lookup.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel))
 
-  override def uniqueValueSelectivity(index: IndexDescriptor ): Option[Selectivity] = {
-    val result = lookup.indexUniqueValueSelectivity( index.label.id, index.property.id )
-    Selectivity.of(result)
+  override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] = {
+    index.entityType match {
+      case IndexDescriptor.EntityType.Node(label) =>
+        val result = lookup.indexUniqueValueSelectivity(label.id, index.property.id)
+        Selectivity.of(result)
+
+      case IndexDescriptor.EntityType.Relationship(_) =>
+        None
+    }
   }
 
-  override def indexPropertyExistsSelectivity( index: IndexDescriptor ): Option[Selectivity] = {
-    val result = lookup.indexPropertyExistsSelectivity( index.label.id, index.property.id )
-    if (result.isNaN) None else Some(Selectivity.of(result).get)
+  override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] = {
+    index.entityType match {
+      case IndexDescriptor.EntityType.Node(label) =>
+        val result = lookup.indexPropertyExistsSelectivity(label.id, index.property.id)
+        Selectivity.of(result)
+
+      case IndexDescriptor.EntityType.Relationship(_) =>
+        None
+    }
   }
 
   override def nodesAllCardinality(): Cardinality = Cardinality(lookup.nodesAllCardinality())

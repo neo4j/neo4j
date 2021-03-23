@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.spi
 
-import org.neo4j.cypher.internal.planner.spi.IndexBehaviour
-import org.neo4j.cypher.internal.planner.spi.SkipAndLimit
-import org.neo4j.cypher.internal.planner.spi.SlowContains
 import org.neo4j.cypher.internal.planner.spi
 import org.neo4j.cypher.internal.planner.spi.EventuallyConsistent
+import org.neo4j.cypher.internal.planner.spi.IndexBehaviour
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.SkipAndLimit
+import org.neo4j.cypher.internal.planner.spi.SlowContains
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundTokenContext
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.LabelSchemaDescriptor
@@ -39,8 +40,12 @@ trait IndexDescriptorCompatibility {
     }
   }
 
-  def cypherToKernelSchema(index: spi.IndexDescriptor): LabelSchemaDescriptor =
-    SchemaDescriptor.forLabel(index.label.id, index.properties.map(_.id):_*)
+  def cypherToKernelSchema(index: spi.IndexDescriptor): SchemaDescriptor = index.entityType match {
+    case IndexDescriptor.EntityType.Node(label) =>
+      SchemaDescriptor.forLabel(label.id, index.properties.map(_.id):_*)
+    case IndexDescriptor.EntityType.Relationship(relType) =>
+      SchemaDescriptor.forRelType(relType.id, index.properties.map(_.id):_*)
+  }
 
   def toLabelSchemaDescriptor(labelId: Int, propertyKeyIds: Seq[Int]): LabelSchemaDescriptor =
     SchemaDescriptor.forLabel(labelId, propertyKeyIds.toArray:_*)

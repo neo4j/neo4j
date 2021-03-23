@@ -92,6 +92,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.Attribute
@@ -253,8 +254,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         val canGetValue = if (indexType.withValues) CanGetValue else DoNotGetValue
         val valueCapability: ValueCapability = _ => indexDef.propertyKeys.map(_ => canGetValue)
         val orderCapability: OrderCapability = _ => indexType.withOrdering
+        val entityType = IndexDescriptor.EntityType.Node(LabelId(
+          semanticTable.resolvedLabelNames(indexDef.label)
+        ))
         IndexDescriptor(
-          semanticTable.resolvedLabelNames(indexDef.label),
+          entityType,
           indexDef.propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_)),
           valueCapability = valueCapability,
           orderCapability = orderCapability,

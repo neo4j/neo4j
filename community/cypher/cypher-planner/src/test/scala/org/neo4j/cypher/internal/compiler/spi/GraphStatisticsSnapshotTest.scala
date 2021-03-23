@@ -38,7 +38,7 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
 
   private val label2 = LabelId(2)
   private val label4 = LabelId(4)
-  private val index = IndexDescriptor(LabelId(0), Seq(PropertyKeyId(3)))
+  private val index = IndexDescriptor.forLabel(LabelId(0), Seq(PropertyKeyId(3)))
 
   test("records queries and its observed values") {
     val snapshot = new MutableGraphStatisticsSnapshot()

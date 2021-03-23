@@ -31,7 +31,6 @@ import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
-import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.Log
 
@@ -51,22 +50,22 @@ object TransactionBoundGraphStatistics {
 
     override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
-        val maybeIndexDescriptor = Option(Iterators.singleOrNull(schemaRead.index(SchemaDescriptor.forLabel(index.label, index.properties.map(_.id): _*))))
+        val maybeIndexDescriptor = Option(Iterators.singleOrNull(schemaRead.index(cypherToKernelSchema(index))))
         maybeIndexDescriptor.flatMap { indexDescriptor =>
           val indexSize = schemaRead.indexSize(indexDescriptor)
           if (indexSize == 0)
             Some(Selectivity.ZERO)
 
           else {
-            // Probability of any node in the index, to have a property with a given value
+            // Probability of any entity in the index, to have a property with a given value
             val indexEntrySelectivity = schemaRead.indexUniqueValuesSelectivity(indexDescriptor)
             if (indexEntrySelectivity == 0.0) {
               Some(Selectivity.ZERO)
             } else {
-              val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
+              val frequencyOfEntitiesWithSameValue = 1.0 / indexEntrySelectivity
 
               // This is = 1 / number of unique values
-              val indexSelectivity = frequencyOfNodesWithSameValue / indexSize
+              val indexSelectivity = frequencyOfEntitiesWithSameValue / indexSize
 
               Selectivity.of(min(indexSelectivity, 1.0))
             }
@@ -81,18 +80,24 @@ object TransactionBoundGraphStatistics {
 
     override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
-        val labeledNodes = read.countsForNodeWithoutTxState(index.label).toDouble
-        if (labeledNodes == 0)
+        val entitiesCount = index.entityType match {
+          case IndexDescriptor.EntityType.Node(label) =>
+            read.countsForNodeWithoutTxState(label).toDouble
+          case IndexDescriptor.EntityType.Relationship(relType) =>
+            read.countsForRelationshipWithoutTxState(TokenRead.ANY_LABEL, relType, TokenRead.ANY_LABEL).toDouble
+        }
+
+        if (entitiesCount == 0)
           Some(Selectivity.ZERO)
         else {
-          // Probability of any node with the given label, to have a given property
-          val maybeIndexDescriptor = Option(Iterators.singleOrNull(schemaRead.index(SchemaDescriptor.forLabel(index.label, index.properties.map(_.id): _*))))
+          // Probability of any entity with the given type, to have a given property
+          val maybeIndexDescriptor = Option(Iterators.singleOrNull(schemaRead.index(cypherToKernelSchema(index))))
           maybeIndexDescriptor.flatMap { indexDescriptor =>
             val indexSize = schemaRead.indexSize(indexDescriptor)
-            val indexSelectivity = indexSize / labeledNodes
+            val indexSelectivity = indexSize / entitiesCount
 
             //Even though semantically impossible the index can get into a state where
-            //the indexSize > labeledNodes
+            //the indexSize > entitiesCount
             Selectivity.of(min(indexSelectivity, 1.0))
           }
         }

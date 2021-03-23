@@ -54,8 +54,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val indexPerson = IndexDescriptor(LabelId(0), Seq(PropertyKeyId(0)))
-  private val indexAnimal = IndexDescriptor(LabelId(1), Seq(PropertyKeyId(0)))
+  private val indexPerson = IndexDescriptor.forLabel(LabelId(0), Seq(PropertyKeyId(0)))
+  private val indexAnimal = IndexDescriptor.forLabel(LabelId(1), Seq(PropertyKeyId(0)))
 
   private val nProp = prop("n", "prop")
 
@@ -1015,4 +1015,11 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
   private def predicate(expr: Expression) = Predicate(Set("n"), expr)
 
   private def anded(exprs: NonEmptyList[InequalityExpression]) = AndedPropertyInequalities(varFor("n"), nProp, exprs)
+
+  implicit private class IndexDescriptorHelper(index: IndexDescriptor) {
+    def label: LabelId = index.entityType match {
+      case IndexDescriptor.EntityType.Node(label) => label
+      case IndexDescriptor.EntityType.Relationship(_) => throw new IllegalStateException("Should not have been called in this test.")
+    }
+  }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
@@ -43,6 +44,7 @@ import org.neo4j.cypher.internal.spi.procsHelpers.asOption
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.KernelException
@@ -127,13 +129,11 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     tc.schemaRead.indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex).nonEmpty
   }
 
-  override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
-    try {
+  override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+    evalOrNone {
       val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
       val itr = tc.schemaRead.index(descriptor).asScala.flatMap(getOnlineIndex)
       if (itr.hasNext) Some(itr.next) else None
-    } catch {
-      case _: KernelException => None
     }
   }
 
@@ -151,7 +151,14 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   private def getOnlineIndex(reference: schema.IndexDescriptor): Option[IndexDescriptor] =
     tc.schemaRead.indexGetState(reference) match {
       case InternalIndexState.ONLINE =>
-        val label = LabelId(reference.schema().getEntityTokenIds()(0))
+        val entityType = {
+          val tokenId = reference.schema().getEntityTokenIds()(0)
+          reference.schema().entityType() match {
+            case EntityType.NODE => IndexDescriptor.EntityType.Node(LabelId(tokenId))
+            case EntityType.RELATIONSHIP => IndexDescriptor.EntityType.Relationship(RelTypeId(tokenId))
+          }
+        }
+
         val properties = reference.schema.getPropertyIds.map(PropertyKeyId)
         val isUnique = reference.isUnique
         val behaviours = reference.getCapability.behaviours().map(kernelToCypher).toSet
@@ -182,7 +189,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
           // Also, ignore eventually consistent indexes. Those are for explicit querying via procedures.
           None
         } else {
-          Some(IndexDescriptor(label, properties, behaviours, orderCapability, valueCapability, isUnique))
+          Some(IndexDescriptor(entityType, properties, behaviours, orderCapability, valueCapability, isUnique))
         }
       case _ => None
     }
