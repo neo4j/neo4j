@@ -175,7 +175,8 @@ object LogicalPlanToPlanBuilderString {
           case CreateNodeSideEffect(node, labels, properties) => createNodeToString(CreateNode(node, labels, properties))
         }
         val relsToCreate = creates.collect {
-          case CreatRelationshipSideEffect(relationship, startNode, typ, endNode, properties) => createRelationshipToString(CreateRelationship(relationship, startNode, typ, endNode, SemanticDirection.OUTGOING, properties))
+          case CreatRelationshipSideEffect(relationship, startNode, typ, endNode, direction, properties) =>
+            createRelationshipToString(CreateRelationship(relationship, startNode, typ, endNode, direction, properties))
         }
         val onMatchString = onMatch.map(setOpToString)
         val onCreateString = onCreate.map(setOpToString)

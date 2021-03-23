@@ -951,7 +951,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             onCreate : Seq[SetSideEffect] = Seq.empty): IMPL = {
 
     val nodesToCreate = nodes.map(cn => CreateNodeSideEffect(cn.idName, cn.labels, cn.properties))
-    val relationshipsToCreate = relationships.map(cr => CreatRelationshipSideEffect(cr.idName, cr.startNode, cr.relType, cr.endNode, cr.properties))
+    val relationshipsToCreate = relationships.map(cr => CreatRelationshipSideEffect(cr.idName, cr.startNode, cr.relType, cr.endNode, cr.direction, cr.properties))
     appendAtCurrentIndent(UnaryOperator(source => Merge(source, nodesToCreate ++ relationshipsToCreate, onMatch, onCreate)(_)))
   }
 

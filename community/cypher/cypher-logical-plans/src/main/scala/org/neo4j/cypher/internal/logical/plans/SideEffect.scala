@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 
 sealed trait SideEffect
 
@@ -38,6 +39,7 @@ case class CreatRelationshipSideEffect(relationship: String,
                                        startNode: String,
                                        typ: RelTypeName,
                                        endNode: String,
+                                       direction: SemanticDirection,
                                        properties: Option[Expression]) extends CreateSideEffect
 
 case class SetLabelsSideEffect(node: String,

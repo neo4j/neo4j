@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans
@@ -660,7 +661,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         val creates = createOps.map {
           case CreateNodeSideEffect(node, labels, properties) =>
             CreateNode(CreateNodeCommand(node, labels.map(LazyLabel.apply), properties.map(buildExpression)))
-          case CreatRelationshipSideEffect(relationship, startNode, typ, endNode, properties) =>
+          case CreatRelationshipSideEffect(relationship, startNode, typ, endNode, INCOMING, properties) =>
+            CreateRelationship(CreateRelationshipCommand(relationship, endNode, LazyType(typ)(semanticTable), startNode, properties.map(buildExpression)))
+          case CreatRelationshipSideEffect(relationship, startNode, typ, endNode, _, properties) =>
             CreateRelationship(CreateRelationshipCommand(relationship, startNode, LazyType(typ)(semanticTable), endNode, properties.map(buildExpression)))
         }
 
