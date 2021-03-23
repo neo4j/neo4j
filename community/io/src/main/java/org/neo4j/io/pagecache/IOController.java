@@ -25,12 +25,10 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 
 /**
- * TODO:// update
- * IOController instances can be passed to the {@link PageCache#flushAndForce(IOController)} and
- * {@link PagedFile#flushAndForce(IOController)} methods, which will invoke the
- * {@link #maybeLimitIO(long, int, Flushable, FlushEventOpportunity)} method on regular intervals.
+ * IOController instances used by page file to control speed of data flushing when {@link PageCache#flushAndForce()} invoked.
+ * As part of flush controller's {@link #maybeLimitIO(int, Flushable, FlushEventOpportunity)} method is invoked on regular intervals.
  * <p/>
- * This allows the controller to measure the rate of IO, and inject sleeps, pauses or flushes into the process.
+ * This allows the controller to measure the rate of IO (including io performed by other system parts), and inject sleeps, pauses or flushes into the process.
  * The flushes are in this case referring to the underlying hardware.
  * <p/>
  * Normally, flushing a channel will just copy the dirty buffers into the OS page cache, but flushing is in this case
@@ -49,24 +47,15 @@ public interface IOController
     /**
      * Invoked at regular intervals during flushing of the {@link PageCache} or {@link PagedFile}s.
      * <p/>
-     * For the first call in a flush, the {@code previousStamp} should have the {@link #INITIAL_STAMP} value.
-     * The return value of this method should then be used as the stamp of the next call. This allows implementations
-     * to be stateless, yet still keep some context around about a given flush, provided they can encode it as a
-     * {@code long}.
-     * <p/>
-     * The meaning of this long value is totally opaque to the caller, and can be anything the IOPSLimiter
-     * implementation desires.
-     * <p/>
      * The implementation is allowed to force changes to the storage device using the given {@link Flushable}, or
      * to perform {@link Thread#sleep(long) sleeps}, as it desires. It is not allowed to throw
      * {@link InterruptedException}, however. Those should be dealt with by catching them and re-interrupting the
      * current thread, or by wrapping them in {@link IOException}s.
      *
-     * @param recentlyCompletedIOs The number of IOs completed since the last call to this method.
+     * @param recentlyCompletedIOs The number of IOs completed by caller since the last call to this method.
      * @param flushable A {@link Flushable} instance that can flush any relevant dirty system buffers, to help smooth
      * out the IO load on the storage device.
      * @param flushes A {@link FlushEventOpportunity} event that describes ongoing io represented by flushable instance.
-     * @return A new stamp to pass into the next call to this method.
      */
     void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes );
 
