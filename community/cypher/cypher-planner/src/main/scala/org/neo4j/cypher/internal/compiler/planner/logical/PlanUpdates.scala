@@ -107,11 +107,11 @@ case object PlanUpdates extends UpdatesPlanner {
 
       //MERGE ()
       case p: MergeNodePattern =>
-        planMerge(source, p.matchGraph, Seq(p.createNode), Seq.empty, p.onCreate, p.onMatch, first, interestingOrderConfig, context, p)
+        planMerge(source, p.matchGraph, Seq(p.createNode), Seq.empty, p.onCreate, p.onMatch, interestingOrderConfig, context)
 
       //MERGE (a)-[:T]->(b)
       case p: MergeRelationshipPattern =>
-        planMerge(source, p.matchGraph, p.createNodes, p.createRelationships, p.onCreate, p.onMatch, first, interestingOrderConfig, context, p)
+        planMerge(source, p.matchGraph, p.createNodes, p.createRelationships, p.onCreate, p.onMatch, interestingOrderConfig, context)
 
       //SET n:Foo:Bar
       case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(source, pattern, context)
@@ -184,13 +184,11 @@ case object PlanUpdates extends UpdatesPlanner {
    * we will plan it like
    *
    * {{{
-   *         apply
-   *          /\
-   *  scan(a)   either
-   *              /\
-   *      onMatch   set(2)
-   *        /\       \
-   * scan(b) set(1)   create(b)
+   *        apply
+   *         /\
+   * scan(a)   merge(create(b), set(b.prop=1), set(b.prop=2))
+   *             |
+   *           scan(b)
    * }}}
    *
    * When merging on a relationship we take node locks to prevent the creation of multiple relationships,
@@ -199,17 +197,15 @@ case object PlanUpdates extends UpdatesPlanner {
    * we will plan something like:
    *
    * {{{
-   *              apply
-   *               /\
-   *       scan(a)   either
-   *                   /\
-   *           onMatch   set(2)
-   *             /\       \
-   *      either set(1)   create(r)
-   *        /\              \
-   *  expand expand        create(b)
-   *           \
-   *          lock(a)
+   *        apply
+   *         /\
+   * scan(a)  merge(create(b), create(r))
+   *             |
+   *          either
+   *            /\
+   *      expand expand
+   *               \
+   *              lock(a)
    * }}}
    */
   def planMerge(source: LogicalPlan,
@@ -218,10 +214,8 @@ case object PlanUpdates extends UpdatesPlanner {
                 createRelationshipPatterns: Seq[CreateRelationship],
                 onCreatePatterns: Seq[SetMutatingPattern],
                 onMatchPatterns: Seq[SetMutatingPattern],
-                first: Boolean,
                 interestingOrderConfig: InterestingOrderConfig,
-                context: LogicalPlanningContext,
-                solvedMutatingPattern: MutatingPattern): LogicalPlan = {
+                context: LogicalPlanningContext): LogicalPlan = {
 
     val producer: LogicalPlanProducer = context.logicalPlanProducer
 
@@ -233,34 +227,37 @@ case object PlanUpdates extends UpdatesPlanner {
       context.withUpdatedLabelInfo(source).copy(config = context.config.withLeafPlanners(leafPlanners))
     val mergeMatch = mergeMatchPart(matchGraph, interestingOrderConfig, innerContext)
 
+
+    //TODO remove
     //Check if we need to do OnMatch:
     //            OnMatch
     //             /   \
     //     mergeMatch  onMatch
-    val mergeRead = if (onMatchPatterns.nonEmpty) {
-      val qgWithAllNeededArguments = matchGraph.addArgumentIds(matchGraph.allCoveredIds.toIndexedSeq)
-      val onMatch = onMatchPatterns.foldLeft[LogicalPlan](producer.planQueryArgument(qgWithAllNeededArguments, context)) {
-        case (src, current) => planUpdate(src, current, first, interestingOrderConfig, context)
-      }
-      producer.planOnMatchApply(mergeMatch, onMatch, innerContext)
-    } else mergeMatch
+//    val mergeRead = if (onMatchPatterns.nonEmpty) {
+//      val qgWithAllNeededArguments = matchGraph.addArgumentIds(matchGraph.allCoveredIds.toIndexedSeq)
+//      val onMatch = onMatchPatterns.foldLeft[LogicalPlan](producer.planQueryArgument(qgWithAllNeededArguments, context)) {
+//        case (src, current) => planUpdate(src, current, first, interestingOrderConfig, context)
+//      }
+//      producer.planOnMatchApply(mergeMatch, onMatch, innerContext)
+//    } else mergeMatch
 
     //       either
     //         /  \
     //        /    onCreate
     //       /       \
     //   mergeRead    mergeCreatePart
-    val createNodes = createNodePatterns.foldLeft(producer.planQueryArgument(matchGraph, context): LogicalPlan) {
-      case (acc, current) => producer.planMergeCreateNode(acc, current, context)
-    }
-    val mergeCreatePart = createRelationshipPatterns.foldLeft(createNodes) {
-      case (acc, current) => producer.planMergeCreateRelationship(acc, current, context)
-    }
-    val onCreate = onCreatePatterns.foldLeft(mergeCreatePart) {
-      case (src, current) => planUpdate(src, current, first, interestingOrderConfig, context)
-    }
-    val readOrCreate = producer.planMergeEither(mergeRead, onCreate, context)
-    producer.planMergeApply(source, readOrCreate, innerContext)
+//    val createNodes = createNodePatterns.foldLeft(producer.planQueryArgument(matchGraph, context): LogicalPlan) {
+//      case (acc, current) => producer.planMergeCreateNode(acc, current, context)
+//    }
+
+
+//    val mergeCreatePart = createRelationshipPatterns.foldLeft(createNodes) {
+//      case (acc, current) => producer.planMergeCreateRelationship(acc, current, context)
+//    }
+//    val onCreate = onCreatePatterns.foldLeft(mergeCreatePart) {
+//      case (src, current) => planUpdate(src, current, first, interestingOrderConfig, context)
+//    }
+    producer.planApply(source, producer.planMerge(mergeMatch, createNodePatterns, createRelationshipPatterns, onMatchPatterns, onCreatePatterns, context), context)
   }
 
   private def mergeMatchPart(matchGraph: QueryGraph,
