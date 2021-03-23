@@ -155,9 +155,9 @@ public class ForsetiLockManager implements Locks
         LongSet transactionIds();
 
         /**
-         * Check if a lock is released or not
+         * Check if a lock is closed or not. A closed lock can not be locked, reused or be cause of deadlocks.
          */
-        boolean released();
+        boolean isClosed();
     }
 
     /**

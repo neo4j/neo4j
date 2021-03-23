@@ -26,7 +26,6 @@ import org.eclipse.collections.api.map.primitive.LongIntMap;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -132,6 +131,11 @@ public class ForsetiClient implements Locks.Client
     // closed and eventually will block other clients.
     private final LockClientStateHolder stateHolder = new LockClientStateHolder();
 
+    /**
+     * For exclusive locks, we only need a single re-usable one per client. We simply CAS this lock into whatever slots
+     * we want to hold in the global lock map. We re-create it every time the client is reused in order to avoid issues where a reference
+     * is found after the client is reused, causing false deadlocks.
+     */
     private ExclusiveLock myExclusiveLock;
 
     private volatile boolean hasLocks;
@@ -680,7 +684,9 @@ public class ForsetiClient implements Locks.Client
         userTransactionId = INVALID_TRANSACTION_ID;
         memoryTracker = null;
         clientPool.release( this );
-        myExclusiveLock.release(); // This exclusive locks are reused for all exclusive locks held by this client. Best we can do is to release it here
+        // This exclusive lock instance has been used for all exclusive locks held by this client for this transaction.
+        // Close it to mark it not participate in deadlock detection anymore
+        myExclusiveLock.close();
     }
 
     private void releaseAllLocks()
@@ -773,13 +779,13 @@ public class ForsetiClient implements Locks.Client
 
         ForsetiClient that = (ForsetiClient) o;
 
-        return clientId == that.clientId && userTransactionId == that.userTransactionId;
+        return clientId == that.clientId;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( clientId, userTransactionId );
+        return clientId;
     }
 
     @Override
@@ -983,14 +989,14 @@ public class ForsetiClient implements Locks.Client
         {
             waitedUpon.addAll( nextWaitedUpon );
             collectNextOwners( waitedUpon, owners, nextWaitedUpon, nextOwners );
-            if ( nextOwners.contains( this ) )
+            if ( nextOwners.contains( this ) && !lock.isClosed() )
             {
                 // Worrying... let's take a deep breath
                 nextOwners.clear();
                 LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
                 // ... and check again
                 collectNextOwners( waitedUpon, owners, nextWaitedUpon, nextOwners );
-                if ( nextOwners.contains( this ) )
+                if ( nextOwners.contains( this ) && !lock.isClosed() )
                 {
                     // Yes, this deadlock looks real.
                     return true;
@@ -1013,7 +1019,7 @@ public class ForsetiClient implements Locks.Client
         for ( ForsetiClient owner : owners )
         {
             ForsetiLockManager.Lock waitingForLock = owner.waitingForLock;
-            if ( waitingForLock != null && !waitingForLock.released() && !waitedUpon.contains( waitingForLock ) )
+            if ( waitingForLock != null && !waitingForLock.isClosed() && !waitedUpon.contains( waitingForLock ) )
             {
                 nextWaitedUpon.add( waitingForLock );
             }

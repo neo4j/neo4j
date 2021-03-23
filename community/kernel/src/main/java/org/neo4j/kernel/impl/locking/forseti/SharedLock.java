@@ -136,14 +136,17 @@ class SharedLock implements ForsetiLockManager.Lock
     @Override
     public int detectDeadlock( int clientId )
     {
-        for ( AtomicReferenceArray<ForsetiClient> holders : clientsHoldingThisLock )
+        if ( !isClosed() )
         {
-            for ( int j = 0; holders != null && j < holders.length(); j++ )
+            for ( AtomicReferenceArray<ForsetiClient> holders : clientsHoldingThisLock )
             {
-                ForsetiClient client = holders.get( j );
-                if ( client != null && client.isWaitingFor( clientId ) )
+                for ( int j = 0; holders != null && j < holders.length(); j++ )
                 {
-                    return client.id();
+                    ForsetiClient client = holders.get( j );
+                    if ( client != null && client.isWaitingFor( clientId ) )
+                    {
+                        return client.id();
+                    }
                 }
             }
         }
@@ -253,7 +256,7 @@ class SharedLock implements ForsetiLockManager.Lock
     }
 
     @Override
-    public boolean released()
+    public boolean isClosed()
     {
         return refCount.get() == 0;
     }
