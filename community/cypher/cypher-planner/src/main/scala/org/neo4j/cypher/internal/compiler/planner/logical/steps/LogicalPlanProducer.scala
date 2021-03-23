@@ -105,8 +105,6 @@ import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
-import org.neo4j.cypher.internal.logical.plans.CreatRelationshipSideEffect
-import org.neo4j.cypher.internal.logical.plans.CreateNodeSideEffect
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
@@ -175,16 +173,13 @@ import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetLabels
-import org.neo4j.cypher.internal.logical.plans.SetLabelsSideEffect
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
-import org.neo4j.cypher.internal.logical.plans.SetNodePropertySideEffect
 import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
-import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertySideEffect
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
@@ -1309,27 +1304,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   val solved = RegularSinglePlannerQuery().amendQueryGraph(_.addMutatingPatterns(patterns))
-  val createNodes = createNodePatterns.map {
-    case CreateNode(node, labels, props) => CreateNodeSideEffect(node, labels, props)
-  }
-  val createRelationships = createRelationshipPatterns.map {
-    case CreateRelationship(rel, start, typ, end, direction, props) => CreatRelationshipSideEffect(rel, start, typ, end, direction, props)
-  }
-
-  val onMatch = onMatchPatterns.map {
-    case SetRelationshipPropertyPattern(idName, propertyKey, expression) => SetRelationshipPropertySideEffect(idName, propertyKey, expression)
-    case SetNodePropertyPattern(idName, propertyKey, expression) => SetNodePropertySideEffect(idName, propertyKey, expression)
-    case SetLabelPattern(node, labels) => SetLabelsSideEffect(node, labels)
-    case p => throw new IllegalStateException(s"cannot merge with $p")
-  }
-  val onCreate = onCreatePatterns.map {
-    case SetRelationshipPropertyPattern(idName, propertyKey, expression) => SetRelationshipPropertySideEffect(idName, propertyKey, expression)
-    case SetNodePropertyPattern(idName, propertyKey, expression) => SetNodePropertySideEffect(idName, propertyKey, expression)
-    case SetLabelPattern(node, labels) => SetLabelsSideEffect(node, labels)
-    case p => throw new IllegalStateException(s"cannot merge with $p")
-  }
-
-  annotate(Merge(inner, createNodes ++ createRelationships, onMatch, onCreate), solved, ProvidedOrder.empty, context)
+  annotate(Merge(inner, createNodePatterns, createRelationshipPatterns, onMatchPatterns, onCreatePatterns), solved, ProvidedOrder.empty, context)
 }
 
   def planMergeCreateNode(inner: LogicalPlan, pattern: CreateNode, context: LogicalPlanningContext): LogicalPlan = {

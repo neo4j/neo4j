@@ -19,13 +19,20 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreateRelationship
+import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
  * Merge executes the inner plan and on each found row it executes `onMatch`. If there are no found rows
  * it will first run `createOps` followed by `onCreate`
  */
-case class Merge(read: LogicalPlan, createOps: Seq[CreateSideEffect], onMatch: Seq[SetSideEffect], onCreate: Seq[SetSideEffect])
+case class Merge(read: LogicalPlan,
+                 createNodes: Seq[CreateNode],
+                 createRelationships: Seq[CreateRelationship],
+                 onMatch: Seq[SetMutatingPattern],
+                 onCreate: Seq[SetMutatingPattern])
                 (implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
   override def source: LogicalPlan = read
 

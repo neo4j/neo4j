@@ -44,6 +44,10 @@ import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetMutatingPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -64,13 +68,11 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
-import org.neo4j.cypher.internal.logical.plans.CreatRelationshipSideEffect
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.CreateBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateNodeSideEffect
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
@@ -169,16 +171,12 @@ import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetLabels
-import org.neo4j.cypher.internal.logical.plans.SetLabelsSideEffect
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
-import org.neo4j.cypher.internal.logical.plans.SetNodePropertySideEffect
 import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
-import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertySideEffect
-import org.neo4j.cypher.internal.logical.plans.SetSideEffect
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
@@ -594,25 +592,27 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
       case LoadCSV(_, _, variableName, _, _, _, _) =>
         PlanDescriptionImpl(id, "LoadCSV", children, Seq(Details(asPrettyString(variableName))), variables, withRawCardinalities)
 
-      case Merge(_, creates, onMatch, onCreate) =>
-        def setOpDetatils(setOp: SetSideEffect): PrettyString = setOp match {
-          case SetLabelsSideEffect(node, labelNames) =>
+      case Merge(_, createNodes, createRelationships, onMatch, onCreate) =>
+        def setOpDetatils(setOp: SetMutatingPattern): PrettyString = setOp match {
+          case SetLabelPattern(node, labelNames) =>
             val prettyId = asPrettyString(node)
             val prettyLabels = labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")
             pretty"$prettyId$prettyLabels"
-          case SetNodePropertySideEffect(node, propertyKey, value) =>
+          case SetNodePropertyPattern(node, propertyKey, value) =>
             pretty"${setPropertyInfo(pretty"${asPrettyString(node)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)}"
-          case SetRelationshipPropertySideEffect(relationship, propertyKey, value) =>
+          case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>
             pretty"${setPropertyInfo(pretty"${asPrettyString(relationship)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)}"
         }
 
-        val createsPretty = creates.map {
-          case CreateNodeSideEffect(node, labels, properties) =>
+        val createNodesPretty = createNodes.map {
+          case CreateNode(node, labels, _) =>
             pretty"(${asPrettyString(node)}${if (labels.nonEmpty) labels.map(x => asPrettyString(x.name)).mkPrettyString(":", ":", "") else pretty""})"
-          case CreatRelationshipSideEffect(relationship, startNode, typ, endNode, direction, properties) =>
+        }
+        val createRelsPretty = createRelationships.map {
+          case CreateRelationship(relationship, startNode, typ, endNode, direction, properties) =>
             expandExpressionDescription(startNode, Some(relationship), Seq(typ.name), endNode, direction, 1, Some(1))
         }
-        PlanDescriptionImpl(id, "Merge", children, Seq(Details(createsPretty ++ onMatch.map(setOpDetatils) ++ onCreate.map(setOpDetatils))), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, "Merge", children, Seq(Details(createNodesPretty ++ createRelsPretty ++ onMatch.map(setOpDetatils) ++ onCreate.map(setOpDetatils))), variables, withRawCardinalities)
 
       case MergeCreateNode(_, idName, _, _) =>
         PlanDescriptionImpl(id, "MergeCreateNode", children, Seq(Details(asPrettyString(idName))), variables, withRawCardinalities)

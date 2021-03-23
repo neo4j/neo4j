@@ -37,6 +37,10 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetMutatingPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -161,23 +165,19 @@ object LogicalPlanToPlanBuilderString {
         nodes.map(createNodeToString).mkString(", ")
       case Create(_, nodes, relationships) =>
         s"Seq(${nodes.map(createNodeToString).mkString(", ")}), Seq(${relationships.map(createRelationshipToString).mkString(", ")})"
-      case Merge(_, creates, onMatch, onCreate) =>
-        def setOpToString(op: SetSideEffect): String = op match {
-          case SetLabelsSideEffect(node, labelNames) =>
+      case Merge(_, createNodes, createRelationships, onMatch, onCreate) =>
+        def setOpToString(op: SetMutatingPattern): String = op match {
+          case SetLabelPattern(node, labelNames) =>
             s"setLabel(${wrapInQuotationsAndMkString(node +: labelNames.map(_.name))})"
-          case SetNodePropertySideEffect(node, propertyKey, value) =>
+          case SetNodePropertyPattern(node, propertyKey, value) =>
             s"setNodeProperty(${wrapInQuotationsAndMkString(Seq(node, propertyKey.name, expressionStringifier(value)))})"
-          case SetRelationshipPropertySideEffect(relationship, propertyKey, value) =>
+          case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>
             s"setRelationshipProperty(${wrapInQuotationsAndMkString(Seq(relationship, propertyKey.name, expressionStringifier(value)))})"
         }
 
-        val nodesToCreate = creates.collect {
-          case CreateNodeSideEffect(node, labels, properties) => createNodeToString(CreateNode(node, labels, properties))
-        }
-        val relsToCreate = creates.collect {
-          case CreatRelationshipSideEffect(relationship, startNode, typ, endNode, direction, properties) =>
-            createRelationshipToString(CreateRelationship(relationship, startNode, typ, endNode, direction, properties))
-        }
+        val nodesToCreate = createNodes.map(createNodeToString)
+        val relsToCreate = createRelationships.map(createRelationshipToString)
+
         val onMatchString = onMatch.map(setOpToString)
         val onCreateString = onCreate.map(setOpToString)
 
