@@ -57,8 +57,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     private static final int translationTableChunkSizePower = getInteger( MuninnPagedFile.class, "translationTableChunkSizePower", 12 );
     private static final int translationTableChunkSize = 1 << translationTableChunkSizePower;
     private static final long translationTableChunkSizeMask = translationTableChunkSize - 1;
-    private static final int translationTableChunkArrayBase = UnsafeUtil.arrayBaseOffset( int[].class );
-    private static final int translationTableChunkArrayScale = UnsafeUtil.arrayIndexScale( int[].class );
 
     private static final int headerStateRefCountShift = 48;
     private static final int headerStateRefCountMax = 0x7FFF;
@@ -74,6 +72,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
 
     // This is the table where we translate file-page-ids to cache-page-ids. Only one thread can perform a resize at
     // a time, and we ensure this mutual exclusion using the monitor lock on this MuninnPagedFile object.
+    static final VarHandle TRANSLATION_TABLE_ARRAY;
     volatile int[][] translationTable;
 
     final PageSwapper swapper;
@@ -116,6 +115,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             MethodHandles.Lookup l = MethodHandles.lookup();
             HEADER_STATE = l.findVarHandle( MuninnPagedFile.class, "headerState", long.class );
             HIGHEST_EVICTED_TRANSACTION_ID = l.findVarHandle( MuninnPagedFile.class, "highestEvictedTransactionId", long.class );
+            TRANSLATION_TABLE_ARRAY = MethodHandles.arrayElementVarHandle( int[].class );
         }
         catch ( ReflectiveOperationException e )
         {
@@ -289,8 +289,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             for ( int i = 0; i < chunk.length; i++ )
             {
                 filePageId++;
-                long offset = computeChunkOffset( filePageId );
-                UnsafeUtil.putIntVolatile( chunk, offset, UNMAPPED_TTE );
+                TRANSLATION_TABLE_ARRAY.setVolatile( chunk, computeChunkIndex( filePageId ), UNMAPPED_TTE );
             }
         }
     }
@@ -344,13 +343,13 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             for ( int i = 0; i < chunk.length; i++ )
             {
                 filePageId++;
-                long offset = computeChunkOffset( filePageId );
+                int chunkIndex = computeChunkIndex( filePageId );
 
                 // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
                 // in getting a lock on all available pages.
                 for (;;)
                 {
-                    int pageId = UnsafeUtil.getIntVolatile( chunk, offset );
+                    int pageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile( chunk, chunkIndex );
                     if ( pageId != UNMAPPED_TTE )
                     {
                         long pageRef = deref( pageId );
@@ -448,13 +447,13 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
             for ( int i = 0; i < chunk.length; i++ )
             {
                 filePageId++;
-                long offset = computeChunkOffset( filePageId );
+                int chunkIndex = computeChunkIndex( filePageId );
 
                 // We might race with eviction, but we also mustn't miss a dirty page, so we loop until we succeed
                 // in getting a lock on all available pages.
                 for ( ; ; )
                 {
-                    int pageId = UnsafeUtil.getIntVolatile( chunk, offset );
+                    int pageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile( chunk, chunkIndex );
                     if ( pageId != UNMAPPED_TTE )
                     {
                         long pageRef = deref( pageId );
@@ -805,13 +804,13 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     private void evictPage( long filePageId )
     {
         int chunkId = computeChunkId( filePageId );
-        long chunkOffset = computeChunkOffset( filePageId );
+        int chunkIndex = computeChunkIndex( filePageId );
         int[] chunk = translationTable[chunkId];
 
-        int mappedPageId = UnsafeUtil.getIntVolatile( chunk, chunkOffset );
+        int mappedPageId = (int) TRANSLATION_TABLE_ARRAY.getVolatile( chunk, chunkIndex );
         long pageRef = deref( mappedPageId );
         setHighestEvictedTransactionId( getAndResetLastModifiedTransactionId( pageRef ) );
-        UnsafeUtil.putIntVolatile( chunk, chunkOffset, UNMAPPED_TTE );
+        TRANSLATION_TABLE_ARRAY.setVolatile( chunk, chunkIndex, UNMAPPED_TTE );
     }
 
     private void setHighestEvictedTransactionId( long modifiedTransactionId )
@@ -890,9 +889,8 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         return (int) (filePageId >>> translationTableChunkSizePower);
     }
 
-    static long computeChunkOffset( long filePageId )
+    static int computeChunkIndex( long filePageId )
     {
-        int index = (int) (filePageId & translationTableChunkSizeMask);
-        return UnsafeUtil.arrayOffset( index, translationTableChunkArrayBase, translationTableChunkArrayScale );
+        return (int) (filePageId & translationTableChunkSizeMask);
     }
 }

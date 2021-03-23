@@ -311,7 +311,7 @@ public abstract class MuninnPageCursor extends PageCursor
         int chunkId = MuninnPagedFile.computeChunkId( filePageId );
         // The chunkOffset is the addressing offset into the chunk array object for the relevant array slot. Using
         // this, we can access the array slot with Unsafe.
-        long chunkOffset = MuninnPagedFile.computeChunkOffset( filePageId );
+        int chunkIndex = MuninnPagedFile.computeChunkIndex( filePageId );
         int[][] tt = pagedFile.translationTable;
         if ( tt.length <= chunkId )
         {
@@ -327,7 +327,7 @@ public abstract class MuninnPageCursor extends PageCursor
         // If the CAS failed, we retry the look up and start over from the top.
         for (;;)
         {
-            int mappedPageId = UnsafeUtil.getIntVolatile( chunk, chunkOffset );
+            int mappedPageId = (int) MuninnPagedFile.TRANSLATION_TABLE_ARRAY.getVolatile( chunk, chunkIndex );
             if ( mappedPageId != UNMAPPED_TTE )
             {
                 // We got *a* page, but we might be racing with eviction. To cope with that, we have to take some
@@ -349,7 +349,7 @@ public abstract class MuninnPageCursor extends PageCursor
             }
             else
             {
-                if ( uncommonPin( filePageId, chunkOffset, chunk ) )
+                if ( uncommonPin( filePageId, chunkIndex, chunk ) )
                 {
                     return;
                 }
@@ -357,7 +357,7 @@ public abstract class MuninnPageCursor extends PageCursor
         }
     }
 
-    private boolean uncommonPin( long filePageId, long chunkOffset, int[] chunk ) throws IOException
+    private boolean uncommonPin( long filePageId, int chunkIndex, int[] chunk ) throws IOException
     {
         if ( noFault )
         {
@@ -373,10 +373,10 @@ public abstract class MuninnPageCursor extends PageCursor
             // have a duty to eventually release and remove the latch, no matter what happens now.
             // However, we first have to double-check that a page fault did not complete in-between our initial
             // check in the translation table, and us getting a latch.
-            if ( UnsafeUtil.getIntVolatile( chunk, chunkOffset ) == UNMAPPED_TTE )
+            if ( (int) MuninnPagedFile.TRANSLATION_TABLE_ARRAY.getVolatile( chunk, chunkIndex ) == UNMAPPED_TTE )
             {
                 // Sweet, we didn't race with any other fault on this translation table entry.
-                long pageRef = pageFault( filePageId, swapper, chunkOffset, chunk, latch );
+                long pageRef = pageFault( filePageId, swapper, chunkIndex, chunk, latch );
                 pinCursorToPage( pageRef, filePageId, swapper );
                 return true;
             }
@@ -390,9 +390,7 @@ public abstract class MuninnPageCursor extends PageCursor
         return false;
     }
 
-    private long pageFault(
-            long filePageId, PageSwapper swapper, long chunkOffset, int[] chunk, LatchMap.Latch latch )
-            throws IOException
+    private long pageFault( long filePageId, PageSwapper swapper, int chunkIndex, int[] chunk, LatchMap.Latch latch ) throws IOException
     {
         // We are page faulting. This is a critical time, because we currently have the given latch in the chunk array
         // slot that we are faulting into. We MUST make sure to release that latch, and remove it from the chunk, no
@@ -417,7 +415,7 @@ public abstract class MuninnPageCursor extends PageCursor
             }
             catch ( Throwable throwable )
             {
-                abortPageFault( throwable, chunk, chunkOffset, faultEvent );
+                abortPageFault( throwable, chunk, chunkIndex, faultEvent );
                 throw throwable;
             }
             try
@@ -439,13 +437,13 @@ public abstract class MuninnPageCursor extends PageCursor
                 }
                 finally
                 {
-                    abortPageFault( throwable, chunk, chunkOffset, faultEvent );
+                    abortPageFault( throwable, chunk, chunkIndex, faultEvent );
                 }
                 throw throwable;
             }
             // Put the page in the translation table before we undo the exclusive lock, as we could otherwise race with
             // eviction, and the onEvict callback expects to find a MuninnPage object in the table.
-            UnsafeUtil.putIntVolatile( chunk, chunkOffset, pagedFile.toId( pageRef ) );
+            MuninnPagedFile.TRANSLATION_TABLE_ARRAY.setVolatile( chunk, chunkIndex, pagedFile.toId( pageRef ) );
             // Once we page has been published to the translation table, we can convert our exclusive lock to whatever we
             // need for the page cursor.
             convertPageFaultLock( pageRef );
@@ -458,10 +456,9 @@ public abstract class MuninnPageCursor extends PageCursor
         }
     }
 
-    private void abortPageFault( Throwable throwable, int[] chunk, long chunkOffset,
-                                 PageFaultEvent faultEvent )
+    private void abortPageFault( Throwable throwable, int[] chunk, int chunkIndex, PageFaultEvent faultEvent )
     {
-        UnsafeUtil.putIntVolatile( chunk, chunkOffset, UNMAPPED_TTE );
+        MuninnPagedFile.TRANSLATION_TABLE_ARRAY.setVolatile( chunk, chunkIndex, UNMAPPED_TTE );
         faultEvent.done( throwable );
         pinEvent.done();
     }

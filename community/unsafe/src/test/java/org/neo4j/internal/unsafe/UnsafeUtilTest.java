@@ -43,7 +43,6 @@ import static org.neo4j.internal.unsafe.UnsafeUtil.getAndSetLong;
 import static org.neo4j.internal.unsafe.UnsafeUtil.getByte;
 import static org.neo4j.internal.unsafe.UnsafeUtil.getFieldOffset;
 import static org.neo4j.internal.unsafe.UnsafeUtil.getInt;
-import static org.neo4j.internal.unsafe.UnsafeUtil.getIntVolatile;
 import static org.neo4j.internal.unsafe.UnsafeUtil.getLong;
 import static org.neo4j.internal.unsafe.UnsafeUtil.getLongVolatile;
 import static org.neo4j.internal.unsafe.UnsafeUtil.getShort;
@@ -52,7 +51,6 @@ import static org.neo4j.internal.unsafe.UnsafeUtil.newDirectByteBuffer;
 import static org.neo4j.internal.unsafe.UnsafeUtil.pageSize;
 import static org.neo4j.internal.unsafe.UnsafeUtil.putByte;
 import static org.neo4j.internal.unsafe.UnsafeUtil.putInt;
-import static org.neo4j.internal.unsafe.UnsafeUtil.putIntVolatile;
 import static org.neo4j.internal.unsafe.UnsafeUtil.putLong;
 import static org.neo4j.internal.unsafe.UnsafeUtil.putLongVolatile;
 import static org.neo4j.internal.unsafe.UnsafeUtil.putShort;
@@ -126,14 +124,6 @@ class UnsafeUtilTest
         assertThat( obj.aByte ).isEqualTo( (byte) 1 );
         assertThat( getByte( obj, aByteOffset ) ).isEqualTo( (byte) 1 );
         obj.aByte = 0;
-        assertThat( obj ).isEqualTo( new Obj() );
-
-        long anIntOffset = getFieldOffset( Obj.class, "anInt" );
-        obj = new Obj();
-        putIntVolatile( obj, anIntOffset, 2 );
-        assertThat( obj.anInt ).isEqualTo( 2 );
-        assertThat( getIntVolatile( obj, anIntOffset ) ).isEqualTo( 2 );
-        obj.anInt = 0;
         assertThat( obj ).isEqualTo( new Obj() );
     }
 
