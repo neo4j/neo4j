@@ -116,6 +116,10 @@ public class RelationshipChangesForNode
                     if ( ids.isEmpty() )
                     {
                         byDirection.deleteIds( direction );
+                        if ( byDirection.isEmpty() )
+                        {
+                            byType.remove( typeId );
+                        }
                     }
                     return true;
                 }
@@ -146,6 +150,11 @@ public class RelationshipChangesForNode
     public void clear()
     {
         byType.clear();
+    }
+
+    boolean isEmpty()
+    {
+        return byType.isEmpty();
     }
 
     public LongIterator getRelationships()

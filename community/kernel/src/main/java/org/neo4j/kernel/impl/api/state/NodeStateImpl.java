@@ -231,7 +231,7 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
 
     boolean hasAddedRelationships()
     {
-        return relationshipsAdded != null;
+        return relationshipsAdded != null && !relationshipsAdded.isEmpty();
     }
 
     public boolean hasAddedRelationships( int type )
@@ -241,7 +241,7 @@ class NodeStateImpl extends EntityStateImpl implements NodeState
 
     boolean hasRemovedRelationships()
     {
-        return relationshipsRemoved != null;
+        return relationshipsRemoved != null && !relationshipsRemoved.isEmpty();
     }
 
     @Override

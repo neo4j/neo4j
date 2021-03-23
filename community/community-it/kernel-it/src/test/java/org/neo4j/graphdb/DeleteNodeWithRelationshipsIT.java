@@ -20,13 +20,16 @@
 package org.neo4j.graphdb;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@ExtendWith( RandomExtension.class )
 @ImpermanentDbmsExtension
 class DeleteNodeWithRelationshipsIT
 {
@@ -54,4 +57,39 @@ class DeleteNodeWithRelationshipsIT
                 "To delete this node, you must first delete its relationships.", ex.getMessage() );
     }
 
+    @Test
+    void shouldDeleteDenseNodeEvenWithTemporarilyCreatedRelationshipsBeforeDeletion()
+    {
+        // Given
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = tx.createNode();
+            nodeId = node.getId();
+            for ( int i = 0; i < 200; i++ )
+            {
+                node.createRelationshipTo( tx.createNode(), RelationshipType.withName( "TYPE_" + i % 3 ) );
+            }
+            tx.commit();
+        }
+
+        // When
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = tx.getNodeById( nodeId );
+            // Create temporary relationships of new types, which will be deleted right afterwards
+            node.createRelationshipTo( tx.createNode(), RelationshipType.withName( "OTHER_TYPE_1" ) );
+            node.createRelationshipTo( tx.createNode(), RelationshipType.withName( "OTHER_TYPE_2" ) );
+            node.getRelationships().forEach( Relationship::delete );
+            node.delete();
+            tx.commit();
+        }
+
+        // Then
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThrows( NotFoundException.class, () -> tx.getNodeById( nodeId ) );
+            tx.commit();
+        }
+    }
 }
