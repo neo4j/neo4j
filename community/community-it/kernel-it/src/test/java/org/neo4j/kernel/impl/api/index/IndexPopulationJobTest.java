@@ -318,7 +318,7 @@ class IndexPopulationJobTest
     }
 
     @Test
-    void shouldPopulateRelatonshipIndexWithASmallDataset()
+    void shouldPopulateRelationshipIndexWithASmallDataset()
     {
         // GIVEN
         String value = "Philip J.Fry";
@@ -442,7 +442,7 @@ class IndexPopulationJobTest
 
         final IndexPopulationJob job =
                 newIndexPopulationJob( populator, index, storeView, NullLogProvider.getInstance(), EntityType.NODE, indexPrototype( FIRST, name, false ) );
-        JobHandle jobHandle = mock( JobHandle.class );
+        JobHandle<?> jobHandle = mock( JobHandle.class );
         job.setHandle( jobHandle );
 
         Future<Void> runFuture;
