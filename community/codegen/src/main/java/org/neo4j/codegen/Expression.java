@@ -408,7 +408,7 @@ public abstract class Expression extends ExpressionTemplate
     {
         assert array.type().isArray();
 
-        return new Expression( array.type() )
+        return new Expression( array.type().elementOfArray() )
         {
             @Override
             public void accept( ExpressionVisitor visitor )

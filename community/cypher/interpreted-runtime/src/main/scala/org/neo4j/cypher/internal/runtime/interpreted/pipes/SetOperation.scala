@@ -45,7 +45,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import scala.collection.mutable.ArrayBuffer
 
-sealed trait SetOperation {
+trait SetOperation {
 
   def set(executionContext: CypherRow, state: QueryState): Long
 

@@ -69,7 +69,6 @@ case class CreateRelationship(command: CreateRelationshipCommand) extends Interp
     row.set(command.idName, relationship)
   }
 
-
   private def getNode(row: CypherRow, relName: String, name: String, lenient: Boolean): NodeValue =
     row.getByName(name) match {
       case n: NodeValue => n
