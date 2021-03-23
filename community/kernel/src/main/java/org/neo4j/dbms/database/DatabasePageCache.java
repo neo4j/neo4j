@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.io.pagecache.IOController;
-import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -78,7 +77,6 @@ public class DatabasePageCache implements PageCache
     public Optional<PagedFile> getExistingMapping( Path path )
     {
         Path canonicalFile = path.normalize();
-
         return databasePagedFiles.stream().filter( pagedFile -> pagedFile.path().equals( canonicalFile ) ).findFirst();
     }
 
