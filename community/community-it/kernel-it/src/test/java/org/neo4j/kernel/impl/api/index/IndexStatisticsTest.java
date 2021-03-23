@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,9 +46,9 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
@@ -730,7 +731,7 @@ public class IndexStatisticsTest
         String message = format(
                 "Expected number of index updates to not differ (expected: %d actual: %d). %s",
                 expected, actual, info );
-        assertEquals( message, 0L, Math.abs( expected - actual ) );
+        Assertions.assertThat( Math.abs( expected - actual ) ).as( message ).isLessThanOrEqualTo( actual / 10 );
     }
 
     private void assertCorrectIndexSelectivity( IndexDescriptor index, long numberOfEntries ) throws KernelException
