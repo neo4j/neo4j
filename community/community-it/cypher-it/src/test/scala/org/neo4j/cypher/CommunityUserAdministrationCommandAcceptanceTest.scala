@@ -436,6 +436,15 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin(username, password, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
+  test("should create user with username and password as same parameter") {
+    // WHEN
+    execute("CREATE USER $user SET PASSWORD $user CHANGE REQUIRED", Map("user" -> username))
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(defaultUser, user(username))
+    testUserLogin(username, username, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
   test("should fail when creating user with numeric password as parameter") {
     the[ParameterWrongTypeException] thrownBy {
       // WHEN
@@ -1091,6 +1100,18 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // THEN
     testUserLogin(username, newPassword, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+    testUserLogin(username, password, AuthenticationResult.FAILURE)
+  }
+
+  test("should alter user password with same parameter as username") {
+    // GIVEN
+    prepareUser()
+
+    // WHEN
+    execute("ALTER USER $user SET PASSWORD $user", Map( "user" -> username))
+
+    // THEN
+    testUserLogin(username, username, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
     testUserLogin(username, password, AuthenticationResult.FAILURE)
   }
 

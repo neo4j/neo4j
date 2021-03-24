@@ -89,17 +89,26 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
                                           bytesValue: Value,
                                           mapValueConverter: (Transaction, MapValue) => MapValue)
 
-  protected def getPasswordExpression(password: expressions.Expression, isEncryptedPassword: Boolean): PasswordExpression =
+  protected def getPasswordExpression(userNameParameter: Option[expressions.Expression], password: expressions.Expression, isEncryptedPassword: Boolean): PasswordExpression =
     password match {
       case parameterPassword: ParameterFromSlot =>
         validateStringParameterType(parameterPassword)
+
+        // Normally we overwrite the password parameter with the hashed version so we don't keep the
+        // raw version around. If the username and password happen to be the same parameter, though
+        // this doesn't work
+        val hashedPwParameterName = userNameParameter match {
+          case Some(param) if param == password => internalKey(parameterPassword.name) + "_hashed"
+          case _ => parameterPassword.name
+        }
+
         def convertPasswordParameters(transaction: Transaction, params: MapValue): MapValue = {
           val passwordParameter = parameterPassword.name
           val encodedPassword = getValidPasswordParameter(params, passwordParameter)
           val hashedPassword = if (isEncryptedPassword) validateAndFormatEncryptedPassword(encodedPassword) else hashPassword(validatePassword(encodedPassword))
-          params.updatedWith(passwordParameter, hashedPassword).updatedWith(passwordParameter + "_bytes", Values.byteArray(encodedPassword))
+          params.updatedWith(hashedPwParameterName, hashedPassword).updatedWith(passwordParameter + "_bytes", Values.byteArray(encodedPassword))
         }
-        PasswordExpression(parameterPassword.name, Values.NO_VALUE, s"${parameterPassword.name}_bytes", Values.NO_VALUE, convertPasswordParameters)
+        PasswordExpression(hashedPwParameterName, Values.NO_VALUE, s"${parameterPassword.name}_bytes", Values.NO_VALUE, convertPasswordParameters)
     }
 
   protected def getPasswordFieldsCurrent(password: expressions.Expression): (String, Value, MapValue => MapValue) = {
@@ -194,7 +203,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name)
     }
     val userNameFields = getNameFields("username", userName)
-    val credentials = getPasswordExpression(password, isEncryptedPassword)
+    val credentials = getPasswordExpression(userName.toOption, password, isEncryptedPassword)
     val homeDatabaseCypher = homeDatabaseFields.map(ddf => s", homeDatabase: $$`${ddf.nameKey}`").getOrElse("")
     val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => {
       val newParams = credentials.mapValueConverter(tx, userNameFields.nameConverter(tx, p))
@@ -245,7 +254,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
       case RemoveHomeDatabaseAction    => NameFields(s"${internalPrefix}homeDatabase", Values.NO_VALUE, IdentityConverter)
       case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name)
     }
-    val maybePw = password.map(p => getPasswordExpression(p, isEncryptedPassword.getOrElse(false)))
+    val maybePw = password.map(p => getPasswordExpression(userName.toOption, p, isEncryptedPassword.getOrElse(false)))
     val params = Seq(
       maybePw -> "credentials",
       requirePasswordChange -> "passwordChangeRequired",
