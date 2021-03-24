@@ -31,7 +31,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.neo4j.logging.log4j.Neo4jLogMessage;
-import org.neo4j.logging.log4j.StructureAwareMessage;
 
 import static java.lang.String.format;
 import static org.apache.commons.text.StringEscapeUtils.escapeJava;
@@ -282,45 +281,33 @@ public class AssertableLogProvider extends AbstractLogProvider<Log>
         }
 
         @Override
+        public void debug( Neo4jLogMessage message )
+        {
+            logCalls.add( new LogCall( context, Level.DEBUG, message.getFormattedMessage(), null, null ) );
+        }
+
+        @Override
         public void info( Neo4jLogMessage message )
         {
-            if ( message instanceof StructureAwareMessage )
-            {
-                StructureAwareMessage msg = (StructureAwareMessage) message;
-                logCalls.add( new LogCall( context, Level.INFO, msg.getFormattedMessage(), null, null ) );
-            }
-            else
-            {
-                throw new UnsupportedOperationException();
-            }
+            logCalls.add( new LogCall( context, Level.INFO, message.getFormattedMessage(), null, null ) );
+        }
+
+        @Override
+        public void warn( Neo4jLogMessage message )
+        {
+            logCalls.add( new LogCall( context, Level.WARN, message.getFormattedMessage(), null, null ) );
         }
 
         @Override
         public void error( Neo4jLogMessage message )
         {
-            if ( message instanceof StructureAwareMessage )
-            {
-                StructureAwareMessage msg = (StructureAwareMessage) message;
-                logCalls.add( new LogCall( context, Level.ERROR, msg.getFormattedMessage(), null, null ) );
-            }
-            else
-            {
-                throw new UnsupportedOperationException();
-            }
+            logCalls.add( new LogCall( context, Level.ERROR, message.getFormattedMessage(), null, null ) );
         }
 
         @Override
         public void error( Neo4jLogMessage message, Throwable throwable )
         {
-            if ( message instanceof StructureAwareMessage )
-            {
-                StructureAwareMessage msg = (StructureAwareMessage) message;
-                logCalls.add( new LogCall( context, Level.ERROR, msg.getFormattedMessage(), null, throwable ) );
-            }
-            else
-            {
-                throw new UnsupportedOperationException();
-            }
+            logCalls.add( new LogCall( context, Level.ERROR, message.getFormattedMessage(), null, throwable ) );
         }
 
         @Override

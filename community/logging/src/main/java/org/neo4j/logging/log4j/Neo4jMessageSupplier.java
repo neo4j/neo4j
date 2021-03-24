@@ -26,6 +26,12 @@ public interface Neo4jMessageSupplier extends MessageSupplier
     @Override
     Neo4jLogMessage get();
 
+    /**
+     * Helper function to create a {@link Neo4jLogMessage} to wrap in a {@link Neo4jMessageSupplier}. Example usage:
+     * <pre>
+     *     {@code log.info( () -> Neo4jMessageSupplier.forMessage( "My log message %s", computeBigStringArg() ) ); }
+     * </pre>
+     */
     static Neo4jLogMessage forMessage( String format, Object... args )
     {
         return new Neo4jLogMessage()
