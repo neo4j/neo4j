@@ -71,5 +71,5 @@ case object OldValidSyntax extends ExistenceConstraintSyntax {
 }
 
 case object NewSyntax extends ExistenceConstraintSyntax {
-  override val keyword: String = "EXISTENCE"
+  override val keyword: String = "PROPERTY EXISTENCE"
 }

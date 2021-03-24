@@ -421,6 +421,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def orderBy(items: SortItem*): OrderBy =
     OrderBy(items)(pos)
 
+  def skip(value: Long): Skip = Skip(literalInt(value))(pos)
+
+  def limit(value: Long): Limit = Limit(literalInt(value))(pos)
+
   def sortItem(e: Expression): AscSortItem =
     AscSortItem(e)(pos)
 

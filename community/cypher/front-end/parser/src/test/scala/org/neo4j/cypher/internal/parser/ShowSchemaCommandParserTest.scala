@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AllConstraints
 import org.neo4j.cypher.internal.ast.DeprecatedSyntax
 import org.neo4j.cypher.internal.ast.ExistsConstraints
@@ -105,12 +104,31 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
     yields(_ => query(ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnAllItems)))
   }
 
+  test("SHOW INDEXES YIELD * ORDER BY name SKIP 2 LIMIT 5") {
+    yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = true)(pos),
+      yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
+    ))
+  }
+
   test("USE db SHOW BTREE INDEXES YIELD name, populationPercent AS pp WHERE pp < 50.0 RETURN name") {
     yields(_ => query(
       use(varFor("db")),
       ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = true)(pos),
       yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
         where = Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
+      return_(variableReturnItem("name"))
+    ))
+  }
+
+  test("USE db SHOW BTREE INDEXES YIELD name, populationPercent AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name") {
+    yields(_ => query(
+      use(varFor("db")),
+      ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = true)(pos),
+      yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
+        Some(orderBy(sortItem(varFor("pp")))),
+        Some(skip(2)),
+        Some(limit(5)),
+        Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
       return_(variableReturnItem("name"))
     ))
   }
@@ -297,12 +315,31 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
     yields(_ => query(ShowConstraintsClause(UniqueConstraints, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnAllItems)))
   }
 
+  test("SHOW CONSTRAINTS YIELD * ORDER BY name SKIP 2 LIMIT 5") {
+    yields(_ => query(ShowConstraintsClause(AllConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
+      yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
+    ))
+  }
+
   test("USE db SHOW NODE KEY CONSTRAINTS YIELD name, properties AS pp WHERE size(pp) > 1 RETURN name") {
     yields(_ => query(
       use(varFor("db")),
       ShowConstraintsClause(NodeKeyConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
       yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("properties", "pp")),
         where = Some(where(greaterThan(function("size", varFor("pp")), literalInt(1))))),
+      return_(variableReturnItem("name"))
+    ))
+  }
+
+  test("USE db SHOW CONSTRAINTS YIELD name, populationPercent AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name") {
+    yields(_ => query(
+      use(varFor("db")),
+      ShowConstraintsClause(AllConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
+      yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
+        Some(orderBy(sortItem(varFor("pp")))),
+        Some(skip(2)),
+        Some(limit(5)),
+        Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
       return_(variableReturnItem("name"))
     ))
   }

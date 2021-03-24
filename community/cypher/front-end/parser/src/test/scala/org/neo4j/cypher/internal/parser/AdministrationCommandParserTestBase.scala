@@ -204,10 +204,6 @@ class AdministrationCommandParserTestBase
   def revokeExecuteFunctionPrivilege(a: AdminAction, q: List[FunctionPrivilegeQualifier], r: Seq[Either[String, Parameter]]): InputPosition => ast.Statement =
     ast.RevokePrivilege.dbmsAction(a, r, RevokeBothType()(pos), q)
 
-  def skip(value: Long): ast.Skip = ast.Skip(literalInt(value))(pos)
-
-  def limit(value: Long): ast.Limit = ast.Limit(literalInt(value))(pos)
-
   // Can't use the `return_` methods in `AstConstructionTestSupport`
   // since that results in `Cannot resolve overloaded method 'return_'` for unknown reasons
   def returnClause(returnItems: ast.ReturnItems,

@@ -532,7 +532,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       "SHOW EXIST CONSTRAINTS",
 
     "show property existence constraint" ->
-      "SHOW EXISTENCE CONSTRAINTS",
+      "SHOW PROPERTY EXISTENCE CONSTRAINTS",
 
     "SHOW NODE EXISTS constraint BRIEF output" ->
       "SHOW NODE EXISTS CONSTRAINTS BRIEF",
@@ -541,7 +541,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       "SHOW NODE EXIST CONSTRAINTS",
 
     "SHOW NODE property EXIST constraint" ->
-      "SHOW NODE EXISTENCE CONSTRAINTS",
+      "SHOW NODE PROPERTY EXISTENCE CONSTRAINTS",
 
     "show relationship EXISTS cOnStRaInTs VERBOSE" ->
       "SHOW RELATIONSHIP EXISTS CONSTRAINTS VERBOSE",
@@ -550,13 +550,13 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       "SHOW RELATIONSHIP EXIST CONSTRAINTS",
 
     "show relationship EXISTENCE cOnStRaInTs" ->
-      "SHOW RELATIONSHIP EXISTENCE CONSTRAINTS",
+      "SHOW RELATIONSHIP PROPERTY EXISTENCE CONSTRAINTS",
 
     "show rel EXIST cOnStRaInTs" ->
-      "SHOW RELATIONSHIP EXISTENCE CONSTRAINTS",
+      "SHOW RELATIONSHIP PROPERTY EXISTENCE CONSTRAINTS",
 
     "show rel property EXISTence cOnStRaInTs" ->
-      "SHOW RELATIONSHIP EXISTENCE CONSTRAINTS",
+      "SHOW RELATIONSHIP PROPERTY EXISTENCE CONSTRAINTS",
 
     "show unique constraint VERBOSE output" ->
       "SHOW UNIQUE CONSTRAINTS VERBOSE",
@@ -582,7 +582,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
         |RETURN DISTINCT type""".stripMargin,
 
     "show existence constraint YIELD * where name = 'neo4j' Return *" ->
-      """SHOW EXISTENCE CONSTRAINTS
+      """SHOW PROPERTY EXISTENCE CONSTRAINTS
         |YIELD *
         |  WHERE name = "neo4j"
         |RETURN *""".stripMargin,
