@@ -26,7 +26,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 
 /**
- * {@link OpenOption}s that are specific to {@link PageCache#map(Path, int, ImmutableSet)},
+ * {@link OpenOption}s that are specific to {@link PageCache#map(Path, int, String, ImmutableSet)},
  * and not normally supported by file systems.
  */
 public enum PageCacheOpenOptions implements OpenOption

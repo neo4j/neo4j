@@ -33,8 +33,8 @@
  * <p>
  * A file must first be "mapped" into the page cache, before the page cache can cache the contents of the files. When
  * you no longer have an immediate use for the contents of the file, it can be "unmapped." Mapping a file using the
- * {@link org.neo4j.io.pagecache.PageCache#map(java.nio.file.Path, int, org.eclipse.collections.api.set.ImmutableSet)} ) map} method gives you a
- * {@link org.neo4j.io.pagecache.PagedFile} object, through which the contents of the file can be accessed. Once a file
+ * {@link org.neo4j.io.pagecache.PageCache#map(java.nio.file.Path, int, java.lang.String, org.eclipse.collections.api.set.ImmutableSet)} ) map}
+ * method gives you a {@link org.neo4j.io.pagecache.PagedFile} object, through which the contents of the file can be accessed. Once a file
  * has been mapped with the page cache, it should no longer be accessed directly through the file system, because the
  * page cache will keep changes in memory, thinking it is managing the only authoritative copy.
  * <p>
