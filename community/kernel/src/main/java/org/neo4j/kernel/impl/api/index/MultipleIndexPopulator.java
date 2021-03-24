@@ -45,6 +45,7 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaState;
@@ -645,8 +646,11 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
                             {
                                 populator.verifyDeferredConstraints( propertyAccessor );
                             }
-                            IndexSample sample = populator.sample( cursorTracer );
-                            indexStatisticsStore.replaceStats( indexId, sample );
+                            if ( indexDescriptor.getIndexType() != IndexType.LOOKUP )
+                            {
+                                IndexSample sample = populator.sample( cursorTracer );
+                                indexStatisticsStore.replaceStats( indexId, sample );
+                            }
                             populator.close( true, cursorTracer );
                             schemaState.clear();
                             return true;

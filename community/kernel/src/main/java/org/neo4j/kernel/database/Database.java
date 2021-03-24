@@ -47,13 +47,18 @@ import org.neo4j.counts.CountsAccessor;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
@@ -65,6 +70,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.Kernel;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailability;
@@ -101,6 +107,7 @@ import org.neo4j.kernel.impl.index.schema.FullStoreChangeStream;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.LoggingMonitor;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
@@ -180,6 +187,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.read_only;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.kernel.database.DatabaseFileHelper.filesToDeleteOnTruncation;
 import static org.neo4j.kernel.database.DatabaseFileHelper.filesToKeepOnTruncation;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
@@ -530,11 +538,37 @@ public class Database extends LifecycleAdapter
              */
             databaseHealth.healed();
             started = true;
+
+            postStartupInit( storageExists );
         }
         catch ( Throwable e )
         {
             handleStartupFailure( e );
         }
+    }
+
+    private void postStartupInit( boolean storageExists ) throws KernelException
+    {
+        if ( !storageExists && databaseConfig.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
+        {
+            try ( var tx = kernelModule.kernelAPI().beginTransaction( KernelTransaction.Type.IMPLICIT, LoginContext.AUTH_DISABLED ) )
+            {
+                createLookupIndex( tx, EntityType.NODE );
+                createLookupIndex( tx, EntityType.RELATIONSHIP );
+                tx.commit();
+            }
+        }
+    }
+
+    private void createLookupIndex( KernelTransaction tx, EntityType entityType ) throws KernelException
+    {
+        var descriptor = SchemaDescriptor.forAllEntityTokens( entityType );
+
+        IndexPrototype prototype = IndexPrototype.forSchema( descriptor ).withIndexType( LOOKUP )
+                                                 .withIndexProvider( indexProviderMap.getTokenIndexProvider().getProviderDescriptor() );
+        prototype = prototype.withName( SchemaRule.generateName( prototype, new String[]{}, new String[]{} ) );
+
+        tx.schemaWrite().indexCreate( prototype );
     }
 
     private LogFiles getLogFiles( LogEntryReader logEntryReader ) throws IOException

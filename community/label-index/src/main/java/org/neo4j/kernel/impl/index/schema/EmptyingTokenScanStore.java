@@ -71,9 +71,10 @@ public class EmptyingTokenScanStore implements TokenScanStore
         return new EmptyingLabelScanStore( fileSystem, directoryStructure, readOnly );
     }
 
-    public static RelationshipTypeScanStore emptyRtss( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
+    public static RelationshipTypeScanStore emptyRtss( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly,
+            boolean shouldDeleteExistingStore )
     {
-        return new EmptyingRelationshipTypeScanStore( fileSystem, directoryStructure, readOnly );
+        return new EmptyingRelationshipTypeScanStore( fileSystem, directoryStructure, readOnly, shouldDeleteExistingStore );
     }
 
     @Override
@@ -277,9 +278,10 @@ public class EmptyingTokenScanStore implements TokenScanStore
 
     private static class EmptyingRelationshipTypeScanStore extends EmptyingTokenScanStore implements RelationshipTypeScanStore
     {
-        EmptyingRelationshipTypeScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly )
+        EmptyingRelationshipTypeScanStore( FileSystemAbstraction fileSystem, DatabaseLayout directoryStructure, boolean readOnly,
+                boolean shouldDeleteExistingStore )
         {
-            super( fileSystem, directoryStructure, readOnly, EntityType.RELATIONSHIP, true );
+            super( fileSystem, directoryStructure, readOnly, EntityType.RELATIONSHIP, shouldDeleteExistingStore );
         }
     }
 }

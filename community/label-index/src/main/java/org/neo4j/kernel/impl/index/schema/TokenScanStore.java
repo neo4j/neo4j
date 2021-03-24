@@ -84,7 +84,8 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
             return relationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
                     config, cacheTracer, memoryTracker );
         }
-        return EmptyingTokenScanStore.emptyRtss( fs, directoryStructure, readOnly );
+        return EmptyingTokenScanStore.emptyRtss( fs, directoryStructure, readOnly,
+                !config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) );
     }
 
     /**

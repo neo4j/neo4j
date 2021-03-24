@@ -40,6 +40,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.impl.api.index.IndexMap;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -128,7 +129,7 @@ public class IndexSamplingController
             {
                 long indexId = indexIds.next();
                 IndexDescriptor descriptor = indexMap.getIndexProxy( indexId ).getDescriptor();
-                if ( indexRecoveryCondition.test( descriptor ) )
+                if ( indexRecoveryCondition.test( descriptor ) && descriptor.getIndexType() != IndexType.LOOKUP )
                 {
                     if ( logRecoverIndexSamples )
                     {

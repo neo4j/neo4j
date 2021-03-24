@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.schema.IndexCreator;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -85,15 +86,16 @@ public class IndexingCompositeQueryAcceptanceTest
         switch ( withIndex )
         {
         case PROPERTY:
+            String indexName;
             try ( Transaction tx = db.beginTx() )
             {
-                entityControl.createIndex( tx, TOKEN_NAME, keys );
+                indexName = entityControl.createIndex( tx, TOKEN_NAME, keys );
                 tx.commit();
             }
 
             try ( Transaction tx = db.beginTx() )
             {
-                tx.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
+                tx.schema().awaitIndexOnline( indexName, 5, TimeUnit.MINUTES );
                 tx.commit();
             }
             break;
@@ -332,7 +334,7 @@ public class IndexingCompositeQueryAcceptanceTest
     private interface EntityControl
     {
 
-        void createIndex( Transaction tx, String tokenName, String[] keys );
+        String createIndex( Transaction tx, String tokenName, String[] keys );
 
         long createEntity( Transaction tx, String token, Map<String,Object> properties );
 
@@ -352,14 +354,15 @@ public class IndexingCompositeQueryAcceptanceTest
         NODE
                 {
                     @Override
-                    public void createIndex( Transaction tx, String tokenName, String[] keys )
+                    public String createIndex( Transaction tx, String tokenName, String[] keys )
                     {
                         IndexCreator indexCreator = tx.schema().indexFor( Label.label( tokenName ) );
                         for ( String key : keys )
                         {
                             indexCreator = indexCreator.on( key );
                         }
-                        indexCreator.create();
+                        IndexDefinition indexDefinition = indexCreator.create();
+                        return indexDefinition.getName();
                     }
 
                     @Override
@@ -408,14 +411,14 @@ public class IndexingCompositeQueryAcceptanceTest
         RELATIONSHIP
                 {
                     @Override
-                    public void createIndex( Transaction tx, String tokenName, String[] keys )
+                    public String createIndex( Transaction tx, String tokenName, String[] keys )
                     {
                         IndexCreator indexCreator = tx.schema().indexFor( RelationshipType.withName( tokenName ) );
                         for ( String key : keys )
                         {
                             indexCreator = indexCreator.on( key );
                         }
-                        indexCreator.create();
+                        return indexCreator.create().getName();
                     }
 
                     @Override
