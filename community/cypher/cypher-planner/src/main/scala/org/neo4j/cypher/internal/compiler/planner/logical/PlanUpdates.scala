@@ -227,36 +227,6 @@ case object PlanUpdates extends UpdatesPlanner {
       context.withUpdatedLabelInfo(source).copy(config = context.config.withLeafPlanners(leafPlanners))
     val mergeMatch = mergeMatchPart(matchGraph, interestingOrderConfig, innerContext)
 
-
-    //TODO remove
-    //Check if we need to do OnMatch:
-    //            OnMatch
-    //             /   \
-    //     mergeMatch  onMatch
-//    val mergeRead = if (onMatchPatterns.nonEmpty) {
-//      val qgWithAllNeededArguments = matchGraph.addArgumentIds(matchGraph.allCoveredIds.toIndexedSeq)
-//      val onMatch = onMatchPatterns.foldLeft[LogicalPlan](producer.planQueryArgument(qgWithAllNeededArguments, context)) {
-//        case (src, current) => planUpdate(src, current, first, interestingOrderConfig, context)
-//      }
-//      producer.planOnMatchApply(mergeMatch, onMatch, innerContext)
-//    } else mergeMatch
-
-    //       either
-    //         /  \
-    //        /    onCreate
-    //       /       \
-    //   mergeRead    mergeCreatePart
-//    val createNodes = createNodePatterns.foldLeft(producer.planQueryArgument(matchGraph, context): LogicalPlan) {
-//      case (acc, current) => producer.planMergeCreateNode(acc, current, context)
-//    }
-
-
-//    val mergeCreatePart = createRelationshipPatterns.foldLeft(createNodes) {
-//      case (acc, current) => producer.planMergeCreateRelationship(acc, current, context)
-//    }
-//    val onCreate = onCreatePatterns.foldLeft(mergeCreatePart) {
-//      case (src, current) => planUpdate(src, current, first, interestingOrderConfig, context)
-//    }
     producer.planApply(source, producer.planMerge(mergeMatch, createNodePatterns, createRelationshipPatterns, onMatchPatterns, onCreatePatterns, context), context)
   }
 
