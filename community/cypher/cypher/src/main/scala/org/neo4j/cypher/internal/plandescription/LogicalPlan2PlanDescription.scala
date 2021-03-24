@@ -592,17 +592,17 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         PlanDescriptionImpl(id, "LoadCSV", children, Seq(Details(asPrettyString(variableName))), variables, withRawCardinalities)
 
       case Merge(_, createNodes, createRelationships, onMatch, onCreate) =>
-        def setOpDetatils(setOp: SetMutatingPattern): PrettyString = setOp match {
+        def setOpDetails(setOp: SetMutatingPattern): PrettyString = setOp match {
           case SetLabelPattern(node, labelNames) =>
             val prettyId = asPrettyString(node)
             val prettyLabels = labelNames.map(labelName => asPrettyString(labelName.name)).mkPrettyString(":", ":", "")
             pretty"$prettyId$prettyLabels"
           case SetNodePropertyPattern(node, propertyKey, value) =>
-            pretty"${setPropertyInfo(pretty"${asPrettyString(node)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)}"
+            setPropertyInfo(pretty"${asPrettyString(node)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)
           case SetNodePropertiesFromMapPattern(node, value, removeOtherProps) =>
             setPropertyInfo(asPrettyString(node),  value, removeOtherProps)
           case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>
-            pretty"${setPropertyInfo(pretty"${asPrettyString(relationship)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)}"
+            setPropertyInfo(pretty"${asPrettyString(relationship)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)
           case SetRelationshipPropertiesFromMapPattern(relationship, value, removeOtherProps) =>
             setPropertyInfo(asPrettyString(relationship),  value, removeOtherProps)
         }
@@ -615,7 +615,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
           case CreateRelationship(relationship, startNode, typ, endNode, direction, properties) =>
             expandExpressionDescription(startNode, Some(relationship), Seq(typ.name), endNode, direction, 1, Some(1))
         }
-        PlanDescriptionImpl(id, "Merge", children, Seq(Details(createNodesPretty ++ createRelsPretty ++ onMatch.map(setOpDetatils) ++ onCreate.map(setOpDetatils))), variables, withRawCardinalities)
+        val creates: Seq[PrettyString] = Seq(pretty"CREATE ${(createNodesPretty ++ createRelsPretty).mkPrettyString(", ")}") ++
+          (if (onMatch.nonEmpty) Seq(pretty"ON MATCH SET ${onMatch.map(setOpDetails).mkPrettyString(", ")}") else Seq.empty) ++
+          (if (onCreate.nonEmpty) Seq(pretty"ON CREATE SET ${onCreate.map(setOpDetails).mkPrettyString(", ")}") else Seq.empty)
+
+        PlanDescriptionImpl(id, "Merge", children, Seq(Details(creates)), variables, withRawCardinalities)
 
       case Optional(_, protectedSymbols) =>
         PlanDescriptionImpl(id, "Optional", children, Seq(Details(keyNamesInfo(protectedSymbols.toSeq))), variables, withRawCardinalities)
