@@ -67,7 +67,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -221,18 +220,9 @@ class CheckPointerImplTest
     void forceCheckPointShouldWaitTheCurrentCheckPointingToCompleteBeforeRunning() throws Throwable
     {
         // Given
-        Lock lock = new ReentrantLock();
-        final Lock spyLock = spy( lock );
+        var lock = new CheckpointCountingLock();
 
-        doAnswer( invocation ->
-        {
-            verify( appender ).checkPoint( any( LogCheckPointEvent.class ), any( LogPosition.class ), any( Instant.class ), any( String.class ) );
-            reset( appender );
-            invocation.callRealMethod();
-            return null;
-        } ).when( spyLock ).unlock();
-
-        final CheckPointerImpl checkPointing = checkPointer( mutex( spyLock ) );
+        final CheckPointerImpl checkPointing = checkPointer( mutex( lock ) );
         mockTxIdStore();
 
         final CountDownLatch startSignal = new CountDownLatch( 2 );
@@ -264,8 +254,8 @@ class CheckPointerImplTest
 
         completed.await();
 
-        verify( spyLock, times( 2 ) ).lock();
-        verify( spyLock, times( 2 ) ).unlock();
+        assertThat( lock.getUnlockCounter() ).isEqualTo( 2 );
+        assertThat( lock.getLockCounter() ).isEqualTo( 2 );
     }
 
     private static StoreCopyCheckPointMutex mutex( Lock lock )
@@ -516,6 +506,45 @@ class CheckPointerImplTest
         long[] triggerCommittedTransaction = {transactionId, logPosition.getLogVersion(), logPosition.getByteOffset()};
         when( metadataProvider.getLastClosedTransaction() ).thenReturn( triggerCommittedTransaction );
         when( metadataProvider.getLastClosedTransactionId() ).thenReturn( initialTransactionId, transactionId, transactionId );
+    }
+
+    private class CheckpointCountingLock extends ReentrantLock
+    {
+        private final AtomicLong unlockCounter = new AtomicLong();
+        private final AtomicLong lockCounter = new AtomicLong();
+
+        @Override
+        public void unlock()
+        {
+            try
+            {
+                unlockCounter.incrementAndGet();
+                verify( appender ).checkPoint( any( LogCheckPointEvent.class ), any( LogPosition.class ), any( Instant.class ), any( String.class ) );
+                reset( appender );
+                super.unlock();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+
+        @Override
+        public void lock()
+        {
+            lockCounter.incrementAndGet();
+            super.lock();
+        }
+
+        public long getUnlockCounter()
+        {
+            return unlockCounter.get();
+        }
+
+        public long getLockCounter()
+        {
+            return lockCounter.get();
+        }
     }
 
     private static class CheckPointerThread extends Thread
