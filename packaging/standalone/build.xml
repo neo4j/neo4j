@@ -1,5 +1,5 @@
 <project default="build">
-  <target name="build" depends="extract-shell-zip,extract-apoc-zip,flatten-browser" />
+  <target name="build" depends="extract-shell-zip" />
 
   <property name="shell.dir" location="../../community/cypher-shell/cypher-shell/target"/>
   <property name="shell.zip" location="${shell.dir}/cypher-shell-${project.version}.zip"/>
@@ -13,30 +13,4 @@
     <echo>Unzipping...</echo>
     <unzip src="${shell.zip}" dest="src/main/distribution"/>
   </target>
-
-  <property name="apoc.dir" location="../../../../apoc"/>
-  <property name="apoc.zip" location="${apoc.dir}/apoc.zip"/>
-  <!-- Extract zip file -->
-
-  <target name="find-apoc-zip" description="See if apoc zip file exists">
-    <available file="${apoc.zip}" property="apoc.zip.present"/>
-    <echo>Checking if ${apoc.zip} exists: ${apoc.zip.present}</echo>
-  </target>
-  <target name="extract-apoc-zip" depends="find-apoc-zip" if="apoc.zip.present">
-    <echo>Unzipping...</echo>
-    <unzip src="${apoc.zip}" dest="src/main/distribution"/>
-  </target>
-  <property name="browser.dir" location="src/main/distribution/neo4j-browser"/>
-    <property name="browser.flat.dir" location="src/main/distribution/neo4j-browser-flat"/>
-    <target name="find-browser" description="See if browser is injected">
-      <available file="${browser.dir}" property="browser.present"/>
-      <echo>Checking if ${browser.dir} exists: ${browser.present}</echo>
-    </target>
-    <target name="flatten-browser" depends="find-browser" if="browser.present">
-      <copy todir="${browser.flat.dir}" flatten="true">
-        <fileset dir="${browser.dir}">
-          <include name="**/*.jar"/>
-        </fileset>
-      </copy>
-    </target>
 </project>
