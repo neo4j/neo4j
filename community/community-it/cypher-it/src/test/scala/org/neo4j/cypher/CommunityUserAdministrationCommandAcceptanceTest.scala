@@ -823,7 +823,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     execute("SHOW USERS").toSet should be(Set(defaultUser))
   }
 
-  test("should not rename to existing name") {
+  test("should fail to rename to existing name") {
     // GIVEN
     prepareUser()
     execute(s"CREATE USER $newUsername SET PASSWORD '$newPassword'")
@@ -839,7 +839,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin(newUsername, newPassword, AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
-  test("should not rename to existing name using if exists") {
+  test("should fail to rename to existing name using if exists") {
     // GIVEN
     prepareUser()
     execute(s"CREATE USER $newUsername SET PASSWORD '$newPassword'")

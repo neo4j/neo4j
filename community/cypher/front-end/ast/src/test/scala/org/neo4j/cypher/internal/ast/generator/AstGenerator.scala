@@ -161,6 +161,7 @@ import org.neo4j.cypher.internal.ast.RemoveRoleAction
 import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameRoleAction
 import org.neo4j.cypher.internal.ast.RenameUser
+import org.neo4j.cypher.internal.ast.RenameUserAction
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
@@ -1407,7 +1408,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     AllDbmsAction,
     ExecuteProcedureAction, ExecuteBoostedProcedureAction, ExecuteAdminProcedureAction,
     ExecuteFunctionAction, ExecuteBoostedFunctionAction,
-    AllUserActions, ShowUserAction, CreateUserAction, SetUserStatusAction, SetUserHomeDatabaseAction, SetPasswordsAction, AlterUserAction, DropUserAction,
+    AllUserActions, ShowUserAction, CreateUserAction, RenameUserAction, SetUserStatusAction, SetUserHomeDatabaseAction, SetPasswordsAction, AlterUserAction, DropUserAction,
     AllRoleActions, ShowRoleAction, CreateRoleAction, RenameRoleAction, DropRoleAction, AssignRoleAction, RemoveRoleAction,
     AllDatabaseManagementActions, CreateDatabaseAction, DropDatabaseAction,
     AllPrivilegeActions, ShowPrivilegeAction, AssignPrivilegeAction, RemovePrivilegeAction
