@@ -307,9 +307,18 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         InstrumentedGraphStatistics(graphStatistics, new MutableGraphStatisticsSnapshot())
 
       override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-        val labelName = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
+        val entityType = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
+        indexesGetForEntityType(entityType)
+      }
+
+      override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
+        val entityType = IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relTypeId))
+        indexesGetForEntityType(entityType)
+      }
+
+      private def indexesGetForEntityType(entityType: IndexDefinition.EntityType): Iterator[IndexDescriptor] = {
         indexes.collect {
-          case indexDef if labelName == indexDef.entityType =>
+          case indexDef if entityType == indexDef.entityType =>
             newIndexDescriptor(indexDef)
         }
       }.iterator

@@ -237,7 +237,31 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
   }
 
-  def inTx(f: (TransactionBoundPlanContext,InternalTransaction) => Unit): Unit = {
+  test("indexesGetForRelType should return relevant relationship indexes") {
+    inTx((_, tx) => {
+      val schema = tx.schema()
+      // relevant
+      schema.indexFor(RelationshipType.withName("REL1")).on("prop").create()
+      schema.indexFor(RelationshipType.withName("REL1")).on("otherProp").create()
+
+      // not relevant
+      schema.indexFor(RelationshipType.withName("REL2")).on("prop").create()
+      schema.indexFor(Label.label("REL1")).on("prop").create()
+    })
+
+    inTx((planContext, tx) => {
+      tx.schema().awaitIndexesOnline(30, SECONDS)
+      val rel1Id = planContext.getRelTypeId("REL1")
+      val propId = planContext.getPropertyKeyId("prop")
+      val otherPropId = planContext.getPropertyKeyId("otherProp")
+      planContext.indexesGetForRelType(rel1Id).toSet should equal(Set(
+        IndexDescriptor.forRelType(RelTypeId(rel1Id), Seq(PropertyKeyId(propId))).withBehaviours(Set(SlowContains)),
+        IndexDescriptor.forRelType(RelTypeId(rel1Id), Seq(PropertyKeyId(otherPropId))).withBehaviours(Set(SlowContains))
+      ))
+    })
+  }
+
+  private def inTx(f: (TransactionBoundPlanContext,InternalTransaction) => Unit): Unit = {
     val tx = graph.beginTransaction(EXPLICIT, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, tx)
     val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger, null)

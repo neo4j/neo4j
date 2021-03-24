@@ -119,6 +119,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     tc.schemaRead.indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex)
   }
 
+  override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
+    tc.schemaRead.indexesGetForRelationshipType(relTypeId).asScala.flatMap(getOnlineIndex)
+  }
+
   override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     tc.schemaRead.indexesGetForLabel(labelId).asScala
       .filter(_.isUnique)

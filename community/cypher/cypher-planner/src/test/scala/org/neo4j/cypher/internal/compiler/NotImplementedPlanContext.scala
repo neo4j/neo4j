@@ -30,6 +30,8 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 class NotImplementedPlanContext extends PlanContext {
   override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???
 
+  override def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = ???
+
   override def indexExistsForLabel(labelId: Int): Boolean = ???
 
   override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???

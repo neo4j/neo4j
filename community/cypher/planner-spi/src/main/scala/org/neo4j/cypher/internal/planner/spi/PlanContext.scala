@@ -39,6 +39,11 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
 
   /**
+   * Return all indexes for a given relationship type
+   */
+  def indexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor]
+
+  /**
    * Return all unique indexes for a given label
    */
   def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]

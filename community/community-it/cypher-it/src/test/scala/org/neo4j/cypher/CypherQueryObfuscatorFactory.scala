@@ -94,6 +94,7 @@ class CypherQueryObfuscatorFactory {
     // unused
 
     override def indexesGetForLabel(labelId: Int): Nothing = fail()
+    override def indexesGetForRelType(relTypeId: Int): Nothing = fail()
     override def indexExistsForLabel(labelId: Int): Nothing = fail()
     override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
     override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Nothing = fail()
