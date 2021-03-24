@@ -22,30 +22,28 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.Eager
-import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
+import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
-import org.neo4j.cypher.internal.logical.plans.OnMatchApply
 import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.logical.plans.SetLabels
-import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should plan single merge node") {
     val allNodesScan = AllNodesScan("a", Set.empty)
-    val onCreate = MergeCreateNode(Argument(), "a", Seq.empty, None)
+    val onCreate = CreateNode("a", Seq.empty, None)
 
-    val mergeNode = EitherPlan(allNodesScan, onCreate)
+    val mergeNode = Merge(allNodesScan, Seq(onCreate), Seq.empty, Seq.empty, Seq.empty)
     val emptyResult = EmptyResult(mergeNode)
 
     planFor("MERGE (a)")._2 should equal(emptyResult)
@@ -54,9 +52,9 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
   test("should plan single merge node from a label scan") {
 
     val labelScan = NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone)
-    val onCreate = MergeCreateNode(Argument(), "a", Seq(labelName("X")), None)
+    val onCreate = CreateNode("a", Seq(labelName("X")), None)
 
-    val mergeNode = EitherPlan(labelScan, onCreate)
+    val mergeNode = Merge(labelScan, Seq(onCreate), Seq.empty, Seq.empty, Seq.empty)
     val emptyResult = EmptyResult(mergeNode)
 
     (new given {
@@ -71,9 +69,9 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
 
     val allNodesScan = AllNodesScan("a", Set.empty)
     val selection = Selection(Seq(equals(prop("a", "prop"), literalInt(42))), allNodesScan)
-    val onCreate = MergeCreateNode(Argument(), "a", Seq.empty, Some(mapOfInt(("prop", 42))))
+    val onCreate = CreateNode("a", Seq.empty, Some(mapOfInt(("prop", 42))))
 
-    val mergeNode = EitherPlan(selection, onCreate)
+    val mergeNode = Merge(selection, Seq(onCreate), Seq.empty, Seq.empty, Seq.empty)
     val emptyResult = EmptyResult(mergeNode)
 
     planFor("MERGE (a {prop: 42})")._2 should equal(emptyResult)
@@ -82,8 +80,8 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
   test("should plan create followed by merge") {
     val createNode = Create(Argument(), nodes = List(CreateNode("a", Seq.empty, None)), Nil)
     val allNodesScan = AllNodesScan("b", Set.empty)
-    val onCreate = MergeCreateNode(Argument(), "b", Seq.empty, None)
-    val mergeNode = EitherPlan(allNodesScan, onCreate)
+    val onCreate = CreateNode("b", Seq.empty, None)
+    val mergeNode = Merge(allNodesScan, Seq(onCreate), Seq.empty, Seq.empty, Seq.empty)
     val apply = Apply(createNode, mergeNode)
     val emptyResult = EmptyResult(apply)
 
@@ -92,8 +90,8 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
 
   test("should plan merge followed by create") {
     val allNodesScan = AllNodesScan("a", Set.empty)
-    val onCreate = MergeCreateNode(Argument(), "a", Seq.empty, None)
-    val mergeNode = EitherPlan(allNodesScan, onCreate)
+    val onCreate = CreateNode("a", Seq.empty, None)
+    val mergeNode = Merge(allNodesScan, Seq(onCreate),  Seq.empty, Seq.empty, Seq.empty)
     val eager = Eager(mergeNode)
     val createNode = Create(eager, nodes = List(CreateNode("b", Seq.empty, None)), Nil)
     val emptyResult = EmptyResult(createNode)
@@ -120,29 +118,13 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     plan shouldBe using[NodeUniqueIndexSeek]
   }
 
-  /*
-   *                     |
-   *                  either
-   *                  /    \
-   *                 /  set property
-   *                /       \
-   *               /    merge create node
-   *         onMatch       \
-   *            /  \       arg2
-   *           /  set label
-   *          /       \
-   *    allnodes      arg1
-   */
   test("should plan merge node with on create and on match ") {
     val allNodesScan = AllNodesScan("a", Set.empty)
-    val argument1 = Argument(Set("a"))
-    val setLabels = SetLabels(argument1, "a", Seq(labelName("L")))
-    val onMatch = OnMatchApply(allNodesScan, setLabels)
+    val setLabels = SetLabelPattern("a", Seq(labelName("L")))
 
-    val argument2 = Argument()
-    val mergeCreateNode = MergeCreateNode(argument2, "a", Seq.empty, None)
-    val createAndOnCreate = SetNodeProperty(mergeCreateNode, "a", PropertyKeyName("prop")(pos), literalInt(1))
-    val mergeNode = EitherPlan(onMatch, createAndOnCreate)
+    val mergeCreateNode = CreateNode("a", Seq.empty, None)
+    val onCreate = SetNodePropertyPattern("a", PropertyKeyName("prop")(pos), literalInt(1))
+    val mergeNode = Merge(allNodesScan, Seq(mergeCreateNode), Seq.empty, Seq(setLabels), Seq(onCreate))
     val emptyResult = EmptyResult(mergeNode)
 
     planFor("MERGE (a) ON CREATE SET a.prop = 1 ON MATCH SET a:L")._2 should equal(emptyResult)

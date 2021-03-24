@@ -28,14 +28,11 @@ import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
-import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
-import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
+import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
-import org.neo4j.cypher.internal.logical.plans.OnMatchApply
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
@@ -125,17 +122,17 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
     )
   }
 
-  test("MergeCreateNode should eliminate provided order and cause planning Sort") {
+  test("Merge node should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "MERGE (x:N)",
-      {case _:MergeCreateNode  => true}
+      {case _:Merge  => true}
     )
   }
 
-  test("MergeCreateRelationship should eliminate provided order and cause planning Sort") {
+  test("Merge relationship should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "MERGE ()-[x:R]-()",
-      {case _:MergeCreateRelationship  => true}
+      {case _:Merge  => true}
     )
   }
 
@@ -208,17 +205,17 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
     )
   }
 
-  test("OnMatchApply with update should eliminate provided order and cause planning Sort") {
+  test("MERGE + ON MATCH with update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "MERGE (x) ON MATCH SET x.prop = 1",
-      {case _:OnMatchApply  => true}
+      {case _:Merge  => true}
     )
   }
 
-  test("Either with update should eliminate provided order and cause planning Sort") {
+  test("MERGE + ON CREATE with update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
       "MERGE (x) ON CREATE SET x.prop = 1",
-      {case _:EitherPlan  => true}
+      {case _:Merge  => true}
     )
   }
 

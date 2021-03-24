@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.ListComprehension
+import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Property
@@ -40,6 +41,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -53,7 +55,6 @@ import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Distinct
-import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
@@ -63,8 +64,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
-import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
-import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
+import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
@@ -882,26 +882,23 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     }
   }
 
-  test("should solve pattern comprehensions for MergeCreateNode") {
+  test("should solve pattern comprehensions for MERGE node") {
     val q =
       """
         |MERGE (n {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)}) RETURN n
       """.stripMargin
 
     planFor(q)._2 should beLike {
-      case EitherPlan(
+      case Merge(
             Selection(_,
               RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _) // Match part
             ),
-            MergeCreateNode(
-              RollUpApply(Argument(SetExtractor()),
-                      _/* <- This is the subQuery */, _, _), _,_ ,_ // Create part
-                     )
+            Seq(CreateNode("n", Seq(), Some(_:MapExpression))), Seq(), Seq(), Seq()
       ) => ()
     }
   }
 
-  test("should solve pattern comprehensions for MergeCreateRelationship") {
+  test("should solve pattern comprehensions for MERGE relationship") {
     val q =
       """
         |MERGE ()-[r:R {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)}]->() RETURN r
@@ -910,15 +907,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     new given {
       addTypeToSemanticTable(varFor("r"), CTRelationship)
     }.getLogicalPlanFor(q)._2 should beLike {
-      case EitherPlan(
+      case Merge(
                Selection(_,
                        RollUpApply(
                           Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _) // Match part
-               ),
-      MergeCreateRelationship(
-                      RollUpApply(
-                                  _: MergeCreateNode, _/* <- This is the subQuery */, _, _), _,_ ,_, _, _ // Create part
-                     )
+               ), _, _, _, _
       ) => ()
     }
   }
