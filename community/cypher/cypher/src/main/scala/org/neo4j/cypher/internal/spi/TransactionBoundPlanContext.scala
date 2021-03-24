@@ -133,6 +133,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     tc.schemaRead.indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex).nonEmpty
   }
 
+  override def indexExistsForRelType(relTypeId: Int): Boolean = {
+    indexesGetForRelType(relTypeId).nonEmpty
+  }
+
   override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
     evalOrNone {
       val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)

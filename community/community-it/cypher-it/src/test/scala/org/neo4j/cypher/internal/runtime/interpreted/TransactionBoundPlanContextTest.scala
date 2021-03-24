@@ -261,6 +261,28 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
   }
 
+  test("indexExistsForRelType should return true for existing indexes") {
+    inTx((_, tx) => {
+      tx.schema().indexFor(RelationshipType.withName("REL1")).on("prop").create()
+      tx.schema().indexFor(RelationshipType.withName("REL1")).on("otherProp").create()
+      tx.schema().indexFor(RelationshipType.withName("REL2")).on("otherProp").create()
+    })
+
+    inTx((_, tx) => {
+      tx.execute("CREATE ()-[:REL3]->()")
+    })
+
+    inTx((planContext, tx) => {
+      tx.schema().awaitIndexesOnline(30, SECONDS)
+      val rel1Id = planContext.getRelTypeId("REL1")
+      val rel2Id = planContext.getRelTypeId("REL2")
+      val rel3Id = planContext.getRelTypeId("REL3")
+      planContext.indexExistsForRelType(rel1Id) shouldBe true
+      planContext.indexExistsForRelType(rel2Id) shouldBe true
+      planContext.indexExistsForRelType(rel3Id) shouldBe false
+    })
+  }
+
   private def inTx(f: (TransactionBoundPlanContext,InternalTransaction) => Unit): Unit = {
     val tx = graph.beginTransaction(EXPLICIT, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, tx)
