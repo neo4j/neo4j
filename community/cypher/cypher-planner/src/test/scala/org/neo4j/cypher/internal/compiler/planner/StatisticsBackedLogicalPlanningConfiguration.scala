@@ -202,11 +202,40 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
                    withValues: Boolean = false,
                    providesOrder: IndexOrderCapability = IndexOrderCapability.NONE): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
-    val withLabel = addLabel(label)
-    val withProperties = properties.foldLeft(withLabel) {
+    val indexDef = IndexDefinition(IndexDefinition.EntityType.Node(label),
+      propertyKeys = properties,
+      propExistsSelectivity = existsSelectivity,
+      uniqueValueSelectivity = uniqueSelectivity,
+      isUnique = isUnique,
+      withValues = withValues,
+      withOrdering = providesOrder)
+
+    addLabel(label).addIndexDefAndProperties(indexDef, properties)
+  }
+
+  def addRelationshipIndex(relType: String,
+                           properties: Seq[String],
+                           existsSelectivity: Double,
+                           uniqueSelectivity: Double,
+                           isUnique: Boolean = false,
+                           withValues: Boolean = false,
+                           providesOrder: IndexOrderCapability = IndexOrderCapability.NONE): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+
+    val indexDef = IndexDefinition(IndexDefinition.EntityType.Relationship(relType),
+      propertyKeys = properties,
+      propExistsSelectivity = existsSelectivity,
+      uniqueValueSelectivity = uniqueSelectivity,
+      isUnique = isUnique,
+      withValues = withValues,
+      withOrdering = providesOrder)
+
+    addRelType(relType).addIndexDefAndProperties(indexDef, properties)
+  }
+
+  private def addIndexDefAndProperties(indexDef: IndexDefinition, properties: Seq[String]): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    val withProperties = properties.foldLeft(this) {
       case (builder, prop) => builder.addProperty(prop)
     }
-    val indexDef = IndexDefinition(IndexDefinition.EntityType.Node(label), properties, uniqueSelectivity, existsSelectivity, isUnique, withValues, providesOrder)
     withProperties
       .copy(indexes = indexes :+ indexDef)
   }
