@@ -349,11 +349,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       }
 
       override def indexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = {
-        val entityType = IndexDefinition.EntityType.Node(labelName)
-        indexes.exists {
-          case indexDef if indexDef.entityType == entityType && indexDef.propertyKeys == propertyKeys => true
-          case _ => false
-        }
+        indexGetForLabelAndProperties(labelName, propertyKeys).nonEmpty
+      }
+
+      override def indexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = {
+        indexGetForRelTypeAndProperties(relTypeName, propertyKey).nonEmpty
       }
 
       override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {

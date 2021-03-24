@@ -42,6 +42,8 @@ class NotImplementedPlanContext extends PlanContext {
 
   override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = ???
 
+  override def indexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = ???
+
   override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???

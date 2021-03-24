@@ -73,6 +73,11 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
    */
   def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean
 
+  /**
+   * Checks if an index exists for a given relationship type and properties
+   */
+  def indexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean
+
   def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean
 
   def getPropertiesWithExistenceConstraint(labelName: String): Set[String]

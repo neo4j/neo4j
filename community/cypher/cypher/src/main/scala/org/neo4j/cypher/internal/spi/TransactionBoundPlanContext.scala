@@ -160,6 +160,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     indexGetForLabelAndProperties(labelName, propertyKey).isDefined
   }
 
+  override def indexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = {
+    indexGetForRelTypeAndProperties(relTypeName, propertyKey).isDefined
+  }
+
   private def evalOrNone[T](f: => Option[T]): Option[T] =
     try {
       f
