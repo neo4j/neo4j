@@ -306,7 +306,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     val toNameFields = getNameFields("toName", toName)
     val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => toNameFields.nameConverter(tx, fromNameFields.nameConverter(tx, p))
 
-    UpdatingSystemCommandExecutionPlan("CreateRole", normalExecutionEngine,
+    UpdatingSystemCommandExecutionPlan(s"Create$entity", normalExecutionEngine,
       s"""MATCH (old:$entity {name: $$`${fromNameFields.nameKey}`})
          |SET old.name = $$`${toNameFields.nameKey}`
          |RETURN old.name

@@ -99,7 +99,7 @@ trait AdministrationCommand extends Parser
     group(keyword("CREATE USER") ~~ SymbolicNameOrStringParameter ~> (_ => ast.IfExistsThrowError))
   }
 
-  def RenameUser: Rule1[ast.RenameUser] = rule("RENAME USER") {
+  private def RenameUser: Rule1[ast.RenameUser] = rule("RENAME USER") {
     group(keyword("RENAME USER") ~~ SymbolicNameOrStringParameter ~~ keyword("IF EXISTS") ~~ keyword("TO")
       ~~ SymbolicNameOrStringParameter) ~~>> (ast.RenameUser(_, _, ifExists = true)) |
     group(keyword("RENAME USER") ~~ SymbolicNameOrStringParameter ~~ keyword("TO")
@@ -211,7 +211,7 @@ trait AdministrationCommand extends Parser
     group(keyword("CREATE ROLE") ~~ SymbolicNameOrStringParameter ~> (_ => ast.IfExistsThrowError))
   }
 
-  def RenameRole: Rule1[ast.RenameRole] = rule("RENAME ROLE") {
+  private def RenameRole: Rule1[ast.RenameRole] = rule("RENAME ROLE") {
     group(keyword("RENAME ROLE") ~~ SymbolicNameOrStringParameter ~~ keyword("IF EXISTS") ~~ keyword("TO")
       ~~ SymbolicNameOrStringParameter) ~~>> (ast.RenameRole(_, _, ifExists = true)) |
     group(keyword("RENAME ROLE") ~~ SymbolicNameOrStringParameter ~~ keyword("TO")
