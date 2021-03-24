@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -42,4 +43,6 @@ public interface StorageProperty
      * @return whether or not the property is defined, e.g. if it exists (has a value) or not.
      */
     boolean isDefined();
+
+    String toString( TokenHolder tokenHolder );
 }

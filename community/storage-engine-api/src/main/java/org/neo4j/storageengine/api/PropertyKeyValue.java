@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.token.api.TokenHolder;
+import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -78,5 +80,26 @@ public class PropertyKeyValue implements StorageProperty
         int result = propertyKeyId;
         result = 31 * result + value.hashCode();
         return result;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Property{" + propertyKeyId + "=" + value + '}';
+    }
+
+    @Override
+    public String toString( TokenHolder tokenHolder )
+    {
+        String propertyKeyName;
+        try
+        {
+            propertyKeyName = "'" + tokenHolder.getTokenById( propertyKeyId ).name() + "'";
+        }
+        catch ( TokenNotFoundException e )
+        {
+            propertyKeyName = String.valueOf( propertyKeyId );
+        }
+        return "Property{" + propertyKeyName + "=" + value + '}';
     }
 }
