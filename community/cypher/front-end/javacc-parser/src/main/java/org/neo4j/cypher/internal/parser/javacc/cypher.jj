@@ -2424,31 +2424,32 @@ List<String> SymbolicNameList1() :
 STATEMENT ShowCommand(USE_CLAUSE useClause) :
 {
   Token start = null;
+  Token constraintType = null;
   STATEMENT statement = null;
 }
 {
   start = <SHOW>
-  ( <ALL> statement = ShowAllCommand(start, useClause)
+  ( constraintType = <ALL> statement = ShowAllCommand(start, useClause, constraintType.image)
     | <POPULATED> statement = ShowRoles(start, useClause, false)
     | <BTREE> statement = ShowIndexes(start, useClause, false)
-    | <UNIQUE> statement = ShowConstraintsAllowBriefAndYield(start, useClause, "unique")
-    | <NODE> statement = ShowNodeCommand(start, useClause)
-    | <PROPERTY> statement = ShowPropertyCommand(start, useClause, "exists_new")
-    | <EXISTENCE> statement = ShowConstraintsAllowYield(start, useClause, "exists_new")
-    | <EXISTS> statement = ShowConstraintsAllowBrief(start, useClause, "exists_deprecated")
-    | <EXIST> statement = ShowConstraintsAllowBriefAndYield(start, useClause, "exists_old")
-    | <RELATIONSHIP> statement = ShowRelationshipCommand(start, useClause)
-    | <REL> statement = ShowRelCommand(start, useClause)
+    | constraintType = <UNIQUE> statement = ShowConstraintsAllowBriefAndYield(start, useClause, constraintType.image)
+    | constraintType = <NODE> statement = ShowNodeCommand(start, useClause, constraintType.image)
+    | constraintType = <PROPERTY> statement = ShowPropertyCommand(start, useClause, constraintType.image)
+    | constraintType = <EXISTENCE> statement = ShowConstraintsAllowYield(start, useClause, constraintType.image)
+    | constraintType = <EXISTS> statement = ShowConstraintsAllowBrief(start, useClause, constraintType.image)
+    | constraintType = <EXIST> statement = ShowConstraintsAllowBriefAndYield(start, useClause, constraintType.image)
+    | constraintType = <RELATIONSHIP> statement = ShowRelationshipCommand(start, useClause, constraintType.image)
+    | constraintType = <REL> statement = ShowRelCommand(start, useClause, constraintType.image)
     | statement = ShowRoles(start, useClause, true)
     | statement = ShowIndexes(start, useClause, true)
     | statement = ShowDatabase(start, useClause)
     | statement = ShowUsers(start, useClause)
     | statement = ShowCurrentUser(start, useClause)
-    | statement = ShowConstraintsAllowBriefAndYield(start, useClause, "all")
+    | statement = ShowConstraintsAllowBriefAndYield(start, useClause, "ALL") // <ALL>.image
   ) { return statement; }
 }
 
-STATEMENT ShowAllCommand(Token start, USE_CLAUSE useClause) :
+STATEMENT ShowAllCommand(Token start, USE_CLAUSE useClause, String constraintType) :
 {
 
   STATEMENT statement = null;
@@ -2456,48 +2457,48 @@ STATEMENT ShowAllCommand(Token start, USE_CLAUSE useClause) :
 {
     (statement = ShowRoles(start, useClause, true)
     | statement = ShowIndexes(start, useClause, true)
-    | statement = ShowConstraintsAllowBriefAndYield(start, useClause, "all"))
+    | statement = ShowConstraintsAllowBriefAndYield(start, useClause, constraintType))
     {
         return statement;
     }
 }
 
-STATEMENT ShowNodeCommand(Token start, USE_CLAUSE useClause) :
+STATEMENT ShowNodeCommand(Token start, USE_CLAUSE useClause, String initialConstraintType) :
 {
-
+  Token constraintType = null;
   STATEMENT statement = null;
 }
 {
-    ( <KEY> statement = ShowConstraintsAllowBriefAndYield(start, useClause, "node_key")
-    | <PROPERTY> statement = ShowPropertyCommand(start, useClause, "node_exists_new")
-    | <EXISTENCE> statement = ShowConstraintsAllowYield(start, useClause, "node_exists_new")
-    | <EXISTS> statement = ShowConstraintsAllowBrief(start, useClause, "node_exists_deprecated")
-    | <EXIST> statement = ShowConstraintsAllowBriefAndYield(start, useClause, "node_exists_old")
+    // Needs to add <NODE> to the type
+    ( constraintType = <KEY> statement = ShowConstraintsAllowBriefAndYield(start, useClause, initialConstraintType + " " + constraintType)
+    | constraintType = <PROPERTY> statement = ShowPropertyCommand(start, useClause, initialConstraintType + " " + constraintType)
+    | constraintType = <EXISTENCE> statement = ShowConstraintsAllowYield(start, useClause, initialConstraintType + " " + constraintType)
+    | constraintType = <EXISTS> statement = ShowConstraintsAllowBrief(start, useClause, initialConstraintType + " " + constraintType)
+    | constraintType = <EXIST> statement = ShowConstraintsAllowBriefAndYield(start, useClause, initialConstraintType + " " + constraintType)
     ) { return statement; }
 }
 
-STATEMENT ShowRelationshipCommand(Token start, USE_CLAUSE useClause) :
+STATEMENT ShowRelationshipCommand(Token start, USE_CLAUSE useClause, String initialConstraintType) :
 {
-
+  Token constraintType = null;
   STATEMENT statement = null;
 }
 {
-    ( <PROPERTY> statement = ShowPropertyCommand(start, useClause, "rel_exists_new")
-    | <EXISTENCE> statement = ShowConstraintsAllowYield(start, useClause, "rel_exists_new")
-    | <EXISTS> statement = ShowConstraintsAllowBrief(start, useClause, "rel_exists_deprecated")
-    | <EXIST> statement = ShowConstraintsAllowBriefAndYield(start, useClause, "rel_exists_old")
+    ( constraintType = <PROPERTY> statement = ShowPropertyCommand(start, useClause, initialConstraintType + " " + constraintType)
+    | constraintType = <EXISTENCE> statement = ShowConstraintsAllowYield(start, useClause, initialConstraintType + " " + constraintType)
+    | constraintType = <EXISTS> statement = ShowConstraintsAllowBrief(start, useClause, initialConstraintType + " " + constraintType)
+    | constraintType = <EXIST> statement = ShowConstraintsAllowBriefAndYield(start, useClause, initialConstraintType + " " + constraintType)
     ) { return statement; }
 }
 
-STATEMENT ShowRelCommand(Token start, USE_CLAUSE useClause) :
+STATEMENT ShowRelCommand(Token start, USE_CLAUSE useClause, String constraintType) :
 {
-
   STATEMENT statement = null;
 }
 {
-    ( <PROPERTY> statement = ShowPropertyCommand(start, useClause, "rel_exists_new")
-    | <EXISTENCE> statement = ShowConstraintsAllowYield(start, useClause, "rel_exists_new")
-    | <EXIST> statement = ShowConstraintsAllowYield(start, useClause, "rel_exists_new")
+    ( <PROPERTY> statement = ShowPropertyCommand(start, useClause, constraintType)
+    | <EXISTENCE> statement = ShowConstraintsAllowYield(start, useClause, constraintType)
+    | <EXIST> statement = ShowConstraintsAllowYield(start, useClause, constraintType)
     ) { return statement; }
 }
 
