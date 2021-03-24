@@ -235,4 +235,52 @@ class Neo4jASTFactorySimpleTest extends ParsingTestBase with FunSuiteLike with T
   test("MATCH (n) WHERE n.name IS NOT NULL") {
     assertSameASTWithExtraSpaces(testName)
   }
+
+  test("RETURN 0.0d as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 0.0f as flat") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 0.0somegibberish as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 0.0 as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 0.0d as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN .0d as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 1e0d as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 0.0f as flat") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 0.0somegibberish as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 0.0 as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN NaN as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN Infinity as double") {
+    assertSameAST(testName)
+  }
 }

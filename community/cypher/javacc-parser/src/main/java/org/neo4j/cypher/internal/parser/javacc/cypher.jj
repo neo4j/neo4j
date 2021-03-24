@@ -182,9 +182,9 @@ MORE :
 TOKEN :
 {
   < DECIMAL_DOUBLE: (["+","-"])? (
-                                    (["0"-"9"])+ "." (["0"-"9"])+ (<DECIMAL_EXPONENT>)?
-                                  | "." (["0"-"9"])+ (<DECIMAL_EXPONENT>)?
-                                  | (["0"-"9"])+ <DECIMAL_EXPONENT>
+                                    (["0"-"9"])+ "." (["0"-"9"])+ (<DECIMAL_EXPONENT>)? (<IDENTIFIER>)?
+                                  | "." (["0"-"9"])+ (<DECIMAL_EXPONENT>)? (<IDENTIFIER>)?
+                                  | (["0"-"9"])+ <DECIMAL_EXPONENT> (<IDENTIFIER>)?
                                   ) >
 |
   < #DECIMAL_EXPONENT: ["e","E"] (["+","-"])? (["0"-"9"])+ >
