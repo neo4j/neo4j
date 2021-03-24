@@ -324,15 +324,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(plan, solved, providedOrder, context)
   }
 
-  //As of now this plans a normal apply, however that will be subject to change
-  def planMergeApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    val rhsSolved = solveds.get(right.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.withArgumentIds(Set.empty)))
-    val solved = solveds.get(left.id).asSinglePlannerQuery ++ rhsSolved
-    val plan = Apply(left, right)
-    val providedOrder = providedOrderOfApply(left, right)
-    annotate(plan, solved, providedOrder, context)
-  }
-
   def planSubquery(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext, correlated: Boolean): LogicalPlan = {
     val solvedLeft = solveds.get(left.id)
     val solvedRight = solveds.get(right.id)
@@ -1256,15 +1247,18 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                 onMatchPatterns: Seq[SetMutatingPattern],
                 onCreatePatterns: Seq[SetMutatingPattern],
                 context: LogicalPlanningContext): Merge = {
-  val patterns = if (createRelationshipPatterns.isEmpty) {
-    MergeNodePattern(createNodePatterns.head, solveds(inner.id).asSinglePlannerQuery.queryGraph, onCreatePatterns, onMatchPatterns)
-  } else {
-    MergeRelationshipPattern(createNodePatterns, createRelationshipPatterns, solveds(inner.id).asSinglePlannerQuery.queryGraph, onCreatePatterns, onMatchPatterns)
-  }
 
-  val solved = RegularSinglePlannerQuery().amendQueryGraph(_.addMutatingPatterns(patterns))
-  annotate(Merge(inner, createNodePatterns, createRelationshipPatterns, onMatchPatterns, onCreatePatterns), solved, ProvidedOrder.empty, context)
-}
+    val patterns = if (createRelationshipPatterns.isEmpty) {
+      MergeNodePattern(createNodePatterns.head, solveds(inner.id).asSinglePlannerQuery.queryGraph, onCreatePatterns, onMatchPatterns)
+    } else {
+      MergeRelationshipPattern(createNodePatterns, createRelationshipPatterns, solveds(inner.id).asSinglePlannerQuery.queryGraph, onCreatePatterns, onMatchPatterns)
+    }
+    val rewrittenNodePatterns = createNodePatterns.map(p => PatternExpressionSolver.ForMappable().solve(inner, p, context)._1)
+    val rewrittenRelPatterns = createRelationshipPatterns.map(p => PatternExpressionSolver.ForMappable().solve(inner, p, context)._1)
+
+    val solved = RegularSinglePlannerQuery().amendQueryGraph(_.addMutatingPatterns(patterns))
+    annotate(Merge(inner, rewrittenNodePatterns, rewrittenRelPatterns, onMatchPatterns, onCreatePatterns), solved, ProvidedOrder.empty, context)
+  }
 
   def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, idNames: Seq[String], context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(lhs.id).asSinglePlannerQuery ++ solveds.get(rhs.id).asSinglePlannerQuery
