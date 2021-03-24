@@ -147,7 +147,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
-      .addIndex("Person", Seq("age"), 0.3, 0.2)
+      .addNodeIndex("Person", Seq("age"), 0.3, 0.2)
       .build()
     queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a, 1 AS x WHERE a.age = 20",
       i * 0.3 * 0.2)
@@ -406,7 +406,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
     val config = plannerBuilder()
       .setAllNodesCardinality(nodes)
       .setLabelCardinality("Foo", inboundCardinality)
-      .addIndex("Foo", Seq("bar"), 1.0, whereSelectivity)
+      .addNodeIndex("Foo", Seq("bar"), 1.0, whereSelectivity)
       .build()
 
     queryShouldHaveCardinality(config, s"MATCH (f:Foo) WHERE f.bar = 1 WITH f, 1 AS horizon MATCH (a)",
@@ -420,7 +420,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with Cardinali
     val config = plannerBuilder()
       .setAllNodesCardinality(500)
       .setLabelCardinality("Foo", inboundCardinality)
-      .addIndex("Foo", Seq("bar"), 1.0, whereSelectivity)
+      .addNodeIndex("Foo", Seq("bar"), 1.0, whereSelectivity)
       .build()
 
     queryShouldHaveCardinality(config, s"MATCH (f:Foo) WHERE f.bar = 1 WITH f, 1 AS horizon MATCH (a)",

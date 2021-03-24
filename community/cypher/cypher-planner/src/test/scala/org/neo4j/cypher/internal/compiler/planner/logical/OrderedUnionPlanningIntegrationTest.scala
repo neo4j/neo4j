@@ -87,7 +87,7 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setLabelCardinality("A", 60)
       .setLabelCardinality("B", 60)
       .setLabelCardinality("C", 60)
-      .addIndex("C", Seq("prop"), 1.0, 0.1)
+      .addNodeIndex("C", Seq("prop"), 1.0, 0.1)
       .build()
       .plan(query)
       .stripProduceResults
@@ -245,7 +245,7 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val plan = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Person", 60)
-      .addIndex("Person", Seq("name"), 1.0, 0.01, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("Person", Seq("name"), 1.0, 0.01, providesOrder = IndexOrderCapability.BOTH)
       .build()
       .plan(query)
       .stripProduceResults

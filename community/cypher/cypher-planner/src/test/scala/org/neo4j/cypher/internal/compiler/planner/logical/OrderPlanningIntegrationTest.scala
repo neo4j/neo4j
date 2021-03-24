@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
@@ -54,7 +53,6 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
-import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -1215,8 +1213,8 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setLabelCardinality("A", nodeCount)
       .setRelationshipCardinality("(:A)-[]->()", nodeCount * nodeCount)
       .setRelationshipCardinality("()-[]->()", nodeCount * nodeCount)
-      .addIndex("A", Seq("prop"), 0.9, uniqueSelectivity = 0.9, providesOrder = IndexOrderCapability.BOTH)
-      .addIndex("A", Seq("foo"), 0.8, uniqueSelectivity = 0.8) // Make it cheapest to start on a.foo.
+      .addNodeIndex("A", Seq("prop"), 0.9, uniqueSelectivity = 0.9, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("A", Seq("foo"), 0.8, uniqueSelectivity = 0.8) // Make it cheapest to start on a.foo.
       .build()
   }
 
@@ -2000,7 +1998,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val cfg = plannerBuilder()
       .setAllNodesCardinality(10000)
       .setLabelCardinality("N", 1000)
-      .addIndex("N", Seq("prop"), existsSelectivity = 0.9, uniqueSelectivity = 0.9, withValues = true, providesOrder = IndexOrderCapability.ASC)
+      .addNodeIndex("N", Seq("prop"), existsSelectivity = 0.9, uniqueSelectivity = 0.9, withValues = true, providesOrder = IndexOrderCapability.ASC)
       .build()
 
     val plan = cfg

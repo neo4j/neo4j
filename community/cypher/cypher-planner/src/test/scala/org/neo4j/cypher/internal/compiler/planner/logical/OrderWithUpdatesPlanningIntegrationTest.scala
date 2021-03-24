@@ -262,7 +262,7 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
       .setRelationshipCardinality("(:N)-[]-()", 100)
       .setRelationshipCardinality("(:N)-[:R]-()", 100)
       .setRelationshipCardinality("()-[:R]-()", 100)
-      .addIndex("N", Seq("prop"), 1.0, 0.3, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("N", Seq("prop"), 1.0, 0.3, providesOrder = IndexOrderCapability.BOTH)
       .addProcedure(writer)
       .addProcedure(reader)
       .build()

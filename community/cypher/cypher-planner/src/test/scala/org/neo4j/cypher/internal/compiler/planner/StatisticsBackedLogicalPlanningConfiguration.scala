@@ -194,14 +194,13 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
     withToLabel.copy(cardinalities = cardinalities.copy(relationships = cardinalities.relationships + (RelDef(from, rel, to) -> cardinality)))
   }
 
-  def addIndex(
-    label: String,
-    properties: Seq[String],
-    existsSelectivity: Double,
-    uniqueSelectivity: Double,
-    isUnique: Boolean = false,
-    withValues: Boolean = false,
-    providesOrder: IndexOrderCapability = IndexOrderCapability.NONE): StatisticsBackedLogicalPlanningConfigurationBuilder = {
+  def addNodeIndex(label: String,
+                   properties: Seq[String],
+                   existsSelectivity: Double,
+                   uniqueSelectivity: Double,
+                   isUnique: Boolean = false,
+                   withValues: Boolean = false,
+                   providesOrder: IndexOrderCapability = IndexOrderCapability.NONE): StatisticsBackedLogicalPlanningConfigurationBuilder = {
 
     val withLabel = addLabel(label)
     val withProperties = properties.foldLeft(withLabel) {

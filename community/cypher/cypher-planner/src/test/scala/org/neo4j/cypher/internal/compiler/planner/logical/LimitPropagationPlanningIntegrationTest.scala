@@ -48,8 +48,8 @@ class LimitPropagationPlanningIntegrationTest
       .setRelationshipCardinality("(:C)-[:REL_CB]->()", 4444)
       .setRelationshipCardinality("(:C)-[:REL_CB]->(:B)", 4444)
       .setRelationshipCardinality("()-[:REL_CB]->(:B)", 10000)
-      .addIndex("A", Seq("id"), 0.5, 1.0 / 111.0, providesOrder = IndexOrderCapability.ASC)
-      .addIndex("C", Seq("id"), 0.5, 1.0 / 2222.0, providesOrder = IndexOrderCapability.ASC)
+      .addNodeIndex("A", Seq("id"), 0.5, 1.0 / 111.0, providesOrder = IndexOrderCapability.ASC)
+      .addNodeIndex("C", Seq("id"), 0.5, 1.0 / 2222.0, providesOrder = IndexOrderCapability.ASC)
       .build()
 
   private def assertExpectedPlanForQueryGivenStatistics(queryString: String,

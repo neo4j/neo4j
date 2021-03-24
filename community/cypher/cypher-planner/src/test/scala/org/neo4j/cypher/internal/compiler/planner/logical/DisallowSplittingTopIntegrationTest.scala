@@ -74,7 +74,7 @@ class DisallowSplittingTopIntegrationTest extends CypherFunSuite with LogicalPla
       .setLabelCardinality("B", 500)
       .setAllRelationshipsCardinality(2000)
       .setRelationshipCardinality("()-[]-(:B)", 1000)
-      .addIndex("B", Seq("prop"), 1.0, 0.1, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("B", Seq("prop"), 1.0, 0.1, providesOrder = IndexOrderCapability.BOTH)
 
     val defaultPlan = cfg.build().plan(q)
     val forceTopPlan = cfg.enableDebugOption(CypherDebugOption.disallowSplittingTop).build().plan(q)
@@ -94,7 +94,7 @@ class DisallowSplittingTopIntegrationTest extends CypherFunSuite with LogicalPla
       .setLabelCardinality("B", 500)
       .setAllRelationshipsCardinality(2000)
       .setRelationshipCardinality("()-[]-(:B)", 1000)
-      .addIndex("B", Seq("prop"), 1.0, 0.1, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex("B", Seq("prop"), 1.0, 0.1, providesOrder = IndexOrderCapability.BOTH)
 
     val defaultPlan = cfg.build().plan(q)
     val forceTopPlan = cfg.enableDebugOption(CypherDebugOption.disallowSplittingTop).build().plan(q)

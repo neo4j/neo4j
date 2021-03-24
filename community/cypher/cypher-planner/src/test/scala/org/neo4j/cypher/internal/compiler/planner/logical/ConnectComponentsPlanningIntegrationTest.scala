@@ -65,7 +65,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setAllNodesCardinality(100)
       .setLabelCardinality("Few", 2)
       .setLabelCardinality("Many", 50)
-      .addIndex("Many", Seq("prop"), 0.5, 0.01, providesOrder = BOTH)
+      .addNodeIndex("Many", Seq("prop"), 0.5, 0.01, providesOrder = BOTH)
       .build()
       .plan(
         s"""MATCH $nodes, ($orderedNode:Many)
@@ -89,7 +89,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setAllNodesCardinality(Batched.default.bigBatchSize * 2)
       .setLabelCardinality("Few", 1)
       .setLabelCardinality("Many", Batched.default.bigBatchSize * 2)
-      .addIndex("Many", Seq("prop"), 0.5, 0.01, providesOrder = BOTH)
+      .addNodeIndex("Many", Seq("prop"), 0.5, 0.01, providesOrder = BOTH)
       .setExecutionModel(Batched.default) // In Volcano, the cartesian product does not get more expensive by having to provide order, so this test does not make sense there.
       .build()
       .plan(
@@ -292,8 +292,8 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setRelationshipCardinality("(:C)-[]-(:D)", 20)
       .setRelationshipCardinality("(:C)-[]-()", 20)
       .setRelationshipCardinality("()-[]-(:D)", 20)
-      .addIndex("C", Seq("prop"), 1.0, 0.05)
-      .addIndex("D", Seq("prop"), 1.0, 0.05)
+      .addNodeIndex("C", Seq("prop"), 1.0, 0.05)
+      .addNodeIndex("D", Seq("prop"), 1.0, 0.05)
       .build()
 
     val plan = cfg.plan("MATCH (a:A)--(b:B), (c:C)--(d:D) WHERE a.prop + b.prop > c.prop AND a.prop + b.prop > d.prop RETURN a, b, c, d")
@@ -336,8 +336,8 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     val cfg = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Awesome", 10)
-      .addIndex("Awesome", Seq("prop1"), 0.5, 0.01)
-      .addIndex("Awesome", Seq("prop2"), 0.5, 0.01)
+      .addNodeIndex("Awesome", Seq("prop1"), 0.5, 0.01)
+      .addNodeIndex("Awesome", Seq("prop2"), 0.5, 0.01)
       .build()
 
     val plan = cfg.plan(
@@ -356,9 +356,9 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     val cfg = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Awesome", 10)
-      .addIndex("Awesome", Seq("prop1"), 0.5, 0.01)
-      .addIndex("Awesome", Seq("prop2"), 0.5, 0.01)
-      .addIndex("Awesome", Seq("prop3"), 0.5, 0.01)
+      .addNodeIndex("Awesome", Seq("prop1"), 0.5, 0.01)
+      .addNodeIndex("Awesome", Seq("prop2"), 0.5, 0.01)
+      .addNodeIndex("Awesome", Seq("prop3"), 0.5, 0.01)
       .build()
 
     val plan = cfg.plan(
@@ -898,7 +898,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .setAllNodesCardinality(100)
       .setLabelCardinality("N", 20)
       .setLabelCardinality("M", 20)
-      .addIndex("N", Seq("loc"), 1.0, 0.1)
+      .addNodeIndex("N", Seq("loc"), 1.0, 0.1)
       .build()
 
     val plan = cfg.plan(
@@ -924,7 +924,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     val builder = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Person", 100)
-      .addIndex("Person", Seq("name"), 1.0, 0.01)
+      .addNodeIndex("Person", Seq("name"), 1.0, 0.01)
       .setRelationshipCardinality("(:Person)-[]->()", 400)
       .setRelationshipCardinality("()-[]->()", 400)
 
@@ -963,7 +963,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     val builder = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Person", 100)
-      .addIndex("Person", Seq("name"), 1.0, 0.01, withValues = true, providesOrder = BOTH)
+      .addNodeIndex("Person", Seq("name"), 1.0, 0.01, withValues = true, providesOrder = BOTH)
       .setRelationshipCardinality("(:Person)-[]->()", 400)
       .setRelationshipCardinality("()-[]->()", 400)
 
