@@ -1910,6 +1910,13 @@ class GBPTreeTest
                         return super.io( pageId, pf_flags, tracer );
                     }
 
+                    @Override
+                    public void flushAndForce() throws IOException
+                    {
+                        maybeThrow();
+                        super.flushAndForce();
+                    }
+
                     private void maybeThrow() throws IOException
                     {
                         if ( throwOnNextIO.get() )

@@ -324,27 +324,6 @@ class CheckPointerImplTest
     }
 
     @Test
-    void mustUseIoLimiterFromFlushing() throws Throwable
-    {
-        limiter = new EmptyIOController()
-        {
-            @Override
-            public boolean isEnabled()
-            {
-                return true;
-            }
-        };
-        when( threshold.isCheckPointingNeeded( anyLong(), anyLong(), eq( INFO ) ) ).thenReturn( true, false );
-        mockTxIdStore();
-        CheckPointerImpl checkPointing = checkPointer();
-
-        checkPointing.start();
-        checkPointing.checkPointIfNeeded( INFO );
-
-        verify( forceOperation ).flushAndForce( NULL );
-    }
-
-    @Test
     void propagateCheckpointingReason() throws IOException
     {
         mockTxIdStore();

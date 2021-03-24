@@ -116,9 +116,9 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
     /**
      * Forces all changes to disk. Called at certain points from within Neo4j for example when
      * rotating the logical log. There cannot be any essential state not forced to disk
-     * after completion of this call .
+     * after completion of this call.
      *
-     *      * @param cursorTracer underlying page cursor events tracer.@param cursorTracer underlying page cursor events tracer.
+     * @param cursorTracer underlying page cursor events tracer
      * @throws IOException if there was a problem forcing the state to persistent storage.
      */
     void force( PageCursorTracer cursorTracer ) throws IOException;
