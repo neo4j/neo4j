@@ -29,6 +29,7 @@ public class SystemGraphDbmsModel
     public static final String DATABASE_NAME_PROPERTY = "name";
     public static final String DATABASE_STATUS_PROPERTY = "status";
     public static final String DATABASE_DEFAULT_PROPERTY = "default";
+    public static final String DATABASE_STORAGE_ENGINE_PROPERTY = "storage_engine";
     public static final String DUMP_DATA_PROPERTY = "dump_data";
     public static final String UPDATED_AT_PROPERTY = "updated_at";
     public static final String UPDATE_ID_PROPERTY = "update_id";

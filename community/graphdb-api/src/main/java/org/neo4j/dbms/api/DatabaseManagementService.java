@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.event.DatabaseEventListener;
 import org.neo4j.graphdb.event.TransactionEventListener;
 
@@ -45,7 +46,18 @@ public interface DatabaseManagementService
      * @param databaseName name of the database.
      * @throws DatabaseExistsException if a database with the provided name already exists
      */
-    void createDatabase( String databaseName ) throws DatabaseExistsException;
+    default void createDatabase( String databaseName ) throws DatabaseExistsException
+    {
+        createDatabase( databaseName, Configuration.EMPTY );
+    }
+
+    /**
+     * Create a new database.
+     * @param databaseName name of the database.
+     * @param databaseSpecificSettings settings that are specific to this database. Only a sub-set of settings are supported TODO.
+     * @throws DatabaseExistsException if a database with the provided name already exists
+     */
+    void createDatabase( String databaseName, Configuration databaseSpecificSettings ) throws DatabaseExistsException;
 
     /**
      * Drop a database by name. All data stored in the database will be deleted as well.

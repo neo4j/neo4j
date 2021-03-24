@@ -175,8 +175,8 @@ public class DatabaseManagementServiceFactory
     protected DatabaseManagementService createManagementService( GlobalModule globalModule, LifeSupport globalLife, Log internalLog,
             DatabaseManager<?> databaseManager )
     {
-        return new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(),
-                globalLife, globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(), internalLog );
+        return new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(), globalLife,
+                globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(), internalLog, globalModule.getGlobalConfig() );
     }
 
     private Lifecycle createWebServer( AbstractEditionModule edition, DatabaseManagementService managementService,

@@ -63,7 +63,7 @@ public class TestFabricDatabaseManagementServiceFactory extends TestDatabaseMana
     {
         return new DatabaseManagementServiceImpl( databaseManager, globalModule.getGlobalAvailabilityGuard(),
                                                   globalLife, globalModule.getDatabaseEventListeners(), globalModule.getTransactionEventListeners(),
-                                                  internalLog )
+                                                  internalLog, globalModule.getGlobalConfig() )
         {
             @Override
             public GraphDatabaseService database( String name ) throws DatabaseNotFoundException
