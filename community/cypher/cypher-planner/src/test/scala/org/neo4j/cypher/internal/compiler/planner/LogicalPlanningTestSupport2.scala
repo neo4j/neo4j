@@ -292,7 +292,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
                           config:CypherPlannerConfiguration = cypherCompilerConfig,
                           queryGraphSolver: QueryGraphSolver = queryGraphSolver,
                           stripProduceResults: Boolean = true,
-                          deduplicateNames: Boolean = deduplicateNames
+                          deduplicateNames: Boolean = deduplicateNames,
+                          debugOptions: CypherDebugOptions = CypherDebugOptions.default,
                          ): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) = {
       val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
       val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator], config, ExecutionModel.default)
@@ -301,7 +302,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         queryGraphSolver = queryGraphSolver,
         metrics = metrics,
         config = config,
-        logicalPlanIdGen = idGen
+        logicalPlanIdGen = idGen,
+        debugOptions = debugOptions,
       )
 
       val state = createInitState(queryString)
