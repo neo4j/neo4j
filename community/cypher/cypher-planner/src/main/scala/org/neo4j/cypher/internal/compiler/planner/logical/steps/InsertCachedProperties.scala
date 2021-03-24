@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.ProjectingPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
@@ -248,6 +249,17 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
             case _:ApplyPlan =>
               // The rhsAcc was initialized with lhsAcc as argument
               rhsAcc
+            case _:Union => {
+              // Take on only consistent renaming across both unions and remember properties from both subtrees
+              val mergedNames = lhsAcc.previousNames.filter(
+                entry =>
+                  rhsAcc.previousNames.get(entry._1) match {
+                    case None => false
+                    case Some(value) => value.equals(entry._2)
+                  }
+              )
+              Acc(lhsAcc.properties ++ rhsAcc.properties, mergedNames)
+            }
             case _ =>
               // Both accs are independent and need to be combined.
               lhsAcc ++ rhsAcc

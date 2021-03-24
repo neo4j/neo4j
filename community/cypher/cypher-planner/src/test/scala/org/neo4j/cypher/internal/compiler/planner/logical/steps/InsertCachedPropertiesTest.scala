@@ -35,15 +35,18 @@ import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
@@ -54,9 +57,11 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
+import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CachedNodeProperty
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
@@ -398,6 +403,93 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newTable.types(cp1) should be(initialType)
     newTable.types(cp2) should be(initialType)
     newTable.types(cachedNProp3) should be(initialType)
+  }
+
+  test("should not cache node property on renamed usages within union") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTNode, m -> CTNode, x -> CTNode)
+    val plan = new LogicalPlanBuilder()
+      .produceResults("z")
+      .projection("m.prop as z")
+      .apply()
+      .|.union()
+      .|.|.projection("n as m")
+      .|.|.argument("n")
+      .|.projection("x as m")
+      .|.expand("(n)-->(m)")
+      .|.argument("n")
+      .filter("n.prop = 2")
+      .allNodeScan("n")
+      .build()
+
+    val (newPlan, newTable) = replace(plan, initialTable)
+    newPlan should be (plan)
+    newTable should be(initialTable)
+  }
+
+  test("should cache node property for properties with identical renaming across union") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTNode, m -> CTNode)
+    val plan = new LogicalPlanBuilder()
+      .produceResults("z")
+      .projection("m.prop as z")
+      .apply()
+      .|.union()
+      .|.|.projection("n as m")
+      .|.|.argument("n")
+      .|.projection("n as m")
+      .|.argument("n")
+      .filter("n.prop = 2")
+      .allNodeScan("n")
+      .build()
+
+    val (newPlan, _) = replace(plan, initialTable)
+    val expectedPlan = new LogicalPlanBuilder()
+      .produceResults("z")
+      .projection(Map("z" -> cachedNodeProp("n", "prop", "m")))
+      .apply()
+      .|.union()
+      .|.|.projection("n as m")
+      .|.|.argument("n")
+      .|.projection("n as m")
+      .|.argument("n")
+      .filter("cacheFromStore[n.prop] = 2")
+      .allNodeScan("n")
+      .build()
+
+    newPlan should be(expectedPlan)
+  }
+
+  test("should cache node property in union branch") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTNode, m -> CTNode)
+    val plan = new LogicalPlanBuilder()
+      .produceResults("z")
+      .projection("m.prop as z")
+      .apply()
+      .|.union()
+      .|.|.projection("n as m")
+      .|.|.filter("n.prop = 2")
+      .|.|.argument("n")
+      .|.projection("n as m")
+      .|.filter("n.prop = 3")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+
+    val (newPlan, _) = replace(plan, initialTable)
+    val expectedPlan = new LogicalPlanBuilder()
+      .produceResults("z")
+      .projection(Map("z" -> CachedProperty("n", m, prop, NODE_TYPE)(InputPosition.NONE)))
+      .apply()
+      .|.union()
+      .|.|.projection("n as m")
+      .|.|.filter("cacheFromStore[n.prop] = 2")
+      .|.|.argument("n")
+      .|.projection("n as m")
+      .|.filter("cache[n.prop] = 3")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+
+    newPlan should be(expectedPlan)
   }
 
   test("should not rewrite node property if there is only one usage") {

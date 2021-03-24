@@ -100,7 +100,7 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
   }
 
   def containingArgumentForCachedProperty(varName: String, propName: String): PlanMatcher = {
-    containingArgumentRegex(s".*cache\\[$varName\\.$propName]".r)
+    containingArgumentRegex(s".*cache\\[$varName\\.$propName].*".r)
   }
 
   def containingArgumentForIndexPlan(varName: String,
