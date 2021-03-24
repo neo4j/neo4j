@@ -358,6 +358,15 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Node(labelName)
+        indexGetForEntityTypeAndProperties(entityType, propertyKeys)
+      }
+
+      override def indexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+        val entityType = IndexDefinition.EntityType.Relationship(relTypeName)
+        indexGetForEntityTypeAndProperties(entityType, propertyKeys)
+      }
+
+      private def indexGetForEntityTypeAndProperties(entityType: IndexDefinition.EntityType, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
         indexes.collectFirst {
           case indexDef if indexDef.entityType == entityType && indexDef.propertyKeys == propertyKeys => newIndexDescriptor(indexDef)
         }

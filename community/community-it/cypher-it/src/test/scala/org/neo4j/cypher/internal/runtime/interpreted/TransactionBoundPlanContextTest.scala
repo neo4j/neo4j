@@ -283,6 +283,44 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
   }
 
+  test("indexGetForLabelAndProperties should return general and unique indexes") {
+    inTx((_, tx) => {
+      tx.schema().indexFor(Label.label("L")).on("prop").create()
+      tx.schema.constraintFor(Label.label("L")).assertPropertyIsUnique("otherProp").create()
+    })
+
+    inTx((planContext, tx) => {
+      tx.schema().awaitIndexesOnline(30, SECONDS)
+      val labelId = planContext.getLabelId("L")
+      val propId = planContext.getPropertyKeyId("prop")
+      val otherPropId = planContext.getPropertyKeyId("otherProp")
+
+      planContext.indexGetForLabelAndProperties("L", Seq("prop")).toSeq shouldBe Seq(
+        IndexDescriptor.forLabel(LabelId(labelId), Seq(PropertyKeyId(propId))).withBehaviours(Set(SlowContains))
+      )
+
+      planContext.indexGetForLabelAndProperties("L", Seq("otherProp")).toSeq shouldBe Seq(
+        IndexDescriptor.forLabel(LabelId(labelId), Seq(PropertyKeyId(otherPropId))).withBehaviours(Set(SlowContains)).unique()
+      )
+    })
+  }
+
+  test("indexGetForRelTypeAndProperties should return matching index") {
+    inTx((_, tx) => {
+      tx.schema().indexFor(RelationshipType.withName("REL")).on("prop").create()
+    })
+
+    inTx((planContext, tx) => {
+      tx.schema().awaitIndexesOnline(30, SECONDS)
+      val relId = planContext.getRelTypeId("REL")
+      val propId = planContext.getPropertyKeyId("prop")
+
+      planContext.indexGetForRelTypeAndProperties("REL", Seq("prop")).toSeq shouldBe Seq(
+        IndexDescriptor.forRelType(RelTypeId(relId), Seq(PropertyKeyId(propId))).withBehaviours(Set(SlowContains))
+      )
+    })
+  }
+
   private def inTx(f: (TransactionBoundPlanContext,InternalTransaction) => Unit): Unit = {
     val tx = graph.beginTransaction(EXPLICIT, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, tx)

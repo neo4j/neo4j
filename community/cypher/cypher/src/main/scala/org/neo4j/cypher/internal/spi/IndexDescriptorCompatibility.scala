@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.planner.spi.SlowContains
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundTokenContext
 import org.neo4j.internal.schema
 import org.neo4j.internal.schema.LabelSchemaDescriptor
+import org.neo4j.internal.schema.RelationTypeSchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptor
 
 trait IndexDescriptorCompatibility {
@@ -47,12 +48,15 @@ trait IndexDescriptorCompatibility {
       SchemaDescriptor.forRelType(relType.id, index.properties.map(_.id):_*)
   }
 
-  def toLabelSchemaDescriptor(labelId: Int, propertyKeyIds: Seq[Int]): LabelSchemaDescriptor =
-    SchemaDescriptor.forLabel(labelId, propertyKeyIds.toArray:_*)
-
   def toLabelSchemaDescriptor(tc: TransactionBoundTokenContext, labelName: String, propertyKeys: Seq[String]): LabelSchemaDescriptor = {
     val labelId: Int = tc.getLabelId(labelName)
     val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
-    toLabelSchemaDescriptor(labelId, propertyKeyIds)
+    SchemaDescriptor.forLabel(labelId, propertyKeyIds:_*)
+  }
+
+  def toRelTypeSchemaDescriptor(tc: TransactionBoundTokenContext, relTypeName: String, propertyKeys: Seq[String]): RelationTypeSchemaDescriptor = {
+    val relTypeId: Int = tc.getRelTypeId(relTypeName)
+    val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
+    SchemaDescriptor.forRelType(relTypeId, propertyKeyIds:_*)
   }
 }
