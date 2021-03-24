@@ -56,7 +56,7 @@ trait SetOperation {
 
 object SetOperation {
 
-  private[pipes] def toMap(executionContext: CypherRow, state: QueryState, expression: Expression): MapValue = {
+  def toMap(executionContext: CypherRow, state: QueryState, expression: Expression): MapValue = {
     /* Make the map expression look like a map */
     expression(executionContext, state) match {
       case IsMap(map) => map(state)

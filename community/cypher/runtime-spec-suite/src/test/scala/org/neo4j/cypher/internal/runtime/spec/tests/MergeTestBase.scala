@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
@@ -789,6 +791,30 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
       node.getProperty("prop") should equal(42)
     })
     runtimeResult should beColumns("n").withRows(singleColumn(nodes)).withStatistics(labelsAdded = 2 * sizeHint, propertiesSet = sizeHint)
+  }
+
+  test("merge should handle set node property from map") {
+    //given empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .merge(
+        nodes = Seq(createNode("n"), createNode("m")),
+        relationships = Seq(createRelationship("r", "n", "R", "m")),
+        onCreate = Seq(setNodePropertiesFromMap("n", "{prop: 42}"), setRelationshipPropertiesFromMap("r", "{prop: 1337}")))
+      .expand("(n)-[r]->(m)")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    val relationship = Iterables.single(tx.getAllRelationships)
+    relationship.getProperty("prop") should equal(1337)
+    relationship.getStartNode.getProperty("prop") should equal(42)
+    runtimeResult should beColumns("r").withSingleRow(relationship).withStatistics(nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 2)
   }
 }
 

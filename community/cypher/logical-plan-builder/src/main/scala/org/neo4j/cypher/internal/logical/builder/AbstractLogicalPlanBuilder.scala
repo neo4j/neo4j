@@ -53,7 +53,9 @@ import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
@@ -1159,8 +1161,14 @@ object AbstractLogicalPlanBuilder {
   def setNodeProperty(node: String, key: String, value: String): SetMutatingPattern =
     SetNodePropertyPattern(node, PropertyKeyName(key)(InputPosition.NONE), Parser.parseExpression(value))
 
+  def setNodePropertiesFromMap(node: String, map: String, removeOtherProps: Boolean = true): SetMutatingPattern =
+    SetNodePropertiesFromMapPattern(node, Parser.parseExpression(map), removeOtherProps)
+
   def setRelationshipProperty(relationship: String, key: String, value: String): SetMutatingPattern =
     SetRelationshipPropertyPattern(relationship, PropertyKeyName(key)(InputPosition.NONE), Parser.parseExpression(value))
+
+  def setRelationshipPropertiesFromMap(node: String, map: String, removeOtherProps: Boolean = true): SetMutatingPattern =
+    SetRelationshipPropertiesFromMapPattern(node, Parser.parseExpression(map), removeOtherProps)
 
   def setLabel(node: String, labels: String*): SetMutatingPattern =
     SetLabelPattern(node, labels.map(l => LabelName(l)(InputPosition.NONE)))

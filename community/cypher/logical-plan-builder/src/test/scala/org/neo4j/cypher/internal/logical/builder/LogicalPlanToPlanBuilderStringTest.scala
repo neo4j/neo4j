@@ -31,7 +31,10 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
@@ -333,7 +336,13 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   testPlan("merge",
     new TestPlanBuilder()
       .produceResults("x")
-      .merge(Seq(createNode("x")), Seq(), Seq(setNodeProperty("x", "prop", "42")), Seq(setLabel("x", "L", "M")))
+      .merge(
+        Seq(createNode("x"), createNode("y")),
+        Seq(createRelationship("r", "x", "R", "y")),
+        Seq(setNodeProperty("x", "prop", "42"), setNodePropertiesFromMap("x", "{prop: 42}")),
+        Seq(setLabel("x", "L", "M"), setRelationshipProperty("r", "prop", "42"),
+          setRelationshipPropertiesFromMap("r", "{prop: 42}")))
+      .expand("(x)-[r:R]->(y)")
       .allNodeScan("x")
       .build())
 
@@ -1078,7 +1087,9 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
+            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperty
+            |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
             |import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING, BOTH}
             |import org.neo4j.cypher.internal.logical.plans._

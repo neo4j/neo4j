@@ -46,7 +46,9 @@ import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
@@ -600,8 +602,12 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
             pretty"$prettyId$prettyLabels"
           case SetNodePropertyPattern(node, propertyKey, value) =>
             pretty"${setPropertyInfo(pretty"${asPrettyString(node)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)}"
+          case SetNodePropertiesFromMapPattern(node, value, removeOtherProps) =>
+            setPropertyInfo(asPrettyString(node),  value, removeOtherProps)
           case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>
             pretty"${setPropertyInfo(pretty"${asPrettyString(relationship)}.${asPrettyString(propertyKey.name)}", value, removeOtherProps = true)}"
+          case SetRelationshipPropertiesFromMapPattern(relationship, value, removeOtherProps) =>
+            setPropertyInfo(asPrettyString(relationship),  value, removeOtherProps)
         }
 
         val createNodesPretty = createNodes.map {

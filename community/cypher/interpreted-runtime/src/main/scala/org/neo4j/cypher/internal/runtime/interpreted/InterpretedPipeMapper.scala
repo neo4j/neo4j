@@ -27,7 +27,9 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans
@@ -91,7 +93,6 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NonFuseable
 import org.neo4j.cypher.internal.logical.plans.NonPipelined
-import org.neo4j.cypher.internal.logical.plans.OnMatchApply
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -212,7 +213,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeLeftOuterHashJoinPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeRightOuterHashJoinPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.OnMatchApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandAllPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandIntoPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalPipe
@@ -651,9 +651,15 @@ case class InterpretedPipeMapper(readOnly: Boolean,
             val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(node, value, propertyKey)
             SetNodePropertyOperation(node, LazyPropertyKey(propertyKey),
               buildExpression(value), needsExclusiveLock)
+          case SetNodePropertiesFromMapPattern(node, map, removeOtherProps) =>
+            val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(node, map)
+            SetNodePropertyFromMapOperation(node, buildExpression(map), removeOtherProps, needsExclusiveLock)
           case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>
             val needsExclusiveLock = internal.expressions.Expression.hasPropertyReadDependency(relationship, value, propertyKey)
               SetRelationshipPropertyOperation(relationship, LazyPropertyKey(propertyKey), buildExpression(value), needsExclusiveLock)
+          case SetRelationshipPropertiesFromMapPattern(relationship, map, removeOtherProps) =>
+            val needsExclusiveLock = internal.expressions.Expression.mapExpressionHasPropertyReadDependency(relationship, map)
+            SetRelationshipPropertyFromMapOperation(relationship, buildExpression(map), removeOtherProps, needsExclusiveLock)
           case other => throw new IllegalStateException(s"Cannot merge with $other")
         }
 
@@ -841,9 +847,6 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case RollUpApply(_, _, collectionName, identifierToCollection) =>
         RollUpApplyPipe(lhs, rhs, collectionName, identifierToCollection)(id = id)
-
-      case OnMatchApply(_, _) =>
-        OnMatchApplyPipe(lhs, rhs)(id = id)
 
       case EitherPlan(_, _) =>
         EitherPipe(lhs, rhs)(id = id)

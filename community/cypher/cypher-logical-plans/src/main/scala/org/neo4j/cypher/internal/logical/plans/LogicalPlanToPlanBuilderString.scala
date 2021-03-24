@@ -39,7 +39,9 @@ import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
@@ -173,6 +175,10 @@ object LogicalPlanToPlanBuilderString {
             s"setNodeProperty(${wrapInQuotationsAndMkString(Seq(node, propertyKey.name, expressionStringifier(value)))})"
           case SetRelationshipPropertyPattern(relationship, propertyKey, value) =>
             s"setRelationshipProperty(${wrapInQuotationsAndMkString(Seq(relationship, propertyKey.name, expressionStringifier(value)))})"
+          case SetNodePropertiesFromMapPattern(idName, expression, removeOtherProps) =>
+            s"setNodePropertiesFromMap(${wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(expression)))}, $removeOtherProps)"
+          case SetRelationshipPropertiesFromMapPattern(idName, expression, removeOtherProps) =>
+            s"setRelationshipPropertiesFromMap(${wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(expression)))}, $removeOtherProps)"
         }
 
         val nodesToCreate = createNodes.map(createNodeToString)
