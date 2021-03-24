@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.rewriting
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.DeprecatedSyntax
 import org.neo4j.cypher.internal.ast.ExistsConstraints
+import org.neo4j.cypher.internal.ast.HasCatalog
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
@@ -44,6 +45,7 @@ import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.DeprecatedCatalogKeywordForAdminCommandSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCreatePropertyExistenceConstraintSyntax
@@ -241,6 +243,12 @@ object Deprecations {
         Deprecation(
           () => s,
           () => Some(DeprecatedShowSchemaSyntax(s.position))
+        )
+
+      case c: HasCatalog =>
+        Deprecation(
+          () => c.source,
+          () => Some(DeprecatedCatalogKeywordForAdminCommandSyntax(c.position))
         )
     }
   }

@@ -161,7 +161,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CATALOG CREATE DATABASE `foo.bar`") {
-    yields(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError, NoWait))
+    yields(_ => ast.HasCatalog(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError, NoWait)(pos)))
   }
 
   test("CREATE DATABASE foo.bar") {
@@ -169,23 +169,23 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CATALOG CREATE DATABASE foo.bar") {
-    yields(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError, NoWait))
+    yields(_ => ast.HasCatalog(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError, NoWait)(pos)))
   }
 
   test("CATALOG CREATE DATABASE `graph.db`.`db.db`") {
-    yields(ast.CreateDatabase(literal("graph.db.db.db"), ast.IfExistsThrowError, NoWait))
+    yields(_ => ast.HasCatalog(ast.CreateDatabase(literal("graph.db.db.db"), ast.IfExistsThrowError, NoWait)(pos)))
   }
 
   test("CATALOG CREATE DATABASE `foo-bar42`") {
-    yields(ast.CreateDatabase(literal("foo-bar42"), ast.IfExistsThrowError, NoWait))
+    yields(_ => ast.HasCatalog(ast.CreateDatabase(literal("foo-bar42"), ast.IfExistsThrowError, NoWait)(pos)))
   }
 
   test("CATALOG CREATE DATABASE `_foo-bar42`") {
-    yields(ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsThrowError, NoWait))
+    yields(_ => ast.HasCatalog(ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsThrowError, NoWait)(pos)))
   }
 
   test("CATALOG CREATE DATABASE ``") {
-    yields(ast.CreateDatabase(literalEmpty, ast.IfExistsThrowError, NoWait))
+    yields(_ => ast.HasCatalog(ast.CreateDatabase(literalEmpty, ast.IfExistsThrowError, NoWait)(pos)))
   }
 
   test("CREATE DATABASE foo IF NOT EXISTS") {
@@ -205,7 +205,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CATALOG CREATE DATABASE `_foo-bar42` IF NOT EXISTS") {
-    yields(ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsDoNothing, NoWait))
+    yields(_ => ast.HasCatalog(ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsDoNothing, NoWait)(pos)))
   }
 
   test("CREATE OR REPLACE DATABASE foo") {
@@ -225,7 +225,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CATALOG CREATE OR REPLACE DATABASE `_foo-bar42`") {
-    yields(ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsReplace, NoWait))
+    yields(_ => ast.HasCatalog(ast.CreateDatabase(literal("_foo-bar42"), ast.IfExistsReplace, NoWait)(pos)))
   }
 
   test("CREATE OR REPLACE DATABASE foo IF NOT EXISTS") {
@@ -319,11 +319,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CATALOG DROP DATABASE `foo.bar`") {
-    yields(ast.DropDatabase(literalFooBar, ifExists = false, DestroyData, NoWait))
+    yields(_ => ast.HasCatalog(ast.DropDatabase(literalFooBar, ifExists = false, DestroyData, NoWait)(pos)))
   }
 
   test("CATALOG DROP DATABASE foo.bar") {
-    yields(ast.DropDatabase(literalFooBar, ifExists = false, DestroyData, NoWait))
+    yields(_ => ast.HasCatalog(ast.DropDatabase(literalFooBar, ifExists = false, DestroyData, NoWait)(pos)))
   }
 
   test("DROP DATABASE foo IF EXISTS") {
@@ -409,11 +409,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CATALOG START DATABASE `foo.bar`") {
-    yields(ast.StartDatabase(literalFooBar, NoWait))
+    yields(_ => ast.HasCatalog(ast.StartDatabase(literalFooBar, NoWait)(pos)))
   }
 
   test("CATALOG START DATABASE foo.bar") {
-    yields(ast.StartDatabase(literalFooBar, NoWait))
+    yields(_ => ast.HasCatalog(ast.StartDatabase(literalFooBar, NoWait)(pos)))
   }
 
   test("START DATABASE") {
@@ -455,11 +455,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CATALOG STOP DATABASE `foo.bar`") {
-    yields(ast.StopDatabase(literalFooBar, NoWait))
+    yields(_ => ast.HasCatalog(ast.StopDatabase(literalFooBar, NoWait)(pos)))
   }
 
   test("CATALOG STOP DATABASE foo.bar") {
-    yields(ast.StopDatabase(literalFooBar, NoWait))
+    yields(_ => ast.HasCatalog(ast.StopDatabase(literalFooBar, NoWait)(pos)))
   }
 
   test("STOP DATABASE") {

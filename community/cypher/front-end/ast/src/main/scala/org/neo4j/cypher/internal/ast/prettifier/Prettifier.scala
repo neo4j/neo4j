@@ -72,6 +72,7 @@ import org.neo4j.cypher.internal.ast.GraphAction
 import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.GraphSelection
+import org.neo4j.cypher.internal.ast.HasCatalog
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDo
@@ -288,6 +289,10 @@ case class Prettifier(
       }
     }
     val commandString = adminCommand match {
+
+      // Probably not needed for production since it is rewritten away by the deprecation rewriter
+      // but the prettifier tests don't go through that rewriter and will fail with match error without this case
+      case HasCatalog(source) => asString(source)
 
       // User commands
 

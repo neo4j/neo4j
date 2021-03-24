@@ -32,7 +32,7 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationComman
   }
 
   test("catalog show privileges") {
-    yields(ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None))
+    yields(_ => ast.HasCatalog(ast.ShowPrivileges(ast.ShowAllPrivileges()(pos), None)(pos)))
   }
 
   test("use system show privileges") {

@@ -33,11 +33,11 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CATALOG SHOW ALL ROLES") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true, None))
+    yields(_ => ast.HasCatalog(ast.ShowRoles(withUsers = false, showAll = true, None)(pos)))
   }
 
   test("CATALOG SHOW POPULATED ROLES") {
-    yields(ast.ShowRoles(withUsers = false, showAll = false, None))
+    yields(_ => ast.HasCatalog(ast.ShowRoles(withUsers = false, showAll = false, None)(pos)))
   }
 
   test("SHOW ROLES WITH USERS") {
@@ -45,7 +45,7 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CATALOG SHOW ALL ROLES WITH USERS") {
-    yields(ast.ShowRoles(withUsers = true, showAll = true, None))
+    yields(_ => ast.HasCatalog(ast.ShowRoles(withUsers = true, showAll = true, None)(pos)))
   }
 
   test("SHOW POPULATED ROLES WITH USERS") {
@@ -53,11 +53,11 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CATALOG SHOW ALL ROLES YIELD role") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true, Some(Left((yieldClause(returnItems(variableReturnItem(roleString))), None)))))
+    yields(_ => ast.HasCatalog(ast.ShowRoles(withUsers = false, showAll = true, Some(Left((yieldClause(returnItems(variableReturnItem(roleString))), None))))(pos)))
   }
 
   test("CATALOG SHOW ALL ROLES WHERE role='PUBLIC'") {
-    yields(ast.ShowRoles(withUsers = false, showAll = true, Some(Right(where(equals(varFor(roleString), literalString("PUBLIC")))))))
+    yields(_ => ast.HasCatalog(ast.ShowRoles(withUsers = false, showAll = true, Some(Right(where(equals(varFor(roleString), literalString("PUBLIC"))))))(pos)))
   }
 
   test("SHOW ALL ROLES YIELD role RETURN role") {
@@ -155,7 +155,7 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
   }
 
   test("CATALOG CREATE ROLE `foo`") {
-    yields(ast.CreateRole(literalFoo, None, ast.IfExistsThrowError))
+    yields(_ => ast.HasCatalog(ast.CreateRole(literalFoo, None, ast.IfExistsThrowError)(pos)))
   }
 
   test("CREATE ROLE ``") {
@@ -356,11 +356,11 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   //  Granting/revoking roles to/from users
 
-  private type grantOrRevokeRoleFunc = (Seq[String], Seq[String]) => InputPosition => ast.Statement
+  private type grantOrRevokeRoleFunc = (Seq[String], Seq[String]) => InputPosition => ast.AdministrationCommand
 
-  private def grantRole(r: Seq[String], u: Seq[String]): InputPosition => ast.Statement = ast.GrantRolesToUsers(r.map(Left(_)), u.map(Left(_)))
+  private def grantRole(r: Seq[String], u: Seq[String]): InputPosition => ast.AdministrationCommand = ast.GrantRolesToUsers(r.map(Left(_)), u.map(Left(_)))
 
-  private def revokeRole(r: Seq[String], u: Seq[String]): InputPosition => ast.Statement = ast.RevokeRolesFromUsers(r.map(Left(_)), u.map(Left(_)))
+  private def revokeRole(r: Seq[String], u: Seq[String]): InputPosition => ast.AdministrationCommand = ast.RevokeRolesFromUsers(r.map(Left(_)), u.map(Left(_)))
 
   Seq("ROLE", "ROLES").foreach {
     roleKeyword =>
@@ -376,7 +376,7 @@ class RoleAdministrationCommandParserTest extends AdministrationCommandParserTes
           }
 
           test(s"CATALOG $verb $roleKeyword foo $preposition abc") {
-            yields(func(Seq("foo"), Seq("abc")))
+            yields(_ => ast.HasCatalog(func(Seq("foo"), Seq("abc"))(pos)))
           }
 
           test(s"$verb $roleKeyword foo, bar $preposition abc") {

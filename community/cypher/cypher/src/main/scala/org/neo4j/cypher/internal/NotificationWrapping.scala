@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotification
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
 import org.neo4j.cypher.internal.util.CartesianProductNotification
+import org.neo4j.cypher.internal.util.DeprecatedCatalogKeywordForAdminCommandSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCreatePropertyExistenceConstraintSyntax
@@ -128,6 +129,8 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_DEFAULT_DATABASE_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedDefaultGraphSyntax(pos) =>
       NotificationCode.DEPRECATED_DEFAULT_GRAPH_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
+    case DeprecatedCatalogKeywordForAdminCommandSyntax(pos) =>
+      NotificationCode.DEPRECATED_CATALOG_KEYWORD_FOR_ADMIN_COMMAND_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case ProcedureWarningNotification(pos, name, warning) =>
       NotificationCode.PROCEDURE_WARNING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
     case ExperimentalFeatureNotification(msg) =>

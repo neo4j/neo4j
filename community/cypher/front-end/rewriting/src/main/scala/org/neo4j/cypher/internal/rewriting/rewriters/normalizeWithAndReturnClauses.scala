@@ -16,9 +16,11 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.DescSortItem
+import org.neo4j.cypher.internal.ast.HasCatalog
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ProjectionClause
 import org.neo4j.cypher.internal.ast.Query
@@ -103,6 +105,11 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
     case s@ShowRoles(_, _, Some(Left((yields, returns))),_) =>
       s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)
         .withGraph(s.useGraph)
+
+    case h: HasCatalog =>
+      // needs to rewrite the source if we contain a SHOW command
+      // since the source is an AdministrationCommand we will get that back from the apply as well
+      h.copy(apply(h.source).asInstanceOf[AdministrationCommand])
 
     case x => x
   }

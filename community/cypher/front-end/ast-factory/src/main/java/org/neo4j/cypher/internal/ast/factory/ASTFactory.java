@@ -201,6 +201,7 @@ public interface ASTFactory<STATEMENT,
     CLAUSE subqueryClause( POS p, QUERY subquery );
 
     // Show Command Clauses
+
     YIELD yieldClause( POS p,
                        boolean returnAll,
                        List<RETURN_ITEM> returnItems,
@@ -215,6 +216,8 @@ public interface ASTFactory<STATEMENT,
 
     // Administration Commands
     ADMINISTRATION_COMMAND useGraph( ADMINISTRATION_COMMAND command, USE_GRAPH useGraph );
+
+    ADMINISTRATION_COMMAND hasCatalog( ADMINISTRATION_COMMAND command );
 
     // Role Administration Commands
 

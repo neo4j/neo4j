@@ -318,6 +318,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
+    public NULL hasCatalog( NULL aNull )
+    {
+        throw new UnsupportedOperationException( "hasCatalog is not a literal" );
+    }
+
+    @Override
     public NULL createRole( NULL p, boolean replace, Either<String,Object> roleName, Either<String,Object> from, boolean ifNotExists )
     {
         throw new UnsupportedOperationException( "createRole is not a literal" );

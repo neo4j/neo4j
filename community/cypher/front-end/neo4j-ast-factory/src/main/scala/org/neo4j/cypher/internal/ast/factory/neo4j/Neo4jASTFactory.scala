@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
+import org.neo4j.cypher.internal.ast.HasCatalog
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
@@ -874,6 +875,10 @@ class Neo4jASTFactory(query: String)
 
   override def useGraph(command: AdministrationCommand, graph: UseGraph): AdministrationCommand = {
     command.withGraph(Option(graph))
+  }
+
+  override def hasCatalog(command: AdministrationCommand): AdministrationCommand = {
+    HasCatalog(command)
   }
 
   // Role commands

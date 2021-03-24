@@ -161,6 +161,18 @@ public class Cypher<STATEMENT,
         throw exceptionFactory.syntaxException(new ParseException(errorMessage), token.beginOffset, token.beginLine, token.beginColumn);
     }
   }
+
+  private ADMINISTRATION_COMMAND addUseClauseAndCatalog(ADMINISTRATION_COMMAND command, USE_CLAUSE useClause, boolean hasCatalog)
+  {
+      if( hasCatalog )
+      {
+          return astFactory.hasCatalog(astFactory.useGraph( command, useClause ));
+      }
+      else
+      {
+          return astFactory.useGraph( command, useClause );
+      }
+  }
 }
 
 PARSER_END(Cypher)
@@ -1127,8 +1139,8 @@ STATEMENT SingleQueryOrAdministrationCommand(USE_CLAUSE useClause) throws Except
     (
         LOOKAHEAD(2) statement=CreateAdministrationCommand(useClause) // CREATE admin thing vs CREATE graph thing
         | statement=ShowCommand(useClause)
-        | <CATALOG> (statement=AdministrationCommand(useClause) | statement=ShowAdministrationCommand(useClause))
-        | statement=AdministrationCommand(useClause)
+        | <CATALOG> (statement=AdministrationCommand(useClause, true) | statement=ShowAdministrationCommandAfterCatalog(useClause))
+        | statement=AdministrationCommand(useClause, false)
         | query=SingleQuery(useClause) ( query=Union(query) )*
     )
     {
@@ -2657,7 +2669,7 @@ STATEMENT ShowConstraintsAllowYield(Token start, USE_CLAUSE useClause, String co
 
 // Administration Commands
 
-ADMINISTRATION_COMMAND ShowAdministrationCommand(USE_CLAUSE useClause):
+ADMINISTRATION_COMMAND ShowAdministrationCommandAfterCatalog(USE_CLAUSE useClause):
 {
     Token show = null;
     ADMINISTRATION_COMMAND s;
@@ -2672,7 +2684,7 @@ ADMINISTRATION_COMMAND ShowAdministrationCommand(USE_CLAUSE useClause):
        | s = ShowCurrentUser(show, useClause)
     )
     {
-        return s;
+        return astFactory.hasCatalog(s);
     }
 }
 
@@ -2680,21 +2692,22 @@ ADMINISTRATION_COMMAND CreateAdministrationCommand(USE_CLAUSE useClause) throws 
 {
     Token start;
     boolean replace = false;
+    boolean hasCatalog = false;
     ADMINISTRATION_COMMAND command;
 }
 {
-    (<CATALOG>)?
+    (<CATALOG> { hasCatalog = true; })?
     start=<CREATE> (<OR> <REPLACE> { replace = true; })? (
         command=CreateRole(start, replace)
         | command=CreateUser(start, replace)
         | command=CreateDatabase(start, replace)
     )
     {
-        return astFactory.useGraph( command, useClause );
+        return addUseClauseAndCatalog( command, useClause, hasCatalog );
     }
 }
 
-ADMINISTRATION_COMMAND AdministrationCommand(USE_CLAUSE useClause) throws Exception:
+ADMINISTRATION_COMMAND AdministrationCommand(USE_CLAUSE useClause, boolean hasCatalog) throws Exception:
 {
     ADMINISTRATION_COMMAND s;
 }
@@ -2709,7 +2722,7 @@ ADMINISTRATION_COMMAND AdministrationCommand(USE_CLAUSE useClause) throws Except
         | s = StopDatabase()
     )
     {
-        return astFactory.useGraph( s, useClause );
+        return addUseClauseAndCatalog( s, useClause, hasCatalog );
     }
 }
 

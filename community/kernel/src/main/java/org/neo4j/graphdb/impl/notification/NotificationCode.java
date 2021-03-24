@@ -150,6 +150,11 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The `ON DEFAULT GRAPH` syntax is deprecated, use `ON HOME GRAPH` instead"
     ),
+    DEPRECATED_CATALOG_KEYWORD_FOR_ADMIN_COMMAND_SYNTAX(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The optional `CATALOG` prefix for administration commands has been deprecated and should be omitted."
+    ),
     DEPRECATED_OCTAL_LITERAL_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
