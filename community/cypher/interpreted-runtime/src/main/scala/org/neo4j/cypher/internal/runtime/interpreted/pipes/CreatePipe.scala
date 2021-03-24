@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InternalException
-import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
@@ -71,20 +70,11 @@ abstract class BaseCreatePipe(src: Pipe) extends PipeWithSource(src) {
                             qtx: QueryContext,
                             ops: Operations[_, _]): Unit = {
     //do not set properties for null values
-    if (value eq Values.NO_VALUE) {
-      handleNoValue(key)
-    } else {
+    if (!(value eq Values.NO_VALUE)) {
       val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)
       ops.setProperty(entityId, propertyKeyId, makeValueNeoSafe(value))
     }
   }
-
-  /**
-   * Callback for when setProperty encounters a NO_VALUE
-   *
-   * @param key the property key associated with the NO_VALUE
-   */
-  protected def handleNoValue(key: String): Unit
 }
 
 /**
@@ -155,10 +145,6 @@ case class CreatePipe(src: Pipe, nodes: Array[CreateNodeCommand], relationships:
 
       row
     })
-
-  override protected def handleNoValue(key: String) {
-    // do nothing
-  }
 }
 
 case class CreateNodeCommand(idName: String,
@@ -170,68 +156,3 @@ case class CreateRelationshipCommand(idName: String,
                                      relType: LazyType,
                                      endNode: String,
                                      properties: Option[Expression])
-
-/**
- * Create a node corresponding to the constructor command.
- *
- * Differs from CreatePipe in that it throws on NO_VALUE properties. Merge cannot use null properties,
- * * since in that case the match part will not find the result of the create.
- */
-case class MergeCreateNodePipe(src: Pipe, data: CreateNodeCommand)
-                              (val id: Id = Id.INVALID_ID) extends EntityCreatePipe(src) {
-
-  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
-    input.map(inRow => {
-      val (idName, node) = createNode(inRow, state, data)
-      inRow.copyWith(idName, node)
-    })
-
-  override protected def handleNoValue(key: String): Unit = {
-    MergeCreateNodePipe.handleNoValue(data.labels.map(_.name), key)
-  }
-}
-
-object MergeCreateNodePipe {
-  def handleNoValue(labels: Seq[String], key: String): Unit = {
-    val labelsString = if (labels.nonEmpty) ":" + labels.mkString(":") else ""
-    throw new InvalidSemanticsException(s"Cannot merge the following node because of null property value for '$key': ($labelsString {$key: null})")
-  }
-}
-
-/**
- * Create a relationship corresponding to the constructor command.
- *
- * Differs from CreatePipe in that it throws on NO_VALUE properties. Merge cannot use null properties,
- * since in that case the match part will not find the result of the create.
- */
-case class MergeCreateRelationshipPipe(src: Pipe, data: CreateRelationshipCommand)
-                                      (val id: Id = Id.INVALID_ID)
-  extends EntityCreatePipe(src) {
-
-  protected override def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] =
-    input.map(inRow => {
-      val (idName, relationship) = createRelationship(inRow, state, data)
-    inRow.copyWith(idName, relationship)
-    })
-
-  override protected def handleNoValue(key: String): Unit = MergeCreateRelationshipPipe.handleNoValue(data.startNode, data.relType.name, data.endNode, key)
-}
-
-object MergeCreateRelationshipPipe {
-  def handleNoValue(startVariableName: String, relTypeName:String, endVariableName:String, key: String): Unit = {
-    val startVarPart =
-      if (startVariableName.startsWith(" ")) {
-        ""
-      } else {
-        startVariableName
-      }
-    val endVarPart =
-      if (endVariableName.startsWith(" ")) {
-        ""
-      } else {
-        endVariableName
-      }
-    throw new InvalidSemanticsException(
-      s"Cannot merge the following relationship because of null property value for '$key': ($startVarPart)-[:$relTypeName {$key: null}]->($endVarPart)")
-  }
-}

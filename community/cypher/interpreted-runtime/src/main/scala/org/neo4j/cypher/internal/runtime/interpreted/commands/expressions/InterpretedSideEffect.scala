@@ -25,12 +25,11 @@ import org.neo4j.cypher.internal.runtime.LenientCreateRelationship
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateNodeCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CreateRelationshipCommand
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.MergeCreateNodePipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.MergeCreateRelationshipPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.makeValueNeoSafe
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
@@ -48,7 +47,7 @@ case class CreateNode(command: CreateNodeCommand) extends InterpretedSideEffect 
     command.properties.foreach(p => p.apply(row, state) match {
       case IsMap(map) =>
         map(state).foreach((k: String, v: AnyValue) => {
-          if (v eq Values.NO_VALUE) MergeCreateNodePipe.handleNoValue(command.labels.map(_.name), k)
+          if (v eq Values.NO_VALUE) CreateNode.handleNoValue(command.labels.map(_.name), k)
           else {
             val propId = query.getOrCreatePropertyKeyId(k)
             query.nodeOps.setProperty(node.id(), propId, makeValueNeoSafe(v))
@@ -60,6 +59,13 @@ case class CreateNode(command: CreateNodeCommand) extends InterpretedSideEffect 
 
     })
     row.set(command.idName, node)
+  }
+}
+
+object CreateNode {
+  def handleNoValue(labels: Seq[String], key: String): Unit = {
+    val labelsString = if (labels.nonEmpty) ":" + labels.mkString(":") else ""
+    throw new InvalidSemanticsException(s"Cannot merge the following node because of null property value for '$key': ($labelsString {$key: null})")
   }
 }
 
@@ -79,7 +85,7 @@ case class CreateRelationship(command: CreateRelationshipCommand) extends Interp
         case IsMap(map) =>
           map(state).foreach((k: String, v: AnyValue) => {
             if (v eq Values.NO_VALUE) {
-              MergeCreateRelationshipPipe.handleNoValue(command.startNode, command.relType.name, command.endNode, k)
+              CreateRelationship.handleNoValue(command.startNode, command.relType.name, command.endNode, k)
             } else {
               val propId = state.query.getOrCreatePropertyKeyId(k)
               state.query.relationshipOps.setProperty(relationship.id(), propId, makeValueNeoSafe(v))
@@ -104,6 +110,25 @@ case class CreateRelationship(command: CreateRelationshipCommand) extends Interp
         else throw new InternalException(LenientCreateRelationship.errorMsg(relName, name))
       case x => throw new InternalException(s"Expected to find a node at '$name' but found instead: $x")
     }
+}
+
+object CreateRelationship {
+  def handleNoValue(startVariableName: String, relTypeName:String, endVariableName:String, key: String): Unit = {
+    val startVarPart =
+      if (startVariableName.startsWith(" ")) {
+        ""
+      } else {
+        startVariableName
+      }
+    val endVarPart =
+      if (endVariableName.startsWith(" ")) {
+        ""
+      } else {
+        endVariableName
+      }
+    throw new InvalidSemanticsException(
+      s"Cannot merge the following relationship because of null property value for '$key': ($startVarPart)-[:$relTypeName {$key: null}]->($endVarPart)")
+  }
 }
 
 

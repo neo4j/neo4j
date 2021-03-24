@@ -30,11 +30,9 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
-import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.ForeachPattern
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
@@ -372,14 +370,9 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planCreate(ctx.lhs, CreatePattern(Seq(CreateNode("n", Seq(), None)), Seq()), ctx.context))
   }
 
-  test("MergeCreateNode should eliminate provided order") {
+  test("MERGE should eliminate provided order") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planMergeCreateNode(ctx.lhs, CreateNode("n", Seq(), None), ctx.context))
-  }
-
-  test("MergeCreateRelationship should eliminate provided order") {
-    shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planMergeCreateRelationship(ctx.lhs, CreateRelationship("r", "n", relTypeName("R"), "m", SemanticDirection.OUTGOING, None), ctx.context))
+      ctx.producer.planMerge(ctx.lhs, Seq(CreateNode("n", Seq(), None)), Seq.empty, Seq.empty, Seq.empty, ctx.context))
   }
 
   test("DeleteNode should eliminate provided order") {

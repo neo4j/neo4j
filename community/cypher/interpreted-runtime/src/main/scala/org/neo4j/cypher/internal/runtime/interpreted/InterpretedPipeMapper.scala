@@ -79,8 +79,6 @@ import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Merge
-import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
-import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -200,8 +198,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.LetSemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LimitPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCSVPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LockNodesPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.MergeCreateNodePipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.MergeCreateRelationshipPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.MergePipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByIdSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeByLabelScanPipe
@@ -672,16 +668,6 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         }
 
         new MergePipe(source, creates, onMatch.map(compileEffect), onCreate.map(compileEffect))(id = id)
-
-      case MergeCreateNode(_, idName, labels, props) =>
-        MergeCreateNodePipe(source,
-          CreateNodeCommand(idName, labels.map(LazyLabel.apply), props.map(buildExpression))
-        )(id = id)
-
-      case MergeCreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        MergeCreateRelationshipPipe(source,
-          CreateRelationshipCommand(idName, startNode, LazyType(typ)(semanticTable), endNode, props.map(buildExpression))
-        )(id = id)
 
       case SetLabels(_, name, labels) =>
         SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))(id = id)

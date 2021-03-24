@@ -27,8 +27,6 @@ import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
-import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -184,24 +182,6 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanRewritingTestSuppor
         .|.argument("m").withCardinality(1)
         .nodeByLabelScan("m", "M", "n").withCardinality(20).withProvidedOrder(po_n)
       )
-  }
-
-  test("should unnest merge create node from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val merge = MergeCreateNode(rhs, null, null, null)
-    val input = Apply(lhs, merge)
-
-    rewrite(input) should equal(MergeCreateNode(Apply(lhs, rhs), null, null, null))
-  }
-
-  test("should unnest merge create relationship from rhs of apply") {
-    val lhs = newMockedLogicalPlan()
-    val rhs = newMockedLogicalPlan()
-    val merge = MergeCreateRelationship(rhs, null, null, null, null, null)
-    val input = Apply(lhs, merge)
-
-    rewrite(input) should equal(MergeCreateRelationship(Apply(lhs, rhs), null, null, null, null, null))
   }
 
   test("should unnest set node property from rhs of apply") {

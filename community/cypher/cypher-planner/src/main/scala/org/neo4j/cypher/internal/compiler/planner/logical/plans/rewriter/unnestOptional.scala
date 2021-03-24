@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
+import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -46,7 +46,7 @@ case object unnestOptional extends Rewriter {
    * writes
    */
   private def isSafe(input: AnyRef) = !input.treeExists {
-    case _:MergeCreateRelationship => true
+    case m: Merge if m.createRelationships.nonEmpty => true
   }
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {

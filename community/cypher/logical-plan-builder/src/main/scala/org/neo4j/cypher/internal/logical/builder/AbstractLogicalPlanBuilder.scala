@@ -114,8 +114,6 @@ import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.Merge
-import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
-import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
@@ -946,14 +944,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             onMatch: Seq[SetMutatingPattern] = Seq.empty,
             onCreate : Seq[SetMutatingPattern] = Seq.empty): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source => Merge(source, nodes, relationships, onMatch, onCreate)(_)))
-  }
-
-  def mergeCreateNode(node: CreateNode): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => MergeCreateNode(source, node.idName, node.labels, node.properties)(_)))
-  }
-
-  def mergeCreateRelationship(rel: CreateRelationship): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(source => MergeCreateRelationship(source, rel.idName, rel.startNode, rel.relType, rel.endNode, rel.properties)(_)))
   }
 
   def nodeHashJoin(nodes: String*): IMPL = {

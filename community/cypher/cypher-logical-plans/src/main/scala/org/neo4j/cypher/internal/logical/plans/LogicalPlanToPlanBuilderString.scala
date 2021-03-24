@@ -188,10 +188,7 @@ object LogicalPlanToPlanBuilderString {
         val onCreateString = onCreate.map(setOpToString)
 
         s"Seq(${nodesToCreate.mkString(", ")}), Seq(${relsToCreate.mkString(", ")}), Seq(${onMatchString.mkString(", ")}), Seq(${onCreateString.mkString(", ")})"
-      case MergeCreateNode(_, idName, labels, properties) =>
-        createNodeToString(CreateNode(idName, labels, properties))
-      case MergeCreateRelationship(_, idName, startNode, typ, endNode, properties) =>
-        createRelationshipToString(CreateRelationship(idName, startNode, typ, endNode, OUTGOING, properties))
+
       case Expand(_, from, dir, types, to, relName, _) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)

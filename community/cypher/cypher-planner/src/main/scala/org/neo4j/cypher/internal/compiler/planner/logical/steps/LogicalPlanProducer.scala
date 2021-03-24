@@ -140,8 +140,6 @@ import org.neo4j.cypher.internal.logical.plans.LockNodes
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.Merge
-import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
-import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
@@ -1267,23 +1265,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   val solved = RegularSinglePlannerQuery().amendQueryGraph(_.addMutatingPatterns(patterns))
   annotate(Merge(inner, createNodePatterns, createRelationshipPatterns, onMatchPatterns, onCreatePatterns), solved, ProvidedOrder.empty, context)
 }
-
-  def planMergeCreateNode(inner: LogicalPlan, pattern: CreateNode, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(CreatePattern(List(pattern), Nil)))
-    val (rewrittenPattern, rewrittenInner) = PatternExpressionSolver.ForMappable().solve(inner, pattern, context)
-    val plan = MergeCreateNode(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.labels, rewrittenPattern.properties)
-    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner)
-    annotate(plan, solved, providedOrder, context)
-  }
-
-  def planMergeCreateRelationship(inner: LogicalPlan, pattern: CreateRelationship, context: LogicalPlanningContext): LogicalPlan = {
-
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(CreatePattern(Nil, List(pattern))))
-    val (rewrittenPattern, rewrittenInner) = PatternExpressionSolver.ForMappable().solve(inner, pattern, context)
-    val plan = MergeCreateRelationship(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.startNode, rewrittenPattern.relType, rewrittenPattern.endNode, rewrittenPattern.properties)
-    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner)
-    annotate(plan, solved, providedOrder, context)
-  }
 
   def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, idNames: Seq[String], context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(lhs.id).asSinglePlannerQuery ++ solveds.get(rhs.id).asSinglePlannerQuery

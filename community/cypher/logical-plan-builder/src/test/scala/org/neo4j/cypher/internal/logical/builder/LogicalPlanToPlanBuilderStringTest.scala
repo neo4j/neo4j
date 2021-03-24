@@ -362,19 +362,6 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .allNodeScan("x")
       .build())
 
-  testPlan("mergeCreateNode",
-    new TestPlanBuilder()
-      .produceResults("a")
-      .mergeCreateNode(createNode("a", "A"))
-      .argument()
-      .build())
-
-  testPlan("mergeCreateRelationship",
-    new TestPlanBuilder()
-      .produceResults("a")
-      .mergeCreateRelationship(createRelationship("r", "n", "R", "m"))
-      .argument()
-      .build())
 
   testPlan("optional",
     new TestPlanBuilder()

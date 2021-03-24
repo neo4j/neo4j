@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Apply
@@ -29,7 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
+import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -70,8 +71,8 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
         ))
     val lhs = newMockedLogicalPlan("a")
     val apply = Apply(lhs, rhs)
-    val mergeRel = MergeCreateRelationship(Argument(), "r", "a", RelTypeName("T")(pos), "b",
-      None)
+    val mergeRel = Merge(Argument(), Seq.empty,
+      Seq(CreateRelationship("r", "a", RelTypeName("T")(pos), "b", SemanticDirection.OUTGOING, None)), Seq.empty, Seq.empty)
 
     val input = AntiConditionalApply(apply, mergeRel, Seq.empty)
 

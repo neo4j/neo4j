@@ -127,8 +127,6 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.Merge
-import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
-import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -618,13 +616,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
             expandExpressionDescription(startNode, Some(relationship), Seq(typ.name), endNode, direction, 1, Some(1))
         }
         PlanDescriptionImpl(id, "Merge", children, Seq(Details(createNodesPretty ++ createRelsPretty ++ onMatch.map(setOpDetatils) ++ onCreate.map(setOpDetatils))), variables, withRawCardinalities)
-
-      case MergeCreateNode(_, idName, _, _) =>
-        PlanDescriptionImpl(id, "MergeCreateNode", children, Seq(Details(asPrettyString(idName))), variables, withRawCardinalities)
-
-      case MergeCreateRelationship(_, idName, startNode, relTypeName, endNode, _) =>
-        val details = expandExpressionDescription(startNode, Some(idName), Seq(relTypeName.name), endNode, SemanticDirection.OUTGOING, 1, Some(1))
-        PlanDescriptionImpl(id, "MergeCreateRelationship", children, Seq(Details(details)), variables, withRawCardinalities)
 
       case Optional(_, protectedSymbols) =>
         PlanDescriptionImpl(id, "Optional", children, Seq(Details(keyNamesInfo(protectedSymbols.toSeq))), variables, withRawCardinalities)

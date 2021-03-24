@@ -188,8 +188,6 @@ import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
-import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
-import org.neo4j.cypher.internal.logical.plans.MergeCreateRelationship
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -1086,19 +1084,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // with: predicates, UNNAMED variables, relationship type, unbounded max length
     assertGood(attach(FindShortestPaths(lhsLP, ShortestPathPattern(None, PatternRelationship("r", ("a", "  UNNAMED2"), SemanticDirection.BOTH, Seq(relType("R")), VarPatternLength(2, None)), single = true)(null), Seq(predicate)), 2345.0),
       planDescription(id, "ShortestPath", SingleChild(lhsPD), Seq(details(s"(a)-[r:R*2..]-(${anonVar("2")}) WHERE r.prop = $$autostring_1")), Set("r", "a", anonVar("2"))))
-  }
-
-  test("MergeCreate") {
-    // NOTE: currently tests only assert that we do NOT render anything other than the introduced variable
-    val properties = MapExpression(Seq(
-      (key("y"), number("1")),
-      (key("crs"), stringLiteral("cartesian"))))(pos)
-
-    assertGood(attach(MergeCreateNode(lhsLP, "x", Seq(label("L1"), label("L2")), Some(properties)), 113.0),
-      planDescription(id, "MergeCreateNode", SingleChild(lhsPD), Seq(details("x")), Set("a", "x")))
-
-    assertGood(attach(MergeCreateRelationship(lhsLP, "r", "x", relType("R"), "  NODE90", Some(properties)), 113.0),
-      planDescription(id, "MergeCreateRelationship", SingleChild(lhsPD), Seq(details(s"(x)-[r:R]->(${anonVar("90")})")), Set("a", "r", "x", anonVar("90"))))
   }
 
   test("Optional") {

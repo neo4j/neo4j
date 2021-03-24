@@ -23,20 +23,19 @@ import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.logical.plans.Aggregation
-import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
-import org.neo4j.cypher.internal.logical.plans.EitherPlan
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
-import org.neo4j.cypher.internal.logical.plans.MergeCreateNode
+import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
@@ -591,7 +590,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        EitherPlan(
+        Merge(
           NodeUniqueIndexSeek(
             "n",
             LabelToken("Awesome", LabelId(0)),
@@ -599,10 +598,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             SingleQueryExpression(literalString("foo")),
             Set.empty,
             IndexOrderNone),
-          MergeCreateNode(
-            Argument(Set()),
-            "n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo"))))
-          )
+          Seq(CreateNode("n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo")))))), Seq.empty, Seq.empty, Seq.empty,
         ),
         Map("n.prop" -> cachedNodeProp("n", "prop")))
     )
@@ -615,7 +611,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        EitherPlan(
+        Merge(
           NodeUniqueIndexSeek(
             "n",
             LabelToken("Awesome", LabelId(0)),
@@ -623,10 +619,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             SingleQueryExpression(literalString("foo")),
             Set.empty,
             IndexOrderNone),
-          MergeCreateNode(
-            Argument(Set()),
-            "n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo"))))
-          )
+          Seq(CreateNode("n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo")))))), Seq.empty, Seq.empty, Seq.empty
         ),
         Map("n.prop" -> cachedNodeProp("n", "prop")))
     )
@@ -640,7 +633,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        EitherPlan(
+        Merge(
           NodeUniqueIndexSeek(
             "n",
             LabelToken("Awesome", LabelId(0)),
@@ -648,10 +641,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             SingleQueryExpression(literalString("foo")),
             Set.empty,
             IndexOrderNone),
-          MergeCreateNode(
-            Argument(Set()),
-            "n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo"))))
-          )
+          Seq(CreateNode("n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo")))))), Seq.empty, Seq.empty, Seq.empty
         ),
         Map(propertyProj("n", "foo")))
     )

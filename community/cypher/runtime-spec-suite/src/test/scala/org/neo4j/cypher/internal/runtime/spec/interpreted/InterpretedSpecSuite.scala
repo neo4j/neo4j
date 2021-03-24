@@ -65,7 +65,6 @@ import org.neo4j.cypher.internal.runtime.spec.tests.InputTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LabelScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LeftOuterHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LenientCreateRelationshipTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.LenientMergeCreateRelationshipTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LetAntiSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LetSelectOrAntiSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.LetSelectOrSemiApplyTestBase
@@ -75,7 +74,6 @@ import org.neo4j.cypher.internal.runtime.spec.tests.LockNodesTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryDeallocationTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementDisabledTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.MergeCreateTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MergeTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MiscTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MultiNodeIndexSeekTestBase
@@ -93,7 +91,6 @@ import org.neo4j.cypher.internal.runtime.spec.tests.NodeIndexStartsWithSeekTestB
 import org.neo4j.cypher.internal.runtime.spec.tests.NodeLockingUniqueIndexSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NonParallelProfileRowsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.NonParallelProvidedOrderTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.OnMatchApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OptionalExpandAllTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OptionalExpandIntoTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OptionalFailureTestBase
@@ -267,15 +264,12 @@ class InterpretedSetPropertiesFromMapRelationshipTest extends SetPropertiesFromM
 class InterpretedSetNodePropertyTest extends SetNodePropertyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedSetNodePropertiesFromMapTest extends SetNodePropertiesFromMapTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedSetRelationshipPropertiesFromMapTest extends SetRelationshipPropertiesFromMapTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
-class InterpretedMergeCreateTest extends MergeCreateTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
-class InterpretedLenientMergeCreateRelationshipTest extends LenientMergeCreateRelationshipTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedMergeTest extends MergeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 
 class InterpretedLockNodesTest extends LockNodesTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedForEachApplyTest extends ForeachApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedSetRelationshipPropertyTest extends SetRelationshipPropertyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedEitherTest extends EitherTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
-class InterpretedOnMatchApplyTest extends OnMatchApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedDeleteNodeTest extends DeleteNodeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedDetachDeleteNodeTest extends DeleteDetachNodeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedDeleteRelationshipTest extends DeleteRelationshipTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
