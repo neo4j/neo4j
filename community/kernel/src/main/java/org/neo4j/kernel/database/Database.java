@@ -318,6 +318,7 @@ public class Database extends LifecycleAdapter
                     new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
 
             databaseDependencies.satisfyDependency( this );
+            databaseDependencies.satisfyDependencies( databaseLayout );
             databaseDependencies.satisfyDependency( startupController );
             databaseDependencies.satisfyDependency( databaseConfig );
             databaseDependencies.satisfyDependency( databaseMonitors );

@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -41,17 +41,14 @@ class TransactionLogInitializerIT
     @Inject
     private FileSystemAbstraction fileSystem;
     @Inject
-    private RecordStorageEngine recordStorageEngine;
-    @Inject
-    private GraphDatabaseService database;
-    @Inject
-    private DatabaseLayout databaseLayout;
-    @Inject
-    private LogFiles logFiles;
+    private GraphDatabaseAPI database;
 
     @Test
     void resetLogFileOffsetOnEmptyLogFileCreation() throws Exception
     {
+        RecordStorageEngine recordStorageEngine = database.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+        DatabaseLayout databaseLayout = database.getDependencyResolver().resolveDependency( DatabaseLayout.class );
+        LogFiles logFiles = database.getDependencyResolver().resolveDependency( LogFiles.class );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = transaction.createNode();
