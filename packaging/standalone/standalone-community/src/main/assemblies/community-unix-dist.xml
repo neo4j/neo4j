@@ -81,25 +81,6 @@
         <include>**/*.jar</include>
       </includes>
     </fileSet>
-    <fileSet>
-      <directory>${project.parent.basedir}/src/main/distribution/</directory>
-      <outputDirectory>labs</outputDirectory>
-      <includes>
-        <include>apoc*.jar</include>
-      </includes>
-    </fileSet>
-    <!-- TODO: temporary workaround for browser dependency -->
-    <fileSet>
-      <directory>${project.parent.basedir}/src/main/distribution/neo4j-browser-flat</directory>
-      <outputDirectory>lib</outputDirectory>
-      <includes>
-        <include>**/*.jar</include>
-      </includes>
-      <excludes>
-        <exclude>**/*-sources.jar</exclude>
-        <exclude>**/*-tests.jar</exclude>
-      </excludes>
-    </fileSet>
   </fileSets>
 
   <dependencySets>
