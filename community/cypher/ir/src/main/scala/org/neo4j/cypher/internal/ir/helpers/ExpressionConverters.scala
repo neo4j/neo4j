@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.helpers
 
+import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -155,7 +156,7 @@ object ExpressionConverters {
           }
             SkipChildren(newAcc)
         // and
-        case _: Ands =>
+        case _: Ands | _: And =>
           acc => TraverseChildren(acc)
         case p: Expression =>
           acc => SkipChildren(acc + Predicate(p.idNames -- outerScope, p))

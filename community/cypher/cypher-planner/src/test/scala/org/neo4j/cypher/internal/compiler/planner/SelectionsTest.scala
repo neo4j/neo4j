@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private val aIsPerson = hasLabels("a", "Person")
+  private val aIsProgrammer = hasLabels("a", "Programmer")
   private val bIsAnimal = hasLabels("b", "Animal")
 
   private val aId = idNames("a")
@@ -101,14 +102,29 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
     selections.predicatesGiven(aId) should equal(Seq.empty)
   }
 
-  test("prunes away sub predicates") {
-    val covered = hasLabels("a", "Programmer")
-    val covering = and(aIsPerson, covered)
+  test("should prune away sub predicates if covering is added") {
+    val covered = aIsProgrammer
+    val covering = and(aIsPerson, aIsProgrammer)
     val selections = Selections(Set(Predicate(aId, PartialPredicate(covered, covering))))
+    val newSelections = Selections(Set(Predicate(aId, covering)))
 
-    val result = selections ++ Selections(Set(Predicate(aId, covering)))
+    val fromLeft = selections ++ newSelections
+    val fromRight = newSelections ++ selections
 
-    result should equal(Selections(Set(Predicate(aId, covering))))
+    val expected = Selections(Set(Predicate(aId, covering)))
+
+    fromLeft should equal(expected)
+    fromRight should equal(expected)
+  }
+
+  test("should prune selections at initialization") {
+    val covered = aIsProgrammer
+    val covering = and(aIsPerson, aIsProgrammer)
+    val selections = Selections(Set(Predicate(aId, PartialPredicate(covered, covering)), Predicate(aId, covering)))
+
+    val expected = Selections(Set(Predicate(aId, covering)))
+
+    selections should equal(expected)
   }
 
   private def idNames(names: String*) = names.toSet

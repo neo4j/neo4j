@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 
 import scala.collection.mutable.ArrayBuffer
 
-case class Selections(predicates: Set[Predicate] = Set.empty) {
+case class Selections private (predicates: Set[Predicate]) {
   def isEmpty = predicates.isEmpty
 
   def predicatesGiven(ids: Set[String]): Seq[Expression] = {
@@ -118,18 +118,7 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
 
   def contains(e: Expression): Boolean = predicates.exists { _.expr == e }
 
-  def ++(other: Selections): Selections = {
-    val otherPredicates = other.predicates
-    val keptPredicates  = predicates.filter {
-      case Predicate(_, expr: PartialPredicate[_]) =>
-        !expr.coveringPredicate.asPredicates.forall(expr => otherPredicates.contains(expr) || predicates.contains(expr))
-
-      case _ =>
-        true
-    }
-
-    Selections(keptPredicates ++ other.predicates)
-  }
+  def ++(other: Selections): Selections = Selections(predicates ++ other.predicates)
 
   def ++(expressions: Traversable[Expression]): Selections = Selections(predicates ++ expressions.flatMap(_.asPredicates))
 
@@ -137,8 +126,29 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
 }
 
 object Selections {
-  def from(expressions: Traversable[Expression]): Selections = new Selections(expressions.flatMap(_.asPredicates).toSet)
-  def from(expressions: Expression): Selections = new Selections(expressions.asPredicates)
+
+  def apply(): Selections = new Selections(Set.empty)
+
+  /**
+   * Create a new Selections from a set of Predicate:s
+   *
+   * Any PartialPredicate:s where the covering predicate is itself a predicate in the set are removed
+   */
+  def apply(predicates: Set[Predicate]): Selections = {
+
+    def isCoveredByOtherPredicate(partial: PartialPredicate[_]): Boolean =
+      partial.coveringPredicate.asPredicates.forall(subExpr => predicates.contains(subExpr))
+
+    val keptPredicates = predicates.filter {
+      case Predicate(_, partial: PartialPredicate[_]) => !isCoveredByOtherPredicate(partial)
+      case _                                          => true
+    }
+
+    new Selections(keptPredicates)
+  }
+
+  def from(expressions: Traversable[Expression]): Selections = Selections(expressions.flatMap(_.asPredicates).toSet)
+  def from(expressions: Expression): Selections = Selections(expressions.asPredicates)
 
   def containsPatternPredicates(e: Expression): Boolean = e match {
     case _: ExistsSubClause                => true
