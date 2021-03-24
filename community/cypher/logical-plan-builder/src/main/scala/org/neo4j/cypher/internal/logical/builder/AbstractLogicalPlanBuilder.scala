@@ -127,7 +127,6 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeekLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NonFuseable
-import org.neo4j.cypher.internal.logical.plans.OnMatchApply
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -882,9 +881,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def either(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => EitherPlan(lhs, rhs)(_)))
-
-  def onMatchApply(): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => OnMatchApply(lhs, rhs)(_)))
 
   def orderedUnion(sortedOn: Seq[ColumnOrder]): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => OrderedUnion(lhs, rhs, sortedOn)(_)))

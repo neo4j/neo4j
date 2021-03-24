@@ -140,7 +140,6 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeKey
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
-import org.neo4j.cypher.internal.logical.plans.OnMatchApply
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -860,9 +859,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
 
       case _: AssertingMultiNodeIndexSeek =>
         PlanDescriptionImpl(id = plan.id, "AssertingMultiNodeIndexSeek", children, Seq.empty, variables, withRawCardinalities)
-
-      case _: OnMatchApply =>
-        PlanDescriptionImpl(id = plan.id, "OnMatchApply", children, Seq.empty, variables)
 
       case _: plans.EitherPlan =>
         PlanDescriptionImpl(id = plan.id, "Either", children, Seq.empty, variables)

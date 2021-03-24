@@ -151,7 +151,6 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
-import org.neo4j.cypher.internal.logical.plans.OnMatchApply
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
@@ -1248,46 +1247,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(plan, solved, providedOrder, context)
   }
 
-  def planOnMatchApply(read: LogicalPlan, onMatch: LogicalPlan, context: LogicalPlanningContext): OnMatchApply = {
-    //Remove arguments on the rhs since they are only for the RHS.
-    val rhsSolved = solveds.get(onMatch.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.withArgumentIds(Set.empty)))
-    val solved = solveds.get(read.id).asSinglePlannerQuery ++ rhsSolved
-    val providedOrder = providedOrders.get(read.id).fromLeft
-    annotate(OnMatchApply(read, onMatch), solved, providedOrder, context)
-  }
-
   def planEither(read: LogicalPlan, writePlan: LogicalPlan, context: LogicalPlanningContext): EitherPlan = {
     val solved = solveds.get(read.id).asSinglePlannerQuery ++ solveds.get(writePlan.id).asSinglePlannerQuery
-    annotate(EitherPlan(read, writePlan), solved, ProvidedOrder.empty, context)
-  }
-
-  def planMergeEither(read: LogicalPlan, writePlan: LogicalPlan, context: LogicalPlanningContext): EitherPlan = {
-    val lhsGraph = solveds.get(read.id).asSinglePlannerQuery.queryGraph
-    val rhsGraph = solveds.get(writePlan.id).asSinglePlannerQuery.queryGraph
-    //Find if there are any ON MATCH SET ... on the read side
-    val onMatches = lhsGraph.mutatingPatterns.collect {
-      case s: SetMutatingPattern => s
-    }
-
-    //Find what merge pattern we are solving, the rhs is solving the
-    //create part of MERGE X ON CREATE SET Y where X is either a single
-    //node pattern or a longer chain of nodes and relationships
-    val createNodes = rhsGraph.mutatingPatterns.collect {
-      case CreatePattern(Seq(nodePatter), Seq()) => nodePatter
-    }
-    val createRelationships = rhsGraph.mutatingPatterns.collect {
-      case CreatePattern(Seq(), Seq(cr)) => cr
-    }
-    val onCreate = rhsGraph.mutatingPatterns.collect {
-      case s: SetMutatingPattern => s
-    }
-    val solvedRight = if (createRelationships.isEmpty) {
-      MergeNodePattern(createNodes.head, lhsGraph.copy(mutatingPatterns = IndexedSeq.empty), onCreate, onMatches)
-    } else {
-      MergeRelationshipPattern(createNodes, createRelationships, lhsGraph.copy(mutatingPatterns = IndexedSeq.empty), onCreate, onMatches)
-    }
-    val solved = RegularSinglePlannerQuery().amendQueryGraph(_.addMutatingPatterns(solvedRight))
-
     annotate(EitherPlan(read, writePlan), solved, ProvidedOrder.empty, context)
   }
 
