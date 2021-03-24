@@ -132,6 +132,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.SetNodePropertyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SetPropertiesFromMapNodeTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SetPropertiesFromMapRelationshipTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SetPropertyTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.SetRelationshipPropertiesFromMapTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SetRelationshipPropertyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ShortestPathTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SkipTestBase
@@ -265,6 +266,7 @@ class InterpretedSetPropertiesFromMapNodeTest extends SetPropertiesFromMapNodeTe
 class InterpretedSetPropertiesFromMapRelationshipTest extends SetPropertiesFromMapRelationshipTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedSetNodePropertyTest extends SetNodePropertyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedSetNodePropertiesFromMapTest extends SetNodePropertiesFromMapTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedSetRelationshipPropertiesFromMapTest extends SetRelationshipPropertiesFromMapTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedMergeCreateTest extends MergeCreateTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLenientMergeCreateRelationshipTest extends LenientMergeCreateRelationshipTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedMergeTest extends MergeTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
