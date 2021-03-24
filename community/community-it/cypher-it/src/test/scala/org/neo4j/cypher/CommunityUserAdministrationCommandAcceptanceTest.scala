@@ -297,6 +297,15 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     testUserLogin("foo", "bar", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
   }
 
+  test("should create user with username and password as same parameter") {
+    // WHEN
+    execute("CREATE USER $user SET PASSWORD $user CHANGE REQUIRED", Map("user" -> "foo"))
+
+    // THEN
+    execute("SHOW USERS").toSet shouldBe Set(user("neo4j"), user("foo"))
+    testUserLogin("foo", "foo", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+  }
+
   test("should fail when creating user with numeric password as parameter") {
     the[ParameterWrongTypeException] thrownBy {
       // WHEN
@@ -667,6 +676,18 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
 
     // THEN
     testUserLogin("foo", "baz", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
+    testUserLogin("foo", "bar", AuthenticationResult.FAILURE)
+  }
+
+  test("should alter user password with same parameter as username") {
+    // GIVEN
+    prepareUser("foo", "bar")
+
+    // WHEN
+    execute("ALTER USER $user SET PASSWORD $user", Map( "user" -> "foo"))
+
+    // THEN
+    testUserLogin("foo", "foo", AuthenticationResult.PASSWORD_CHANGE_REQUIRED)
     testUserLogin("foo", "bar", AuthenticationResult.FAILURE)
   }
 

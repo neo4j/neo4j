@@ -196,7 +196,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     // ALTER CURRENT USER SET PASSWORD FROM $currentPassword TO $newPassword
     case SetOwnPassword(newPassword, currentPassword) => (_, _) =>
       val usernameKey = internalKey("username")
-      val newPw = getPasswordExpression(newPassword)
+      val newPw = getPasswordExpression(None, newPassword)
       val (currentKeyBytes, currentValueBytes, currentConverterBytes) = getPasswordFieldsCurrent(currentPassword)
       def currentUser(p: MapValue): String = p.get(usernameKey).asInstanceOf[TextValue].stringValue()
       val query =
