@@ -69,6 +69,8 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 
+import static org.neo4j.kernel.database.DatabaseCreationContext.selectStorageEngine;
+
 public class ModularDatabaseCreationContext implements DatabaseCreationContext
 {
     private final NamedDatabaseId namedDatabaseId;
@@ -153,7 +155,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.watcherServiceFactory = editionComponents.getWatcherServiceFactory();
         this.databaseAvailabilityGuardFactory =
                 databaseTimeoutMillis -> databaseAvailabilityGuardFactory( namedDatabaseId, globalModule, databaseTimeoutMillis );
-        this.storageEngineFactory = globalModule.getStorageEngineFactory();
+        this.storageEngineFactory = selectStorageEngine( fs, databaseLayout, pageCache, databaseConfig, namedDatabaseId );
         this.fileLockerService = globalModule.getFileLockerService();
         this.accessCapabilityFactory = editionComponents.getAccessCapabilityFactory();
         this.leaseService = leaseService;

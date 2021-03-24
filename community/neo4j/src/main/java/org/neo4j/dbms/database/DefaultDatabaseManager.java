@@ -19,16 +19,19 @@
  */
 package org.neo4j.dbms.database;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.dbms.api.DatabaseExistsException;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.kernel.database.DatabaseIdRepository.NAMED_SYSTEM_DATABASE_ID;
@@ -79,15 +82,16 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
         requireNonNull( namedDatabaseId );
         log.info( "Creating '%s'.", namedDatabaseId );
         checkDatabaseLimit( namedDatabaseId );
-        StandaloneDatabaseContext databaseContext = createDatabaseContext( namedDatabaseId );
+        StandaloneDatabaseContext databaseContext = createDatabaseContext( namedDatabaseId, emptyMap() );
         databaseMap.put( namedDatabaseId, databaseContext );
         return databaseContext;
     }
 
     @Override
-    protected StandaloneDatabaseContext createDatabaseContext( NamedDatabaseId namedDatabaseId )
+    protected StandaloneDatabaseContext createDatabaseContext( NamedDatabaseId namedDatabaseId, Map<Setting<?>,Object> databaseSpecificSettings )
     {
-        var databaseCreationContext = newDatabaseCreationContext( namedDatabaseId, globalModule.getGlobalDependencies(), globalModule.getGlobalMonitors() );
+        var databaseCreationContext =
+                newDatabaseCreationContext( namedDatabaseId, databaseSpecificSettings, globalModule.getGlobalDependencies(), globalModule.getGlobalMonitors() );
         var kernelDatabase = new Database( databaseCreationContext );
         return new StandaloneDatabaseContext( kernelDatabase );
     }

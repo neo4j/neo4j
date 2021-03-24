@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import java.util.Collections;
+
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseConfig;
@@ -62,7 +64,7 @@ public class DatabaseMigratorFactory
     public DatabaseMigrator createDatabaseMigrator( DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
             DependencyResolver dependencies )
     {
-        DatabaseConfig dbConfig = new DatabaseConfig( config, namedDatabaseId );
+        DatabaseConfig dbConfig = new DatabaseConfig( Collections.emptyMap(), config, namedDatabaseId );
         return new DatabaseMigrator( fs, dbConfig, logService, dependencies, pageCache, jobScheduler, databaseLayout,
                 storageEngineFactory, pageCacheTracer, memoryTracker, databaseHealth );
     }

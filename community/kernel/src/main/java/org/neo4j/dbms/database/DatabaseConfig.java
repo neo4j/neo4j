@@ -40,12 +40,14 @@ import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 
 public class DatabaseConfig extends Config implements Lifecycle
 {
+    private final Map<Setting<?>,Object> databaseSpecificSettings;
     private final Config globalConfig;
     private final Map<Setting<?>, Object> overriddenSettings;
     private Map<Setting<Object>,Collection<SettingChangeListener<Object>>> registeredListeners = new ConcurrentHashMap<>();
 
-    public DatabaseConfig( Config globalConfig, NamedDatabaseId namedDatabaseId )
+    public DatabaseConfig( Map<Setting<?>,Object> databaseSpecificSettings, Config globalConfig, NamedDatabaseId namedDatabaseId )
     {
+        this.databaseSpecificSettings = databaseSpecificSettings;
         this.globalConfig = globalConfig;
         overriddenSettings = !namedDatabaseId.isSystemDatabase() ? null : Map.of(
                 record_format, "", //Latest version of the format family it is currently on. Needs to work in rolling upgrade.
@@ -64,6 +66,11 @@ public class DatabaseConfig extends Config implements Lifecycle
                 //noinspection unchecked
                 return (T) o;
             }
+        }
+        Object dbSpecific = databaseSpecificSettings.get( setting );
+        if ( dbSpecific != null )
+        {
+            return (T) dbSpecific;
         }
         return globalConfig.get( setting );
     }

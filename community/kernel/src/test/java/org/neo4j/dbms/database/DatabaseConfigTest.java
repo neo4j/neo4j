@@ -21,6 +21,8 @@ package org.neo4j.dbms.database;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
@@ -38,7 +40,7 @@ class DatabaseConfigTest
     {
         // given
         NamedDatabaseId namedDatabaseId = new TestDatabaseIdRepository().defaultDatabase();
-        DatabaseConfig dbConfig = new DatabaseConfig( Config.defaults(), namedDatabaseId );
+        DatabaseConfig dbConfig = new DatabaseConfig( Collections.emptyMap(), Config.defaults(), namedDatabaseId );
         Setting<GraphDatabaseSettings.TransactionTracingLevel> setting = GraphDatabaseSettings.transaction_tracing_level;
         int threads = 100; // big because we want to exercise what happens when the potentially backing List wants to grow
         Listener[] listeners = new Listener[threads];
