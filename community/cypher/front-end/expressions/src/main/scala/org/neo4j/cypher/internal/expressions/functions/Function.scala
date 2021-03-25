@@ -113,6 +113,8 @@ object Function {
     ToIntegerOrNull,
     ToLower,
     ToString,
+    ToStringList,
+    ToStringOrNull,
     ToUpper,
     Properties,
     Trim,

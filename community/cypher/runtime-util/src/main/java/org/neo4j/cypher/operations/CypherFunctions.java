@@ -1372,6 +1372,34 @@ public final class CypherFunctions
         }
     }
 
+    public static AnyValue toStringOrNull( AnyValue in )
+    {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        try
+        {
+            return toString( in );
+        }
+        catch ( ParameterWrongTypeException ignore )
+        {
+            return NO_VALUE;
+        }
+    }
+
+    public static AnyValue toStringList( AnyValue in )
+    {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( !(in instanceof ListValue) )
+        {
+            throw new ParameterWrongTypeException( String.format("Expected a List, got: %s in function: ToStringList",in), null );
+        }
+
+        ListValue lv = (ListValue) in;
+
+        return Arrays.stream( lv.asArray() )
+                     .map( entry -> entry == NO_VALUE ? NO_VALUE : toStringOrNull( entry ) )
+                     .collect( ListValueBuilder.collector() );
+    }
+
     public static ListValue fromSlice( AnyValue collection, AnyValue fromValue )
     {
         assert collection != NO_VALUE && fromValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";

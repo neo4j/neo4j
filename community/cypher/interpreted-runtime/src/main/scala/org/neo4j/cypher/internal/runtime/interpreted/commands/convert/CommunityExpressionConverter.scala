@@ -102,6 +102,8 @@ import org.neo4j.cypher.internal.expressions.functions.ToIntegerList
 import org.neo4j.cypher.internal.expressions.functions.ToIntegerOrNull
 import org.neo4j.cypher.internal.expressions.functions.ToLower
 import org.neo4j.cypher.internal.expressions.functions.ToString
+import org.neo4j.cypher.internal.expressions.functions.ToStringList
+import org.neo4j.cypher.internal.expressions.functions.ToStringOrNull
 import org.neo4j.cypher.internal.expressions.functions.ToUpper
 import org.neo4j.cypher.internal.expressions.functions.Trim
 import org.neo4j.cypher.internal.expressions.functions.Type
@@ -515,6 +517,8 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case ToIntegerOrNull => commands.expressions.ToIntegerOrNullFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToLower => commands.expressions.ToLowerFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToString => commands.expressions.ToStringFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case ToStringList => commands.expressions.ToStringListFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case ToStringOrNull => commands.expressions.ToStringOrNullFunction(self.toCommandExpression(id, invocation.arguments.head))
       case ToUpper => commands.expressions.ToUpperFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Properties => commands.expressions.PropertiesFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Trim => commands.expressions.TrimFunction(self.toCommandExpression(id, invocation.arguments.head))

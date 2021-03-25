@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.values.AnyValue
@@ -59,6 +59,26 @@ case class ToStringFunction(argument: Expression) extends StringFunction(argumen
     CypherFunctions.toString(argument(ctx, state))
 
   override def rewrite(f: Expression => Expression): Expression = f(ToStringFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
+}
+
+case class ToStringOrNullFunction(argument: Expression) extends StringFunction(argument) {
+
+  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.toStringOrNull(argument(ctx, state))
+
+  override def rewrite(f: Expression => Expression): Expression = f(ToStringOrNullFunction(argument.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(argument)
+}
+
+case class ToStringListFunction(argument: Expression) extends StringFunction(argument) {
+
+  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.toStringList(argument(ctx, state))
+
+  override def rewrite(f: Expression => Expression): Expression = f(ToStringListFunction(argument.rewrite(f)))
 
   override def children: Seq[AstNode[_]] = Seq(argument)
 }
