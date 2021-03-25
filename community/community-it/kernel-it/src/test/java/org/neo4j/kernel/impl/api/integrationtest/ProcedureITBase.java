@@ -276,7 +276,16 @@ public interface ProcedureITBase
                 proc( "dbms.scheduler.jobs", "() :: (jobId :: STRING?, group :: STRING?, submitted :: STRING?, database :: STRING?, " +
                                              "submitter :: STRING?, description :: STRING?, type :: STRING?, scheduledAt :: STRING?, period :: STRING?, " +
                                              "state :: STRING?, currentStateDescription :: STRING?)",
-                        "List all jobs that are active in the database internal job scheduler.", stringArray( "admin" ), "DBMS" )
+                        "List all jobs that are active in the database internal job scheduler.", stringArray( "admin" ), "DBMS" ),
+                proc( "dbms.cluster.role", "(database :: STRING?) :: (role :: STRING?)",
+                        "The role of this instance in the cluster for the specified database.",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
+                proc( "dbms.cluster.overview", "() :: (id :: STRING?, addresses :: LIST? OF STRING?, databases :: MAP?, groups :: LIST? OF STRING?)",
+                        "Overview of all currently accessible cluster members, their databases and roles.",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
+                proc( "dbms.cluster.protocols", "() :: (orientation :: STRING?, remoteAddress :: STRING?, applicationProtocol :: STRING?, " +
+                                                "applicationProtocolVersion :: INTEGER?, modifierProtocols :: STRING?)","Overview of installed protocols",
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" )
         ) );
         return result;
     }
