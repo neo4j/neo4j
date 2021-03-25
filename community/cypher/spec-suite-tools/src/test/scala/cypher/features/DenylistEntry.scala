@@ -23,15 +23,15 @@ import org.opencypher.tools.tck.api.Scenario
 
 import scala.util.matching.Regex
 
-case class BlacklistEntry(featureName: Option[String], scenarioName: String, exampleNumberOrName: Option[String], isFlaky: Boolean) {
-  def isBlacklisted(scenario: Scenario): Boolean = {
+case class DenylistEntry(featureName: Option[String], scenarioName: String, exampleNumberOrName: Option[String], isFlaky: Boolean) {
+  def isDenylisted(scenario: Scenario): Boolean = {
     scenarioName == scenario.name &&
       (featureName.isEmpty || featureName.get == scenario.featureName) &&
       (exampleNumberOrName.isEmpty || exampleNumberOrName.get == scenario.exampleIndex.map(_.toString).getOrElse(""))
   }
 
   def isFlaky(scenario: Scenario): Boolean  = {
-    isFlaky && isBlacklisted(scenario)
+    isFlaky && isDenylisted(scenario)
   }
 
   override def toString: String = {
@@ -44,19 +44,19 @@ case class BlacklistEntry(featureName: Option[String], scenarioName: String, exa
   }
 }
 
-object BlacklistEntry {
+object DenylistEntry {
   val entryPattern: Regex = """(\??)Feature "(.*)": Scenario "([^"]*)"(: Example "(.*)")?""".r
 
-  def apply(line: String): BlacklistEntry = {
+  def apply(line: String): DenylistEntry = {
     if (line.startsWith("?") || line.startsWith("Feature")) {
       line match {
         case entryPattern(questionMark, featureName, scenarioName, null, null) =>
-          new BlacklistEntry(Some(featureName), scenarioName, None, isFlaky = questionMark.nonEmpty)
+          new DenylistEntry(Some(featureName), scenarioName, None, isFlaky = questionMark.nonEmpty)
         case entryPattern(questionMark, featureName, scenarioName, _, exampleNumberOrName) =>
-          new BlacklistEntry(Some(featureName), scenarioName, Some(exampleNumberOrName), isFlaky = questionMark.nonEmpty)
+          new DenylistEntry(Some(featureName), scenarioName, Some(exampleNumberOrName), isFlaky = questionMark.nonEmpty)
         case other => throw new UnsupportedOperationException(s"Could not parse blacklist entry $other")
       }
 
-    } else new BlacklistEntry(None, line, None, isFlaky = false)
+    } else new DenylistEntry(None, line, None, isFlaky = false)
   }
 }

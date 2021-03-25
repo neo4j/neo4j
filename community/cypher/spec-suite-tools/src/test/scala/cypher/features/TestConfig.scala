@@ -20,9 +20,9 @@
 package cypher.features
 
 class TestConfig(
-  val blacklist: Option[String],
-  val executionPrefix: String,
-  val experimental: Boolean = false
+                  val denylist: Option[String],
+                  val executionPrefix: String,
+                  val experimental: Boolean = false
 )
 
 case object DefaultTestConfig extends TestConfig(Some("default.txt"),"")

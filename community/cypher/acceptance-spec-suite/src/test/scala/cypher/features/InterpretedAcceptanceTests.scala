@@ -23,7 +23,7 @@ import java.util
 
 import cypher.features.Neo4jAdapter.defaultTestConfig
 import cypher.features.ScenarioTestHelper.createTests
-import cypher.features.ScenarioTestHelper.printComputedBlacklist
+import cypher.features.ScenarioTestHelper.printComputedDenylist
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DynamicTest
@@ -40,8 +40,8 @@ class InterpretedAcceptanceTests extends BaseAcceptanceTest {
   }
 
   @Disabled
-  def generateBlacklistCostInterpreted(): Unit = {
-    printComputedBlacklist(scenarios, InterpretedTestConfig, () => new TestDatabaseManagementServiceBuilder())
+  def generateDenylistCostInterpreted(): Unit = {
+    printComputedDenylist(scenarios, InterpretedTestConfig, () => new TestDatabaseManagementServiceBuilder())
     fail("Do not forget to add @Disabled to this method")
   }
 }

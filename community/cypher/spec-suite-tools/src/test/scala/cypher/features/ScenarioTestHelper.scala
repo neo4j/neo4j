@@ -52,14 +52,14 @@ object ScenarioTestHelper {
                   dbConfig: collection.Map[Setting[_], Object],
                   useBolt: Boolean = false,
                   debugOutput: Boolean = false): util.Collection[DynamicTest] = {
-    val blacklist = config.blacklist.map(parseBlacklist).getOrElse(Set.empty[BlacklistEntry])
-    checkForDuplicates(scenarios, blacklist.toList)
-    val (expectFail, expectPass) = scenarios.partition(s => blacklist.exists(_.isBlacklisted(s)))
+    val denylist = config.denylist.map(parseDenylist).getOrElse(Set.empty[DenylistEntry])
+    checkForDuplicates(scenarios, denylist.toList)
+    val (expectFail, expectPass) = scenarios.partition(s => denylist.exists(_.isDenylisted(s)))
     if (debugOutput) {
-      val unusedBlacklistEntries = blacklist.filterNot(b => expectFail.exists(s => b.isBlacklisted(s)))
-      if (unusedBlacklistEntries.nonEmpty) {
-        println("The following entries of the blacklist were not found in the blacklist: \n"
-          + unusedBlacklistEntries.mkString("\n"))
+      val unusedDenylistEntries = denylist.filterNot(b => expectFail.exists(s => b.isDenylisted(s)))
+      if (unusedDenylistEntries.nonEmpty) {
+        println("The following entries of the denylist were not found in the denylist: \n"
+          + unusedDenylistEntries.mkString("\n"))
       }
     }
 
@@ -73,15 +73,15 @@ object ScenarioTestHelper {
           } match {
             case Success(_) =>
               if (!config.experimental) {
-                if (!blacklist.exists(_.isFlaky(scenario)))
-                  throw new IllegalStateException("Unexpectedly succeeded in the following blacklisted scenario:\n" + name)
+                if (!denylist.exists(_.isFlaky(scenario)))
+                  throw new IllegalStateException("Unexpectedly succeeded in the following denylisted scenario:\n" + name)
               }
             case Failure(e) =>
               e.getCause match {
                 case cause@Neo4jExecutionFailed(_, phase, _, _) =>
                   // If the scenario expects an error (e.g. at compile time), but we throw it at runtime instead
-                  // That is not critical. Therefore, if the test is blacklisted, we allow it to fail at runtime.
-                  // If, on the other hand, the scenario expects results and the test is blacklisted, only compile
+                  // That is not critical. Therefore, if the test is denylisted, we allow it to fail at runtime.
+                  // If, on the other hand, the scenario expects results and the test is denylisted, only compile
                   // time failures are acceptable.
                   if (phase == Phase.runtime && !scenarioExpectsError) {
                     // That's not OK
@@ -99,7 +99,7 @@ object ScenarioTestHelper {
           }
         }
       }
-      DynamicTest.dynamicTest("Blacklisted Test: " + name, executable)
+      DynamicTest.dynamicTest("Denylisted Test: " + name, executable)
     }
 
     val expectPassTests: Seq[DynamicTest] = expectPass.map { scenario =>
@@ -110,7 +110,7 @@ object ScenarioTestHelper {
     (expectPassTests ++ expectFailTests).asJavaCollection
   }
 
-  def checkForDuplicates(scenarios: Seq[Scenario], blacklist: Seq[BlacklistEntry]): Unit = {
+  def checkForDuplicates(scenarios: Seq[Scenario], denylist: Seq[DenylistEntry]): Unit = {
     // test scenarios
     val testScenarios = new mutable.HashSet[Scenario]()
     for (s <- scenarios) {
@@ -120,31 +120,31 @@ object ScenarioTestHelper {
         testScenarios += s
       }
     }
-    // test blacklist
-    val testBlacklist = new mutable.HashSet[BlacklistEntry]()
-    for (b <- blacklist) {
-      if (testBlacklist.contains(b)) {
-        throw new IllegalStateException("Multiple blacklists entrys exists for the following scenario: " + b)
+    // test denylist
+    val testDenylist = new mutable.HashSet[DenylistEntry]()
+    for (b <- denylist) {
+      if (testDenylist.contains(b)) {
+        throw new IllegalStateException("Multiple denylists entrys exists for the following scenario: " + b)
       } else {
-        testBlacklist += b
+        testDenylist += b
       }
     }
   }
 
-  def parseBlacklist(blacklistFile: String): Seq[BlacklistEntry] = {
+  def parseDenylist(denylistFile: String): Seq[DenylistEntry] = {
     def validate(scenarioName: String): Unit = {
       if (scenarioName.head.isWhitespace || scenarioName.last.isWhitespace) {
-        throw new Exception(s"Invalid whitespace in scenario name $scenarioName from file $blacklistFile")
+        throw new Exception(s"Invalid whitespace in scenario name $scenarioName from file $denylistFile")
       }
     }
 
     /*
-     * Find blacklist no matter if thy are in the filesystem or in the a jar.
+     * Find denylist no matter if thy are in the filesystem or in the a jar.
      * The code get executed from a jar, when the TCK on a public artifact of Neo4j.
      */
-    val resourcePath = "/blacklists/" + blacklistFile
+    val resourcePath = "/denylists/" + denylistFile
     val resourceUrl: URL = getClass.getResource(resourcePath)
-    if (resourceUrl == null) throw new NoSuchFileException(s"Blacklist file not found at: $resourcePath")
+    if (resourceUrl == null) throw new NoSuchFileException(s"Denylist file not found at: $resourcePath")
     val resourceUri: URI = resourceUrl.toURI
     val fs =
       if ("jar".equalsIgnoreCase(resourceUri.getScheme)) {
@@ -152,17 +152,17 @@ object ScenarioTestHelper {
       } else None
 
     try {
-      val blacklistPath: Path = Paths.get(resourceUri)
-      val blacklistPaths = Files.walk(blacklistPath).filter {
+      val denylistPath: Path = Paths.get(resourceUri)
+      val denylistPaths = Files.walk(denylistPath).filter {
         t: Path => Files.isRegularFile(t)
       }
-      val blacklistPathsList: List[Path] = blacklistPaths.iterator().asScala.toList
-      if (blacklistPathsList.isEmpty) throw new NoSuchFileException(s"Blacklist file not found at: $resourcePath")
-      val lines = blacklistPathsList.flatMap(f => Files.readAllLines(f, StandardCharsets.UTF_8).asScala.toList)
+      val denylistPathsList: List[Path] = denylistPaths.iterator().asScala.toList
+      if (denylistPathsList.isEmpty) throw new NoSuchFileException(s"Denylist file not found at: $resourcePath")
+      val lines = denylistPathsList.flatMap(f => Files.readAllLines(f, StandardCharsets.UTF_8).asScala.toList)
 
-      val scenarios = lines.filterNot(line => line.startsWith("//") || line.isEmpty) // comments in blacklist are being ignored
+      val scenarios = lines.filterNot(line => line.startsWith("//") || line.isEmpty) // comments in denylist are being ignored
       scenarios.foreach(validate)
-      scenarios.map(BlacklistEntry(_))
+      scenarios.map(DenylistEntry(_))
     } finally {
       try {
         fs.foreach(_.close())
@@ -173,12 +173,12 @@ object ScenarioTestHelper {
   }
 
   /*
-    This method can be used to generate a blacklist for a given TestConfig.
+    This method can be used to generate a denylist for a given TestConfig.
     It can be very useful when adding a new runtime for example.
    */
-  def printComputedBlacklist(scenarios: Seq[Scenario],
-                             config: TestConfig, graphDatabaseFactory: () => TestDatabaseManagementServiceBuilder,
-                             useBolt: Boolean = false): Unit = {
+  def printComputedDenylist(scenarios: Seq[Scenario],
+                            config: TestConfig, graphDatabaseFactory: () => TestDatabaseManagementServiceBuilder,
+                            useBolt: Boolean = false): Unit = {
     //Sometime this method doesn't print its progress output (but is actually working (Do not cancel)!).
     //TODO: Investigate this!
     println("Evaluating scenarios")
