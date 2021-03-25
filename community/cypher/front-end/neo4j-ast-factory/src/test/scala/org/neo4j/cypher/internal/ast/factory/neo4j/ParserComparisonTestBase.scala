@@ -76,10 +76,12 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
   /**
    * Tests that the parboiled and JavaCC parsers produce the same AST and error positions.
    */
-  protected def assertSameAST(query: String): Assertion = {
+  protected def assertSameAST(query: String): Assertion = assertSameAST(query, query)
+
+  protected def assertSameAST(query: String, parBoiledQuery: String): Assertion = {
     withClue(query+System.lineSeparator()) {
       val parboiledParser = new org.neo4j.cypher.internal.parser.CypherParser()
-      val parboiledAST = Try(parboiledParser.parse(query, exceptionFactory, None))
+      val parboiledAST = Try(parboiledParser.parse(parBoiledQuery, exceptionFactory, None))
 
       val javaccAST = Try(JavaCCParser.parse(query, exceptionFactory))
 

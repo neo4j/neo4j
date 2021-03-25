@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.scalatest.FunSuiteLike
 
 class UserAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase with FunSuiteLike with TestName {
+
   //  Showing user
 
   test("SHOW USERS") {
@@ -37,11 +38,11 @@ class UserAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertSameAST(testName)
   }
 
-  test("SHOW USERS WHERE user = 'GRANTED'") {
+  test("SHOW USERS WHERE user = 'alice'") {
     assertSameAST(testName)
   }
 
-  test("SHOW USERS WHERE user = 'GRANTED' AND action = 'match'") {
+  test("SHOW USERS WHERE user = 'alice' OR user = 'bob'") {
     assertSameAST(testName)
   }
 
@@ -463,6 +464,7 @@ class UserAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
       s"""Duplicate SET HOME DATABASE clause (line 1, column 61 (offset: 60))""".stripMargin
     assertJavaCCException(testName, exceptionMessage)
   }
+
   //  Dropping user
 
   test("DROP USER foo") {
@@ -643,6 +645,22 @@ class UserAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
       }
   }
 
+  Seq("SET PASSWORD 'password' CHANGE NOT REQUIRED", "SET STATUS ACTIVE", "SET HOME DATABASE db1"
+  ).permutations.foreach {
+    clauses =>
+      test(s"ALTER USER foo ${clauses.mkString(" ")}") {
+        assertSameAST(testName, "ALTER USER foo SET PASSWORD 'password' CHANGE NOT REQUIRED SET STATUS ACTIVE SET HOME DATABASE db1")
+      }
+  }
+
+  Seq("SET PASSWORD 'password'", "SET PASSWORD CHANGE REQUIRED", "SET STATUS ACTIVE", "SET HOME DATABASE db1"
+  ).permutations.foreach {
+    clauses =>
+      test(s"ALTER USER foo ${clauses.mkString(" ")}") {
+        assertSameAST(testName, "ALTER USER foo SET PASSWORD 'password' CHANGE REQUIRED SET STATUS ACTIVE SET HOME DATABASE db1")
+      }
+  }
+
   test("ALTER USER foo REMOVE HOME DATABASE") {
     assertSameAST(testName)
   }
@@ -741,6 +759,30 @@ class UserAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
 
   test("ALTER USER foo REMOVE DEFAULT DATABASE") {
     assertSameAST(testName)
+  }
+
+  test("ALTER USER foo SET PASSWORD $password SET PASSWORD 'password'") {
+    val exceptionMessage =
+      s"""Duplicate SET PASSWORD clause (line 1, column 39 (offset: 38))""".stripMargin
+    assertJavaCCException(testName, exceptionMessage)
+  }
+
+  test("ALTER USER foo SET PASSWORD CHANGE NOT REQUIRED SET PASSWORD CHANGE REQUIRED") {
+    val exceptionMessage =
+      s"""Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause (line 1, column 49 (offset: 48))""".stripMargin
+    assertJavaCCException(testName, exceptionMessage)
+  }
+
+  test("ALTER USER foo SET STATUS ACTIVE SET STATUS SUSPENDED") {
+    val exceptionMessage =
+      s"""Duplicate SET STATUS {SUSPENDED|ACTIVE} clause (line 1, column 34 (offset: 33))""".stripMargin
+    assertJavaCCException(testName, exceptionMessage)
+  }
+
+  test("ALTER USER foo SET HOME DATABASE db SET HOME DATABASE db") {
+    val exceptionMessage =
+      s"""Duplicate SET HOME DATABASE clause (line 1, column 37 (offset: 36))""".stripMargin
+    assertJavaCCException(testName, exceptionMessage)
   }
 
   // Changing own password

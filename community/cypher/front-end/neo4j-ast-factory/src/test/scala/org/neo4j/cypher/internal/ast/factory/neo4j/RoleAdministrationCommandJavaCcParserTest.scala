@@ -391,35 +391,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertJavaCCException(testName, "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))")
   }
 
-  // TODO: update this error message to something like "Invalid input 'ROLE': expected \"USER\" (line 1, column 7 (offset: 8))"
-  //  once user commands are ported to Javacc
   test("ALTER ROLE foo SET NAME bar") {
-    assertJavaCCException(testName,
-      s"""Invalid input 'ALTER': expected
-         |  "CALL"
-         |  "CATALOG"
-         |  "CREATE"
-         |  "DELETE"
-         |  "DETACH"
-         |  "DROP"
-         |  "FOREACH"
-         |  "GRANT"
-         |  "LOAD"
-         |  "MATCH"
-         |  "MERGE"
-         |  "OPTIONAL"
-         |  "REMOVE"
-         |  "RENAME"
-         |  "RETURN"
-         |  "REVOKE"
-         |  "SET"
-         |  "SHOW"
-         |  "START"
-         |  "STOP"
-         |  "UNWIND"
-         |  "USE"
-         |  "USING"
-         |  "WITH" (line 1, column 1 (offset: 0))""".stripMargin)
+    assertJavaCCException(testName, """Invalid input 'ROLE': expected "CURRENT" or "USER" (line 1, column 7 (offset: 6))""")
   }
 
   test("RENAME ROLE foo IF EXIST TO bar") {

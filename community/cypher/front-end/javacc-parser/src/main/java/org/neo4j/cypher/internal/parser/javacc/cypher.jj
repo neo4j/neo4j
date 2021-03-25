@@ -2550,7 +2550,7 @@ ADMINISTRATION_COMMAND AdministrationCommand(USE_CLAUSE useClause) throws Except
 {
     (
         s = DropCommand()
-        | s = AlterCommand()
+        | s = AlterUserCommand()
         | s = RenameCommand()
         | s = GrantRole()
         | s = RevokeRole()
@@ -2559,6 +2559,87 @@ ADMINISTRATION_COMMAND AdministrationCommand(USE_CLAUSE useClause) throws Except
     )
     {
         return astFactory.useGraph( s, useClause );
+    }
+}
+
+ADMINISTRATION_COMMAND DropCommand():
+{
+    Token start;
+    ADMINISTRATION_COMMAND c;
+}
+{
+    start=<DROP>
+    (
+        c = DropRole(start)
+        | c = DropUser(start)
+        | c = DropDatabase(start)
+    )
+    {
+        return c;
+    }
+}
+
+ADMINISTRATION_COMMAND RenameCommand():
+{
+    Token start;
+    ADMINISTRATION_COMMAND c;
+}
+{
+    start=<RENAME>
+    (
+        c=RenameRole(start)
+    )
+    {
+        return c;
+    }
+}
+
+// Role commands
+
+ADMINISTRATION_COMMAND CreateRole(Token start, boolean replace):
+{
+    Either<String, PARAMETER> roleName = null;
+    Either<String, PARAMETER>  sourceRoleName = null;
+    boolean ifNotExists = false;
+}
+{
+    <ROLE>
+    roleName=SymbolicNameOrStringParameter()
+    (<IF> <NOT> <EXISTS> { ifNotExists = true; })?
+    (<AS> <COPY> <OF> sourceRoleName=SymbolicNameOrStringParameter())?
+    {
+        return astFactory.createRole( pos(start), replace, roleName, sourceRoleName, ifNotExists );
+    }
+}
+
+ADMINISTRATION_COMMAND DropRole(Token start):
+{
+    Either<String, PARAMETER> roleName = null;
+    boolean ifExists = false;
+}
+{
+    <ROLE>
+    roleName=SymbolicNameOrStringParameter()
+    (<IF> <EXISTS> {ifExists = true;})?
+    {
+        return astFactory.dropRole( pos(start), roleName, ifExists );
+    }
+}
+
+ADMINISTRATION_COMMAND RenameRole(Token start):
+{
+    Either<String, PARAMETER> fromRoleName = null;
+    Either<String, PARAMETER> toRoleName = null;
+    boolean ifExists = false;
+}
+{
+    <ROLE>
+    fromRoleName=SymbolicNameOrStringParameter()
+    (<IF> <EXISTS> {ifExists = true;})?
+    <TO>
+    toRoleName=SymbolicNameOrStringParameter()
+    {
+        return astFactory.renameRole( pos(start), fromRoleName, toRoleName, ifExists );
     }
 }
 
@@ -2577,6 +2658,204 @@ ADMINISTRATION_COMMAND ShowRoles(Token start, USE_CLAUSE useClause, boolean show
     {
         return astFactory.useGraph(astFactory.showRoles( pos(start), withUsers, showAll, yield, returnClause, where ), useClause);
     }
+}
+
+ADMINISTRATION_COMMAND GrantRole():
+{
+    Token start;
+    List<Either<String, PARAMETER>> roles;
+    List<Either<String, PARAMETER>> users;
+}
+{
+    start = <GRANT> (<ROLE> | <ROLES>) roles=SymbolicNamerOrStringParameterList() <TO> users=SymbolicNamerOrStringParameterList()
+    {
+        return astFactory.grantRoles( pos(start), roles, users );
+    }
+}
+
+ADMINISTRATION_COMMAND RevokeRole():
+{
+    Token start;
+    List<Either<String, PARAMETER>> roles;
+    List<Either<String, PARAMETER>> users;
+}
+{
+    start = <REVOKE> (<ROLE> | <ROLES>) roles=SymbolicNamerOrStringParameterList() <FROM> users=SymbolicNamerOrStringParameterList()
+    {
+        return astFactory.revokeRoles( pos(start), roles, users  );
+    }
+}
+
+// User commands
+
+ADMINISTRATION_COMMAND CreateUser(Token start, boolean replace) throws Exception:
+{
+    Token set = null;
+    Either<String, PARAMETER> username = null;
+    EXPRESSION password = null;
+    boolean ifNotExists = false;
+    boolean encrypted = false;
+    Optional<Boolean> changeRequired = Optional.empty();
+    Optional<Boolean> suspended = Optional.empty();
+    Optional<Either<String, PARAMETER>> homeDatabase = Optional.empty();
+}
+{
+    <USER>
+    username=SymbolicNameOrStringParameter()
+    (<IF> <NOT> <EXISTS> { ifNotExists = true; })?
+    <SET> ((<PLAINTEXT> { encrypted = false; }) | (<ENCRYPTED> { encrypted = true; }) )? <PASSWORD>
+    password=passwordExpression() (changeRequired=PasswordChangeRequired(start, changeRequired))?
+    (set=<SET> (<PASSWORD> changeRequired=PasswordChangeRequired(set, changeRequired)
+    | suspended=UserStatus(set, suspended)
+    | homeDatabase=HomeDatabase(set, homeDatabase)
+    ))*
+    {
+        return astFactory.createUser( pos(start), replace, ifNotExists, username, password, encrypted,
+            changeRequired.orElse(true), suspended.orElse(null), homeDatabase.orElse(null) );
+    }
+}
+
+ADMINISTRATION_COMMAND DropUser(Token start) :
+{
+    Either<String, PARAMETER> username = null;
+    boolean ifExists = false;
+}
+{
+    <USER>
+    username=SymbolicNameOrStringParameter()
+    (<IF> <EXISTS> { ifExists = true; })?
+    {
+        return astFactory.dropUser( pos(start), ifExists, username );
+    }
+}
+
+ADMINISTRATION_COMMAND AlterUserCommand() throws Exception:
+{
+  Token start = null;
+  ADMINISTRATION_COMMAND statement = null;
+}
+{
+    start=<ALTER> (
+        statement=AlterCurrentUser(start)
+        | statement=AlterUser(start)
+    )
+    { return statement; }
+}
+
+ADMINISTRATION_COMMAND AlterCurrentUser(Token start) throws Exception:
+{
+  EXPRESSION currentPassword = null;
+  EXPRESSION newPassword = null;
+}
+{
+    <CURRENT> <USER> <SET> <PASSWORD> <FROM> currentPassword=passwordExpression() <TO> newPassword=passwordExpression()
+    { return astFactory.setOwnPassword(pos(start), currentPassword, newPassword); }
+}
+
+ADMINISTRATION_COMMAND AlterUser(Token start) throws Exception:
+{
+    Token set = null;
+    Either<String, PARAMETER> username = null;
+    EXPRESSION password = null;
+    boolean ifExists = false;
+    boolean encrypted = false;
+    Optional<Boolean> changeRequired = Optional.empty();
+    Optional<Boolean> suspended = Optional.empty();
+    Optional<Either<String, PARAMETER>> homeDatabase = Optional.empty();
+    boolean removeHome = false;
+    String passwordSetError = "Duplicate SET PASSWORD clause";
+}
+{
+    <USER>
+    username=SymbolicNameOrStringParameter()
+    (<IF> <EXISTS> { ifExists = true; })?
+    ((
+        set=<SET> (
+            <PLAINTEXT> { assertNotAlreadySet(password, set, passwordSetError); } <PASSWORD> password=SetPassword(set, password) (changeRequired=PasswordChangeRequired(set, changeRequired))?
+            | <ENCRYPTED> { assertNotAlreadySet(password, set, passwordSetError); encrypted = true; } <PASSWORD> password=SetPassword(set, password) (changeRequired=PasswordChangeRequired(set, changeRequired))?
+            | <PASSWORD> (
+                changeRequired=PasswordChangeRequired(set, changeRequired)
+                | password=SetPassword(set, password) (changeRequired=PasswordChangeRequired(set, changeRequired))?
+            )
+            | suspended=UserStatus(set, suspended)
+            | homeDatabase=HomeDatabase(set, homeDatabase)
+        )
+    )+
+    | <REMOVE> <HOME> <DATABASE> { removeHome = true; })
+    {
+        return astFactory.alterUser( pos(start), ifExists, username, password, encrypted,
+            changeRequired.orElse(null), suspended.orElse(null), homeDatabase.orElse(null), removeHome );
+    }
+}
+
+EXPRESSION SetPassword(Token start, EXPRESSION password) throws Exception:
+{
+    String errorMessage = "Duplicate SET PASSWORD clause";
+    EXPRESSION newPassword = null;
+}
+{
+    newPassword=passwordExpression()
+    {
+        if (password != null) {
+            throw exceptionFactory.syntaxException(new ParseException(errorMessage), start.beginOffset, start.beginLine, start.beginColumn);
+        }
+        return newPassword;
+    }
+}
+
+EXPRESSION passwordExpression():
+{
+   Token name = null;
+   PARAMETER parameter = null;
+}
+{
+    (
+        name=<STRING_LITERAL1>
+        | name=<STRING_LITERAL2>
+        | parameter=StringParameter()
+    )
+    {
+        if ( name != null )
+        {
+            return astFactory.passwordExpression( pos(name), name.image );
+        }
+        else
+        {
+            return astFactory.passwordExpression( parameter );
+        }
+    }
+}
+
+Optional<Boolean> PasswordChangeRequired(Token start, Optional<Boolean> changeRequired) throws Exception:
+{
+    String errorMessage = "Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause";
+    boolean required = true;
+}
+{
+    <CHANGE> (<NOT> {required = false;})? <REQUIRED>
+    { return setOrThrowIfAlreadySet(start, changeRequired, required, errorMessage); }
+}
+
+Optional<Boolean> UserStatus(Token start, Optional<Boolean> suspended) throws Exception:
+{
+    String errorMessage = "Duplicate SET STATUS {SUSPENDED|ACTIVE} clause";
+    boolean suspend = false;
+}
+{
+    <STATUS> (
+        <SUSPENDED> {suspend = true;}
+        | <ACTIVE> {suspend = false;}
+    )  { return setOrThrowIfAlreadySet(start, suspended, suspend, errorMessage); }
+}
+
+Optional<Either<String, PARAMETER>> HomeDatabase(Token start, Optional<Either<String, PARAMETER>> homeDatabase) throws Exception:
+{
+    String errorMessage = "Duplicate SET HOME DATABASE clause";
+    Either<String, PARAMETER> home = null;
+}
+{
+    <HOME> <DATABASE> home=SymbolicDatabaseNameStringOrParameter()
+    { return setOrThrowIfAlreadySet(start, homeDatabase, home, errorMessage); }
 }
 
 ADMINISTRATION_COMMAND ShowUsers(Token start, USE_CLAUSE useClause):
@@ -2606,6 +2885,87 @@ ADMINISTRATION_COMMAND ShowCurrentUser(Token start, USE_CLAUSE useClause):
         return astFactory.useGraph(astFactory.showCurrentUser(pos(start), yield, returnClause, where), useClause);
    }
 }
+
+// Database commands
+
+ADMINISTRATION_COMMAND CreateDatabase(Token start, boolean replace):
+{
+    Either<String, PARAMETER> databaseName = null;
+    boolean ifNotExists = false;
+    WAIT_CLAUSE wait = astFactory.wait(false, -1);
+}
+{
+    <DATABASE>
+    databaseName=SymbolicDatabaseNameStringOrParameter()
+    (<IF> <NOT> <EXISTS> { ifNotExists = true; })?
+    (wait = WaitClause())?
+    {
+       return astFactory.createDatabase( pos(start), replace, databaseName, ifNotExists, wait );
+    }
+}
+
+ADMINISTRATION_COMMAND DropDatabase(Token start):
+{
+    Either<String, PARAMETER> databaseName = null;
+    boolean ifExists = false;
+    WAIT_CLAUSE wait = astFactory.wait(false, -1);
+    boolean dumpData = false;
+}
+{
+    <DATABASE>
+    databaseName=SymbolicDatabaseNameStringOrParameter()
+    (<IF> <EXISTS> {ifExists = true;})?
+    ((<DUMP> { dumpData = true; } | <DESTROY>) <DATA>)?
+    (wait = WaitClause())?
+    {
+        return astFactory.dropDatabase( pos(start), databaseName, ifExists, dumpData, wait );
+    }
+}
+
+ADMINISTRATION_COMMAND StartDatabase():
+{
+    Token start;
+    Either<String, PARAMETER> databaseName;
+    WAIT_CLAUSE wait = astFactory.wait(false, -1);
+}
+{
+    start=<START> <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter() (wait=WaitClause())?
+    {
+      return astFactory.startDatabase(pos(start), databaseName, wait);
+    }
+}
+
+ADMINISTRATION_COMMAND StopDatabase():
+{
+    Token start;
+    Either<String, PARAMETER> databaseName;
+    WAIT_CLAUSE wait = astFactory.wait(false, -1);
+}
+{
+    start=<STOP> <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter() (wait=WaitClause())?
+    {
+      return astFactory.stopDatabase(pos(start), databaseName, wait);
+    }
+}
+
+WAIT_CLAUSE WaitClause():
+{
+ Token number = null;
+ boolean wait = false;
+}
+{
+    (
+        <WAIT> { wait = true; } (number=<UNSIGNED_DECIMAL_INTEGER> (<SEC> | <SECOND> | <SECONDS>)? )?
+        | <NOWAIT>
+    )
+    {
+        if (number != null) {
+            return astFactory.wait(wait, Long.parseLong(number.image));
+        }
+        return astFactory.wait(wait, -1) ;
+    }
+}
+
 ADMINISTRATION_COMMAND ShowDatabase(Token start, USE_CLAUSE useClause):
 {
     DATABASE_SCOPE scope;
@@ -2642,335 +3002,16 @@ DATABASE_SCOPE DatabaseScope():
   }
 }
 
-ADMINISTRATION_COMMAND CreateRole(Token start, boolean replace):
+Either<String, PARAMETER> SymbolicDatabaseNameStringOrParameter():
 {
-    Either<String, PARAMETER> roleName = null;
-    Either<String, PARAMETER>  sourceRoleName = null;
-    boolean ifNotExists = false;
+   Token nameToken;
+   StringBuilder nameBuilder;
+   PARAMETER parameter;
 }
 {
-    <ROLE>
-    roleName=SymbolicNameOrStringParameter()
-    (<IF> <NOT> <EXISTS> { ifNotExists = true; })?
-    (<AS> <COPY> <OF> sourceRoleName=SymbolicNameOrStringParameter())?
-    {
-        return astFactory.createRole( pos(start), replace, roleName, sourceRoleName, ifNotExists );
-    }
-}
-
-ADMINISTRATION_COMMAND CreateUser(Token start, boolean replace) throws Exception:
-{
-    Token set = null;
-    Either<String, PARAMETER> username = null;
-    Either<String, PARAMETER> password = null;
-    boolean ifNotExists = false;
-    boolean encrypted = false;
-    Optional<Boolean> changeRequired = Optional.empty();
-    Optional<Boolean> suspended = Optional.empty();
-    Optional<Either<String, PARAMETER>> homeDatabase = Optional.empty();
-}
-{
-    <USER>
-    username=SymbolicNameOrStringParameter()
-    (<IF> <NOT> <EXISTS> { ifNotExists = true; })?
-    <SET> ((<PLAINTEXT> { encrypted = false; }) | (<ENCRYPTED> { encrypted = true; }) )? <PASSWORD>
-    password=SensitiveStringOrParameter() (changeRequired=PasswordChangeRequired(start, changeRequired))?
-    (set=<SET> (<PASSWORD> changeRequired=PasswordChangeRequired(set, changeRequired)
-    | suspended=UserStatus(set, suspended)
-    | homeDatabase=HomeDatabase(set, homeDatabase)
-    ))*
-    {
-        return astFactory.createUser( pos(start), replace, ifNotExists, username, password, encrypted,
-            changeRequired.orElse(true), suspended.orElse(null), homeDatabase.orElse(null) );
-    }
-}
-
-ADMINISTRATION_COMMAND DropUser(Token start) :
-{
-    Either<String, PARAMETER> username = null;
-    boolean ifExists = false;
-}
-{
-    <USER>
-    username=SymbolicNameOrStringParameter()
-    (<IF> <EXISTS> { ifExists = true; })?
-    {
-        return astFactory.dropUser( pos(start), ifExists, username );
-    }
-}
-
-ADMINISTRATION_COMMAND AlterCommand() throws Exception:
-{
-  Token start = null;
-  ADMINISTRATION_COMMAND statement = null;
-}
-{
-    start=<ALTER> (
-        statement=AlterCurrentUser(start)
-        | statement=AlterUser(start)
-    )
-    { return statement; }
-}
-
-ADMINISTRATION_COMMAND AlterCurrentUser(Token start) throws Exception:
-{
-  Either<String, PARAMETER> currentPassword = null;
-  Either<String, PARAMETER> newPassword = null;
-}
-{
-    <CURRENT> <USER> <SET> <PASSWORD> <FROM> currentPassword=SensitiveStringOrParameter() <TO> newPassword=SensitiveStringOrParameter()
-    { return astFactory.setOwnPassword(pos(start), currentPassword, newPassword); }
-}
-
-ADMINISTRATION_COMMAND AlterUser(Token start) throws Exception:
-{
-    Token set = null;
-    Either<String, PARAMETER> username = null;
-    Either<String, PARAMETER> password = null;
-    boolean ifExists = false;
-    boolean encrypted = false;
-    Optional<Boolean> changeRequired = Optional.empty();
-    Optional<Boolean> suspended = Optional.empty();
-    Optional<Either<String, PARAMETER>> homeDatabase = Optional.empty();
-    boolean removeHome = false;
-    String passwordSetError = "Duplicate SET PASSWORD clause";
-}
-{
-    <USER>
-    username=SymbolicNameOrStringParameter()
-    (<IF> <EXISTS> { ifExists = true; })?
-    ((
-        set=<SET> (
-            <PLAINTEXT> { assertNotAlreadySet(password, set, passwordSetError); } <PASSWORD> password=SetPassword(set, password) (changeRequired=PasswordChangeRequired(set, changeRequired))?
-            | <ENCRYPTED> { assertNotAlreadySet(password, set, passwordSetError); encrypted = true; } <PASSWORD> password=SetPassword(set, password) (changeRequired=PasswordChangeRequired(set, changeRequired))?
-            | <PASSWORD> (
-                changeRequired=PasswordChangeRequired(set, changeRequired)
-                | password=SetPassword(set, password) (changeRequired=PasswordChangeRequired(set, changeRequired))?
-            )
-            | suspended=UserStatus(set, suspended)
-            | homeDatabase=HomeDatabase(set, homeDatabase)
-        )
-    )+
-    | <REMOVE> <HOME> <DATABASE> { removeHome = true; })
-    {
-        return astFactory.alterUser( pos(start), ifExists, username, password, encrypted,
-            changeRequired.orElse(null), suspended.orElse(null), homeDatabase.orElse(null), removeHome );
-    }
-}
-
-Either<String, PARAMETER> SetPassword(Token start, Either<String, PARAMETER> password) throws Exception:
-{
-    String errorMessage = "Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause";
-    Either<String, PARAMETER> newPassword = null;
-}
-{
-    newPassword=SensitiveStringOrParameter()
-    {
-        if (password != null) {
-            throw exceptionFactory.syntaxException(new ParseException(errorMessage), start.beginOffset, start.beginLine, start.beginColumn);
-        }
-        return newPassword;
-    }
-}
-
-Optional<Boolean> PasswordChangeRequired(Token start, Optional<Boolean> changeRequired) throws Exception:
-{
-    String errorMessage = "Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause";
-    boolean required = true;
-}
-{
-    <CHANGE> (<NOT> {required = false;})? <REQUIRED>
-    { return setOrThrowIfAlreadySet(start, changeRequired, required, errorMessage); }
-}
-
-Optional<Boolean> UserStatus(Token start, Optional<Boolean> suspended) throws Exception:
-{
-    String errorMessage = "Duplicate SET STATUS {SUSPENDED|ACTIVE} clause";
-    boolean suspend = false;
-}
-{
-    <STATUS> (
-        <SUSPENDED> {suspend = true;}
-        | <ACTIVE>
-    )  { return setOrThrowIfAlreadySet(start, suspended, suspend, errorMessage); }
-}
-
-Optional<Either<String, PARAMETER>> HomeDatabase(Token start, Optional<Either<String, PARAMETER>> homeDatabase) throws Exception:
-{
-    String errorMessage = "Duplicate SET HOME DATABASE clause";
-    Either<String, PARAMETER> home = null;
-}
-{
-    <HOME> <DATABASE> home=SymbolicDatabaseNameStringOrParameter()
-    { return setOrThrowIfAlreadySet(start, homeDatabase, home, errorMessage); }
-}
-
-ADMINISTRATION_COMMAND CreateDatabase(Token start, boolean replace):
-{
-    Either<String, PARAMETER> databaseName = null;
-    boolean ifNotExists = false;
-    WAIT_CLAUSE wait = astFactory.wait(false, -1);
-}
-{
-    <DATABASE>
-    databaseName=SymbolicDatabaseNameStringOrParameter()
-    (<IF> <NOT> <EXISTS> { ifNotExists = true; })?
-    (wait = WaitClause())?
-    {
-       return astFactory.createDatabase( pos(start), replace, databaseName, ifNotExists, wait );
-    }
-}
-
-WAIT_CLAUSE WaitClause():
-{
- Token number = null;
- boolean wait = false;
-}
-{
-    (
-        <WAIT> { wait = true; } (number=<UNSIGNED_DECIMAL_INTEGER> (<SEC> | <SECOND> | <SECONDS>)? )?
-        | <NOWAIT>
-    )
-    {
-        if (number != null) {
-            return astFactory.wait(wait, Long.parseLong(number.image));
-        }
-        return astFactory.wait(wait, -1) ;
-    }
-}
-
-ADMINISTRATION_COMMAND RenameCommand():
-{
-    Token start;
-    ADMINISTRATION_COMMAND c;
-}
-{
-    start=<RENAME>
-    (
-        c=RenameRole(start)
-    )
-    {
-        return c;
-    }
-}
-
-ADMINISTRATION_COMMAND RenameRole(Token start):
-{
-    Either<String, PARAMETER> fromRoleName = null;
-    Either<String, PARAMETER> toRoleName = null;
-    boolean ifExists = false;
-}
-{
-    <ROLE>
-    fromRoleName=SymbolicNameOrStringParameter()
-    (<IF> <EXISTS> {ifExists = true;})?
-    <TO>
-    toRoleName=SymbolicNameOrStringParameter()
-    {
-        return astFactory.renameRole( pos(start), fromRoleName, toRoleName, ifExists );
-    }
-}
-
-
-ADMINISTRATION_COMMAND DropCommand():
-{
-    Token start;
-    ADMINISTRATION_COMMAND c;
-}
-{
-    start=<DROP>
-    (
-        c =DropRole(start)
-        | c = DropUser(start)
-        | c = DropDatabase(start)
-    )
-    {
-        return c;
-    }
-}
-
-ADMINISTRATION_COMMAND DropRole(Token start):
-{
-    Either<String, PARAMETER> roleName = null;
-    boolean ifExists = false;
-}
-{
-    <ROLE>
-    roleName=SymbolicNameOrStringParameter()
-    (<IF> <EXISTS> {ifExists = true;})?
-    {
-        return astFactory.dropRole( pos(start), roleName, ifExists );
-    }
-}
-
-ADMINISTRATION_COMMAND DropDatabase(Token start):
-{
-    Either<String, PARAMETER> databaseName = null;
-    boolean ifExists = false;
-    WAIT_CLAUSE wait = astFactory.wait(false, -1);
-    boolean dumpData = false;
-}
-{
-    <DATABASE>
-    databaseName=SymbolicDatabaseNameStringOrParameter()
-    (<IF> <EXISTS> {ifExists = true;})?
-    ((<DUMP> { dumpData = true; } | <DESTROY>) <DATA>)?
-    (wait = WaitClause())?
-    {
-        return astFactory.dropDatabase( pos(start), databaseName, ifExists, dumpData, wait );
-    }
-}
-
-ADMINISTRATION_COMMAND GrantRole():
-{
-    Token start;
-    List<Either<String, PARAMETER>> roles;
-    List<Either<String, PARAMETER>> users;
-}
-{
-    start = <GRANT> (<ROLE> | <ROLES>) roles=SymbolicNamerOrStringParameterList() <TO> users=SymbolicNamerOrStringParameterList()
-    {
-        return astFactory.grantRoles( pos(start), roles, users );
-    }
-}
-
-ADMINISTRATION_COMMAND RevokeRole():
-{
-    Token start;
-    List<Either<String, PARAMETER>> roles;
-    List<Either<String, PARAMETER>> users;
-}
-{
-    start = <REVOKE> (<ROLE> | <ROLES>) roles=SymbolicNamerOrStringParameterList() <FROM> users=SymbolicNamerOrStringParameterList()
-    {
-        return astFactory.revokeRoles( pos(start), roles, users  );
-    }
-}
-
-ADMINISTRATION_COMMAND StartDatabase():
-{
-    Token start;
-    Either<String, PARAMETER> databaseName;
-    WAIT_CLAUSE wait = astFactory.wait(false, -1);
-}
-{
-    start=<START> <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter() (wait=WaitClause())?
-    {
-      return astFactory.startDatabase(pos(start), databaseName, wait);
-    }
-}
-
-ADMINISTRATION_COMMAND StopDatabase():
-{
-    Token start;
-    Either<String, PARAMETER> databaseName;
-    WAIT_CLAUSE wait = astFactory.wait(false, -1);
-}
-{
-    start=<STOP> <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter() (wait=WaitClause())?
-    {
-      return astFactory.stopDatabase(pos(start), databaseName, wait);
-    }
+   nameToken=SymbolicNameString() { nameBuilder =new StringBuilder(nameToken.image); }
+   (<DOT> nameToken=SymbolicNameString() { nameBuilder.append("."); nameBuilder.append(nameToken.image);})* { return new Left<String, PARAMETER>(nameBuilder.toString()); }
+   | parameter=StringParameter() { return new Right<String, PARAMETER>(parameter); }
 }
 
 List<Either<String, PARAMETER>> SymbolicNamerOrStringParameterList() :
@@ -2992,29 +3033,6 @@ Either<String, PARAMETER> SymbolicNameOrStringParameter():
 }
 {
    name=SymbolicNameString() { return new Left<String, PARAMETER>(name.image); }
-   | parameter=StringParameter() { return new Right<String, PARAMETER>(parameter); }
-}
-
-Either<String, PARAMETER> SymbolicDatabaseNameStringOrParameter():
-{
-   Token nameToken;
-   StringBuilder nameBuilder;
-   PARAMETER parameter;
-}
-{
-   nameToken=SymbolicNameString() { nameBuilder =new StringBuilder(nameToken.image); }
-   (<DOT> nameToken=SymbolicNameString() { nameBuilder.append("."); nameBuilder.append(nameToken.image);})* { return new Left<String, PARAMETER>(nameBuilder.toString()); }
-   | parameter=StringParameter() { return new Right<String, PARAMETER>(parameter); }
-}
-
-Either<String, PARAMETER> SensitiveStringOrParameter():
-{
-   Token name;
-   PARAMETER parameter;
-}
-{
-   ( name=<STRING_LITERAL1>
-   | name=<STRING_LITERAL2>) { return new Left<String, PARAMETER>(name.image); }
    | parameter=StringParameter() { return new Right<String, PARAMETER>(parameter); }
 }
 

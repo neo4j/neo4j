@@ -342,7 +342,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL createUser( NULL p, boolean replace, boolean ifNotExists, Either<String,Object> username, Either<String,Object> password, boolean encrypted,
+    public NULL createUser( NULL p, boolean replace, boolean ifNotExists, Either<String,Object> username, Object password, boolean encrypted,
                             boolean changeRequired, Boolean suspended, Either<String,Object> homeDatabase )
     {
         throw new UnsupportedOperationException( "createUser is not a literal" );
@@ -355,13 +355,13 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL setOwnPassword( NULL p, Either<String,Object> currentPassword, Either<String,Object> newPassword )
+    public NULL setOwnPassword( NULL p, Object currentPassword, Object newPassword )
     {
         throw new UnsupportedOperationException( "setOwnPassword is not a literal" );
     }
 
     @Override
-    public NULL alterUser( NULL p, boolean ifExists, Either<String,Object> username, Either<String,Object> password, boolean encrypted, Boolean changeRequired,
+    public NULL alterUser( NULL p, boolean ifExists, Either<String,Object> username, Object password, boolean encrypted, Boolean changeRequired,
                            Boolean suspended, Either<String,Object> homeDatabase, boolean removeHome )
     {
         throw new UnsupportedOperationException( "alterUser is not a literal" );
@@ -377,6 +377,18 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     public NULL showCurrentUser( NULL p, NULL yieldExpr, NULL returnWithoutGraph, Object where )
     {
         throw new UnsupportedOperationException( "showCurrentUser is not a literal" );
+    }
+
+    @Override
+    public Object passwordExpression( Object password )
+    {
+        throw new UnsupportedOperationException( "passwordExpression is not a literal" );
+    }
+
+    @Override
+    public Object passwordExpression( NULL p, String password )
+    {
+        throw new UnsupportedOperationException( "passwordExpression is not a literal" );
     }
 
     @Override
