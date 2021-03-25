@@ -33,10 +33,10 @@ case class Merge(read: LogicalPlan,
                  createRelationships: Seq[CreateRelationship],
                  onMatch: Seq[SetMutatingPattern],
                  onCreate: Seq[SetMutatingPattern])
-                (implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
+                (implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
   override def source: LogicalPlan = read
 
-  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(read = newLHS)(idGen)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(read = newLHS)(idGen)
 
   override def availableSymbols: Set[String] = read.availableSymbols
 }

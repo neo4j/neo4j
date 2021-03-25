@@ -1257,7 +1257,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val rewrittenRelPatterns = createRelationshipPatterns.map(p => PatternExpressionSolver.ForMappable().solve(inner, p, context)._1)
 
     val solved = RegularSinglePlannerQuery().amendQueryGraph(_.addMutatingPatterns(patterns))
-    annotate(Merge(inner, rewrittenNodePatterns, rewrittenRelPatterns, onMatchPatterns, onCreatePatterns), solved, ProvidedOrder.empty, context)
+    val merge = Merge(inner, rewrittenNodePatterns, rewrittenRelPatterns, onMatchPatterns, onCreatePatterns)
+    val providedOrder = providedOrderOfUpdate(merge, inner)
+    annotate(merge, solved, providedOrder, context)
   }
 
   def planConditionalApply(lhs: LogicalPlan, rhs: LogicalPlan, idNames: Seq[String], context: LogicalPlanningContext): LogicalPlan = {
