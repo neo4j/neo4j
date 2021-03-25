@@ -260,7 +260,7 @@ public class RelationshipModifier
                 // Look for an opportunity to delete empty groups that we noticed while looking for groups above
                 if ( nodeContext.hasExclusiveGroupLock() && nodeContext.hasAnyEmptyGroup() )
                 {
-                    // There may to be one or more empty groups that we can delete
+                    // There may be one or more empty groups that we can delete
                     if ( locks.tryExclusiveLock( NODE_RELATIONSHIP_GROUP_DELETE, nodeId ) )
                     {
                         // We got the EXCLUSIVE group lock so we can go ahead and try to remove any potentially empty groups

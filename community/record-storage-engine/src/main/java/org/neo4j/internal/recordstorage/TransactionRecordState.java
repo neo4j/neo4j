@@ -109,6 +109,8 @@ public class TransactionRecordState implements RecordState
     private final DegreesUpdater groupDegreesUpdater = new DegreesUpdater();
 
     private boolean prepared;
+    private final RelationshipGroupGetter relationshipGroupGetter;
+    private final RelationshipGroupGetter.DirectGroupLookup directGroupLookup;
 
     TransactionRecordState( NeoStores neoStores, IntegrityValidator integrityValidator, RecordChangeSet recordChangeSet,
             long lastCommittedTxWhenTransactionStarted, ResourceLocker locks, LockTracer lockTracer, RelationshipModifier relationshipModifier,
@@ -131,6 +133,8 @@ public class TransactionRecordState implements RecordState
         this.cursorTracer = cursorTracer;
         this.memoryTracker = memoryTracker;
         this.commandSerialization = commandSerialization;
+        this.relationshipGroupGetter = new RelationshipGroupGetter( relationshipGroupStore, cursorTracer );
+        this.directGroupLookup = new RelationshipGroupGetter.DirectGroupLookup( recordChangeSet, cursorTracer );
     }
 
     @Override
@@ -332,11 +336,16 @@ public class TransactionRecordState implements RecordState
      */
     public void nodeDelete( long nodeId )
     {
-        NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, cursorTracer ).forChangingData();
+        RecordProxy<NodeRecord,Void> nodeChange = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null, cursorTracer );
+        NodeRecord nodeRecord = nodeChange.forChangingData();
         if ( !nodeRecord.inUse() )
         {
             throw new IllegalStateException( "Unable to delete Node[" + nodeId +
                                              "] since it has already been deleted." );
+        }
+        if ( nodeRecord.isDense() )
+        {
+            relationshipGroupGetter.deleteEmptyGroups( nodeChange, g -> true, directGroupLookup );
         }
         nodeRecord.setInUse( false );
         nodeRecord.setLabelField( Record.NO_LABELS_FIELD.intValue(),

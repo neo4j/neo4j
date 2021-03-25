@@ -143,7 +143,7 @@ public class RelationshipGroupGetter
         return change;
     }
 
-    static void deleteGroup( RecordProxy<NodeRecord,Void> nodeChange, RelationshipGroupRecord group, MappedNodeDataLookup nodeDataLookup )
+    static void deleteGroup( RecordProxy<NodeRecord,Void> nodeChange, RelationshipGroupRecord group, GroupLookup groupLookup )
     {
         long previous = group.getPrev();
         long next = group.getNext();
@@ -153,12 +153,12 @@ public class RelationshipGroupGetter
         }
         else
         {   // There are others before it, point the previous to the next group
-            nodeDataLookup.group( previous ).forChangingLinkage().setNext( next );
+            groupLookup.group( previous ).forChangingLinkage().setNext( next );
         }
 
         if ( !isNull( next ) )
         {   // There are groups after this one, point that next group to the previous of the group to be deleted
-            nodeDataLookup.group( next ).forReadingLinkage().setPrev( previous ); //This is only for updating cache, thus reading not changing.
+            groupLookup.group( next ).forReadingLinkage().setPrev( previous ); //This is only for updating cache, thus reading not changing.
         }
         group.setInUse( false );
     }
@@ -169,7 +169,7 @@ public class RelationshipGroupGetter
     }
 
     public boolean deleteEmptyGroups( RecordProxy<NodeRecord,Void> nodeProxy,
-            Predicate<RelationshipGroupRecord> canDeleteGroup, MappedNodeDataLookup nodeDataLookup )
+            Predicate<RelationshipGroupRecord> canDeleteGroup, GroupLookup groupLookup )
     {
         long groupId = nodeProxy.forReadingLinkage().getNextRel();
         long previousGroupId = Record.NULL_REFERENCE.longValue();
@@ -177,15 +177,14 @@ public class RelationshipGroupGetter
         boolean anyDeleted = false;
         while ( !isNull( groupId ) )
         {
-            current = nodeDataLookup.group( groupId );
+            current = groupLookup.group( groupId );
             RelationshipGroupRecord group = current.forReadingData();
             group.setPrev( previousGroupId );
             if ( group.inUse() && groupIsEmpty( group ) && canDeleteGroup.test( group ) )
             {
                 group = current.forChangingData();
-                deleteGroup( nodeProxy, group, nodeDataLookup );
+                deleteGroup( nodeProxy, group, groupLookup );
                 anyDeleted = true;
-                break;
             }
             else
             {
@@ -216,6 +215,29 @@ public class RelationshipGroupGetter
         public RecordProxy<RelationshipGroupRecord, Integer> closestPrevious()
         {
             return closestPrevious;
+        }
+    }
+
+    interface GroupLookup
+    {
+        RecordProxy<RelationshipGroupRecord,Integer> group( long groupId );
+    }
+
+    static class DirectGroupLookup implements GroupLookup
+    {
+        final RecordAccessSet recordChanges;
+        final PageCursorTracer cursorTracer;
+
+        DirectGroupLookup( RecordAccessSet recordChanges, PageCursorTracer cursorTracer )
+        {
+            this.recordChanges = recordChanges;
+            this.cursorTracer = cursorTracer;
+        }
+
+        @Override
+        public RecordProxy<RelationshipGroupRecord,Integer> group( long groupId )
+        {
+            return recordChanges.getRelGroupRecords().getOrLoad( groupId, null, cursorTracer );
         }
     }
 }

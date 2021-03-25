@@ -65,6 +65,8 @@ import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -130,6 +132,8 @@ import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
@@ -1467,6 +1471,88 @@ class TransactionRecordStateTest
         assertThat( schemaCmd.getAfter().inUse() ).isEqualTo( true );
         assertThat( schemaCmd.getAfter().isCreated() ).isEqualTo( false );
         assertThat( schemaCmd.getAfter().getNextProp() ).isEqualTo( propCmd.getKey() );
+    }
+
+    @Test
+    void shouldDeleteEmptyGroupsWhenDeletingNodeAndLastRelationship() throws Exception
+    {
+        // given
+        // node --> group A (empty) --> group B (not empty) --> group C (empty)
+        //                                     |
+        //                                     v
+        //                                 relationship
+        neoStores = createStores();
+        NodeStore nodeStore = neoStores.getNodeStore();
+        RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
+        RelationshipStore relationshipStore = neoStores.getRelationshipStore();
+        long nodeId = nodeStore.nextId( NULL );
+        long relationshipId = relationshipStore.nextId( NULL );
+        long groupA = groupStore.nextId( NULL );
+        long groupB = groupStore.nextId( NULL );
+        long groupC = groupStore.nextId( NULL );
+        groupStore.updateRecord(
+                new RelationshipGroupRecord( groupA ).initialize( true, 0, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
+                        nodeId, groupB ), NULL );
+        groupStore.updateRecord(
+                new RelationshipGroupRecord( groupB ).initialize( true, 1, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), relationshipId,
+                        nodeId, groupC ), NULL );
+        groupStore.updateRecord(
+                new RelationshipGroupRecord( groupC ).initialize( true, 2, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
+                        nodeId, NULL_REFERENCE.longValue() ), NULL );
+        relationshipStore.updateRecord(
+                new RelationshipRecord( relationshipId ).initialize( true, NO_NEXT_PROPERTY.longValue(), nodeId, nodeId, 1, 1, NULL_REFERENCE.longValue(), 1,
+                        NULL_REFERENCE.longValue(), true, true ), NULL );
+        nodeStore.updateRecord( new NodeRecord( nodeId ).initialize( true, NO_NEXT_PROPERTY.longValue(), true, groupA, Record.NO_LABELS_FIELD.longValue() ),
+                NULL );
+
+        // when
+        TransactionRecordState state = newTransactionRecordState();
+        state.relModify( singleDelete( relationship( relationshipId, 1, nodeId, nodeId ) ) );
+        state.nodeDelete( nodeId );
+        apply( state );
+
+        // then
+        assertThat( nodeStore.isInUse( nodeId, NULL ) ).isFalse();
+        assertThat( groupStore.isInUse( groupA, NULL ) ).isFalse();
+        assertThat( groupStore.isInUse( groupB, NULL ) ).isFalse();
+        assertThat( groupStore.isInUse( groupC, NULL ) ).isFalse();
+        assertThat( relationshipStore.isInUse( relationshipId, NULL ) ).isFalse();
+    }
+
+    @Test
+    void shouldDeleteEmptyGroupsWhenDeletingNode() throws Exception
+    {
+        // given
+        // node --> group A (empty) --> group B (empty) --> group C (empty)
+        neoStores = createStores();
+        NodeStore nodeStore = neoStores.getNodeStore();
+        RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
+        long nodeId = nodeStore.nextId( NULL );
+        long groupA = groupStore.nextId( NULL );
+        long groupB = groupStore.nextId( NULL );
+        long groupC = groupStore.nextId( NULL );
+        groupStore.updateRecord(
+                new RelationshipGroupRecord( groupA ).initialize( true, 0, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
+                        nodeId, groupB ), NULL );
+        groupStore.updateRecord(
+                new RelationshipGroupRecord( groupB ).initialize( true, 1, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
+                        nodeId, groupC ), NULL );
+        groupStore.updateRecord(
+                new RelationshipGroupRecord( groupC ).initialize( true, 2, NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(), NULL_REFERENCE.longValue(),
+                        nodeId, NULL_REFERENCE.longValue() ), NULL );
+        nodeStore.updateRecord( new NodeRecord( nodeId ).initialize( true, NO_NEXT_PROPERTY.longValue(), true, groupA, Record.NO_LABELS_FIELD.longValue() ),
+                NULL );
+
+        // when
+        TransactionRecordState state = newTransactionRecordState();
+        state.nodeDelete( nodeId );
+        apply( state );
+
+        // then
+        assertThat( nodeStore.isInUse( nodeId, NULL ) ).isFalse();
+        assertThat( groupStore.isInUse( groupA, NULL ) ).isFalse();
+        assertThat( groupStore.isInUse( groupB, NULL ) ).isFalse();
+        assertThat( groupStore.isInUse( groupC, NULL ) ).isFalse();
     }
 
     private static void addLabelsToNode( TransactionRecordState recordState, long nodeId, long[] labelIds )

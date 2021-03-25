@@ -196,7 +196,6 @@ import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.NO_MONITOR;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
-import static org.neo4j.internal.recordstorage.RelationshipCreator.insertFirst;
 import static org.neo4j.internal.recordstorage.RelationshipModifier.DEFAULT_EXTERNAL_DEGREES_THRESHOLD_SWITCH;
 import static org.neo4j.internal.schema.IndexType.fromPublicApi;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
@@ -1001,7 +1000,7 @@ public class BatchInserterImpl implements BatchInserter
         long id = relationshipStore.nextId( cursorTracer );
         int typeId = getOrCreateRelationshipTypeId( type.name() );
         relationshipCreator.relationshipCreate( id, typeId, node1, node2, recordAccess, degreeUpdater,
-                insertFirst( relationshipGroupGetter, recordAccess, cursorTracer ) );
+                new RelationshipCreator.InsertFirst( relationshipGroupGetter, recordAccess, cursorTracer ) );
         if ( properties != null && !properties.isEmpty() )
         {
             RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( id, null, cursorTracer ).forChangingData();

@@ -49,7 +49,7 @@ public class RelationshipCreator
         this.cursorTracer = cursorTracer;
     }
 
-    public interface NodeDataLookup
+    public interface NodeDataLookup extends RelationshipGroupGetter.GroupLookup
     {
         int DIR_OUT = 0;
         int DIR_IN = 1;
@@ -60,23 +60,28 @@ public class RelationshipCreator
         RecordProxy<RelationshipGroupRecord,Integer> group( long nodeId, int type, boolean create );
     }
 
-    public static NodeDataLookup insertFirst( RelationshipGroupGetter relationshipGroupGetter, RecordAccessSet recordChanges, PageCursorTracer cursorTracer )
+    public static class InsertFirst extends RelationshipGroupGetter.DirectGroupLookup implements NodeDataLookup
     {
-        return new RelationshipCreator.NodeDataLookup()
-        {
-            @Override
-            public RecordProxy<RelationshipRecord,Void> insertionPoint( long nodeId, int type, int direction )
-            {
-                return null;
-            }
+        private final RelationshipGroupGetter relationshipGroupGetter;
 
-            @Override
-            public RecordProxy<RelationshipGroupRecord,Integer> group( long nodeId, int type, boolean create )
-            {
-                RecordProxy<NodeRecord,Void> nodeChange = recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorTracer );
-                return relationshipGroupGetter.getOrCreateRelationshipGroup( nodeChange, type, recordChanges.getRelGroupRecords() );
-            }
-        };
+        public InsertFirst( RelationshipGroupGetter relationshipGroupGetter, RecordAccessSet recordChanges, PageCursorTracer cursorTracer )
+        {
+            super( recordChanges, cursorTracer );
+            this.relationshipGroupGetter = relationshipGroupGetter;
+        }
+
+        @Override
+        public RecordProxy<RelationshipRecord,Void> insertionPoint( long nodeId, int type, int direction )
+        {
+            return null;
+        }
+
+        @Override
+        public RecordProxy<RelationshipGroupRecord,Integer> group( long nodeId, int type, boolean create )
+        {
+            RecordProxy<NodeRecord,Void> nodeChange = recordChanges.getNodeRecords().getOrLoad( nodeId, null, cursorTracer );
+            return relationshipGroupGetter.getOrCreateRelationshipGroup( nodeChange, type, recordChanges.getRelGroupRecords() );
+        }
     }
 
     /**
