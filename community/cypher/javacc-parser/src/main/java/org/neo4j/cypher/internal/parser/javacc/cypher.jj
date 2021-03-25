@@ -1884,7 +1884,7 @@ EXPRESSION CaseExpression() :
 }
 {
   t=<CASE> (
-    LOOKAHEAD(2) e=Expression() <WHEN>
+    LOOKAHEAD(e=Expression() <WHEN>) e=Expression() <WHEN>
   | <WHEN> )
   x=Expression() {whens.add(x);} <THEN> x=Expression() {thens.add(x);}
   ( <WHEN> x=Expression() {whens.add(x);} <THEN> x=Expression() {thens.add(x);} )*
