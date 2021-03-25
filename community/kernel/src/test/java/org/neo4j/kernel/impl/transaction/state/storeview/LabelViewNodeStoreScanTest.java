@@ -23,22 +23,20 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
+import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenScanReader;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StubStorageCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,8 +52,8 @@ class LabelViewNodeStoreScanTest
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private final TokenScanReader labelScanReader = mock( TokenScanReader.class );
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
-    private final Visitor<List<EntityTokenUpdate>,Exception> labelUpdateVisitor = mock( Visitor.class );
-    private final Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
+    private final TokenScanConsumer labelScanConsumer = mock( TokenScanConsumer.class );
+    private final PropertyScanConsumer propertyScanConsumer = mock( PropertyScanConsumer.class );
     private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
 
     @AfterEach
@@ -83,7 +81,7 @@ class LabelViewNodeStoreScanTest
         int[] labelIds = new int[]{1, 2};
         when( labelScanReader.entitiesWithAnyOfTokens( eq( labelIds ), any() ) ).thenReturn( labeledNodes );
 
-        LabelViewNodeStoreScan<Exception> storeScan = getLabelScanViewStoreScan( labelIds );
+        LabelViewNodeStoreScan storeScan = getLabelScanViewStoreScan( labelIds );
         PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator( PageCursorTracer.NULL );
 
         assertThat( idIterator.next() ).isEqualTo( 1L );
@@ -93,9 +91,9 @@ class LabelViewNodeStoreScanTest
         assertThat( idIterator.hasNext() ).isEqualTo( false );
     }
 
-    private LabelViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
+    private LabelViewNodeStoreScan getLabelScanViewStoreScan( int[] labelIds )
     {
-        return new LabelViewNodeStoreScan<>( Config.defaults(), cursors, LockService.NO_LOCK_SERVICE,
-                labelScanStore, labelUpdateVisitor, propertyUpdateVisitor, labelIds, propertyKeyIdFilter, false, jobScheduler, PageCacheTracer.NULL, INSTANCE );
+        return new LabelViewNodeStoreScan( Config.defaults(), cursors, LockService.NO_LOCK_SERVICE,
+                labelScanStore, labelScanConsumer, propertyScanConsumer, labelIds, propertyKeyIdFilter, false, jobScheduler, PageCacheTracer.NULL, INSTANCE );
     }
 }

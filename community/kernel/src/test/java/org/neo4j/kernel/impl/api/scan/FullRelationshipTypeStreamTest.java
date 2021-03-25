@@ -41,7 +41,7 @@ class FullRelationshipTypeStreamTest
         FullRelationshipTypeStream stream = new FullRelationshipTypeStream( indexStoreView );
 
         // when
-        stream.getStoreScan( indexStoreView, updates -> false, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
+        stream.getStoreScan( indexStoreView, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
 
         // then
         verify( indexStoreView ).visitRelationships( any(), any(), any(), any(), anyBoolean(), eq( false ), any(), any() );

@@ -24,20 +24,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -56,6 +56,7 @@ import org.neo4j.test.InMemoryTokens;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.scheduler.CallingThreadJobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -145,10 +146,10 @@ public class BatchingMultipleIndexPopulatorTest
     @Test
     void pendingBatchesFlushedAfterStoreScan() throws Exception
     {
-        EntityUpdates update1 = nodeUpdates( 1, propertyId, "foo", labelId );
-        EntityUpdates update2 = nodeUpdates( 2, propertyId, "bar", labelId );
-        EntityUpdates update3 = nodeUpdates( 3, propertyId, "baz", labelId );
-        EntityUpdates update42 = nodeUpdates( 4, 42, "42", 42 );
+        Update update1 = nodeUpdate( 1, propertyId, "foo", labelId );
+        Update update2 = nodeUpdate( 2, propertyId, "bar", labelId );
+        Update update3 = nodeUpdate( 3, propertyId, "baz", labelId );
+        Update update42 = nodeUpdate( 4, 42, "42", 42 );
         IndexStoreView storeView = newStoreView( update1, update2, update3, update42 );
 
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator( storeView,
@@ -167,8 +168,8 @@ public class BatchingMultipleIndexPopulatorTest
     @Test
     void populatorMarkedAsFailed() throws Exception
     {
-        EntityUpdates update1 = nodeUpdates( 1, propertyId, "aaa", labelId );
-        EntityUpdates update2 = nodeUpdates( 1, propertyId, "bbb", labelId );
+        Update update1 = nodeUpdate( 1, propertyId, "aaa", labelId );
+        Update update2 = nodeUpdate( 1, propertyId, "bbb", labelId );
         IndexStoreView storeView = newStoreView( update1, update2 );
 
         RuntimeException batchFlushError = new RuntimeException( "Batch failed" );
@@ -198,22 +199,25 @@ public class BatchingMultipleIndexPopulatorTest
         verify( populator ).markAsFailed( failure( batchFlushError ).asString() );
     }
 
-    private List<IndexEntryUpdate<IndexDescriptor>> forUpdates( IndexDescriptor index, EntityUpdates... updates )
+    private List<IndexEntryUpdate<IndexDescriptor>> forUpdates( IndexDescriptor index, Update... updates )
     {
+        var entityUpdates = Arrays.stream( updates ).map( update ->
+                EntityUpdates.forEntity( update.id, true )
+                         .withTokens( update.labels )
+                         .added( update.propertyId, update.propertyValue )
+                         .build()
+        ).collect( Collectors.toList());
         return Iterables.asList(
                 Iterables.concat(
                         Iterables.map(
                                 update -> update.valueUpdatesForIndexKeys( Iterables.asIterable( index ) ),
-                                Arrays.asList( updates )
+                                entityUpdates
                         ) ) );
     }
 
-    private EntityUpdates nodeUpdates( int nodeId, int propertyId, String propertyValue, long...
-            labelIds )
+    private Update nodeUpdate( int nodeId, int propertyId, String propertyValue, long... labelIds )
     {
-        return EntityUpdates.forEntity( nodeId, false ).withTokens( labelIds ).withTokensAfter( labelIds )
-                .added( propertyId, Values.of( propertyValue ) )
-                .build();
+        return new Update( nodeId, labelIds, propertyId, Values.stringValue( propertyValue ) );
     }
 
     private static IndexPopulator addPopulator( MultipleIndexPopulator batchingPopulator, IndexDescriptor descriptor )
@@ -233,40 +237,42 @@ public class BatchingMultipleIndexPopulatorTest
         return populator;
     }
 
-    private static IndexStoreView newStoreView( EntityUpdates... updates )
+    private static IndexStoreView newStoreView( Update... updates )
     {
         IndexStoreView storeView = mock( IndexStoreView.class );
         when( storeView.visitNodes( any(), any(), any(), any(), anyBoolean(), anyBoolean(), any(), any() ) ).thenAnswer( invocation ->
         {
-            Visitor<List<EntityUpdates>,IndexPopulationFailedKernelException> visitorArg = invocation.getArgument( 2 );
-            return new IndexEntryUpdateScan( updates, visitorArg );
+            PropertyScanConsumer consumerArg = invocation.getArgument( 2 );
+            return new IndexEntryUpdateScan( updates, consumerArg );
         } );
         when( storeView.newPropertyAccessor( any( PageCursorTracer.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
         return storeView;
     }
 
-    private static class IndexEntryUpdateScan implements StoreScan<IndexPopulationFailedKernelException>
+    private static class IndexEntryUpdateScan implements StoreScan
     {
-        final EntityUpdates[] updates;
-        final Visitor<List<EntityUpdates>,IndexPopulationFailedKernelException> visitor;
+        final Update[] updates;
+        final PropertyScanConsumer consumer;
 
         boolean stop;
 
-        IndexEntryUpdateScan( EntityUpdates[] updates,
-                Visitor<List<EntityUpdates>,IndexPopulationFailedKernelException> visitor )
+        IndexEntryUpdateScan( Update[] updates,
+                PropertyScanConsumer consumer )
         {
             this.updates = updates;
-            this.visitor = visitor;
+            this.consumer = consumer;
         }
 
         @Override
-        public void run( ExternalUpdatesCheck externalUpdatesCheck ) throws IndexPopulationFailedKernelException
+        public void run( ExternalUpdatesCheck externalUpdatesCheck )
         {
             if ( stop )
             {
                 return;
             }
-            visitor.visit( List.of( updates ) );
+            var batch = consumer.newBatch();
+            Arrays.stream( updates ).forEach( update -> batch.addRecord( update.id, update.labels, Map.of( update.propertyId, update.propertyValue ) ) );
+            batch.process();
         }
 
         @Override
@@ -279,6 +285,22 @@ public class BatchingMultipleIndexPopulatorTest
         public PopulationProgress getProgress()
         {
             return PopulationProgress.NONE;
+        }
+    }
+
+    private static class Update
+    {
+        private final long id;
+        private final long[] labels;
+        private final int propertyId;
+        private final Value propertyValue;
+
+        private Update( long id, long[] labels, int propertyId, Value propertyValue )
+        {
+            this.id = id;
+            this.labels = labels;
+            this.propertyId = propertyId;
+            this.propertyValue = propertyValue;
         }
     }
 }

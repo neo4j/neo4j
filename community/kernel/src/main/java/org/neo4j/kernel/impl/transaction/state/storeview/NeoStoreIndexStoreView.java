@@ -19,21 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.List;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
 
@@ -56,20 +54,20 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( final int[] labelIds, IntPredicate propertyKeyIdFilter,
-            final Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor, final Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
+    public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
+            PropertyScanConsumer propertyScanConsumer, TokenScanConsumer labelScanConsumer,
             boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        return new NodeStoreScan<>( config, storageEngine.get(), locks, labelUpdateVisitor,
-                propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
+        return new NodeStoreScan( config, storageEngine.get(), locks, labelScanConsumer,
+                propertyScanConsumer, labelIds, propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
     }
 
     @Override
-    public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( final int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-            final Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
+    public StoreScan visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
+            PropertyScanConsumer propertyScanConsumer, TokenScanConsumer relationshipTypeScanConsumer,
             boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        return new RelationshipStoreScan<>( config, storageEngine.get(), locks, relationshipTypeUpdateVisitor, propertyUpdatesVisitor, relationshipTypeIds,
+        return new RelationshipStoreScan( config, storageEngine.get(), locks, relationshipTypeScanConsumer, propertyScanConsumer, relationshipTypeIds,
                 propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
     }
 

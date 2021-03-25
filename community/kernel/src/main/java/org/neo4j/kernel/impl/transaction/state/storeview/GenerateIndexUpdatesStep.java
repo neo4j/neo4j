@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.IntPredicate;
 import java.util.function.LongFunction;
 
@@ -30,19 +30,17 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
+import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.Lock;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
 
 public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>> extends ProcessorStep<long[]>
@@ -53,8 +51,8 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
     private final IntPredicate propertyKeyIdFilter;
     private final EntityScanCursorBehaviour<CURSOR> entityCursorBehaviour;
     private final long[] relevantTokenIds;
-    private final Visitor<List<EntityUpdates>,? extends Exception> propertyUpdatesVisitor;
-    private final Visitor<List<EntityTokenUpdate>,? extends Exception> tokenUpdatesVisitor;
+    private final PropertyScanConsumer propertyScanConsumer;
+    private final TokenScanConsumer tokenScanConsumer;
     private final boolean gatherTokenUpdates;
     private final boolean gatherPropertyUpdates;
     private final LongFunction<Lock> lockFunction;
@@ -64,7 +62,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
 
     public GenerateIndexUpdatesStep( StageControl control, Configuration config, StorageReader reader, IntPredicate propertyKeyIdFilter,
             EntityScanCursorBehaviour<CURSOR> entityCursorBehaviour, int[] entityTokenIdFilter,
-            Visitor<List<EntityUpdates>,? extends Exception> propertyUpdatesVisitor, Visitor<List<EntityTokenUpdate>,? extends Exception> tokenUpdatesVisitor,
+            PropertyScanConsumer propertyScanConsumer, TokenScanConsumer tokenScanConsumer,
             LongFunction<Lock> lockFunction, int parallelism, long maxBatchSizeBytes, boolean alsoWrite, PageCacheTracer cacheTracer,
             MemoryTracker memoryTracker )
     {
@@ -73,10 +71,10 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
         this.propertyKeyIdFilter = propertyKeyIdFilter;
         this.entityCursorBehaviour = entityCursorBehaviour;
         this.relevantTokenIds = intsToLongs( entityTokenIdFilter );
-        this.propertyUpdatesVisitor = propertyUpdatesVisitor;
-        this.tokenUpdatesVisitor = tokenUpdatesVisitor;
-        this.gatherPropertyUpdates = propertyUpdatesVisitor != null;
-        this.gatherTokenUpdates = tokenUpdatesVisitor != null;
+        this.propertyScanConsumer = propertyScanConsumer;
+        this.tokenScanConsumer = tokenScanConsumer;
+        this.gatherPropertyUpdates = propertyScanConsumer != null;
+        this.gatherTokenUpdates = tokenScanConsumer != null;
         this.lockFunction = lockFunction;
         this.alsoWrite = alsoWrite;
         this.memoryTracker = memoryTracker;
@@ -107,17 +105,14 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
                 }
             }
         }
-        if ( !updates.isEmpty() )
-        {
-            batchDone( updates, sender );
-        }
+        batchDone( updates, sender );
     }
 
-    private void batchDone( GeneratedIndexUpdates updates, BatchSender sender ) throws Exception
+    private void batchDone( GeneratedIndexUpdates updates, BatchSender sender )
     {
         if ( alsoWrite )
         {
-            updates.accept( propertyUpdatesVisitor, tokenUpdatesVisitor );
+            updates.completeBatch();
         }
         else
         {
@@ -136,7 +131,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
 
         if ( gatherTokenUpdates )
         {
-            updates.tokenUpdates.add( EntityTokenUpdate.tokenChanges( entityCursor.entityReference(), EMPTY_LONG_ARRAY, tokens ) );
+            updates.tokenUpdates.addRecord( entityCursor.entityReference(), tokens );
         }
 
         if ( gatherPropertyUpdates && containsAnyEntityToken( relevantTokenIds, tokens ) )
@@ -151,9 +146,10 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
         {
             return;
         }
-        boolean hasRelevantProperty = false;
         cursor.properties( propertyCursor );
-        EntityUpdates.Builder updates = EntityUpdates.forEntity( cursor.entityReference(), true ).withTokens( tokens );
+
+        Map<Integer,Value> relevantProperties = new HashMap<>();
+
         while ( propertyCursor.next() )
         {
             int propertyKeyId = propertyCursor.propertyKey();
@@ -164,14 +160,13 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
                 // No need to validate values before passing them to the updater since the index implementation
                 // is allowed to fail in which ever way it wants to. The result of failure will be the same as
                 // a failed validation, i.e. population FAILED.
-                updates.added( propertyKeyId, value );
-                hasRelevantProperty = true;
+                relevantProperties.put( propertyKeyId, value );
                 indexUpdates.propertiesByteSize += value.estimatedHeapUsage();
             }
         }
-        if ( hasRelevantProperty )
+        if ( !relevantProperties.isEmpty() )
         {
-            indexUpdates.propertyUpdates.add( updates.build() );
+            indexUpdates.propertyUpdates.addRecord( cursor.entityReference(), tokens, relevantProperties );
         }
     }
 
@@ -193,34 +188,28 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
         return false;
     }
 
-    static class GeneratedIndexUpdates
+    class GeneratedIndexUpdates
     {
-        private final List<EntityUpdates> propertyUpdates;
-        private final List<EntityTokenUpdate> tokenUpdates;
+        private final PropertyScanConsumer.Batch propertyUpdates;
+        private final TokenScanConsumer.Batch tokenUpdates;
         private long propertiesByteSize;
 
         GeneratedIndexUpdates( boolean gatherPropertyUpdates, boolean gatherTokenUpdates )
         {
-            propertyUpdates = gatherPropertyUpdates ? new ArrayList<>() : null;
-            tokenUpdates = gatherTokenUpdates ? new ArrayList<>() : null;
+            propertyUpdates = gatherPropertyUpdates ? propertyScanConsumer.newBatch() : null;
+            tokenUpdates = gatherTokenUpdates ? tokenScanConsumer.newBatch() : null;
         }
 
-        boolean isEmpty()
+        void completeBatch()
         {
-            return (propertyUpdates == null || propertyUpdates.isEmpty()) && (tokenUpdates == null || tokenUpdates.isEmpty());
-        }
-
-        void accept( Visitor<List<EntityUpdates>,? extends Exception> propertyUpdatesVisitor,
-                Visitor<List<EntityTokenUpdate>,? extends Exception> tokenUpdatesVisitor ) throws Exception
-        {
-            if ( propertyUpdatesVisitor != null )
+            if ( gatherPropertyUpdates )
             {
-                propertyUpdatesVisitor.visit( propertyUpdates );
+                propertyUpdates.process();
             }
 
-            if ( tokenUpdatesVisitor != null )
+            if ( gatherTokenUpdates )
             {
-                tokenUpdatesVisitor.visit( tokenUpdates );
+                tokenUpdates.process();
             }
         }
     }

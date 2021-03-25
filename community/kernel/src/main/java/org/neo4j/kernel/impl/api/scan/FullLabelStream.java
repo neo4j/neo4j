@@ -21,16 +21,11 @@ package org.neo4j.kernel.impl.api.scan;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.io.IOException;
-import java.util.List;
-
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.index.schema.FullStoreChangeStream;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 
@@ -45,9 +40,8 @@ public class FullLabelStream extends FullTokenStream
     }
 
     @Override
-    StoreScan<IOException> getStoreScan( IndexStoreView indexStoreView, Visitor<List<EntityTokenUpdate>,IOException> tokenUpdateVisitor,
-            PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+    StoreScan getStoreScan( IndexStoreView indexStoreView, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        return indexStoreView.visitNodes( ArrayUtils.EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, tokenUpdateVisitor, true, false, cacheTracer, memoryTracker );
+        return indexStoreView.visitNodes( ArrayUtils.EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, this, true, false, cacheTracer, memoryTracker );
     }
 }

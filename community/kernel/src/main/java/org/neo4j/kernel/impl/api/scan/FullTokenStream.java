@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.scan;
 
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.index.schema.FullStoreChangeStream;
 import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
 import org.neo4j.memory.MemoryTracker;
@@ -37,7 +37,7 @@ import org.neo4j.storageengine.api.EntityTokenUpdate;
  * Connects the provided {@link TokenScanWriter writer} to the receiving end of a full store scan,
  * feeding {@link EntityTokenUpdate entity tokens} into the writer.
  */
-public abstract class FullTokenStream implements FullStoreChangeStream, Visitor<List<EntityTokenUpdate>,IOException>
+public abstract class FullTokenStream implements FullStoreChangeStream, TokenScanConsumer
 {
     private final IndexStoreView indexStoreView;
     private TokenScanWriter writer;
@@ -48,27 +48,40 @@ public abstract class FullTokenStream implements FullStoreChangeStream, Visitor<
         this.indexStoreView = indexStoreView;
     }
 
-    abstract StoreScan<IOException> getStoreScan( IndexStoreView indexStoreView, Visitor<List<EntityTokenUpdate>,IOException> tokenUpdateVisitor,
-            PageCacheTracer cacheTracer, MemoryTracker memoryTracker );
+    abstract StoreScan getStoreScan( IndexStoreView indexStoreView, PageCacheTracer cacheTracer, MemoryTracker memoryTracker );
 
     @Override
-    public long applyTo( TokenScanWriter writer, PageCacheTracer cacheTracer, MemoryTracker memoryTracker ) throws IOException
+    public long applyTo( TokenScanWriter writer, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
         // Keep the writer for using it in "visit"
         this.writer = writer;
-        StoreScan<IOException> scan = getStoreScan( indexStoreView, this, cacheTracer, memoryTracker );
+        StoreScan scan = getStoreScan( indexStoreView, cacheTracer, memoryTracker );
         scan.run( StoreScan.NO_EXTERNAL_UPDATES );
         return count;
     }
 
     @Override
-    public boolean visit( List<EntityTokenUpdate> updates ) throws IOException
+    public Batch newBatch()
     {
-        for ( EntityTokenUpdate update : updates )
+        return new Batch()
         {
-            writer.write( update );
-            count++;
-        }
-        return false;
+            final List<EntityTokenUpdate> updates = new ArrayList<>();
+
+            @Override
+            public void addRecord( long entityId, long[] tokens )
+            {
+                updates.add( EntityTokenUpdate.tokenChanges( entityId, new long[0], tokens ) );
+            }
+
+            @Override
+            public void process()
+            {
+                for ( EntityTokenUpdate update : updates )
+                {
+                    writer.write( update );
+                    count++;
+                }
+            }
+        };
     }
 }

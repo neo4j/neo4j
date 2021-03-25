@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.internal.kernel.api.PopulationProgress;
 
-public interface StoreScan<FAILURE extends Exception>
+public interface StoreScan
 {
-    void run( ExternalUpdatesCheck externalUpdatesCheck ) throws FAILURE;
+    void run( ExternalUpdatesCheck externalUpdatesCheck );
 
     void stop();
 

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntPredicate;
 import java.util.function.LongFunction;
@@ -27,19 +26,18 @@ import java.util.function.LongFunction;
 import org.neo4j.collection.PrimitiveLongResourceCollections.AbstractPrimitiveLongBaseResourceIterator;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
+import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.lock.Lock;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.StorageReader;
 
@@ -52,10 +50,8 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
  * or a partial scan backed by {@link LabelScanStore} or {@link RelationshipTypeScanStore}.
  *
  * @param <CURSOR> the type of cursor used to read the records.
- * @param <FAILURE> on failure during processing.
  */
-public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityScanCursor<?>, FAILURE extends Exception>
-        implements StoreScan<FAILURE>
+public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityScanCursor<?>> implements StoreScan
 {
     protected final StorageReader storageReader;
     protected final EntityScanCursorBehaviour<CURSOR> cursorBehaviour;
@@ -70,13 +66,12 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     private final LongFunction<Lock> lockFunction;
     private final Config dbConfig;
     private PhaseTracker phaseTracker;
-    protected final Visitor<List<EntityTokenUpdate>,FAILURE> tokenUpdateVisitor;
-    protected final Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor;
-    private volatile StoreScanStage<FAILURE,CURSOR> stage;
+    protected final TokenScanConsumer tokenScanConsumer;
+    protected final PropertyScanConsumer propertyScanConsumer;
+    private volatile StoreScanStage<CURSOR> stage;
 
     protected PropertyAwareEntityStoreScan( Config config, StorageReader storageReader, long totalEntityCount, int[] entityTokenIdFilter,
-            IntPredicate propertyKeyIdFilter, Visitor<List<EntityTokenUpdate>,FAILURE> tokenUpdateVisitor,
-            Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, LongFunction<Lock> lockFunction,
+            IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer, TokenScanConsumer tokenScanConsumer, LongFunction<Lock> lockFunction,
             EntityScanCursorBehaviour<CURSOR> cursorBehaviour, boolean parallelWrite, JobScheduler scheduler,
             PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
@@ -91,20 +86,20 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
         this.totalCount = totalEntityCount;
         this.memoryTracker = memoryTracker;
         this.phaseTracker = PhaseTracker.nullInstance;
-        this.tokenUpdateVisitor = tokenUpdateVisitor;
-        this.propertyUpdateVisitor = propertyUpdateVisitor;
+        this.tokenScanConsumer = tokenScanConsumer;
+        this.propertyScanConsumer = propertyScanConsumer;
         this.dbConfig = config;
     }
 
     @Override
-    public void run( ExternalUpdatesCheck externalUpdatesCheck ) throws FAILURE
+    public void run( ExternalUpdatesCheck externalUpdatesCheck )
     {
         try
         {
             continueScanning.set( true );
             Configuration config = Configuration.DEFAULT;
             stage = new StoreScanStage<>( dbConfig, config, this::getEntityIdIterator, externalUpdatesCheck, continueScanning, storageReader,
-                    entityTokenIdFilter, propertyKeyIdFilter, propertyUpdateVisitor, tokenUpdateVisitor, cursorBehaviour, lockFunction, parallelWrite,
+                    entityTokenIdFilter, propertyKeyIdFilter, propertyScanConsumer, tokenScanConsumer, cursorBehaviour, lockFunction, parallelWrite,
                     scheduler, cacheTracer, memoryTracker );
             superviseDynamicExecution( INVISIBLE, stage );
             stage.reportTo( phaseTracker );
@@ -124,7 +119,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     @Override
     public PopulationProgress getProgress()
     {
-        StoreScanStage<FAILURE,CURSOR> observedStage = stage;
+        StoreScanStage<CURSOR> observedStage = stage;
         if ( totalCount > 0 || observedStage == null )
         {
             return PopulationProgress.single( observedStage != null ? observedStage.numberOfIteratedEntities() : 0, totalCount );

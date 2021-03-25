@@ -22,11 +22,8 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -34,7 +31,6 @@ import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -79,7 +75,7 @@ class NeoStoreIndexStoreViewTracingIT
         var pageCacheTracer = new DefaultPageCacheTracer();
         var indexStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader, Config.defaults(), jobScheduler );
         var storeScan = indexStoreView.visitNodes( EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null,
-                (Visitor<List<EntityTokenUpdate>,Exception>) element -> false, true, true, pageCacheTracer, INSTANCE );
+                new TestTokenScanConsumer(), true, true, pageCacheTracer, INSTANCE );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         assertThat( pageCacheTracer.pins() ).isEqualTo( 4 );

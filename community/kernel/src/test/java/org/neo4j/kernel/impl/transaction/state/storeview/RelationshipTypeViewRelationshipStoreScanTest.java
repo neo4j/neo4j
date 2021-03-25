@@ -23,22 +23,20 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
+import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenScanReader;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StubStorageCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,8 +52,8 @@ class RelationshipTypeViewRelationshipStoreScanTest
     private final RelationshipTypeScanStore relationshipTypeScanStore = mock( RelationshipTypeScanStore.class );
     private final TokenScanReader relationshipTypeScanReader = mock( TokenScanReader.class );
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
-    private final Visitor<List<EntityTokenUpdate>,Exception> labelUpdateVisitor = mock( Visitor.class );
-    private final Visitor<List<EntityUpdates>,Exception> propertyUpdateVisitor = mock( Visitor.class );
+    private final TokenScanConsumer typeScanConsumer = mock( TokenScanConsumer.class );
+    private final PropertyScanConsumer propertyScanConsumer = mock( PropertyScanConsumer.class );
     private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
 
     @AfterEach
@@ -83,7 +81,7 @@ class RelationshipTypeViewRelationshipStoreScanTest
         int[] types = new int[]{1};
         when( relationshipTypeScanReader.entitiesWithAnyOfTokens( eq( types ), any() ) ).thenReturn( relationshipsWithType );
 
-        RelationshipTypeViewRelationshipStoreScan<Exception> storeScan = getRelationshipTypeScanViewStoreScan( types );
+        RelationshipTypeViewRelationshipStoreScan storeScan = getRelationshipTypeScanViewStoreScan( types );
         PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator( PageCursorTracer.NULL );
 
         assertThat( idIterator.next() ).isEqualTo( 1L );
@@ -93,9 +91,9 @@ class RelationshipTypeViewRelationshipStoreScanTest
         assertThat( idIterator.hasNext() ).isEqualTo( false );
     }
 
-    private RelationshipTypeViewRelationshipStoreScan<Exception> getRelationshipTypeScanViewStoreScan( int[] relationshipTypeIds )
+    private RelationshipTypeViewRelationshipStoreScan getRelationshipTypeScanViewStoreScan( int[] relationshipTypeIds )
     {
-        return new RelationshipTypeViewRelationshipStoreScan<>( Config.defaults(), cursors, LockService.NO_LOCK_SERVICE, relationshipTypeScanStore,
-                labelUpdateVisitor, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter, false, jobScheduler, PageCacheTracer.NULL, INSTANCE );
+        return new RelationshipTypeViewRelationshipStoreScan( Config.defaults(), cursors, LockService.NO_LOCK_SERVICE, relationshipTypeScanStore,
+                typeScanConsumer, propertyScanConsumer, relationshipTypeIds, propertyKeyIdFilter, false, jobScheduler, PageCacheTracer.NULL, INSTANCE );
     }
 }

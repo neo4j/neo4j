@@ -19,39 +19,40 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.List;
 import java.util.function.IntPredicate;
-import javax.annotation.Nullable;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
+import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 
 import static org.neo4j.lock.LockType.SHARED;
 
 /**
- * Scan the node store and produce {@link EntityUpdates updates for indexes} and/or {@link EntityTokenUpdate updates for label index}
- * depending on which {@link Visitor visitors} that are used.
+ * Scan the node store and produce {@link EntityUpdates updates for indexes} and/or {@link TokenIndexEntryUpdate updates for label index}
+ * depending on which scan consumer ({@link TokenScanConsumer}, {@link PropertyScanConsumer} or both) is used.
+ * <p>
+ * {@code labelIds} and {@code propertyKeyIdFilter} are relevant only for {@link PropertyScanConsumer} and don't influence
+ * {@link TokenScanConsumer}.
  */
-public class NodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageNodeCursor,FAILURE>
+public class NodeStoreScan extends PropertyAwareEntityStoreScan<StorageNodeCursor>
 {
     private static final String TRACER_TAG = "NodeStoreScan_getNodeCount";
 
     public NodeStoreScan( Config config, StorageReader storageReader, LockService locks,
-            @Nullable Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
-            @Nullable Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
+            TokenScanConsumer labelScanConsumer, PropertyScanConsumer propertyScanConsumer,
             int[] labelIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
             JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( config, storageReader, getNodeCount( storageReader, cacheTracer ), labelIds, propertyKeyIdFilter, labelUpdateVisitor, propertyUpdatesVisitor,
+        super( config, storageReader, getNodeCount( storageReader, cacheTracer ), labelIds, propertyKeyIdFilter, propertyScanConsumer, labelScanConsumer,
                 id -> locks.acquireNodeLock( id, SHARED ), new NodeCursorBehaviour( storageReader ), parallelWrite, scheduler, cacheTracer, memoryTracker );
     }
 

@@ -71,7 +71,7 @@ public class IndexPopulationJob implements Runnable
      */
     private final List<IndexDescriptor> populatedIndexes = new ArrayList<>();
 
-    private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
+    private volatile StoreScan storeScan;
     private volatile boolean stopped;
     /**
      * The {@link JobHandle} that represents the scheduling of this index population job.

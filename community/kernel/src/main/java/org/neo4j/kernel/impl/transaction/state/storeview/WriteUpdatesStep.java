@@ -19,34 +19,23 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.List;
-
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.EntityUpdates;
 
-public class WriteUpdatesStep extends ProcessorStep<GenerateIndexUpdatesStep.GeneratedIndexUpdates>
+public class WriteUpdatesStep extends ProcessorStep<GenerateIndexUpdatesStep<?>.GeneratedIndexUpdates>
 {
-    private final Visitor<List<EntityUpdates>,? extends Throwable> propertyUpdatesVisitor;
-    private final Visitor<List<EntityTokenUpdate>,? extends Throwable> tokenUpdatesVisitor;
-
-    public WriteUpdatesStep( StageControl control, Configuration config, Visitor<List<EntityUpdates>,? extends Exception> propertyUpdatesVisitor,
-            Visitor<List<EntityTokenUpdate>,? extends Exception> tokenUpdatesVisitor, PageCacheTracer cacheTracer )
+    public WriteUpdatesStep( StageControl control, Configuration config, PageCacheTracer cacheTracer )
     {
         super( control, "write updates", config, 1, cacheTracer );
-        this.propertyUpdatesVisitor = propertyUpdatesVisitor;
-        this.tokenUpdatesVisitor = tokenUpdatesVisitor;
     }
 
     @Override
-    protected void process( GenerateIndexUpdatesStep.GeneratedIndexUpdates updates, BatchSender sender, PageCursorTracer cursorTracer ) throws Exception
+    protected void process( GenerateIndexUpdatesStep<?>.GeneratedIndexUpdates updates, BatchSender sender, PageCursorTracer cursorTracer )
     {
-        updates.accept( propertyUpdatesVisitor, tokenUpdatesVisitor );
+        updates.completeBatch();
     }
 }

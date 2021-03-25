@@ -21,12 +21,10 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -45,8 +43,6 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.InMemoryTokens;
@@ -129,9 +125,9 @@ class IndexPopulationTest
         return new IndexStoreView.Adaptor()
         {
             @Override
-            public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-                    Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
-                    boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
+                    TokenScanConsumer labelScanConsumer, boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer,
+                    MemoryTracker memoryTracker )
             {
                 //noinspection unchecked
                 return new StoreScan()

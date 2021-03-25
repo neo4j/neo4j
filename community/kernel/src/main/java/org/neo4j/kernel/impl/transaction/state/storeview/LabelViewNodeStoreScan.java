@@ -19,39 +19,36 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.List;
 import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
+import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageReader;
 
 /**
  * Store scan view that will try to minimize the amount of scanned nodes by using label scan store {@link LabelScanStore}
  * as a source of known labeled node ids.
- * @param <FAILURE> type of exception thrown on failure
  */
-public class LabelViewNodeStoreScan<FAILURE extends Exception> extends NodeStoreScan<FAILURE>
+public class LabelViewNodeStoreScan extends NodeStoreScan
 {
     private final LabelScanStore labelScanStore;
 
     public LabelViewNodeStoreScan( Config config, StorageReader storageReader, LockService locks,
             LabelScanStore labelScanStore,
-            @Nullable Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
-            @Nullable Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
+            @Nullable TokenScanConsumer labelScanConsumer,
+            @Nullable PropertyScanConsumer propertyScanConsumer,
             int[] labelIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
             JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( config, storageReader, locks, labelUpdateVisitor, propertyUpdatesVisitor, labelIds,
+        super( config, storageReader, locks, labelScanConsumer, propertyScanConsumer, labelIds,
                 propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
         this.labelScanStore = labelScanStore;
     }

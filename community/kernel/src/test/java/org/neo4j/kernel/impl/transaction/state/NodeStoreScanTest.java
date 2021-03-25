@@ -29,23 +29,23 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.IntPredicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.kernel.impl.transaction.state.storeview.TestPropertyScanConsumer;
+import org.neo4j.kernel.impl.transaction.state.storeview.TestTokenScanConsumer;
 import org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -53,7 +53,6 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static java.util.Collections.synchronizedList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.impl.block.factory.primitive.IntPredicates.alwaysTrue;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -120,9 +119,8 @@ class NodeStoreScanTest
     void shouldSeeZeroProgressBeforeRunStarted()
     {
         // given
-        NodeStoreScan<RuntimeException> scan =
-                new NodeStoreScan<>( Config.defaults(), cursors, locks, t -> false, p -> false, allPossibleLabelIds, k -> true, false, jobScheduler,
-                        NULL, INSTANCE );
+        NodeStoreScan scan = new NodeStoreScan( Config.defaults(), cursors, locks, mock( TokenScanConsumer.class ), mock( PropertyScanConsumer.class ),
+                allPossibleLabelIds, k -> true, false, jobScheduler, NULL, INSTANCE );
 
         // when
         PopulationProgress progressBeforeStarted = scan.getProgress();
@@ -166,29 +164,22 @@ class NodeStoreScanTest
         }
 
         // when
-        List<EntityTokenUpdate> allTokenUpdates = synchronizedList( new ArrayList<>() );
-        Visitor<List<EntityTokenUpdate>,RuntimeException> tokenVisitor = element ->
-        {
-            allTokenUpdates.addAll( element );
-            return false;
-        };
-        List<EntityUpdates> allPropertyUpdates = synchronizedList( new ArrayList<>() );
-        Visitor<List<EntityUpdates>,RuntimeException> propertyVisitor = element ->
-        {
-            allPropertyUpdates.addAll( element );
-            return false;
-        };
-        NodeStoreScan<RuntimeException> scan =
-                new NodeStoreScan<>( Config.defaults(), cursors, locks, tokenVisitor, propertyVisitor, labelFilter, propertyKeyFilter, false, jobScheduler,
+        var tokenConsumer = new TestTokenScanConsumer();
+        var propertyConsumer = new TestPropertyScanConsumer();
+        NodeStoreScan scan =
+                new NodeStoreScan( Config.defaults(), cursors, locks, tokenConsumer, propertyConsumer, labelFilter, propertyKeyFilter, false, jobScheduler,
                         NULL, INSTANCE );
         assertThat( scan.getProgress().getCompleted() ).isZero();
 
         scan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         // then
-        assertThat( LongSets.mutable.of( allTokenUpdates.stream().mapToLong( EntityTokenUpdate::getEntityId ).toArray() ) )
+        assertThat( LongSets.mutable.of( tokenConsumer.batches.stream().flatMap( Collection::stream ).mapToLong( record -> record.getEntityId() ).toArray() ) )
                 .isEqualTo( expectedTokenUpdatesNodes );
-        assertThat( LongSets.mutable.of( allPropertyUpdates.stream().mapToLong( EntityUpdates::getEntityId ).toArray() ) )
+        assertThat( LongSets.mutable.of( propertyConsumer.batches.stream()
+                                                                 .flatMap( Collection::stream )
+                                                                 .mapToLong( record -> record.getEntityId() )
+                                                                 .toArray() ) )
                 .isEqualTo( expectedPropertyUpdatesNodes );
     }
 

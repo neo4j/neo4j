@@ -21,11 +21,8 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -34,7 +31,6 @@ import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -75,8 +71,8 @@ class LabelScanNodeViewTracingIT
 
         var jobScheduler = database.getDependencyResolver().resolveDependency( JobScheduler.class );
         var cacheTracer = new DefaultPageCacheTracer();
-        var scan = new LabelViewNodeStoreScan<>( Config.defaults(), storageEngine.newReader(), lockService, labelScanStore,
-                (Visitor<List<EntityTokenUpdate>,Exception>) element -> false, null, new int[]{labelId}, any -> false, false, jobScheduler, cacheTracer,
+        var scan = new LabelViewNodeStoreScan( Config.defaults(), storageEngine.newReader(), lockService, labelScanStore,
+                new TestTokenScanConsumer(), null, new int[]{labelId}, any -> false, false, jobScheduler, cacheTracer,
                 INSTANCE );
         scan.run( StoreScan.NO_EXTERNAL_UPDATES );
 

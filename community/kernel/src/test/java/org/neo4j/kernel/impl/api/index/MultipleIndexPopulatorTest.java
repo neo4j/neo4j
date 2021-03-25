@@ -30,7 +30,6 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -265,8 +264,8 @@ class MultipleIndexPopulatorTest
         multipleIndexPopulator.create( NULL );
         multipleIndexPopulator.createStoreScan( PageCacheTracer.NULL );
 
-        verify( indexStoreView ).visitNodes( any( int[].class ), any( IntPredicate.class ), any( Visitor.class ), isNull(), anyBoolean(), anyBoolean(),
-                any( PageCacheTracer.class ), any() );
+        verify( indexStoreView ).visitNodes( any( int[].class ), any( IntPredicate.class ), any( PropertyScanConsumer.class ), isNull(), anyBoolean(),
+                anyBoolean(), any( PageCacheTracer.class ), any() );
     }
 
     @Test

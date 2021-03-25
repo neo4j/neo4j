@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -53,7 +54,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -67,7 +67,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -88,7 +87,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
@@ -97,6 +95,7 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.util.concurrent.BinaryLatch;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -814,7 +813,7 @@ class IndexingServiceTest
         // GIVEN
         long nodeId = 0;
         long otherIndexId = 2;
-        EntityUpdates update = addNodeUpdate( nodeId, "value" );
+        Update update = addNodeUpdate( nodeId, "value" );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample( 100, 42, 42 ) );
         // For some reason the usual accessor returned null from newUpdater, even when told to return the updater
         // so spying on a real object instead.
@@ -845,7 +844,7 @@ class IndexingServiceTest
         // GIVEN
         AtomicReference<BinaryLatch> populationStartLatch = latchedIndexPopulation();
         long nodeId = 0;
-        EntityUpdates update = addNodeUpdate( nodeId, "value" );
+        Update update = addNodeUpdate( nodeId, "value" );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample( 100, 42, 42 ) );
         // For some reason the usual accessor returned null from newUpdater, even when told to return the updater
         // so spying on a real object instead.
@@ -1429,15 +1428,14 @@ class IndexingServiceTest
         return invocationOnMock -> asResourceIterator( iterator( theFile ) );
     }
 
-    private EntityUpdates addNodeUpdate( long nodeId, Object propertyValue )
+    private Update addNodeUpdate( long nodeId, Object propertyValue )
     {
         return addNodeUpdate( nodeId, propertyValue, labelId );
     }
 
-    private EntityUpdates addNodeUpdate( long nodeId, Object propertyValue, int labelId )
+    private Update addNodeUpdate( long nodeId, Object propertyValue, int labelId )
     {
-        return EntityUpdates.forEntity( nodeId, false ).withTokens( labelId )
-                .added( prototype.schema().getPropertyId(), Values.of( propertyValue ) ).build();
+        return new Update( nodeId, new long[]{labelId}, prototype.schema().getPropertyId(), Values.of( propertyValue ) );
     }
 
     private IndexEntryUpdate<IndexDescriptor> add( long nodeId, Object propertyValue )
@@ -1490,49 +1488,50 @@ class IndexingServiceTest
         );
     }
 
-    private static DataUpdates withData( EntityUpdates... updates )
+    private static DataUpdates withData( Update... updates )
     {
-        return new DataUpdates( updates );
+        return new DataUpdates( Arrays.asList( updates ) );
     }
 
-    private static class DataUpdates implements Answer<StoreScan<IndexPopulationFailedKernelException>>
+    private static class DataUpdates implements Answer<StoreScan>
     {
-        private final EntityUpdates[] updates;
+        private final List<Update> updates;
 
         DataUpdates()
         {
-            this.updates = new EntityUpdates[0];
+            this.updates = List.of();
         }
 
-        DataUpdates( EntityUpdates[] updates )
+        DataUpdates( List<Update> updates )
         {
             this.updates = updates;
         }
 
-        @SuppressWarnings( "unchecked" )
         void getsProcessedByStoreScanFrom( IndexStoreView mock )
         {
             when( mock.visitNodes( any(int[].class), any( IntPredicate.class ),
-                    any( Visitor.class ), isNull(), anyBoolean(), anyBoolean(), any( PageCacheTracer.class ), any() ) ).thenAnswer( this );
+                    any( PropertyScanConsumer.class ), isNull(), anyBoolean(), anyBoolean(), any( PageCacheTracer.class ), any() ) ).thenAnswer( this );
         }
 
         @Override
-        public StoreScan<IndexPopulationFailedKernelException> answer( InvocationOnMock invocation )
+        public StoreScan answer( InvocationOnMock invocation )
         {
-            final Visitor<List<EntityUpdates>,IndexPopulationFailedKernelException> visitor =
-                    visitor( invocation.getArgument( 2 ) );
-            return new StoreScan<>()
+            final PropertyScanConsumer consumer = invocation.getArgument( 2 );
+            return new StoreScan()
             {
                 private volatile boolean stop;
 
                 @Override
-                public void run( ExternalUpdatesCheck externalUpdatesCheck ) throws IndexPopulationFailedKernelException
+                public void run( ExternalUpdatesCheck externalUpdatesCheck )
                 {
-                    if ( stop || updates.length == 0 )
+                    if ( stop || updates.size() == 0 )
                     {
                         return;
                     }
-                    visitor.visit( List.of( updates ) );
+
+                    var batch = consumer.newBatch();
+                    updates.forEach( update -> batch.addRecord( update.id, update.labels, Map.of( update.propertyId, update.propertyValue ) ) );
+                    batch.process();
                 }
 
                 @Override
@@ -1549,16 +1548,10 @@ class IndexingServiceTest
             };
         }
 
-        @SuppressWarnings( {"unchecked", "rawtypes"} )
-        private static Visitor<List<EntityUpdates>, IndexPopulationFailedKernelException> visitor( Object v )
-        {
-            return (Visitor) v;
-        }
-
         @Override
         public String toString()
         {
-            return Arrays.toString( updates );
+            return updates.toString();
         }
     }
 
@@ -1659,5 +1652,21 @@ class IndexingServiceTest
     {
         logProviderAction.accept( internalLogProvider );
         logProviderAction.accept( userLogProvider );
+    }
+
+    private static class Update
+    {
+        private final long id;
+        private final long[] labels;
+        private final int propertyId;
+        private final Value propertyValue;
+
+        private Update( long id, long[] labels, int propertyId, Value propertyValue )
+        {
+            this.id = id;
+            this.labels = labels;
+            this.propertyId = propertyId;
+            this.propertyValue = propertyValue;
+        }
     }
 }

@@ -436,7 +436,7 @@ class IndexPopulationJobTest
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodes( any(int[].class), any( IntPredicate.class ),
                 ArgumentMatchers.any(),
-                ArgumentMatchers.<Visitor<List<EntityTokenUpdate>,RuntimeException>>any(), anyBoolean(), anyBoolean(), any(), any() ) )
+                ArgumentMatchers.any(), anyBoolean(), anyBoolean(), any(), any() ) )
                 .thenReturn(storeScan );
         when( storeView.newPropertyAccessor( any( PageCursorTracer.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
 
@@ -612,11 +612,11 @@ class IndexPopulationJobTest
         IndexStoreView failingStoreView = new IndexStoreView.Adaptor()
         {
             @Override
-            public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-                    Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
-                    boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+            public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
+                    TokenScanConsumer labelScanConsumer, boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer,
+                    MemoryTracker memoryTracker )
             {
-                return new StoreScan<>()
+                return new StoreScan()
                 {
                     @Override
                     public void run( ExternalUpdatesCheck externalUpdatesCheck )
@@ -649,7 +649,7 @@ class IndexPopulationJobTest
         assertTrue( populator.closed );
     }
 
-    private static class ControlledStoreScan implements StoreScan<RuntimeException>
+    private static class ControlledStoreScan implements StoreScan
     {
         private final DoubleLatch latch = new DoubleLatch();
 

@@ -194,7 +194,7 @@ class NativeTokenScanWriter implements TokenScanWriter
      * or when {@link #close() closing}.
      */
     @Override
-    public void write( EntityTokenUpdate update ) throws IOException
+    public void write( EntityTokenUpdate update )
     {
         if ( pendingUpdatesCursor == pendingUpdates.length )
         {

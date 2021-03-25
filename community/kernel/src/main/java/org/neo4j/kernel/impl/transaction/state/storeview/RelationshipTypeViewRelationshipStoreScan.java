@@ -19,34 +19,32 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.List;
 import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
+import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageReader;
 
-public class RelationshipTypeViewRelationshipStoreScan<FAILURE extends Exception> extends RelationshipStoreScan<FAILURE>
+public class RelationshipTypeViewRelationshipStoreScan extends RelationshipStoreScan
 {
     private final RelationshipTypeScanStore relationshipTypeScanStore;
 
     public RelationshipTypeViewRelationshipStoreScan( Config config, StorageReader storageReader, LockService locks,
             RelationshipTypeScanStore relationshipTypeScanStore,
-            @Nullable Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
-            @Nullable Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor,
+            @Nullable TokenScanConsumer relationshipTypeScanConsumer,
+            @Nullable PropertyScanConsumer propertyScanConsumer,
             int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
             JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( config, storageReader, locks, relationshipTypeUpdateVisitor, propertyUpdatesVisitor, relationshipTypeIds, propertyKeyIdFilter, parallelWrite,
+        super( config, storageReader, locks, relationshipTypeScanConsumer, propertyScanConsumer, relationshipTypeIds, propertyKeyIdFilter, parallelWrite,
                 scheduler, cacheTracer, memoryTracker );
         this.relationshipTypeScanStore = relationshipTypeScanStore;
     }

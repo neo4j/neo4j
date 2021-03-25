@@ -45,7 +45,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -68,7 +67,9 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
+import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -83,7 +84,6 @@ import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -515,30 +515,30 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
 
         @Override
-        public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-                Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
+        public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
+                PropertyScanConsumer propertyScanConsumer, TokenScanConsumer labelScanConsumer,
                 boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
         {
-            StoreScan<FAILURE> storeScan = super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor,
-                    labelUpdateVisitor, forceStoreScan, parallelWrite, cacheTracer, memoryTracker );
-            return new LabelViewNodeStoreWrapper<>( storageEngine.get(), locks, getLabelScanStore(),
-                    element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
-                    (LabelViewNodeStoreScan<FAILURE>) storeScan, customAction, jobScheduler );
+            StoreScan storeScan = super.visitNodes( labelIds, propertyKeyIdFilter, propertyScanConsumer,
+                    labelScanConsumer, forceStoreScan, parallelWrite, cacheTracer, memoryTracker );
+            return new LabelViewNodeStoreWrapper( storageEngine.get(), locks, getLabelScanStore(),
+                    null, propertyScanConsumer, labelIds, propertyKeyIdFilter,
+                    (LabelViewNodeStoreScan) storeScan, customAction, jobScheduler );
         }
     }
 
-    private static class LabelViewNodeStoreWrapper<FAILURE extends Exception> extends LabelViewNodeStoreScan<FAILURE>
+    private static class LabelViewNodeStoreWrapper extends LabelViewNodeStoreScan
     {
-        private final LabelViewNodeStoreScan<FAILURE> delegate;
+        private final LabelViewNodeStoreScan delegate;
         private final Runnable customAction;
 
         LabelViewNodeStoreWrapper( StorageReader storageReader, LockService locks,
-                LabelScanStore labelScanStore, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor,
-                Visitor<List<EntityUpdates>,FAILURE> propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter,
-                LabelViewNodeStoreScan<FAILURE> delegate, Runnable customAction,
+                LabelScanStore labelScanStore, TokenScanConsumer labelScanConsumer,
+                PropertyScanConsumer propertyUpdatesConsumer, int[] labelIds, IntPredicate propertyKeyIdFilter,
+                LabelViewNodeStoreScan delegate, Runnable customAction,
                 JobScheduler jobScheduler )
         {
-            super( Config.defaults(), storageReader, locks, labelScanStore, labelUpdateVisitor, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, false,
+            super( Config.defaults(), storageReader, locks, labelScanStore, labelScanConsumer, propertyUpdatesConsumer, labelIds, propertyKeyIdFilter, false,
                     jobScheduler, PageCacheTracer.NULL, INSTANCE );
             this.delegate = delegate;
             this.customAction = customAction;

@@ -22,11 +22,8 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -37,7 +34,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -68,7 +64,7 @@ class DynamicIndexStoreViewTracingIT
     }
 
     @Test
-    void tracePageCacheAccess() throws Exception
+    void tracePageCacheAccess()
     {
         int nodeCount = 1000;
         var label = Label.label( "marker" );
@@ -87,7 +83,7 @@ class DynamicIndexStoreViewTracingIT
         var indexStoreView = new DynamicIndexStoreView( neoStoreStoreView, labelScanStore, relationshipTypeScanStore,
                 lockService, storageEngine::newReader, NullLogProvider.nullLogProvider(), Config.defaults() );
         var storeScan = indexStoreView.visitNodes( new int[]{0, 1, 2}, ALWAYS_TRUE_INT, null,
-                (Visitor<List<EntityTokenUpdate>,Exception>) element -> false, false, true, pageCacheTracer, INSTANCE );
+                new TestTokenScanConsumer(), false, true, pageCacheTracer, INSTANCE );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );
 
         assertThat( pageCacheTracer.pins() ).isEqualTo( 6 );

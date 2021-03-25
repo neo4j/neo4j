@@ -30,9 +30,8 @@ public interface TokenScanWriter extends Closeable
      * Store a {@link EntityTokenUpdate}. Calls to this method MUST be ordered by ascending entity id.
      *
      * @param update entity token update to store
-     * @throws IOException some kind of I/O exception has occurred
      */
-    void write( EntityTokenUpdate update ) throws IOException;
+    void write( EntityTokenUpdate update );
 
     /**
      * Close this writer and flush pending changes to the store.

@@ -37,7 +37,6 @@ import java.util.function.LongFunction;
 
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.SimpleStageControl;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.state.storeview.GenerateIndexUpdatesStep.GeneratedIndexUpdates;
 import org.neo4j.lock.Lock;
@@ -74,10 +73,10 @@ class GenerateIndexUpdatesStepTest
     {
         // given
         StubStorageCursors data = someUniformData( 10 );
-        CapturingVisitor<List<EntityUpdates>> propertyUpdates = new CapturingVisitor<>();
+        TestPropertyScanConsumer scanConsumer = new TestPropertyScanConsumer();
         GenerateIndexUpdatesStep<StorageNodeCursor> step =
-                new GenerateIndexUpdatesStep<>( new SimpleStageControl(), DEFAULT, data, alwaysTrue(), new NodeCursorBehaviour( data ), new int[]{LABEL},
-                        propertyUpdates, null, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite, PageCacheTracer.NULL, INSTANCE );
+                new GenerateIndexUpdatesStep( new SimpleStageControl(), DEFAULT, data, alwaysTrue(), new NodeCursorBehaviour( data ), new int[]{LABEL},
+                        scanConsumer, null, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite, PageCacheTracer.NULL, INSTANCE );
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
@@ -87,13 +86,13 @@ class GenerateIndexUpdatesStepTest
         if ( alsoWrite )
         {
             assertThat( sender.batches ).isEmpty();
-            assertThat( propertyUpdates.batches.size() ).isEqualTo( 1 );
-            assertThat( propertyUpdates.batches.get( 0 ).size() ).isEqualTo( 10 );
+            assertThat( scanConsumer.batches.size() ).isEqualTo( 1 );
+            assertThat( scanConsumer.batches.get( 0 ).size() ).isEqualTo( 10 );
         }
         else
         {
             assertThat( sender.batches.size() ).isEqualTo( 1 );
-            assertThat( propertyUpdates.batches ).isEmpty();
+            assertThat( scanConsumer.batches ).isEmpty();
         }
     }
 
@@ -103,10 +102,10 @@ class GenerateIndexUpdatesStepTest
     {
         // given
         StubStorageCursors data = someUniformData( 10 );
-        CapturingVisitor<List<EntityUpdates>> propertyUpdates = new CapturingVisitor<>();
+        TestPropertyScanConsumer scanConsumer = new TestPropertyScanConsumer();
         GenerateIndexUpdatesStep<StorageNodeCursor> step =
                 new GenerateIndexUpdatesStep<>( new SimpleStageControl(), DEFAULT, data, alwaysTrue(), new NodeCursorBehaviour( data ),
-                        new int[]{LABEL}, propertyUpdates, null, NO_LOCKING, 1, 100, alsoWrite, PageCacheTracer.NULL, INSTANCE );
+                        new int[]{LABEL}, scanConsumer, null, NO_LOCKING, 1, 100, alsoWrite, PageCacheTracer.NULL, INSTANCE );
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
@@ -115,12 +114,12 @@ class GenerateIndexUpdatesStepTest
         // then
         if ( alsoWrite )
         {
-            assertThat( propertyUpdates.batches.size() ).isGreaterThan( 1 );
+            assertThat( scanConsumer.batches.size() ).isGreaterThan( 1 );
             assertThat( sender.batches ).isEmpty();
         }
         else
         {
-            assertThat( propertyUpdates.batches ).isEmpty();
+            assertThat( scanConsumer.batches ).isEmpty();
             assertThat( sender.batches.size() ).isGreaterThan( 1 );
         }
     }
@@ -131,24 +130,24 @@ class GenerateIndexUpdatesStepTest
     {
         // given
         StubStorageCursors data = someUniformData( 10 );
-        CapturingVisitor<List<EntityUpdates>> propertyUpdates = new CapturingVisitor<>();
+        TestPropertyScanConsumer scanConsumer = new TestPropertyScanConsumer();
         GenerateIndexUpdatesStep<StorageNodeCursor> step =
                 new GenerateIndexUpdatesStep<>( new SimpleStageControl(), DEFAULT, data, alwaysTrue(), new NodeCursorBehaviour( data ), new int[]{LABEL},
-                        propertyUpdates, null, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite, PageCacheTracer.NULL, INSTANCE );
-        Set<EntityUpdates> expectedUpdates = new HashSet<>();
+                        scanConsumer, null, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite, PageCacheTracer.NULL, INSTANCE );
+        Set<TestPropertyScanConsumer.Record> expectedUpdates = new HashSet<>();
         try ( StorageNodeCursor cursor = data.allocateNodeCursor( NULL );
                 StoragePropertyCursor propertyCursor = data.allocatePropertyCursor( NULL, INSTANCE ) )
         {
             cursor.scan();
             while ( cursor.next() )
             {
-                EntityUpdates.Builder updatesBuilder = EntityUpdates.forEntity( cursor.entityReference(), true ).withTokens( cursor.labels() );
                 cursor.properties( propertyCursor );
+                Map<Integer, Value> properties = new HashMap<>();
                 while ( propertyCursor.next() )
                 {
-                    updatesBuilder.added( propertyCursor.propertyKey(), propertyCursor.propertyValue() );
+                    properties.put( propertyCursor.propertyKey(), propertyCursor.propertyValue() );
                 }
-                expectedUpdates.add( updatesBuilder.build() );
+                expectedUpdates.add( new TestPropertyScanConsumer.Record( cursor.entityReference(), cursor.labels(), properties ) );
             }
         }
 
@@ -159,7 +158,7 @@ class GenerateIndexUpdatesStepTest
         // then
         if ( alsoWrite )
         {
-            for ( EntityUpdates update : propertyUpdates.batches.get( 0 ) )
+            for ( TestPropertyScanConsumer.Record update : scanConsumer.batches.get( 0 ) )
             {
                 assertThat( expectedUpdates.remove( update ) ).isTrue();
             }
@@ -167,14 +166,11 @@ class GenerateIndexUpdatesStepTest
         else
         {
             GeneratedIndexUpdates updates = sender.batches.get( 0 );
-            updates.accept( entityPropertyUpdates ->
+            updates.completeBatch();
+            for ( TestPropertyScanConsumer.Record update : scanConsumer.batches.get( 0 ) )
             {
-                for ( EntityUpdates update : entityPropertyUpdates )
-                {
-                    assertThat( expectedUpdates.remove( update ) ).isTrue();
-                }
-                return false;
-            }, null );
+                assertThat( expectedUpdates.remove( update ) ).isTrue();
+            }
         }
         assertThat( expectedUpdates ).isEmpty();
     }
@@ -185,17 +181,17 @@ class GenerateIndexUpdatesStepTest
     {
         // given
         StubStorageCursors data = someUniformData( 10 );
-        CapturingVisitor<List<EntityTokenUpdate>> tokenUpdates = new CapturingVisitor<>();
+        TestTokenScanConsumer scanConsumer = new TestTokenScanConsumer();
         GenerateIndexUpdatesStep<StorageNodeCursor> step =
                 new GenerateIndexUpdatesStep<>( new SimpleStageControl(), DEFAULT, data, alwaysTrue(), new NodeCursorBehaviour( data ), new int[]{LABEL}, null,
-                        tokenUpdates, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite, PageCacheTracer.NULL, INSTANCE );
-        Set<EntityTokenUpdate> expectedUpdates = new HashSet<>();
+                        scanConsumer, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite, PageCacheTracer.NULL, INSTANCE );
+        Set<TestTokenScanConsumer.Record> expectedUpdates = new HashSet<>();
         try ( StorageNodeCursor cursor = data.allocateNodeCursor( NULL ) )
         {
             cursor.scan();
             while ( cursor.next() )
             {
-                expectedUpdates.add( tokenChanges( cursor.entityReference(), EMPTY_LONG_ARRAY, cursor.labels() ) );
+                expectedUpdates.add( new TestTokenScanConsumer.Record( cursor.entityReference(), cursor.labels() ) );
             }
         }
 
@@ -206,7 +202,7 @@ class GenerateIndexUpdatesStepTest
         // then
         if ( alsoWrite )
         {
-            for ( EntityTokenUpdate tokenUpdate : tokenUpdates.batches.get( 0 ) )
+            for ( TestTokenScanConsumer.Record tokenUpdate : scanConsumer.batches.get( 0 ) )
             {
                 assertThat( expectedUpdates.remove( tokenUpdate ) ).isTrue();
             }
@@ -214,14 +210,11 @@ class GenerateIndexUpdatesStepTest
         else
         {
             GeneratedIndexUpdates updates = sender.batches.get( 0 );
-            updates.accept( null, entityTokenUpdates ->
+            updates.completeBatch();
+            for ( TestTokenScanConsumer.Record tokenUpdate : scanConsumer.batches.get( 0 ) )
             {
-                for ( EntityTokenUpdate update : entityTokenUpdates )
-                {
-                    assertThat( expectedUpdates.remove( update ) ).isTrue();
-                }
-                return false;
-            } );
+                assertThat( expectedUpdates.remove( tokenUpdate ) ).isTrue();
+            }
         }
         assertThat( expectedUpdates ).isEmpty();
     }
@@ -242,9 +235,10 @@ class GenerateIndexUpdatesStepTest
                 relevantNodeIds.add( i );
             }
         }
+        TestPropertyScanConsumer scanConsumer = new TestPropertyScanConsumer();
         GenerateIndexUpdatesStep<StorageNodeCursor> step =
                 new GenerateIndexUpdatesStep<>( new SimpleStageControl(), DEFAULT, data, alwaysTrue(), new NodeCursorBehaviour( data ), new int[]{LABEL},
-                        new CapturingVisitor<>(), null, NO_LOCKING, 1, mebiBytes( 1 ), false, PageCacheTracer.NULL, INSTANCE );
+                        scanConsumer, null, NO_LOCKING, 1, mebiBytes( 1 ), false, PageCacheTracer.NULL, INSTANCE );
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
@@ -252,14 +246,11 @@ class GenerateIndexUpdatesStepTest
 
         // then
         GeneratedIndexUpdates updates = sender.batches.get( 0 );
-        updates.accept( entityPropertyUpdates ->
+        updates.completeBatch();
+        for ( TestPropertyScanConsumer.Record  update : scanConsumer.batches.get( 0 ) )
         {
-            for ( EntityUpdates update : entityPropertyUpdates )
-            {
-                assertThat( relevantNodeIds.remove( update.getEntityId() ) ).isTrue();
-            }
-            return false;
-        }, null );
+            assertThat( relevantNodeIds.remove( update.getEntityId() ) ).isTrue();
+        }
         assertThat( relevantNodeIds.isEmpty() ).isTrue();
     }
 
@@ -284,10 +275,10 @@ class GenerateIndexUpdatesStepTest
             node.properties( properties );
         }
         int otherKeyId = data.propertyKeyTokenHolder().getIdByName( OTHER_KEY );
-        CapturingVisitor<List<EntityUpdates>> propertyUpdates = new CapturingVisitor<>();
+        TestPropertyScanConsumer scanConsumer = new TestPropertyScanConsumer();
         GenerateIndexUpdatesStep<StorageNodeCursor> step =
-                new GenerateIndexUpdatesStep<>( new SimpleStageControl(), DEFAULT, data, pid -> pid == otherKeyId, new NodeCursorBehaviour( data ),
-                        new int[]{LABEL}, propertyUpdates, null, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite, PageCacheTracer.NULL, INSTANCE );
+                new GenerateIndexUpdatesStep( new SimpleStageControl(), DEFAULT, data, pid -> pid == otherKeyId, new NodeCursorBehaviour( data ),
+                        new int[]{LABEL}, scanConsumer, null, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite, PageCacheTracer.NULL, INSTANCE );
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
@@ -296,7 +287,7 @@ class GenerateIndexUpdatesStepTest
         // then
         if ( alsoWrite )
         {
-            for ( EntityUpdates update : propertyUpdates.batches.get( 0 ) )
+            for ( TestPropertyScanConsumer.Record update : scanConsumer.batches.get( 0 ) )
             {
                 assertThat( relevantNodeIds.remove( update.getEntityId() ) ).isTrue();
             }
@@ -304,14 +295,11 @@ class GenerateIndexUpdatesStepTest
         else
         {
             GeneratedIndexUpdates updates = sender.batches.get( 0 );
-            updates.accept( entityPropertyUpdates ->
+            updates.completeBatch();
+            for ( TestPropertyScanConsumer.Record update : scanConsumer.batches.get( 0 ) )
             {
-                for ( EntityUpdates update : entityPropertyUpdates )
-                {
-                    assertThat( relevantNodeIds.remove( update.getEntityId() ) ).isTrue();
-                }
-                return false;
-            }, null );
+                assertThat( relevantNodeIds.remove( update.getEntityId() ) ).isTrue();
+            }
         }
         assertThat( relevantNodeIds.isEmpty() ).isTrue();
     }
@@ -323,11 +311,11 @@ class GenerateIndexUpdatesStepTest
         // given
         int numNodes = 10;
         StubStorageCursors data = someUniformData( numNodes );
-        CapturingVisitor<List<EntityUpdates>> propertyUpdates = new CapturingVisitor<>();
-        CapturingVisitor<List<EntityTokenUpdate>> tokenUpdates = new CapturingVisitor<>();
+        TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
+        TestTokenScanConsumer tokenScanConsumer = new TestTokenScanConsumer();
         GenerateIndexUpdatesStep<StorageNodeCursor> step =
                 new GenerateIndexUpdatesStep<>( new SimpleStageControl(), DEFAULT, data, alwaysTrue(), new NodeCursorBehaviour( data ), new int[]{LABEL},
-                        propertyUpdates, tokenUpdates, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite, PageCacheTracer.NULL, INSTANCE );
+                        propertyScanConsumer, tokenScanConsumer, NO_LOCKING, 1, mebiBytes( 1 ), alsoWrite, PageCacheTracer.NULL, INSTANCE );
 
         // when
         CapturingBatchSender<GeneratedIndexUpdates> sender = new CapturingBatchSender<>();
@@ -336,21 +324,19 @@ class GenerateIndexUpdatesStepTest
         // then
         if ( alsoWrite )
         {
-            assertThat( propertyUpdates.batches.size() ).isEqualTo( 1 );
-            assertThat( propertyUpdates.batches.get( 0 ).size() ).isEqualTo( numNodes );
-            assertThat( tokenUpdates.batches.size() ).isEqualTo( 1 );
-            assertThat( tokenUpdates.batches.get( 0 ).size() ).isEqualTo( numNodes );
+            assertThat( propertyScanConsumer.batches.size() ).isEqualTo( 1 );
+            assertThat( propertyScanConsumer.batches.get( 0 ).size() ).isEqualTo( numNodes );
+            assertThat( tokenScanConsumer.batches.size() ).isEqualTo( 1 );
+            assertThat( tokenScanConsumer.batches.get( 0 ).size() ).isEqualTo( numNodes );
         }
         else
         {
             GeneratedIndexUpdates updates = sender.batches.get( 0 );
-            CapturingVisitor<List<EntityUpdates>> propertyUpdatesCaptor = new CapturingVisitor<>();
-            CapturingVisitor<List<EntityTokenUpdate>> tokenUpdatesCaptor = new CapturingVisitor<>();
-            updates.accept( propertyUpdatesCaptor, tokenUpdatesCaptor );
-            assertThat( propertyUpdatesCaptor.batches.size() ).isEqualTo( 1 );
-            assertThat( propertyUpdatesCaptor.batches.get( 0 ).size() ).isEqualTo( numNodes );
-            assertThat( tokenUpdatesCaptor.batches.size() ).isEqualTo( 1 );
-            assertThat( tokenUpdatesCaptor.batches.get( 0 ).size() ).isEqualTo( numNodes );
+            updates.completeBatch();
+            assertThat( propertyScanConsumer.batches.size() ).isEqualTo( 1 );
+            assertThat( propertyScanConsumer.batches.get( 0 ).size() ).isEqualTo( numNodes );
+            assertThat( tokenScanConsumer.batches.size() ).isEqualTo( 1 );
+            assertThat( tokenScanConsumer.batches.get( 0 ).size() ).isEqualTo( numNodes );
         }
     }
 
@@ -386,18 +372,6 @@ class GenerateIndexUpdatesStepTest
         public void send( Object batch )
         {
             batches.add( (T) batch );
-        }
-    }
-
-    private static class CapturingVisitor<T> implements Visitor<T,RuntimeException>
-    {
-        private List<T> batches = new ArrayList<>();
-
-        @Override
-        public boolean visit( T element ) throws RuntimeException
-        {
-            batches.add( element );
-            return false;
         }
     }
 }

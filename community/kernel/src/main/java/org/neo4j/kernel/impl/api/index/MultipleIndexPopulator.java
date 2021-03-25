@@ -41,7 +41,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.helpers.collection.Pair;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -68,11 +67,14 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.util.VisibleForTesting;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static org.eclipse.collections.impl.utility.ArrayIterate.contains;
+import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -138,7 +140,6 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
     private final JobScheduler jobScheduler;
     private final PageCursorTracer cursorTracer;
     private final MemoryTracker memoryTracker;
-    private StoreScan<IndexPopulationFailedKernelException> storeScan;
     private final TokenNameLookup tokenNameLookup;
     private final PageCacheTracer cacheTracer;
     private final String databaseName;
@@ -197,24 +198,39 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
         }, cursorTracer );
     }
 
-    StoreScan<IndexPopulationFailedKernelException> createStoreScan( PageCacheTracer cacheTracer )
+    StoreScan createStoreScan( PageCacheTracer cacheTracer )
     {
         int[] entityTokenIds = entityTokenIds();
         int[] propertyKeyIds = propertyKeyIds();
         IntPredicate propertyKeyIdFilter = propertyKeyId -> contains( propertyKeyIds, propertyKeyId );
 
+        StoreScan storeScan;
         if ( type == EntityType.RELATIONSHIP )
         {
-            storeScan = storeView.visitRelationships( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor(), null, false, true, cacheTracer,
+            storeScan = storeView.visitRelationships( entityTokenIds,
+                    propertyKeyIdFilter,
+                    createPropertyScanConsumer(),
+                    createTokenScanConsumer(),
+                    false,
+                    true,
+                    cacheTracer,
                     memoryTracker );
+            storeScan = new LoggingStoreScan( storeScan, false );
         }
         else
         {
-            storeScan =
-                    storeView.visitNodes( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor(), null, false, true, cacheTracer, memoryTracker );
+            storeScan = storeView.visitNodes( entityTokenIds,
+                    propertyKeyIdFilter,
+                    createPropertyScanConsumer(),
+                    createTokenScanConsumer(),
+                    false,
+                    true,
+                    cacheTracer,
+                    memoryTracker );
+            storeScan = new LoggingStoreScan( storeScan, true );
         }
         storeScan.setPhaseTracker( phaseTracker );
-        return new BatchingStoreScan<>( storeScan );
+        return storeScan;
     }
 
     /**
@@ -468,6 +484,26 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
         }
     }
 
+    private PropertyScanConsumer createPropertyScanConsumer()
+    {
+        // are we going to populate only token indexes?
+        if ( populations.stream().allMatch( population -> population.indexDescriptor.getIndexType() == LOOKUP ) )
+        {
+            return null;
+        }
+
+        return new PropertyScanConsumerImpl();
+    }
+
+    private TokenScanConsumer createTokenScanConsumer()
+    {
+        // is there a token index among the to-be-populated indexes?
+        var maybeTokenIdxPopulation = populations.stream()
+                                                 .filter( population -> population.indexDescriptor.getIndexType() == LOOKUP )
+                                                 .findAny();
+        return maybeTokenIdxPopulation.map( TokenScanConsumerImpl::new ).orElse( null );
+    }
+
     @Override
     public String toString()
     {
@@ -707,22 +743,39 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
         }
     }
 
-    private class EntityPopulationVisitor implements Visitor<List<EntityUpdates>,
-            IndexPopulationFailedKernelException>
+    private class PropertyScanConsumerImpl implements PropertyScanConsumer
     {
+
         @Override
-        public boolean visit( List<EntityUpdates> updates )
+        public Batch newBatch()
         {
-            try ( var cursorTracer = cacheTracer.createPageCursorTracer( POPULATION_WORK_FLUSH_TAG ) )
+            return new Batch()
             {
-                addFromScan( updates, cursorTracer );
-            }
-            long lastEntityId = updates.get( updates.size() - 1 ).getEntityId();
-            if ( printDebug )
-            {
-                log.info( "Added scan updates for entities %d-%d", updates.get( 0 ).getEntityId(), lastEntityId );
-            }
-            return false;
+                final List<EntityUpdates> updates = new ArrayList<>();
+
+                @Override
+                public void addRecord( long entityId, long[] tokens, Map<Integer,Value> properties )
+                {
+                    var builder = EntityUpdates.forEntity( entityId, true ).withTokens( tokens );
+                    properties.forEach( builder::added );
+                    updates.add( builder.build() );
+                }
+
+                @Override
+                public void process()
+                {
+                    try ( var cursorTracer = cacheTracer.createPageCursorTracer( POPULATION_WORK_FLUSH_TAG ) )
+                    {
+                        addFromScan( updates, cursorTracer );
+                    }
+
+                    if ( printDebug )
+                    {
+                        long lastEntityId = updates.get( updates.size() - 1 ).getEntityId();
+                        log.info( "Added scan updates for entities %d-%d", updates.get( 0 ).getEntityId(), lastEntityId );
+                    }
+                }
+            };
         }
 
         private void addFromScan( List<EntityUpdates> entityUpdates, PageCursorTracer cursorTracer )
@@ -753,19 +806,73 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
         }
     }
 
-    protected static class DelegatingStoreScan<E extends Exception> implements StoreScan<E>
+    private class TokenScanConsumerImpl implements TokenScanConsumer
     {
-        private final StoreScan<E> delegate;
+        private final IndexPopulation population;
 
-        DelegatingStoreScan( StoreScan<E> delegate )
+        TokenScanConsumerImpl( IndexPopulation population )
         {
-            this.delegate = delegate;
+            this.population = population;
         }
 
         @Override
-        public void run( ExternalUpdatesCheck externalUpdatesCheck ) throws E
+        public Batch newBatch()
+        {
+            return new Batch()
+            {
+                private final List<TokenIndexEntryUpdate<IndexPopulation>> updates = new ArrayList<>();
+
+                @Override
+                public void addRecord( long entityId, long[] tokens )
+                {
+                    updates.add( IndexEntryUpdate.change( entityId, population, new long[0], tokens ) );
+                }
+
+                @Override
+                public void process()
+                {
+                    try
+                    {
+                        population.populator.add( updates, cursorTracer );
+                    }
+                    catch ( Throwable e )
+                    {
+                        cancel( population, e, cursorTracer );
+                    }
+                }
+            };
+        }
+    }
+
+    /**
+     * A delegating {@link StoreScan} with the only functionality being logging when the scan is completed.
+     */
+    private class LoggingStoreScan implements StoreScan
+    {
+        private final StoreScan delegate;
+        private final boolean nodeScan;
+
+        LoggingStoreScan( StoreScan delegate, boolean nodeScan )
+        {
+            this.delegate = delegate;
+            this.nodeScan = nodeScan;
+        }
+
+        @Override
+        public void run( ExternalUpdatesCheck externalUpdatesCheck )
         {
             delegate.run( externalUpdatesCheck );
+            String entityType;
+            if ( nodeScan )
+            {
+                entityType = "node";
+            }
+            else
+            {
+                entityType = "relationship";
+            }
+            log.info( "Completed " + entityType + " store scan. " +
+                    "Flushing all pending updates." + EOL + MultipleIndexPopulator.this );
         }
 
         @Override
@@ -784,28 +891,6 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
         public void setPhaseTracker( PhaseTracker phaseTracker )
         {
             delegate.setPhaseTracker( phaseTracker );
-        }
-    }
-
-    /**
-     * A delegating {@link StoreScan} implementation that flushes all pending updates and terminates the executor after
-     * the delegate store scan completes.
-     *
-     * @param <E> type of the exception this store scan might get.
-     */
-    private class BatchingStoreScan<E extends Exception> extends DelegatingStoreScan<E>
-    {
-        BatchingStoreScan( StoreScan<E> delegate )
-        {
-            super( delegate );
-        }
-
-        @Override
-        public void run( ExternalUpdatesCheck externalUpdatesCheck ) throws E
-        {
-            super.run( externalUpdatesCheck );
-            log.info( "Completed node store scan. " +
-                      "Flushing all pending updates." + EOL + MultipleIndexPopulator.this );
         }
     }
 }

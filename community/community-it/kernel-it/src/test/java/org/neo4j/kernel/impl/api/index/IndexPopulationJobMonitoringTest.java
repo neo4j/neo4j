@@ -42,7 +42,7 @@ class IndexPopulationJobMonitoringTest
 {
     private final MultipleIndexPopulator populator = mock( MultipleIndexPopulator.class );
     private final MemoryTracker memoryTracker = mock( MemoryTracker.class );
-    private final StoreScan<IndexPopulationFailedKernelException> scan = mock( StoreScan.class );
+    private final StoreScan scan = mock( StoreScan.class );
 
     @Test
     void testPopulationOfSingleIndex()

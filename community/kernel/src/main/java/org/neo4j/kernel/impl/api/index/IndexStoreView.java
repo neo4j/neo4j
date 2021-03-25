@@ -19,61 +19,64 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.List;
 import java.util.function.IntPredicate;
 
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 
 /** The indexing services view of the universe. */
 public interface IndexStoreView
 {
     /**
-     * Retrieve all nodes in the database which has got one or more of the given labels AND
-     * one or more of the given property key ids. This scan additionally accepts a visitor
+     * Retrieve all nodes in the database which have got one or more of the given labels AND
+     * one or more of the given property key ids. This scan additionally accepts a consumer
      * for label updates for a joint scan.
      *
      * @param labelIds array of label ids to generate updates for. Empty array means all.
+     * This filter is used only for property scan consumer and not for label scan consumer.
      * @param propertyKeyIdFilter property key ids to generate updates for.
-     * @param propertyUpdateVisitor visitor which will see all generated {@link EntityUpdates}.
-     * @param labelUpdateVisitor visitor which will see all generated {@link EntityTokenUpdate}.
+     * This filter is used only for property scan consumer and not for label scan consumer.
+     * @param propertyScanConsumer a consumer of a scan over nodes generating a tuple of
+     * node id, labels and property map for each scanned node.
+     * @param labelScanConsumer a consumer of a scan over nodes generating a tuple of node id and labels
+     * for each scanned node.
      * @param forceStoreScan overrides decision about which source to scan from. If {@code true}
      * then store scan will be used, otherwise if {@code false} then the best suited will be used.
      * @param parallelWrite whether or not the visitors can be called by multiple threads concurrently.
      * @param cacheTracer underlying page cursor events tracer.
      * @return a {@link StoreScan} to start and to stop the scan.
      */
-    <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-            Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor, boolean forceStoreScan,
-            boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker );
+    StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer, TokenScanConsumer labelScanConsumer,
+            boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker );
 
     /**
-     * Retrieve all relationships in the database which has any of the the given relationship types AND
-     * one or more of the given property key ids.
+     * Retrieve all relationships in the database which have any of the the given relationship types AND
+     * one or more of the given property key ids. This scan additionally accepts a consumer
+     * for relationship type updates for a joint scan.
      *
      * @param relationshipTypeIds array of relationship type ids to generate updates for. Empty array means all.
+     * This filter is used only for property scan consumer and not for relationship type scan consumer.
      * @param propertyKeyIdFilter property key ids to generate updates for.
-     * @param propertyUpdateVisitor visitor which will see all generated {@link EntityUpdates}
-     * @param relationshipTypeUpdateVisitor visitor which will see all generated {@link EntityTokenUpdate}.
+     * This filter is used only for property scan consumer and not for relationship type scan consumer.
+     * @param propertyScanConsumer a consumer of a scan over relationships generating a tuple of
+     * relationship id, relationshipType and property map for each scanned relationship.
+     * @param relationshipTypeScanConsumer a consumer of a scan over relationships generating a tuple of
+     * relationship id and relationshipType for each scanned relationship.
      * @param forceStoreScan overrides decision about which source to scan from. If {@code true}
      * then store scan will be used, otherwise if {@code false} then the best suited will be used.
      * @param parallelWrite whether or not the visitors can be called by multiple threads concurrently.
      * @param cacheTracer underlying page cursor events tracer.
      * @return a {@link StoreScan} to start and to stop the scan.
      */
-    <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-            Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
+    StoreScan visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
+            PropertyScanConsumer propertyScanConsumer, TokenScanConsumer relationshipTypeScanConsumer,
             boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker );
 
     NodePropertyAccessor newPropertyAccessor( PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
 
-    @SuppressWarnings( "rawtypes" )
     StoreScan EMPTY_SCAN = new StoreScan()
     {
         @Override
@@ -99,20 +102,18 @@ public interface IndexStoreView
 
     class Adaptor implements IndexStoreView
     {
-        @SuppressWarnings( "unchecked" )
         @Override
-        public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
-                Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> labelUpdateVisitor, boolean forceStoreScan,
-                boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+        public StoreScan visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
+                TokenScanConsumer labelScanConsumer, boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer,
+                MemoryTracker memoryTracker )
         {
             return EMPTY_SCAN;
         }
 
-        @SuppressWarnings( "unchecked" )
         @Override
-        public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
-                Visitor<List<EntityUpdates>,FAILURE> propertyUpdateVisitor, Visitor<List<EntityTokenUpdate>,FAILURE> relationshipTypeUpdateVisitor,
-                boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+        public StoreScan visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, PropertyScanConsumer propertyScanConsumer,
+                TokenScanConsumer relationshipTypeScanConsumer, boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer,
+                MemoryTracker memoryTracker )
         {
             return EMPTY_SCAN;
         }

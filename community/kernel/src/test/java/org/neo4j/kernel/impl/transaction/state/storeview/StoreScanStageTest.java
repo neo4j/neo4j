@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -36,19 +36,19 @@ import java.util.function.LongFunction;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan.ExternalUpdatesCheck;
+import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.PropertyAwareEntityStoreScan.CursorEntityIdIterator;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
-import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StubStorageCursors;
+import org.neo4j.values.storable.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -97,12 +97,12 @@ class StoreScanStageTest
         // given
         StubStorageCursors data = someData();
         EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>( data.allocateNodeCursor( NULL ) );
-        ThreadCapturingWriter<List<EntityUpdates>> propertyUpdateVisitor = new ThreadCapturingWriter<>();
-        ThreadCapturingWriter<List<EntityTokenUpdate>> tokenUpdateVisitor = new ThreadCapturingWriter<>();
+        var propertyConsumer = new ThreadCapturingPropertyConsumer();
+        var tokenConsumer = new ThreadCapturingTokenConsumer();
         ControlledLockFunction lockFunction = new ControlledLockFunction();
-        StoreScanStage<RuntimeException,StorageNodeCursor> scan =
+        StoreScanStage<StorageNodeCursor> scan =
                 new StoreScanStage<>( dbConfig, config, ct -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data, new int[]{LABEL},
-                        alwaysTrue(), propertyUpdateVisitor, tokenUpdateVisitor, new NodeCursorBehaviour( data ), lockFunction, parallelWrite,
+                        alwaysTrue(), propertyConsumer, tokenConsumer, new NodeCursorBehaviour( data ), lockFunction, parallelWrite,
                         jobScheduler, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
 
         // when
@@ -112,13 +112,13 @@ class StoreScanStageTest
         assertThat( lockFunction.seenThreads.size() ).isGreaterThan( 1 );
         if ( parallelWrite )
         {
-            assertThat( propertyUpdateVisitor.seenThreads.size() ).isGreaterThan( 1 );
-            assertThat( tokenUpdateVisitor.seenThreads.size() ).isGreaterThan( 1 );
+            assertThat( propertyConsumer.seenThreads.size() ).isGreaterThan( 1 );
+            assertThat( tokenConsumer.seenThreads.size() ).isGreaterThan( 1 );
         }
         else
         {
-            assertThat( propertyUpdateVisitor.seenThreads.size() ).isEqualTo( 1 );
-            assertThat( tokenUpdateVisitor.seenThreads.size() ).isEqualTo( 1 );
+            assertThat( propertyConsumer.seenThreads.size() ).isEqualTo( 1 );
+            assertThat( tokenConsumer.seenThreads.size() ).isEqualTo( 1 );
         }
     }
 
@@ -128,11 +128,12 @@ class StoreScanStageTest
         // given
         StubStorageCursors data = someData();
         EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>( data.allocateNodeCursor( NULL ) );
-        Visitor<List<EntityUpdates>,RuntimeException> failingWriter = updates ->
+
+        var failingWriter = new PropertyConsumer( () ->
         {
             throw new IllegalStateException( "Failed to write" );
-        };
-        StoreScanStage<RuntimeException,StorageNodeCursor> scan =
+        } );
+        StoreScanStage<StorageNodeCursor> scan =
                 new StoreScanStage<>( dbConfig, config, ct -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data, new int[]{LABEL},
                         alwaysTrue(), failingWriter, null, new NodeCursorBehaviour( data ), id -> null, true, jobScheduler, PageCacheTracer.NULL,
                         EmptyMemoryTracker.INSTANCE );
@@ -149,13 +150,10 @@ class StoreScanStageTest
         EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>( data.allocateNodeCursor( NULL ) );
         AtomicInteger numBatchesProcessed = new AtomicInteger();
         ControlledExternalUpdatesCheck externalUpdatesCheck = new ControlledExternalUpdatesCheck( config.batchSize(), 2, numBatchesProcessed );
-        Visitor<List<EntityUpdates>,RuntimeException> writer = updates ->
-        {
-            numBatchesProcessed.incrementAndGet();
-            return false;
-        };
-        StoreScanStage<RuntimeException,StorageNodeCursor> scan =
-                new StoreScanStage<>( dbConfig, config, ct -> entityIdIterator, externalUpdatesCheck, new AtomicBoolean( true ), data, new int[]{LABEL},
+        var writer = new PropertyConsumer( () -> numBatchesProcessed.incrementAndGet() );
+
+        StoreScanStage<StorageNodeCursor> scan =
+                new StoreScanStage( dbConfig, config, ct -> entityIdIterator, externalUpdatesCheck, new AtomicBoolean( true ), data, new int[]{LABEL},
                         alwaysTrue(), writer, null, new NodeCursorBehaviour( data ), id -> null, true, jobScheduler,
                         PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
 
@@ -175,13 +173,9 @@ class StoreScanStageTest
         AtomicInteger numBatchesProcessed = new AtomicInteger();
         AtomicBoolean continueScanning = new AtomicBoolean( true );
         AbortingExternalUpdatesCheck externalUpdatesCheck = new AbortingExternalUpdatesCheck( 1, continueScanning );
-        Visitor<List<EntityUpdates>,RuntimeException> writer = updates ->
-        {
-            numBatchesProcessed.incrementAndGet();
-            return false;
-        };
-        StoreScanStage<RuntimeException,StorageNodeCursor> scan =
-                new StoreScanStage<>( dbConfig, config, ct -> entityIdIterator, externalUpdatesCheck, continueScanning, data, new int[]{LABEL}, alwaysTrue(),
+        var writer = new PropertyConsumer( () -> numBatchesProcessed.incrementAndGet() );
+        StoreScanStage<StorageNodeCursor> scan =
+                new StoreScanStage( dbConfig, config, ct -> entityIdIterator, externalUpdatesCheck, continueScanning, data, new int[]{LABEL}, alwaysTrue(),
                         writer, null, new NodeCursorBehaviour( data ), id -> null, true, jobScheduler, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
 
         // when
@@ -196,7 +190,7 @@ class StoreScanStageTest
     {
         // given
         StubStorageCursors data = someData();
-        AtomicReference<StoreScanStage<RuntimeException,StorageNodeCursor>> stage = new AtomicReference<>();
+        AtomicReference<StoreScanStage<StorageNodeCursor>> stage = new AtomicReference<>();
         EntityIdIterator entityIdIterator = new CursorEntityIdIterator<>( data.allocateNodeCursor( NULL ) )
         {
             private long manualCounter;
@@ -209,10 +203,10 @@ class StoreScanStageTest
                 return super.fetchNext();
             }
         };
-        StoreScanStage<RuntimeException,StorageNodeCursor> scan =
-                new StoreScanStage<>( dbConfig, config, ct -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data, new int[]{LABEL},
-                        alwaysTrue(), new ThreadCapturingWriter<>(), new ThreadCapturingWriter<>(), new NodeCursorBehaviour( data ), l -> LockService.NO_LOCK,
-                        true, jobScheduler, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
+        StoreScanStage<StorageNodeCursor> scan =
+                new StoreScanStage( dbConfig, config, ct -> entityIdIterator, NO_EXTERNAL_UPDATES, new AtomicBoolean( true ), data, new int[]{LABEL},
+                        alwaysTrue(), new ThreadCapturingPropertyConsumer(), new ThreadCapturingTokenConsumer(), new NodeCursorBehaviour( data ),
+                        l -> LockService.NO_LOCK, true, jobScheduler, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
         stage.set( scan );
 
         // when
@@ -222,7 +216,7 @@ class StoreScanStageTest
         assertThat( scan.numberOfIteratedEntities() ).isEqualTo( (long) config.batchSize() * NUMBER_OF_BATCHES );
     }
 
-    private void runScan( StoreScanStage<RuntimeException,StorageNodeCursor> scan )
+    private void runScan( StoreScanStage<StorageNodeCursor> scan )
     {
         superviseDynamicExecution( saturateSpecificStep( 1 ), scan );
     }
@@ -284,15 +278,84 @@ class StoreScanStageTest
         }
     }
 
-    private static class ThreadCapturingWriter<T> implements Visitor<T,RuntimeException>
+    private static class PropertyConsumer implements PropertyScanConsumer
     {
+        private final Runnable action;
+
+        PropertyConsumer( Runnable action )
+        {
+            this.action = action;
+        }
+
+        @Override
+        public Batch newBatch()
+        {
+            return new Batch()
+            {
+
+                @Override
+                public void addRecord( long entityId, long[] tokens, Map<Integer,Value> properties )
+                {
+
+                }
+
+                @Override
+                public void process()
+                {
+                    action.run();
+                }
+            };
+        }
+    }
+
+    private static class ThreadCapturingPropertyConsumer implements PropertyScanConsumer
+    {
+
         private final Set<Thread> seenThreads = ConcurrentHashMap.newKeySet();
 
         @Override
-        public boolean visit( T element ) throws RuntimeException
+        public Batch newBatch()
         {
-            seenThreads.add( Thread.currentThread() );
-            return false;
+            return new Batch()
+            {
+
+                @Override
+                public void addRecord( long entityId, long[] tokens, Map<Integer,Value> properties )
+                {
+
+                }
+
+                @Override
+                public void process()
+                {
+                    seenThreads.add( Thread.currentThread() );
+                }
+            };
+        }
+    }
+
+    private static class ThreadCapturingTokenConsumer implements TokenScanConsumer
+    {
+
+        private final Set<Thread> seenThreads = ConcurrentHashMap.newKeySet();
+
+        @Override
+        public Batch newBatch()
+        {
+            return new Batch()
+            {
+                @Override
+                public void addRecord( long entityId, long[] tokens )
+                {
+
+                }
+
+                @Override
+                public void process()
+                {
+                    seenThreads.add( Thread.currentThread() );
+                }
+            };
         }
     }
 
