@@ -664,6 +664,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "Whether or not to do additional checks for locks when making changes as part of commit. This may be expensive to enable." )
     public static final Setting<Boolean> additional_lock_verification = newBuilder( "unsupported.dbms.extra_lock_verification", BOOL, false ).build();
 
+    @Internal
+    public static final Setting<Boolean> io_controller_consider_external_io =
+            newBuilder( "unsupported.dbms.io.controller.consider.external.enabled", BOOL, true ).dynamic().build();
+
     // should neo byte buffer pool be used for network stack buffers?
     @Internal
     public static Setting<Boolean> neo_network_buffer_pool =
