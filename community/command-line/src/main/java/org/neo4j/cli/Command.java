@@ -27,6 +27,7 @@ public interface Command extends Callable<Integer>
     {
         ONLINE_BACKUP,
         RESTORE_DB,
+        TRANSACTION_APPLY,
         LOAD,
         UNBIND,
         CHECK_CONSISTENCY,
