@@ -174,13 +174,7 @@ abstract class BootloaderOsAbstraction
     {
         //Is it okay to check this on the boostrapper VM or should it be done on the "real"?
         String version = ctx.getProp( PROP_JAVA_VERSION );
-        if ( version.startsWith( "1." ) || version.startsWith( "9" ) || version.startsWith( "10" ) )
-        {
-            //too old java
-            printBadRuntime();
-            throw new BootFailureException( "Neo4j cannot be started using java version " + version );
-        }
-        else if ( !version.startsWith( "11" ) )
+        if ( !version.startsWith( "11" ) )
         {
             //too new java
             printBadRuntime();

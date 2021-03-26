@@ -216,14 +216,6 @@ class Neo4jCommandTest
         }
 
         @Test
-        void shouldNotStartWhenJavaVersionIsTooOld()
-        {
-            Map<String,String> java = Map.of( Bootloader.PROP_JAVA_VERSION, "1.8", Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM" );
-            assertThat( execute( List.of( "start" ), java ) ).isEqualTo( 1 );
-            assertThat( err.toString() ).contains( "Neo4j cannot be started using java version 1.8" );
-        }
-
-        @Test
         void shouldComplainWhenJavaVersionIsTooNew()
         {
             Map<String,String> java = Map.of( Bootloader.PROP_JAVA_VERSION, "15.0.1", Bootloader.PROP_VM_NAME, "Java HotSpot(TM) 64-Bit Server VM" );
