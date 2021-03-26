@@ -20,7 +20,11 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.ast.AllIndexes
+import org.neo4j.cypher.internal.ast.BtreeIndexes
+import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.ShowColumn
+import org.neo4j.cypher.internal.ast.ShowIndexType
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.Nonunique
@@ -52,14 +56,23 @@ import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.immutable.ListMap
 
 // SHOW [ALL|BTREE] INDEX[ES] [BRIEF|VERBOSE|WHERE clause|YIELD clause]
-case class ShowIndexesCommand(all: Boolean, verbose: Boolean, columns: Set[ShowColumn]) extends Command(columns) {
+case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, columns: Set[ShowColumn]) extends Command(columns) {
   override def originalNameRows(state: QueryState): ClosingIterator[Map[String, AnyValue]] = {
     val ctx = state.query
     ctx.assertShowIndexAllowed()
     val indexes: Map[IndexDescriptor, IndexInfo] = ctx.getAllIndexes()
-    val relevantIndexes = if (all) indexes else indexes.filter {
-      case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.BTREE)
+    val relevantIndexes = indexType match {
+      case AllIndexes => indexes
+      case BtreeIndexes =>
+        indexes.filter {
+          case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.BTREE)
+        }
+      case FulltextIndexes =>
+        indexes.filter {
+          case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.FULLTEXT)
+        }
     }
+
     val sortedRelevantIndexes: ListMap[IndexDescriptor, IndexInfo] = ListMap(relevantIndexes.toSeq.sortBy(_._1.getName): _*)
     val rows = sortedRelevantIndexes.map {
       case (indexDescriptor: IndexDescriptor, indexInfo: IndexInfo) =>

@@ -404,7 +404,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL showIndexClause( NULL p, boolean all, boolean brief, boolean verbose, Object where, boolean hasYield )
+    public NULL showIndexClause( NULL p, String indexType, boolean brief, boolean verbose, Object where, boolean hasYield )
     {
         throw new UnsupportedOperationException( "showIndexClause is not a literal" );
     }

@@ -321,6 +321,9 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "show BTREE index VERBOSE output" ->
       "SHOW BTREE INDEXES VERBOSE",
 
+    "show FULltEXT index" ->
+      "SHOW FULLTEXT INDEXES",
+
     "show \nindex\n verbose" ->
       "SHOW ALL INDEXES VERBOSE",
 
@@ -341,8 +344,8 @@ class ParboiledPrettifierIT extends CypherFunSuite {
         |YIELD *
         |RETURN DISTINCT type""".stripMargin,
 
-    "show index YIELD * where name = 'neo4j' Return *" ->
-      """SHOW ALL INDEXES
+    "show fulltext index YIELD * where name = 'neo4j' Return *" ->
+      """SHOW FULLTEXT INDEXES
         |YIELD *
         |  WHERE name = "neo4j"
         |RETURN *""".stripMargin,

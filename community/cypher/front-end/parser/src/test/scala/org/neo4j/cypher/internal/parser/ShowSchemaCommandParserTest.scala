@@ -17,8 +17,11 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast.AllConstraints
+import org.neo4j.cypher.internal.ast.AllIndexes
+import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.DeprecatedSyntax
 import org.neo4j.cypher.internal.ast.ExistsConstraints
+import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.NewSyntax
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
@@ -38,82 +41,86 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
     // No explicit output
 
     test(s"SHOW $indexKeyword") {
-      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = false)(pos)))
+      yields(_ => query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(pos)))
     }
 
     test(s"SHOW ALL $indexKeyword") {
-      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = false)(pos)))
+      yields(_ => query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(pos)))
     }
 
     test(s"SHOW BTREE $indexKeyword") {
-      yields(_ => query(ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = false)(pos)))
+      yields(_ => query(ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = false)(pos)))
+    }
+
+    test(s"SHOW FULLTEXT $indexKeyword") {
+      yields(_ => query(ShowIndexesClause(FulltextIndexes, brief = false, verbose = false, None, hasYield = false)(pos)))
     }
 
     test(s"USE db SHOW $indexKeyword") {
-      yields(_ => query(use(varFor("db")), ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = false)(pos)))
+      yields(_ => query(use(varFor("db")), ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(pos)))
     }
 
     // Brief output (deprecated)
 
     test(s"SHOW $indexKeyword BRIEF") {
-      yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
+      yields(_ => query(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(pos)))
     }
 
     test(s"SHOW $indexKeyword BRIEF OUTPUT") {
-      yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
+      yields(_ => query(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(pos)))
     }
 
     test(s"SHOW ALL $indexKeyword BRIEF") {
-      yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
+      yields(_ => query(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(pos)))
     }
 
     test(s"SHOW  ALL $indexKeyword BRIEF OUTPUT") {
-      yields(_ => query(ShowIndexesClause(all = true, brief = true, verbose = false, None, hasYield = false)(pos)))
+      yields(_ => query(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(pos)))
     }
 
     test(s"SHOW BTREE $indexKeyword BRIEF") {
-      yields(_ => query(ShowIndexesClause(all = false, brief = true, verbose = false, None, hasYield = false)(pos)))
+      yields(_ => query(ShowIndexesClause(BtreeIndexes, brief = true, verbose = false, None, hasYield = false)(pos)))
     }
 
     // Verbose output (deprecated)
 
     test(s"SHOW $indexKeyword VERBOSE") {
-      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = true, None, hasYield = false)(pos)))
+      yields(_ => query(ShowIndexesClause(AllIndexes, brief = false, verbose = true, None, hasYield = false)(pos)))
     }
 
     test(s"SHOW ALL $indexKeyword VERBOSE") {
-      yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = true, None, hasYield = false)(pos)))
+      yields(_ => query(ShowIndexesClause(AllIndexes, brief = false, verbose = true, None, hasYield = false)(pos)))
     }
 
     test(s"SHOW BTREE $indexKeyword VERBOSE OUTPUT") {
-      yields(_ => query(ShowIndexesClause(all = false, brief = false, verbose = true, None, hasYield = false)(pos)))
+      yields(_ => query(ShowIndexesClause(BtreeIndexes, brief = false, verbose = true, None, hasYield = false)(pos)))
     }
   }
 
   // Show indexes filtering
 
   test("SHOW INDEX WHERE uniqueness = 'UNIQUE'") {
-    yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, Some(where(equals(varFor("uniqueness"), literalString("UNIQUE")))), hasYield = false)(pos)))
+    yields(_ => query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, Some(where(equals(varFor("uniqueness"), literalString("UNIQUE")))), hasYield = false)(pos)))
   }
 
   test("SHOW INDEXES YIELD populationPercent") {
-    yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnItems(variableReturnItem("populationPercent")))))
+    yields(_ => query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnItems(variableReturnItem("populationPercent")))))
   }
 
   test("SHOW BTREE INDEXES YIELD *") {
-    yields(_ => query(ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnAllItems)))
+    yields(_ => query(ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = true)(pos), yieldClause(returnAllItems)))
   }
 
   test("SHOW INDEXES YIELD * ORDER BY name SKIP 2 LIMIT 5") {
-    yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = true)(pos),
+    yields(_ => query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
       yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
     ))
   }
 
-  test("USE db SHOW BTREE INDEXES YIELD name, populationPercent AS pp WHERE pp < 50.0 RETURN name") {
+  test("USE db SHOW FULLTEXT INDEXES YIELD name, populationPercent AS pp WHERE pp < 50.0 RETURN name") {
     yields(_ => query(
       use(varFor("db")),
-      ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = true)(pos),
+      ShowIndexesClause(FulltextIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
       yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
         where = Some(where(lessThan(varFor("pp"), literalFloat(50.0))))),
       return_(variableReturnItem("name"))
@@ -123,7 +130,7 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
   test("USE db SHOW BTREE INDEXES YIELD name, populationPercent AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name") {
     yields(_ => query(
       use(varFor("db")),
-      ShowIndexesClause(all = false, brief = false, verbose = false, None, hasYield = true)(pos),
+      ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
       yieldClause(returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
         Some(orderBy(sortItem(varFor("pp")))),
         Some(skip(2)),
@@ -134,12 +141,12 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
   }
 
   test("SHOW INDEXES YIELD name AS INDEX, type AS OUTPUT") {
-    yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false, None, hasYield = true)(pos),
+    yields(_ => query(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
       yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))))
   }
 
   test("SHOW INDEXES WHERE name = 'GRANT'") {
-    yields(_ => query(ShowIndexesClause(all = true, brief = false, verbose = false,
+    yields(_ => query(ShowIndexesClause(AllIndexes, brief = false, verbose = false,
       Some(where(equals(varFor("name"), literalString("GRANT")))), hasYield = false)(pos)))
   }
 
@@ -229,6 +236,14 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
   }
 
   test("SHOW RELATIONSHIP INDEXES") {
+    failsToParse
+  }
+
+  test("SHOW FULLTEXT INDEXES BRIEF") {
+    failsToParse
+  }
+
+  test("SHOW FULLTEXT INDEXES VERBOSE") {
     failsToParse
   }
 

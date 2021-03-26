@@ -950,7 +950,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     // TODO as we support more commands, this match case should probably live somewhere else
     val plan = clause match {
       case s: ShowIndexesClause =>
-        ShowIndexes(s.all, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
+        ShowIndexes(s.indexType, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
       case s: ShowConstraintsClause =>
         ShowConstraints(s.constraintType, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
     }

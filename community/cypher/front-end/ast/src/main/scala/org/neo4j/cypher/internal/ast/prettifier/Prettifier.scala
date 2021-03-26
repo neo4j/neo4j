@@ -666,7 +666,7 @@ case class Prettifier(
     }
 
     def asString(s: ShowIndexesClause): String = {
-      val indexType = if (s.all) "ALL" else "BTREE"
+      val indexType = s.indexType.prettyPrint
       val indexOutput = s match {
         case ShowIndexesClause(_, _, true, _, _, false) => " BRIEF"
         case ShowIndexesClause(_, _, _, true, _, false) => " VERBOSE"

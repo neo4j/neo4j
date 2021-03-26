@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.plandescription
 import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AllConstraints
+import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.AllPropertyResource
+import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.DropRoleAction
@@ -32,11 +34,12 @@ import org.neo4j.cypher.internal.ast.ExecuteAdminProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ExistsConstraints
+import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.LabelQualifier
+import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
-import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
@@ -670,11 +673,14 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("ShowIndexes") {
-    assertGood(attach(ShowIndexes(all = true, verbose = true, Set.empty), 1.0),
+    assertGood(attach(ShowIndexes(AllIndexes, verbose = true, Set.empty), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("allIndexes, allColumns")), Set.empty))
 
-    assertGood(attach(ShowIndexes(all = false, verbose = false, Set.empty), 1.0),
+    assertGood(attach(ShowIndexes(BtreeIndexes, verbose = false, Set.empty), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("btreeIndexes, defaultColumns")), Set.empty))
+
+    assertGood(attach(ShowIndexes(FulltextIndexes, verbose = true, Set.empty), 1.0),
+      planDescription(id, "ShowIndexes", NoChildren, Seq(details("fulltextIndexes, allColumns")), Set.empty))
   }
 
   test("CreateUniquePropertyConstraint") {

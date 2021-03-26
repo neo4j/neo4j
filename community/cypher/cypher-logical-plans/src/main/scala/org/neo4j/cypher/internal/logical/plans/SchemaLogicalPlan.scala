@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowConstraintType
+import org.neo4j.cypher.internal.ast.ShowIndexType
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
@@ -67,7 +68,7 @@ case class CreateIndex(source: Option[DoNothingIfExistsForIndex], entityName: Ei
 case class DropIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 case class DropIndexOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class ShowIndexes(all: Boolean, verbose: Boolean, defaultColumns: Set[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
+case class ShowIndexes(indexType: ShowIndexType, verbose: Boolean, defaultColumns: Set[ShowColumn])(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
 
 case class DoNothingIfExistsForIndex(entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 case class DoNothingIfExistsForConstraint(entity: String, entityName: Either[LabelName, RelTypeName], props: Seq[Property], assertion: ConstraintType, name: Option[String])(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)

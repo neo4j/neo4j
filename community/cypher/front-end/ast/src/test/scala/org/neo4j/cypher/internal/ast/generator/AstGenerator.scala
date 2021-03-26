@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ast.AllDbmsAction
 import org.neo4j.cypher.internal.ast.AllGraphAction
 import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllIndexActions
+import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.AllLabelResource
 import org.neo4j.cypher.internal.ast.AllNodes
 import org.neo4j.cypher.internal.ast.AllPrivilegeActions
@@ -45,6 +46,7 @@ import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
+import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
@@ -103,6 +105,7 @@ import org.neo4j.cypher.internal.ast.ExecuteFunctionAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.Foreach
+import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.FunctionQualifier
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
@@ -192,11 +195,12 @@ import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
 import org.neo4j.cypher.internal.ast.ShowAllPrivileges
 import org.neo4j.cypher.internal.ast.ShowConstraintAction
-import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowConstraintType
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowIndexAction
+import org.neo4j.cypher.internal.ast.ShowIndexType
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeCommands
@@ -1182,6 +1186,11 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     types                     <- oneOf(AllConstraints, UniqueConstraints, ExistsConstraints(exists), NodeExistsConstraints(exists), RelExistsConstraints(exists), NodeKeyConstraints)
   } yield (types, verbose, yields)
 
+  def _indexType: Gen[(ShowIndexType, Option[Boolean])] = for {
+    verbose   <- frequency(8 -> const(None), 2 -> some(boolean)) // option(boolean) but None more often than Some
+    indexType <- oneOf((AllIndexes, verbose), (BtreeIndexes, verbose), (FulltextIndexes, None))
+  } yield indexType
+
   def _createIndex: Gen[CreateIndex] = for {
     variable   <- _variable
     labelName  <- _labelName
@@ -1210,17 +1219,16 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield command
 
   def _showIndexes: Gen[Query] = for {
-    all     <- boolean
-    verbose <- frequency(8 -> const(None), 2 -> some(boolean)) // option(boolean) but None more often than Some
-    use     <- option(_use)
-    yields  <- _eitherYieldOrWhere
+    (indexType, verbose) <- _indexType
+    use                  <- option(_use)
+    yields               <- _eitherYieldOrWhere
   } yield {
     val showClauses = (yields, verbose) match {
-      case (Some(Right(w)), _)           => Seq(ShowIndexesClause(all, brief = false, verbose = false, Some(w), hasYield = false)(pos))
-      case (Some(Left((y, Some(r)))), _) => Seq(ShowIndexesClause(all, brief = false, verbose = false, None, hasYield = true)(pos), y, r)
-      case (Some(Left((y, None))), _)    => Seq(ShowIndexesClause(all, brief = false, verbose = false, None, hasYield = true)(pos), y)
-      case (_, Some(v))                  => Seq(ShowIndexesClause(all, !v, v, None, hasYield = false)(pos))
-      case _                             => Seq(ShowIndexesClause(all, brief = false, verbose = false, None, hasYield = false)(pos))
+      case (Some(Right(w)), _)           => Seq(ShowIndexesClause(indexType, brief = false, verbose = false, Some(w), hasYield = false)(pos))
+      case (Some(Left((y, Some(r)))), _) => Seq(ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = true)(pos), y, r)
+      case (Some(Left((y, None))), _)    => Seq(ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = true)(pos), y)
+      case (_, Some(v))                  => Seq(ShowIndexesClause(indexType, !v, v, None, hasYield = false)(pos))
+      case _                             => Seq(ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = false)(pos))
     }
     val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
     Query(None, SingleQuery(fullClauses)(pos))(pos)

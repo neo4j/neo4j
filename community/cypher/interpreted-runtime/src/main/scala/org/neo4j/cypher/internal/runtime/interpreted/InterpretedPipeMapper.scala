@@ -372,7 +372,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         NodeIndexEndsWithScanPipe(ident, label, property, indexRegistrator.registerQueryIndex(label, property),
           buildExpression(valueExpr), indexOrder)(id = id)
 
-      case ShowIndexes(all, verbose, columns) => CommandPipe(ShowIndexesCommand(all, verbose, columns))(id)
+      case ShowIndexes(indexType, verbose, columns) => CommandPipe(ShowIndexesCommand(indexType, verbose, columns))(id)
 
       case ShowConstraints(constraintType, verbose, columns) => CommandPipe(ShowConstraintsCommand(constraintType, verbose, columns))(id)
 

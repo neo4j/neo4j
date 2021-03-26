@@ -70,6 +70,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FIELDTERMINATOR
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FILTER
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FOREACH
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FROM
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.FULLTEXT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.GRANT
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.GRAPH
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.HEADERS
@@ -200,6 +201,7 @@ object IdentifierTokens {
     FILTER,
     FOREACH,
     FROM,
+    FULLTEXT,
     GRANT,
     GRAPH,
     HEADERS,

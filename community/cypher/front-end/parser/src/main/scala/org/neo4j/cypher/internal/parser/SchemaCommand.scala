@@ -121,21 +121,27 @@ trait SchemaCommand extends Parser
   }
 
   private def ShowIndexesClauses: Rule1[Seq[ast.Clause]] = rule("SHOW INDEXES YIELD / WHERE / RETURN") {
-    keyword("SHOW") ~~ IndexType ~~ IndexKeyword ~~ SchemaOutput  ~~>>
-      ((all, verbose) => pos => Seq(ast.ShowIndexesClause(all, !verbose, verbose, None, hasYield = false)(pos))) |
+    keyword("SHOW") ~~ OldIndexType ~~ IndexKeyword ~~ SchemaOutput  ~~>>
+      ((indexType, verbose) => pos => Seq(ast.ShowIndexesClause(indexType, !verbose, verbose, None, hasYield = false)(pos))) |
     keyword("SHOW") ~~ IndexType ~~ IndexKeyword ~~ ShowCommandClauses  ~~>>
-      ((all, clauses) => pos => clauses match {
-        case Right(where) => Seq(ast.ShowIndexesClause(all, brief = false, verbose = false, Some(where), hasYield = false)(pos))
-        case Left((y, Some(r))) => Seq(ast.ShowIndexesClause(all, brief = false, verbose = false, None, hasYield = true)(pos), y, r)
-        case Left((y, None)) => Seq(ast.ShowIndexesClause(all, brief = false, verbose = false, None, hasYield = true)(pos), y)
+      ((indexType, clauses) => pos => clauses match {
+        case Right(where) => Seq(ast.ShowIndexesClause(indexType, brief = false, verbose = false, Some(where), hasYield = false)(pos))
+        case Left((y, Some(r))) => Seq(ast.ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = true)(pos), y, r)
+        case Left((y, None)) => Seq(ast.ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = true)(pos), y)
       }) |
     keyword("SHOW") ~~ IndexType ~~ IndexKeyword ~~>>
-      (all => pos => Seq(ast.ShowIndexesClause(all, brief = false, verbose = false, None, hasYield = false)(pos)))
+      (indexType => pos => Seq(ast.ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = false)(pos)))
   }
 
-  private def IndexType: Rule1[Boolean] = rule("type of indexes") {
-    keyword("BTREE") ~~~> (_ => false) |
-      optional(keyword("ALL")) ~~~> (_ => true)
+  private def OldIndexType: Rule1[ast.ShowIndexType] = rule("type of indexes") {
+    keyword("BTREE") ~~~> (_ => ast.BtreeIndexes) |
+    optional(keyword("ALL")) ~~~> (_ => ast.AllIndexes)
+  }
+
+  private def IndexType: Rule1[ast.ShowIndexType] = rule("type of indexes") {
+    keyword("BTREE") ~~~> (_ => ast.BtreeIndexes) |
+    keyword("FULLTEXT") ~~~> (_ => ast.FulltextIndexes) |
+    optional(keyword("ALL")) ~~~> (_ => ast.AllIndexes)
   }
 
   private def CreateConstraint: Rule1[ast.SchemaCommand] = rule {

@@ -369,10 +369,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
       case DropIndexOnName(name, _) =>
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(pretty"INDEX ${asPrettyString(name)}")), variables, withRawCardinalities)
 
-      case ShowIndexes(all, verbose, _) =>
-        val allDescription = if (all) pretty"allIndexes" else pretty"btreeIndexes"
+      case ShowIndexes(indexType, verbose, _) =>
+        val typeDescription = asPrettyString.raw(indexType.description)
         val colsDescription = if (verbose) pretty"allColumns" else pretty"defaultColumns"
-        PlanDescriptionImpl(id, "ShowIndexes", NoChildren, Seq(Details(pretty"$allDescription, $colsDescription")), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, "ShowIndexes", NoChildren, Seq(Details(pretty"$typeDescription, $colsDescription")), variables, withRawCardinalities)
 
       case DoNothingIfExistsForConstraint(entity, entityName, props, assertion, name) =>
         val a = assertion match {

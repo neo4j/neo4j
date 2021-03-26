@@ -339,6 +339,7 @@ TOKEN [IGNORE_CASE] :
     | < FILTER: "FILTER" >
     | < FOREACH: "FOREACH" >
     | < FROM: "FROM" >
+    | < FULLTEXT: "FULLTEXT" >
     | < GE: ">=" >
     | < GRANT: "GRANT">
     | < GRAPH: "GRAPH" >
@@ -2436,24 +2437,25 @@ List<String> SymbolicNameList1() :
 STATEMENT ShowCommand(USE_CLAUSE useClause) :
 {
   Token start = null;
-  Token constraintType = null;
+  Token schemaType = null;
   STATEMENT statement = null;
 }
 {
   start = <SHOW>
-  ( constraintType = <ALL> statement = ShowAllCommand(start, useClause, constraintType.image)
+  ( schemaType = <ALL> statement = ShowAllCommand(start, useClause, schemaType.image)
     | <POPULATED> statement = ShowRoles(start, useClause, false)
-    | <BTREE> statement = ShowIndexes(start, useClause, false)
-    | constraintType = <UNIQUE> statement = ShowConstraintsAllowBriefAndYield(start, useClause, constraintType.image)
-    | constraintType = <NODE> statement = ShowNodeCommand(start, useClause, constraintType.image)
-    | constraintType = <PROPERTY> statement = ShowPropertyCommand(start, useClause, constraintType.image)
-    | constraintType = <EXISTENCE> statement = ShowConstraintsAllowYield(start, useClause, constraintType.image)
-    | constraintType = <EXISTS> statement = ShowConstraintsAllowBrief(start, useClause, constraintType.image)
-    | constraintType = <EXIST> statement = ShowConstraintsAllowBriefAndYield(start, useClause, constraintType.image)
-    | constraintType = <RELATIONSHIP> statement = ShowRelationshipCommand(start, useClause, constraintType.image)
-    | constraintType = <REL> statement = ShowRelCommand(start, useClause, constraintType.image)
+    | schemaType = <BTREE> statement = ShowIndexesAllowBrief(start, useClause, schemaType.image)
+    | schemaType = <FULLTEXT> statement = ShowIndexesNoBrief(start, useClause, schemaType.image)
+    | schemaType = <UNIQUE> statement = ShowConstraintsAllowBriefAndYield(start, useClause, schemaType.image)
+    | schemaType = <NODE> statement = ShowNodeCommand(start, useClause, schemaType.image)
+    | schemaType = <PROPERTY> statement = ShowPropertyCommand(start, useClause, schemaType.image)
+    | schemaType = <EXISTENCE> statement = ShowConstraintsAllowYield(start, useClause, schemaType.image)
+    | schemaType = <EXISTS> statement = ShowConstraintsAllowBrief(start, useClause, schemaType.image)
+    | schemaType = <EXIST> statement = ShowConstraintsAllowBriefAndYield(start, useClause, schemaType.image)
+    | schemaType = <RELATIONSHIP> statement = ShowRelationshipCommand(start, useClause, schemaType.image)
+    | schemaType = <REL> statement = ShowRelCommand(start, useClause, schemaType.image)
     | statement = ShowRoles(start, useClause, true)
-    | statement = ShowIndexes(start, useClause, true)
+    | statement = ShowIndexesAllowBrief(start, useClause, "ALL") // <ALL>.image
     | statement = ShowDatabase(start, useClause)
     | statement = ShowUsers(start, useClause)
     | statement = ShowCurrentUser(start, useClause)
@@ -2461,15 +2463,15 @@ STATEMENT ShowCommand(USE_CLAUSE useClause) :
   ) { return statement; }
 }
 
-STATEMENT ShowAllCommand(Token start, USE_CLAUSE useClause, String constraintType) :
+STATEMENT ShowAllCommand(Token start, USE_CLAUSE useClause, String schemaType) :
 {
 
   STATEMENT statement = null;
 }
 {
     (statement = ShowRoles(start, useClause, true)
-    | statement = ShowIndexes(start, useClause, true)
-    | statement = ShowConstraintsAllowBriefAndYield(start, useClause, constraintType))
+    | statement = ShowIndexesAllowBrief(start, useClause, schemaType)
+    | statement = ShowConstraintsAllowBriefAndYield(start, useClause, schemaType))
     {
         return statement;
     }
@@ -2549,8 +2551,9 @@ YIELD YieldClause():
     }
 }
 
-STATEMENT ShowIndexes(Token start, USE_CLAUSE useClause, boolean all):
+STATEMENT ShowIndexesAllowBrief(Token start, USE_CLAUSE useClause, String schemaType):
 {
+  // all and btree indexes
   List<CLAUSE> clauses = new ArrayList<>();
   if (useClause != null) {
       clauses.add( useClause );
@@ -2567,7 +2570,7 @@ STATEMENT ShowIndexes(Token start, USE_CLAUSE useClause, boolean all):
     {
         if ( yieldClause != null )
         {
-            clauses.add( astFactory.showIndexClause( pos( start ), all, brief, verbose, where, true ) );
+            clauses.add( astFactory.showIndexClause( pos( start ), schemaType, brief, verbose, where, true ) );
             clauses.add( yieldClause );
             if ( returnClause != null )
             {
@@ -2576,7 +2579,39 @@ STATEMENT ShowIndexes(Token start, USE_CLAUSE useClause, boolean all):
         }
         else
         {
-            clauses.add( astFactory.showIndexClause( pos( start ), all, brief, verbose, where, false ) );
+            clauses.add( astFactory.showIndexClause( pos( start ), schemaType, brief, verbose, where, false ) );
+        }
+        return astFactory.newSingleQuery( clauses );
+    }
+}
+
+STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, String schemaType):
+{
+  // fulltext indexes
+  List<CLAUSE> clauses = new ArrayList<>();
+  if (useClause != null) {
+      clauses.add( useClause );
+  }
+  EXPRESSION where = null;
+  YIELD yieldClause = null;
+  RETURN_CLAUSE returnClause = null;
+}
+{
+    (<INDEX>|<INDEXES>)
+    ( (yieldClause = YieldClause() ( returnClause=ReturnClause() )?) | where = Where() )?
+    {
+        if ( yieldClause != null )
+        {
+            clauses.add( astFactory.showIndexClause( pos( start ), schemaType, false, false, where, true ) );
+            clauses.add( yieldClause );
+            if ( returnClause != null )
+            {
+                clauses.add( returnClause );
+            }
+        }
+        else
+        {
+            clauses.add( astFactory.showIndexClause( pos( start ), schemaType, false, false, where, false ) );
         }
         return astFactory.newSingleQuery( clauses );
     }
@@ -3259,6 +3294,7 @@ Token SymbolicNameString() :
     | t=<FILTER>
     | t=<FOREACH>
     | t=<FROM>
+    | t=<FULLTEXT>
     | t=<GRANT>
     | t=<GRAPH>
     | t=<HEADERS>

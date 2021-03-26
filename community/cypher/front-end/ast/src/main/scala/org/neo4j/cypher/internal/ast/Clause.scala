@@ -452,7 +452,7 @@ case class DefaultOrAllShowColumns(useAllColumns: Boolean, brief: Set[ShowColumn
   def columns: Set[ShowColumn] = if (useAllColumns) brief ++ verbose else brief
 }
 
-case class ShowIndexesClause(unfilteredColumns: DefaultOrAllShowColumns, all: Boolean, brief: Boolean, verbose: Boolean, where: Option[Where], hasYield: Boolean)
+case class ShowIndexesClause(unfilteredColumns: DefaultOrAllShowColumns, indexType: ShowIndexType, brief: Boolean, verbose: Boolean, where: Option[Where], hasYield: Boolean)
                             (val position: InputPosition) extends CommandClause {
   override def name: String = "SHOW INDEXES"
 
@@ -460,7 +460,7 @@ case class ShowIndexesClause(unfilteredColumns: DefaultOrAllShowColumns, all: Bo
 }
 
 object ShowIndexesClause {
-  def apply(all: Boolean, brief: Boolean, verbose: Boolean, where: Option[Where], hasYield: Boolean)(position: InputPosition): ShowIndexesClause = {
+  def apply(indexType: ShowIndexType, brief: Boolean, verbose: Boolean, where: Option[Where], hasYield: Boolean)(position: InputPosition): ShowIndexesClause = {
     val briefCols = Set(
       ShowColumn("id", CTInteger)(position),
       ShowColumn("name")(position),
@@ -479,7 +479,7 @@ object ShowIndexesClause {
       ShowColumn("createStatement")(position)
     )
 
-    ShowIndexesClause(DefaultOrAllShowColumns(hasYield | verbose, briefCols, verboseCols), all, brief, verbose, where, hasYield)(position)
+    ShowIndexesClause(DefaultOrAllShowColumns(hasYield | verbose, briefCols, verboseCols), indexType, brief, verbose, where, hasYield)(position)
   }
 }
 

@@ -210,7 +210,7 @@ public interface ASTFactory<STATEMENT,
                        EXPRESSION limit,
                        EXPRESSION where );
 
-    CLAUSE showIndexClause( POS p, boolean all, boolean brief, boolean verbose, EXPRESSION where, boolean hasYield );
+    CLAUSE showIndexClause( POS p, String indexType, boolean brief, boolean verbose, EXPRESSION where, boolean hasYield );
 
     CLAUSE showConstraintClause( POS p, String constraintType, boolean brief, boolean verbose, EXPRESSION where, boolean hasYield );
 

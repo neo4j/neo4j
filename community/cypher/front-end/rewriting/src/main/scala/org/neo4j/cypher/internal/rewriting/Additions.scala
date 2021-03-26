@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ast.DenyPrivilege
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.ExistsConstraints
+import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
@@ -208,6 +209,9 @@ object Additions {
 
       case c: ShowConstraintsClause if c.where.isDefined || c.hasYield =>
         throw cypherExceptionFactory.syntaxException("Using YIELD or WHERE to list constraints is not supported in this Cypher version.", c.position)
+
+      case c@ShowIndexesClause(_, FulltextIndexes, _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("Using `FULLTEXT` when listing indexes is not supported in this Cypher version.", c.position)
     }
   }
 

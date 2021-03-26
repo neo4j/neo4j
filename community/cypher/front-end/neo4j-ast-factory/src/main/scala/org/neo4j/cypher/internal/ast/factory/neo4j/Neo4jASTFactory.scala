@@ -29,8 +29,10 @@ import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AllConstraints
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
+import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.AscSortItem
+import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateDatabase
@@ -49,6 +51,7 @@ import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.Foreach
+import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.HasCatalog
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
@@ -96,6 +99,8 @@ import org.neo4j.cypher.internal.ast.SetItem
 import org.neo4j.cypher.internal.ast.SetLabelItem
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPropertyItem
+import org.neo4j.cypher.internal.ast.ShowConstraintType
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowCurrentUser
 import org.neo4j.cypher.internal.ast.ShowDatabase
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
@@ -112,6 +117,7 @@ import org.neo4j.cypher.internal.ast.TimeoutAfter
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
+import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.UseGraph
@@ -126,9 +132,6 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.factory.ASTFactory
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.MergeActionType
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos
-import org.neo4j.cypher.internal.ast.ShowConstraintsClause
-import org.neo4j.cypher.internal.ast.ShowConstraintType
-import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -840,12 +843,17 @@ class Neo4jASTFactory(query: String)
   }
 
   override def showIndexClause(p: InputPosition,
-                               all: Boolean,
+                               indexTypeString: String,
                                brief: Boolean,
                                verbose: Boolean,
                                where: Expression,
                                hasYield: Boolean): Clause = {
-    ShowIndexesClause(all, brief, verbose, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
+    val indexType = indexTypeString.toUpperCase match {
+      case "ALL" => AllIndexes
+      case "BTREE" => BtreeIndexes
+      case "FULLTEXT" => FulltextIndexes
+    }
+    ShowIndexesClause(indexType, brief, verbose, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
   }
 
   override def showConstraintClause(p: InputPosition,
