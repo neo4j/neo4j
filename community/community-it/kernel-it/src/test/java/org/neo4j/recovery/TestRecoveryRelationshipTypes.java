@@ -38,12 +38,10 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.lang.Runtime.getRuntime;
 import static java.lang.System.exit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.test.proc.ProcessUtil.getClassPath;
-import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
+import static org.neo4j.test.proc.ProcessUtil.start;
 
 @TestDirectoryExtension
 class TestRecoveryRelationshipTypes
@@ -56,9 +54,8 @@ class TestRecoveryRelationshipTypes
     {
         // Given (create transactions and kill process, leaving it needing for recovery)
         Path storeDir = testDirectory.homePath();
-        assertEquals( 0, getRuntime().exec( new String[]{
-                getJavaExecutable().toString(), "-Djava.awt.headless=true", "-cp",
-                getClassPath(), getClass().getName(), storeDir.toAbsolutePath().toString()} ).waitFor() );
+        Process process = start( getClass().getName(), storeDir.toAbsolutePath().toString() );
+        assertEquals( 0, process.waitFor() );
 
         // When
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( storeDir ).build();

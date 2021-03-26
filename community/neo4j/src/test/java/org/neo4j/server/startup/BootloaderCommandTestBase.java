@@ -73,8 +73,7 @@ import static org.junit.platform.testkit.engine.EventConditions.finishedSuccessf
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.server.startup.BootloaderOsAbstraction.UNKNOWN_PID;
-import static org.neo4j.test.proc.ProcessUtil.getClassPath;
-import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
+import static org.neo4j.test.proc.ProcessUtil.start;
 
 @TestDirectoryExtension
 @ExtendWith( BootloaderCommandTestBase.FailureOutputProvider.class )
@@ -283,16 +282,10 @@ abstract class BootloaderCommandTestBase
                         .findFirst().orElseThrow() );
                 assertNotNull( frame, "No test found" );
 
-                String[] args = {
-                        getJavaExecutable().toString(),
-                        "-cp", getClassPath(),
-                        TestInFork.class.getName(),
+                var process = start( pb -> pb.environment().putAll( env ), TestInFork.class.getName(),
                         frame.getClassName(),
-                        frame.getMethodName()
-                };
-                ProcessBuilder pb = new ProcessBuilder( args );
-                pb.environment().putAll( env );
-                Process process = pb.start();
+                        frame.getMethodName() );
+
                 int expectedExit = monitor.afterStart( process );
                 int exitCode = process.waitFor();
                 byte[] outputBytes = process.getInputStream().readAllBytes();

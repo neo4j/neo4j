@@ -25,8 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.dbms.archive.CompressionFormat.GZIP;
 import static org.neo4j.dbms.archive.CompressionFormat.ZSTD;
 import static org.neo4j.dbms.archive.CompressionFormat.selectCompressionFormat;
-import static org.neo4j.test.proc.ProcessUtil.getClassPath;
-import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
+import static org.neo4j.test.proc.ProcessUtil.start;
 
 class CompressionFormatTest
 {
@@ -41,17 +40,9 @@ class CompressionFormatTest
     {
         // this test runs in a separate process to avoid problems with any parallel execution and shared static states
         int expectedExitCode = 66;
-        String[] args = {
-                getJavaExecutable().toString(),
-                "-cp", getClassPath(),
-                CompressionFormatTest.class.getName(),
-                Integer.toString( expectedExitCode ) // using exitcode to verify execution of correct function
-        };
-        Process start = new ProcessBuilder( args )
-                .inheritIO() // dont hide any errors
-                .start();
-        assertEquals( expectedExitCode, start.waitFor() );
-
+        var process =
+                start( CompressionFormatTest.class.getName(), Integer.toString( expectedExitCode ) );
+        assertEquals( expectedExitCode, process.waitFor() ); // using exitcode to verify execution of correct function
     }
 
     public static void main( String[] args )

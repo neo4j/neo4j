@@ -71,8 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.test.proc.ProcessUtil.getClassPath;
-import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
+import static org.neo4j.test.proc.ProcessUtil.start;
 
 public class SingleFilePageSwapperTest extends PageSwapperTest
 {
@@ -378,13 +377,9 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
         ((StoreChannel) fileSystem.write( file )).close();
 
-        ProcessBuilder pb = new ProcessBuilder(
-                getJavaExecutable().toString(),
-                "-cp", getClassPath(),
-                LockThisFileProgram.class.getCanonicalName(), file.toAbsolutePath().toString() );
-        Path wd = Path.of( "target/test-classes" ).toAbsolutePath();
-        pb.directory( wd.toFile() );
-        Process process = pb.start();
+        var process = start( pb -> pb.directory( Path.of( "target/test-classes" ).toAbsolutePath().toFile() ), LockThisFileProgram.class.getCanonicalName(),
+                file.toAbsolutePath().toString() );
+
         BufferedReader stdout = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
         InputStream stderr = process.getErrorStream();
         try

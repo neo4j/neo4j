@@ -19,11 +19,19 @@
  */
 package org.neo4j.test.proc;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+import static java.util.Collections.emptyList;
 
 /**
  * Utility methods for accessing information about the current Java process.
@@ -68,5 +76,57 @@ public final class ProcessUtil
     public static String getClassPath()
     {
         return System.getProperty( "java.class.path" );
+    }
+
+    /**
+     * Get additional export/open module options that is required to be able to start neo4j as a java process
+     * and defined by neo4j own {@code jdk.custom.options} system property.
+     *
+     * @return array of options that can be passed to the java launcher.
+     */
+    public static List<String> getModuleOptions()
+    {
+        var moduleOptions = System.getProperty( "jdk.custom.options" );
+        if ( StringUtils.isEmpty( moduleOptions ) )
+        {
+            return emptyList();
+        }
+        return Arrays.stream( moduleOptions.split( " " ) ).filter( StringUtils::isNotBlank ).map( String::trim ).collect( Collectors.toList() );
+    }
+
+    /**
+     * Start java process with java that is defined in {@code java.home}, with classpath that is defined by {@code java.class.path} and
+     * with additional module options defined by {@code jdk.custom.options} system property and with provided additional arguments.
+     * By default new process started with inherited io option.
+     * @param arguments additional arguments that should be passed to new process
+     * @return newly started java process
+     */
+    public static Process start( String... arguments ) throws IOException
+    {
+        return start( ProcessBuilder::inheritIO, arguments );
+    }
+
+    /**
+     * Start java process with java that is defined in {@code java.home}, with classpath that is defined by {@code java.class.path} and
+     * with additional module options defined by {@code jdk.custom.options} system property and with provided additional arguments
+     * @param
+     * @param arguments additional arguments that should be passed to new process
+     * @return newly started java process
+     */
+    public static Process start( Consumer<ProcessBuilder> configurator, String... arguments ) throws IOException
+    {
+        var args = new ArrayList<String>();
+        args.add( getJavaExecutable().toString() );
+        var moduleOptions = getModuleOptions();
+        if ( !moduleOptions.isEmpty() )
+        {
+            args.addAll( moduleOptions );
+        }
+        args.add( "-cp" );
+        args.add( getClassPath() );
+        args.addAll( Arrays.asList( arguments ) );
+        ProcessBuilder processBuilder = new ProcessBuilder( args );
+        configurator.accept( processBuilder );
+        return processBuilder.start();
     }
 }

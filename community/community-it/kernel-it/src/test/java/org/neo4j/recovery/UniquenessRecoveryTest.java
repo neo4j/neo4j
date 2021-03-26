@@ -114,7 +114,7 @@ public class UniquenessRecoveryTest
         // given
         Path path = dir.absolutePath();
         System.out.println( "in path: " + path );
-        ProcessBuilder prototype = new ProcessBuilder( "java", "-ea", "-Xmx1G", "-Djava.awt.headless=true",
+        ProcessBuilder prototype = new ProcessBuilder( "java", "-ea", "-Xmx1G",
                 "-Dforce_create_constraint=" + config.force_create_constraint,
                 "-D" + param( "use_cypher" ) + "=" + USE_CYPHER,
                 "-cp", System.getProperty( "java.class.path" ),

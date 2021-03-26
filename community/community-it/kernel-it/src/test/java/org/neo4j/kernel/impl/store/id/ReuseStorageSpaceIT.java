@@ -68,8 +68,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.test.Race.throwing;
-import static org.neo4j.test.proc.ProcessUtil.getClassPath;
-import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
+import static org.neo4j.test.proc.ProcessUtil.start;
 
 @TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -156,11 +155,8 @@ class ReuseStorageSpaceIT
     private static Pair<Integer,Sizes> crashingChildProcess( Path storeDirectory, long seed, Operation operation ) throws Exception
     {
         // See "main" method in this class
-        Process process = new ProcessBuilder( getJavaExecutable().toString(),
-                "-cp", getClassPath(), ReuseStorageSpaceIT.class.getCanonicalName(), storeDirectory.toAbsolutePath().toString(), String.valueOf( seed ),
-                operation.name() )
-                .inheritIO()
-                .start();
+        var process =
+                start( ReuseStorageSpaceIT.class.getCanonicalName(), storeDirectory.toAbsolutePath().toString(), String.valueOf( seed ), operation.name() );
 
         // then storage size should be comparable (the store part, not the logs and all that)
         int exitCode = process.waitFor();
