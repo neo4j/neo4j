@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.impl.UnmodifiableMap;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -54,8 +52,6 @@ import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -96,7 +92,7 @@ class TxStateIndexChangesTest
     }
 
     @Test
-    void shouldComputeIndexUpdatesForScanWhenThereAreNewNodes()
+    void shouldComputeIndexUpdatesForScanWhenThereAreNewEntities()
     {
         // GIVEN
         final ReadableTransactionState state = new TxStateBuilder()
@@ -110,7 +106,7 @@ class TxStateIndexChangesTest
 
         // THEN
         assertContains( changes.getAdded(), 42L, 43L );
-        assertContains( changesWithValues.getAdded(), nodeWithPropertyValues( 42L, "foo" ), nodeWithPropertyValues( 43L, "bar" ) );
+        assertContains( changesWithValues.getAdded(), entityWithPropertyValues( 42L, "foo" ), entityWithPropertyValues( 43L, "bar" ) );
     }
 
     @Test
@@ -144,21 +140,21 @@ class TxStateIndexChangesTest
         AddedAndRemoved changes = indexUpdatesForScan( state, index, indexOrder );
         AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForScan( state, index, indexOrder );
 
-        EntityWithPropertyValues[] expectedNodesWithValues = {nodeWithPropertyValues( 40L, "Aaron" ),
-                                                              nodeWithPropertyValues( 41L, "Agatha" ),
-                                                              nodeWithPropertyValues( 44L, "Andrea" ),
-                                                              nodeWithPropertyValues( 42L, "Andreas" ),
-                                                              nodeWithPropertyValues( 45L, "Aristotle" ),
-                                                              nodeWithPropertyValues( 46L, "Barbara" ),
-                                                              nodeWithPropertyValues( 43L, "Barbarella" ),
-                                                              nodeWithPropertyValues( 47L, "Cinderella" )};
+        EntityWithPropertyValues[] expectedEntitiesWithValues = {entityWithPropertyValues( 40L, "Aaron" ),
+                                                                 entityWithPropertyValues( 41L, "Agatha" ),
+                                                                 entityWithPropertyValues( 44L, "Andrea" ),
+                                                                 entityWithPropertyValues( 42L, "Andreas" ),
+                                                                 entityWithPropertyValues( 45L, "Aristotle" ),
+                                                                 entityWithPropertyValues( 46L, "Barbara" ),
+                                                                 entityWithPropertyValues( 43L, "Barbarella" ),
+                                                                 entityWithPropertyValues( 47L, "Cinderella" )};
 
         // THEN
-        assertContains( indexOrder, changes, changesWithValues, expectedNodesWithValues );
+        assertContains( indexOrder, changes, changesWithValues, expectedEntitiesWithValues );
     }
 
     @Test
-    void shouldComputeIndexUpdatesForSeekWhenThereAreNewNodes()
+    void shouldComputeIndexUpdatesForSeekWhenThereAreNewEntities()
     {
         // GIVEN
         final ReadableTransactionState state = new TxStateBuilder()
@@ -189,76 +185,76 @@ class TxStateIndexChangesTest
         final Collection<DynamicTest> tests = new ArrayList<>();
 
         tests.addAll( rangeTest( state, Values.of( 510 ), true, Values.of( 550 ), true,
-                nodeWithPropertyValues( 42L, 510 ),
-                nodeWithPropertyValues( 43L, 520 ),
-                nodeWithPropertyValues( 46L, 530 ),
-                nodeWithPropertyValues( 48L, 540 ),
-                nodeWithPropertyValues( 44L, 550 )
+                entityWithPropertyValues( 42L, 510 ),
+                entityWithPropertyValues( 43L, 520 ),
+                entityWithPropertyValues( 46L, 530 ),
+                entityWithPropertyValues( 48L, 540 ),
+                entityWithPropertyValues( 44L, 550 )
         ) );
         tests.addAll( rangeTest( state, Values.of( 510 ), true, Values.of( 550 ), false,
-                nodeWithPropertyValues( 42L, 510 ),
-                nodeWithPropertyValues( 43L, 520 ),
-                nodeWithPropertyValues( 46L, 530 ),
-                nodeWithPropertyValues( 48L, 540 )
+                entityWithPropertyValues( 42L, 510 ),
+                entityWithPropertyValues( 43L, 520 ),
+                entityWithPropertyValues( 46L, 530 ),
+                entityWithPropertyValues( 48L, 540 )
         ) );
         tests.addAll( rangeTest( state, Values.of( 510 ), false, Values.of( 550 ), true,
-                nodeWithPropertyValues( 43L, 520 ),
-                nodeWithPropertyValues( 46L, 530 ),
-                nodeWithPropertyValues( 48L, 540 ),
-                nodeWithPropertyValues( 44L, 550 )
+                entityWithPropertyValues( 43L, 520 ),
+                entityWithPropertyValues( 46L, 530 ),
+                entityWithPropertyValues( 48L, 540 ),
+                entityWithPropertyValues( 44L, 550 )
         ) );
         tests.addAll( rangeTest( state, Values.of( 510 ), false, Values.of( 550 ), false,
-                nodeWithPropertyValues( 43L, 520 ),
-                nodeWithPropertyValues( 46L, 530 ),
-                nodeWithPropertyValues( 48L, 540 )
+                entityWithPropertyValues( 43L, 520 ),
+                entityWithPropertyValues( 46L, 530 ),
+                entityWithPropertyValues( 48L, 540 )
         ) );
         tests.addAll( rangeTest( state, null, false, Values.of( 550 ), true,
-                nodeWithPropertyValues( 45L, 500 ),
-                nodeWithPropertyValues( 42L, 510 ),
-                nodeWithPropertyValues( 43L, 520 ),
-                nodeWithPropertyValues( 46L, 530 ),
-                nodeWithPropertyValues( 48L, 540 ),
-                nodeWithPropertyValues( 44L, 550 )
+                entityWithPropertyValues( 45L, 500 ),
+                entityWithPropertyValues( 42L, 510 ),
+                entityWithPropertyValues( 43L, 520 ),
+                entityWithPropertyValues( 46L, 530 ),
+                entityWithPropertyValues( 48L, 540 ),
+                entityWithPropertyValues( 44L, 550 )
         ) );
         tests.addAll( rangeTest( state, null, true, Values.of( 550 ), true,
-                nodeWithPropertyValues( 45L, 500 ),
-                nodeWithPropertyValues( 42L, 510 ),
-                nodeWithPropertyValues( 43L, 520 ),
-                nodeWithPropertyValues( 46L, 530 ),
-                nodeWithPropertyValues( 48L, 540 ),
-                nodeWithPropertyValues( 44L, 550 )
+                entityWithPropertyValues( 45L, 500 ),
+                entityWithPropertyValues( 42L, 510 ),
+                entityWithPropertyValues( 43L, 520 ),
+                entityWithPropertyValues( 46L, 530 ),
+                entityWithPropertyValues( 48L, 540 ),
+                entityWithPropertyValues( 44L, 550 )
         ) );
         tests.addAll( rangeTest( state, null, false, Values.of( 550 ), false,
-                nodeWithPropertyValues( 45L, 500 ),
-                nodeWithPropertyValues( 42L, 510 ),
-                nodeWithPropertyValues( 43L, 520 ),
-                nodeWithPropertyValues( 46L, 530 ),
-                nodeWithPropertyValues( 48L, 540 )
+                entityWithPropertyValues( 45L, 500 ),
+                entityWithPropertyValues( 42L, 510 ),
+                entityWithPropertyValues( 43L, 520 ),
+                entityWithPropertyValues( 46L, 530 ),
+                entityWithPropertyValues( 48L, 540 )
         ) );
         tests.addAll( rangeTest( state, null, true, Values.of( 550 ), false,
-                nodeWithPropertyValues( 45L, 500 ),
-                nodeWithPropertyValues( 42L, 510 ),
-                nodeWithPropertyValues( 43L, 520 ),
-                nodeWithPropertyValues( 46L, 530 ),
-                nodeWithPropertyValues( 48L, 540 )
+                entityWithPropertyValues( 45L, 500 ),
+                entityWithPropertyValues( 42L, 510 ),
+                entityWithPropertyValues( 43L, 520 ),
+                entityWithPropertyValues( 46L, 530 ),
+                entityWithPropertyValues( 48L, 540 )
         ) );
         tests.addAll( rangeTest( state, Values.of( 540 ), true, null, true,
-                nodeWithPropertyValues( 48L, 540 ),
-                nodeWithPropertyValues( 44L, 550 ),
-                nodeWithPropertyValues( 47L, 560 )
+                entityWithPropertyValues( 48L, 540 ),
+                entityWithPropertyValues( 44L, 550 ),
+                entityWithPropertyValues( 47L, 560 )
         ) );
         tests.addAll( rangeTest( state, Values.of( 540 ), true, null, false,
-                nodeWithPropertyValues( 48L, 540 ),
-                nodeWithPropertyValues( 44L, 550 ),
-                nodeWithPropertyValues( 47L, 560 )
+                entityWithPropertyValues( 48L, 540 ),
+                entityWithPropertyValues( 44L, 550 ),
+                entityWithPropertyValues( 47L, 560 )
         ) );
         tests.addAll( rangeTest( state, Values.of( 540 ), false, null, true,
-                nodeWithPropertyValues( 44L, 550 ),
-                nodeWithPropertyValues( 47L, 560 )
+                entityWithPropertyValues( 44L, 550 ),
+                entityWithPropertyValues( 47L, 560 )
         ) );
         tests.addAll( rangeTest( state, Values.of( 540 ), false, null, false,
-                nodeWithPropertyValues( 44L, 550 ),
-                nodeWithPropertyValues( 47L, 560 )
+                entityWithPropertyValues( 44L, 550 ),
+                entityWithPropertyValues( 47L, 560 )
         ) );
         tests.addAll( rangeTest( state, Values.of( 560 ), false, Values.of( 800 ), true ) );
 
@@ -300,7 +296,7 @@ class TxStateIndexChangesTest
     {
 
         @Test
-        void shouldComputeIndexUpdatesForRangeSeekByContainsWhenThereAreNoMatchingNodes()
+        void shouldComputeIndexUpdatesForRangeSeekByContainsWhenThereAreNoMatchingEntities()
         {
             // GIVEN
             final ReadableTransactionState state = new TxStateBuilder()
@@ -319,7 +315,7 @@ class TxStateIndexChangesTest
         }
 
         @Test
-        void shouldComputeIndexUpdatesForRangeSeekBySuffixWhenThereArePartiallyMatchingNewNodes()
+        void shouldComputeIndexUpdatesForRangeSeekBySuffixWhenThereArePartiallyMatchingNewEntities()
         {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
@@ -341,8 +337,8 @@ class TxStateIndexChangesTest
             // THEN
             assertContains( changes.getAdded(), 46L, 47L );
             assertContains( changesWithValues.getAdded(),
-                            nodeWithPropertyValues( 46L, "Barbarella" ),
-                            nodeWithPropertyValues( 47L, "Cinderella" ) );
+                            entityWithPropertyValues( 46L, "Barbarella" ),
+                            entityWithPropertyValues( 47L, "Cinderella" ) );
         }
 
         @Test
@@ -378,18 +374,18 @@ class TxStateIndexChangesTest
             AddedAndRemoved changes = indexUpdatesForSuffixOrContains( state, index, indexQuery, indexOrder );
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, indexOrder );
 
-            EntityWithPropertyValues[] expected = {nodeWithPropertyValues( 40L, "Aaron" ),
-                                                   nodeWithPropertyValues( 41L, "Bonbon" ),
-                                                   nodeWithPropertyValues( 48L, "Evon" ),
-                                                   nodeWithPropertyValues( 46L, "Macron" ),
-                                                   nodeWithPropertyValues( 45L, "Ton" )};
+            EntityWithPropertyValues[] expected = {entityWithPropertyValues( 40L, "Aaron" ),
+                                                   entityWithPropertyValues( 41L, "Bonbon" ),
+                                                   entityWithPropertyValues( 48L, "Evon" ),
+                                                   entityWithPropertyValues( 46L, "Macron" ),
+                                                   entityWithPropertyValues( 45L, "Ton" )};
 
             // THEN
             assertContains( indexOrder, changes, changesWithValues, expected );
         }
 
         @Test
-        void shouldComputeIndexUpdatesForRangeSeekByContainsWhenThereArePartiallyMatchingNewNodes()
+        void shouldComputeIndexUpdatesForRangeSeekByContainsWhenThereArePartiallyMatchingNewEntities()
         {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
@@ -411,8 +407,8 @@ class TxStateIndexChangesTest
             // THEN
             assertContains( changes.getAdded(), 45L, 46L );
             assertContains( changesWithValues.getAdded(),
-                            nodeWithPropertyValues( 45L, "Barbara" ),
-                            nodeWithPropertyValues( 46L, "Barbarella" ) );
+                            entityWithPropertyValues( 45L, "Barbara" ),
+                            entityWithPropertyValues( 46L, "Barbarella" ) );
         }
 
         @Test
@@ -448,11 +444,11 @@ class TxStateIndexChangesTest
             AddedAndRemoved changes = indexUpdatesForSuffixOrContains( state, index, indexQuery, indexOrder );
             AddedWithValuesAndRemoved changesWithValues = indexUpdatesWithValuesForSuffixOrContains( state, index, indexQuery, indexOrder );
 
-            EntityWithPropertyValues[] expected = {nodeWithPropertyValues( 41L, "Bashley" ),
-                                                   nodeWithPropertyValues( 44L, "Seashell" ),
-                                                   nodeWithPropertyValues( 40L, "Smashing" ),
-                                                   nodeWithPropertyValues( 46L, "The Flash" ),
-                                                   nodeWithPropertyValues( 48L, "Trashy" )};
+            EntityWithPropertyValues[] expected = {entityWithPropertyValues( 41L, "Bashley" ),
+                                                   entityWithPropertyValues( 44L, "Seashell" ),
+                                                   entityWithPropertyValues( 40L, "Smashing" ),
+                                                   entityWithPropertyValues( 46L, "The Flash" ),
+                                                   entityWithPropertyValues( 48L, "Trashy" )};
 
             // THEN
             assertContains( indexOrder, changes, changesWithValues, expected );
@@ -464,7 +460,7 @@ class TxStateIndexChangesTest
     {
 
         @Test
-        void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNoMatchingNodes()
+        void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNoMatchingEntities()
         {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
@@ -516,17 +512,17 @@ class TxStateIndexChangesTest
             AddedWithValuesAndRemoved changesWithValues =
                     indexUpdatesWithValuesForRangeSeekByPrefix( state, index, new Value[0], stringValue( "And" ), indexOrder );
 
-            EntityWithPropertyValues[] expected = {nodeWithPropertyValues( 44L, "Andrea" ),
-                                                   nodeWithPropertyValues( 42L, "Andreas" ),
-                                                   nodeWithPropertyValues( 49L, "Andromeda" ),
-                                                   nodeWithPropertyValues( 47L, "Andy" )};
+            EntityWithPropertyValues[] expected = {entityWithPropertyValues( 44L, "Andrea" ),
+                                                   entityWithPropertyValues( 42L, "Andreas" ),
+                                                   entityWithPropertyValues( 49L, "Andromeda" ),
+                                                   entityWithPropertyValues( 47L, "Andy" )};
 
             // THEN
             assertContains( indexOrder, changes, changesWithValues, expected );
         }
 
         @Test
-        void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNonStringNodes()
+        void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNonStringEntities()
         {
             // GIVEN
             final ReadableTransactionState state = new TxStateBuilder()
@@ -563,7 +559,7 @@ class TxStateIndexChangesTest
         }
 
         @Test
-        void shouldScanWhenThereAreNewNodes()
+        void shouldScanWhenThereAreNewEntities()
         {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
@@ -578,12 +574,12 @@ class TxStateIndexChangesTest
             // THEN
             assertContains( changes.getAdded(), 42L, 43L );
             assertContains( changesWithValues.getAdded(),
-                            nodeWithPropertyValues( 42L, "42value1", "42value2" ),
-                            nodeWithPropertyValues( 43L, "43value1", "43value2" ) );
+                            entityWithPropertyValues( 42L, "42value1", "42value2" ),
+                            entityWithPropertyValues( 43L, "43value1", "43value2" ) );
         }
 
         @Test
-        void shouldSeekWhenThereAreNewStringNodes()
+        void shouldSeekWhenThereAreNewStringEntities()
         {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
@@ -600,11 +596,11 @@ class TxStateIndexChangesTest
 
             // THEN
             assertContains( changes.getAdded(), 43L );
-            assertContains( changesWithValues.getAdded(), nodeWithPropertyValues( 43L, "43value1", "43value2" ) );
+            assertContains( changesWithValues.getAdded(), entityWithPropertyValues( 43L, "43value1", "43value2" ) );
         }
 
         @Test
-        void shouldSeekWhenThereAreNewNumberNodes()
+        void shouldSeekWhenThereAreNewNumberEntities()
         {
             // GIVEN
             ReadableTransactionState state = new TxStateBuilder()
@@ -621,7 +617,7 @@ class TxStateIndexChangesTest
 
             // THEN
             assertContains( changes.getAdded(), 43L );
-            assertContains( changesWithValues.getAdded(), nodeWithPropertyValues( 43L, 43001.0, 43002.0 ) );
+            assertContains( changesWithValues.getAdded(), entityWithPropertyValues( 43L, 43001.0, 43002.0 ) );
         }
 
         @Test
@@ -641,7 +637,7 @@ class TxStateIndexChangesTest
 
             // THEN
             assertContains( changes.getAdded(), 42L );
-            assertContains( changesWithValues.getAdded(), nodeWithPropertyValues( 42L, "42value1", "42value2" ) );
+            assertContains( changesWithValues.getAdded(), entityWithPropertyValues( 42L, "42value1", "42value2" ) );
             assertContains( changes.getRemoved(), 44L );
             assertContains( changesWithValues.getRemoved(), 44L );
         }
@@ -676,7 +672,7 @@ class TxStateIndexChangesTest
             assertTrue( changes44.getAdded().isEmpty() );
             assertContains( changes44.getRemoved(), 44L );
 
-            assertContains( changesWithValues42.getAdded(), nodeWithPropertyValues( 42L, "42value1", "42value2" ) );
+            assertContains( changesWithValues42.getAdded(), entityWithPropertyValues( 42L, "42value1", "42value2" ) );
             assertTrue( changesWithValues42.getRemoved().isEmpty() );
             assertTrue( changesWithValues43.isEmpty() );
             assertFalse( changesWithValues44.getAdded().iterator().hasNext() );
@@ -701,8 +697,8 @@ class TxStateIndexChangesTest
 
             // THEN
             assertContains( changes.getAdded(), 43L, 44L );
-            assertContains( changesWithValues.getAdded(), nodeWithPropertyValues( 43L, "43value1", "43value2", "43value3" ),
-                    nodeWithPropertyValues( 44L, "43value1", "43value2", "43value3" ) );
+            assertContains( changesWithValues.getAdded(), entityWithPropertyValues( 43L, "43value1", "43value2", "43value3" ),
+                    entityWithPropertyValues( 44L, "43value1", "43value2", "43value3" ) );
         }
 
         @Test
@@ -726,19 +722,19 @@ class TxStateIndexChangesTest
 
             assertContains( indexUpdatesWithValuesForRangeSeek( state, compositeIndex,
                     new Value[]{stringValue( "hi" )}, null, IndexOrder.NONE ).getAdded(),
-                    nodeWithPropertyValues( 10L, "hi", 3 ) );
+                    entityWithPropertyValues( 10L, "hi", 3 ) );
             assertContains( indexUpdatesWithValuesForRangeSeek( state, compositeIndex,
                     new Value[]{longValue( 9L )}, null, IndexOrder.NONE ).getAdded(),
-                    nodeWithPropertyValues( 11L, 9L, 33L ) );
+                    entityWithPropertyValues( 11L, 9L, 33L ) );
             assertContains( indexUpdatesWithValuesForRangeSeek( state, compositeIndex,
                     new Value[]{stringValue( "sneaker" )}, null, IndexOrder.NONE ).getAdded(),
-                    nodeWithPropertyValues( 12L, "sneaker", false ) );
+                    entityWithPropertyValues( 12L, "sneaker", false ) );
             assertContains( indexUpdatesWithValuesForRangeSeek( state, compositeIndex,
                     new Value[]{intArray( new int[]{10, 100} )}, null, IndexOrder.NONE ).getAdded(),
-                    nodeWithPropertyValues( 13L, new int[]{10, 100}, "array-buddy" ) );
+                    entityWithPropertyValues( 13L, new int[]{10, 100}, "array-buddy" ) );
             assertContains( indexUpdatesWithValuesForRangeSeek( state, compositeIndex,
                     new Value[]{doubleValue( 40.1 )}, null, IndexOrder.NONE ).getAdded(),
-                    nodeWithPropertyValues( 14L, 40.1, 40.2 ) );
+                    entityWithPropertyValues( 14L, 40.1, 40.2 ) );
         }
 
         @Test
@@ -771,13 +767,13 @@ class TxStateIndexChangesTest
                             .build();
 
             EntityWithPropertyValues[] expectedInt = new EntityWithPropertyValues[]{
-                    nodeWithPropertyValues( 43L, 510, "random43" ),
-                    nodeWithPropertyValues( 42L, 520, "random42" ),
-                    nodeWithPropertyValues( 44L, 550, "random44" )
+                    entityWithPropertyValues( 43L, 510, "random43" ),
+                    entityWithPropertyValues( 42L, 520, "random42" ),
+                    entityWithPropertyValues( 44L, 550, "random44" )
             };
             EntityWithPropertyValues[] expectedString = new EntityWithPropertyValues[]{
-                    nodeWithPropertyValues( 48L, "540", "random48" ),
-                    nodeWithPropertyValues( 47L, "560", "random47" )
+                    entityWithPropertyValues( 48L, "540", "random48" ),
+                    entityWithPropertyValues( 47L, "560", "random47" )
             };
 
             AddedAndRemoved changesInt =
@@ -819,10 +815,10 @@ class TxStateIndexChangesTest
                     indexUpdatesWithValuesForRangeSeekByPrefix( state, compositeIndex, new Value[0], stringValue( "And" ), indexOrder );
 
             EntityWithPropertyValues[] expected = {
-                    nodeWithPropertyValues( 44L, "Andrea", "Kormos" ),
-                    nodeWithPropertyValues( 42L, "Andreas", "Jona" ),
-                    nodeWithPropertyValues( 49L, "Andromeda", "Black" ),
-                    nodeWithPropertyValues( 47L, "Andy", "Gallagher" )
+                    entityWithPropertyValues( 44L, "Andrea", "Kormos" ),
+                    entityWithPropertyValues( 42L, "Andreas", "Jona" ),
+                    entityWithPropertyValues( 49L, "Andromeda", "Black" ),
+                    entityWithPropertyValues( 47L, "Andy", "Gallagher" )
             };
 
             // THEN
@@ -838,38 +834,38 @@ class TxStateIndexChangesTest
             ArrayUtils.reverse( expected );
         }
 
-        long[] expectedNodeIds = Arrays.stream( expected ).mapToLong( EntityWithPropertyValues::getEntityId ).toArray();
+        long[] expectedEntityIds = Arrays.stream( expected ).mapToLong( EntityWithPropertyValues::getEntityId ).toArray();
 
         if ( indexOrder == IndexOrder.NONE )
         {
-            assertContains( changes.getAdded(), expectedNodeIds );
+            assertContains( changes.getAdded(), expectedEntityIds );
             assertContains( changesWithValues.getAdded(), expected );
         }
         else
         {
-            assertContainsInOrder( changes.getAdded(), expectedNodeIds );
+            assertContainsInOrder( changes.getAdded(), expectedEntityIds );
             assertContainsInOrder( changesWithValues.getAdded(), expected );
         }
     }
 
-    private static EntityWithPropertyValues nodeWithPropertyValues( long nodeId, Object... values )
+    private static EntityWithPropertyValues entityWithPropertyValues( long entityId, Object... values )
     {
-        return new EntityWithPropertyValues( nodeId, Arrays.stream( values ).map( ValueUtils::of ).toArray( Value[]::new ) );
+        return new EntityWithPropertyValues( entityId, Arrays.stream( values ).map( ValueUtils::of ).toArray( Value[]::new ) );
     }
 
-    private static void assertContains( LongIterable iterable, long... nodeIds )
+    private static void assertContains( LongIterable iterable, long... entityIds )
     {
-        assertEquals( newSetWith( nodeIds ), LongSets.immutable.ofAll( iterable ) );
+        assertThat( iterable.toArray() ).contains( entityIds );
     }
 
     private static void assertContains( Iterable<EntityWithPropertyValues> iterable, EntityWithPropertyValues... expected )
     {
-        assertEquals( UnifiedSet.newSetWith( expected ), UnifiedSet.newSet( iterable ) );
+        assertThat( iterable ).containsExactlyInAnyOrder( expected );
     }
 
-    private static void assertContainsInOrder( LongIterable iterable, long... nodeIds )
+    private static void assertContainsInOrder( LongIterable iterable, long... entityIds )
     {
-        assertTrue( iterable.containsAll( nodeIds ), "Expected: " + iterable + " to contains: " + Arrays.toString( nodeIds ) );
+        assertThat( iterable.toArray() ).containsExactly( entityIds );
     }
 
     private static void assertContainsInOrder( Iterable<EntityWithPropertyValues> iterable, EntityWithPropertyValues... expected )
