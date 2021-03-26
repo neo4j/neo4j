@@ -15,7 +15,8 @@ org.neo4j.dbms.api.DatabaseManagementException::DatabaseManagementException(java
 org.neo4j.dbms.api.DatabaseManagementException::status() org.neo4j.kernel.api.exceptions.Status public
 org.neo4j.dbms.api.DatabaseManagementException::wrap(java.lang.Throwable) org.neo4j.dbms.api.DatabaseManagementException public static
 org.neo4j.dbms.api.DatabaseManagementService public abstract interface
-org.neo4j.dbms.api.DatabaseManagementService::createDatabase(java.lang.String) void public abstract throws org.neo4j.dbms.api.DatabaseExistsException
+org.neo4j.dbms.api.DatabaseManagementService::createDatabase(java.lang.String) void public default throws org.neo4j.dbms.api.DatabaseExistsException
+org.neo4j.dbms.api.DatabaseManagementService::createDatabase(java.lang.String, org.neo4j.graphdb.config.Configuration) void public abstract throws org.neo4j.dbms.api.DatabaseExistsException
 org.neo4j.dbms.api.DatabaseManagementService::database(java.lang.String) org.neo4j.graphdb.GraphDatabaseService public abstract throws org.neo4j.dbms.api.DatabaseNotFoundException
 org.neo4j.dbms.api.DatabaseManagementService::dropDatabase(java.lang.String) void public abstract throws org.neo4j.dbms.api.DatabaseNotFoundException
 org.neo4j.dbms.api.DatabaseManagementService::listDatabases() java.util.List<java.lang.String> public abstract
