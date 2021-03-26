@@ -667,8 +667,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
                   "Log entries are by default written to the file _query.log_ located in the Logs directory. " +
                   "For location of the Logs directory, see <<file-locations>>. " +
                   "This feature is available in the Neo4j Enterprise Edition." )
-    public static final Setting<Boolean> log_transactions =
-            newBuilder( "dbms.logs.query.transactions.enabled", BOOL, false ).dynamic().build();
+    public static final Setting<LogQueryLevel> log_queries_transactions_level =
+            newBuilder( "dbms.logs.query.transaction.enabled", ofEnum( LogQueryLevel.class ), LogQueryLevel.OFF ).dynamic().build();
 
     @Description( "Send user logs to the process stdout. " +
             "If this is disabled then logs will instead be sent to the file _neo4j.log_ located in the logs directory." )
@@ -741,6 +741,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "provided query logging is set to INFO. Defaults to 0 seconds, that is all queries are logged." )
     public static final Setting<Duration> log_queries_threshold =
             newBuilder( "dbms.logs.query.threshold", DURATION, Duration.ZERO ).dynamic().build();
+
+    @Description( "If the transaction is open for more time than this threshold, the transaction is logged once completed - " +
+                  "provided transaction logging is set to INFO. Defaults to 0 seconds, that is all transactions are logged." )
+    public static final Setting<Duration> log_queries_transaction_threshold =
+            newBuilder( "dbms.logs.query.transaction.threshold", DURATION, Duration.ZERO ).dynamic().build();
 
     @Description( "The file size in bytes at which the query log will auto-rotate. If set to zero then no rotation " +
             "will occur. Accepts a binary suffix `k`, `m` or `g`." )
