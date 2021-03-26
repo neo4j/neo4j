@@ -27,7 +27,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 
@@ -37,22 +36,19 @@ public class RecoveryFacade
     private final PageCache pageCache;
     private final DatabaseTracers tracers;
     private final Config config;
-    private final StorageEngineFactory storageEngineFactory;
     private final MemoryTracker memoryTracker;
 
-    RecoveryFacade( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config, StorageEngineFactory storageEngineFactory,
-            MemoryTracker memoryTracker )
+    RecoveryFacade( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers, Config config, MemoryTracker memoryTracker )
     {
         this.fs = fs;
         this.pageCache = pageCache;
         this.tracers = tracers;
         this.config = config;
-        this.storageEngineFactory = storageEngineFactory;
         this.memoryTracker = memoryTracker;
     }
 
     public void recovery( DatabaseLayout databaseLayout ) throws IOException
     {
-        performRecovery( fs, pageCache, tracers, config, databaseLayout, storageEngineFactory, false, memoryTracker );
+        performRecovery( fs, pageCache, tracers, config, databaseLayout, memoryTracker );
     }
 }

@@ -145,13 +145,11 @@ public final class Recovery
      * @param pageCache page cache used to perform database recovery.
      * @param tracers underlying operation tracers
      * @param config custom configuration
-     * @param storageEngineFactory {@link StorageEngineFactory} for the storage to recover.
      * @return helper recovery checker
      */
-    public static RecoveryFacade recoveryFacade( FileSystemAbstraction fs, PageCache pageCache, Tracers tracers, Config config,
-            StorageEngineFactory storageEngineFactory, MemoryTracker memoryTracker )
+    public static RecoveryFacade recoveryFacade( FileSystemAbstraction fs, PageCache pageCache, Tracers tracers, Config config, MemoryTracker memoryTracker )
     {
-        return new RecoveryFacade( fs, pageCache, new DatabaseTracers( tracers ), config, storageEngineFactory, memoryTracker );
+        return new RecoveryFacade( fs, pageCache, new DatabaseTracers( tracers ), config, memoryTracker );
     }
 
     /**
@@ -231,7 +229,7 @@ public final class Recovery
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, DatabaseTracers tracers,
             Config config, DatabaseLayout databaseLayout, MemoryTracker memoryTracker ) throws IOException
     {
-        performRecovery( fs, pageCache, tracers, config, databaseLayout, selectStorageEngine(), false, memoryTracker );
+        performRecovery( fs, pageCache, tracers, config, databaseLayout, selectStorageEngine( fs, databaseLayout, pageCache, config ), false, memoryTracker );
     }
 
     /**

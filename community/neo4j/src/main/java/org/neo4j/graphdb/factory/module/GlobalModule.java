@@ -143,8 +143,6 @@ public class GlobalModule
     private final FileSystemWatcherService fileSystemWatcher;
     private final DatabaseEventListeners databaseEventListeners;
     private final GlobalTransactionEventListeners transactionEventListeners;
-    // In the future this may not be a global decision, but for now this is a good central place to make the decision about which storage engine to use
-    private final StorageEngineFactory storageEngineFactory;
     private final DependencyResolver externalDependencyResolver;
     private final FileLockerService fileLockerService;
     private final MemoryPools memoryPools;
@@ -266,11 +264,6 @@ public class GlobalModule
         connectorPortRegister = new ConnectorPortRegister();
         globalDependencies.satisfyDependency( connectorPortRegister );
 
-        // There's no way of actually configuring storage engine right now and this is on purpose since
-        // we have neither figured out the surface, use cases nor other storage engines.
-        storageEngineFactory = StorageEngineFactory.selectStorageEngine();
-        globalDependencies.satisfyDependency( storageEngineFactory );
-
         dbmsReadOnlyChecker = new DbmsReadOnlyChecker.Default( globalConfig );
 
         capabilitiesService = loadCapabilities();
@@ -288,6 +281,7 @@ public class GlobalModule
     {
         if ( !globalConfig.isExplicitlySet( default_database ) )
         {
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
             DatabaseLayout defaultDatabaseLayout = neo4jLayout.databaseLayout( globalConfig.get( default_database ) );
             if ( storageEngineFactory.storageExists( fileSystem, defaultDatabaseLayout, pageCache ) )
             {
@@ -561,11 +555,6 @@ public class GlobalModule
     public GlobalTransactionEventListeners getTransactionEventListeners()
     {
         return transactionEventListeners;
-    }
-
-    public StorageEngineFactory getStorageEngineFactory()
-    {
-        return storageEngineFactory;
     }
 
     public DependencyResolver getExternalDependencyResolver()
