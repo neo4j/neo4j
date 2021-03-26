@@ -275,10 +275,14 @@ abstract class GBPTreeLargeDynamicKeysITBase
         {
             try ( Writer<RawBytes,RawBytes> writer = tree.writer( NULL ) )
             {
-                while ( iterator.hasNext() && random.nextDouble() > checkpointFrequency )
+                while ( iterator.hasNext() )
                 {
                     Pair<RawBytes,RawBytes> entry = iterator.next();
                     writerAction.accept( writer, entry );
+                    if ( random.nextDouble() < checkpointFrequency )
+                    {
+                        break;
+                    }
                 }
             }
             tree.checkpoint( NULL );
