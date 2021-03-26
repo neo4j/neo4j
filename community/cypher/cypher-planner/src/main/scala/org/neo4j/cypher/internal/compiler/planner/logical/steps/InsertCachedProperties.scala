@@ -356,7 +356,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
     Property(Variable(entity)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE)
 }
 
-object InsertCachedProperties extends StepSequencer.Step with PlanPipelineTransformerFactory {
+case object InsertCachedProperties extends StepSequencer.Step with PlanPipelineTransformerFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This rewriter operates on the LogicalPlan
     CompilationContains[LogicalPlan],

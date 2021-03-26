@@ -79,7 +79,7 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
   override def postConditions = Set(BaseContains[SemanticState], StatementCondition(containsNoNodesOfType[UnaliasedReturnItem]))
 }
 
-object SemanticAnalysis extends StepSequencer.Step with PlanPipelineTransformerFactory {
+case object SemanticAnalysis extends StepSequencer.Step with PlanPipelineTransformerFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def postConditions: Set[StepSequencer.Condition] = Set(StateContainsSemanticTable) ++ SemanticInfoAvailable

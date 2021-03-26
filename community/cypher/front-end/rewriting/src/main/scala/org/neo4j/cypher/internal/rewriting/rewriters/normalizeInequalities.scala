@@ -47,4 +47,6 @@ case object normalizeInequalities extends Rewriter {
     case o@Or(GreaterThan(a2, b2), Equals(b1, a1)) if a1 == a2 && b1 == b2 =>
       GreaterThanOrEqual(a1, b1)(o.position)
   })
+
+  override def toString: String = "normalizeInequalities"
 }

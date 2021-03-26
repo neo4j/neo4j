@@ -64,18 +64,18 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
         _ = { if (initialConditions.contains(postCondition)) throw new IllegalArgumentException(s"Step $step introduces $postCondition, which is an initial condition. That is currently not allowed.") }
       } yield postCondition -> Right(step)
 
-        is.groupBy(_._1)
-          .filter(_._2.size > 1)
-          .mapValues(_.map(_._2.right.get))
-          .foreach {
-            case (condition, steps) =>
-              throw new IllegalArgumentException(s"Found same post-condition $condition in these steps: $steps.")
-          }
+      is.groupBy(_._1)
+        .filter(_._2.size > 1)
+        .mapValues(_.map(_._2.right.get))
+        .foreach {
+          case (condition, steps) =>
+            throw new IllegalArgumentException(s"Found same post-condition $condition in these steps: $steps.")
+        }
 
       (is ++ initialConditions.map(_ -> Left(ByInitialCondition))).toMap
     }
     // For each condition, all steps that invalidate it
-    val invalidingSteps: Map[Condition, Set[S]] = {
+    val invalidatingSteps: Map[Condition, Set[S]] = {
       val is = for {
         step <- steps.toSeq
         invalidatedCondition <- step.invalidatedConditions
@@ -120,7 +120,7 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
             case Left(ByInitialCondition) =>
               // Initial conditions cannot be re-enabled by any step.
               // Therefore, there is hard requirement that a step that has an initial condition as a pre-condition runs before any steps that invalidate it.
-              invalidingSteps(condition).foreach(graph.connect(step, _))
+              invalidatingSteps(condition).foreach(graph.connect(step, _))
             case Right(introducingStep) =>
               // The introducing step needs to happen before the one that has it as a pre-condition.
               graph.connect(introducingStep, step)
@@ -241,6 +241,14 @@ object StepSequencer {
      * @return all neighbors of `to` going via incoming edges.
      */
     def incoming(to: S): Set[S] = elems(to).incoming.toSet
+
+    override def toString: String = {
+      val nodes = allNodes.map(node => s"""  "$node";""").mkString("\n")
+      val edges = allNodes.map(
+        node => outgoing(node).map(other => s"""  "$node" -> "$other";""").mkString("\n")
+      ).mkString("\n")
+      s"digraph G {\n$nodes\n$edges\n}"
+    }
   }
 
   /**
