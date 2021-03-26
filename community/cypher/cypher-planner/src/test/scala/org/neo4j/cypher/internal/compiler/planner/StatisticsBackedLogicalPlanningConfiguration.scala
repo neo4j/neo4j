@@ -324,9 +324,9 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       }.iterator
 
       override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-        val labelName = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
+        val entityType = IndexDefinition.EntityType.Node(resolver.getLabelName(labelId))
         indexes.collect {
-          case indexDef if labelName == indexDef.entityType && indexDef.isUnique =>
+          case indexDef if entityType == indexDef.entityType && indexDef.isUnique =>
             newIndexDescriptor(indexDef)
         }
       }.iterator
@@ -341,7 +341,7 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       }
 
       override def indexExistsForLabel(labelId: Int): Boolean = {
-        indexesGetForRelType(labelId).nonEmpty
+        indexesGetForLabel(labelId).nonEmpty
       }
 
       override def indexExistsForRelType(relTypeId: Int): Boolean = {

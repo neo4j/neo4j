@@ -254,9 +254,9 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         val canGetValue = if (indexType.withValues) CanGetValue else DoNotGetValue
         val valueCapability: ValueCapability = _ => indexDef.propertyKeys.map(_ => canGetValue)
         val orderCapability: OrderCapability = _ => indexType.withOrdering
-        val entityType = IndexDescriptor.EntityType.Node(LabelId(
+        val entityType = IndexDescriptor.EntityType.Node(
           semanticTable.resolvedLabelNames(indexDef.label)
-        ))
+        )
         IndexDescriptor(
           entityType,
           indexDef.propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_)),

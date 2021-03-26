@@ -39,8 +39,7 @@ class CheckForIndexBehaviourTest extends CypherFunSuite with LogicalPlanningTest
 
   test("should notify for NodeIndexContainsScan backed by limited index") {
     val planContext = mock[PlanContext]
-    when(planContext.indexGetForLabelAndProperties(anyString(), any())).thenReturn(Some(spi.IndexDescriptor.forLabel(LabelId(1), Seq(PropertyKeyId(1))).withBehaviours(Set[IndexBehaviour](SlowContains))
-    ))
+    when(planContext.indexGetForLabelAndProperties(anyString(), any())).thenReturn(Some(spi.IndexDescriptor.forLabel(LabelId(1), Seq(PropertyKeyId(1))).withBehaviours(Set[IndexBehaviour](SlowContains))))
     val plan = nodeIndexSeek("id:label(prop CONTAINS 'tron')")
 
     checkForSuboptimalIndexBehaviours(planContext)(plan) should equal(Set(SuboptimalIndexForConstainsQueryNotification("label", Seq("prop"))))

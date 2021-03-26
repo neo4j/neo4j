@@ -286,7 +286,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   test("indexGetForLabelAndProperties should return general and unique indexes") {
     inTx((_, tx) => {
       tx.schema().indexFor(Label.label("L")).on("prop").create()
-      tx.schema.constraintFor(Label.label("L")).assertPropertyIsUnique("otherProp").create()
+      tx.schema().constraintFor(Label.label("L")).assertPropertyIsUnique("otherProp").create()
     })
 
     inTx((planContext, tx) => {
@@ -337,7 +337,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
   }
 
-  private def inTx(f: (TransactionBoundPlanContext,InternalTransaction) => Unit): Unit = {
+  private def inTx(f: (TransactionBoundPlanContext, InternalTransaction) => Unit): Unit = {
     val tx = graph.beginTransaction(EXPLICIT, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, tx)
     val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger, null)

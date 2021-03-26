@@ -130,7 +130,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def indexExistsForLabel(labelId: Int): Boolean = {
-    tc.schemaRead.indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex).nonEmpty
+    indexesGetForLabel(labelId).nonEmpty
   }
 
   override def indexExistsForRelType(relTypeId: Int): Boolean = {
