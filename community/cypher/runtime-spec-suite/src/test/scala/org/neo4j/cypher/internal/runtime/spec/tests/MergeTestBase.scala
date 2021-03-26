@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.helpers.collection.Iterators
@@ -92,7 +92,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    val node = Iterators.single(tx.findNodes(Label.label("M")))
+    val node = Iterators.single(tx.findNodes(label("M")))
     runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 1)
   }
 
@@ -152,7 +152,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    val node = Iterators.single(tx.findNodes(Label.label("L")).stream().filter(n => n.hasProperty("prop")).iterator())
+    val node = Iterators.single(tx.findNodes(label("L")).stream().filter(n => n.hasProperty("prop")).iterator())
     runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
   }
 
@@ -195,7 +195,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    val node = Iterators.single(tx.findNodes(Label.label("L"), "prop", "hello"))
+    val node = Iterators.single(tx.findNodes(label("L"), "prop", "hello"))
     runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
   }
 
@@ -704,7 +704,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    val node = Iterators.single(tx.findNodes(Label.label("M")))
+    val node = Iterators.single(tx.findNodes(label("M")))
     runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 2)
   }
 
@@ -765,8 +765,8 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     val node = Iterables.single(tx.getAllNodes)
-    node.hasLabel(Label.label("L")) shouldBe true
-    node.hasLabel(Label.label("M")) shouldBe true
+    node.hasLabel(label("L")) shouldBe true
+    node.hasLabel(label("M")) shouldBe true
     node.getProperty("prop") should equal(42)
     runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 2, propertiesSet = 1)
   }
@@ -786,8 +786,8 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     nodes.foreach(node => {
-      node.hasLabel(Label.label("L")) shouldBe true
-      node.hasLabel(Label.label("M")) shouldBe true
+      node.hasLabel(label("L")) shouldBe true
+      node.hasLabel(label("M")) shouldBe true
       node.getProperty("prop") should equal(42)
     })
     runtimeResult should beColumns("n").withRows(singleColumn(nodes)).withStatistics(labelsAdded = 2 * sizeHint, propertiesSet = sizeHint)
@@ -815,6 +815,191 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     relationship.getProperty("prop") should equal(1337)
     relationship.getStartNode.getProperty("prop") should equal(42)
     runtimeResult should beColumns("r").withSingleRow(relationship).withStatistics(nodesCreated = 2, relationshipsCreated = 1, propertiesSet = 2)
+  }
+
+  test("merge followed by non-fuseable with continuations should  create nodes on no matches") {
+    //given empty db
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .merge(nodes = Seq(createNode("x")))
+      .allNodeScan("x")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val node = Iterables.single(tx.getAllNodes)
+    runtimeResult should beColumns("x").withSingleRow(node).withStatistics(nodesCreated = 1)
+  }
+
+  test("merge followed by non-fuseable with continuations should not create nodes on matches") {
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .merge(nodes = Seq(createNode("x")))
+      .allNodeScan("x")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("x").withRows(singleColumn(nodes)).withNoUpdates()
+  }
+
+  test("merge followed by optional expand into with no updates") {
+    val size = Math.sqrt(sizeHint).intValue()
+    val (nodes, rels) = given {
+      circleGraph(size)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r",  "y")
+      .optionalExpandInto("(x)-[r]->(y)")
+      .apply()
+      .|.merge(nodes = Seq(createNode("y")))
+      .|.allNodeScan("y", "x")
+      .allNodeScan("x")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+
+    consume(runtimeResult)
+    val expected = for {i <- 0 until size
+                        j <- 0 until size} yield if (j == (i + 1) % size) Array(nodes(i), rels(i), nodes(j)) else Array(nodes(i), null, nodes(j))
+    runtimeResult should beColumns("x", "r", "y").withRows(expected).withNoUpdates()
+  }
+
+  test("merge followed by optional expand into with updates") {
+    val size = Math.sqrt(sizeHint).intValue()
+    val (nodes, _) = given {
+      circleGraph(size)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r",  "y")
+      .optionalExpandInto("(x)-[r]->(y)")
+      .apply()
+      .|.merge(nodes = Seq(createNode("y", "N")))
+      .|.nodeByLabelScan("y", "N", "x")
+      .allNodeScan("x")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+
+    consume(runtimeResult)
+    val y = Iterators.single(tx.findNodes(label("N")))
+    val expected = for {x <- nodes} yield  Array[Any](x, null, y)
+
+    runtimeResult should beColumns("x", "r", "y").withRows(expected).withStatistics(nodesCreated = 1, labelsAdded = 1)
+  }
+
+  test("merge followed by aggregation into with no updates") {
+    val size = Math.sqrt(sizeHint).intValue()
+    given {
+      circleGraph(size)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("count")
+      .aggregation(Seq(), Seq("count(r) AS count"))
+      .optionalExpandInto("(x)-[r]->(y)")
+      .apply()
+      .|.merge(nodes = Seq(createNode("y")))
+      .|.allNodeScan("y", "x")
+      .allNodeScan("x")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+
+    consume(runtimeResult)
+    runtimeResult should beColumns("count").withSingleRow(size).withNoUpdates()
+  }
+
+  test("merge followed by aggregation into with updates") {
+    val size = Math.sqrt(sizeHint).intValue()
+    given {
+      circleGraph(size)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("count")
+      .aggregation(Seq(), Seq("count(x) AS count"))
+      .optionalExpandInto("(x)-[r]->(y)")
+      .apply()
+      .|.merge(nodes = Seq(createNode("y", "L")))
+      .|.nodeByLabelScan("y", "L", "x")
+      .allNodeScan("x")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+
+    consume(runtimeResult)
+    runtimeResult should beColumns("count").withSingleRow(size).withStatistics(nodesCreated = 1, labelsAdded = 1)
+  }
+
+  test("merge followed by limit with no updates") {
+    val size = Math.sqrt(sizeHint).intValue()
+    given {
+      circleGraph(size)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .limit(5)
+      .optionalExpandInto("(x)-[r]->(y)")
+      .apply()
+      .|.merge(nodes = Seq(createNode("y")))
+      .|.allNodeScan("y", "x")
+      .allNodeScan("x")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+
+    consume(runtimeResult)
+    runtimeResult should beColumns("x").withRows(rowCount(5)).withNoUpdates()
+  }
+
+  test("merge followed by limit with no updates not fused to produce results") {
+    val size = Math.sqrt(sizeHint).intValue()
+    given {
+      circleGraph(size)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nonFuseable()
+      .limit(5)
+      .optionalExpandInto("(x)-[r]->(y)")
+      .apply()
+      .|.merge(nodes = Seq(createNode("y")))
+      .|.allNodeScan("y", "x")
+      .allNodeScan("x")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+
+    consume(runtimeResult)
+    runtimeResult should beColumns("x").withRows(rowCount(5)).withNoUpdates()
   }
 }
 
