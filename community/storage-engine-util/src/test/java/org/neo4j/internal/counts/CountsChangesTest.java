@@ -59,7 +59,7 @@ class CountsChangesTest
     void shouldReturnAbsentIfNoCountAndNotStored()
     {
         // given
-        CountsChanges changes = new CountsChanges();
+        CountsChanges changes = new MapCountsChanges();
 
         // when
         long count = changes.get( nodeKey( 1 ) );
@@ -73,7 +73,7 @@ class CountsChangesTest
     void shouldAddNewCountIfMissingAndNotStored()
     {
         // given
-        CountsChanges changes = new CountsChanges();
+        CountsChanges changes = new MapCountsChanges();
         CountsKey key = nodeKey( 2 );
 
         // when
@@ -89,7 +89,7 @@ class CountsChangesTest
     void shouldAddNewCountFromStoreIfMissingAndStored()
     {
         // given
-        CountsChanges changes = new CountsChanges();
+        CountsChanges changes = new MapCountsChanges();
         CountsKey key = nodeKey( 2 );
 
         // when
@@ -106,7 +106,7 @@ class CountsChangesTest
     void shouldUpdateExistingCountIfPresent()
     {
         // given
-        CountsChanges changes = new CountsChanges();
+        CountsChanges changes = new MapCountsChanges();
         CountsKey key = nodeKey( 99 );
         long delta1 = 9;
         long delta2 = 5;
@@ -125,7 +125,7 @@ class CountsChangesTest
     void shouldNotReadFromStoreOnUpdate()
     {
         // given
-        CountsChanges changes = new CountsChanges();
+        CountsChanges changes = new MapCountsChanges();
         CountsKey key = nodeKey( 99 );
         long storedCount = 2;
         long delta1 = 9;
@@ -144,7 +144,7 @@ class CountsChangesTest
     void shouldUpdateWithNegativeDelta()
     {
         // given
-        CountsChanges changes = new CountsChanges();
+        CountsChanges changes = new MapCountsChanges();
         CountsKey key = nodeKey( 99 );
         long delta1 = 9;
         long delta2 = -5;
@@ -162,7 +162,7 @@ class CountsChangesTest
     void shouldFailUpdateOnFrozenChanges()
     {
         // given
-        CountsChanges changes = new CountsChanges();
+        CountsChanges changes = new MapCountsChanges();
         CountsKey key = relationshipKey( 1, 2, 3 );
         changes.add( key, 10, NOT_STORED );
 
@@ -177,7 +177,7 @@ class CountsChangesTest
     void shouldFindCountInOldChanges()
     {
         // given
-        CountsChanges oldChanges = new CountsChanges();
+        CountsChanges oldChanges = new MapCountsChanges();
         CountsKey key = relationshipKey( 4, 99, 21 );
         long delta = 10;
         oldChanges.add( key, delta, NOT_STORED );
@@ -194,7 +194,7 @@ class CountsChangesTest
     void shouldUpdateNewChangesBasedOnOldChanges()
     {
         // given
-        CountsChanges oldChanges = new CountsChanges();
+        CountsChanges oldChanges = new MapCountsChanges();
         CountsKey key = relationshipKey( 4, 99, 21 );
         long delta1 = 10;
         oldChanges.add( key, delta1, NOT_STORED );
@@ -214,7 +214,7 @@ class CountsChangesTest
     void shouldReturnAbsentIfMissingFromNewAndOld()
     {
         // given
-        CountsChanges oldChanges = new CountsChanges();
+        CountsChanges oldChanges = new MapCountsChanges();
         CountsKey key = nodeKey( 123 );
         oldChanges.add( key, 10, NOT_STORED );
         CountsChanges newChanges = oldChanges.freezeAndFork();
@@ -232,7 +232,7 @@ class CountsChangesTest
     void shouldUpdateConcurrently()
     {
         // given
-        CountsChanges changes = new CountsChanges();
+        CountsChanges changes = new MapCountsChanges();
         InMemoryCountsStore store = new InMemoryCountsStore();
         int numStoredCounts = random.nextInt( 10, 100 );
         for ( int i = 0; i < numStoredCounts; i++ )
@@ -283,7 +283,7 @@ class CountsChangesTest
     void shouldSortChanges()
     {
         // given
-        CountsChanges changes = new CountsChanges();
+        CountsChanges changes = new MapCountsChanges();
         Set<CountsKey> expectedChangesSet = new HashSet<>();
         for ( int i = 0; i < 100; i++ )
         {

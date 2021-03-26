@@ -42,7 +42,7 @@ class DeltaTreeWriter implements CountUpdater.CountWriter
     private final Comparator<CountsKey> comparator;
     private final int maxCacheSize;
     private final LogProvider userLogProvider;
-    private CountsChanges changes = new CountsChanges();
+    private CountsChanges changes = new MapCountsChanges();
     private int changeCounter;
 
     DeltaTreeWriter( ThrowingSupplier<Writer<CountsKey,CountsValue>,IOException> treeWriter, ToLongFunction<CountsKey> lookup,
@@ -80,7 +80,7 @@ class DeltaTreeWriter implements CountUpdater.CountWriter
         {
             throw new UncheckedIOException( e );
         }
-        changes = new CountsChanges();
+        changes = new MapCountsChanges();
     }
 
     @Override

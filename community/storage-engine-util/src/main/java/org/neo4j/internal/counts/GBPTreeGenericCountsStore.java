@@ -37,9 +37,9 @@ import java.util.function.LongConsumer;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.collection.PrimitiveLongArrayQueue;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.counts.CountsStorage;
 import org.neo4j.counts.InvalidCountException;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
@@ -107,7 +107,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     private final String databaseName;
     private final int maxCacheSize;
     private final int highMarkCacheSize;
-    protected volatile CountsChanges changes = new CountsChanges();
+    protected volatile CountsChanges changes = createCountChanges();
     private final TxIdInformation txIdInformation;
     private final LogProvider userLogProvider;
     private volatile boolean started;
@@ -159,6 +159,11 @@ public class GBPTreeGenericCountsStore implements CountsStorage
                 closeAllUnchecked( tree );
             }
         }
+    }
+
+    protected CountsChanges createCountChanges()
+    {
+        return new MapCountsChanges();
     }
 
     private GBPTree<CountsKey,CountsValue> instantiateTree( PageCache pageCache, Path file, RecoveryCleanupWorkCollector recoveryCollector,

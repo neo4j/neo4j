@@ -105,6 +105,12 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
         return updater != null ? new Incrementer( updater ) : NO_OP_UPDATER;
     }
 
+    public CountsAccessor.Updater directApply( boolean deltas, CursorContext cursorContext ) throws IOException
+    {
+        CountUpdater updater = directUpdater( deltas, cursorContext );
+        return updater != null ? new Incrementer( updater ) : NO_OP_UPDATER;
+    }
+
     @Override
     public long nodeCount( int labelId, CursorContext cursorContext )
     {

@@ -23,32 +23,23 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import org.neo4j.util.Preconditions;
 
-/**
- * Changes to counts, kept as {@link AtomicLong} to allow for concurrent threads incrementing/decrementing.
- * As part of checkpoint a new instance is created and the old (now immutable) instance accessible to read from while those counts are written to
- * the backing tree.
- */
-class CountsChanges
+abstract class CountsChanges
 {
     static final long ABSENT = -1;
 
-    private final ConcurrentHashMap<CountsKey,AtomicLong> changes = new ConcurrentHashMap<>();
-    private volatile ConcurrentHashMap<CountsKey,AtomicLong> previousChanges;
+    protected final ConcurrentMap<CountsKey,AtomicLong> changes;
+    private volatile ConcurrentMap<CountsKey,AtomicLong> previousChanges;
     private volatile boolean frozen;
 
-    CountsChanges()
+    protected CountsChanges( ConcurrentMap<CountsKey,AtomicLong> changes )
     {
-    }
-
-    private CountsChanges( ConcurrentHashMap<CountsKey,AtomicLong> previousChanges )
-    {
-        this.previousChanges = previousChanges;
+        this.changes = changes;
     }
 
     /**
@@ -59,8 +50,12 @@ class CountsChanges
     CountsChanges freezeAndFork()
     {
         frozen = true;
-        return new CountsChanges( changes );
+        CountsChanges fork = fork();
+        fork.previousChanges = changes;
+        return fork;
     }
+
+    protected abstract CountsChanges fork();
 
     /**
      * Clears the reference to the old instances that now has been written to the backing tree.
@@ -85,7 +80,7 @@ class CountsChanges
 
     private AtomicLong getCounter( CountsKey key, Function<CountsKey,AtomicLong> defaultToStoredCount )
     {
-        ConcurrentHashMap<CountsKey,AtomicLong> prev = previousChanges;
+        ConcurrentMap<CountsKey,AtomicLong> prev = previousChanges;
         Function<CountsKey,AtomicLong> defaultFunction = prev == null ? defaultToStoredCount : k ->
         {
             AtomicLong prevCount = prev.get( k );
@@ -115,7 +110,7 @@ class CountsChanges
         {
             return true;
         }
-        ConcurrentHashMap<CountsKey,AtomicLong> prev = previousChanges;
+        ConcurrentMap<CountsKey,AtomicLong> prev = previousChanges;
         return prev != null && prev.containsKey( key );
     }
 
@@ -131,7 +126,7 @@ class CountsChanges
         {
             return count.get();
         }
-        ConcurrentHashMap<CountsKey,AtomicLong> prev = previousChanges;
+        ConcurrentMap<CountsKey,AtomicLong> prev = previousChanges;
         if ( prev != null )
         {
             AtomicLong prevCount = prev.get( key );
