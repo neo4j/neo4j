@@ -397,7 +397,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         KernelVersion currentVersion = metaDataStore.kernelVersion();
         Preconditions.checkState( currentVersion.isAtLeast( KernelVersion.V4_2 ),
                 "Upgrade transaction was introduced in %s and must be done from at least %s. Tried upgrading from %s to %s",
-                KernelVersion.V4_3_D3, KernelVersion.V4_2, currentVersion, versionToUpgradeTo );
+                KernelVersion.V4_3_D4, KernelVersion.V4_2, currentVersion, versionToUpgradeTo );
         Preconditions.checkState( versionToUpgradeTo.isGreaterThan( currentVersion ), "Can not downgrade from %s to %s", currentVersion, versionToUpgradeTo );
 
         int id = MetaDataStore.Position.KERNEL_VERSION.id();
@@ -554,7 +554,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     private boolean relaxedLockingForDenseNodes()
     {
-        return neoStores.getMetaDataStore().kernelVersion().isAtLeast( KernelVersion.V4_3_D3 );
+        return neoStores.getMetaDataStore().kernelVersion().isAtLeast( KernelVersion.V4_3_D4 );
     }
 
     /**

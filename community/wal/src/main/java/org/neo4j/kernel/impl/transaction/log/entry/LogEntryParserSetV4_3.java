@@ -25,6 +25,6 @@ public class LogEntryParserSetV4_3 extends LogEntryParserSetV4_2
 {
     LogEntryParserSetV4_3()
     {
-        super( KernelVersion.V4_3_D3 );
+        super( KernelVersion.V4_3_D4 );
     }
 }

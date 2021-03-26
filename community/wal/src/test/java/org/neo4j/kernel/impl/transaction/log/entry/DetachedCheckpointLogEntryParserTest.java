@@ -43,7 +43,7 @@ class DetachedCheckpointLogEntryParserTest
     @Test
     void parseDetachedCheckpointRecord() throws IOException
     {
-        KernelVersion version = KernelVersion.V4_3_D3;
+        KernelVersion version = KernelVersion.V4_3_D4;
         var storeId = new StoreId( 4, 5, 6, 7, 8 );
         var channel = new InMemoryClosableChannel();
         int checkpointMillis = 3;

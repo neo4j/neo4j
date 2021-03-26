@@ -41,7 +41,7 @@ class LogCommandSerializationV4_3_D3 extends LogCommandSerializationV4_2
     @Override
     KernelVersion version()
     {
-        return KernelVersion.V4_3_D3;
+        return KernelVersion.V4_3_D4;
     }
 
     @Override

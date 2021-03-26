@@ -117,7 +117,7 @@ class DatabaseUpgradeTransactionIT
         //Then
         assertThat( getKernelVersion() ).isEqualTo( V4_2 );
         createWriteTransaction(); // Just to have at least one tx from our measurement point in the old version
-        setDbmsRuntime( DbmsRuntimeVersion.V4_3_D3 );
+        setDbmsRuntime( DbmsRuntimeVersion.V4_3_D4 );
 
         //When
         createReadTransaction();
