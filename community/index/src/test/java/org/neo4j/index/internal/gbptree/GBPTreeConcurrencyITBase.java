@@ -474,7 +474,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
             CountDownLatch readerStartSignal,
             AtomicBoolean endSignal, AtomicBoolean failHalt ) throws InterruptedException, IOException
     {
-        assertTrue( readerReadySignal.await( 10, SECONDS ) ); // Ready, set...
+        assertTrue( readerReadySignal.await( 60, SECONDS ) ); // Ready, set...
         readerStartSignal.countDown(); // GO!
 
         while ( !failHalt.get() && !endSignal.get() )
