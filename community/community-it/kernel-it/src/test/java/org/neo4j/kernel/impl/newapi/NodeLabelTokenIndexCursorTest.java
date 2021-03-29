@@ -19,13 +19,31 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.jupiter.api.Disabled;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.common.EntityType;
+import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.schema.AnyTokens;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.kernel.api.TokenReadSession;
+import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
-@Disabled( "Scan stores as token indexes are not fully implemented yet" )
-public class NodeLabelTokenIndexCursorTest extends NodeLabelIndexCursorTestBase<WriteTestSupport>
+import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertNodeCount;
+import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertNodes;
+
+public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteTestSupport>
 {
     @Override
     public WriteTestSupport newTestSupport()
@@ -39,5 +57,147 @@ public class NodeLabelTokenIndexCursorTest extends NodeLabelIndexCursorTestBase<
                 return super.configure( builder );
             }
         };
+    }
+
+    private int labelOne = 1;
+    private int labelTwo = 2;
+    private int labelThree = 3;
+    private int labelFirst = 4;
+
+    @Test
+    void shouldFindNodesByLabel() throws Exception
+    {
+        // GIVEN
+        createNLS();
+
+        long toDelete;
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            createNode( tx.dataWrite(), labelOne, labelFirst );
+            createNode( tx.dataWrite(), labelTwo, labelFirst );
+            createNode( tx.dataWrite(), labelThree, labelFirst );
+            toDelete = createNode( tx.dataWrite(), labelOne );
+            createNode( tx.dataWrite(), labelTwo );
+            createNode( tx.dataWrite(), labelThree );
+            createNode( tx.dataWrite(), labelThree );
+            tx.commit();
+        }
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            tx.dataWrite().nodeDelete( toDelete );
+            tx.commit();
+        }
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            org.neo4j.internal.kernel.api.Read read = tx.dataRead();
+
+            var session = getTokenReadSession( tx );
+
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )
+            {
+                MutableLongSet uniqueIds = new LongHashSet();
+
+                // WHEN
+                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelOne ) );
+
+                // THEN
+                assertNodeCount( cursor, 1, uniqueIds );
+
+                // WHEN
+                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelTwo ) );
+
+                // THEN
+                assertNodeCount( cursor, 2, uniqueIds );
+
+                // WHEN
+                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelThree ) );
+
+                // THEN
+                assertNodeCount( cursor, 3, uniqueIds );
+
+                // WHEN
+                uniqueIds.clear();
+                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelFirst ) );
+
+                // THEN
+                assertNodeCount( cursor, 3, uniqueIds );
+            }
+        }
+    }
+
+    private TokenReadSession getTokenReadSession( KernelTransaction tx ) throws IndexNotFoundKernelException
+    {
+        var descriptor = SchemaDescriptor.forAllEntityTokens( EntityType.NODE );
+        var indexes = tx.schemaRead().index( descriptor );
+        var session = tx.dataRead().tokenReadSession( indexes.next() );
+        return session;
+    }
+
+    @Test
+    void shouldFindNodesByLabelInTx() throws Exception
+    {
+
+        createNLS();
+
+        long inStore;
+        long deletedInTx;
+        long createdInTx;
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            inStore = createNode( tx.dataWrite(), labelOne );
+            createNode( tx.dataWrite(), labelTwo );
+            deletedInTx = createNode( tx.dataWrite(), labelOne );
+            tx.commit();
+        }
+
+        try ( KernelTransaction tx = beginTransaction() )
+        {
+            tx.dataWrite().nodeDelete( deletedInTx );
+            createdInTx = createNode( tx.dataWrite(), labelOne );
+
+            createNode( tx.dataWrite(), labelTwo );
+
+            Read read = tx.dataRead();
+
+            var session = getTokenReadSession( tx );
+
+            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor( tx.pageCursorTracer() ) )
+            {
+                MutableLongSet uniqueIds = new LongHashSet();
+
+                // when
+                read.nodeLabelScan( session, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( labelOne ) );
+
+                // then
+                assertNodes( cursor, uniqueIds, inStore, createdInTx );
+            }
+        }
+    }
+
+    private void createNLS()
+    {
+        try ( var tx = graphDb.beginTx() )
+        {
+            tx.schema().indexFor( AnyTokens.ANY_LABELS ).create();
+            tx.commit();
+        }
+
+        try ( var tx = graphDb.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+        }
+    }
+
+    private long createNode( Write write, int... labels ) throws KernelException
+    {
+        long nodeId = write.nodeCreate();
+        for ( int label : labels )
+        {
+            write.nodeAddLabel( nodeId, label );
+        }
+        return nodeId;
     }
 }

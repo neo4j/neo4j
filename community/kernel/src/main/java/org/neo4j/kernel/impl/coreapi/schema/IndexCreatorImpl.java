@@ -86,6 +86,10 @@ public class IndexCreatorImpl implements IndexCreator
     public IndexCreator withIndexType( IndexType indexType )
     {
         assertInUnterminatedTransaction();
+        if ( indexType == IndexType.LOOKUP )
+        {
+            throw new ConstraintViolationException( "Index type " + indexType + " is not supported for property indexes." );
+        }
         return new IndexCreatorImpl( actions, labels, types, indexName, propertyKeys, indexType, indexConfig );
     }
 

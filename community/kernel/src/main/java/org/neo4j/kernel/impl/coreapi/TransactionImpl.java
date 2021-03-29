@@ -1183,7 +1183,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         while ( iterator.hasNext() )
         {
             IndexDescriptor index = iterator.next();
-            if ( index.getIndexType() == IndexType.BTREE && indexIsOnline( schemaRead, index ) )
+            if ( index.getIndexType() != IndexType.FULLTEXT && indexIsOnline( schemaRead, index ) )
             {
                 return index;
             }

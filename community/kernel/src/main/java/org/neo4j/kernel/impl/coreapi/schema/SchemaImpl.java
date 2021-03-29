@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
@@ -83,6 +84,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.map;
 import static org.neo4j.internal.schema.IndexType.fromPublicApi;
+import static org.neo4j.internal.schema.SchemaDescriptor.forAllEntityTokens;
 import static org.neo4j.internal.schema.SchemaDescriptor.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptor.forRelType;
 import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
@@ -122,6 +124,16 @@ public class SchemaImpl implements Schema
     public IndexCreator indexFor( RelationshipType... types )
     {
         return new IndexCreatorImpl( actions, types );
+    }
+
+    @Override
+    public IndexCreator indexFor( AnyTokens tokens )
+    {
+        if ( !transaction.schemaRead().scanStoreAsTokenIndexEnabled() )
+        {
+            throw new IllegalStateException( "Cannot create token indexes when feature is not enabled." );
+        }
+        return new TokenIndexCreator( actions, tokens );
     }
 
     @Override
@@ -513,6 +525,10 @@ public class SchemaImpl implements Schema
             {
                 schema = fulltext( EntityType.NODE, labelIds, propertyKeyIds );
             }
+            else if ( index.getIndexType() == IndexType.LOOKUP )
+            {
+                schema = forAllEntityTokens( EntityType.NODE );
+            }
             else
             {
                 schema = forLabel( labelIds[0], propertyKeyIds );
@@ -526,6 +542,10 @@ public class SchemaImpl implements Schema
             if ( index.isMultiTokenIndex() )
             {
                 schema = fulltext( EntityType.RELATIONSHIP, relTypes, propertyKeyIds );
+            }
+            else if ( index.getIndexType() == IndexType.LOOKUP )
+            {
+                schema = forAllEntityTokens( EntityType.RELATIONSHIP );
             }
             else
             {
@@ -720,6 +740,30 @@ public class SchemaImpl implements Schema
             catch ( KernelException e )
             {
                 throw new TransactionFailureException( "Unknown error trying to create token ids", e );
+            }
+        }
+
+        @Override
+        public IndexDefinition createIndexDefinition( AnyTokens tokens, String indexName, IndexConfig indexConfig )
+        {
+            try
+            {
+                var schema = SchemaDescriptor.forAllEntityTokens(
+                        tokens == AnyTokens.ANY_LABELS ? EntityType.NODE : EntityType.RELATIONSHIP );
+                var indexDescriptor = createIndex( indexName, schema, IndexType.LOOKUP, indexConfig );
+                if ( tokens == AnyTokens.ANY_LABELS )
+                {
+                    return new IndexDefinitionImpl( this, indexDescriptor, new Label[0], new String[0], false );
+                }
+                return new IndexDefinitionImpl( this, indexDescriptor, new RelationshipType[0], new String[0], false );
+            }
+            catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
+            {
+                throw new ConstraintViolationException( e.getUserMessage( transaction.tokenRead() ), e );
+            }
+            catch ( KernelException e )
+            {
+                throw new TransactionFailureException( "Unknown error trying to create index", e );
             }
         }
 

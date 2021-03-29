@@ -60,7 +60,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
     {
         for ( Consumer<T> method : methods )
         {
-            assertThrows( NotInTransactionException.class, () -> method.accept( entity ) );
+            assertThrows( NotInTransactionException.class, () -> method.accept( entity ), method::toString );
         }
     }
 
@@ -68,7 +68,8 @@ public abstract class AbstractMandatoryTransactionsTest<T>
     {
         for ( final Consumer<T> method : methods )
         {
-            obtainEntityInTerminatedTransaction( entity -> assertThrows( TransactionTerminatedException.class, () -> method.accept( entity ) ) );
+            obtainEntityInTerminatedTransaction(
+                    entity -> assertThrows( TransactionTerminatedException.class, () -> method.accept( entity ), method::toString ) );
         }
     }
 }

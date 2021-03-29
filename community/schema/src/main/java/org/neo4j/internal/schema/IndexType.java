@@ -35,7 +35,7 @@ public enum IndexType
      */
     FULLTEXT,
     /**
-     * todo: This type does not have corresponding public version because name is not fixed yet.
+     * @see org.neo4j.graphdb.schema.IndexType#LOOKUP
      */
     LOOKUP;
 
@@ -47,9 +47,14 @@ public enum IndexType
         }
         switch ( type )
         {
-        case BTREE: return BTREE;
-        case FULLTEXT: return FULLTEXT;
-        default: throw new IllegalArgumentException( "Unknown index type: " + type );
+        case BTREE:
+            return BTREE;
+        case FULLTEXT:
+            return FULLTEXT;
+        case LOOKUP:
+            return LOOKUP;
+        default:
+            throw new IllegalArgumentException( "Unknown index type: " + type );
         }
     }
 
@@ -57,9 +62,14 @@ public enum IndexType
     {
         switch ( this )
         {
-        case BTREE: return org.neo4j.graphdb.schema.IndexType.BTREE;
-        case FULLTEXT: return org.neo4j.graphdb.schema.IndexType.FULLTEXT;
-        default: throw new IllegalStateException( "Missing index type variant in IndexType.toPublicApi: " + this );
+        case BTREE:
+            return org.neo4j.graphdb.schema.IndexType.BTREE;
+        case FULLTEXT:
+            return org.neo4j.graphdb.schema.IndexType.FULLTEXT;
+        case LOOKUP:
+            return org.neo4j.graphdb.schema.IndexType.LOOKUP;
+        default:
+            throw new IllegalStateException( "Missing index type variant in IndexType.toPublicApi: " + this );
         }
     }
 }

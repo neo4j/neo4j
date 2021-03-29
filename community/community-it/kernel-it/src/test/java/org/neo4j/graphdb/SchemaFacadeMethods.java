@@ -22,15 +22,20 @@ package org.neo4j.graphdb;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.graphdb.schema.Schema;
 
+import static org.neo4j.graphdb.FacadeMethod.FOO;
 import static org.neo4j.graphdb.FacadeMethod.INDEX_DEFINITION;
 import static org.neo4j.graphdb.FacadeMethod.LABEL;
 
 public enum SchemaFacadeMethods implements Consumer<Schema>
 {
-    INDEX_FOR( new FacadeMethod<>( "IndexCreator indexFor( Label label )", s -> s.indexFor( LABEL ) ) ),
+    INDEX_FOR_LABEL( new FacadeMethod<>( "IndexCreator indexFor( Label label )", s -> s.indexFor( LABEL ) ) ),
+    INDEX_FOR_REL_TYPE( new FacadeMethod<>( "IndexCreator indexFor( RelationshipType type )", s -> s.indexFor( FOO ) ) ),
+    INDEX_FOR_TOKENS( new FacadeMethod<>( "IndexCreator indexFor( AnyTokens tokens )", s -> s.indexFor( AnyTokens.ANY_LABELS ) ) ),
     GET_INDEXES_BY_LABEL( new FacadeMethod<>( "Iterable<IndexDefinition> getIndexes( Label label )", s -> s.getIndexes( LABEL ) ) ),
+    GET_INDEXES_BY_REL_TYPE( new FacadeMethod<>( "Iterable<IndexDefinition> getIndexes( RelationshipType relationshipType )", s -> s.getIndexes( FOO ) ) ),
     GET_INDEXES( new FacadeMethod<>( "Iterable<IndexDefinition> getIndexes()", Schema::getIndexes ) ),
     GET_INDEX_STATE( new FacadeMethod<>( "IndexState getIndexState( IndexDefinition index )", s -> s.getIndexState( INDEX_DEFINITION ) ) ),
     GET_INDEX_FAILURE( new FacadeMethod<>( "String getIndexFailure( IndexDefinition index )", s -> s.getIndexFailure( INDEX_DEFINITION ) ) ),

@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertNodeCount;
 import static org.neo4j.kernel.impl.newapi.IndexReadAsserts.assertNodes;
 
+// TODO remove this, keep NodeLabelTokenIndexCursorTest which uses token read sessions
 abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
     private int labelOne = 1;

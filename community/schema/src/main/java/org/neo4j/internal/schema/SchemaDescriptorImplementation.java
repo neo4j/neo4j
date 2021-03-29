@@ -40,6 +40,8 @@ import static org.neo4j.internal.schema.PropertySchemaType.PARTIAL_ANY_TOKEN;
 public final class SchemaDescriptorImplementation implements SchemaDescriptor, LabelSchemaDescriptor, RelationTypeSchemaDescriptor, FulltextSchemaDescriptor,
         AnyTokenSchemaDescriptor
 {
+    private static final long[] TOKEN_INDEX_LOCKING_IDS = {Long.MAX_VALUE};
+
     private final EntityType entityType;
     private final PropertySchemaType propertySchemaType;
     private final int[] entityTokens;
@@ -295,6 +297,26 @@ public final class SchemaDescriptorImplementation implements SchemaDescriptor, L
     public PropertySchemaType propertySchemaType()
     {
         return propertySchemaType;
+    }
+
+    @Override
+    public long[] lockingKeys()
+    {
+        // for AnyToken schema which doesn't have specific token ids lock on max long
+        if ( archetypalAnyTokenSchema )
+        {
+            return TOKEN_INDEX_LOCKING_IDS;
+        }
+
+        // TODO make getEntityTokenIds produce a long array directly, and avoid this extra copying.
+        int[] tokenIds = getEntityTokenIds();
+        int length = tokenIds.length;
+        long[] lockingIds = new long[length];
+        for ( int i = 0; i < length; i++ )
+        {
+            lockingIds[i] = tokenIds[i];
+        }
+        return lockingIds;
     }
 
     @Override

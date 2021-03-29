@@ -985,6 +985,10 @@ public class Operations implements Write, SchemaWrite
             {
                 provider = indexProviders.getFulltextProvider();
             }
+            else if ( prototype.getIndexType() == IndexType.LOOKUP )
+            {
+                provider = indexProviders.getTokenIndexProvider();
+            }
             else
             {
                 provider = indexProviders.getDefaultProvider();
@@ -1032,7 +1036,7 @@ public class Operations implements Write, SchemaWrite
     {
         exclusiveSchemaLock( schema );
         Iterator<IndexDescriptor> iterator = Iterators.filter(
-                index -> index.getIndexType() == IndexType.BTREE,
+                index -> index.getIndexType() != IndexType.FULLTEXT,
                 allStoreHolder.index( schema ) );
 
         if ( !iterator.hasNext() )

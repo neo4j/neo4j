@@ -341,6 +341,11 @@ org.neo4j.graphdb.event.TransactionEventListener<T extends java.lang.Object> pub
 org.neo4j.graphdb.event.TransactionEventListener<T>::afterCommit(org.neo4j.graphdb.event.TransactionData, #T, org.neo4j.graphdb.GraphDatabaseService) void public abstract
 org.neo4j.graphdb.event.TransactionEventListener<T>::afterRollback(org.neo4j.graphdb.event.TransactionData, #T, org.neo4j.graphdb.GraphDatabaseService) void public abstract
 org.neo4j.graphdb.event.TransactionEventListener<T>::beforeCommit(org.neo4j.graphdb.event.TransactionData, org.neo4j.graphdb.Transaction, org.neo4j.graphdb.GraphDatabaseService) #T public abstract throws java.lang.Exception
+org.neo4j.graphdb.schema.AnyTokens public final enum extends java.lang.Enum<org.neo4j.graphdb.schema.AnyTokens>
+org.neo4j.graphdb.schema.AnyTokens::ANY_LABELS org.neo4j.graphdb.schema.AnyTokens public static final
+org.neo4j.graphdb.schema.AnyTokens::ANY_RELATIONSHIP_TYPES org.neo4j.graphdb.schema.AnyTokens public static final
+org.neo4j.graphdb.schema.AnyTokens::valueOf(java.lang.String) org.neo4j.graphdb.schema.AnyTokens public static
+org.neo4j.graphdb.schema.AnyTokens::values() org.neo4j.graphdb.schema.AnyTokens[] public static
 org.neo4j.graphdb.schema.ConstraintCreator public abstract interface
 org.neo4j.graphdb.schema.ConstraintCreator::assertPropertyExists(java.lang.String) org.neo4j.graphdb.schema.ConstraintCreator public abstract
 org.neo4j.graphdb.schema.ConstraintCreator::assertPropertyIsNodeKey(java.lang.String) org.neo4j.graphdb.schema.ConstraintCreator public abstract
@@ -405,6 +410,7 @@ org.neo4j.graphdb.schema.IndexSetting::spatial_Wgs84_Min() org.neo4j.graphdb.sch
 org.neo4j.graphdb.schema.IndexType public final enum extends java.lang.Enum<org.neo4j.graphdb.schema.IndexType>
 org.neo4j.graphdb.schema.IndexType::BTREE org.neo4j.graphdb.schema.IndexType public static final
 org.neo4j.graphdb.schema.IndexType::FULLTEXT org.neo4j.graphdb.schema.IndexType public static final
+org.neo4j.graphdb.schema.IndexType::LOOKUP org.neo4j.graphdb.schema.IndexType public static final
 org.neo4j.graphdb.schema.IndexType::valueOf(java.lang.String) org.neo4j.graphdb.schema.IndexType public static
 org.neo4j.graphdb.schema.IndexType::values() org.neo4j.graphdb.schema.IndexType[] public static
 org.neo4j.graphdb.schema.Schema public abstract interface
@@ -434,6 +440,7 @@ org.neo4j.graphdb.schema.Schema::indexFor(org.neo4j.graphdb.Label) org.neo4j.gra
 org.neo4j.graphdb.schema.Schema::indexFor(org.neo4j.graphdb.Label...) org.neo4j.graphdb.schema.IndexCreator public abstract
 org.neo4j.graphdb.schema.Schema::indexFor(org.neo4j.graphdb.RelationshipType) org.neo4j.graphdb.schema.IndexCreator public abstract
 org.neo4j.graphdb.schema.Schema::indexFor(org.neo4j.graphdb.RelationshipType...) org.neo4j.graphdb.schema.IndexCreator public abstract
+org.neo4j.graphdb.schema.Schema::indexFor(org.neo4j.graphdb.schema.AnyTokens) org.neo4j.graphdb.schema.IndexCreator public abstract
 org.neo4j.graphdb.spatial.CRS public abstract interface
 org.neo4j.graphdb.spatial.CRS::getCode() int public abstract
 org.neo4j.graphdb.spatial.CRS::getHref() java.lang.String public abstract

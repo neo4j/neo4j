@@ -82,6 +82,7 @@ import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -105,7 +106,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     @Inject
     private DbmsController controller;
     @Inject
-    private GraphDatabaseService db;
+    protected GraphDatabaseService db;
     @Inject
     private EphemeralFileSystemAbstraction fs;
     @Inject
@@ -190,10 +191,9 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                 schema1 -> schema1.indexFor( label ).on( propertyKey ).withName( "name" ).create(),
                 ConstraintViolationException.class );
         Class<EquivalentSchemaRuleAlreadyExistsException> expectedCause = EquivalentSchemaRuleAlreadyExistsException.class;
-        String expectedMessage =
-                "An equivalent index already exists, 'Index( id=1, name='name', type='GENERAL BTREE', schema=(:MY_LABEL {my_property_key}), " +
-                        "indexProvider='native-btree-1.0' )'.";
-        assertExpectedException( exception, expectedCause, expectedMessage );
+        assertExpectedException( exception, expectedCause,
+                "An equivalent index already exists, 'Index( id=", "name='name', type='GENERAL BTREE', schema=(:MY_LABEL {my_property_key}), " +
+                                                                   "indexProvider='native-btree-1.0' )'." );
     }
 
     @ParameterizedTest()
@@ -208,7 +208,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         Class<EquivalentSchemaRuleAlreadyExistsException> expectedCause = EquivalentSchemaRuleAlreadyExistsException.class;
         assertExpectedException( exception, expectedCause,
                 "An equivalent constraint already exists, 'Constraint( ",
-                "name='name', type='UNIQUENESS', schema=(:MY_LABEL {my_property_key}), ownedIndex=1 )'." );
+                "name='name', type='UNIQUENESS', schema=(:MY_LABEL {my_property_key}), ownedIndex=" );
     }
 
     @ParameterizedTest()
@@ -261,7 +261,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                 ConstraintViolationException.class );
         Class<AlreadyConstrainedException> expectedCause = AlreadyConstrainedException.class;
         assertExpectedException( exception, expectedCause,
-                "Constraint already exists: Constraint( ", "name='name', type='UNIQUENESS', schema=(:MY_LABEL {my_property_key}), ownedIndex=1 )" );
+                "Constraint already exists: Constraint( ", "name='name', type='UNIQUENESS', schema=(:MY_LABEL {my_property_key}), ownedIndex=" );
     }
 
     @ParameterizedTest()
@@ -362,8 +362,9 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             index = getIndex( tx, index.getName() );
             index.drop();
             ConstraintViolationException e = assertThrows( ConstraintViolationException.class, index::drop );
-            assertThat( e ).hasMessageContaining( "Unable to drop index: Index does not exist: " +
-                    "Index( id=1, name='index_a0d2924', type='GENERAL BTREE', schema=(:MY_LABEL {my_property_key}), indexProvider='native-btree-1.0' )" );
+            assertThat( e ).hasMessageContaining( "Unable to drop index: Index does not exist: Index( id=" )
+                           .hasMessageContaining( "name='index_a0d2924', type='GENERAL BTREE', schema=(:MY_LABEL {my_property_key})," +
+                                                  " indexProvider='native-btree-1.0' )" );
             tx.commit();
         }
 
@@ -1141,6 +1142,19 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
                     .withIndexConfiguration( Map.of( IndexSettingImpl.SPATIAL_CARTESIAN_MAX, 1.0 ) )
                     .create() );
             tx.commit();
+        }
+    }
+
+    @Test
+    void indexCreatorThrowsOnUnsupportedIndexType()
+    {
+        try ( var tx = db.beginTx() )
+        {
+            IndexCreator indexCreator = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey );
+
+            assertThatThrownBy( () -> indexCreator.withIndexType( IndexType.LOOKUP ).create() )
+                    .isInstanceOf( ConstraintViolationException.class )
+                    .hasMessageContaining( "Index type LOOKUP is not supported for property indexes." );
         }
     }
 
@@ -2542,7 +2556,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
-    private void dropIndex( IndexDefinition index )
+    protected void dropIndex( IndexDefinition index )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -2551,7 +2565,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
     }
 
-    private static Node createNode( GraphDatabaseService db, String key, Object value, Label label )
+    static Node createNode( GraphDatabaseService db, String key, Object value, Label label )
     {
         try ( Transaction tx = db.beginTx() )
         {

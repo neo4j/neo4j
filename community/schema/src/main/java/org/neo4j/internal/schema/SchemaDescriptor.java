@@ -116,19 +116,6 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         }
     }
 
-    private static long[] schemaTokenLockingIds( SchemaDescriptor schema )
-    {
-        // TODO make getEntityTokenIds produce a long array directly, and avoid this extra copying.
-        int[] tokenIds = schema.getEntityTokenIds();
-        int length = tokenIds.length;
-        long[] lockingIds = new long[length];
-        for ( int i = 0; i < length; i++ )
-        {
-            lockingIds[i] = tokenIds[i];
-        }
-        return lockingIds;
-    }
-
     /**
      * Test if this schema descriptor is a {@link LabelSchemaDescriptor}.
      * @return {@code true} if calling {@link #asLabelSchemaDescriptor()} will not throw an exception.
@@ -265,10 +252,7 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     /**
      * Get the ids that together with the {@link #keyType()} can be used to acquire the schema locks needed to lock the schema represented by this descriptor.
      */
-    default long[] lockingKeys()
-    {
-        return schemaTokenLockingIds( this );
-    }
+    long[] lockingKeys();
 
     /**
      * Type of underlying schema descriptor key.

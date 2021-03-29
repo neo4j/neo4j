@@ -132,6 +132,12 @@ class NoSchemaDescriptor implements SchemaDescriptor
     }
 
     @Override
+    public long[] lockingKeys()
+    {
+        return new long[0];
+    }
+
+    @Override
     public SchemaDescriptor schema()
     {
         return null;

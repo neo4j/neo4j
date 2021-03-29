@@ -137,6 +137,24 @@ public interface Schema
     IndexCreator indexFor( RelationshipType... types );
 
     /**
+     * Begin specifying an index of type {@link IndexType#LOOKUP} for all labels or relationship types.
+     *
+     * Returns an {@link IndexCreator} where details about the index to create can be
+     * specified. When all details have been entered, {@link IndexCreator#create() create}
+     * must be called for the index to actually be created.
+     *
+     * Creating such index enables indexing for labeled nodes or relationships. The index will
+     * have the details supplied to the {@link IndexCreator returned index creator}.
+     * All existing and all future label nodes or relationships will be indexed,
+     * speeding up future read operations.
+     *
+     * @param tokens kind of tokens to be indexed.
+     * @return an {@link IndexCreator} capable of providing details for, as well as creating
+     * an index for the given {@link Label label}.
+     */
+    IndexCreator indexFor( AnyTokens tokens );
+
+    /**
      * @param label the {@link Label} to get {@link IndexDefinition indexes} for.
      * @return all {@link IndexDefinition indexes} attached to the given {@link Label label}.
      */

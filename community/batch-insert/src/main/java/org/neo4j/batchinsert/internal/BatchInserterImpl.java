@@ -47,6 +47,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
@@ -1324,6 +1325,12 @@ public class BatchInserterImpl implements BatchInserter
         @Override
         public IndexDefinition createIndexDefinition( RelationshipType[] types, String indexName, IndexType indexType, IndexConfig indexConfig,
                 String... propertyKeys )
+        {
+            throw unsupportedException();
+        }
+
+        @Override
+        public IndexDefinition createIndexDefinition( AnyTokens tokens, String indexName, IndexConfig indexConfig )
         {
             throw unsupportedException();
         }

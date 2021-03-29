@@ -54,5 +54,20 @@ public enum IndexType
      *     <li>They can be created on both {@link Schema#indexFor(Label) labels}, and {@link Schema#indexFor(RelationshipType) relationship types}.</li>
      * </ul>
      */
-    FULLTEXT
+    FULLTEXT,
+
+    /**
+     * Type of index that maps all labels or all relationship types to nodes or relationships respectively. This type of index is used to find all entities
+     * that have specific token.
+     * <p>
+     * LOOKUP indexes have the following abilities and limitations:
+     * <ul>
+     *     <li>They cannot be used as the {@link ConstraintCreator#withIndexType(IndexType) constraint index type} for index-backed constraints.</li>
+     *     <li>They can not have their behaviour fine-tuned, using the {@linkplain IndexSetting index settings}.</li>
+     *     <li>They do not support {@linkplain Schema#indexFor(Label...) creating} {@linkplain IndexDefinition#isMultiTokenIndex() multi-token} indexes.</li>
+     *     <li>They can be {@link Schema#indexFor(AnyTokens) created} as {@link AnyTokens#ANY_LABELS label} or
+     *     {@link AnyTokens#ANY_RELATIONSHIP_TYPES relationship type} token index.</li>
+     * </ul>
+     */
+    LOOKUP
 }
