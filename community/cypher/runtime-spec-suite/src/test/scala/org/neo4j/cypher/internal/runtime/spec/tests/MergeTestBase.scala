@@ -1001,6 +1001,27 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("x").withRows(rowCount(5)).withNoUpdates()
   }
+
+  test("handle continuations from rhs of apply") {
+    given(nodeGraph(sizeHint))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("b")
+      .nonFuseable()
+      .apply()
+      .|.merge(nodes = Seq(createNodeWithProperties("b", Seq.empty, "{prop: 1}")))
+      .|.filter("b.prop = 1")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val b = Iterators.single(tx.getAllNodes.stream().filter(n => n.getProperty("prop", null) == 1).iterator())
+    runtimeResult should beColumns("b").withRows((1 to sizeHint).map(_ => Array[Any](b))).withStatistics(nodesCreated = 1, propertiesSet = 1)
+  }
 }
 
 
