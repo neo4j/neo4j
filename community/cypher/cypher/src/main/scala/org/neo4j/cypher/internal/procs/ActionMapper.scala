@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.ast.AccessDatabaseAction
-import org.neo4j.cypher.internal.ast.AdminAction
+import org.neo4j.cypher.internal.ast.AdministrationAction
 import org.neo4j.cypher.internal.ast.AllConstraintActions
 import org.neo4j.cypher.internal.ast.AllDatabaseAction
 import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
@@ -82,7 +82,7 @@ import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.internal.kernel.api.security
 
 object ActionMapper {
-  def asKernelAction(action: AdminAction): security.PrivilegeAction = action match {
+  def asKernelAction(action: AdministrationAction): security.PrivilegeAction = action match {
     case AccessDatabaseAction => security.PrivilegeAction.ACCESS
 
     case AllIndexActions        => security.PrivilegeAction.INDEX

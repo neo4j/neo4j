@@ -338,7 +338,7 @@ trait AdministrationCommand extends Parser
 
   // Dbms specific
 
-  private def DbmsAction: Rule1[ast.AdminAction] = rule("dbms action") {
+  private def DbmsAction: Rule1[ast.DbmsAction] = rule("dbms action") {
     keyword("CREATE ROLE") ~~~> (_ => ast.CreateRoleAction) |
     keyword("RENAME ROLE") ~~~> (_ => ast.RenameRoleAction) |
     keyword("DROP ROLE") ~~~> (_ => ast.DropRoleAction) |
@@ -366,7 +366,7 @@ trait AdministrationCommand extends Parser
     group(keyword("EXECUTE") ~~ AdminKeyword ~~ keyword("PROCEDURES")) ~> (_ => ast.ExecuteAdminProcedureAction)
   }
 
-  private def QualifiedDbmsAction: Rule2[List[ast.PrivilegeQualifier], ast.AdminAction] = rule("qualified dbms action") {
+  private def QualifiedDbmsAction: Rule2[List[ast.PrivilegeQualifier], ast.DbmsAction] = rule("qualified dbms action") {
     keyword("EXECUTE") ~~ Procedure ~> (_ => ast.ExecuteProcedureAction) |
     keyword("EXECUTE BOOSTED") ~~ Procedure ~> (_ => ast.ExecuteBoostedProcedureAction) |
     keyword("EXECUTE") ~~ Function ~> (_ => ast.ExecuteFunctionAction) |

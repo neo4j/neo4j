@@ -49,7 +49,7 @@ class DbmsPrivilegeAdministrationCommandParserTest extends AdministrationCommand
       ("PRIVILEGE MANAGEMENT", ast.AllPrivilegeActions),
       ("ALL DBMS PRIVILEGES", ast.AllDbmsAction)
     ).foreach {
-      case (privilege: String, action: ast.AdminAction) =>
+      case (privilege: String, action: ast.DbmsAction) =>
 
         test(s"$command $privilege ON DBMS $preposition role") {
           yields(privilegeFunc(action, Seq(literalRole)))

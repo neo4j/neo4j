@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.common.DependencyResolver
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.helpers.NormalizedDatabaseName
-import org.neo4j.cypher.internal.ast.AdminAction
+import org.neo4j.cypher.internal.ast.AdministrationAction
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
@@ -115,7 +115,7 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
   val checkShowUserPrivilegesText: String = "Try executing SHOW USER PRIVILEGES to determine the missing or denied privileges. " +
     "In case of missing privileges, they need to be granted (See GRANT). In case of denied privileges, they need to be revoked (See REVOKE) and granted."
 
-  def prettifyActionName (actions: AdminAction*) : String = {
+  def prettifyActionName (actions: AdministrationAction*) : String = {
     actions.map{
       case StartDatabaseAction => "START DATABASE"
       case StopDatabaseAction => "STOP DATABASE"

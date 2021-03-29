@@ -328,7 +328,7 @@ abstract class PrivilegeType(val name: String)
 
 final case class DatabasePrivilege(action: DatabaseAction, scope: List[DatabaseScope])(val position: InputPosition) extends PrivilegeType(action.name)
 
-final case class DbmsPrivilege(action: AdminAction)(val position: InputPosition) extends PrivilegeType(action.name)
+final case class DbmsPrivilege(action: DbmsAction)(val position: InputPosition) extends PrivilegeType(action.name)
 
 final case class GraphPrivilege(action: GraphAction, scope: List[GraphScope])(val position: InputPosition) extends PrivilegeType(action.name)
 
@@ -496,11 +496,11 @@ final case class ShowUsersPrivileges(users: List[Either[String, Parameter]])(val
 
 final case class ShowAllPrivileges()(val position: InputPosition) extends ShowPrivilegeScope
 
-sealed trait AdminAction {
+sealed trait AdministrationAction {
   def name: String = "<unknown>"
 }
 
-abstract class DatabaseAction(override val name: String) extends AdminAction
+abstract class DatabaseAction(override val name: String) extends AdministrationAction
 
 case object StartDatabaseAction extends DatabaseAction("START")
 
@@ -548,7 +548,7 @@ case object ShowTransactionAction extends TransactionManagementAction("SHOW TRAN
 
 case object TerminateTransactionAction extends TransactionManagementAction("TERMINATE TRANSACTION")
 
-abstract class DbmsAction(override val name: String) extends AdminAction
+abstract class DbmsAction(override val name: String) extends AdministrationAction
 
 case object AllDbmsAction extends DbmsAction("ALL DBMS PRIVILEGES")
 
@@ -616,7 +616,7 @@ case object AssignPrivilegeAction extends PrivilegeManagementAction("ASSIGN PRIV
 
 case object RemovePrivilegeAction extends PrivilegeManagementAction("REMOVE PRIVILEGE")
 
-abstract class GraphAction(override val name: String, val planName: String) extends AdminAction
+abstract class GraphAction(override val name: String, val planName: String) extends AdministrationAction
 
 case object ReadAction extends GraphAction("READ", "Read")
 
@@ -642,7 +642,7 @@ case object AllGraphAction extends GraphAction("ALL GRAPH PRIVILEGES", "AllGraph
 
 object GrantPrivilege {
 
-  def dbmsAction(action: AdminAction,
+  def dbmsAction(action: DbmsAction,
                  roleNames: Seq[Either[String, Parameter]],
                  qualifier: List[PrivilegeQualifier] = List(AllQualifier()(InputPosition.NONE))
                 ): InputPosition => GrantPrivilege =
@@ -663,7 +663,7 @@ object GrantPrivilege {
 }
 
 object DenyPrivilege {
-  def dbmsAction(action: AdminAction,
+  def dbmsAction(action: DbmsAction,
                  roleNames: Seq[Either[String, Parameter]],
                  qualifier: List[PrivilegeQualifier] = List(AllQualifier()(InputPosition.NONE))
                 ): InputPosition => DenyPrivilege =
@@ -684,7 +684,7 @@ object DenyPrivilege {
 }
 
 object RevokePrivilege {
-  def dbmsAction(action: AdminAction,
+  def dbmsAction(action: DbmsAction,
                  roleNames: Seq[Either[String, Parameter]],
                  revokeType: RevokeType,
                  qualifier: List[PrivilegeQualifier] = List(AllQualifier()(InputPosition.NONE))
