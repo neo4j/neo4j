@@ -397,6 +397,10 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     {
         // calculated here just to reduce amount of state kept in this instance
         int dots = dotsPerLine() * lines();
+        if ( progress == goal )
+        {
+            return dots;
+        }
         double dotSize = goal / (double) dots;
         return (int) (progress / dotSize);
     }
