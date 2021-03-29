@@ -726,6 +726,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 {
                     throw (TransientFailureException) cause;
                 }
+                if ( cause instanceof Status.HasStatus )
+                {
+                    throw new TransactionFailureException( ((Status.HasStatus) cause).status(), cause, cause.getMessage() );
+                }
                 throw new TransactionFailureException( Status.Transaction.TransactionHookFailed, cause, cause.getMessage() );
             }
 

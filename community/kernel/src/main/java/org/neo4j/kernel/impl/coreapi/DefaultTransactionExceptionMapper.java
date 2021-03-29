@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -52,7 +50,7 @@ public class DefaultTransactionExceptionMapper implements TransactionExceptionMa
         {
             return new ConstraintViolationException( e.getMessage(), e );
         }
-        else if ( e instanceof KernelException || e instanceof TransactionTerminatedException )
+        else if ( e instanceof Status.HasStatus )
         {
             Status status = ((Status.HasStatus) e).status();
             Status.Code statusCode = status.code();
