@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -2063,5 +2064,49 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
         sizeHint,   // apply
         sizeHint))  // triadic filter
     }
+  }
+}
+
+//Merge is supported in fused only so we need to break this one out
+trait MergeProfileRowsTestBase[CONTEXT <: RuntimeContext] {
+  self: ProfileRowsTestBase[CONTEXT] =>
+  test("should profile rows of merge on match") {
+    given { nodeGraph(sizeHint) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .merge(nodes = Seq(createNode("x")))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe sizeHint // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe sizeHint // merge
+    queryProfile.operatorProfile(2).rows() shouldBe sizeHint // all nodes scan
+  }
+
+  test("should profile rows of merge on create") {
+    //given no nodes
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .merge(nodes = Seq(createNode("x")))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+    queryProfile.operatorProfile(0).rows() shouldBe 1 // produce results
+    queryProfile.operatorProfile(1).rows() shouldBe 1 // merge
+    queryProfile.operatorProfile(2).rows() shouldBe 0 // all nodes scan
   }
 }

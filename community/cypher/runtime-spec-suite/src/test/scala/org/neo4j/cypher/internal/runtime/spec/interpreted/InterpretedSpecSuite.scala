@@ -74,6 +74,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.LockNodesTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryDeallocationTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementDisabledTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MemoryManagementTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.MergeProfileRowsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MergeTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MiscTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.MultiNodeIndexSeekTestBase
@@ -220,6 +221,7 @@ class InterpretedProfileDbHitsTest extends LegacyDbHitsTestBase(COMMUNITY.EDITIO
                                    with WriteOperatorsDbHitsTestBase[CommunityRuntimeContext]
 class InterpretedProfileRowsTest extends ProfileRowsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT, 1)
                                   with EagerLimitProfileRowsTestBase[CommunityRuntimeContext]
+                                  with MergeProfileRowsTestBase[CommunityRuntimeContext]
                                   with NonParallelProfileRowsTestBase[CommunityRuntimeContext]
 class InterpretedMemoryManagementTest extends MemoryManagementTestBase(COMMUNITY.EDITION, InterpretedRuntime)
                                       with FullSupportMemoryManagementTestBase[CommunityRuntimeContext]
