@@ -102,7 +102,7 @@ class ToStringFunctionTest extends CypherFunSuite with GeneratorDrivenPropertyCh
 
   test("toStringOrNull should not throw an exception for any value") {
     val generator: Gen[Any] = for {
-      v <- Gen.oneOf(Gen.numStr, Gen.alphaStr, Gen.posNum[Double])
+      v <- Gen.oneOf(Gen.numStr, Gen.alphaStr, Gen.posNum[Double], Gen.posNum[Int])
     } yield v
 
     forAll(generator) { s => {

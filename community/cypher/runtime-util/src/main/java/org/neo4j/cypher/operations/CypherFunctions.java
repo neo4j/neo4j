@@ -1375,11 +1375,12 @@ public final class CypherFunctions
     public static AnyValue toStringOrNull( AnyValue in )
     {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        try
+        if ( in instanceof TextValue || in instanceof NumberValue || in instanceof BooleanValue || in instanceof TemporalValue || in instanceof DurationValue ||
+             in instanceof PointValue )
         {
             return toString( in );
         }
-        catch ( ParameterWrongTypeException ignore )
+        else
         {
             return NO_VALUE;
         }
