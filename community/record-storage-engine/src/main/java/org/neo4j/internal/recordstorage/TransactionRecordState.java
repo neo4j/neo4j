@@ -73,6 +73,7 @@ import static java.lang.String.format;
 import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.combinedKeyOnGroupAndDirection;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
+import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
 
 /**
  * Transaction containing {@link Command commands} reflecting the operations performed in the transaction.
@@ -345,7 +346,12 @@ public class TransactionRecordState implements RecordState
         }
         if ( nodeRecord.isDense() )
         {
-            relationshipGroupGetter.deleteEmptyGroups( nodeChange, g -> true, directGroupLookup );
+            relationshipGroupGetter.deleteEmptyGroups( nodeChange, g ->
+            {
+                //This lock make be taken out-of-order but we have NODE_RELATIONSHIP_GROUP_DELETE exclusive. No concurrent transaction using this node exists.
+                locks.acquireExclusive( lockTracer, RELATIONSHIP_GROUP, nodeId ); //We may take this lock multiple times but that's so rare we don't care.
+                return true;
+            }, directGroupLookup );
         }
         nodeRecord.setInUse( false );
         nodeRecord.setLabelField( Record.NO_LABELS_FIELD.intValue(),

@@ -46,6 +46,7 @@ class CommandCreationLocking
             locker.acquireExclusive( lockTracer, ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, node );
             locker.acquireExclusive( lockTracer, ResourceTypes.NODE, node );
             locker.acquireExclusive( lockTracer, ResourceTypes.DEGREES, node );
+            //Note. We also take RELATIONSHIP_GROUP lock in TransactionRecordState.nodeDelete if we need to clean up any left over empty groups.
         }
     }
 
