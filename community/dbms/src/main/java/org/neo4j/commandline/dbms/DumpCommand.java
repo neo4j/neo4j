@@ -79,7 +79,7 @@ public class DumpCommand extends AbstractCommand
     public void execute()
     {
         var databaseName = database.name();
-        Path archive = calculateArchive( databaseName, to.toAbsolutePath() );
+        Path archive = buildArchivePath( databaseName, to.toAbsolutePath() );
         var memoryTracker =  EmptyMemoryTracker.INSTANCE;
 
         Config config = CommandHelpers.buildConfig( ctx, allowCommandExpansion );
@@ -113,7 +113,7 @@ public class DumpCommand extends AbstractCommand
         }
     }
 
-    private static Path calculateArchive( String database, Path to )
+    private static Path buildArchivePath( String database, Path to )
     {
         return Files.isDirectory( to ) ? to.resolve( database + ".dump" ) : to;
     }

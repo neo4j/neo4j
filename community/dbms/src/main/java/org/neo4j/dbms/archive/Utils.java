@@ -37,7 +37,7 @@ public class Utils
     {
     }
 
-    static void checkWritableDirectory( Path directory ) throws FileSystemException
+    public static void checkWritableDirectory( Path directory ) throws FileSystemException
     {
         if ( !exists( directory ) )
         {
