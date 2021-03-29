@@ -123,7 +123,7 @@ class NodeCheckerIT
         context = new CheckerContext( neoStores, indexAccessors, labelScanStore, relationshipTypeScanStore,
                 execution, mock( ConsistencyReport.Reporter.class, RETURNS_MOCKS ), CacheAccess.EMPTY,
                 tokenHolders, mock( RecordLoading.class ), mock( CountsState.class ), mock( NodeBasedMemoryLimiter.class ),
-                ProgressMonitorFactory.NONE.multipleParts( "test" ), pageCache, pageCacheTracer, INSTANCE, false, ConsistencyFlags.DEFAULT );
+                ProgressMonitorFactory.NONE.multipleParts( "test" ), pageCache, pageCacheTracer, INSTANCE, false, ConsistencyFlags.DEFAULT, false );
         context.initialize();
     }
 }

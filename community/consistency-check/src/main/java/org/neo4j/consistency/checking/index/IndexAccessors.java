@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -43,16 +44,18 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.token.TokenHolders;
 
 public class IndexAccessors implements Closeable
 {
     private static final String CONSISTENCY_INDEX_ACCESSOR_BUILDER_TAG = "consistencyIndexAccessorBuilder";
-    private final MutableLongObjectMap<IndexAccessor> accessors = new LongObjectHashMap<>();
+    private final MutableLongObjectMap<IndexAccessor> propertyIndexAccessors = new LongObjectHashMap<>();
     private final List<IndexDescriptor> onlineIndexRules = new ArrayList<>();
     private final List<IndexDescriptor> notOnlineIndexRules = new ArrayList<>();
     private final List<IndexDescriptor> inconsistentRules = new ArrayList<>();
+    private TokenIndexAccessor nodeLabelIndex;
 
     public IndexAccessors(
             IndexProviderMap providers,
@@ -124,7 +127,17 @@ public class IndexAccessors implements Closeable
             long indexId = indexRule.getId();
             try
             {
-                accessors.put( indexId, accessorLookup.apply( indexRule ) );
+                final IndexAccessor accessor = accessorLookup.apply( indexRule );
+                if ( indexRule.schema().isAnyTokenSchemaDescriptor() && indexRule.schema().entityType() == EntityType.NODE &&
+                     indexRule.getIndexType() == IndexType.LOOKUP )
+                {
+                    nodeLabelIndex = (TokenIndexAccessor)accessor;
+                    onlineIndexRules.remove( i-- );
+                }
+                else
+                {
+                    propertyIndexAccessors.put( indexId, accessor );
+                }
             }
             catch ( RuntimeException e )
             {
@@ -151,7 +164,7 @@ public class IndexAccessors implements Closeable
 
     public IndexAccessor accessorFor( IndexDescriptor indexRule )
     {
-        return accessors.get( indexRule.getId() );
+        return propertyIndexAccessors.get( indexRule.getId() );
     }
 
     public List<IndexDescriptor> onlineRules()
@@ -166,6 +179,15 @@ public class IndexAccessors implements Closeable
                 .collect( Collectors.toList() );
     }
 
+    /**
+     * TOken Accessor or null TODO
+     * @return
+     */
+    public TokenIndexAccessor nodeLabelIndex()
+    {
+        return nodeLabelIndex;
+    }
+
     public IndexReaders readers()
     {
         return new IndexReaders();
@@ -173,7 +195,7 @@ public class IndexAccessors implements Closeable
 
     public void remove( IndexDescriptor descriptor )
     {
-        IndexAccessor remove = accessors.remove( descriptor.getId() );
+        IndexAccessor remove = propertyIndexAccessors.remove( descriptor.getId() );
         if ( remove != null )
         {
             remove.close();
@@ -187,11 +209,11 @@ public class IndexAccessors implements Closeable
     {
         try
         {
-            IOUtils.closeAllUnchecked( accessors.toList() );
+            IOUtils.closeAllUnchecked( propertyIndexAccessors.toList() );
         }
         finally
         {
-            accessors.clear();
+            propertyIndexAccessors.clear();
             onlineIndexRules.clear();
             notOnlineIndexRules.clear();
         }
@@ -207,7 +229,7 @@ public class IndexAccessors implements Closeable
             var reader = readers.get( indexId );
             if ( reader == null )
             {
-                reader = accessors.get( indexId ).newValueReader();
+                reader = propertyIndexAccessors.get( indexId ).newValueReader();
                 readers.put( indexId, reader );
             }
             return reader;

@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
+import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.Stopwatch;
@@ -50,6 +51,7 @@ class CheckerContext
     final NeoStores neoStores;
     final IndexAccessors indexAccessors;
     final ConsistencyFlags consistencyFlags;
+    final boolean useScanStoresAsTokenIndexes;
     final IndexSizes indexSizes;
     final LabelScanStore labelScanStore;
     final RelationshipTypeScanStore relationshipTypeScanStore;
@@ -66,6 +68,7 @@ class CheckerContext
     final PageCacheTracer pageCacheTracer;
     final MemoryTracker memoryTracker;
     final long highNodeId;
+    final TokenIndexAccessor nodeLabelIndex;
     private final boolean debug;
     private final AtomicBoolean cancelled;
 
@@ -86,10 +89,12 @@ class CheckerContext
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker,
             boolean debug,
-            ConsistencyFlags consistencyFlags )
+            ConsistencyFlags consistencyFlags,
+            boolean useScanStoresAsTokenIndexes )
     {
         this( neoStores, indexAccessors, labelScanStore, relationshipTypeScanStore, execution, reporter, cacheAccess, tokenHolders, recordLoader,
-                observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debug, new AtomicBoolean(), consistencyFlags );
+                observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debug, new AtomicBoolean(), consistencyFlags,
+                useScanStoresAsTokenIndexes );
     }
 
     private CheckerContext(
@@ -110,13 +115,16 @@ class CheckerContext
             MemoryTracker memoryTracker,
             boolean debug,
             AtomicBoolean cancelled,
-            ConsistencyFlags consistencyFlags )
+            ConsistencyFlags consistencyFlags,
+            boolean useScanStoresAsTokenIndexes )
     {
         this.neoStores = neoStores;
         this.highNodeId = neoStores.getNodeStore().getHighId();
         this.indexAccessors = indexAccessors;
+        this.nodeLabelIndex = indexAccessors.nodeLabelIndex();
         this.debug = debug;
         this.consistencyFlags = consistencyFlags;
+        this.useScanStoresAsTokenIndexes = useScanStoresAsTokenIndexes;
         this.indexSizes = new IndexSizes( execution, indexAccessors, neoStores.getNodeStore().getHighId(), pageCacheTracer );
         this.labelScanStore = labelScanStore;
         this.relationshipTypeScanStore = relationshipTypeScanStore;
@@ -138,7 +146,8 @@ class CheckerContext
     CheckerContext withoutReporting()
     {
         return new CheckerContext( neoStores, indexAccessors, labelScanStore, relationshipTypeScanStore, execution, ConsistencyReport.NO_REPORT, cacheAccess,
-                tokenHolders, recordLoader, observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debug, cancelled, consistencyFlags );
+                tokenHolders, recordLoader, observedCounts, limiter, progress, pageCache, pageCacheTracer, memoryTracker, debug, cancelled, consistencyFlags,
+                useScanStoresAsTokenIndexes );
     }
 
     void initialize() throws Exception

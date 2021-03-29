@@ -43,6 +43,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.DelegatingTokenHolder;
@@ -117,7 +118,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         this.progress = progressFactory.multipleParts( "Consistency check" );
         this.context = new CheckerContext( neoStores, indexAccessors, labelScanStore, relationshipTypeScanStore, execution,
                 reporter, cacheAccess, tokenHolders, recordLoading, observedCounts, limiter, progress, pageCache, cacheTracer, memoryTracker,
-                debug, consistencyFlags );
+                debug, consistencyFlags, config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) );
     }
 
     public void check() throws ConsistencyCheckIncompleteException

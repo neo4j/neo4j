@@ -83,6 +83,32 @@ class NodeChecker implements Checker
     private final TokenHolders tokenHolders;
     private final NeoStores neoStores;
     private final List<IndexDescriptor> smallIndexes;
+    private static final AllEntriesTokenScanReader NO_LABEL_INDEX_CHECKER = new AllEntriesTokenScanReader()
+    {
+        @Override
+        public int rangeSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long maxCount()
+        {
+            return 0;
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+
+        }
+
+        @Override
+        public Iterator<EntityTokenRange> iterator()
+        {
+            return null;
+        }
+    };
 
     NodeChecker( CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties )
     {
@@ -118,6 +144,21 @@ class NodeChecker implements Checker
         return flags.isCheckGraph() || flags.isCheckIndexes() && !smallIndexes.isEmpty();
     }
 
+    private AllEntriesTokenScanReader getLabelIndexReader( long fromNodeId, long toNodeId, boolean last, PageCursorTracer cursorTracer )
+    {
+        if ( context.useScanStoresAsTokenIndexes )
+        {
+            if ( context.nodeLabelIndex != null )
+            {
+                return context.nodeLabelIndex.allEntityTokenRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
+                        cursorTracer );
+            }
+            return NO_LABEL_INDEX_CHECKER;
+        }
+        return context.labelScanStore.allEntityTokenRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
+                cursorTracer );
+    }
+
     private void check( long fromNodeId, long toNodeId, boolean last ) throws Exception
     {
         long usedNodes = 0;
@@ -125,8 +166,7 @@ class NodeChecker implements Checker
               var cursorTracer = context.pageCacheTracer.createPageCursorTracer( NODE_RANGE_CHECKER_TAG );
               RecordNodeCursor nodeCursor = reader.allocateNodeCursor( cursorTracer );
               RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), cursorTracer );
-              AllEntriesTokenScanReader labelIndexReader = context.labelScanStore.allEntityTokenRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
-                      cursorTracer );
+              AllEntriesTokenScanReader labelIndexReader = getLabelIndexReader( fromNodeId, toNodeId, last, cursorTracer );
               SafePropertyChainReader property = new SafePropertyChainReader( context, cursorTracer );
               SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, smallIndexes, cursorTracer,
                       context.memoryTracker ) )
@@ -187,7 +227,10 @@ class NodeChecker implements Checker
                 boolean propertyChainIsOk = property.read( propertyValues, nodeCursor, reporter::forNode, cursorTracer );
 
                 // Label index
-                checkNodeVsLabelIndex( nodeCursor, nodeLabelRangeIterator, labelIndexState, nodeId, labels, fromNodeId, cursorTracer );
+                if ( labelIndexReader != NO_LABEL_INDEX_CHECKER )
+                {
+                    checkNodeVsLabelIndex( nodeCursor, nodeLabelRangeIterator, labelIndexState, nodeId, labels, fromNodeId, cursorTracer );
+                }
                 client.putToCache( nodeId, nextRelCacheFields );
 
                 // Mandatory properties and (some) indexing
@@ -203,7 +246,7 @@ class NodeChecker implements Checker
                 }
                 // Large indexes are checked elsewhere, more efficiently than per-entity
             }
-            if ( !context.isCancelled() )
+            if ( !context.isCancelled() && labelIndexReader != NO_LABEL_INDEX_CHECKER )
             {
                 reportRemainingLabelIndexEntries( nodeLabelRangeIterator, labelIndexState, last ? Long.MAX_VALUE : toNodeId, cursorTracer );
             }

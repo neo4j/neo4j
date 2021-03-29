@@ -22,10 +22,13 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.function.IntFunction;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -39,16 +42,20 @@ import org.neo4j.storageengine.api.NodePropertyAccessor;
 
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
+import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
 {
+    private final EntityType entityType;
+
     public TokenIndexAccessor( DatabaseIndexContext databaseIndexContext, DatabaseLayout directoryStructure, IndexFiles indexFiles, Config config,
             IndexDescriptor descriptor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         super( databaseIndexContext, indexFiles, descriptor );
 
+        entityType = descriptor.schema().entityType();
         instantiateTree( recoveryCleanupWorkCollector, new NativeIndexHeaderWriter( ONLINE ) );
-        instantiateUpdater( config, directoryStructure, descriptor.schema().entityType() );
+        instantiateUpdater( config, directoryStructure, entityType );
     }
 
     @Override
@@ -95,6 +102,39 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
     {
         assertTreeOpen();
         return new DefaultTokenIndexReader( index );
+    }
+
+    public AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId, PageCursorTracer cursorTracer )
+    {
+        IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider = tokenId ->
+        {
+            try
+            {
+                return index.seek(
+                        new TokenScanKey().set( tokenId, fromEntityId / RANGE_SIZE ),
+                        new TokenScanKey().set( tokenId, (toEntityId - 1) / RANGE_SIZE + 1 ), cursorTracer );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        };
+
+        int highestTokenId = -1;
+        try ( Seeker<TokenScanKey,TokenScanValue> cursor = index.seek(
+                new TokenScanKey().set( Integer.MAX_VALUE, Long.MAX_VALUE ),
+                new TokenScanKey().set( 0, -1 ), cursorTracer ) )
+        {
+            if ( cursor.next() )
+            {
+                highestTokenId = cursor.key().tokenId;
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        return new NativeAllEntriesTokenScanReader( seekProvider, highestTokenId, entityType );
     }
 
     @Override
