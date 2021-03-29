@@ -666,7 +666,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
 
     @Internal
     public static final Setting<Boolean> io_controller_consider_external_io =
-            newBuilder( "unsupported.dbms.io.controller.consider.external.enabled", BOOL, true ).dynamic().build();
+            newBuilder( "unsupported.dbms.io.controller.consider.external.enabled", BOOL, false ).dynamic().build();
 
     // should neo byte buffer pool be used for network stack buffers?
     @Internal
