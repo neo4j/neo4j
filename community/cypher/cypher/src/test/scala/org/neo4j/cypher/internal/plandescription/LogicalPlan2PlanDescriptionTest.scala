@@ -102,8 +102,8 @@ import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.AssertDatabaseAdmin
-import org.neo4j.cypher.internal.logical.plans.AssertDbmsAdminOrSelf
+import org.neo4j.cypher.internal.logical.plans.AssertAllowedDatabaseAction
+import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActionsOrSelf
 import org.neo4j.cypher.internal.logical.plans.AssertNotBlocked
 import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
@@ -335,7 +335,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     plan
   }
 
-  private val privLhsLP = attach(plans.AssertDbmsAdmin(ShowUserAction), 2.0, providedOrder = ProvidedOrder.empty)
+  private val privLhsLP = attach(plans.AssertAllowedDbmsActions(ShowUserAction), 2.0, providedOrder = ProvidedOrder.empty)
 
   private val lhsLP = attach(AllNodesScan("a", Set.empty), EffectiveCardinality(2.0, Some(10.0)), ProvidedOrder.empty)
   private val lhsPD = PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(details("a"), EstimatedRows(2, Some(10))), Set(pretty"a"))
@@ -1313,15 +1313,15 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(AssertNotCurrentUser(privLhsLP, util.Left("user1"), "verb1", "validation message"), 1.0), adminPlanDescription)
 
-    assertGood(attach(AssertDbmsAdminOrSelf(util.Left("user1"), DropRoleAction), 1.0), adminPlanDescription)
+    assertGood(attach(AssertAllowedDbmsActionsOrSelf(util.Left("user1"), DropRoleAction), 1.0), adminPlanDescription)
 
-    assertGood(attach(AssertDatabaseAdmin(StopDatabaseAction, util.Left("db1"), None), 1.0), adminPlanDescription)
+    assertGood(attach(AssertAllowedDatabaseAction(StopDatabaseAction, util.Left("db1"), None), 1.0), adminPlanDescription)
 
     assertGood(attach(AssertNotBlocked(CreateDatabaseAction), 1.0), adminPlanDescription)
 
     assertGood(attach(WaitForCompletion(
       StartDatabase(
-        plans.AssertDatabaseAdmin(StartDatabaseAction, Left("db1"), Some(privLhsLP)), Left("db1")), util.Left("db1"), IndefiniteWait), 1.0), adminPlanDescription)
+        plans.AssertAllowedDatabaseAction(StartDatabaseAction, Left("db1"), Some(privLhsLP)), Left("db1")), util.Left("db1"), IndefiniteWait), 1.0), adminPlanDescription)
   }
 
   test("AntiConditionalApply") {
