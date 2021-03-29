@@ -79,22 +79,23 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions ) throws IOException
+            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution ) throws IOException
     {
         IndexedIdGenerator generator =
                 instantiate( fs, pageCache, recoveryCleanupWorkCollector, filename, highIdScanner, maxId, idType, readOnlyChecker, config, cursorContext,
-                        databaseName, openOptions );
+                        databaseName, openOptions,
+                        slotDistribution );
         generators.put( idType, generator );
         return generator;
     }
 
     protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-            CursorContext cursorContext, String databaseName, ImmutableSet<OpenOption> openOptions )
+            CursorContext cursorContext, String databaseName, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution )
     {
         // highId not used when opening an IndexedIdGenerator
         return new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, highIdSupplier, maxValue, readOnlyChecker,
-                config, cursorContext, defaultIdMonitor( fs, fileName, config ), databaseName, openOptions );
+                config, databaseName, cursorContext, defaultIdMonitor( fs, fileName, config ), openOptions, slotDistribution );
     }
 
     @Override
@@ -105,7 +106,8 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions ) throws IOException
+            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions,
+            IdSlotDistribution slotDistribution ) throws IOException
     {
         // For the potential scenario where there's no store (of course this is where this method will be called),
         // but there's a naked id generator, then delete the id generator so that it too starts from a clean state.
@@ -116,7 +118,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
 
         IndexedIdGenerator generator =
                 new IndexedIdGenerator( pageCache, fileName, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, () -> highId, maxId, readOnlyChecker,
-                        config, cursorContext, defaultIdMonitor( fs, fileName, config ), databaseName, openOptions );
+                        config, databaseName, cursorContext, defaultIdMonitor( fs, fileName, config ), openOptions, slotDistribution );
         generator.checkpoint( cursorContext );
         generators.put( idType, generator );
         return generator;

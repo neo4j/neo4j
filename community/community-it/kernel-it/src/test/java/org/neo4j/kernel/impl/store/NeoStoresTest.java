@@ -48,6 +48,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.internal.recordstorage.CommandLockVerification;
@@ -847,13 +848,13 @@ public class NeoStoresTest
         @Override
         protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                 Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-                CursorContext cursorContext, String databaseName, ImmutableSet<OpenOption> openOptions )
+                CursorContext cursorContext, String databaseName, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution )
         {
             if ( RecordIdType.NODE.equals( idType ) )
             {
                 // Return a special id generator which will throw exception on close
                 return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, allowLargeIdCaches, () -> 6 * 7, maxValue, readOnlyChecker, config,
-                        databaseName, cursorContext )
+                        databaseName, cursorContext, IndexedIdGenerator.NO_MONITOR, immutable.empty(), slotDistribution )
                 {
                     @Override
                     public synchronized void close()
@@ -864,7 +865,7 @@ public class NeoStoresTest
                 };
             }
             return super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnlyChecker, config,
-                    cursorContext, databaseName, openOptions );
+                    cursorContext, databaseName, openOptions, slotDistribution );
         }
     }
 }

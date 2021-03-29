@@ -42,6 +42,7 @@ import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -831,20 +832,23 @@ class LabelsAcceptanceTest
                 {
                     @Override
                     public IdGenerator open( PageCache pageCache, Path fileName, IdType idType, LongSupplier highId, long maxId,
-                            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
+                            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions,
+                            IdSlotDistribution slotDistribution )
                             throws IOException
                     {
                         return super.open( pageCache, fileName, idType, highId, maxId( idType, maxId, highId ), readOnlyChecker, config, cursorContext,
-                                openOptions );
+                                openOptions,
+                                slotDistribution );
                     }
 
                     @Override
                     public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
+                            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions,
+                            IdSlotDistribution slotDistribution )
                             throws IOException
                     {
                         return super.create( pageCache, fileName, idType, highId, throwIfFileExists, maxId( idType, maxId, () -> highId ), readOnlyChecker,
-                                config, cursorContext, openOptions );
+                                config, cursorContext, openOptions, slotDistribution );
                     }
 
                     private long maxId( IdType idType, long maxId, LongSupplier highId )

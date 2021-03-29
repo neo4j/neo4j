@@ -39,6 +39,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -125,16 +126,19 @@ public class IdGeneratorMigrator extends AbstractStoreMigrationParticipant
         {
             @Override
             public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId,
-                    DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext,
-                    ImmutableSet<OpenOption> openOptions ) throws IOException
+                    DatabaseReadOnlyChecker readOnlyChecker, Config config,
+                    CursorContext cursorContext, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution )
+                    throws IOException
             {
                 Path redirectedFilename = migrationLayout.databaseDirectory().resolve( filename.getFileName().toString() );
-                return super.open( pageCache, redirectedFilename, idType, highIdScanner, maxId, readOnlyChecker, config, cursorContext, openOptions );
+                return super.open( pageCache, redirectedFilename, idType, highIdScanner, maxId, readOnlyChecker, config, cursorContext, openOptions,
+                        slotDistribution );
             }
 
             @Override
             public IdGenerator create( PageCache pageCache, Path fileName, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                    DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
+                    DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions,
+                    IdSlotDistribution slotDistribution )
             {
                 throw new IllegalStateException( "The store file should exist and therefore all calls should be to open, not create" );
             }

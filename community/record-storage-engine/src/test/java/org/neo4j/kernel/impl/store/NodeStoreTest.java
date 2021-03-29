@@ -41,6 +41,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.indexed.IndexedIdGenerator;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -348,8 +349,8 @@ class NodeStoreTest
         }
 
         // THEN
-        verify( idUpdateListener ).markIdAsUnused( any(), eq( 5L ), any( CursorContext.class ) );
-        verify( idUpdateListener ).markIdAsUnused( any(), eq( 10L ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUnused( any(), eq( 5L ), eq( 1 ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUnused( any(), eq( 10L ), eq( 1 ), any( CursorContext.class ) );
     }
 
     @Test
@@ -375,8 +376,8 @@ class NodeStoreTest
         }
 
         // THEN
-        verify( idUpdateListener, never() ).markIdAsUnused( any(), eq( 5L ), any( CursorContext.class ) );
-        verify( idUpdateListener ).markIdAsUnused( any(), eq( 10L ), any( CursorContext.class ) );
+        verify( idUpdateListener, never() ).markIdAsUnused( any(), eq( 5L ), eq( 1 ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUnused( any(), eq( 10L ), eq( 1 ), any( CursorContext.class ) );
     }
 
     @Test
@@ -399,8 +400,8 @@ class NodeStoreTest
         }
 
         // then
-        verify( idUpdateListener ).markIdAsUsed( any(), eq( primaryUnitId ), any( CursorContext.class ) );
-        verify( idUpdateListener ).markIdAsUsed( any(), eq( secondaryUnitId ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUsed( any(), eq( primaryUnitId ), eq( 1 ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUsed( any(), eq( secondaryUnitId ), eq( 1 ), any( CursorContext.class ) );
     }
 
     @Test
@@ -428,8 +429,8 @@ class NodeStoreTest
         }
 
         // then
-        verify( idUpdateListener, never() ).markIdAsUsed( any(), eq( primaryUnitId ), any( CursorContext.class ) );
-        verify( idUpdateListener ).markIdAsUsed( any(), eq( secondaryUnitId ), any( CursorContext.class ) );
+        verify( idUpdateListener, never() ).markIdAsUsed( any(), eq( primaryUnitId ), eq( 1 ), any( CursorContext.class ) );
+        verify( idUpdateListener ).markIdAsUsed( any(), eq( secondaryUnitId ), eq( 1 ), any( CursorContext.class ) );
     }
 
     @Test
@@ -478,10 +479,10 @@ class NodeStoreTest
             @Override
             protected IndexedIdGenerator instantiate( FileSystemAbstraction fs, PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                     Path fileName, LongSupplier highIdSupplier, long maxValue, IdType idType, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-                    CursorContext cursorContext, String databaseName, ImmutableSet<OpenOption> openOptions )
+                    CursorContext cursorContext, String databaseName, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution )
             {
                 return spy( super.instantiate( fs, pageCache, recoveryCleanupWorkCollector, fileName, highIdSupplier, maxValue, idType, readOnlyChecker, config,
-                        cursorContext, databaseName, openOptions ) );
+                        cursorContext, databaseName, openOptions, slotDistribution ) );
             }
         } );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance(),

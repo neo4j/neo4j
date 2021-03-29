@@ -54,6 +54,7 @@ import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 
 @PageCacheExtension
@@ -114,7 +115,7 @@ class IdGeneratorMigratorTest
             throws IOException
     {
         try ( IdGenerator idGenerator = new IndexedIdGenerator( pageCache, idFilePath, immediate(), idType, false, () -> -1, Long.MAX_VALUE, writable(),
-                Config.defaults(), DEFAULT_DATABASE_NAME, CursorContext.NULL ) )
+                Config.defaults(), DEFAULT_DATABASE_NAME, CursorContext.NULL, IndexedIdGenerator.NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             idGenerator.start( ignored ->
             {

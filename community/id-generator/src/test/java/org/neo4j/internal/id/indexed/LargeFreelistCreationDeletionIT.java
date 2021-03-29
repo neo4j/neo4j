@@ -20,6 +20,7 @@
 package org.neo4j.internal.id.indexed;
 
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
+import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.test.Race.throwing;
 
@@ -77,7 +80,7 @@ class LargeFreelistCreationDeletionIT
         {
             // Create
             try ( var freelist = new IndexedIdGenerator( pageCache, directory.file( "file.id" ), immediate(), TestIdType.TEST, false, () -> 0, Long.MAX_VALUE,
-                    writable(), Config.defaults(), DEFAULT_DATABASE_NAME, NULL ) )
+                    writable(), Config.defaults(), DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, Sets.immutable.empty(), SINGLE_IDS ) )
             {
                 // Make sure ID cache is filled so that initial allocations won't slide highId unnecessarily.
                 freelist.maintenance( true, NULL );

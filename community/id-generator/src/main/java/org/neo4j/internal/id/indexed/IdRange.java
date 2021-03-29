@@ -82,20 +82,29 @@ class IdRange
         return 1L << bitIndex;
     }
 
-    void setBit( int type, int n )
+    void setBits( int type, int n, int numIds )
     {
-        int longIndex = n / BITSET_SIZE;
-        int bitIndex = n % BITSET_SIZE;
-        bitSets[type][longIndex] |= bitMask( bitIndex );
+        for ( int i = 0; i < numIds; i++ )
+        {
+            int bit = n + i;
+            int longIndex = bit / BITSET_SIZE;
+            int bitIndex = bit % BITSET_SIZE;
+            bitSets[type][longIndex] |= bitMask( bitIndex );
+        }
     }
 
-    void setBitsForAllTypes( int n )
+    void setBitsForAllTypes( int n, int numIds )
     {
-        int longIndex = n / BITSET_SIZE;
-        int bitIndex = n % BITSET_SIZE;
-        bitSets[BITSET_COMMIT][longIndex] |= bitMask( bitIndex );
-        bitSets[BITSET_REUSE][longIndex] |= bitMask( bitIndex );
-        bitSets[BITSET_RESERVED][longIndex] |= bitMask( bitIndex );
+        for ( int i = 0; i < numIds; i++ )
+        {
+            int bit = n + i;
+            int longIndex = bit / BITSET_SIZE;
+            int bitIndex = bit % BITSET_SIZE;
+            long mask = bitMask( bitIndex );
+            bitSets[BITSET_COMMIT][longIndex] |= mask;
+            bitSets[BITSET_REUSE][longIndex] |= mask;
+            bitSets[BITSET_RESERVED][longIndex] |= mask;
+        }
     }
 
     void clear( long generation, boolean addition )
@@ -132,11 +141,11 @@ class IdRange
         }
     }
 
-    boolean mergeFrom( IdRange other, boolean recoveryMode )
+    boolean mergeFrom( IdRangeKey key, IdRange other, boolean recoveryMode )
     {
         if ( !recoveryMode )
         {
-            verifyMerge( other );
+            verifyMerge( key, other );
         }
 
         for ( int bitSetIndex = 0; bitSetIndex < BITSET_COUNT; bitSetIndex++ )
@@ -156,7 +165,7 @@ class IdRange
         }
     }
 
-    private void verifyMerge( IdRange other )
+    private void verifyMerge( IdRangeKey key, IdRange other )
     {
         boolean addition = other.addition;
         long[] intoBitSet = bitSets[BITSET_COMMIT];
@@ -169,11 +178,11 @@ class IdRange
             {
                 if ( (into & from ) != 0 )
                 {
-                    throw new IllegalStateException( format( "Illegal addition ID state transition longIdx: %d%ninto: %s%nfrom: %s",
-                            i, toPaddedBinaryString( into ), toPaddedBinaryString( from ) ) );
+                    throw new IllegalStateException( format( "Illegal addition ID state for range: %s transition longIdx: %d%ninto: %s%nfrom: %s",
+                            key.getIdRangeIdx(), i, toPaddedBinaryString( into ), toPaddedBinaryString( from ) ) );
                 }
             }
-            // don't very removal since we can't quite verify transitioning to USED since 0 is the default bit value
+            // don't verify removal since we can't quite verify transitioning to USED since 0 is the default bit value
         }
     }
 
@@ -195,9 +204,9 @@ class IdRange
     @Override
     public String toString()
     {
-        StringBuilder builder = new StringBuilder().append( " gen:" ).append( generation );
-        appendBitSet( builder, bitSets[BITSET_COMMIT], "commit  " );
-        appendBitSet( builder, bitSets[BITSET_REUSE], "reuse   " );
+        StringBuilder builder = new StringBuilder().append( addition ? "+" : "-" ).append( " gen:" ).append( generation );
+        appendBitSet( builder, bitSets[BITSET_COMMIT], "deleted " );
+        appendBitSet( builder, bitSets[BITSET_REUSE], "freed   " );
         appendBitSet( builder, bitSets[BITSET_RESERVED], "reserved" );
         return builder.toString();
     }

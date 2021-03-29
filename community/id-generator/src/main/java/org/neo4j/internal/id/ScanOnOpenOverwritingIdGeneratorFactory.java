@@ -51,9 +51,9 @@ public class ScanOnOpenOverwritingIdGeneratorFactory extends DefaultIdGeneratorF
 
     @Override
     public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions ) throws IOException
+            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution ) throws IOException
     {
         long highId = highIdScanner.getAsLong();
-        return create( pageCache, filename, idType, highId, true, maxId, readOnlyChecker, config, cursorContext, openOptions );
+        return create( pageCache, filename, idType, highId, true, maxId, readOnlyChecker, config, cursorContext, openOptions, slotDistribution );
     }
 }

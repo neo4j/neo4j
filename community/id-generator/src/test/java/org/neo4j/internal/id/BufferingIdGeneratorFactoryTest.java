@@ -51,6 +51,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
@@ -74,7 +75,7 @@ class BufferingIdGeneratorFactoryTest
         bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
         bufferingIdGeneratorFactory.initialize( boundaries );
         idGenerator = bufferingIdGeneratorFactory.open( pageCache, Path.of( "doesnt-matter" ), TestIdType.TEST, () -> 0L, Integer.MAX_VALUE, writable(),
-                Config.defaults(), NULL, immutable.empty() );
+                Config.defaults(), NULL, immutable.empty(), SINGLE_IDS );
     }
 
     @Test
@@ -83,9 +84,9 @@ class BufferingIdGeneratorFactoryTest
         // WHEN
         try ( Marker marker = idGenerator.marker( NULL ) )
         {
-            marker.markDeleted( 7 );
+            marker.markDeleted( 7, 2 );
         }
-        verify( actual.markers.get( TestIdType.TEST ) ).markDeleted( 7 );
+        verify( actual.markers.get( TestIdType.TEST ) ).markDeleted( 7, 2 );
         verify( actual.markers.get( TestIdType.TEST ) ).close();
         verifyNoMoreInteractions( actual.markers.get( TestIdType.TEST ) );
 
@@ -98,7 +99,7 @@ class BufferingIdGeneratorFactoryTest
         bufferingIdGeneratorFactory.maintenance( false, NULL );
 
         // THEN
-        verify( actual.markers.get( TestIdType.TEST ) ).markFree( 7 );
+        verify( actual.markers.get( TestIdType.TEST ) ).markFree( 7, 2 );
     }
 
     @Test
@@ -107,9 +108,9 @@ class BufferingIdGeneratorFactoryTest
         // WHEN
         try ( Marker marker = idGenerator.marker( NULL ) )
         {
-            marker.markDeleted( 7 );
+            marker.markDeleted( 7, 1 );
         }
-        verify( actual.markers.get( TestIdType.TEST ) ).markDeleted( 7 );
+        verify( actual.markers.get( TestIdType.TEST ) ).markDeleted( 7, 1 );
         verify( actual.markers.get( TestIdType.TEST ) ).close();
         verifyNoMoreInteractions( actual.markers.get( TestIdType.TEST ) );
 
@@ -122,7 +123,7 @@ class BufferingIdGeneratorFactoryTest
         idGenerator.checkpoint( NULL );
 
         // THEN
-        verify( actual.markers.get( TestIdType.TEST ) ).markFree( 7 );
+        verify( actual.markers.get( TestIdType.TEST ) ).markFree( 7, 1 );
     }
 
     private static class ControllableSnapshotSupplier implements Supplier<ConditionSnapshot>
@@ -148,7 +149,8 @@ class BufferingIdGeneratorFactoryTest
 
         @Override
         public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId,
-                DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
+                DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions,
+                IdSlotDistribution slotDistribution )
         {
             IdGenerator idGenerator = mock( IdGenerator.class );
             Marker marker = mock( Marker.class );
@@ -160,9 +162,10 @@ class BufferingIdGeneratorFactoryTest
 
         @Override
         public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-                DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
+                DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions,
+                IdSlotDistribution slotDistribution )
         {
-            return open( pageCache, filename, idType, () -> highId, maxId, readOnlyChecker, config, cursorContext, openOptions );
+            return open( pageCache, filename, idType, () -> highId, maxId, readOnlyChecker, config, cursorContext, openOptions, SINGLE_IDS );
         }
 
         @Override

@@ -21,6 +21,7 @@ package org.neo4j.internal.id.indexed;
 
 import org.eclipse.collections.api.set.primitive.ImmutableLongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 
@@ -44,6 +45,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
+import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
+import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
@@ -253,7 +256,7 @@ class IndexedIdGeneratorRecoverabilityTest
     private IndexedIdGenerator instantiateFreelist()
     {
         return new IndexedIdGenerator( pageCache, testDirectory.file( ID_FILE_NAME ), immediate(), ID_TYPE, true, () -> 0, Long.MAX_VALUE, writable(),
-                Config.defaults(), DEFAULT_DATABASE_NAME, NULL );
+                Config.defaults(), DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, Sets.immutable.empty(), SINGLE_IDS );
     }
 
     private static PageCache getPageCache( FileSystemAbstraction fs )

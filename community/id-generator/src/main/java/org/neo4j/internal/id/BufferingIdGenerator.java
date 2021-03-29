@@ -24,6 +24,10 @@ import java.util.function.Supplier;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 
+import static org.neo4j.internal.id.IdUtils.combinedIdAndNumberOfIds;
+import static org.neo4j.internal.id.IdUtils.idFromCombinedId;
+import static org.neo4j.internal.id.IdUtils.numberOfIdsFromCombinedId;
+
 class BufferingIdGenerator extends IdGenerator.Delegate
 {
     private DelayedBuffer<IdController.ConditionSnapshot> buffer;
@@ -45,24 +49,24 @@ class BufferingIdGenerator extends IdGenerator.Delegate
         return new Marker()
         {
             @Override
-            public void markUsed( long id )
+            public void markUsed( long id, int numberOfIds )
             {
                 // Goes straight in
-                actual.markUsed( id );
+                actual.markUsed( id, numberOfIds );
             }
 
             @Override
-            public void markDeleted( long id )
+            public void markDeleted( long id, int numberOfIds )
             {
                 // Run these by the buffering too
-                actual.markDeleted( id );
-                buffer.offer( id );
+                actual.markDeleted( id, numberOfIds );
+                buffer.offer( combinedIdAndNumberOfIds( id, numberOfIds, false ) );
             }
 
             @Override
-            public void markFree( long id )
+            public void markFree( long id, int numberOfIds )
             {
-                actual.markFree( id );
+                actual.markFree( id, numberOfIds );
             }
 
             @Override
@@ -122,9 +126,9 @@ class BufferingIdGenerator extends IdGenerator.Delegate
         {
             try ( Marker reuseMarker = BufferingIdGenerator.super.marker( cursorContext ) )
             {
-                for ( long id : freedIds )
+                for ( long freedId : freedIds )
                 {
-                    reuseMarker.markFree( id );
+                    reuseMarker.markFree( idFromCombinedId( freedId ), numberOfIdsFromCombinedId( freedId ) );
                 }
             }
         }

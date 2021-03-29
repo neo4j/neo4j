@@ -42,7 +42,8 @@ import java.util.function.LongConsumer;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
-import org.neo4j.internal.id.indexed.IndexedIdGenerator.ReservedMarker;
+import org.neo4j.internal.id.IdSlotDistribution;
+import org.neo4j.internal.id.indexed.IndexedIdGenerator.InternalMarker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -54,15 +55,14 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.id.IdSlotDistribution.evenSlotDistribution;
+import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_ID;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.test.OtherThreadExecutor.command;
@@ -71,6 +71,7 @@ import static org.neo4j.test.OtherThreadExecutor.command;
 class FreeIdScannerTest
 {
     private static final int IDS_PER_ENTRY = 256;
+    public static final IdCache.IdRangeConsumer EMPTY_ID_RANGE_CONSUMER = ( id, size ) -> {};
 
     @Inject
     PageCache pageCache;
@@ -83,8 +84,8 @@ class FreeIdScannerTest
 
     // instantiated in tests
     private AtomicBoolean atLeastOneFreeId;
-    private ConcurrentLongQueue cache;
-    private RecordingReservedMarker reuser;
+    private IdCache cache;
+    private RecordingReservedMarkerProvider reuser;
 
     @BeforeEach
     void beforeEach()
@@ -106,7 +107,7 @@ class FreeIdScannerTest
         FreeIdScanner scanner = scanner( IDS_PER_ENTRY, 8, 1 );
 
         // then
-        assertFalse( scanner.tryLoadFreeIdsIntoCache( false, NULL ) );
+        assertThat( scanner.tryLoadFreeIdsIntoCache( false, NULL ) ).isFalse();
     }
 
     @Test
@@ -124,12 +125,12 @@ class FreeIdScannerTest
 
         // when
         scanner.tryLoadFreeIdsIntoCache( false, NULL );
-        assertTrue( cache.size() > 0 );
+        assertThat( cache.size() > 0 ).isTrue();
         // take at least one so that scanner wants to load more from the ongoing scan
-        assertEquals( 0, cache.takeOrDefault( -1 ) );
+        assertThat( cache.takeOrDefault( -1 ) ).isZero();
 
         // then
-        assertTrue( scanner.tryLoadFreeIdsIntoCache( false, NULL ) );
+        assertThat( scanner.tryLoadFreeIdsIntoCache( false, NULL ) ).isTrue();
     }
 
     @Test
@@ -241,31 +242,6 @@ class FreeIdScannerTest
     }
 
     @Test
-    void shouldOnlyScanUntilCacheIsFull()
-    {
-        // given
-        int generation = 1;
-        ConcurrentLongQueue cache = mock( ConcurrentLongQueue.class );
-        when( cache.capacity() ).thenReturn( 8 );
-        when( cache.size() ).thenReturn( 3 );
-        when( cache.offer( anyLong() ) ).thenReturn( true );
-        FreeIdScanner scanner = scanner( IDS_PER_ENTRY, cache, generation );
-
-        forEachId( generation, range( 0, 8 ) ).accept( ( marker, id ) ->
-        {
-            marker.markDeleted( id );
-            marker.markFree( id );
-        } );
-        // cache has capacity of 8 and there are 8 free ids, however cache isn't completely empty
-
-        // when
-        scanner.tryLoadFreeIdsIntoCache( false, NULL );
-
-        // then verify that the cache only got offered 5 ids (capacity:8 - size:3)
-        verify( cache, times( 5 ) ).offer( anyLong() );
-    }
-
-    @Test
     void shouldContinuePausedScan()
     {
         // given
@@ -323,13 +299,14 @@ class FreeIdScannerTest
         // given
         int generation = 1;
         Barrier.Control barrier = new Barrier.Control();
-        ConcurrentLongQueue cache = mock( ConcurrentLongQueue.class );
-        when( cache.capacity() ).thenReturn( 8 );
-        when( cache.offer( anyLong() ) ).thenAnswer( invocationOnMock ->
+        IdCache cache = mock( IdCache.class );
+        when( cache.availableSpaceById() ).thenReturn( 8 );
+        when( cache.slotsByAvailableSpace() ).thenReturn( new IdSlotDistribution.Slot[]{new IdSlotDistribution.Slot( 10, 1 )} );
+        doAnswer( invocationOnMock ->
         {
             barrier.reached();
-            return true;
-        } );
+            return null;
+        } ).when( cache ).offer( any(), any() );
         FreeIdScanner scanner = scanner( IDS_PER_ENTRY, cache, generation );
 
         forEachId( generation, range( 0, 2 ) ).accept( ( marker, id ) ->
@@ -345,18 +322,14 @@ class FreeIdScannerTest
         // now it's stuck in trying to offer to the cache
 
         // then a scan call from another thread should complete but not do anything
-        verify( cache, times( 1 ) ).offer( anyLong() ); // <-- the 1 call is from the call which makes the other thread stuck above
+        verify( cache, times( 1 ) ).offer( any(), any() ); // <-- the 1 call is from the call which makes the other thread stuck above
         scanner.tryLoadFreeIdsIntoCache( false, NULL );
-        verify( cache, times( 1 ) ).offer( anyLong() );
+        verify( cache, times( 1 ) ).offer( any(), any() );
 
         // clean up
         barrier.release();
         scanFuture.get();
         executorService.shutdown();
-
-        // and then
-        verify( cache ).offer( 0 );
-        verify( cache ).offer( 1 );
     }
 
     @Test
@@ -394,7 +367,7 @@ class FreeIdScannerTest
         scanner.tryLoadFreeIdsIntoCache( false, NULL );
 
         // then
-        assertArrayEquals( new long[]{0, 1, 2, 3, 4}, reuser.reservedIds.toArray() );
+        assertThat( reuser.reservedIds.toArray() ).isEqualTo( new long[]{0, 1, 2, 3, 4} );
     }
 
     @Test
@@ -402,7 +375,7 @@ class FreeIdScannerTest
     {
         // given
         long generation = 1;
-        ConcurrentLongQueue cache = new SpmcLongQueue( 32 );
+        IdCache cache = new IdCache( new IdSlotDistribution.Slot( 32, 1 ) );
         FreeIdScanner scanner = scanner( IDS_PER_ENTRY, cache, generation );
         forEachId( generation, range( 0, 5 ) ).accept( ( marker, id ) ->
         {
@@ -416,9 +389,9 @@ class FreeIdScannerTest
         scanner.clearCache( NULL );
 
         // then
-        assertEquals( 5, cacheSizeBeforeClear );
-        assertEquals( 0, cache.size() );
-        assertEquals( LongLists.immutable.of( 0, 1, 2, 3, 4 ), reuser.unreservedIds );
+        assertThat( cacheSizeBeforeClear ).isEqualTo( 5 );
+        assertThat( cache.size() ).isZero();
+        assertThat( reuser.unreservedIds ).isEqualTo( LongLists.mutable.of( 0, 1, 2, 3, 4 ) );
     }
 
     @Test
@@ -426,9 +399,9 @@ class FreeIdScannerTest
     {
         // given
         long generation = 1;
-        ConcurrentLongQueue cache = new SpmcLongQueue( 32 );
         Barrier.Control barrier = new Barrier.Control();
-        FreeIdScanner scanner = scanner( IDS_PER_ENTRY, new ControlledConcurrentLongQueue( cache, QueueMethodControl.TAKE, barrier ), generation );
+        FreeIdScanner scanner =
+                scanner( IDS_PER_ENTRY, new ControlledIdCache( QueueMethodControl.DRAIN, barrier, new IdSlotDistribution.Slot( 32, 1 ) ), generation );
         forEachId( generation, range( 0, 5 ) ).accept( ( marker, id ) ->
         {
             marker.markDeleted( id );
@@ -451,7 +424,7 @@ class FreeIdScannerTest
         }
 
         // then
-        assertEquals( 0, cache.size() );
+        assertThat( cache.size() ).isZero();
     }
 
     @Test
@@ -459,9 +432,9 @@ class FreeIdScannerTest
     {
         // given
         long generation = 1;
-        ConcurrentLongQueue cache = new SpmcLongQueue( 32 );
         Barrier.Control barrier = new Barrier.Control();
-        FreeIdScanner scanner = scanner( IDS_PER_ENTRY, new ControlledConcurrentLongQueue( cache, QueueMethodControl.OFFER, barrier ), generation );
+        FreeIdScanner scanner =
+                scanner( IDS_PER_ENTRY, new ControlledIdCache( QueueMethodControl.OFFER, barrier, new IdSlotDistribution.Slot( 32, 1 ) ), generation );
         forEachId( generation, range( 0, 1 ) ).accept( ( marker, id ) ->
         {
             marker.markDeleted( id );
@@ -487,7 +460,7 @@ class FreeIdScannerTest
         }
 
         // then
-        assertEquals( 0, cache.size() );
+        assertThat( cache.size() ).isZero();
     }
 
     @Test
@@ -519,7 +492,7 @@ class FreeIdScannerTest
         assertCacheHasIds( range( IDS_PER_ENTRY + cacheSize, IDS_PER_ENTRY * 2 ) );
         scanner.tryLoadFreeIdsIntoCache( false, NULL );
         assertCacheHasIds( range( IDS_PER_ENTRY * 2, IDS_PER_ENTRY * 2 + 4 ) );
-        assertEquals( -1, cache.takeOrDefault( -1 ) );
+        assertThat( cache.takeOrDefault( -1 ) ).isEqualTo( -1 );
     }
 
     @Test
@@ -596,17 +569,73 @@ class FreeIdScannerTest
         }
     }
 
-    private FreeIdScanner scanner( int idsPerEntry, int cacheSize, long generation )
+    @Test
+    void shouldFreeSkippedHighIdsDuringScan() throws IOException
     {
-        return scanner( idsPerEntry, new SpmcLongQueue( cacheSize ), generation );
+        // given
+        int generation = 1;
+        int[] slotSizes =  {1, 2, 4};
+        IdCache cache = new IdCache( evenSlotDistribution( slotSizes ).slots( 256 ) );
+        FreeIdScanner scanner = scanner( IDS_PER_ENTRY, cache, generation );
+        long id = 10;
+        int size = 4;
+        try ( IdRangeMarker marker = marker( generation, true ) )
+        {
+            // Let the id bridging do its thing and mark the IDs that we're testing as deleted as part of marking a higher one as used.
+            marker.markUsed( id + size * 2 );
+        }
+
+        // when
+        scanner.queueSkippedHighId( id, size );
+        boolean idsWereFound = scanner.tryLoadFreeIdsIntoCache( false, true /*force the scan*/, NULL );
+        assertThat( idsWereFound ).isTrue();
+
+        // then
+        assertThat( cache.takeOrDefault( NO_ID, size, EMPTY_ID_RANGE_CONSUMER ) ).isEqualTo( id );
     }
 
-    private FreeIdScanner scanner( int idsPerEntry, ConcurrentLongQueue cache, long generation )
+    @Test
+    void shouldFreeSkippedHighIdsDuringScanIfScanComesFirst() throws IOException
+    {
+        // given
+        int generation = 1;
+        int[] slotSizes = {1, 2, 4};
+        IdCache cache = new IdCache( evenSlotDistribution( slotSizes ).slots( 256 ) );
+        FreeIdScanner scanner = scanner( IDS_PER_ENTRY, cache, generation );
+        long id = 10;
+        int size = 4;
+        scanner.queueSkippedHighId( id, size );
+        // Here the id range will be marked as free, although it's not yet deleted. The bridging will take care of it below when marking a higher one as used
+        assertThat( scanner.tryLoadFreeIdsIntoCache( false, NULL ) ).isFalse();
+
+        // when
+        try ( IdRangeMarker marker = marker( generation, true ) )
+        {
+            // Let the id bridging do its thing and mark the IDs that we're testing as deleted as part of marking a higher one as used.
+            marker.markUsed( id + size * 2 );
+            // The scanner below won't think there are any free ids and therefore won't bother to do a scan even. Therefore delete another ID.
+            marker.markDeleted( 0 );
+            marker.markFree( 0 );
+        }
+
+        boolean idsWereFound = scanner.tryLoadFreeIdsIntoCache( false, NULL );
+        assertThat( idsWereFound ).isTrue();
+
+        // then
+        assertThat( cache.takeOrDefault( NO_ID, size, EMPTY_ID_RANGE_CONSUMER ) ).isEqualTo( id );
+    }
+
+    private FreeIdScanner scanner( int idsPerEntry, int cacheSize, long generation )
+    {
+        return scanner( idsPerEntry, new IdCache( new IdSlotDistribution.Slot( cacheSize, 1 ) ), generation );
+    }
+
+    private FreeIdScanner scanner( int idsPerEntry, IdCache cache, long generation )
     {
         this.cache = cache;
-        this.reuser = new RecordingReservedMarker( tree, generation, new AtomicLong() );
+        this.reuser = new RecordingReservedMarkerProvider( tree, generation, new AtomicLong() );
         this.atLeastOneFreeId = new AtomicBoolean();
-        return new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneFreeId, reuser, generation, false, NO_MONITOR );
+        return new FreeIdScanner( idsPerEntry, tree, layout, cache, atLeastOneFreeId, reuser, generation, false, NO_MONITOR );
     }
 
     private void assertCacheHasIdsNonExhaustive( Range... ranges )
@@ -625,12 +654,12 @@ class FreeIdScannerTest
         {
             for ( long id = range.fromId; id < range.toId; id++ )
             {
-                assertEquals( id, cache.takeOrDefault( -1 ) );
+                assertThat( cache.takeOrDefault( -1 ) ).isEqualTo( id );
             }
         }
         if ( exhaustive )
         {
-            assertEquals( -1, cache.takeOrDefault( -1 ) );
+            assertThat( cache.takeOrDefault( -1 ) ).isEqualTo( -1 );
         }
     }
 
@@ -638,8 +667,7 @@ class FreeIdScannerTest
     {
         return handler ->
         {
-            try ( IdRangeMarker marker = new IdRangeMarker( IDS_PER_ENTRY, layout, tree.writer( NULL ),
-                    mock( Lock.class ), IdRangeMerger.DEFAULT, true, atLeastOneFreeId, generation, new AtomicLong(), false, NO_MONITOR ) )
+            try ( IdRangeMarker marker = marker( generation, false ) )
             {
                 for ( Range range : ranges )
                 {
@@ -653,7 +681,13 @@ class FreeIdScannerTest
         };
     }
 
-    private class RecordingReservedMarker implements MarkerProvider
+    private IdRangeMarker marker( long generation, boolean bridgeIdGaps ) throws IOException
+    {
+        return new IdRangeMarker( IDS_PER_ENTRY, layout, tree.writer( NULL ), mock( Lock.class ), IdRangeMerger.DEFAULT, true, atLeastOneFreeId, generation,
+                new AtomicLong(), bridgeIdGaps, NO_MONITOR );
+    }
+
+    private class RecordingReservedMarkerProvider implements MarkerProvider
     {
         private final MutableLongList reservedIds = LongLists.mutable.empty();
         private final MutableLongList unreservedIds = LongLists.mutable.empty();
@@ -661,7 +695,7 @@ class FreeIdScannerTest
         private final long generation;
         private final AtomicLong highestWrittenId;
 
-        RecordingReservedMarker( GBPTree<IdRangeKey,IdRange> tree, long generation, AtomicLong highestWrittenId )
+        RecordingReservedMarkerProvider( GBPTree<IdRangeKey,IdRange> tree, long generation, AtomicLong highestWrittenId )
         {
             this.tree = tree;
             this.generation = generation;
@@ -669,26 +703,51 @@ class FreeIdScannerTest
         }
 
         @Override
-        public ReservedMarker getMarker( CursorContext cursorContext )
+        public InternalMarker getMarker( CursorContext cursorContext )
         {
-            ReservedMarker actual = instantiateRealMarker();
+            InternalMarker actual = instantiateRealMarker();
             PinEvent pinEvent = cursorContext.getCursorTracer().beginPin( false, 1, null );
             pinEvent.hit();
             pinEvent.done();
-            return new ReservedMarker()
+            return new InternalMarker()
             {
                 @Override
-                public void markReserved( long id )
+                public void markReserved( long id, int numberOfIds )
                 {
-                    actual.markReserved( id );
-                    reservedIds.add( id );
+                    actual.markReserved( id, numberOfIds );
+                    for ( int i = 0; i < numberOfIds; i++ )
+                    {
+                        reservedIds.add( id + i );
+                    }
                 }
 
                 @Override
-                public void markUnreserved( long id )
+                public void markUnreserved( long id, int numberOfIds )
                 {
-                    actual.markUnreserved( id );
-                    unreservedIds.add( id );
+                    actual.markUnreserved( id, numberOfIds );
+                    for ( int i = 0; i < numberOfIds; i++ )
+                    {
+                        unreservedIds.add( id + i );
+                    }
+                }
+
+                @Override
+                public void markUsed( long id, int numberOfIds )
+                {
+                    actual.markUsed( id, numberOfIds );
+                }
+
+                @Override
+                public void markDeleted( long id, int numberOfIds )
+                {
+                    actual.markDeleted( id, numberOfIds );
+                }
+
+                @Override
+                public void markFree( long id, int numberOfIds )
+                {
+                    // TODO implement tracking of these too
+                    actual.markFree( id, numberOfIds );
                 }
 
                 @Override
@@ -699,7 +758,7 @@ class FreeIdScannerTest
             };
         }
 
-        private ReservedMarker instantiateRealMarker()
+        private InternalMarker instantiateRealMarker()
         {
             try
             {
@@ -743,58 +802,49 @@ class FreeIdScannerTest
     private enum QueueMethodControl
     {
         TAKE,
-        OFFER
+        OFFER,
+        DRAIN
     }
 
-    private static class ControlledConcurrentLongQueue implements ConcurrentLongQueue
+    private static class ControlledIdCache extends IdCache
     {
-        private final ConcurrentLongQueue actual;
         private final QueueMethodControl method;
         private final Barrier.Control barrier;
 
-        ControlledConcurrentLongQueue( ConcurrentLongQueue actual, QueueMethodControl method, Barrier.Control barrier )
+        ControlledIdCache( QueueMethodControl method, Barrier.Control barrier, IdSlotDistribution.Slot... slots )
         {
-            this.actual = actual;
+            super( slots );
             this.method = method;
             this.barrier = barrier;
         }
 
         @Override
-        public boolean offer( long v )
+        void offer( PendingIdQueue pendingItemsToCache, IndexedIdGenerator.Monitor monitor )
         {
-            if ( method == QueueMethodControl.OFFER )
+            reachBarrier( QueueMethodControl.OFFER );
+            super.offer( pendingItemsToCache, monitor );
+        }
+
+        @Override
+        long takeOrDefault( long defaultValue, int numberOfIds, IdRangeConsumer wastedIdConsumer )
+        {
+            reachBarrier( QueueMethodControl.TAKE );
+            return super.takeOrDefault( defaultValue, numberOfIds, wastedIdConsumer );
+        }
+
+        @Override
+        void drain( IdRangeConsumer consumer )
+        {
+            reachBarrier( QueueMethodControl.DRAIN );
+            super.drain( consumer );
+        }
+
+        private void reachBarrier( QueueMethodControl offer )
+        {
+            if ( method == offer )
             {
                 barrier.reached();
             }
-            return actual.offer( v );
-        }
-
-        @Override
-        public long takeOrDefault( long defaultValue )
-        {
-            if ( method == QueueMethodControl.TAKE )
-            {
-                barrier.reached();
-            }
-            return actual.takeOrDefault( defaultValue );
-        }
-
-        @Override
-        public int capacity()
-        {
-            return actual.capacity();
-        }
-
-        @Override
-        public int size()
-        {
-            return actual.size();
-        }
-
-        @Override
-        public void clear()
-        {
-            actual.clear();
         }
     }
 }

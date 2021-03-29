@@ -54,7 +54,7 @@ final class IdRangeMerger implements ValueMerger<IdRangeKey, IdRange>
             monitor.normalized( existingKey.getIdRangeIdx() );
         }
 
-        final boolean changed = existingValue.mergeFrom( newValue, recoveryMode );
+        final boolean changed = existingValue.mergeFrom( existingKey, newValue, recoveryMode );
         if ( !changed )
         {
             return UNCHANGED;

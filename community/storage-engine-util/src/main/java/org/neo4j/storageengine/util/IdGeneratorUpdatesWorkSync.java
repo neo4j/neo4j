@@ -23,7 +23,6 @@ import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +34,11 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.util.concurrent.AsyncApply;
 import org.neo4j.util.concurrent.Work;
 import org.neo4j.util.concurrent.WorkSync;
+
+import static org.neo4j.internal.id.IdUtils.combinedIdAndNumberOfIds;
+import static org.neo4j.internal.id.IdUtils.idFromCombinedId;
+import static org.neo4j.internal.id.IdUtils.numberOfIdsFromCombinedId;
+import static org.neo4j.internal.id.IdUtils.usedFromCombinedId;
 
 /**
  * Convenience for updating one or more {@link IdGenerator} in a concurrent fashion. Supports applying in batches, e.g. multiple transactions
@@ -67,15 +71,15 @@ public class IdGeneratorUpdatesWorkSync
         }
 
         @Override
-        public void markIdAsUsed( IdGenerator idGenerator, long id, CursorContext cursorContext )
+        public void markIdAsUsed( IdGenerator idGenerator, long id, int size, CursorContext cursorContext )
         {
-            idUpdatesMap.computeIfAbsent( idGenerator, t -> new ChangedIds() ).addUsedId( id );
+            idUpdatesMap.computeIfAbsent( idGenerator, t -> new ChangedIds() ).addUsedId( id, size );
         }
 
         @Override
-        public void markIdAsUnused( IdGenerator idGenerator, long id, CursorContext cursorContext )
+        public void markIdAsUnused( IdGenerator idGenerator, long id, int size, CursorContext cursorContext )
         {
-            idUpdatesMap.computeIfAbsent( idGenerator, t -> new ChangedIds() ).addUnusedId( id );
+            idUpdatesMap.computeIfAbsent( idGenerator, t -> new ChangedIds() ).addUnusedId( id, size );
         }
 
         public AsyncApply applyAsync( PageCacheTracer cacheTracer )
@@ -129,32 +133,31 @@ public class IdGeneratorUpdatesWorkSync
     private static class ChangedIds
     {
         private final MutableLongList ids = LongLists.mutable.empty();
-        private final BitSet usedSet = new BitSet(); // set=used, cleared=unused
         private AsyncApply asyncApply;
 
-        private void addUsedId( long id )
+        private void addUsedId( long id, int numberOfIds )
         {
-            usedSet.set( ids.size() );
-            ids.add( id );
+            ids.add( combinedIdAndNumberOfIds( id, numberOfIds, true ) );
         }
 
-        void addUnusedId( long id )
+        void addUnusedId( long id, int numberOfIds )
         {
-            ids.add( id );
+            ids.add( combinedIdAndNumberOfIds( id, numberOfIds, false ) );
         }
 
         void accept( IdGenerator.Marker visitor )
         {
-            ids.forEachWithIndex( ( id, index ) ->
+            ids.forEach( combined ->
             {
-                boolean used = usedSet.get( index );
-                if ( used )
+                long id = idFromCombinedId( combined );
+                int slots = numberOfIdsFromCombinedId( combined );
+                if ( usedFromCombinedId( combined ) )
                 {
-                    visitor.markUsed( id );
+                    visitor.markUsed( id, slots );
                 }
                 else
                 {
-                    visitor.markDeleted( id );
+                    visitor.markDeleted( id, slots );
                 }
             } );
         }

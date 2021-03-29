@@ -48,13 +48,13 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 
-import static java.lang.String.format;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -79,19 +79,19 @@ public class IndexedIdGenerator implements IdGenerator
         @Override
         void close();
 
-        void allocatedFromHigh( long allocatedId );
+        void allocatedFromHigh( long allocatedId, int numberOfIds );
 
-        void allocatedFromReused( long allocatedId );
+        void allocatedFromReused( long allocatedId, int numberOfIds );
 
-        void cached( long cachedId );
+        void cached( long cachedId, int numberOfIds );
 
-        void markedAsUsed( long markedId );
+        void markedAsUsed( long markedId, int numberOfIds );
 
-        void markedAsDeleted( long markedId );
+        void markedAsDeleted( long markedId, int numberOfIds );
 
-        void markedAsFree( long markedId );
+        void markedAsFree( long markedId, int numberOfIds );
 
-        void markedAsReserved( long markedId );
+        void markedAsReserved( long markedId, int numberOfIds );
 
         void markedAsUnreserved( long markedId );
 
@@ -109,6 +109,8 @@ public class IndexedIdGenerator implements IdGenerator
 
         void clearedCache();
 
+        void skippedIdsAtHighId( int numberOfIds );
+
         class Adapter implements Monitor
         {
             @Override
@@ -117,37 +119,37 @@ public class IndexedIdGenerator implements IdGenerator
             }
 
             @Override
-            public void allocatedFromHigh( long allocatedId )
+            public void allocatedFromHigh( long allocatedId, int numberOfIds )
             {
             }
 
             @Override
-            public void allocatedFromReused( long allocatedId )
+            public void allocatedFromReused( long allocatedId, int numberOfIds )
             {
             }
 
             @Override
-            public void cached( long cachedId )
+            public void cached( long cachedId, int numberOfIds )
             {
             }
 
             @Override
-            public void markedAsUsed( long markedId )
+            public void markedAsUsed( long markedId, int numberOfIds )
             {
             }
 
             @Override
-            public void markedAsDeleted( long markedId )
+            public void markedAsDeleted( long markedId, int numberOfIds )
             {
             }
 
             @Override
-            public void markedAsFree( long markedId )
+            public void markedAsFree( long markedId, int numberOfIds )
             {
             }
 
             @Override
-            public void markedAsReserved( long markedId )
+            public void markedAsReserved( long markedId, int numberOfIds )
             {
             }
 
@@ -192,6 +194,11 @@ public class IndexedIdGenerator implements IdGenerator
             }
 
             @Override
+            public void skippedIdsAtHighId( int numberOfIds )
+            {
+            }
+
+            @Override
             public void close()
             {
             }
@@ -208,7 +215,7 @@ public class IndexedIdGenerator implements IdGenerator
     /**
      * Number of ids per entry in the GBPTree.
      */
-    static final int IDS_PER_ENTRY = 128;
+    public static final int IDS_PER_ENTRY = 128;
 
     /**
      * Used for id generators that generally has low activity.
@@ -237,7 +244,7 @@ public class IndexedIdGenerator implements IdGenerator
     /**
      * Cache of free ids to be handed out from {@link #nextId(CursorContext)}. Populated by {@link FreeIdScanner}.
      */
-    private final ConcurrentLongQueue cache;
+    private final IdCache cache;
 
     /**
      * {@link IdType} that this id generator covers.
@@ -322,30 +329,14 @@ public class IndexedIdGenerator implements IdGenerator
 
     public IndexedIdGenerator( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
             boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, DatabaseReadOnlyChecker readOnlyChecker, Config config, String databaseName,
-            CursorContext cursorContext )
-    {
-        this( pageCache, path, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, initialHighId, maxId, readOnlyChecker, config, cursorContext,
-                databaseName, immutable.empty() );
-    }
-
-    public IndexedIdGenerator( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
-            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-            CursorContext cursorContext, String databaseName, ImmutableSet<OpenOption> openOptions )
-    {
-        this( pageCache, path, recoveryCleanupWorkCollector, idType, allowLargeIdCaches, initialHighId, maxId, readOnlyChecker, config, cursorContext,
-                NO_MONITOR, databaseName, openOptions );
-    }
-
-    public IndexedIdGenerator( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdType idType,
-            boolean allowLargeIdCaches, LongSupplier initialHighId, long maxId, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-            CursorContext cursorContext, Monitor monitor, String databaseName, ImmutableSet<OpenOption> openOptions )
+            CursorContext cursorContext, Monitor monitor, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution )
     {
         this.path = path;
         this.readOnlyChecker = readOnlyChecker;
         int cacheCapacity = idType.highActivity() && allowLargeIdCaches ? LARGE_CACHE_CAPACITY : SMALL_CACHE_CAPACITY;
         this.idType = idType;
         this.cacheOptimisticRefillThreshold = cacheCapacity / 4;
-        this.cache = new SpmcLongQueue( cacheCapacity );
+        this.cache = new IdCache( slotDistribution.slots( cacheCapacity ) );
         this.maxId = maxId;
         this.monitor = monitor;
         this.defaultMerger = new IdRangeMerger( false, monitor );
@@ -374,7 +365,7 @@ public class IndexedIdGenerator implements IdGenerator
             this.highId.set( initialHighId.getAsLong() );
             this.highestWrittenId.set( highId.get() - 1 );
             this.generation = STARTING_GENERATION + 1;
-            this.idsPerEntry = IDS_PER_ENTRY;
+            this.idsPerEntry = slotDistribution.idsPerEntry();
         }
         monitor.opened( highestWrittenId.get(), highId.get() );
 
@@ -382,8 +373,8 @@ public class IndexedIdGenerator implements IdGenerator
         this.tree = instantiateTree( pageCache, path, recoveryCleanupWorkCollector, readOnlyChecker, databaseName, openOptions );
 
         this.strictlyPrioritizeFreelist = config.get( GraphDatabaseInternalSettings.strictly_prioritize_id_freelist );
-        this.scanner = new FreeIdScanner( idsPerEntry, tree, cache, atLeastOneIdOnFreelist,
-                tracer -> lockAndInstantiateMarker( true, tracer ), generation, strictlyPrioritizeFreelist, monitor );
+        this.scanner = new FreeIdScanner( idsPerEntry, tree, layout, cache, atLeastOneIdOnFreelist,
+                context -> lockAndInstantiateMarker( true, context ), generation, strictlyPrioritizeFreelist, monitor );
     }
 
     private GBPTree<IdRangeKey,IdRange> instantiateTree( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
@@ -414,12 +405,10 @@ public class IndexedIdGenerator implements IdGenerator
     public long nextId( CursorContext cursorContext )
     {
         prepareIdAllocation( cursorContext );
-
         long id = cache.takeOrDefault( NO_ID );
         if ( id != NO_ID )
         {
-            // We got an ID from the cache, all good
-            monitor.allocatedFromReused( id );
+            monitor.allocatedFromReused( id, 1 );
             return id;
         }
 
@@ -434,7 +423,57 @@ public class IndexedIdGenerator implements IdGenerator
             IdValidator.assertIdWithinMaxCapacity( idType, id, maxId );
         }
         while ( IdValidator.isReservedId( id ) );
-        monitor.allocatedFromHigh( id );
+        monitor.allocatedFromHigh( id, 1 );
+        return id;
+    }
+
+    @Override
+    public long nextConsecutiveIdRange( int numberOfIds, CursorContext cursorContext )
+    {
+        prepareIdAllocation( cursorContext );
+        long id = cache.takeOrDefault( NO_ID, numberOfIds, scanner::queueWastedCachedId );
+        if ( id != NO_ID )
+        {
+            monitor.allocatedFromReused( id, numberOfIds );
+            return id;
+        }
+
+        long readHighId;
+        long endId;
+        int skipped = 0;
+        do
+        {
+            readHighId = highId.get();
+            id = readHighId;
+            endId = readHighId + numberOfIds - 1;
+            if ( layout.idRangeIndex( readHighId ) != layout.idRangeIndex( endId ) )
+            {
+                // The page boundary was crossed. Go to the beginning of the next page
+                long newId = layout.idRangeIndex( endId ) * idsPerEntry;
+                skipped = (int) (newId - id);
+                id = newId;
+                endId = id + numberOfIds - 1;
+            }
+            IdValidator.assertIdWithinMaxCapacity( idType, endId, maxId );
+        }
+        while ( !highId.compareAndSet( readHighId, endId + 1 ) );
+        monitor.allocatedFromHigh( id, numberOfIds );
+        if ( skipped > 0 )
+        {
+            // Tell FreeIdScanner about this temporary waste?
+            // What happens with this "waste" if we do nothing?
+            // The IDs will be marked as deleted by the "ID gap bridging", but not marked as free because it's not allowed because of this scenario:
+            //  - T1 allocates ID 10 from highId
+            //  - T2 allocates ID 11 from highId
+            //  - T2 commits and bridges the gap that it sees for ID 10
+            //  - T1 commits
+            // If the bridging of ID 10 would also mark it as free then there's a chance that the ID scanner would pick up 10 and hand it out
+            // before T1 commits.
+            // OK, so the skipped IDs will be marked as deleted, but will never be picked up by the ID scanner in this generation/session
+            // and therefore temporarily wasted until next restart.
+            scanner.queueSkippedHighId( readHighId, skipped );
+            monitor.skippedIdsAtHighId( skipped );
+        }
         return id;
     }
 
@@ -557,8 +596,8 @@ public class IndexedIdGenerator implements IdGenerator
                 // We can mark the ids as free right away since this is before started which means we get the very liberal merger
                 long highestId = freeIdsForRebuild.accept( id ->
                 {
-                    idRangeMarker.markDeleted( id );
-                    idRangeMarker.markFree( id );
+                    idRangeMarker.markDeleted( id, 1 );
+                    idRangeMarker.markFree( id, 1 );
                 } );
                 highId.set( highestId + 1 );
                 highestWrittenId.set( highestId );
@@ -741,10 +780,14 @@ public class IndexedIdGenerator implements IdGenerator
                         @Override
                         public void value( IdRange value )
                         {
-                            System.out.println( format( "%s [%d]", value, key.getIdRangeIdx() ) );
+                            long rangeIndex = key.getIdRangeIdx();
+                            int idsPerEntry = layout.idsPerEntry();
+                            System.out.printf( "%s [rangeIndex: %d, i.e. IDs:%d-%d]%n", value, rangeIndex, rangeIndex * idsPerEntry,
+                                    (rangeIndex + 1) * idsPerEntry - 1 );
                         }
                     }, cursorContext );
                 }
+                System.out.println( header );
             }
         }
     }
@@ -772,11 +815,15 @@ public class IndexedIdGenerator implements IdGenerator
         readOnlyChecker.check();
     }
 
-    interface ReservedMarker extends AutoCloseable
+    interface InternalMarker extends Marker
     {
-        void markReserved( long id );
-        void markUnreserved( long id );
-        @Override
-        void close();
+        default void markReserved( long id )
+        {
+            markReserved( id, 1 );
+        }
+
+        void markReserved( long id, int numberOfIds );
+
+        void markUnreserved( long id, int numberOfIds );
     }
 }

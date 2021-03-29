@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
@@ -35,6 +34,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -60,6 +60,7 @@ import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdCapacityExceededException;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdRange;
+import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.internal.id.TestIdType;
 import org.neo4j.io.pagecache.PageCache;
@@ -75,8 +76,11 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
+import static java.lang.String.format;
+import static java.util.Arrays.stream;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -96,6 +100,10 @@ import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.FreeIds.NO_FREE_IDS;
+import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
+import static org.neo4j.internal.id.IdSlotDistribution.diminishingSlotDistribution;
+import static org.neo4j.internal.id.IdSlotDistribution.evenSlotDistribution;
+import static org.neo4j.internal.id.IdSlotDistribution.powerTwoSlotSizesDownwards;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.IDS_PER_ENTRY;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
@@ -125,13 +133,13 @@ class IndexedIdGeneratorTest
 
     void open()
     {
-        open( Config.defaults(), IndexedIdGenerator.NO_MONITOR, writable() );
+        open( Config.defaults(), IndexedIdGenerator.NO_MONITOR, writable(), SINGLE_IDS );
     }
 
-    void open( Config config, IndexedIdGenerator.Monitor monitor, DatabaseReadOnlyChecker readOnlyChecker )
+    void open( Config config, IndexedIdGenerator.Monitor monitor, DatabaseReadOnlyChecker readOnlyChecker, IdSlotDistribution slotDistribution )
     {
         idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readOnlyChecker, config,
-                NULL, monitor, DEFAULT_DATABASE_NAME, Sets.immutable.empty() );
+                DEFAULT_DATABASE_NAME, NULL, monitor, immutable.empty(), slotDistribution );
     }
 
     @AfterEach
@@ -153,7 +161,7 @@ class IndexedIdGeneratorTest
         var readableChecker = new DatabaseReadOnlyChecker.Default( config, DEFAULT_DATABASE_NAME );
 
         try ( var customGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readableChecker,
-                Config.defaults(), DEFAULT_DATABASE_NAME, NULL ) )
+                config, DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             customGenerator.start( NO_FREE_IDS, NULL );
             for ( int i = 0; i < generatedIds; i++ )
@@ -168,7 +176,7 @@ class IndexedIdGeneratorTest
         }
 
         try ( var reopenedGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readableChecker,
-                Config.defaults(), DEFAULT_DATABASE_NAME, NULL ) )
+                config, DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             reopenedGenerator.start( NO_FREE_IDS, NULL );
             assertDoesNotThrow( () -> reopenedGenerator.nextId( NULL ) );
@@ -187,7 +195,7 @@ class IndexedIdGeneratorTest
         idGenerator.start( NO_FREE_IDS, NULL );
         long id = idGenerator.nextId( NULL );
         markDeleted( id );
-        markReusable( id );
+        markFree( id );
 
         // when
         idGenerator.maintenance( true, NULL );
@@ -209,7 +217,7 @@ class IndexedIdGeneratorTest
         assertNotEquals( id, otherId );
 
         // when
-        markReusable( id );
+        markFree( id );
 
         // then
         idGenerator.maintenance( true, NULL );
@@ -218,37 +226,75 @@ class IndexedIdGeneratorTest
     }
 
     @Test
-    void shouldStayConsistentAndNotLoseIdsInConcurrent_Allocate_Delete_Free() throws Throwable
+    void shouldHandleSlotsLargerThanOne() throws IOException
     {
         // given
-        open( Config.defaults( strictly_prioritize_id_freelist, true ), NO_MONITOR, writable() );
+        int[] slotSizes = {1, 2, 4};
+        open( Config.defaults(), NO_MONITOR, writable(), diminishingSlotDistribution( slotSizes ) );
         idGenerator.start( NO_FREE_IDS, NULL );
+
+        // when
+        int firstSize = 2;
+        int secondSize = 4;
+        long firstId = idGenerator.nextConsecutiveIdRange( firstSize, NULL );
+        assertThat( firstId ).isEqualTo( 0 );
+        long secondId = idGenerator.nextConsecutiveIdRange( secondSize, NULL );
+        assertThat( secondId ).isEqualTo( firstId + firstSize );
+        markUsed( firstId, firstSize );
+        markUsed( secondId, secondSize );
+        markDeleted( firstId, firstSize );
+        markDeleted( secondId, secondSize );
+        markFree( firstId, firstSize );
+        markFree( secondId, secondSize );
+        idGenerator.maintenance( true, NULL );
+
+        // then
+        assertThat( idGenerator.nextConsecutiveIdRange( 4, NULL ) ).isEqualTo( 0 );
+        assertThat( idGenerator.nextConsecutiveIdRange( 4, NULL ) ).isEqualTo( 6 );
+        assertThat( idGenerator.nextConsecutiveIdRange( 2, NULL ) ).isEqualTo( 4 );
+    }
+
+    @ParameterizedTest
+    @ValueSource( ints = {1, 2, 4, 8, 16} )
+    void shouldStayConsistentAndNotLoseIdsInConcurrent_Allocate_Delete_Free( int maxSlotSize ) throws Throwable
+    {
+        // given
+        open( Config.defaults( strictly_prioritize_id_freelist, true ), NO_MONITOR, writable(),
+                evenSlotDistribution( powerTwoSlotSizesDownwards( maxSlotSize ) ) );
+        idGenerator.start( NO_FREE_IDS, NULL );
+
         Race race = new Race().withMaxDuration( 1, TimeUnit.SECONDS );
         ConcurrentLinkedQueue<Allocation> allocations = new ConcurrentLinkedQueue<>();
         ConcurrentSparseLongBitSet expectedInUse = new ConcurrentSparseLongBitSet( IDS_PER_ENTRY );
-        race.addContestants( 6, allocator( 500, allocations, expectedInUse ) );
-        race.addContestants( 1, deleter( allocations ) );
-        race.addContestants( 1, freer( allocations, expectedInUse ) );
+        race.addContestants( 6, allocator( 500, allocations, expectedInUse, maxSlotSize ) );
+        race.addContestants( 2, deleter( allocations ) );
+        race.addContestants( 2, freer( allocations, expectedInUse ) );
 
         // when
         race.go();
 
         // then
-        verifyReallocationDoesNotIncreaseHighId( allocations, expectedInUse );
+        if ( maxSlotSize == 1 )
+        {
+            verifyReallocationDoesNotIncreaseHighId( allocations, expectedInUse );
+        }
     }
 
-    @Test
-    void shouldStayConsistentAndNotLoseIdsInConcurrentAllocate_Delete_Free_ClearCache() throws Throwable
+    @ParameterizedTest
+    @ValueSource( ints = {1, 2, 4, 8, 16} )
+    void shouldStayConsistentAndNotLoseIdsInConcurrent_Allocate_Delete_Free_ClearCache( int maxSlotSize ) throws Throwable
     {
         // given
-        open( Config.defaults( strictly_prioritize_id_freelist, true ), NO_MONITOR, writable() );
+        open( Config.defaults( strictly_prioritize_id_freelist, true ), NO_MONITOR, writable(),
+                diminishingSlotDistribution( powerTwoSlotSizesDownwards( maxSlotSize ) ) );
         idGenerator.start( NO_FREE_IDS, NULL );
+
         Race race = new Race().withMaxDuration( 3, TimeUnit.SECONDS );
         ConcurrentLinkedQueue<Allocation> allocations = new ConcurrentLinkedQueue<>();
         ConcurrentSparseLongBitSet expectedInUse = new ConcurrentSparseLongBitSet( IDS_PER_ENTRY );
-        race.addContestants( 6, allocator( 500, allocations, expectedInUse ) );
-        race.addContestants( 1, deleter( allocations ) );
-        race.addContestants( 1, freer( allocations, expectedInUse ) );
+        race.addContestants( 6, allocator( 500, allocations, expectedInUse, maxSlotSize ) );
+        race.addContestants( 2, deleter( allocations ) );
+        race.addContestants( 2, freer( allocations, expectedInUse ) );
         race.addContestant( throwing( () ->
         {
             Thread.sleep( 300 );
@@ -259,7 +305,10 @@ class IndexedIdGeneratorTest
         race.go();
 
         // then
-        verifyReallocationDoesNotIncreaseHighId( allocations, expectedInUse );
+        if ( maxSlotSize == 1 )
+        {
+            verifyReallocationDoesNotIncreaseHighId( allocations, expectedInUse );
+        }
     }
 
     @Test
@@ -521,7 +570,7 @@ class IndexedIdGeneratorTest
         LongSupplier highIdSupplier = mock( LongSupplier.class );
         when( highIdSupplier.getAsLong() ).thenReturn( highId );
         idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, highIdSupplier, MAX_ID, writable(), Config.defaults(),
-                DEFAULT_DATABASE_NAME, NULL );
+                DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS );
 
         // then
         verify( highIdSupplier ).getAsLong();
@@ -542,7 +591,7 @@ class IndexedIdGeneratorTest
         LongSupplier highIdSupplier = mock( LongSupplier.class );
         when( highIdSupplier.getAsLong() ).thenReturn( 101L );
         idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, highIdSupplier, MAX_ID, writable(), Config.defaults(),
-                DEFAULT_DATABASE_NAME, NULL );
+                DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS );
 
         // then
         verifyNoMoreInteractions( highIdSupplier );
@@ -556,7 +605,7 @@ class IndexedIdGeneratorTest
         Path file = directory.file( "non-existing" );
         final IllegalStateException e = assertThrows( IllegalStateException.class,
                 () -> new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readOnly(), Config.defaults(),
-                        DEFAULT_DATABASE_NAME, NULL ) );
+                        DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof ReadOnlyDbException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
@@ -567,12 +616,12 @@ class IndexedIdGeneratorTest
     {
         Path file = directory.file( "existing" );
         new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, writable(), Config.defaults(), DEFAULT_DATABASE_NAME,
-                NULL ).close();
+                NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS ).close();
         // Never start id generator means it will need rebuild on next start
 
         // Start in readOnly mode
         try ( IndexedIdGenerator readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID,
-                readOnly(), Config.defaults(), DEFAULT_DATABASE_NAME, NULL ) )
+                readOnly(), Config.defaults(), DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             var e = assertThrows( Exception.class, () -> readOnlyGenerator.start( NO_FREE_IDS, NULL ) );
             assertThat( e ).hasCauseInstanceOf( ReadOnlyDbException.class );
@@ -585,14 +634,14 @@ class IndexedIdGeneratorTest
         Path file = directory.file( "existing" );
         var indexedIdGenerator =
                 new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, writable(), Config.defaults(),
-                        DEFAULT_DATABASE_NAME, NULL );
+                        DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS );
         indexedIdGenerator.start( NO_FREE_IDS, NULL );
         indexedIdGenerator.close();
         // Never start id generator means it will need rebuild on next start
 
         // Start in readOnly mode should not throw
         try ( var readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readOnly(),
-                Config.defaults(), DEFAULT_DATABASE_NAME, NULL ) )
+                Config.defaults(), DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             readOnlyGenerator.start( NO_FREE_IDS, NULL );
         }
@@ -626,26 +675,26 @@ class IndexedIdGeneratorTest
     void shouldInvokeMonitorOnCorrectCalls() throws IOException
     {
         IndexedIdGenerator.Monitor monitor = mock( IndexedIdGenerator.Monitor.class );
-        open( Config.defaults(), monitor, writable() );
+        open( Config.defaults(), monitor, writable(), SINGLE_IDS );
         verify( monitor ).opened( -1, 0 );
         idGenerator.start( NO_FREE_IDS, NULL );
 
         long allocatedHighId = idGenerator.nextId( NULL );
-        verify( monitor ).allocatedFromHigh( allocatedHighId );
+        verify( monitor ).allocatedFromHigh( allocatedHighId, 1 );
 
         try ( Marker marker = idGenerator.marker( NULL ) )
         {
             marker.markUsed( allocatedHighId );
-            verify( monitor ).markedAsUsed( allocatedHighId );
+            verify( monitor ).markedAsUsed( allocatedHighId, 1 );
             marker.markDeleted( allocatedHighId );
-            verify( monitor ).markedAsDeleted( allocatedHighId );
+            verify( monitor ).markedAsDeleted( allocatedHighId, 1 );
             marker.markFree( allocatedHighId );
-            verify( monitor ).markedAsFree( allocatedHighId );
+            verify( monitor ).markedAsFree( allocatedHighId, 1 );
         }
 
         idGenerator.maintenance( true, NULL );
         long reusedId = idGenerator.nextId( NULL );
-        verify( monitor ).allocatedFromReused( reusedId );
+        verify( monitor ).allocatedFromReused( reusedId, 1 );
         idGenerator.checkpoint( NULL );
         // two times, one in start and one now in checkpoint
         verify( monitor, times( 2 ) ).checkpoint( anyLong(), anyLong() );
@@ -664,7 +713,7 @@ class IndexedIdGeneratorTest
         verify( monitor ).close();
 
         // Also test normalization (which requires a restart)
-        open( Config.defaults(), monitor, writable() );
+        open( Config.defaults(), monitor, writable(), SINGLE_IDS );
         idGenerator.start( NO_FREE_IDS, NULL );
         try ( Marker marker = idGenerator.marker( NULL ) )
         {
@@ -845,12 +894,12 @@ class IndexedIdGeneratorTest
     void tracePageCacheOnIdGeneratorStartWithoutRebuild() throws IOException
     {
         try ( var prepareIndexWithoutRebuild = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, writable(),
-                Config.defaults(), DEFAULT_DATABASE_NAME, NULL ) )
+                Config.defaults(), DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             prepareIndexWithoutRebuild.checkpoint( NULL );
         }
-        try ( var idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, writable(), Config.defaults(),
-                DEFAULT_DATABASE_NAME, NULL ) )
+        try ( var idGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, writable(),
+                Config.defaults(), DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             var pageCacheTracer = new DefaultPageCacheTracer();
             try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorStartWithoutRebuild" ) ) )
@@ -931,17 +980,17 @@ class IndexedIdGeneratorTest
             private boolean first = true;
 
             @Override
-            public void cached( long cachedId )
+            public void cached( long cachedId, int numberOfIds )
             {
                 if ( first )
                 {
                     barrier.reached();
                     first = false;
                 }
-                super.cached( cachedId );
+                super.cached( cachedId, numberOfIds );
             }
         };
-        open( Config.defaults(), monitor, writable() );
+        open( Config.defaults(), monitor, writable(), SINGLE_IDS );
         idGenerator.start( NO_FREE_IDS, NULL );
         try ( Marker marker = idGenerator.marker( NULL ) )
         {
@@ -983,18 +1032,81 @@ class IndexedIdGeneratorTest
         }
     }
 
+    @Test
+    void shouldAllocateRangesFromHighIdConcurrently() throws IOException
+    {
+        // given
+        int[] slotSizes = {1, 2, 4, 8};
+        open( Config.defaults(), NO_MONITOR, writable(), diminishingSlotDistribution( slotSizes ) );
+        idGenerator.start( NO_FREE_IDS, NULL );
+        int numThreads = 4;
+        BitSet[] allocatedIds = new BitSet[numThreads];
+        for ( int i = 0; i < allocatedIds.length; i++ )
+        {
+            allocatedIds[i] = new BitSet();
+        }
+
+        // when
+        Race race = new Race().withEndCondition( () -> false );
+        race.addContestants( 4, t -> () ->
+        {
+            int size = ThreadLocalRandom.current().nextInt( 1, 8 );
+            long startId = idGenerator.nextConsecutiveIdRange( size, NULL );
+            long endId = startId + size - 1;
+            assertThat( startId / IDS_PER_ENTRY ).isEqualTo( endId / IDS_PER_ENTRY );
+            for ( long id = startId; id <= endId; id++ )
+            {
+                allocatedIds[t].set( (int) id );
+            }
+        }, 1_000 );
+        race.goUnchecked();
+
+        // then
+        int totalCount = stream( allocatedIds ).mapToInt( BitSet::cardinality ).sum();
+        BitSet merged = new BitSet();
+        for ( BitSet ids : allocatedIds )
+        {
+            merged.or( ids );
+        }
+        int mergedCount = merged.cardinality();
+        // I.e. no overlapping ids
+        assertThat( mergedCount ).isEqualTo( totalCount );
+    }
+
+    @Test
+    void shouldSkipLastIdsOfRangeIfAllocatingFromHighIdAcrossRangeBoundary() throws IOException
+    {
+        // given
+        open( Config.defaults(), NO_MONITOR, writable(), diminishingSlotDistribution( powerTwoSlotSizesDownwards( 64 ) ) );
+        idGenerator.start( NO_FREE_IDS, NULL );
+        long preId1 = idGenerator.nextConsecutiveIdRange( 64, NULL );
+        long preId2 = idGenerator.nextConsecutiveIdRange( 32, NULL );
+        long preId3 = idGenerator.nextConsecutiveIdRange( 16, NULL );
+        assertThat( preId1 ).isEqualTo( 0 );
+        assertThat( preId2 ).isEqualTo( 64 );
+        assertThat( preId3 ).isEqualTo( 64 + 32 );
+
+        // when
+        long id = idGenerator.nextConsecutiveIdRange( 32, NULL );
+
+        // then
+        long postId = idGenerator.nextConsecutiveIdRange( 8, NULL );
+        assertThat( id ).isEqualTo( 128 );
+        assertThat( postId ).isEqualTo( 128 + 32 );
+    }
+
     private void assertOperationPermittedInReadOnlyMode( Function<IndexedIdGenerator,Executable> operation ) throws IOException
     {
         Path file = directory.file( "existing" );
         var indexedIdGenerator =
                 new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, writable(), Config.defaults(),
-                        DEFAULT_DATABASE_NAME, NULL );
+                        DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS );
         indexedIdGenerator.start( NO_FREE_IDS, NULL );
         indexedIdGenerator.close();
 
         // Start in readOnly mode
         try ( var readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readOnly(),
-                Config.defaults(), DEFAULT_DATABASE_NAME, NULL ) )
+                Config.defaults(), DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             readOnlyGenerator.start( NO_FREE_IDS, NULL );
             assertDoesNotThrow( () -> operation.apply( readOnlyGenerator ) );
@@ -1006,13 +1118,13 @@ class IndexedIdGeneratorTest
         Path file = directory.file( "existing" );
         var indexedIdGenerator =
                 new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, writable(), Config.defaults(),
-                        DEFAULT_DATABASE_NAME, NULL );
+                        DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS );
         indexedIdGenerator.start( NO_FREE_IDS, NULL );
         indexedIdGenerator.close();
 
         // Start in readOnly mode
         try ( var readOnlyGenerator = new IndexedIdGenerator( pageCache, file, immediate(), TestIdType.TEST, false, () -> 0, MAX_ID, readOnly(),
-                Config.defaults(), DEFAULT_DATABASE_NAME, NULL ) )
+                Config.defaults(), DEFAULT_DATABASE_NAME, NULL, NO_MONITOR, immutable.empty(), SINGLE_IDS ) )
         {
             readOnlyGenerator.start( NO_FREE_IDS, NULL );
             var e = assertThrows( Exception.class, operation.apply( readOnlyGenerator ) );
@@ -1031,7 +1143,7 @@ class IndexedIdGeneratorTest
         while ( numberOfIdsOutThere > 0 )
         {
             long id = idGenerator.nextId( NULL );
-            Allocation allocation = new Allocation( id );
+            Allocation allocation = new Allocation( id, 1 );
             numberOfIdsOutThere -= 1;
             reallocationIds.set( allocation.id, 1, true );
         }
@@ -1062,7 +1174,7 @@ class IndexedIdGeneratorTest
     {
         return new Runnable()
         {
-            private Random r = new Random( random.nextLong() );
+            private final Random rng = new Random( random.nextLong() );
 
             @Override
             public void run()
@@ -1071,7 +1183,7 @@ class IndexedIdGeneratorTest
                 int size = allocations.size();
                 if ( size > 0 )
                 {
-                    int slot = r.nextInt( size );
+                    int slot = rng.nextInt( size );
                     Iterator<Allocation> iterator = allocations.iterator();
                     Allocation allocation = null;
                     for ( int i = 0; i < slot && iterator.hasNext(); i++ )
@@ -1095,7 +1207,7 @@ class IndexedIdGeneratorTest
     {
         return new Runnable()
         {
-            private Random r = new Random( random.nextLong() );
+            private final Random rng = new Random( random.nextLong() );
 
             @Override
             public void run()
@@ -1104,7 +1216,7 @@ class IndexedIdGeneratorTest
                 int size = allocations.size();
                 if ( size > 0 )
                 {
-                    int slot = r.nextInt( size );
+                    int slot = rng.nextInt( size );
                     Iterator<Allocation> iterator = allocations.iterator();
                     Allocation allocation = null;
                     for ( int i = 0; i < slot && iterator.hasNext(); i++ )
@@ -1121,17 +1233,25 @@ class IndexedIdGeneratorTest
         };
     }
 
-    private Runnable allocator( int maxAllocationsAhead, ConcurrentLinkedQueue<Allocation> allocations, ConcurrentSparseLongBitSet expectedInUse )
+    private Runnable allocator( int maxAllocationsAhead, ConcurrentLinkedQueue<Allocation> allocations, ConcurrentSparseLongBitSet expectedInUse,
+            int maxSlotSize )
     {
-        return () ->
+        return new Runnable()
         {
-            // Allocate ids
-            if ( allocations.size() < maxAllocationsAhead )
+            private final Random rng = new Random( random.nextLong() );
+
+            @Override
+            public void run()
             {
-                long id = idGenerator.nextId( NULL );
-                Allocation allocation = new Allocation( id );
-                allocation.markAsInUse( expectedInUse );
-                allocations.add( allocation );
+                // Allocate ids
+                if ( allocations.size() < maxAllocationsAhead )
+                {
+                    int size = rng.nextInt( maxSlotSize ) + 1;
+                    long id = idGenerator.nextConsecutiveIdRange( size, NULL );
+                    Allocation allocation = new Allocation( id, size );
+                    allocation.markAsInUse( expectedInUse );
+                    allocations.add( allocation );
+                }
             }
         };
     }
@@ -1147,53 +1267,62 @@ class IndexedIdGeneratorTest
 
     private void markUsed( long id )
     {
+        markUsed( id, 1 );
+    }
+
+    private void markUsed( long id, int size )
+    {
         try ( Marker marker = idGenerator.marker( NULL ) )
         {
-            marker.markUsed( id );
+            marker.markUsed( id, size );
         }
     }
 
     private void markDeleted( long id )
     {
-        try ( Marker marker = idGenerator.marker( NULL ) )
-        {
-            marker.markDeleted( id );
-        }
+        markDeleted( id, 1 );
     }
 
-    private void markReusable( long id )
+    private void markDeleted( long id, int size )
     {
         try ( Marker marker = idGenerator.marker( NULL ) )
         {
-            marker.markFree( id );
+            marker.markDeleted( id, size );
         }
     }
 
     private void markFree( long id )
     {
+        markFree( id, 1 );
+    }
+
+    private void markFree( long id, int size )
+    {
         try ( Marker marker = idGenerator.marker( NULL ) )
         {
-            marker.markFree( id );
+            marker.markFree( id, size );
         }
     }
 
     private class Allocation
     {
         private final long id;
+        private final int size;
         private final AtomicBoolean deleting = new AtomicBoolean();
         private volatile boolean deleted;
         private final AtomicBoolean freeing = new AtomicBoolean();
 
-        Allocation( long id )
+        Allocation( long id, int size )
         {
             this.id = id;
+            this.size = size;
         }
 
         void delete()
         {
             if ( deleting.compareAndSet( false, true ) )
             {
-                markDeleted( id );
+                markDeleted( id, size );
                 deleted = true;
             }
         }
@@ -1207,8 +1336,8 @@ class IndexedIdGeneratorTest
 
             if ( freeing.compareAndSet( false, true ) )
             {
-                expectedInUse.set( id, 1, false );
-                markReusable( id );
+                expectedInUse.set( id, size, false );
+                markFree( id, size );
                 return true;
             }
             return false;
@@ -1216,17 +1345,17 @@ class IndexedIdGeneratorTest
 
         void markAsInUse( ConcurrentSparseLongBitSet expectedInUse )
         {
-            expectedInUse.set( id, 1, true );
+            expectedInUse.set( id, size, true );
             // Simulate that actual commit comes very close after allocation, in reality they are slightly more apart
             // Also this test marks all ids, regardless if they come from highId or the free-list. This to simulate more real-world
             // scenario and to exercise the idempotent clearing feature.
-            markUsed( id );
+            markUsed( id, size );
         }
 
         @Override
         public String toString()
         {
-            return String.valueOf( id );
+            return format( "{id:%d, slots:%d}", id, size );
         }
     }
 }

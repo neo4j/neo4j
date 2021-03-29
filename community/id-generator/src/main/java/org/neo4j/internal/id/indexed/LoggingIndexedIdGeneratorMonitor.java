@@ -113,43 +113,43 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     }
 
     @Override
-    public synchronized void allocatedFromHigh( long allocatedId )
+    public synchronized void allocatedFromHigh( long allocatedId, int numberOfIds )
     {
         putTypeAndId( Type.ALLOCATE_HIGH, allocatedId );
     }
 
     @Override
-    public synchronized void allocatedFromReused( long allocatedId )
+    public synchronized void allocatedFromReused( long allocatedId, int numberOfIds )
     {
         putTypeAndId( Type.ALLOCATE_REUSED, allocatedId );
     }
 
     @Override
-    public synchronized void cached( long cachedId )
+    public synchronized void cached( long cachedId, int numberOfIds )
     {
-        putTypeAndId( Type.CACHED, cachedId );
+        putTypeAndTwoIds( Type.CACHED, cachedId, numberOfIds );
     }
 
     @Override
-    public synchronized void markedAsUsed( long markedId )
+    public synchronized void markedAsUsed( long markedId, int numberOfIds )
     {
         putTypeAndId( Type.MARK_USED, markedId );
     }
 
     @Override
-    public synchronized void markedAsDeleted( long markedId )
+    public synchronized void markedAsDeleted( long markedId, int numberOfIds )
     {
         putTypeAndId( Type.MARK_DELETED, markedId );
     }
 
     @Override
-    public synchronized void markedAsFree( long markedId )
+    public synchronized void markedAsFree( long markedId, int numberOfIds )
     {
         putTypeAndId( Type.MARK_FREE, markedId );
     }
 
     @Override
-    public synchronized void markedAsReserved( long markedId )
+    public synchronized void markedAsReserved( long markedId, int numberOfIds )
     {
         putTypeAndId( Type.MARK_RESERVED, markedId );
     }
@@ -204,6 +204,11 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     public synchronized void clearedCache()
     {
         putTypeOnly( Type.CLEARED_CACHE );
+    }
+
+    @Override
+    public void skippedIdsAtHighId( int numberOfIds )
+    {
     }
 
     @Override
@@ -404,7 +409,6 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
                     break;
                 case ALLOCATE_HIGH:
                 case ALLOCATE_REUSED:
-                case CACHED:
                 case MARK_USED:
                 case MARK_DELETED:
                 case MARK_FREE:
@@ -415,6 +419,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
                 case BRIDGED:
                     dumper.typeAndId( type, time, channel.getLong() );
                     break;
+                case CACHED:
                 case OPENED:
                 case CHECKPOINT:
                     dumper.typeAndTwoIds( type, time, channel.getLong(), channel.getLong() );

@@ -31,10 +31,12 @@ import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 public class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
 {
     private final int longsPerEntry;
+    private final int idsPerEntry;
 
     public IdRangeLayout( int idsPerEntry )
     {
         super( true, 3_735_929_054L + idsPerEntry, 1, 2 );
+        this.idsPerEntry = idsPerEntry;
         requirePowerOfTwo( idsPerEntry );
         this.longsPerEntry = ((idsPerEntry - 1) / (IdRange.BITSET_SIZE)) + 1;
     }
@@ -137,5 +139,15 @@ public class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange>
     public int compare( IdRangeKey o1, IdRangeKey o2 )
     {
         return Long.compare( o1.getIdRangeIdx(), o2.getIdRangeIdx() );
+    }
+
+    long idRangeIndex( long id )
+    {
+        return id / idsPerEntry;
+    }
+
+    int idsPerEntry()
+    {
+        return idsPerEntry;
     }
 }

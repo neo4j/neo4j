@@ -49,6 +49,7 @@ import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -822,7 +823,7 @@ class RecoveryIT
         // Make an ID generator, say for the node store, dirty
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), "my db" );
         try ( IdGenerator idGenerator = idGeneratorFactory.open( pageCache, layout.idNodeStore(), RecordIdType.NODE, () -> 0L /*will not be used*/, 10_000,
-                writable(), Config.defaults(), NULL, Sets.immutable.empty() ) )
+                writable(), Config.defaults(), NULL, Sets.immutable.empty(), IdSlotDistribution.SINGLE_IDS ) )
         {
             // Merely opening a marker will make the backing GBPTree dirty
             idGenerator.marker( NULL ).close();
@@ -944,7 +945,7 @@ class RecoveryIT
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), "my db" );
         try ( IdGenerator idGenerator = idGeneratorFactory.open( pageCache, path, idType, () -> 0L /*will not be used*/, 10_000, readOnly(),
-                Config.defaults(), NULL, Sets.immutable.empty() ) )
+                Config.defaults(), NULL, Sets.immutable.empty(), IdSlotDistribution.SINGLE_IDS ) )
         {
             MutableBoolean dirtyOnStartup = new MutableBoolean();
             InvocationHandler invocationHandler = ( proxy, method, args ) ->

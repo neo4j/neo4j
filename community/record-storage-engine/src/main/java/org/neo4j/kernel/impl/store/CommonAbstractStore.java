@@ -62,6 +62,7 @@ import org.neo4j.util.concurrent.Runnables;
 import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
+import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
@@ -239,7 +240,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
                     // Create the id generator, and also open it because some stores may need the id generator when initializing their store
                     idGenerator = idGeneratorFactory.create( pageCache, idFile, idType, getNumberOfReservedLowIds(), false, recordFormat.getMaxId(),
-                            readOnlyChecker, configuration, cursorContext, openOptions );
+                            readOnlyChecker, configuration, cursorContext, openOptions, SINGLE_IDS );
 
                     // Map the file (w/ the CREATE flag) and initialize the header
                     pagedFile = pageCache.map( storageFile, filePageSize, databaseName, openOptions.newWith( CREATE ) );
@@ -625,7 +626,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     private void openIdGenerator( CursorContext cursorContext ) throws IOException
     {
         idGenerator = idGeneratorFactory.open( pageCache, idFile, getIdType(), () -> scanForHighId( cursorContext ), recordFormat.getMaxId(), readOnlyChecker,
-                configuration, cursorContext, openOptions );
+                configuration, cursorContext, openOptions, SINGLE_IDS );
     }
 
     /**
@@ -913,25 +914,25 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                 checkForDecodingErrors( cursor, id, NORMAL ); // We don't free ids if something weird goes wrong
                 if ( !record.inUse() )
                 {
-                    idUpdateListener.markIdAsUnused( idGenerator, id, cursorContext );
+                    idUpdateListener.markIdAsUnused( idGenerator, id, 1, cursorContext );
                 }
                 else if ( record.isCreated() )
                 {
-                    idUpdateListener.markIdAsUsed( idGenerator, id, cursorContext );
+                    idUpdateListener.markIdAsUsed( idGenerator, id, 1, cursorContext );
                 }
 
                 if ( (!record.inUse() || !record.requiresSecondaryUnit()) && record.hasSecondaryUnitId() )
                 {
                     // If record was just now deleted, or if the record used a secondary unit, but not anymore
                     // then free the id of that secondary unit.
-                    idUpdateListener.markIdAsUnused( idGenerator, record.getSecondaryUnitId(), cursorContext );
+                    idUpdateListener.markIdAsUnused( idGenerator, record.getSecondaryUnitId(), 1, cursorContext );
                 }
                 if ( record.inUse() && record.isSecondaryUnitCreated() )
                 {
                     // Triggers on:
                     // - (a) record got created right now and has a secondary unit, or
                     // - (b) it already existed and just now grew into a secondary unit then mark the secondary unit as used
-                    idUpdateListener.markIdAsUsed( idGenerator, record.getSecondaryUnitId(), cursorContext );
+                    idUpdateListener.markIdAsUsed( idGenerator, record.getSecondaryUnitId(), 1, cursorContext );
                 }
             }
         }

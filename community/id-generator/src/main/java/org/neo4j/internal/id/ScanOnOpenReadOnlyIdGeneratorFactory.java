@@ -37,8 +37,8 @@ import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
  * {@link IdGeneratorFactory} that ignores the underlying id file and only uses the provided highIdScanner in
- * {@link IdGeneratorFactory#open(PageCache, Path, IdType, LongSupplier, long, DatabaseReadOnlyChecker, Config, CursorContext, ImmutableSet)},
- * instantiating {@link IdGenerator} that will return that highId and do nothing else.
+ * {@link IdGeneratorFactory#open(PageCache, Path, IdType, LongSupplier, long, DatabaseReadOnlyChecker, Config, CursorContext, ImmutableSet,
+ * IdSlotDistribution)}, instantiating {@link IdGenerator} that will return that highId and do nothing else.
  * This is of great convenience when migrating between id file formats.
  */
 public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
@@ -47,7 +47,7 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
+            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution )
     {
         long highId = highIdScanner.getAsLong();
         ReadOnlyHighIdGenerator idGenerator = new ReadOnlyHighIdGenerator( highId );
@@ -57,9 +57,10 @@ public class ScanOnOpenReadOnlyIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
+            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions,
+            IdSlotDistribution slotDistribution )
     {
-        return open( pageCache, filename, idType, () -> highId, maxId, readOnlyChecker, config, cursorContext, openOptions );
+        return open( pageCache, filename, idType, () -> highId, maxId, readOnlyChecker, config, cursorContext, openOptions, slotDistribution );
     }
 
     @Override

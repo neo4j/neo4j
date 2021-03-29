@@ -42,6 +42,15 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
     IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, CursorContext cursorContext );
 
     /**
+     * Allocates a range of IDs that are guaranteed to be consecutive where the returned id represents the first i.e. lowest of them.
+     *
+     * @param numberOfIds the number of consecutive IDs to allocate in this range.
+     * @param cursorContext for tracing page accesses.
+     * @return the first id in the consecutive range.
+     */
+    long nextConsecutiveIdRange( int numberOfIds, CursorContext cursorContext );
+
+    /**
      * @param id the highest in use + 1
      */
     void setHighId( long id );
@@ -85,9 +94,27 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
     interface Marker extends AutoCloseable
     {
-        void markUsed( long id );
-        void markDeleted( long id );
-        void markFree( long id );
+        default void markUsed( long id )
+        {
+            markUsed( id, 1 );
+        }
+
+        void markUsed( long id, int numberOfIds );
+
+        default void markDeleted( long id )
+        {
+            markDeleted( id, 1 );
+        }
+
+        void markDeleted( long id, int numberOfIds );
+
+        default void markFree( long id )
+        {
+            markFree( id, 1 );
+        }
+
+        void markFree( long id, int numberOfIds );
+
         @Override
         void close();
     }
@@ -111,6 +138,12 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         public IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, CursorContext cursorContext )
         {
             return delegate.nextIdBatch( size, forceConsecutiveAllocation, cursorContext );
+        }
+
+        @Override
+        public long nextConsecutiveIdRange( int numberOfIds, CursorContext cursorContext )
+        {
+            return delegate.nextConsecutiveIdRange( numberOfIds, cursorContext );
         }
 
         @Override
@@ -201,17 +234,17 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
     Marker NOOP_MARKER = new Marker()
     {
         @Override
-        public void markFree( long id )
+        public void markFree( long id, int numberOfIds )
         {   // no-op
         }
 
         @Override
-        public void markUsed( long id )
+        public void markUsed( long id, int numberOfIds )
         {   // no-op
         }
 
         @Override
-        public void markDeleted( long id )
+        public void markDeleted( long id, int numberOfIds )
         {   // no-op
         }
 

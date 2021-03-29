@@ -61,20 +61,23 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions ) throws IOException
+            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution ) throws IOException
     {
         assert boundaries != null : "Factory needs to be initialized before usage";
 
-        IdGenerator generator = delegate.open( pageCache, filename, idType, highIdScanner, maxId, readOnlyChecker, config, cursorContext, openOptions );
+        IdGenerator generator =
+                delegate.open( pageCache, filename, idType, highIdScanner, maxId, readOnlyChecker, config, cursorContext, openOptions, slotDistribution );
         return wrapAndKeep( idType, generator );
     }
 
     @Override
     public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions ) throws IOException
+            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions,
+            IdSlotDistribution slotDistribution ) throws IOException
     {
-        IdGenerator idGenerator = delegate.create( pageCache, filename, idType, highId, throwIfFileExists, maxId, readOnlyChecker, config,
-                cursorContext, openOptions );
+        IdGenerator idGenerator =
+                delegate.create( pageCache, filename, idType, highId, throwIfFileExists, maxId, readOnlyChecker, config, cursorContext, openOptions,
+                        slotDistribution );
         return wrapAndKeep( idType, idGenerator );
     }
 

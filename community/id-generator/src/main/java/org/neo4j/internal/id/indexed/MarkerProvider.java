@@ -22,7 +22,7 @@ package org.neo4j.internal.id.indexed;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 @FunctionalInterface
-public interface MarkerProvider
+interface MarkerProvider
 {
-    IndexedIdGenerator.ReservedMarker getMarker( CursorContext cursorContext );
+    IndexedIdGenerator.InternalMarker getMarker( CursorContext cursorContext );
 }

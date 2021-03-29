@@ -25,19 +25,19 @@ import org.neo4j.io.pagecache.context.CursorContext;
 
 public interface IdUpdateListener extends AutoCloseable
 {
-    void markIdAsUsed( IdGenerator idGenerator, long id, CursorContext cursorContext );
+    void markIdAsUsed( IdGenerator idGenerator, long id, int size, CursorContext cursorContext );
 
-    void markIdAsUnused( IdGenerator idGenerator, long id, CursorContext cursorContext );
+    void markIdAsUnused( IdGenerator idGenerator, long id, int size, CursorContext cursorContext );
 
-    default void markId( IdGenerator idGenerator, long id, boolean used, CursorContext cursorContext )
+    default void markId( IdGenerator idGenerator, long id, int size, boolean used, CursorContext cursorContext )
     {
         if ( used )
         {
-            markIdAsUsed( idGenerator, id, cursorContext );
+            markIdAsUsed( idGenerator, id, size, cursorContext );
         }
         else
         {
-            markIdAsUnused( idGenerator, id, cursorContext );
+            markIdAsUnused( idGenerator, id, size, cursorContext );
         }
     }
 
@@ -50,20 +50,20 @@ public interface IdUpdateListener extends AutoCloseable
         }
 
         @Override
-        public void markIdAsUsed( IdGenerator idGenerator, long id, CursorContext cursorContext )
+        public void markIdAsUsed( IdGenerator idGenerator, long id, int size, CursorContext cursorContext )
         {
             try ( Marker marker = idGenerator.marker( cursorContext ) )
             {
-                marker.markUsed( id );
+                marker.markUsed( id, size );
             }
         }
 
         @Override
-        public void markIdAsUnused( IdGenerator idGenerator, long id, CursorContext cursorContext )
+        public void markIdAsUnused( IdGenerator idGenerator, long id, int size, CursorContext cursorContext )
         {
             try ( Marker marker = idGenerator.marker( cursorContext ) )
             {
-                marker.markDeleted( id );
+                marker.markDeleted( id, size );
             }
         }
     };
@@ -77,12 +77,12 @@ public interface IdUpdateListener extends AutoCloseable
         }
 
         @Override
-        public void markIdAsUsed( IdGenerator idGenerator, long id, CursorContext cursorContext )
+        public void markIdAsUsed( IdGenerator idGenerator, long id, int size, CursorContext cursorContext )
         {   // no-op
         }
 
         @Override
-        public void markIdAsUnused( IdGenerator idGenerator, long id, CursorContext cursorContext )
+        public void markIdAsUnused( IdGenerator idGenerator, long id, int size, CursorContext cursorContext )
         {   // no-op
         }
     };

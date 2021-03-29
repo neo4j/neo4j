@@ -47,14 +47,15 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory
 
     @Override
     public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
-            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions ) throws IOException
+            Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution ) throws IOException
     {
         return EmptyIdGenerator.EMPTY_ID_GENERATOR;
     }
 
     @Override
     public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
-            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions ) throws IOException
+            DatabaseReadOnlyChecker readOnlyChecker, Config config, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions,
+            IdSlotDistribution slotDistribution ) throws IOException
     {
         return EmptyIdGenerator.EMPTY_ID_GENERATOR;
     }
@@ -178,6 +179,12 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory
 
         @Override
         public long nextId( CursorContext cursorContext )
+        {
+            return EMPTY_ID;
+        }
+
+        @Override
+        public long nextConsecutiveIdRange( int numberOfIds, CursorContext cursorContext )
         {
             return EMPTY_ID;
         }

@@ -23,18 +23,26 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.stream.Stream;
 
 import org.neo4j.internal.id.indexed.IdRange.IdState;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_COMMIT;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_RESERVED;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_REUSE;
@@ -63,18 +71,18 @@ class IdRangeTest
         assertEquals( USED, idRange.getState( 0 ) );
 
         merger.clear( 1, true );
-        merger.setBit( BITSET_COMMIT, 0 );
-        idRange.mergeFrom( merger, false );
+        merger.setBits( BITSET_COMMIT, 0, 1 );
+        idRange.mergeFrom( null, merger, false );
         assertEquals( DELETED, idRange.getState( 0 ) );
 
         merger.clear( 1, true );
-        merger.setBit( BITSET_REUSE, 0 );
-        idRange.mergeFrom( merger, false );
+        merger.setBits( BITSET_REUSE, 0, 1 );
+        idRange.mergeFrom( null, merger, false );
         assertEquals( FREE, idRange.getState( 0 ) );
 
         merger.clear( 1, false );
-        merger.setBitsForAllTypes( 0 );
-        idRange.mergeFrom( merger, false );
+        merger.setBitsForAllTypes( 0, 1 );
+        idRange.mergeFrom( null, merger, false );
         assertEquals( USED, idRange.getState( 0 ) );
     }
 
@@ -82,8 +90,8 @@ class IdRangeTest
     void clear()
     {
         final var idRange = new IdRange( 1 );
-        idRange.setBit( BITSET_REUSE, 0 );
-        idRange.setBit( BITSET_COMMIT, 1 );
+        idRange.setBits( BITSET_REUSE, 0, 1 );
+        idRange.setBits( BITSET_COMMIT, 1, 1 );
         idRange.clear( 1, false );
         assertEquals( USED, idRange.getState( 0 ) );
         assertEquals( USED, idRange.getState( 1 ) );
@@ -162,6 +170,38 @@ class IdRangeTest
         assertEquals( FREE, idStateGetsNormalizedAs( 1, 1, 1 ) );
     }
 
+    @MethodSource( "slotSizesAndOffsets" )
+    @ParameterizedTest
+    void shouldSetCorrectBitsOfVariousSlotSizes( int offset, int slotSize )
+    {
+        // given
+        IdRange idRange = new IdRange( 2 );
+
+        // when
+        idRange.setBits( BITSET_COMMIT, offset, slotSize );
+
+        // then
+        for ( int i = 0; i < 128; i++ )
+        {
+            IdState state = idRange.getState( i );
+            IdState expectedState = i >= offset && i < offset + slotSize ? DELETED : USED;
+            assertThat( state ).isEqualTo( expectedState );
+        }
+    }
+
+    private static Stream<Arguments> slotSizesAndOffsets()
+    {
+        List<Arguments> permutations = new ArrayList<>();
+        for ( int s = 1; s < 128; s++ )
+        {
+            for ( int o = 0; o < 128 - s; o++ )
+            {
+                permutations.add( arguments( o, s ) );
+            }
+        }
+        return permutations.stream();
+    }
+
     private IdState idStateGetsNormalizedAs( int commitBit, int reuseBit, int reservedBit )
     {
         int numLongs = random.nextInt( 1, 3 );
@@ -192,7 +232,7 @@ class IdRangeTest
     {
         if ( value == 1 )
         {
-            idRange.setBit( type, offset );
+            idRange.setBits( type, offset, 1 );
         }
     }
 
@@ -215,11 +255,11 @@ class IdRangeTest
         range.clear( 1, true );
         if ( (beforeState & 0x01) != 0 )
         {
-            range.setBit( BITSET_COMMIT, 0 );
+            range.setBits( BITSET_COMMIT, 0, 1 );
         }
         if ( (beforeState & 0x10) != 0 )
         {
-            range.setBit( BITSET_REUSE, 0 );
+            range.setBits( BITSET_REUSE, 0, 1 );
         }
 
         // when
@@ -233,14 +273,14 @@ class IdRangeTest
     {
         var into = initialIdRange( intoState );
         var from = idRange( intoState, fromState );
-        assertThrows( IllegalStateException.class, () -> into.mergeFrom( from, false ), intoState + "!" + fromState );
+        assertThrows( IllegalStateException.class, () -> into.mergeFrom( new IdRangeKey( 0 ), from, false ), intoState + "!" + fromState );
     }
 
     private static void testMerge( IdState intoState, IdState fromState, IdState expected, boolean recoveryMode )
     {
         var into = initialIdRange( intoState );
         var from = idRange( intoState, fromState );
-        into.mergeFrom( from, recoveryMode );
+        into.mergeFrom( new IdRangeKey( 0 ), from, recoveryMode );
         var actual = into.getState( 0 );
         assertEquals( expected, actual );
     }
@@ -251,9 +291,9 @@ class IdRangeTest
         switch ( state )
         {
         case FREE:
-            idRange.setBit( BITSET_REUSE, 0 );
+            idRange.setBits( BITSET_REUSE, 0, 1 );
         case DELETED:
-            idRange.setBit( BITSET_COMMIT, 0 );
+            idRange.setBits( BITSET_COMMIT, 0, 1 );
         case USED:
             break;
         default:
@@ -269,25 +309,25 @@ class IdRangeTest
         {
         case USED:
             idRange.clear( 1, false );
-            idRange.setBitsForAllTypes( 0 );
+            idRange.setBitsForAllTypes( 0, 1 );
             break;
         case DELETED:
             if ( intoState == FREE )
             {
                 // If we're going from FREE to DELETED, the transition is to remove the reuse bit
                 idRange.clear( 1, false );
-                idRange.setBit( BITSET_REUSE, 0 );
+                idRange.setBits( BITSET_REUSE, 0, 1 );
             }
             else
             {
                 // If we're going from USED to DELETED, the transition is to add the commit bit
                 idRange.clear( 1, true );
-                idRange.setBit( BITSET_COMMIT, 0 );
+                idRange.setBits( BITSET_COMMIT, 0, 1 );
             }
             break;
         case FREE:
             idRange.clear( 1, true );
-            idRange.setBit( BITSET_REUSE, 0 );
+            idRange.setBits( BITSET_REUSE, 0, 1 );
             break;
         default:
             throw new UnsupportedOperationException( state.name() );

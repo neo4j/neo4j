@@ -71,25 +71,25 @@ class LoggingIndexedIdGeneratorMonitorTest
             clock.forward( timeStep, MILLISECONDS );
             monitor.opened( 98, 99 );
             clock.forward( timeStep, MILLISECONDS );
-            monitor.allocatedFromHigh( 1 );
+            monitor.allocatedFromHigh( 1, 1 );
             clock.forward( timeStep, MILLISECONDS );
-            monitor.allocatedFromReused( 2 );
+            monitor.allocatedFromReused( 2, 1 );
             clock.forward( timeStep, MILLISECONDS );
             monitor.bridged( 3 );
             clock.forward( timeStep, MILLISECONDS );
-            monitor.cached( 4 );
+            monitor.cached( 4, 1 );
             clock.forward( timeStep, MILLISECONDS );
             monitor.checkpoint( 5, 6 );
             clock.forward( timeStep, MILLISECONDS );
             monitor.markedAsDeletedAndFree( 7 );
             clock.forward( timeStep, MILLISECONDS );
-            monitor.markedAsUsed( 8 );
+            monitor.markedAsUsed( 8, 1 );
             clock.forward( timeStep, MILLISECONDS );
-            monitor.markedAsDeleted( 9 );
+            monitor.markedAsDeleted( 9, 1 );
             clock.forward( timeStep, MILLISECONDS );
-            monitor.markedAsFree( 10 );
+            monitor.markedAsFree( 10, 1 );
             clock.forward( timeStep, MILLISECONDS );
-            monitor.markedAsReserved( 11 );
+            monitor.markedAsReserved( 11, 1 );
             clock.forward( timeStep, MILLISECONDS );
             monitor.markedAsUnreserved( 12 );
             clock.forward( timeStep, MILLISECONDS );
@@ -109,7 +109,7 @@ class LoggingIndexedIdGeneratorMonitorTest
         verify( dumper ).typeAndId( LoggingIndexedIdGeneratorMonitor.Type.ALLOCATE_HIGH, time += timeStep, 1 );
         verify( dumper ).typeAndId( LoggingIndexedIdGeneratorMonitor.Type.ALLOCATE_REUSED, time += timeStep, 2 );
         verify( dumper ).typeAndId( LoggingIndexedIdGeneratorMonitor.Type.BRIDGED, time += timeStep, 3 );
-        verify( dumper ).typeAndId( LoggingIndexedIdGeneratorMonitor.Type.CACHED, time += timeStep, 4 );
+        verify( dumper ).typeAndTwoIds( LoggingIndexedIdGeneratorMonitor.Type.CACHED, time += timeStep, 4, 1 );
         verify( dumper ).typeAndTwoIds( LoggingIndexedIdGeneratorMonitor.Type.CHECKPOINT, time += timeStep, 5, 6 );
         verify( dumper ).typeAndId( LoggingIndexedIdGeneratorMonitor.Type.MARK_DELETED_AND_FREE, time += timeStep, 7 );
         verify( dumper ).typeAndId( LoggingIndexedIdGeneratorMonitor.Type.MARK_USED, time += timeStep, 8 );
@@ -140,7 +140,7 @@ class LoggingIndexedIdGeneratorMonitorTest
             {
                 for ( int j = 0; j < entriesPerFile; j++ )
                 {
-                    monitor.markedAsUsed( 0 );
+                    monitor.markedAsUsed( 0, 1 );
                 }
                 clock.forward( 1, SECONDS );
                 monitor.markSessionDone();
@@ -173,7 +173,7 @@ class LoggingIndexedIdGeneratorMonitorTest
                 {
                     for ( int j = 0; j < 10; j++ )
                     {
-                        monitor.markedAsUsed( nextId++ );
+                        monitor.markedAsUsed( nextId++, 1 );
                     }
                     // This is the call that checks rotate and pruning
                     monitor.markSessionDone();
@@ -229,7 +229,7 @@ class LoggingIndexedIdGeneratorMonitorTest
         {
             for ( int i = 0; i < numberOfIds; i++ )
             {
-                monitor.allocatedFromHigh( i );
+                monitor.allocatedFromHigh( i, 1 );
                 clock.forward( 50, MILLISECONDS );
                 monitor.markSessionDone();
             }

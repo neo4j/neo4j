@@ -29,8 +29,8 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
-import org.neo4j.internal.id.IdGenerator.Marker;
 
+import static org.neo4j.internal.id.IdValidator.hasReservedIdInRange;
 import static org.neo4j.internal.id.IdValidator.isReservedId;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_COMMIT;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_RESERVED;
@@ -40,7 +40,7 @@ import static org.neo4j.internal.id.indexed.IdRange.BITSET_REUSE;
  * Contains logic for merging ID state changes into the tree backing an {@link IndexedIdGenerator}.
  * Basically manipulates {@link IdRangeKey} and {@link IdRange} instances and sends to {@link Writer#merge(Object, Object, ValueMerger)}.
  */
-class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
+class IdRangeMarker implements IndexedIdGenerator.InternalMarker
 {
     /**
      * Number of ids that is contained in one {@link IdRange}
@@ -143,63 +143,63 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
     }
 
     @Override
-    public void markUsed( long id )
+    public void markUsed( long id, int numberOfIds )
     {
-        bridgeGapBetweenHighestWrittenIdAndThisId( id );
-        if ( !isReservedId( id ) )
+        bridgeGapBetweenHighestWrittenIdAndThisId( id, numberOfIds );
+        if ( !hasReservedIdInRange( id, id + numberOfIds ) )
         {
             prepareRange( id, false );
-            value.setBitsForAllTypes( idOffset( id ) );
+            value.setBitsForAllTypes( idOffset( id ), numberOfIds );
             writer.mergeIfExists( key, value, merger );
-            monitor.markedAsUsed( id );
+            monitor.markedAsUsed( id, numberOfIds );
         }
     }
 
     @Override
-    public void markDeleted( long id )
+    public void markDeleted( long id, int numberOfIds )
     {
-        if ( !isReservedId( id ) )
+        if ( !hasReservedIdInRange( id, id + numberOfIds ) )
         {
             prepareRange( id, true );
-            value.setBit( BITSET_COMMIT, idOffset( id ) );
+            value.setBits( BITSET_COMMIT, idOffset( id ), numberOfIds );
             writer.merge( key, value, merger );
-            monitor.markedAsDeleted( id );
+            monitor.markedAsDeleted( id, numberOfIds );
         }
     }
 
     @Override
-    public void markReserved( long id )
+    public void markReserved( long id, int numberOfIds )
     {
-        if ( !isReservedId( id ) )
+        if ( !hasReservedIdInRange( id, id + numberOfIds ) )
         {
             prepareRange( id, true );
-            value.setBit( BITSET_RESERVED, idOffset( id ) );
+            value.setBits( BITSET_RESERVED, idOffset( id ), numberOfIds );
             writer.merge( key, value, merger );
-            monitor.markedAsReserved( id );
+            monitor.markedAsReserved( id, numberOfIds );
         }
     }
 
     @Override
-    public void markUnreserved( long id )
+    public void markUnreserved( long id, int numberOfIds )
     {
-        if ( !isReservedId( id ) )
+        if ( !hasReservedIdInRange( id, id + numberOfIds ) )
         {
             prepareRange( id, false );
-            value.setBit( BITSET_RESERVED, idOffset( id ) );
+            value.setBits( BITSET_RESERVED, idOffset( id ), numberOfIds );
             writer.merge( key, value, merger );
             monitor.markedAsUnreserved( id );
         }
     }
 
     @Override
-    public void markFree( long id )
+    public void markFree( long id, int numberOfIds )
     {
-        if ( !isReservedId( id ) )
+        if ( !hasReservedIdInRange( id, id + numberOfIds ) )
         {
             prepareRange( id, true );
-            value.setBit( BITSET_REUSE, idOffset( id ) );
+            value.setBits( BITSET_REUSE, idOffset( id ), numberOfIds );
             writer.merge( key, value, merger );
-            monitor.markedAsFree( id );
+            monitor.markedAsFree( id, numberOfIds );
         }
 
         freeIdsNotifier.set( true );
@@ -226,8 +226,9 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
      * will be marked as deleted, or in the recovery case (where {@link #started} is {@code false} marked as deleted AND free.
      * This solves a problem of not losing track of ids that have been allocated off of high id, but either not committed or failed to be committed.
      * @param id the id being updated.
+     * @param numberOfIds number of ids this id allocation is.
      */
-    private void bridgeGapBetweenHighestWrittenIdAndThisId( long id )
+    private void bridgeGapBetweenHighestWrittenIdAndThisId( long id, int numberOfIds )
     {
         long highestWrittenId = this.highestWrittenId.get();
         if ( bridgeIdGaps && highestWrittenId < id )
@@ -251,11 +252,11 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
                     }
 
                     // Mark this id as deleted
-                    value.setBit( BITSET_COMMIT, idOffset( bridgeId ) );
+                    value.setBits( BITSET_COMMIT, idOffset( bridgeId ), 1 );
                     if ( !started ) // i.e. in recovery mode
                     {
                         // We're doing this bridging in recovery and we can therefore mark this id as free right away
-                        value.setBit( BITSET_REUSE, idOffset( bridgeId ) );
+                        value.setBits( BITSET_REUSE, idOffset( bridgeId ), 1 );
                     }
 
                     // Set this flag so that the last range (if updated) will be written below, when exiting this loop
@@ -271,7 +272,7 @@ class IdRangeMarker implements Marker, IndexedIdGenerator.ReservedMarker
 
             // Well, we bridged the gap up and including id - 1, but we know that right after this the actual id will be written
             // so to try to isolate updates to highestWrittenId to this method we can might as well do that right here.
-            this.highestWrittenId.set( id );
+            this.highestWrittenId.set( id + numberOfIds - 1 );
         }
     }
 }
