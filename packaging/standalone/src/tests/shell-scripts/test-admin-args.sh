@@ -31,7 +31,6 @@ test_expect_success "should let higher heap size env var override memory setting
   set_config 'dbms.memory.heap.max_size' '222m' neo4j.conf &&
   HEAP_SIZE=666m neo4j-home/bin/neo4j-admin backup &&
   test_expect_java_arg '-Xmx666m'
-  test_expect_java_arg '-Xms666m'
 "
 
 test_expect_success "should let lower heap size env var override memory setting when both given" "
@@ -40,12 +39,16 @@ test_expect_success "should let lower heap size env var override memory setting 
   set_config 'dbms.memory.heap.max_size' '777m' neo4j.conf &&
   HEAP_SIZE=222m neo4j-home/bin/neo4j-admin backup &&
   test_expect_java_arg '-Xmx222m'
-  test_expect_java_arg '-Xms222m'
 "
 
 test_expect_success "should pass parallel collector option" "
   neo4j-home/bin/neo4j-admin &&
   test_expect_java_arg '-XX:+UseParallelGC'
+"
+
+test_expect_success "should not set -Xms" "
+  HEAP_SIZE=222m neo4j-home/bin/neo4j-admin &&
+  test_expect_no_java_arg '-Xms222m'
 "
 
 test_done

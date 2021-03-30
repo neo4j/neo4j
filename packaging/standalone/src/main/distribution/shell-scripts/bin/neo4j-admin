@@ -42,7 +42,6 @@ setup_environment() {
 
 setup_heap() {
   if [[ -n "${HEAP_SIZE:-}" ]]; then
-    JAVA_MEMORY_OPTS_XMS="-Xms${HEAP_SIZE}"
     JAVA_MEMORY_OPTS_XMX="-Xmx${HEAP_SIZE}"
   fi
 }
@@ -73,22 +72,6 @@ check_limits() {
 
 setup_memory_opts() {
   # In some cases the heap size may have already been set before we get here, from e.g. HEAP_SIZE env.variable, if so then skip
-  if [[ -n "${dbms_memory_heap_initial_size:-}" && -z "${JAVA_MEMORY_OPTS_XMS-}" ]]; then
-    local mem="${dbms_memory_heap_initial_size}"
-    if ! [[ ${mem} =~ .*[gGmMkK] ]]; then
-      mem="${mem}m"
-      cat >&2 <<EOF
-WARNING: dbms.memory.heap.initial_size will require a unit suffix in a
-         future version of Neo4j. Please add a unit suffix to your
-         configuration. Example:
-
-         dbms.memory.heap.initial_size=512m
-                                          ^
-EOF
-    fi
-    JAVA_MEMORY_OPTS_XMS="-Xms${mem}"
-  fi
-  # In some cases the heap size may have already been set before we get here, from e.g. HEAP_SIZE env.variable, if so then skip
   if [[ -n "${dbms_memory_heap_max_size:-}" && -z "${JAVA_MEMORY_OPTS_XMX-}" ]]; then
     local mem="${dbms_memory_heap_max_size}"
     if ! [[ ${mem} =~ .*[gGmMkK] ]]; then
@@ -110,7 +93,7 @@ check_java() {
   _find_java_cmd
   setup_memory_opts
 
-  version_command=("${JAVA_CMD}" "-version" ${JAVA_MEMORY_OPTS_XMS-} ${JAVA_MEMORY_OPTS_XMX-})
+  version_command=("${JAVA_CMD}" "-version" ${JAVA_MEMORY_OPTS_XMX-})
 
   JAVA_VERSION=$("${version_command[@]}" 2>&1 | awk -F '"' '/version/ {print $2}')
   if [[ $JAVA_VERSION = "1."* ]] || [[ $JAVA_VERSION = "9"* ]] || [[ $JAVA_VERSION = "10"* ]]; then
@@ -154,7 +137,7 @@ call_main_class() {
 
   export NEO4J_HOME NEO4J_CONF
 
-  exec "${JAVA_CMD}" ${JAVA_OPTS:--XX:+UseParallelGC} ${JAVA_MEMORY_OPTS_XMS-} ${JAVA_MEMORY_OPTS_XMX-} \
+  exec "${JAVA_CMD}" ${JAVA_OPTS:--XX:+UseParallelGC} ${JAVA_MEMORY_OPTS_XMX-} \
     -classpath "${CLASSPATH}" \
     ${EXTRA_JVM_ARGUMENTS:-} \
     $class_name "$@"

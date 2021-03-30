@@ -17,6 +17,25 @@ test_expect_java_arg() {
   done
 }
 
+test_expect_no_java_arg() {
+  arg="$1"
+  end="$((SECONDS+5))"
+  java_args="${SHARNESS_TRASH_DIRECTORY}/java-args"
+  while true; do
+    if grep --fixed-strings --regexp "${arg}" "${java_args}" >/dev/null ; then
+      echo >&2 "test_expect_no_java_arg: expected argument to not contain '$arg' but got '$(cat "${java_args}")'"
+      return 1
+    fi
+
+    if [[ "${SECONDS}" -ge "${end}" ]]; then
+      break
+    fi
+
+    echo >&2 "waiting for java args"
+    sleep 1
+  done
+}
+
 test_expect_stdout_matching() {
   expected_pattern=$1
   shift
