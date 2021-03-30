@@ -567,7 +567,8 @@ public class StoreUpgraderTest
         RecordStorageMigrator defaultMigrator = new RecordStorageMigrator( fileSystem, pageCache, getTuningConfig(), instance, jobScheduler, pageCacheTracer,
                 batchImporterFactory, INSTANCE );
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
-        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( "Indexes", fileSystem, IndexProvider.EMPTY.directoryStructure(), storageEngineFactory );
+        SchemaIndexMigrator indexMigrator =
+                new SchemaIndexMigrator( "Indexes", fileSystem, pageCache, IndexProvider.EMPTY.directoryStructure(), storageEngineFactory, true );
 
         LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, databaseLayout );
         DatabaseHealth databaseHealth = new DatabaseHealth( NO_OP, NullLog.getInstance() );

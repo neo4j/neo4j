@@ -281,7 +281,7 @@ public class FulltextIndexProvider extends IndexProvider implements FulltextAdap
     @Override
     public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
-        return new SchemaIndexMigrator( "Fulltext indexes",  fs, this.directoryStructure(), storageEngineFactory );
+        return new SchemaIndexMigrator( "Fulltext indexes", fs, pageCache, this.directoryStructure(), storageEngineFactory, true );
     }
 
     @Override

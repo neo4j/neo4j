@@ -65,6 +65,7 @@ public class PageAlignedV4_1 extends BaseRecordFormats
     private PageAlignedV4_1()
     {
         super( ALIGNED_V4_1.versionString(), ALIGNED_V4_1.introductionVersion(), 1,
+                FormatFamily.aligned.formatCapability(),
                 RecordStorageCapability.SCHEMA,
                 RecordStorageCapability.DENSE_NODES,
                 RecordStorageCapability.POINT_PROPERTIES,
@@ -135,7 +136,7 @@ public class PageAlignedV4_1 extends BaseRecordFormats
     @Override
     public FormatFamily getFormatFamily()
     {
-        return AlignedFormatFamily.INSTANCE;
+        return FormatFamily.aligned;
     }
 
     @Override

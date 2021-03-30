@@ -17,32 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.standard;
+package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.kernel.impl.store.format.FormatFamily;
+import org.neo4j.storageengine.api.format.Capability;
+import org.neo4j.storageengine.api.format.CapabilityType;
 
-/**
- * Standard format family.
- * @see FormatFamily
- */
-public class StandardFormatFamily extends FormatFamily
+class RecordFormatFamilyCapability implements Capability
 {
-    public static final FormatFamily INSTANCE = new StandardFormatFamily();
+    private final String familyName;
 
-    private StandardFormatFamily()
+    RecordFormatFamilyCapability( String familyName )
     {
+        this.familyName = familyName;
     }
 
     @Override
-    public String getName()
+    public boolean isType( CapabilityType type )
     {
-        return "Standard format family";
+        return type == CapabilityType.FORMAT;
     }
 
     @Override
-    public int rank()
+    public boolean isAdditive()
     {
-        return 0;
+        return false;
     }
-
 }

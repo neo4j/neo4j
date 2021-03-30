@@ -54,7 +54,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.internal.helpers.collection.Iterables.concat;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
-import static org.neo4j.kernel.impl.store.format.FormatFamily.isSameFamily;
 
 /**
  * Selects record format that will be used in a database.
@@ -302,7 +301,7 @@ public class RecordFormatSelector
     public static Optional<RecordFormats> findLatestFormatInFamily( RecordFormats result )
     {
         return Iterables.stream( allFormats() )
-                .filter( format -> isSameFamily( result, format ) )
+                .filter( format -> format.getFormatFamily() == result.getFormatFamily() )
                 .max( comparingInt( RecordFormats::generation ) );
     }
 
@@ -316,7 +315,7 @@ public class RecordFormatSelector
     public static Optional<RecordFormats> findSuccessor( @Nonnull final RecordFormats format )
     {
         return StreamSupport.stream( RecordFormatSelector.allFormats().spliterator(), false )
-                .filter( candidate -> isSameFamily( format, candidate ) )
+                .filter( candidate -> candidate.getFormatFamily() == format.getFormatFamily() )
                 .filter( candidate -> candidate.generation() > format.generation() )
                 .reduce( ( a, b ) -> a.generation() < b.generation() ? a : b );
     }

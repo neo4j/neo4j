@@ -45,6 +45,7 @@ public class StandardV4_0 extends BaseRecordFormats
     public StandardV4_0()
     {
         super( STORE_VERSION, StoreVersion.STANDARD_V4_0.introductionVersion(), 9,
+                FormatFamily.standard.formatCapability(),
                 RecordStorageCapability.SCHEMA,
                 RecordStorageCapability.DENSE_NODES,
                 RecordStorageCapability.POINT_PROPERTIES,
@@ -109,7 +110,7 @@ public class StandardV4_0 extends BaseRecordFormats
     @Override
     public FormatFamily getFormatFamily()
     {
-        return StandardFormatFamily.INSTANCE;
+        return FormatFamily.standard;
     }
 
     @Override

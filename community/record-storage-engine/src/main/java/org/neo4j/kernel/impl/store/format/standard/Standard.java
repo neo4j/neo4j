@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format.standard;
 
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 
 /**
@@ -32,5 +33,5 @@ public class Standard
 
     public static final String LATEST_STORE_VERSION = StandardV4_3.STORE_VERSION;
     public static final RecordFormats LATEST_RECORD_FORMATS = StandardV4_3.RECORD_FORMATS;
-    public static final String LATEST_NAME = StandardV4_3.NAME;
+    public static final String LATEST_NAME = FormatFamily.standard.name();
 }

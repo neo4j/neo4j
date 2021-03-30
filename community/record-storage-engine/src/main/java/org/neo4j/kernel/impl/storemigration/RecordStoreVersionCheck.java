@@ -33,7 +33,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
@@ -144,17 +143,17 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
             RecordFormats fromFormat;
             try
             {
-                RecordFormats format = RecordFormatSelector.selectForVersion( desiredVersion );
+                RecordFormats toFormat = RecordFormatSelector.selectForVersion( desiredVersion );
                 fromFormat = RecordFormatSelector.selectForVersion( version );
 
                 // If we are trying to open an enterprise store when configured to use community format, then inform the user
                 // of the config setting to change since downgrades aren't possible but the store can still be opened.
-                if ( FormatFamily.isLowerFamilyFormat( format, fromFormat ) )
+                if ( fromFormat.getFormatFamily().isHigherThan( toFormat.getFormatFamily() ) )
                 {
                     return new Result( Outcome.unexpectedUpgradingVersion, version, metaDataFile.toAbsolutePath().toString() );
                 }
 
-                if ( FormatFamily.isSameFamily( fromFormat, format ) && (fromFormat.generation() > format.generation()) )
+                if ( fromFormat.getFormatFamily() == toFormat.getFormatFamily() && fromFormat.generation() > toFormat.generation() )
                 {
                     // Tried to downgrade, that isn't supported
                     return new Result( Outcome.attemptedStoreDowngrade, fromFormat.storeVersion(), metaDataFile.toAbsolutePath().toString() );

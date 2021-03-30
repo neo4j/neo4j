@@ -31,6 +31,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.schema.IndexConfigCompleter;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -132,6 +133,9 @@ public interface StorageEngineFactory
 
     SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
             LogService logService, String recordFormats, PageCacheTracer cacheTracer, PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
+
+    List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
+            PageCursorTracer cursorTracer );
 
     /**
      * Asks this storage engine about the state of a specific store before opening it. If this specific store is missing optional or

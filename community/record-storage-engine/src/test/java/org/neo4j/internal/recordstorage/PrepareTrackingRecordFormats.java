@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.StandardFormatFamily;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -158,7 +157,7 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     @Override
     public FormatFamily getFormatFamily()
     {
-        return StandardFormatFamily.INSTANCE;
+        return FormatFamily.standard;
     }
 
     @Override

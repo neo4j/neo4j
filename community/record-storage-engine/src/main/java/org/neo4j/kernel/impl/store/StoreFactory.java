@@ -33,8 +33,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.aligned.AlignedFormatFamily;
 import org.neo4j.logging.LogProvider;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
@@ -142,7 +142,7 @@ public class StoreFactory
     private static ImmutableSet<OpenOption> buildOpenOptions( Config config, RecordFormats recordFormats, ImmutableSet<OpenOption> openOptions )
     {
         // we need to modify options only for aligned format and avoid passing direct io option in all other cases
-        if ( recordFormats.getFormatFamily() != AlignedFormatFamily.INSTANCE )
+        if ( recordFormats.getFormatFamily() != FormatFamily.aligned )
         {
             return openOptions;
         }

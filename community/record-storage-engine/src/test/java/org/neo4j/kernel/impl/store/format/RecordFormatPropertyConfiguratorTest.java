@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.NoRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.store.format.standard.StandardFormatFamily;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
@@ -186,7 +185,7 @@ class RecordFormatPropertyConfiguratorTest
         @Override
         public FormatFamily getFormatFamily()
         {
-            return StandardFormatFamily.INSTANCE;
+            return FormatFamily.standard;
         }
 
         @Override

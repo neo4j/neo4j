@@ -24,12 +24,17 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -44,9 +49,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.schema.IndexPrototype.forSchema;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 @TestDirectoryExtension
 class SchemaIndexMigratorTest
@@ -57,6 +67,7 @@ class SchemaIndexMigratorTest
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final ProgressReporter progressReporter = mock( ProgressReporter.class );
     private final IndexProvider indexProvider = mock( IndexProvider.class );
+    private final PageCache pageCache = mock( PageCache.class );
     private DatabaseLayout databaseLayout;
     private DatabaseLayout migrationLayout;
 
@@ -77,7 +88,7 @@ class SchemaIndexMigratorTest
         IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
         Path indexProviderRootDirectory = databaseLayout.file( "just-some-directory" );
         when( directoryStructure.rootDirectory() ).thenReturn( indexProviderRootDirectory );
-        SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, directoryStructure, storageEngineFactory );
+        SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, pageCache, directoryStructure, storageEngineFactory, true );
         when( indexProvider.getProviderDescriptor() )
                 .thenReturn( new IndexProviderDescriptor( "key", "version" ) );
 
@@ -85,5 +96,36 @@ class SchemaIndexMigratorTest
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, "from", "to" );
 
         verify( fs ).deleteRecursively( indexProviderRootDirectory );
+    }
+
+    @Test
+    void shouldDeleteRelationshipIndexesAfterCrossFormatFamilyMigration() throws IOException
+    {
+        // given
+        IndexProviderDescriptor provider = new IndexProviderDescriptor( "k", "v" );
+        IndexDirectoryStructure directoryStructure = directoriesByProvider( databaseLayout.databaseDirectory() ).forProvider( provider );
+        StorageEngineFactory storageEngineFactory = mock( StorageEngineFactory.class );
+        StoreVersion fromVersion = mock( StoreVersion.class );
+        StoreVersion toVersion = mock( StoreVersion.class );
+        when( fromVersion.hasCompatibleCapabilities( toVersion, CapabilityType.FORMAT ) ).thenReturn( false );
+        when( storageEngineFactory.versionInformation( "from" ) ).thenReturn( fromVersion );
+        when( storageEngineFactory.versionInformation( "to" ) ).thenReturn( toVersion );
+        List<SchemaRule> schemaRules = new ArrayList<>();
+        schemaRules.add( forSchema( SchemaDescriptor.forLabel( 1, 2, 3 ) ).withName( "n1" ).materialise( 1L ) );
+        schemaRules.add( forSchema( SchemaDescriptor.forRelType( 5, 3 ) ).withName( "r1" ).materialise( 2L ) );
+        schemaRules.add( forSchema( SchemaDescriptor.fulltext( RELATIONSHIP, new int[]{1, 2, 3}, new int[]{4, 5, 6} ) ).withName( "r2" ).materialise( 3L ) );
+        schemaRules.add( forSchema( SchemaDescriptor.fulltext( NODE, new int[]{1, 2, 3}, new int[]{4, 5, 6} ) ).withName( "n2" ).materialise( 4L ) );
+        when( storageEngineFactory.loadSchemaRules( any(), any(), any(), any(), any() ) ).thenReturn( schemaRules );
+        SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, pageCache, directoryStructure, storageEngineFactory, false );
+
+        // when
+        migrator.migrate( databaseLayout, migrationLayout, progressReporter, "from", "to" );
+        migrator.moveMigratedFiles( databaseLayout, migrationLayout, "from", "to" );
+
+        // then
+        verify( fs, never() ).deleteRecursively( directoryStructure.directoryForIndex( 1L ) );
+        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( 2L ) );
+        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( 3L ) );
+        verify( fs, never() ).deleteRecursively( directoryStructure.directoryForIndex( 4L ) );
     }
 }

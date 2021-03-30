@@ -39,6 +39,7 @@ import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.internal.schema.IndexConfigCompleter;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -85,6 +86,7 @@ import org.neo4j.storageengine.migration.RollingUpgradeCompatibility;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
@@ -215,6 +217,27 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
+    public List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
+            PageCursorTracer cursorTracer )
+    {
+        StoreFactory factory =
+                new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
+                        NullLogProvider.nullLogProvider(), PageCacheTracer.NULL );
+        try ( NeoStores stores = factory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
+        {
+            stores.start( cursorTracer );
+            TokenHolders tokenHolders = tokenHoldersForSchemaStore( stores, new ReadOnlyTokenCreator(), cursorTracer );
+            List<SchemaRule> rules = new ArrayList<>();
+            new SchemaStorage( stores.getSchemaStore(), tokenHolders ).getAll( cursorTracer ).forEach( rules::add );
+            return rules;
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    @Override
     public CommandReaderFactory commandReaderFactory()
     {
         return RecordStorageCommandReaderFactory.INSTANCE;
@@ -271,10 +294,16 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             keyTokenStore.setHighestPossibleIdInUse( keyTokenRecord.getId() );
             return Math.toIntExact( tokenId );
         };
+        TokenHolders dstTokenHolders = tokenHoldersForSchemaStore( stores, propertyKeyTokenCreator, cursorTracer );
+        return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders ), cursorTracer, memoryTracker );
+    }
+
+    private static TokenHolders tokenHoldersForSchemaStore( NeoStores stores, TokenCreator propertyKeyTokenCreator, PageCursorTracer cursorTracer )
+    {
         TokenHolder propertyKeyTokens = new DelegatingTokenHolder( propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY );
         TokenHolders dstTokenHolders = new TokenHolders( propertyKeyTokens, StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                 StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         dstTokenHolders.propertyKeyTokens().setInitialTokens( stores.getPropertyKeyTokenStore().getTokens( cursorTracer ) );
-        return new SchemaRuleMigrationAccessImpl( stores, new SchemaStorage( dstSchema, dstTokenHolders ), cursorTracer, memoryTracker );
+        return dstTokenHolders;
     }
 }

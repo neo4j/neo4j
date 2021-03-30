@@ -19,68 +19,57 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import org.neo4j.storageengine.api.format.Capability;
+
 /**
  * Family of the format. Family of format is specific to a format across all version that format support.
  * Two formats in different versions should have same format family.
  * Family is one of the criteria that will determine if migration between formats is possible.
  */
-public abstract class FormatFamily implements Comparable<FormatFamily>
+public enum FormatFamily
 {
-    /**
-     * Get format family name
-     * @return family name
-     */
-    public abstract String getName();
+    standard( 0, "Standard format family" ),
+    aligned( 1, "Page-aligned format family" ),
+    high_limit( 2, "High-limit format family" );
+
+    private final int rank;
+    private final String description;
+    private final Capability formatCapability;
+
+    FormatFamily( int rank, String description )
+    {
+        this.rank = rank;
+        this.description = description;
+        this.formatCapability = new RecordFormatFamilyCapability( name() );
+    }
+
+    public Capability formatCapability()
+    {
+        return formatCapability;
+    }
+
+    public String description()
+    {
+        return description;
+    }
 
     /**
      * get format family rank
      * @return rank
      */
-    public abstract int rank();
-
-    @Override
-    public int compareTo( FormatFamily formatFamily )
+    public int rank()
     {
-        return Integer.compare( this.rank(), formatFamily.rank() );
+        return rank;
     }
 
     /**
-     * Check if new record format family is higher then old record format family.
-     * New format family is higher then old one in case when it safe to migrate from old format into new
-     * format in terms of format capabilities and determined by family rank: new family is higher if it's rank is higher
-     * then rank
-     * of old family
-     * @param newFormat new record format
-     * @param oldFormat old record format
-     * @return true if new record format family is higher
+     * Check if this format family is higher ranked than another format family.
+     * It is generally possible to migrate from a lower ranked family to a higher ranked family.
+     * @param other family to compare with.
+     * @return {@code true} if this family is higher ranked than {@code other}.
      */
-    public static boolean isHigherFamilyFormat( RecordFormats newFormat, RecordFormats oldFormat )
+    public boolean isHigherThan( FormatFamily other )
     {
-        return oldFormat.getFormatFamily().compareTo( newFormat.getFormatFamily() ) < 0;
-    }
-
-    /**
-     * Check if record formats have same format family
-     * @param recordFormats1 first record format
-     * @param recordFormats2 second record format
-     * @return true if formats have the same format family
-     */
-    public static boolean isSameFamily( RecordFormats recordFormats1, RecordFormats recordFormats2 )
-    {
-        return recordFormats1.getFormatFamily().equals( recordFormats2.getFormatFamily() );
-    }
-
-    /**
-     * Check if new record format family is lower then old record format family.
-     * New format family is lower then old one in case when its not safe to migrate from old format into new
-     * format in terms of format capabilities and determined by family rank: new family is lower if it's rank is lower
-     * then rank of old family
-     * @param newFormat new record format
-     * @param oldFormat old record format
-     * @return true if new record format family is lower
-     */
-    public static boolean isLowerFamilyFormat( RecordFormats newFormat, RecordFormats oldFormat )
-    {
-        return oldFormat.getFormatFamily().compareTo( newFormat.getFormatFamily() ) > 0;
+        return rank > other.rank;
     }
 }

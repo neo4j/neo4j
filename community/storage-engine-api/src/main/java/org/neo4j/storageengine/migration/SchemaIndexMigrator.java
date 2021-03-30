@@ -22,9 +22,14 @@ package org.neo4j.storageengine.migration;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.configuration.Config;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
@@ -39,44 +44,50 @@ import org.neo4j.storageengine.api.format.CapabilityType;
 public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
 {
     private final FileSystemAbstraction fileSystem;
-    private boolean deleteObsoleteIndexes;
-    private Path schemaIndexDirectory;
+    private final PageCache pageCache;
     private final IndexDirectoryStructure indexDirectoryStructure;
     private final StorageEngineFactory storageEngineFactory;
+    private final boolean checkIndexCapabilities;
+    private boolean deleteAllIndexes;
+    private boolean deleteRelationshipIndexes;
 
-    public SchemaIndexMigrator( String name, FileSystemAbstraction fileSystem, IndexDirectoryStructure indexDirectoryStructure,
-            StorageEngineFactory storageEngineFactory )
+    public SchemaIndexMigrator( String name, FileSystemAbstraction fileSystem, PageCache pageCache, IndexDirectoryStructure indexDirectoryStructure,
+            StorageEngineFactory storageEngineFactory, boolean checkIndexCapabilities )
     {
         super( name );
         this.fileSystem = fileSystem;
+        this.pageCache = pageCache;
         this.indexDirectoryStructure = indexDirectoryStructure;
         this.storageEngineFactory = storageEngineFactory;
+        this.checkIndexCapabilities = checkIndexCapabilities;
     }
 
     @Override
     public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
             String versionToMigrateFrom, String versionToMigrateTo )
     {
-        StoreVersion fromVersionInformation = storageEngineFactory.versionInformation( versionToMigrateFrom );
-        StoreVersion toVersionInformation = storageEngineFactory.versionInformation( versionToMigrateTo );
-        if ( !fromVersionInformation.hasCompatibleCapabilities( toVersionInformation, CapabilityType.INDEX ) )
-        {
-            schemaIndexDirectory = indexDirectoryStructure.rootDirectory();
-            if ( schemaIndexDirectory != null )
-            {
-                deleteObsoleteIndexes = true;
-            }
-            // else this schema index provider doesn't have any persistent storage to delete.
-        }
+        StoreVersion fromVersion = storageEngineFactory.versionInformation( versionToMigrateFrom );
+        StoreVersion toVersion = storageEngineFactory.versionInformation( versionToMigrateTo );
+
+        deleteAllIndexes = checkIndexCapabilities && !fromVersion.hasCompatibleCapabilities( toVersion, CapabilityType.INDEX );
+        deleteRelationshipIndexes = !fromVersion.hasCompatibleCapabilities( toVersion, CapabilityType.FORMAT );
     }
 
     @Override
     public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToUpgradeFrom,
             String versionToMigrateTo ) throws IOException
     {
-        if ( deleteObsoleteIndexes )
+        Path schemaIndexDirectory = indexDirectoryStructure.rootDirectory();
+        if ( schemaIndexDirectory != null )
         {
-            deleteIndexes( schemaIndexDirectory );
+            if ( deleteAllIndexes )
+            {
+                deleteIndexes( schemaIndexDirectory );
+            }
+            else if ( deleteRelationshipIndexes )
+            {
+                deleteRelationshipIndexes( directoryLayout );
+            }
         }
     }
 
@@ -89,5 +100,16 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     private void deleteIndexes( Path indexRootDirectory ) throws IOException
     {
         fileSystem.deleteRecursively( indexRootDirectory );
+    }
+
+    private void deleteRelationshipIndexes( DatabaseLayout databaseLayout ) throws IOException
+    {
+        for ( SchemaRule schemaRule : storageEngineFactory.loadSchemaRules( fileSystem, pageCache, Config.defaults(), databaseLayout, PageCursorTracer.NULL ) )
+        {
+            if ( schemaRule.schema().entityType() == EntityType.RELATIONSHIP )
+            {
+                fileSystem.deleteRecursively( indexDirectoryStructure.directoryForIndex( schemaRule.getId() ) );
+            }
+        }
     }
 }

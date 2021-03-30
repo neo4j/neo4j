@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.migration.SchemaIndexMigrator;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
@@ -147,9 +148,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     @Override
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
-        // Since this native provider is a new one, there's no need for migration on this level.
-        // Migration should happen in the combined layer for the time being.
-        return StoreMigrationParticipant.NOT_PARTICIPATING;
+        return new SchemaIndexMigrator( "Native indexes", fs, pageCache, directoryStructure(), storageEngineFactory, false );
     }
 
     private Path storeFile( IndexDescriptor descriptor )

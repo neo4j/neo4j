@@ -92,7 +92,6 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
@@ -232,8 +231,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             boolean requiresPropertyMigration =
                     !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
             boolean requiresIdFilesMigration = requiresIdFilesMigration( oldFormat, newFormat );
-            if ( FormatFamily.isHigherFamilyFormat( newFormat, oldFormat ) ||
-                    (FormatFamily.isSameFamily( oldFormat, newFormat ) && isDifferentCapabilities( oldFormat, newFormat )) )
+            // The FORMAT capability now also includes the format family so this comparison is enough
+            if ( !oldFormat.hasCompatibleCapabilities( newFormat, CapabilityType.FORMAT ) )
             {
                 // Some form of migration is required (a fallback/catch-all option)
                 migrateWithBatchImporter( directoryLayout, migrationLayout, lastTxId, lastTxInfo.checksum(), lastTxLogPosition.getLogVersion(),
@@ -297,11 +296,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         return !oldFormat.hasCapability( RecordStorageCapability.GBPTREE_COUNTS_STORE ) &&
                 newFormat.hasCapability( RecordStorageCapability.GBPTREE_COUNTS_STORE );
-    }
-
-    private static boolean isDifferentCapabilities( RecordFormats oldFormat, RecordFormats newFormat )
-    {
-        return !oldFormat.hasCompatibleCapabilities( newFormat, CapabilityType.FORMAT );
     }
 
     void writeLastTxInformation( DatabaseLayout migrationStructure, TransactionId txInfo ) throws IOException

@@ -200,7 +200,7 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
-        return new SchemaIndexMigrator( "Schema indexes", fs, this.directoryStructure(), storageEngineFactory );
+        return new SchemaIndexMigrator( "Schema indexes", fs, pageCache, this.directoryStructure(), storageEngineFactory, true );
     }
 
     private IndexFiles indexFiles( IndexDescriptor descriptor )

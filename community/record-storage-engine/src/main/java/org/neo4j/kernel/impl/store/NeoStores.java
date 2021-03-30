@@ -42,7 +42,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
@@ -215,8 +214,7 @@ public class NeoStores implements AutoCloseable
 
     private boolean isCompatibleFormats( RecordFormats storeFormat )
     {
-        return FormatFamily.isSameFamily( recordFormats, storeFormat ) &&
-               recordFormats.hasCompatibleCapabilities( storeFormat, CapabilityType.FORMAT ) &&
+        return recordFormats.hasCompatibleCapabilities( storeFormat, CapabilityType.FORMAT ) &&
                recordFormats.generation() >= storeFormat.generation();
     }
 

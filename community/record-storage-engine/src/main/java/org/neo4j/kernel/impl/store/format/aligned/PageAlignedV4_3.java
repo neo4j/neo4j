@@ -60,11 +60,12 @@ import static org.neo4j.kernel.impl.store.format.StoreVersion.ALIGNED_V4_3;
 public class PageAlignedV4_3 extends BaseRecordFormats
 {
     public static final RecordFormats RECORD_FORMATS = new PageAlignedV4_3();
-    public static final String NAME = "aligned";
+    public static final String NAME = FormatFamily.aligned.name();
 
     private PageAlignedV4_3()
     {
         super( ALIGNED_V4_3.versionString(), ALIGNED_V4_3.introductionVersion(), 2,
+                FormatFamily.aligned.formatCapability(),
                 RecordStorageCapability.SCHEMA,
                 RecordStorageCapability.DENSE_NODES,
                 RecordStorageCapability.POINT_PROPERTIES,
@@ -137,7 +138,7 @@ public class PageAlignedV4_3 extends BaseRecordFormats
     @Override
     public FormatFamily getFormatFamily()
     {
-        return AlignedFormatFamily.INSTANCE;
+        return FormatFamily.aligned;
     }
 
     @Override
