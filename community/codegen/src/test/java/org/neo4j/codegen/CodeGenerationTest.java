@@ -2725,7 +2725,7 @@ class SourceCodeCodeGenerationTest extends CodeGenerationTest
     {
         try
         {
-            return CodeGenerator.generateCode( SourceCode.SOURCECODE );
+            return CodeGenerator.generateCode( SourceCode.SOURCECODE, SourceCode.PRINT_SOURCE );
         }
         catch ( CodeGenerationNotSupportedException e )
         {

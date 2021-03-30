@@ -174,9 +174,6 @@ object CodeGeneration {
 
     generateCode(classOf[IntermediateRepresentation].getClassLoader, strategy, options: _*)
   }
-  //invoke static 3 bytes
-  //ivoke interface 5 bytes
-  //each load 2 bytes
 
   private def compileExpression(ir: IntermediateRepresentation, block: codegen.CodeBlock): codegen.Expression = ir match {
     //Foo.method(p1, p2,...)

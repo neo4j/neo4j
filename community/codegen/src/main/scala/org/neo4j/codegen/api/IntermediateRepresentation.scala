@@ -28,6 +28,8 @@ import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 
+import scala.annotation.tailrec
+
 /**
  * IntermediateRepresentation is an intermediate step between pure byte code and the operator/expression
  *
@@ -836,7 +838,13 @@ object IntermediateRepresentation {
 
   def ternary(condition: IntermediateRepresentation,
               onTrue: IntermediateRepresentation,
-              onFalse: IntermediateRepresentation): IntermediateRepresentation = Ternary(condition, onTrue, onFalse)
+              onFalse: IntermediateRepresentation): IntermediateRepresentation = {
+    staticallyKnownPredicate(condition) match {
+      case Some(true) => onTrue
+      case Some(false) => onFalse
+      case _ => Ternary(condition, onTrue, onFalse)
+    }
+  }
 
   def add(lhs: IntermediateRepresentation, rhs: Int): IntermediateRepresentation =
     Add(lhs, constant(rhs))
@@ -916,12 +924,43 @@ object IntermediateRepresentation {
 
   def noop(): IntermediateRepresentation = Noop
 
+  @tailrec
+  def staticallyKnownPredicate(ir: IntermediateRepresentation, notCount: Int = 0): Option[Boolean] = ir match {
+    case Constant(true) => Some(notCount % 2 == 0)
+    case Constant(false) => Some(notCount % 2 != 0)
+    case Not(inner) => staticallyKnownPredicate(inner, notCount + 1)
+    case _ => None
+  }
+
+  def isEmpty(ir: IntermediateRepresentation): Boolean = ir match {
+    case Noop => true
+    case Block(ops) => ops.isEmpty || ops.forall(isEmpty)
+    case _ => false
+  }
+
   def condition(test: IntermediateRepresentation)
-               (onTrue: IntermediateRepresentation): IntermediateRepresentation = Condition(test, onTrue)
+               (onTrue: IntermediateRepresentation): IntermediateRepresentation = {
+    if (isEmpty(onTrue)) noop()
+    else staticallyKnownPredicate(test) match {
+      case Some(true) => onTrue
+      case  Some(false) => noop()
+      case _ => Condition(test, onTrue)
+    }
+  }
 
   def ifElse(test: IntermediateRepresentation)
                (onTrue: IntermediateRepresentation)
-               (onFalse: IntermediateRepresentation): IntermediateRepresentation = Condition(test, onTrue, Some(onFalse))
+               (onFalse: IntermediateRepresentation): IntermediateRepresentation = {
+    if (isEmpty(onFalse)) condition(test)(onTrue)
+    else if (isEmpty(onTrue)) condition(not(test))(onFalse)
+    else {
+      staticallyKnownPredicate(test) match {
+        case Some(true) => onTrue
+        case Some(false) => onFalse
+        case _ => Condition(test, onTrue, Some(onFalse))
+      }
+    }
+  }
 
   def loop(test: IntermediateRepresentation)
                (body: IntermediateRepresentation): IntermediateRepresentation = Loop(test, body, labelName = null)
@@ -1019,7 +1058,18 @@ object IntermediateRepresentation {
 
   def newArray(baseType: codegen.TypeReference, size: Int): NewArray = NewArray(baseType, size)
 
-  def not(test: IntermediateRepresentation): Not = Not(test)
+  def not(test: IntermediateRepresentation): IntermediateRepresentation = {
+    @tailrec
+    def simplify(in: IntermediateRepresentation, count: Int = 0): IntermediateRepresentation = in match {
+      case Not(inner) => simplify(inner, count + 1)
+      case inner if count % 2 == 0 => inner
+      case inner => Not(inner)
+    }
+    staticallyKnownPredicate(test) match {
+      case Some(p) => constant(!p)
+      case None => simplify(Not(test))
+    }
+  }
 
   def oneTime(expression: IntermediateRepresentation): IntermediateRepresentation = OneTime(expression)(used = false)
 
