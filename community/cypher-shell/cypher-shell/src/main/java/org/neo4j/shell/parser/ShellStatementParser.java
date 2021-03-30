@@ -197,7 +197,7 @@ public class ShellStatementParser implements StatementParser
      */
     private boolean isRightDelimiter( char first, char last )
     {
-        if ( !awaitedRightDelimiter.isPresent() )
+        if ( awaitedRightDelimiter.isEmpty() )
         {
             return false;
         }
