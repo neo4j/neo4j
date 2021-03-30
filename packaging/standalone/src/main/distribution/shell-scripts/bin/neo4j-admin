@@ -43,7 +43,6 @@ setup_environment() {
 
 setup_heap() {
   if [[ -n "${HEAP_SIZE:-}" ]]; then
-    JAVA_MEMORY_OPTS_XMS="-Xms${HEAP_SIZE}"
     JAVA_MEMORY_OPTS_XMX="-Xmx${HEAP_SIZE}"
   fi
 }
@@ -240,7 +239,7 @@ call_main_class() {
   export NEO4J_HOME NEO4J_CONF
 
   # shellcheck disable=SC2086
-  exec "${JAVA_CMD}" ${JAVA_OPTS:--XX:+UseParallelGC} ${JAVA_MEMORY_OPTS_XMS-} ${JAVA_MEMORY_OPTS_XMX-} \
+  exec "${JAVA_CMD}" ${JAVA_OPTS:--XX:+UseParallelGC} ${JAVA_MEMORY_OPTS_XMX-} \
     -classpath "${CLASSPATH}" \
     "-Dfile.encoding=UTF-8" \
     "$class_name" "$@"
