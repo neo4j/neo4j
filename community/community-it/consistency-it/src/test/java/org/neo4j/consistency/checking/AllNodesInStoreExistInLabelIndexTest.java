@@ -66,9 +66,9 @@ class AllNodesInStoreExistInLabelIndexTest
     @Inject
     private FileSystemAbstraction fs;
     @Inject
-    private DatabaseManagementService managementService;
+    DatabaseManagementService managementService;
     @Inject
-    private GraphDatabaseAPI db;
+    GraphDatabaseAPI db;
     @Inject
     private Database database;
     @Inject
@@ -290,7 +290,7 @@ class AllNodesInStoreExistInLabelIndexTest
         return labelIndexFileCopy;
     }
 
-    private List<Pair<Long,Label[]>> someData()
+    List<Pair<Long,Label[]>> someData()
     {
         return someData( 50 );
     }
@@ -372,11 +372,16 @@ class AllNodesInStoreExistInLabelIndexTest
         return labels.toArray( new Label[0] );
     }
 
-    private ConsistencyCheckService.Result fullConsistencyCheck() throws ConsistencyCheckIncompleteException
+    Config addAdditionalConfigToCC( Config config )
+    {
+        return config;
+    }
+
+    ConsistencyCheckService.Result fullConsistencyCheck() throws ConsistencyCheckIncompleteException
     {
         ConsistencyCheckService service = new ConsistencyCheckService();
         DatabaseLayout databaseLayout = db.databaseLayout();
         Config config = Config.defaults( logs_directory, databaseLayout.databaseDirectory() );
-        return service.runFullConsistencyCheck( databaseLayout, config, NONE, log, false, ConsistencyFlags.DEFAULT );
+        return service.runFullConsistencyCheck( databaseLayout, addAdditionalConfigToCC( config ), NONE, log, false, ConsistencyFlags.DEFAULT );
     }
 }

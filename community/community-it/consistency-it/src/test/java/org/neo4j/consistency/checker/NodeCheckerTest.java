@@ -115,7 +115,7 @@ class NodeCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // Label index having (N) which is not in use in the store
-            try ( TokenScanWriter writer = labelIndex.newWriter( PageCursorTracer.NULL ) )
+            try ( TokenScanWriter writer = labelIndexWriter() )
             {
                 writer.write( EntityTokenUpdate.tokenChanges( nodeStore.nextId( PageCursorTracer.NULL ), EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
@@ -135,7 +135,7 @@ class NodeCheckerTest extends CheckerTestBase
         try ( AutoCloseable ignored = tx() )
         {
             // A couple of nodes w/ correct label indexing
-            try ( TokenScanWriter writer = labelIndex.newWriter( PageCursorTracer.NULL ) )
+            try ( TokenScanWriter writer = labelIndexWriter() )
             {
                 for ( int i = 0; i < 10; i++ )
                 {
@@ -145,7 +145,7 @@ class NodeCheckerTest extends CheckerTestBase
             }
 
             // Label index having (N) which is not in use in the store
-            try ( TokenScanWriter writer = labelIndex.newWriter( PageCursorTracer.NULL ) )
+            try ( TokenScanWriter writer = labelIndexWriter() )
             {
                 writer.write( EntityTokenUpdate.tokenChanges( nodeStore.nextId( PageCursorTracer.NULL ), EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
@@ -245,7 +245,7 @@ class NodeCheckerTest extends CheckerTestBase
             // (N) w/ label L
             // LabelIndex does not have the N:L entry
             long nodeId = node( nodeStore.nextId( PageCursorTracer.NULL ), NULL, NULL );
-            try ( TokenScanWriter writer = labelIndex.newWriter( PageCursorTracer.NULL ) )
+            try ( TokenScanWriter writer = labelIndexWriter() )
             {
                 writer.write( EntityTokenUpdate.tokenChanges( nodeId, EMPTY_LONG_ARRAY, new long[]{label1} ) );
             }
@@ -282,7 +282,7 @@ class NodeCheckerTest extends CheckerTestBase
         // given
         try ( AutoCloseable ignored = tx() )
         {
-            try ( TokenScanWriter writer = labelIndex.newWriter( PageCursorTracer.NULL ) )
+            try ( TokenScanWriter writer = labelIndexWriter() )
             {
                 for ( int i = 0; i < 20; i++ )
                 {

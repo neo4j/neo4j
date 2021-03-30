@@ -66,6 +66,8 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
+import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -176,8 +178,19 @@ class CheckerTestBase
         dbms.shutdown();
     }
 
+    TokenScanWriter labelIndexWriter()
+    {
+        return labelIndex.newWriter( PageCursorTracer.NULL );
+    }
+
     void configure( TestDatabaseManagementServiceBuilder builder )
     {   // no-op
+    }
+
+    Config additionalConfigToCC( Config config )
+    {
+        // no-op
+        return config;
     }
 
     void initialData( KernelTransaction tx ) throws KernelException
@@ -208,7 +221,7 @@ class CheckerTestBase
 
         // We do this as late as possible because of how it eagerly caches which indexes exist so if the test creates an index
         // this lazy instantiation allows the context to pick it up
-        Config config = Config.defaults( neo4j_home, directory.homePath() );
+        Config config = additionalConfigToCC( Config.defaults( neo4j_home, directory.homePath() ) );
         DependencyResolver dependencies = db.getDependencyResolver();
         IndexProviderMap indexProviders = dependencies.resolveDependency( IndexProviderMap.class );
         IndexingService indexingService = dependencies.resolveDependency( IndexingService.class );
@@ -224,7 +237,8 @@ class CheckerTestBase
         ProgressMonitorFactory.MultiPartBuilder progress = ProgressMonitorFactory.NONE.multipleParts( "Test" );
         ParallelExecution execution = new ParallelExecution( numberOfThreads, NOOP_EXCEPTION_HANDLER, IDS_PER_CHUNK );
         context = new CheckerContext( neoStores, indexAccessors, labelIndex, relationshipTypeIndex, execution, reporter, cacheAccess, tokenHolders,
-                new RecordLoading( neoStores ), countsState, limiter, progress, pageCache, PageCacheTracer.NULL, INSTANCE, false, consistencyFlags, false );
+                new RecordLoading( neoStores ), countsState, limiter, progress, pageCache, PageCacheTracer.NULL, INSTANCE, false, consistencyFlags, config.get(
+                RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) );
         context.initialize();
         return context;
     }

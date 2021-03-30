@@ -56,6 +56,7 @@ public class IndexAccessors implements Closeable
     private final List<IndexDescriptor> notOnlineIndexRules = new ArrayList<>();
     private final List<IndexDescriptor> inconsistentRules = new ArrayList<>();
     private TokenIndexAccessor nodeLabelIndex;
+    private TokenIndexAccessor relationshipTokenIndex;
 
     public IndexAccessors(
             IndexProviderMap providers,
@@ -128,10 +129,16 @@ public class IndexAccessors implements Closeable
             try
             {
                 final IndexAccessor accessor = accessorLookup.apply( indexRule );
-                if ( indexRule.schema().isAnyTokenSchemaDescriptor() && indexRule.schema().entityType() == EntityType.NODE &&
-                     indexRule.getIndexType() == IndexType.LOOKUP )
+                if ( isTokenIndex( indexRule ) )
                 {
-                    nodeLabelIndex = (TokenIndexAccessor)accessor;
+                    if ( indexRule.schema().entityType() == EntityType.NODE )
+                    {
+                        nodeLabelIndex = (TokenIndexAccessor) accessor;
+                    }
+                    else
+                    {
+                        relationshipTokenIndex = (TokenIndexAccessor) accessor;
+                    }
                     onlineIndexRules.remove( i-- );
                 }
                 else
@@ -217,6 +224,11 @@ public class IndexAccessors implements Closeable
             onlineIndexRules.clear();
             notOnlineIndexRules.clear();
         }
+    }
+
+    private boolean isTokenIndex( IndexDescriptor indexRule )
+    {
+        return indexRule.schema().isAnyTokenSchemaDescriptor() && indexRule.getIndexType() == IndexType.LOOKUP;
     }
 
     public class IndexReaders implements AutoCloseable
