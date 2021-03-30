@@ -117,7 +117,7 @@ case object getDegreeRewriter extends Rewriter {
 
 object RelationshipsPatternSolvableByGetDegree {
   def unapply(arg: Any): Option[(LogicalVariable, LogicalVariable, LogicalVariable, Seq[RelTypeName], SemanticDirection)] = arg match {
-    //(a)-[]->()
+    // (a)-[r:X|Y]->(b)
     case RelationshipsPattern
       (RelationshipChain
         (NodePattern
@@ -137,7 +137,7 @@ object PatternExpressionOrComprehension {
   def unapply(arg: Any): Option[RelationshipsPattern] = arg match {
     case PatternExpression(relPattern) =>
       Some(relPattern)
-    case PatternComprehension(None, relPattern, None, _) =>
+    case PatternComprehension(_, relPattern, None, _) =>
       Some(relPattern)
 
     case _ => None
