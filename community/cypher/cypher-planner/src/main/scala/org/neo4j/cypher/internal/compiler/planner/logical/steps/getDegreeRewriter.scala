@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -114,10 +115,38 @@ case object getDegreeRewriter extends Rewriter {
   }
 }
 
+object RelationshipsPatternSolvableByGetDegree {
+  def unapply(arg: Any): Option[(LogicalVariable, LogicalVariable, LogicalVariable, Seq[RelTypeName], SemanticDirection)] = arg match {
+    //(a)-[]->()
+    case RelationshipsPattern
+      (RelationshipChain
+        (NodePattern
+          (Some(node), List(), None),
+        RelationshipPattern
+          (Some(rel), types, None, None, dir, _),
+        NodePattern
+          (Some(otherNode), List(), None))) =>
+
+      Some((node, rel, otherNode, types, dir))
+
+    case _ => None
+  }
+}
+
+object PatternExpressionOrComprehension {
+  def unapply(arg: Any): Option[RelationshipsPattern] = arg match {
+    case PatternExpression(relPattern) =>
+      Some(relPattern)
+    case PatternComprehension(None, relPattern, None, _) =>
+      Some(relPattern)
+
+    case _ => None
+  }
+}
+
 object FunctionOfPattern {
   def unapply(arg: Any): Option[(FunctionInvocation, LogicalVariable, Seq[RelTypeName], SemanticDirection)] = arg match {
-    //(a)-[]->()
-    case func@FunctionInvocation(_, _, _, IndexedSeq(pe@PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(Some(rel), types, None, None, dir, _), NodePattern(Some(otherNode), List(), None))))))
+    case func@FunctionInvocation(_, _, _, IndexedSeq(pe@PatternExpressionOrComprehension(RelationshipsPatternSolvableByGetDegree(node, rel, otherNode, types, dir))))
     =>
       val peDeps = pe.dependencies
       if (peDeps.contains(node) && !peDeps.contains(rel) && !peDeps.contains(otherNode)) {
@@ -139,9 +168,3 @@ object LengthFunctionOfPattern {
     case _ => None
   }
 }
-
-
-
-
-
-
