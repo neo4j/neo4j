@@ -20,9 +20,7 @@
 package org.neo4j.shell.cli;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayInputStream;
 
@@ -47,11 +45,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class NonInteractiveShellRunnerTest
 {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
-    private Logger logger = mock( Logger.class );
-    private StatementExecuter cmdExecuter = mock( StatementExecuter.class );
+    private final Logger logger = mock( Logger.class );
+    private final StatementExecuter cmdExecuter = mock( StatementExecuter.class );
     private StatementParser statementParser;
     private ClientException badLineError;
 
@@ -65,7 +60,7 @@ public class NonInteractiveShellRunnerTest
     }
 
     @Test
-    public void testSimple() throws Exception
+    public void testSimple()
     {
         String input = "good1;\n" +
                        "good2;\n";
@@ -81,7 +76,7 @@ public class NonInteractiveShellRunnerTest
     }
 
     @Test
-    public void testFailFast() throws Exception
+    public void testFailFast()
     {
         String input =
                 "good1;\n" +
@@ -100,7 +95,7 @@ public class NonInteractiveShellRunnerTest
     }
 
     @Test
-    public void testFailAtEnd() throws Exception
+    public void testFailAtEnd()
     {
         String input =
                 "good1;\n" +
@@ -119,7 +114,7 @@ public class NonInteractiveShellRunnerTest
     }
 
     @Test
-    public void runUntilEndExitsImmediatelyOnParseError() throws Exception
+    public void runUntilEndExitsImmediatelyOnParseError()
     {
         // given
         StatementParser statementParser = mock( StatementParser.class );
@@ -170,7 +165,7 @@ public class NonInteractiveShellRunnerTest
     }
 
     @Test
-    public void nonInteractiveHasNoHistory() throws Exception
+    public void nonInteractiveHasNoHistory()
     {
         // given
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
