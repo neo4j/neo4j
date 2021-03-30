@@ -566,7 +566,7 @@ case class ExtendClass(name: String,
  * @param name   the name of the method
  * @param params the parameter types of the method
  */
-case class Method(owner: codegen.TypeReference, returnType: codegen.TypeReference, name: String, params: codegen.TypeReference*) {
+case class Method(owner: codegen.TypeReference, returnType: codegen.TypeReference, name: String, params: Seq[codegen.TypeReference]) {
 
   def asReference: codegen.MethodReference = codegen.MethodReference.methodReference(owner, returnType, name, params: _*)
 }
@@ -641,69 +641,69 @@ object IntermediateRepresentation {
     LocalVariable(typeRef(typ), name, value)
 
   def method[OWNER, OUT](name: String)(implicit owner: Manifest[OWNER], out: Manifest[OUT]): Method =
-    Method(typeRef(owner), typeRef(out), name)
+    Method(typeRef(owner), typeRef(out), name, Seq.empty)
 
   def method[OWNER, OUT, IN](name: String)(implicit owner: Manifest[OWNER], out: Manifest[OUT], in: Manifest[IN]): Method =
-    Method(typeRef(owner), typeRef(out), name, typeRef(in))
+    Method(typeRef(owner), typeRef(out), name, Seq(typeRef(in)))
 
   def method[OWNER, OUT, IN1, IN2](name: String)
                                   (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
                                    in2: Manifest[IN2]): Method =
-    Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2))
+    Method(typeRef(owner), typeRef(out), name, Seq(typeRef(in1), typeRef(in2)))
 
   def method[OWNER, OUT, IN1, IN2, IN3](name: String)
                                        (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
                                         in2: Manifest[IN2], in3: Manifest[IN3]): Method =
-    Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3))
+    Method(typeRef(owner), typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3)))
 
   def method[OWNER, OUT, IN1, IN2, IN3, IN4](name: String)
                                        (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
                                         in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4]): Method =
-    Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4))
+    Method(typeRef(owner), typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4)))
 
   def method[OWNER, OUT, IN1, IN2, IN3, IN4, IN5](name: String)
                                             (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
                                              in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5]): Method =
-    Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5))
+    Method(typeRef(owner), typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5)))
 
 
   def method[OWNER, OUT, IN1, IN2, IN3, IN4, IN5, IN6](name: String)
                                                  (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
                                                   in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5],
                                                   in6: Manifest[IN6]): Method =
-    Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6))
+    Method(typeRef(owner), typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6)))
 
   def method[OWNER, OUT, IN1, IN2, IN3, IN4, IN5, IN6, IN7](name: String)
                                                       (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
                                                        in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5],
                                                        in6: Manifest[IN6], in7: Manifest[IN7]): Method =
-    Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7))
+    Method(typeRef(owner), typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7)))
 
   def method[OWNER, OUT, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8](name: String)
                                                            (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
                                                             in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5],
                                                             in6: Manifest[IN6], in7: Manifest[IN7], in8: Manifest[IN8]): Method =
-    Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8))
+    Method(typeRef(owner), typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8)))
 
 
   def method[OWNER, OUT, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9](name: String)
                                                                            (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
                                                                             in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5],
                                                                             in6: Manifest[IN6], in7: Manifest[IN7], in8: Manifest[IN8], in9: Manifest[IN9]): Method =
-    Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9))
+    Method(typeRef(owner), typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9)))
 
   def method[OWNER, OUT, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9, IN10](name: String)
                                                                 (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
                                                                  in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5],
                                                                  in6: Manifest[IN6], in7: Manifest[IN7], in8: Manifest[IN8], in9: Manifest[IN9], in10: Manifest[IN10]): Method =
-    Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9), typeRef(in10))
+    Method(typeRef(owner), typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9), typeRef(in10)))
 
   def method[OWNER, OUT, IN1, IN2, IN3, IN4, IN5, IN6, IN7, IN8, IN9, IN10, IN11](name: String)
                                                                            (implicit owner: Manifest[OWNER], out: Manifest[OUT], in1: Manifest[IN1],
                                                                             in2: Manifest[IN2], in3: Manifest[IN3], in4: Manifest[IN4], in5: Manifest[IN5],
                                                                             in6: Manifest[IN6], in7: Manifest[IN7], in8: Manifest[IN8], in9: Manifest[IN9],
                                                                             in10: Manifest[IN10], in11: Manifest[IN11]): Method =
-    Method(typeRef(owner), typeRef(out), name, typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9), typeRef(in10), typeRef(in11))
+    Method(typeRef(owner), typeRef(out), name, Seq(typeRef(in1), typeRef(in2), typeRef(in3), typeRef(in4), typeRef(in5), typeRef(in6), typeRef(in7), typeRef(in8), typeRef(in9), typeRef(in10), typeRef(in11)))
 
   def methodDeclaration[OUT](name: String,
                              body: IntermediateRepresentation,
@@ -842,7 +842,7 @@ object IntermediateRepresentation {
     staticallyKnownPredicate(condition) match {
       case Some(true) => onTrue
       case Some(false) => onFalse
-      case _ => Ternary(condition, onTrue, onFalse)
+      case _ => Ternary(simplifyPredicate(condition), onTrue, onFalse)
     }
   }
 
@@ -920,7 +920,11 @@ object IntermediateRepresentation {
   def notEqual(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation =
     NotEq(lhs, rhs)
 
-  def block(ops: IntermediateRepresentation*): IntermediateRepresentation = Block(ops)
+  def block(ops: IntermediateRepresentation*): IntermediateRepresentation = {
+    if (ops.isEmpty) noop()
+    else if (ops.length == 1) ops.head
+    else Block(ops)
+  }
 
   def noop(): IntermediateRepresentation = Noop
 
@@ -943,8 +947,8 @@ object IntermediateRepresentation {
     if (isEmpty(onTrue)) noop()
     else staticallyKnownPredicate(test) match {
       case Some(true) => onTrue
-      case  Some(false) => noop()
-      case _ => Condition(test, onTrue)
+      case Some(false) => noop()
+      case _ => Condition(simplifyPredicate(test), onTrue)
     }
   }
 
@@ -957,16 +961,16 @@ object IntermediateRepresentation {
       staticallyKnownPredicate(test) match {
         case Some(true) => onTrue
         case Some(false) => onFalse
-        case _ => Condition(test, onTrue, Some(onFalse))
+        case _ => Condition(simplifyPredicate(test), onTrue, Some(onFalse))
       }
     }
   }
 
   def loop(test: IntermediateRepresentation)
-               (body: IntermediateRepresentation): IntermediateRepresentation = Loop(test, body, labelName = null)
+               (body: IntermediateRepresentation): IntermediateRepresentation = Loop(simplifyPredicate(test), body, labelName = null)
 
   def labeledLoop(labelName: String, test: IntermediateRepresentation)
-                 (body: IntermediateRepresentation): IntermediateRepresentation = Loop(test, body, labelName)
+                 (body: IntermediateRepresentation): IntermediateRepresentation = Loop(simplifyPredicate(test), body, labelName)
 
   def break(labelName: String): IntermediateRepresentation = Break(labelName)
 
@@ -1011,14 +1015,14 @@ object IntermediateRepresentation {
     (lhs, rhs) match {
       case (Constant(false), _) => Constant(false)
       case (_, Constant(false)) => Constant(false)
-      case (Constant(true), _) => rhs
-      case (_, Constant(true)) => lhs
+      case (Constant(true), _) => simplifyPredicate(rhs)
+      case (_, Constant(true)) => simplifyPredicate(lhs)
       case (lhsAnd: BooleanAnd, _) => rhs match {
         case rhsAnd: BooleanAnd => BooleanAnd(lhsAnd.as ++ rhsAnd.as)
-        case a => BooleanAnd(lhsAnd.as :+ a)
+        case a => BooleanAnd(lhsAnd.as :+ simplifyPredicate(a))
       }
-      case (_, rhsAnd: BooleanAnd) => BooleanAnd(lhs +: rhsAnd.as)
-      case _ => BooleanAnd(Seq(lhs, rhs))
+      case (_, rhsAnd: BooleanAnd) => BooleanAnd(simplifyPredicate(lhs) +: rhsAnd.as)
+      case _ => BooleanAnd(Seq(simplifyPredicate(lhs), simplifyPredicate(rhs)))
     }
   }
 
@@ -1032,14 +1036,14 @@ object IntermediateRepresentation {
     (lhs, rhs) match {
       case (Constant(true), _) => Constant(true)
       case (_, Constant(true)) => Constant(true)
-      case (Constant(false), _) => rhs
-      case (_, Constant(false)) => lhs
+      case (Constant(false), _) => simplifyPredicate(rhs)
+      case (_, Constant(false)) => simplifyPredicate(lhs)
       case (lhsOr: BooleanOr, _) => rhs match {
         case rhsOr: BooleanOr => BooleanOr(lhsOr.as ++ rhsOr.as)
-        case a => BooleanOr(lhsOr.as :+ a)
+        case a => BooleanOr(lhsOr.as :+ simplifyPredicate(a))
       }
-      case (_, rhsOr: BooleanOr) => BooleanOr(lhs +: rhsOr.as)
-      case _ => BooleanOr(Seq(lhs, rhs))
+      case (_, rhsOr: BooleanOr) => BooleanOr(simplifyPredicate(lhs) +: rhsOr.as)
+      case _ => BooleanOr(Seq(simplifyPredicate(lhs), simplifyPredicate(rhs)))
     }
   }
 
@@ -1084,4 +1088,31 @@ object IntermediateRepresentation {
 
   def booleanValue(ir: IntermediateRepresentation): IntermediateRepresentation =
     invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"), ir)
+
+  private val BOOLEAN_VALUE_TYPE: TypeReference = typeRefOf[BooleanValue]
+  private val VALUES_TYPE: TypeReference = typeRefOf[Values]
+
+  private object BooleanValueFcn {
+    def unapply(arg: IntermediateRepresentation): Option[IntermediateRepresentation] = arg match {
+      case InvokeStatic(Method(owner, returnType, "booleanValue", Seq(inType)), Seq(in))
+        if owner == VALUES_TYPE && returnType == BOOLEAN_VALUE_TYPE && inType == TypeReference.BOOLEAN =>
+        Some(in)
+      case _ => None
+    }
+  }
+
+  private object IsTrueValue {
+    def unapply(arg: IntermediateRepresentation): Boolean = arg match {
+      case GetStatic(Some(owner), t, "TRUE") => owner == VALUES_TYPE && t == BOOLEAN_VALUE_TYPE
+      case _ => false
+    }
+  }
+
+  private def simplifyPredicate(predicate: IntermediateRepresentation): IntermediateRepresentation = predicate match {
+    case Eq(BooleanValueFcn(in), IsTrueValue()) => in
+    case Eq(IsTrueValue(), BooleanValueFcn(in)) => in
+    case Eq(Block(others :+ BooleanValueFcn(in)), IsTrueValue()) => Block(others :+ in)
+    case Eq(IsTrueValue(), Block(others :+ BooleanValueFcn(in))) => Block(others :+ in)
+    case other => other
+  }
 }

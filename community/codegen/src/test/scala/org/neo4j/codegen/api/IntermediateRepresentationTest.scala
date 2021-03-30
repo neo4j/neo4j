@@ -29,6 +29,7 @@ import org.neo4j.codegen.api.IntermediateRepresentation.noop
 import org.neo4j.codegen.api.IntermediateRepresentation.print
 import org.neo4j.codegen.api.IntermediateRepresentation.staticallyKnownPredicate
 import org.neo4j.codegen.api.IntermediateRepresentation.ternary
+import org.neo4j.codegen.api.IntermediateRepresentation.trueValue
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class IntermediateRepresentationTest extends CypherFunSuite {
@@ -81,6 +82,23 @@ class IntermediateRepresentationTest extends CypherFunSuite {
    notOp(Not(Not(load[Boolean]("boolean")))) shouldBe notOp(load[Boolean]("boolean"))
   }
 
+  test("rewrite if (booleanValue(a) == TRUE) to if (a)") {
+    condition(IntermediateRepresentation.equal(IntermediateRepresentation.booleanValue(load[Boolean]("foo")), trueValue)) {
+      print(constant("hello"))
+    } shouldBe condition(load[Boolean]("foo"))(print(constant("hello")))
+
+    condition(IntermediateRepresentation.equal(trueValue, IntermediateRepresentation.booleanValue(load[Boolean]("foo")))) {
+      print(constant("hello"))
+    } shouldBe condition(load[Boolean]("foo"))(print(constant("hello")))
+
+    condition(IntermediateRepresentation.equal(block(print(constant("hello")), IntermediateRepresentation.booleanValue(load[Boolean]("foo"))), trueValue)) {
+      print(constant("hello"))
+    } shouldBe condition(block(print(constant("hello")), load[Boolean]("foo")))(print(constant("hello")))
+    condition(IntermediateRepresentation.equal(trueValue, block(print(constant("hello")), IntermediateRepresentation.booleanValue(load[Boolean]("foo"))))) {
+      print(constant("hello"))
+    } shouldBe condition(block(print(constant("hello")), load[Boolean]("foo")))(print(constant("hello")))
+
+  }
   //this is here just because we cannot import IntermediateRepresentation.not because of scalatest
   private def notOp(inner: IntermediateRepresentation) = IntermediateRepresentation.not(inner)
 }
