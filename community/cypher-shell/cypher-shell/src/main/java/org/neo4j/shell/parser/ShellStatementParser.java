@@ -279,6 +279,13 @@ public class ShellStatementParser implements StatementParser
         return result;
     }
 
+    @Nonnull
+    @Override
+    public Optional<String> incompleteStatement()
+    {
+        return Optional.of( statement.toString().trim() ).filter( s -> !s.isEmpty() );
+    }
+
     @Override
     public boolean containsText()
     {

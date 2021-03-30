@@ -181,4 +181,22 @@ public class NonInteractiveShellRunnerTest
         // when then
         assertEquals( Historian.empty, runner.getHistorian() );
     }
+
+    @Test
+    public void shouldTryToExecuteIncompleteStatements() throws CommandException
+    {
+        String input = "good1;\nno semicolon here\n// A comment at end";
+        NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
+                FailBehavior.FAIL_FAST,
+                cmdExecuter,
+                logger, statementParser,
+                new ByteArrayInputStream( input.getBytes() ) );
+        int code = runner.runUntilEnd();
+
+        assertEquals( "Exit code incorrect", 0, code );
+        verify( logger, times( 0 ) ).printError( anyString() );
+        verify( cmdExecuter ).execute( "good1;" );
+        verify( cmdExecuter ).execute( "no semicolon here" );
+        verifyNoMoreInteractions( cmdExecuter );
+    }
 }
