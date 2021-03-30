@@ -56,6 +56,7 @@ public class IndexingCompositeQueryAcceptanceTest
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
     }
 
     public static Stream<Arguments> data()

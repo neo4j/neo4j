@@ -37,6 +37,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -70,7 +71,8 @@ class IndexSamplingIntegrationTest
         try
         {
             // Given
-            managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
+            managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
+                    .setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true ).build();
             db = managementService.database( DEFAULT_DATABASE_NAME );
             try ( Transaction tx = db.beginTx() )
             {

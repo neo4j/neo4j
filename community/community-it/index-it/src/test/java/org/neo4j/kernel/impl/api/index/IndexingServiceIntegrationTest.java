@@ -50,6 +50,7 @@ import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -90,7 +91,8 @@ public class IndexingServiceIntegrationTest
     private void setUp( GraphDatabaseSettings.SchemaIndex schemaIndex )
     {
         managementService = new TestDatabaseManagementServiceBuilder( directory.homePath() )
-                .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() ).build();
+                .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() )
+                .setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         createData( database );
     }

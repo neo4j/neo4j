@@ -33,5 +33,6 @@ public class RelationshipIndexingAcceptanceSSTITest extends RelationshipIndexing
     {
         // TODO: test with SSTI enabled and token indexes created
         builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
     }
 }

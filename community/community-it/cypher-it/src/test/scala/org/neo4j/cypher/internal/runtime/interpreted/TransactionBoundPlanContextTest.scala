@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import java.lang.Boolean.TRUE
+import java.util.concurrent.TimeUnit.SECONDS
+
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.spi.IndexBehaviour
@@ -40,11 +43,10 @@ import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
-
-import java.util.concurrent.TimeUnit.SECONDS
 
 class TransactionBoundPlanContextTest extends CypherFunSuite {
 
@@ -58,7 +60,8 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   }
 
   override protected def initTest(): Unit = {
-    managementService = new TestDatabaseManagementServiceBuilder().impermanent().build()
+    managementService = new TestDatabaseManagementServiceBuilder()
+      .setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, TRUE ).impermanent().build()
     database = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(database)
   }

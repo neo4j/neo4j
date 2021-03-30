@@ -50,6 +50,7 @@ public class IndexingStringQueryAcceptanceTest
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
     }
 
     private static final String KEY = "name";

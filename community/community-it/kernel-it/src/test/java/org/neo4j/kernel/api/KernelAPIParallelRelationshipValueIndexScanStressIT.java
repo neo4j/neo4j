@@ -34,8 +34,11 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
@@ -45,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
-@DbmsExtension
+@DbmsExtension( configurationCallback = "configure" )
 @ExtendWith( RandomExtension.class )
 class KernelAPIParallelRelationshipValueIndexScanStressIT
 {
@@ -58,6 +61,12 @@ class KernelAPIParallelRelationshipValueIndexScanStressIT
     private Kernel kernel;
     @Inject
     private RandomRule random;
+
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
+    }
 
     @Test
     void shouldDoParallelIndexScans() throws Throwable

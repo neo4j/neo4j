@@ -33,12 +33,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
@@ -475,6 +475,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
     {
         ReadTestSupport testSupport = new ReadTestSupport();
         testSupport.addSetting( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
+        testSupport.addSetting( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
         return testSupport;
     }
 }

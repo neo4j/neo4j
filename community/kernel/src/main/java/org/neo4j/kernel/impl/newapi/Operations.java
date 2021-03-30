@@ -101,6 +101,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
@@ -153,6 +154,7 @@ public class Operations implements Write, SchemaWrite
     private final PageCursorTracer cursorTracer;
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
+    private final boolean relationshipPropertyIndexesEnabled;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
@@ -178,6 +180,7 @@ public class Operations implements Write, SchemaWrite
         this.cursorTracer = cursorTracer;
         this.memoryTracker = memoryTracker;
         additionLockVerification = config.get( additional_lock_verification );
+        relationshipPropertyIndexesEnabled = config.get( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes );
     }
 
     public void initialize()
@@ -887,6 +890,15 @@ public class Operations implements Write, SchemaWrite
     @Override
     public IndexDescriptor indexCreate( IndexPrototype prototype ) throws KernelException
     {
+        if ( prototype.schema().isAnyTokenSchemaDescriptor() && !allStoreHolder.scanStoreAsTokenIndexEnabled() )
+        {
+            throw new UnsupportedOperationException( "Token indexes feature is not supported on this version" );
+        }
+        if ( prototype.schema().entityType() == RELATIONSHIP && prototype.getIndexType() == IndexType.BTREE && !relationshipPropertyIndexesEnabled )
+        {
+            throw new UnsupportedOperationException( "Relationship property indexes feature is not supported on this version" );
+        }
+
         exclusiveSchemaLock( prototype.schema() );
         ktx.assertOpen();
         assertValidDescriptor( prototype.schema(), INDEX_CREATION );
@@ -1005,6 +1017,10 @@ public class Operations implements Write, SchemaWrite
         {
             throw new DropIndexFailureException( "No index was specified." );
         }
+        if ( index.schema().isAnyTokenSchemaDescriptor() && !allStoreHolder.scanStoreAsTokenIndexEnabled() )
+        {
+            throw new UnsupportedOperationException( "Token indexes can not be dropped in this version" );
+        }
         exclusiveSchemaLock( index.schema() );
         exclusiveSchemaNameLock( index.getName() );
         assertIndexExistsForDrop( index );
@@ -1061,6 +1077,10 @@ public class Operations implements Write, SchemaWrite
         if ( index == IndexDescriptor.NO_INDEX )
         {
             throw new DropIndexFailureException( "Unable to drop index called `" + indexName + "`. There is no such index." );
+        }
+        if ( index.schema().isAnyTokenSchemaDescriptor() && !allStoreHolder.scanStoreAsTokenIndexEnabled() )
+        {
+            throw new UnsupportedOperationException( "Token indexes can not be dropped in this version" );
         }
         exclusiveSchemaLock( index.schema() );
         assertIndexExistsForDrop( index );

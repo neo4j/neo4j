@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -140,6 +141,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         };
         monitors.addMonitorListener( trappingMonitor );
         builder.setMonitors( monitors );
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
     }
 
     @Test

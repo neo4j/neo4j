@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedRelationshipTypeInSchemaException;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -47,6 +48,14 @@ public class IndexCreateIT extends KernelIntegrationTest
             ( schemaWrite, schema, provider, name ) -> schemaWrite.indexCreate( schema, provider, IndexConfig.empty(), name );
     private static final IndexCreator UNIQUE_CONSTRAINT_CREATOR = ( schemaWrite, schema, provider, name ) -> schemaWrite.uniquePropertyConstraintCreate(
             IndexPrototype.uniqueForSchema( schema, schemaWrite.indexProviderByName( provider ) ).withName( name ) );
+
+    @Override
+    protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder databaseManagementServiceBuilder )
+    {
+        final TestDatabaseManagementServiceBuilder builder = super.configure( databaseManagementServiceBuilder );
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
+        return builder;
+    }
 
     @Test
     void shouldCreateIndexWithSpecificExistingProviderName() throws KernelException

@@ -36,6 +36,7 @@ public class RelationshipIndexingAcceptanceTest extends IndexingAcceptanceTestBa
     void configureRelSearch( TestDatabaseManagementServiceBuilder builder )
     {
         builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
     }
 
     @Override
