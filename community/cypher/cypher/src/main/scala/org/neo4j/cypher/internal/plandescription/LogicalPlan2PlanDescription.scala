@@ -36,7 +36,9 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Point
+import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreateRelationship
@@ -64,6 +66,7 @@ import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.CreateBtreeIndex
+import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
@@ -85,6 +88,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropIndex
 import org.neo4j.cypher.internal.logical.plans.DropIndexOnName
@@ -360,8 +364,14 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
       case DoNothingIfExistsForIndex(entityName, propertyKeyNames, nameOption) =>
         PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(indexInfo(nameOption, entityName, propertyKeyNames, Map.empty))), variables, withRawCardinalities)
 
+      case DoNothingIfExistsForLookupIndex(isNodeIndex, nameOption) =>
+        PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(indexInfo(nameOption, isNodeIndex))), variables, withRawCardinalities)
+
       case CreateBtreeIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(indexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
+
+      case CreateLookupIndex(_, isNodeIndex, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
+        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(indexInfo(nameOption, isNodeIndex))), variables, withRawCardinalities)
 
       case DropIndex(labelName, propertyKeyNames) =>
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(indexInfo(None, Left(labelName), propertyKeyNames, Map.empty))), variables, withRawCardinalities)
@@ -683,6 +693,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
 
       case CreateBtreeIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(indexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
+
+      case CreateLookupIndex(_, isNodeIndex, nameOption) => // Can be both a leaf plan and a middle plan so need to be in both places
+        PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(indexInfo(nameOption, isNodeIndex))), variables, withRawCardinalities)
 
       case CreateUniquePropertyConstraint(_, node, label, properties: Seq[Property], nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         val details = Details(constraintInfo(nameOption, node, scala.util.Left(label), properties, scala.util.Right("IS UNIQUE"), options))
@@ -1130,6 +1143,16 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         pretty"()-[:$prettyType]-()"
     }
     pretty"INDEX$name FOR $pattern ON $propertyString${prettyOptions(options)}"
+  }
+
+  private def indexInfo(nameOption: Option[String], isNodeIndex: Boolean): PrettyString = {
+    val name = nameOption match {
+      case Some(n) => pretty" ${asPrettyString(n)}"
+      case _ => pretty""
+    }
+    val (pattern, function) = if (isNodeIndex) (pretty"(n)", pretty"${asPrettyString.raw(Labels.name)}(n)")
+                              else (pretty"()-[r]-()", pretty"${asPrettyString.raw(Type.name)}(r)")
+    pretty"INDEX$name FOR $pattern ON EACH $function"
   }
 
   private def constraintInfo(nameOption: Option[String],

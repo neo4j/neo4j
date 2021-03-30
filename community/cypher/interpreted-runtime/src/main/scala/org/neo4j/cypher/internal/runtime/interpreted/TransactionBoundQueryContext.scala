@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.net.URL
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
@@ -94,6 +95,7 @@ import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexPrototype
+import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.StatementConstants
@@ -372,6 +374,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def indexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = {
     val descriptor = if (isNodeIndex) SchemaDescriptor.forLabel(entityId, properties: _*) else SchemaDescriptor.forRelType(entityId, properties: _*)
+    Iterators.single(transactionalContext.kernelTransaction.schemaRead().index(descriptor))
+  }
+
+  override def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor = {
+    val descriptor = if (isNodeIndex) SchemaDescriptor.forAnyEntityTokens(EntityType.NODE) else SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP)
     Iterators.single(transactionalContext.kernelTransaction.schemaRead().index(descriptor))
   }
 
@@ -892,6 +899,24 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         ktx.schemaWrite().indexCreate(descriptor, indexConfig, name.orNull)
       else
         ktx.schemaWrite().indexCreate(descriptor, provider.get, indexConfig, name.orNull)
+    } catch {
+      case e: EquivalentSchemaRuleAlreadyExistsException =>
+        val indexReference = ktx.schemaRead().index(descriptor).next()
+        if (ktx.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED) {
+          val message = ktx.schemaRead().indexGetFailure(indexReference)
+          throw new FailedIndexException(indexReference.userDescription(ktx.tokenRead()), message)
+        }
+        throw e
+    }
+  }
+
+  override def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor = {
+    val ktx = transactionalContext.kernelTransaction
+    val descriptor = if (isNodeIndex) SchemaDescriptor.forAnyEntityTokens(EntityType.NODE) else SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP)
+    val prototype = IndexPrototype.forSchema(descriptor).withIndexType(IndexType.LOOKUP)
+    val namedPrototype = name.map(n => prototype.withName(n)).getOrElse(prototype)
+    try {
+      ktx.schemaWrite().indexCreate(namedPrototype)
     } catch {
       case e: EquivalentSchemaRuleAlreadyExistsException =>
         val indexReference = ktx.schemaRead().index(descriptor).next()

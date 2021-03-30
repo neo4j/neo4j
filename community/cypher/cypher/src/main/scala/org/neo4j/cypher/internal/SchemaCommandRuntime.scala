@@ -30,12 +30,14 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.logical.plans.ConstraintType
 import org.neo4j.cypher.internal.logical.plans.CreateBtreeIndex
+import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropIndex
 import org.neo4j.cypher.internal.logical.plans.DropIndexOnName
@@ -189,6 +191,14 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
 
+    // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR (n) ON EACH labels(n)
+    // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR ()-[r]-() ON [EACH] type(r)
+    case CreateLookupIndex(source, isNodeIndex, name) => (context, parameterMapping) =>
+      SchemaExecutionPlan("CreateIndex", ctx => {
+        ctx.addLookupIndexRule(isNodeIndex, name)
+        SuccessResult
+      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
+
     // DROP INDEX ON :LABEL(prop)
     case DropIndex(label, props) => (_, _) =>
       SchemaExecutionPlan("DropIndex", ctx => {
@@ -212,6 +222,17 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         val (entityId, isNodeIndex) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
         if (Try(ctx.indexReference(entityId, isNodeIndex, propertyKeyIds: _*).getName).isSuccess) {
+          IgnoredResult
+        } else if (name.exists(ctx.indexExists)) {
+          IgnoredResult
+        } else {
+          SuccessResult
+        }
+      }, None)
+
+    case DoNothingIfExistsForLookupIndex(isNodeIndex, name) => (_, _) =>
+      SchemaExecutionPlan("DoNothingIfExist", ctx => {
+        if (Try(ctx.lookupIndexReference(isNodeIndex).getName).isSuccess) {
           IgnoredResult
         } else if (name.exists(ctx.indexExists)) {
           IgnoredResult

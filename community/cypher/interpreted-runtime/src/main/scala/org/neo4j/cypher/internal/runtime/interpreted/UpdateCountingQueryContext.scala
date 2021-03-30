@@ -119,6 +119,12 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     result
   }
 
+  override def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor = {
+    val result = inner.addLookupIndexRule(isNodeIndex, name)
+    indexesAdded.increase()
+    result
+  }
+
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = {
     inner.dropIndexRule(labelId, propertyKeyIds)
     indexesRemoved.increase()

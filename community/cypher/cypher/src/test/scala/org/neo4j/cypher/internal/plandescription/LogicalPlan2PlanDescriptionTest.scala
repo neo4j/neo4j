@@ -118,6 +118,7 @@ import org.neo4j.cypher.internal.logical.plans.CopyRolePrivileges
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.CreateBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateDatabase
+import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
@@ -141,6 +142,7 @@ import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExists
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropDatabase
@@ -655,6 +657,22 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "CreateIndex", SingleChild(
         planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty)
       ), Seq(details("INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty))
+
+    assertGood(attach(CreateLookupIndex(None, isNodeIndex = true, Some("$indexName")), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR (n) ON EACH labels(n)")), Set.empty))
+
+    assertGood(attach(CreateLookupIndex(Some(DoNothingIfExistsForLookupIndex(isNodeIndex = true, None)), isNodeIndex = true, None), 63.2),
+      planDescription(id, "CreateIndex", SingleChild(
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR (n) ON EACH labels(n)")), Set.empty)
+      ), Seq(details("INDEX FOR (n) ON EACH labels(n)")), Set.empty))
+
+    assertGood(attach(CreateLookupIndex(None, isNodeIndex = false, Some("$indexName")), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR ()-[r]-() ON EACH type(r)")), Set.empty))
+
+    assertGood(attach(CreateLookupIndex(Some(DoNothingIfExistsForLookupIndex(isNodeIndex = false, None)), isNodeIndex = false, None), 63.2),
+      planDescription(id, "CreateIndex", SingleChild(
+        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR ()-[r]-() ON EACH type(r)")), Set.empty)
+      ), Seq(details("INDEX FOR ()-[r]-() ON EACH type(r)")), Set.empty))
   }
 
   test("DropIndex") {

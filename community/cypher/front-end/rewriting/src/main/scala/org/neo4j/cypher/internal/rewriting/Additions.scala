@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.rewriting
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
+import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
@@ -216,6 +217,10 @@ object Additions {
 
       case c@ShowIndexesClause(_, LookupIndexes, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Using `LOOKUP` when listing indexes is not supported in this Cypher version.", c.position)
+
+      // CREATE LOOKUP INDEX ...
+      case c: CreateLookupIndex =>
+        throw cypherExceptionFactory.syntaxException("Lookup indexes are not supported in this Cypher version.", c.position)
     }
   }
 

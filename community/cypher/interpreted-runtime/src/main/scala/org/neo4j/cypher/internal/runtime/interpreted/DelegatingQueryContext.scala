@@ -168,6 +168,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def addIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
     singleDbHit(inner.addIndexRule(entityId, isNodeIndex, propertyKeyIds, name, provider, indexConfig))
 
+  override def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor =
+    singleDbHit(inner.addLookupIndexRule(isNodeIndex, name))
+
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = singleDbHit(inner.dropIndexRule(labelId, propertyKeyIds))
 
   override def dropIndexRule(name: String): Unit = singleDbHit(inner.dropIndexRule(name))
@@ -182,6 +185,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     singleDbHit(inner.constraintExists(matchFn, entityId, properties: _*))
 
   override def indexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = singleDbHit(inner.indexReference(entityId, isNodeIndex, properties:_*))
+
+  override def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor = singleDbHit(inner.lookupIndexReference(isNodeIndex))
 
   override def nodeIndexSeek(index: IndexReadSession,
                              needsValues: Boolean,

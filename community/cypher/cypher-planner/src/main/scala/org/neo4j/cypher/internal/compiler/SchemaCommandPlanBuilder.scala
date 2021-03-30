@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
+import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
@@ -144,6 +145,13 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       // CREATE INDEX [name] [IF NOT EXISTS] FOR ()-[r:RELATIONSHIP_TYPE]->() ON (r.prop) [OPTIONS {...}]
       case CreateBtreeRelationshipIndex(_, relType, props, name, ifExistsDo, options, _) =>
         createBtreeIndex(Right(relType), props, name, ifExistsDo, options)
+
+      case CreateLookupIndex(_, isNodeIndex, _, name, ifExistsDo, _, _) =>
+        val source = ifExistsDo match {
+          case IfExistsDoNothing => Some(plans.DoNothingIfExistsForLookupIndex(isNodeIndex, name))
+          case _ => None
+        }
+        Some(plans.CreateLookupIndex(source, isNodeIndex, name))
 
       // DROP INDEX ON :LABEL(prop)
       case DropIndex(label, props, _) =>

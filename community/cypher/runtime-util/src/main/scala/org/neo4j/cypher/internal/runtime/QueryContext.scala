@@ -125,6 +125,8 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def addIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor
 
+  def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor
+
   def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
   def dropIndexRule(name: String): Unit
@@ -132,6 +134,8 @@ trait QueryContext extends TokenContext with DbAccess {
   def getAllIndexes(): Map[IndexDescriptor, IndexInfo]
 
   def indexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor
+
+  def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor
 
   def indexExists(name: String): Boolean
 

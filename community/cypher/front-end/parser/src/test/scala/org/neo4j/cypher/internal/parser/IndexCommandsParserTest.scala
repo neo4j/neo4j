@@ -18,6 +18,9 @@ package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.functions.Count
+import org.neo4j.cypher.internal.expressions.functions.Labels
+import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.util.InputPosition
 
 /* Tests for creating and dropping indexes */
@@ -159,23 +162,186 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
       }
   }
 
+  Seq(
+    ("(n)", "labels(n)", lookupNodeIndex: CreateLookupIndexFunction),
+    ("()-[r]-()", "type(r)", lookupRelIndex: CreateLookupIndexFunction),
+    ("()-[r]->()", "type(r)", lookupRelIndex: CreateLookupIndexFunction),
+    ("()<-[r]-()", "type(r)", lookupRelIndex: CreateLookupIndexFunction)
+  ).foreach {
+    case (pattern, function, createIndex: CreateLookupIndexFunction) =>
+      test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function") {
+        yields(createIndex(None, ast.IfExistsThrowError, Map.empty))
+      }
+
+      test(s"USE neo4j CREATE LOOKUP INDEX FOR $pattern ON EACH $function") {
+        yields(_ => createIndex(None, ast.IfExistsThrowError, Map.empty).withGraph(Some(use(varFor("neo4j")))))
+      }
+
+      test(s"CREATE LOOKUP INDEX my_index FOR $pattern ON EACH $function") {
+        yields(createIndex(Some("my_index"), ast.IfExistsThrowError, Map.empty))
+      }
+
+      test(s"CREATE LOOKUP INDEX `$$my_index` FOR $pattern ON EACH $function") {
+        yields(createIndex(Some("$my_index"), ast.IfExistsThrowError, Map.empty))
+      }
+
+      test(s"CREATE OR REPLACE LOOKUP INDEX FOR $pattern ON EACH $function") {
+        yields(createIndex(None, ast.IfExistsReplace, Map.empty))
+      }
+
+      test(s"CREATE OR REPLACE LOOKUP INDEX my_index FOR $pattern ON EACH $function") {
+        yields(createIndex(Some("my_index"), ast.IfExistsReplace, Map.empty))
+      }
+
+      test(s"CREATE OR REPLACE LOOKUP INDEX IF NOT EXISTS FOR $pattern ON EACH $function") {
+        yields(createIndex(None, ast.IfExistsInvalidSyntax, Map.empty))
+      }
+
+      test(s"CREATE OR REPLACE LOOKUP INDEX my_index IF NOT EXISTS FOR $pattern ON EACH $function") {
+        yields(createIndex(Some("my_index"), ast.IfExistsInvalidSyntax, Map.empty))
+      }
+
+      test(s"CREATE LOOKUP INDEX IF NOT EXISTS FOR $pattern ON EACH $function") {
+        yields(createIndex(None, ast.IfExistsDoNothing, Map.empty))
+      }
+
+      test(s"CREATE LOOKUP INDEX my_index IF NOT EXISTS FOR $pattern ON EACH $function") {
+        yields(createIndex(Some("my_index"), ast.IfExistsDoNothing, Map.empty))
+      }
+
+      test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS {indexProvider : 'native-btree-1.0'}") {
+        yields(createIndex(None, ast.IfExistsThrowError, Map("indexProvider" -> literalString("native-btree-1.0"))))
+      }
+
+      test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
+        yields(createIndex(None, ast.IfExistsThrowError,
+          Map("indexProvider" -> literalString("lucene+native-3.0"),
+            "indexConfig"   -> mapOf(
+              "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
+              "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
+            )
+          )
+        ))
+      }
+
+      test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'lucene+native-3.0'}") {
+        yields(createIndex(None, ast.IfExistsThrowError,
+          Map("indexProvider" -> literalString("lucene+native-3.0"),
+            "indexConfig"   -> mapOf(
+              "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
+              "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
+            )
+          )
+        ))
+      }
+
+      test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}") {
+        yields(createIndex(None, ast.IfExistsThrowError,
+          Map("indexConfig" -> mapOf(
+            "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
+            "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
+          ))
+        ))
+      }
+
+      test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS {nonValidOption : 42}") {
+        yields(createIndex(None, ast.IfExistsThrowError, Map("nonValidOption" -> literalInt(42))))
+      }
+
+      test(s"CREATE LOOKUP INDEX my_index FOR $pattern ON EACH $function OPTIONS {}") {
+        yields(createIndex(Some("my_index"), ast.IfExistsThrowError, Map.empty))
+      }
+
+      test(s"CREATE LOOKUP INDEX $$my_index FOR $pattern ON EACH $function") {
+        failsToParse
+      }
+
+      test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function {indexProvider : 'native-btree-1.0'}") {
+        failsToParse
+      }
+
+      test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS") {
+        failsToParse
+      }
+  }
+
+  test("CREATE LOOKUP INDEX FOR (n) ON EACH count(n)") {
+    yields(ast.CreateLookupIndex(varFor("n"), isNodeIndex = true, function(Count.name, varFor("n")), None, ast.IfExistsThrowError, Map.empty))
+  }
+
+  test("CREATE LOOKUP INDEX FOR (n) ON EACH type(n)") {
+    yields(ast.CreateLookupIndex(varFor("n"), isNodeIndex = true, function(Type.name, varFor("n")), None, ast.IfExistsThrowError, Map.empty))
+  }
+
+  test("CREATE LOOKUP INDEX FOR (n) ON EACH labels(x)") {
+    yields(ast.CreateLookupIndex(varFor("n"), isNodeIndex = true, function(Labels.name, varFor("x")), None, ast.IfExistsThrowError, Map.empty))
+  }
+
+  test("CREATE LOOKUP INDEX FOR ()-[r]-() ON EACH count(r)") {
+    yields(ast.CreateLookupIndex(varFor("r"), isNodeIndex = false, function(Count.name, varFor("r")), None, ast.IfExistsThrowError, Map.empty))
+  }
+
+  test("CREATE LOOKUP INDEX FOR ()-[r]-() ON EACH labels(r)") {
+    yields(ast.CreateLookupIndex(varFor("r"), isNodeIndex = false, function(Labels.name, varFor("r")), None, ast.IfExistsThrowError, Map.empty))
+  }
+
+  test("CREATE LOOKUP INDEX FOR ()-[r]-() ON EACH type(x)") {
+    yields(ast.CreateLookupIndex(varFor("r"), isNodeIndex = false, function(Type.name, varFor("x")), None, ast.IfExistsThrowError, Map.empty))
+  }
+
+  test("CREATE LOOKUP INDEX FOR ()-[r]-() ON type(r)") {
+    yields(ast.CreateLookupIndex(varFor("r"), isNodeIndex = false, function(Type.name, varFor("r")), None, ast.IfExistsThrowError, Map.empty))
+  }
+
   test("CREATE INDEX FOR n:Person ON (n.name)") {
     failsToParse
   }
 
-  test("CREATE INDEX FOR -[n:R]-() ON (n.name)") {
+  test("CREATE INDEX FOR -[r:R]-() ON (r.name)") {
     failsToParse
   }
 
-  test("CREATE INDEX FOR ()-[n:R]- ON (n.name)") {
+  test("CREATE INDEX FOR ()-[r:R]- ON (r.name)") {
     failsToParse
   }
 
-  test("CREATE INDEX FOR -[n:R]- ON (n.name)") {
+  test("CREATE INDEX FOR -[r:R]- ON (r.name)") {
     failsToParse
   }
 
-  test("CREATE INDEX FOR [n:R] ON (n.name)") {
+  test("CREATE INDEX FOR [r:R] ON (r.name)") {
+    failsToParse
+  }
+
+  test("CREATE LOOKUP INDEX FOR n ON EACH labels(n)") {
+    failsToParse
+  }
+
+  test("CREATE LOOKUP INDEX FOR -[r]-() ON EACH type(r)") {
+    failsToParse
+  }
+
+  test("CREATE LOOKUP INDEX FOR ()-[r]- ON EACH type(r)") {
+    failsToParse
+  }
+
+  test("CREATE LOOKUP INDEX FOR -[r]- ON EACH type(r)") {
+    failsToParse
+  }
+
+  test("CREATE LOOKUP INDEX FOR [r] ON EACH type(r)") {
+    failsToParse
+  }
+
+  test("CREATE LOOKUP INDEX FOR (n) EACH labels(n)") {
+    failsToParse
+  }
+
+  test("CREATE LOOKUP INDEX FOR ()-[r]-() EACH type(r)") {
+    failsToParse
+  }
+
+  test("CREATE LOOKUP INDEX FOR (n) ON labels(n)") {
     failsToParse
   }
 
@@ -256,4 +422,16 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
                        ifExistsDo: ast.IfExistsDo,
                        options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
     ast.CreateBtreeRelationshipIndex(varFor("n"), relTypeName("R"), props, name, ifExistsDo, options)
+
+  type CreateLookupIndexFunction = (Option[String], ast.IfExistsDo, Map[String, expressions.Expression]) => InputPosition => ast.CreateIndex
+
+  private def lookupNodeIndex(name: Option[String],
+                        ifExistsDo: ast.IfExistsDo,
+                        options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
+    ast.CreateLookupIndex(varFor("n"), isNodeIndex = true, function(Labels.name, varFor("n")), name, ifExistsDo, options)
+
+  private def lookupRelIndex(name: Option[String],
+                       ifExistsDo: ast.IfExistsDo,
+                       options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
+    ast.CreateLookupIndex(varFor("r"), isNodeIndex = false, function(Type.name, varFor("r")), name, ifExistsDo, options)
 }

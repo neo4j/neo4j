@@ -200,6 +200,8 @@ object StaticEvaluation {
 
     override def addIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = notAvailable()
 
+    override def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor = notAvailable()
+
     override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = notAvailable()
 
     override def dropIndexRule(name: String): Unit = notAvailable()
@@ -213,6 +215,8 @@ object StaticEvaluation {
     override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean = notAvailable()
 
     override def indexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = notAvailable()
+
+    override def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor = notAvailable()
 
     override def nodeIndexSeek(index: IndexReadSession, needsValues: Boolean, indexOrder: IndexOrder, queries: Seq[PropertyIndexQuery]): NodeValueIndexCursor = notAvailable()
 

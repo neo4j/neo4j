@@ -33,6 +33,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition
 import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.graphdb.schema.IndexDefinition
 import org.neo4j.graphdb.schema.IndexSetting
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.internal.schema.IndexProviderDescriptor
@@ -176,6 +177,12 @@ trait GraphIcing {
       } )
     }
 
+    def getLookupIndex(isNodeIndex: Boolean): IndexDefinition = {
+      withTx( tx => {
+        tx.schema().getIndexes().asScala.find(id => id.getIndexType.equals(IndexType.LOOKUP) && id.isNodeIndex == isNodeIndex).get
+      })
+    }
+
     def getMaybeNodeIndex(label: String, properties: Seq[String]): Option[IndexDefinition] = {
       withTx( tx =>  {
         tx.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList)
@@ -188,12 +195,25 @@ trait GraphIcing {
       } )
     }
 
+    def getMaybeLookupIndex(isNodeIndex: Boolean): Option[IndexDefinition] = {
+      withTx( tx => {
+        tx.schema().getIndexes().asScala.find(id => id.getIndexType.equals(IndexType.LOOKUP) && id.isNodeIndex == isNodeIndex)
+      })
+    }
+
     def getIndexSchemaByName(name: String): (String, Seq[String]) = {
       withTx( tx =>  {
         val index = tx.schema().getIndexByName(name)
         val labelOrRelType = if (index.isNodeIndex) Iterables.single(index.getLabels).name() else Iterables.single(index.getRelationshipTypes).name()
         val properties = index.getPropertyKeys.asScala.toList
         (labelOrRelType, properties)
+      } )
+    }
+
+    def getLookupIndexByName(name: String): (IndexType, Boolean) = {
+      withTx( tx =>  {
+        val index = tx.schema().getIndexByName(name)
+        (index.getIndexType, index.isNodeIndex)
       } )
     }
 

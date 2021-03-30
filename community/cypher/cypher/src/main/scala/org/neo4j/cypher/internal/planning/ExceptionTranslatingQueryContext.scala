@@ -133,6 +133,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def addIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
     translateException(tokenNameLookup, inner.addIndexRule(entityId, isNodeIndex, propertyKeyIds, name, provider, indexConfig))
 
+  override def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addLookupIndexRule(isNodeIndex, name))
+
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     translateException(tokenNameLookup, inner.dropIndexRule(labelId, propertyKeyIds))
 
@@ -153,6 +156,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def indexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor =
     translateException(tokenNameLookup, inner.indexReference(entityId, isNodeIndex, properties:_*))
+
+  override def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor =
+    translateException(tokenNameLookup, inner.lookupIndexReference(isNodeIndex))
 
   override def nodeIndexSeek(index: IndexReadSession,
                              needsValues: Boolean,

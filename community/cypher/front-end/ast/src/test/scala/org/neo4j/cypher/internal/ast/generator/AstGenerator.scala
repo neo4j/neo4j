@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.ast.CreateElementAction
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateIndexAction
 import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
+import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
@@ -350,6 +351,8 @@ import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
+import org.neo4j.cypher.internal.expressions.functions.Labels
+import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.CTString
@@ -1204,7 +1207,9 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     use             <- option(_use)
     btreeNodeIndex  = CreateBtreeNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
     btreeRelIndex   = CreateBtreeRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
-    command         <- oneOf(btreeNodeIndex, btreeRelIndex)
+    lookupNodeIndex = CreateLookupIndex(variable, isNodeIndex = true, FunctionInvocation(FunctionName(Labels.name)(pos), distinct = false, IndexedSeq(variable))(pos), name, ifExistsDo, options, use)(pos)
+    lookupRelIndex  = CreateLookupIndex(variable, isNodeIndex = false, FunctionInvocation(FunctionName(Type.name)(pos), distinct = false, IndexedSeq(variable))(pos), name, ifExistsDo, options, use)(pos)
+    command         <- oneOf(btreeNodeIndex, btreeRelIndex, lookupNodeIndex, lookupRelIndex)
   } yield command
 
   def _dropIndex: Gen[DropIndexOnName] = for {

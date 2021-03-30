@@ -282,6 +282,36 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "create INDEX foo IF not EXISTS FOR ()-[n:R]-() ON (n.p)" ->
       "CREATE INDEX foo IF NOT EXISTS FOR ()-[n:R]-() ON (n.p)",
 
+    "CREATE lookup INDEX FOR (n) ON each labels(n)" ->
+      "CREATE LOOKUP INDEX FOR (n) ON EACH labels(n)",
+
+    "CREATE lookup INDEX foo FOR (n) ON each labels(n)" ->
+      "CREATE LOOKUP INDEX foo FOR (n) ON EACH labels(n)",
+
+    "CREATE lookup INDEX IF NOT EXISTS FOR (n) ON each labels(n)" ->
+      "CREATE LOOKUP INDEX IF NOT EXISTS FOR (n) ON EACH labels(n)",
+
+    "CREATE OR REPLACE lookup INDEX foo FOR (n) ON each labels(n) OPTIONS {}" ->
+      "CREATE OR REPLACE LOOKUP INDEX foo FOR (n) ON EACH labels(n)",
+
+    "CREATE LOOKUP index FOR (n) ON each labels(n) OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+      """CREATE LOOKUP INDEX FOR (n) ON EACH labels(n) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+
+    "CREATE lookup INDEX FOR ()-[r]-() ON each type(r)" ->
+      "CREATE LOOKUP INDEX FOR ()-[r]-() ON EACH type(r)",
+
+    "CREATE lookup INDEX foo FOR ()-[r]-() ON type(r)" ->
+      "CREATE LOOKUP INDEX foo FOR ()-[r]-() ON EACH type(r)",
+
+    "CREATE lookup INDEX IF NOT EXISTS FOR ()-[r]-() ON each type(r)" ->
+      "CREATE LOOKUP INDEX IF NOT EXISTS FOR ()-[r]-() ON EACH type(r)",
+
+    "CREATE OR REPLACE lookup INDEX foo FOR ()-[r]-() ON type(r) OPTIONS {}" ->
+      "CREATE OR REPLACE LOOKUP INDEX foo FOR ()-[r]-() ON EACH type(r)",
+
+    "CREATE LOOKUP index FOR ()-[r]-() ON each type(r) OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+      """CREATE LOOKUP INDEX FOR ()-[r]-() ON EACH type(r) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+
     "drop INDEX ON :A(p)" ->
       "DROP INDEX ON :A(p)",
 
