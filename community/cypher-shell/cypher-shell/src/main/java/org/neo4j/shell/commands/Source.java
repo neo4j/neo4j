@@ -20,7 +20,6 @@
 package org.neo4j.shell.commands;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -91,11 +90,15 @@ public class Source implements Command
     {
         String filename = simpleArgParse( argString, 1, 1, COMMAND_NAME, getUsage() )[0];
 
-        try ( BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( new FileInputStream( new File( filename ) ) ) ) )
+        try ( BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( new FileInputStream( filename ) ) ) )
         {
             bufferedReader.lines()
                           .forEach( line -> statementParser.parseMoreText( line + "\n" ) );
             List<String> statements = statementParser.consumeStatements();
+
+            // Executing this could fail but we try anyway to avoid hiding errors
+            statementParser.incompleteStatement().ifPresent( statements::add );
+
             for ( String statement : statements )
             {
                 cypherShell.execute( statement );
