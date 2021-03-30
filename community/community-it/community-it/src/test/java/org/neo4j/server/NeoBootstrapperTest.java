@@ -76,7 +76,7 @@ class NeoBootstrapperTest
     }
 
     @Test
-    void shouldNotThrowNullPointerExceptionIfConfigurationValidationFails() throws Exception
+    void shouldNotThrowNullPointerExceptionIfConfigurationValidationFails()
     {
         // given
         neoBootstrapper = new CommunityBootstrapper();
@@ -94,7 +94,7 @@ class NeoBootstrapperTest
     }
 
     @Test
-    void shouldFailToStartIfRequestedPageCacheMemoryExceedsTotal() throws Exception
+    void shouldFailToStartIfRequestedPageCacheMemoryExceedsTotal()
     {
         // given
         neoBootstrapper = new CommunityBootstrapper();
@@ -114,7 +114,7 @@ class NeoBootstrapperTest
     }
 
     @Test
-    void shouldFailToStartIfRequestedHeapMemoryExceedsTotal() throws Exception
+    void shouldFailToStartIfRequestedHeapMemoryExceedsTotal()
     {
         // given
         neoBootstrapper = new CommunityBootstrapper();
@@ -135,7 +135,7 @@ class NeoBootstrapperTest
     }
 
     @Test
-    void shouldFailToStartIfRequestedHeapAndPageCacheMemoryExceedsTotal() throws Exception
+    void shouldFailToStartIfRequestedHeapAndPageCacheMemoryExceedsTotal()
     {
         // given
         neoBootstrapper = new CommunityBootstrapper();
@@ -156,7 +156,7 @@ class NeoBootstrapperTest
     }
 
     @Test
-    void shouldFailToStartIfCalculatedPageCacheSizeExceedsTotalMemory() throws Exception
+    void shouldFailToStartIfCalculatedPageCacheSizeExceedsTotalMemory()
     {
         // given
         neoBootstrapper = new CommunityBootstrapper();
@@ -173,5 +173,23 @@ class NeoBootstrapperTest
         assertThat( neoBootstrapper.start( dir, config ) ).isNotEqualTo( NeoBootstrapper.OK );
         assertThat( suppress.getOutputVoice().lines() )
                 .anySatisfy( line -> assertThat( line ).containsSubsequence( "Invalid memory configuration - exceeds physical memory." ) );
+    }
+
+    @Test
+    void ignoreMemoryChecksIfTotalMemoryIsNotAvailable()
+    {
+        // given
+        neoBootstrapper = new CommunityBootstrapper();
+        Map<String,String> config = MapUtil.stringMap();
+
+        // Mock heap usage and free memory.
+        MachineMemory mockedMemory = mock( MachineMemory.class );
+        MemoryUsage heapMemory = new MemoryUsage( 0, 1, 1, 10 );
+        when( mockedMemory.getTotalPhysicalMemory() ).thenReturn( 0L );
+        when( mockedMemory.getHeapMemoryUsage() ).thenReturn( heapMemory );
+        neoBootstrapper.setMachineMemory( mockedMemory );
+
+        assertThat( neoBootstrapper.start( dir, config ) ).isEqualTo( NeoBootstrapper.OK );
+        assertThat( suppress.getOutputVoice().containsMessage( "Unable to determine total physical memory of machine." ) ).isTrue();
     }
 }

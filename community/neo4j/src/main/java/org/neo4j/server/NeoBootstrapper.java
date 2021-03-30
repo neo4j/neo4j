@@ -163,6 +163,12 @@ public abstract class NeoBootstrapper implements Bootstrapper
         MemoryUsage heapMemoryUsage = machineMemory.getHeapMemoryUsage();
         long totalPhysicalMemory = machineMemory.getTotalPhysicalMemory();
 
+        if ( totalPhysicalMemory == 0 )
+        {
+            log.warn( "Unable to determine total physical memory of machine. JVM is most likely running in a container that do not expose that." );
+            return false;
+        }
+
         return totalPhysicalMemory != OsBeanUtil.VALUE_UNAVAILABLE  && pageCacheSize + heapMemoryUsage.getMax() > totalPhysicalMemory;
     }
 
