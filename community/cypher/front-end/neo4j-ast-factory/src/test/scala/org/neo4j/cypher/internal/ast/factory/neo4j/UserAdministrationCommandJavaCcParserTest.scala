@@ -465,6 +465,113 @@ class UserAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertJavaCCException(testName, exceptionMessage)
   }
 
+  // Renaming user
+
+  test("RENAME USER foo TO bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME USER foo TO $bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME USER $foo TO bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME USER $foo TO $bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME USER foo IF EXISTS TO bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME USER foo IF EXISTS TO $bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME USER $foo IF EXISTS TO bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME USER $foo IF EXISTS TO $bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME USER foo TO ``") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME USER `` TO bar") {
+    assertSameAST(testName)
+  }
+
+  test("RENAME USER foo TO") {
+    assertJavaCCException(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 19 (offset: 18))")
+  }
+
+  test("RENAME USER TO bar") {
+    assertJavaCCException(testName, "Invalid input 'bar': expected \"IF\" or \"TO\" (line 1, column 16 (offset: 15))")
+  }
+
+  test("RENAME USER TO") {
+    assertJavaCCException(testName, "Invalid input '': expected \"IF\" or \"TO\" (line 1, column 15 (offset: 14))")
+  }
+
+  test("RENAME USER foo SET NAME TO bar") {
+    assertJavaCCException(testName, "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))")
+  }
+
+  test("RENAME USER foo SET NAME bar") {
+    assertJavaCCException(testName, "Invalid input 'SET': expected \"IF\" or \"TO\" (line 1, column 17 (offset: 16))")
+  }
+
+  test("ALTER USER foo SET NAME bar") {
+    val exceptionMessage =
+      s"""Invalid input 'NAME': expected
+         |  "ENCRYPTED"
+         |  "HOME"
+         |  "PASSWORD"
+         |  "PLAINTEXT"
+         |  "STATUS" (line 1, column 20 (offset: 19))""".stripMargin
+
+    assertJavaCCException(testName, exceptionMessage)
+  }
+
+  test("ALTER USER foo SET PASSWORD 'secret' SET NAME bar") {
+      s"""Invalid input 'NAME': expected
+         |  "ALL"
+         |  "CURRENT"
+         |  "DATABASE"
+         |  "DATABASES"
+         |  "DEFAULT"
+         |  "HOME"
+         |  "POPULATED"
+         |  "ROLES"
+         |  "USERS" (line 1, column 42 (offset: 41))""".stripMargin
+  }
+
+  test("RENAME USER foo IF EXIST TO bar") {
+    assertJavaCCException(testName, "Invalid input 'EXIST': expected \"EXISTS\" (line 1, column 20 (offset: 19))")
+  }
+
+  test("RENAME USER foo IF NOT EXISTS TO bar") {
+    assertJavaCCException(testName, "Invalid input 'NOT': expected \"EXISTS\" (line 1, column 20 (offset: 19))")
+  }
+
+  test("RENAME USER foo TO bar IF EXISTS") {
+    assertJavaCCException(testName, "Invalid input 'IF': expected <EOF> (line 1, column 24 (offset: 23))")
+  }
+
+  test("RENAME IF EXISTS USER foo TO bar") {
+    assertJavaCCException(testName, "Invalid input 'IF': expected \"ROLE\" or \"USER\" (line 1, column 8 (offset: 7))")
+  }
+
+  test("RENAME OR REPLACE USER foo TO bar") {
+    assertJavaCCException(testName, "Invalid input 'OR': expected \"ROLE\" or \"USER\" (line 1, column 8 (offset: 7))")
+  }
+
   //  Dropping user
 
   test("DROP USER foo") {

@@ -361,6 +361,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
+    public NULL renameUser( NULL p, Either<String,Object> fromUserName, Either<String,Object> toUserName, boolean ifExists )
+    {
+        throw new UnsupportedOperationException( "renameUser is not a literal" );
+    }
+
+    @Override
     public NULL setOwnPassword( NULL p, Object currentPassword, Object newPassword )
     {
         throw new UnsupportedOperationException( "setOwnPassword is not a literal" );

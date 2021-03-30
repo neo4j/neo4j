@@ -3060,6 +3060,7 @@ ADMINISTRATION_COMMAND RenameCommand():
     start=<RENAME>
     (
         command=RenameRole( start )
+        | command=RenameUser( start )
     )
     {
         return command;
@@ -3206,6 +3207,23 @@ ADMINISTRATION_COMMAND DropUser( Token start ) :
     ( <IF> <EXISTS> { ifExists = true; } )?
     {
         return astFactory.dropUser( pos( start ), ifExists, username );
+    }
+}
+
+ADMINISTRATION_COMMAND RenameUser(Token start):
+{
+    Either<String, PARAMETER> fromUserName = null;
+    Either<String, PARAMETER> toUserName = null;
+    boolean ifExists = false;
+}
+{
+    <USER>
+    fromUserName=SymbolicNameOrStringParameter()
+    (<IF> <EXISTS> { ifExists = true; } )?
+    <TO>
+    toUserName=SymbolicNameOrStringParameter()
+    {
+        return astFactory.renameUser( pos( start ), fromUserName, toUserName, ifExists );
     }
 }
 

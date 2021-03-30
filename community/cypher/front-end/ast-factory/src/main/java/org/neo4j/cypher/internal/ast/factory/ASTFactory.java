@@ -247,6 +247,8 @@ public interface ASTFactory<STATEMENT,
 
     ADMINISTRATION_COMMAND dropUser( POS p, boolean ifExists, Either<String, PARAMETER> username );
 
+    ADMINISTRATION_COMMAND renameUser( POS p, Either<String, PARAMETER> fromUserName, Either<String, PARAMETER> toUserName, boolean ifExists );
+
     ADMINISTRATION_COMMAND setOwnPassword( POS p, EXPRESSION currentPassword, EXPRESSION newPassword );
 
     ADMINISTRATION_COMMAND alterUser( POS p,

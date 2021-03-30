@@ -19,11 +19,6 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import java.lang
-import java.nio.charset.StandardCharsets
-import java.util
-import java.util.stream.Collectors
-
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
@@ -85,6 +80,7 @@ import org.neo4j.cypher.internal.ast.RemoveItem
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.RenameRole
+import org.neo4j.cypher.internal.ast.RenameUser
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
@@ -227,6 +223,10 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTString
 
+import java.lang
+import java.nio.charset.StandardCharsets
+import java.util
+import java.util.stream.Collectors
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.util.Either
 
@@ -946,6 +946,10 @@ class Neo4jASTFactory(query: String)
 
   override def dropUser(p: InputPosition, ifExists: Boolean, username: Either[String, Parameter]): DropUser = {
     DropUser(username, ifExists)(p)
+  }
+
+  override def renameUser(p: InputPosition, fromUserName: Either[String, Parameter], toUserName: Either[String, Parameter], ifExists: Boolean): RenameUser = {
+    RenameUser(fromUserName, toUserName, ifExists)(p)
   }
 
   override def setOwnPassword(p: InputPosition, currentPassword: Expression, newPassword: Expression): SetOwnPassword = {
