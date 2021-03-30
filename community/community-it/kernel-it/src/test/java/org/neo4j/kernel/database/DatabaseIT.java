@@ -20,6 +20,7 @@
 package org.neo4j.kernel.database;
 
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -98,6 +99,12 @@ class DatabaseIT
         pageCacheWrapper = new PageCacheWrapper( pageCacheExtension.getPageCache( fs ) );
         dependencies.satisfyDependency( pageCacheWrapper );
         builder.setInternalLogProvider( logProvider ).setExternalDependencies( dependencies );
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        pageCacheWrapper.close();
     }
 
     @Test

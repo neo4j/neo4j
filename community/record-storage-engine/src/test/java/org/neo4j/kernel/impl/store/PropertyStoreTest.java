@@ -78,38 +78,40 @@ class PropertyStoreTest
     void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord() throws IOException
     {
         // given
-        PageCache pageCache = pageCacheExtension.getPageCache( fs );
-        Config config = Config.defaults();
-
-        DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
-
-        try ( var store = new PropertyStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
-                pageCache, NullLogProvider.getInstance(), stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
-                RecordFormatSelector.defaultFormat(), writable(), databaseLayout.getDatabaseName(), immutable.empty() ) )
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( fs ) )
         {
-            store.initialise( true, NULL );
-            store.start( NULL );
-            final long propertyRecordId = store.nextId( NULL );
+            Config config = Config.defaults();
 
-            PropertyRecord record = new PropertyRecord( propertyRecordId );
-            record.setInUse( true );
+            DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
 
-            DynamicRecord dynamicRecord = dynamicRecord();
-            PropertyBlock propertyBlock = propertyBlockWith( dynamicRecord );
-            record.setPropertyBlock( propertyBlock );
-
-            doAnswer( invocation ->
+            try ( var store = new PropertyStore( storeFile, idFile, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
+                    pageCache, NullLogProvider.getInstance(), stringPropertyStore, mock( PropertyKeyTokenStore.class ), mock( DynamicArrayStore.class ),
+                    RecordFormatSelector.defaultFormat(), writable(), databaseLayout.getDatabaseName(), immutable.empty() ) )
             {
-                PropertyRecord recordBeforeWrite = store.getRecord( propertyRecordId, store.newRecord(), FORCE, NULL );
-                assertFalse( recordBeforeWrite.inUse() );
-                return null;
-            } ).when( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any() );
+                store.initialise( true, NULL );
+                store.start( NULL );
+                final long propertyRecordId = store.nextId( NULL );
 
-            // when
-            store.updateRecord( record, NULL );
+                PropertyRecord record = new PropertyRecord( propertyRecordId );
+                record.setInUse( true );
 
-            // then verify that our mocked method above, with the assert, was actually called
-            verify( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any(), any() );
+                DynamicRecord dynamicRecord = dynamicRecord();
+                PropertyBlock propertyBlock = propertyBlockWith( dynamicRecord );
+                record.setPropertyBlock( propertyBlock );
+
+                doAnswer( invocation ->
+                {
+                    PropertyRecord recordBeforeWrite = store.getRecord( propertyRecordId, store.newRecord(), FORCE, NULL );
+                    assertFalse( recordBeforeWrite.inUse() );
+                    return null;
+                } ).when( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any() );
+
+                // when
+                store.updateRecord( record, NULL );
+
+                // then verify that our mocked method above, with the assert, was actually called
+                verify( stringPropertyStore ).updateRecord( eq( dynamicRecord ), any(), any() );
+            }
         }
     }
 

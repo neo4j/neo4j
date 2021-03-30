@@ -95,6 +95,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
 
     private TestLayout<KEY,VALUE> layout;
     private GBPTree<KEY,VALUE> index;
+    private PageCache pageCache;
     private final ExecutorService threadPool =
             Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
 
@@ -102,7 +103,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
     {
         int pageSize = 512;
         layout = getLayout( random, pageSize );
-        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
+        pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
         return this.index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
     }
 
@@ -114,6 +115,7 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
         threadPool.shutdownNow();
         index.consistencyCheck( NULL );
         index.close();
+        pageCache.close();
     }
 
     @Test

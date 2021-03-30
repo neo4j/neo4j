@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -127,6 +128,12 @@ class MetaDataStoreTest
                 };
             }
         };
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        pageCache.close();
     }
 
     @Test

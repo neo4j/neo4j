@@ -99,6 +99,7 @@ class NodeStoreTest
 
     private NodeStore nodeStore;
     private NeoStores neoStores;
+    private PageCache pageCache;
 
     @AfterEach
     void tearDown()
@@ -106,6 +107,10 @@ class NodeStoreTest
         if ( neoStores != null )
         {
             neoStores.close();
+        }
+        if ( pageCache != null )
+        {
+            pageCache.close();
         }
     }
 
@@ -415,7 +420,8 @@ class NodeStoreTest
 
     private NodeStore newNodeStore( FileSystemAbstraction fs )
     {
-        return newNodeStore( fs, pageCacheExtension.getPageCache( fs ) );
+        pageCache = pageCacheExtension.getPageCache( fs );
+        return newNodeStore( fs, pageCache );
     }
 
     private NodeStore newNodeStore( FileSystemAbstraction fs, PageCache pageCache )

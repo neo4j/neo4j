@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -59,22 +60,26 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
 
     private AtomicBoolean nextReadIsInconsistent;
 
+    private NeoStores neoStores;
+    private PageCache pageCache;
+
     @BeforeEach
     void setUp()
     {
         nextReadIsInconsistent = new AtomicBoolean();
-    }
-
-    private NeoStores storeFixture()
-    {
-        PageCache pageCache = pageCacheExtension.getPageCache( fs,
-                config().withInconsistentReads( nextReadIsInconsistent ) );
+        pageCache = pageCacheExtension.getPageCache( fs, config().withInconsistentReads( nextReadIsInconsistent ) );
         StoreFactory factory =
                 new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
-                pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() );
-        NeoStores neoStores = factory.openAllNeoStores( true );
+                        pageCache, fs, NullLogProvider.getInstance(), PageCacheTracer.NULL, writable() );
+        neoStores = factory.openAllNeoStores( true );
         initialiseStore( neoStores );
-        return neoStores;
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        neoStores.close();
+        pageCache.close();
     }
 
     protected S initialiseStore( NeoStores neoStores )
@@ -109,34 +114,25 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
     @Test
     void mustReadExistingRecord()
     {
-        try ( NeoStores neoStores = storeFixture() )
-        {
-            S store = getStore( neoStores );
-            R record = getHeavy( store, ID );
-            assertRecordsEqual( record, createExistingRecord( false ) );
-        }
+        S store = getStore( neoStores );
+        R record = getHeavy( store, ID );
+        assertRecordsEqual( record, createExistingRecord( false ) );
     }
 
     @Test
     void mustReadExistingLightRecord()
     {
-        try ( NeoStores neoStores = storeFixture() )
-        {
-            S store = getStore( neoStores );
-            R record = getLight( ID, store );
-            assertRecordsEqual( record, createExistingRecord( true ) );
-        }
+        S store = getStore( neoStores );
+        R record = getLight( ID, store );
+        assertRecordsEqual( record, createExistingRecord( true ) );
     }
 
     @Test
     void mustForceReadExistingRecord()
     {
-        try ( NeoStores neoStores = storeFixture() )
-        {
-            S store = getStore( neoStores );
-            R record = getForce( store, ID );
-            assertRecordsEqual( record, createExistingRecord( true ) );
-        }
+        S store = getStore( neoStores );
+        R record = getForce( store, ID );
+        assertRecordsEqual( record, createExistingRecord( true ) );
     }
 
     @Test
@@ -144,59 +140,44 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
     {
         assertThrows( InvalidRecordException.class, () ->
         {
-            try ( NeoStores neoStores = storeFixture() )
-            {
-                S store = getStore( neoStores );
-                getHeavy( store, ID + 1 );
-            }
+            S store = getStore( neoStores );
+            getHeavy( store, ID + 1 );
         } );
     }
 
     @Test
     void forceReadingNonExistingRecordMustReturnEmptyRecordWithThatId()
     {
-        try ( NeoStores neoStores = storeFixture() )
-        {
-            S store = getStore( neoStores );
-            R record = getForce( store, ID + 1 );
-            R nullRecord = createNullRecord( ID + 1 );
-            assertRecordsEqual( record, nullRecord );
-        }
+        S store = getStore( neoStores );
+        R record = getForce( store, ID + 1 );
+        R nullRecord = createNullRecord( ID + 1 );
+        assertRecordsEqual( record, nullRecord );
     }
 
     @Test
     void mustRetryInconsistentReads()
     {
-        try ( NeoStores neoStores = storeFixture() )
-        {
-            S store = getStore( neoStores );
-            nextReadIsInconsistent.set( true );
-            R record = getHeavy( store, ID );
-            assertRecordsEqual( record, createExistingRecord( false ) );
-        }
+        S store = getStore( neoStores );
+        nextReadIsInconsistent.set( true );
+        R record = getHeavy( store, ID );
+        assertRecordsEqual( record, createExistingRecord( false ) );
     }
 
     @Test
     void mustRetryInconsistentLightReads()
     {
-        try ( NeoStores neoStores = storeFixture() )
-        {
-            S store = getStore( neoStores );
-            nextReadIsInconsistent.set( true );
-            R record = getLight( ID, store );
-            assertRecordsEqual( record, createExistingRecord( true ) );
-        }
+        S store = getStore( neoStores );
+        nextReadIsInconsistent.set( true );
+        R record = getLight( ID, store );
+        assertRecordsEqual( record, createExistingRecord( true ) );
     }
 
     @Test
     void mustRetryInconsistentForcedReads()
     {
-        try ( NeoStores neoStores = storeFixture() )
-        {
-            S store = getStore( neoStores );
-            nextReadIsInconsistent.set( true );
-            R record = getForce( store, ID );
-            assertRecordsEqual( record, createExistingRecord( true ) );
-        }
+        S store = getStore( neoStores );
+        nextReadIsInconsistent.set( true );
+        R record = getForce( store, ID );
+        assertRecordsEqual( record, createExistingRecord( true ) );
     }
 }

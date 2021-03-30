@@ -413,31 +413,35 @@ class DatabaseRecoveryIT
         managementService.shutdown();
         fs.close();
         Dependencies dependencies = new Dependencies();
-        PageCache pageCache = pageCacheExtension.getPageCache( crashedFs );
-        dependencies.satisfyDependencies( pageCache );
-
-        Monitors monitors = new Monitors();
-        AtomicReference<EphemeralFileSystemAbstraction> reversedFs = new AtomicReference<>();
-        monitors.addMonitorListener( new RecoveryMonitor()
+        Monitors monitors;
+        AtomicReference<EphemeralFileSystemAbstraction> reversedFs;
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( crashedFs ) )
         {
-            @Override
-            public void reverseStoreRecoveryCompleted( long checkpointTxId )
-            {
-                try
-                {
-                    // Flush the page cache which will fished out of the GlobalModule at the point of constructing the database
-                    pageCache.flushAndForce();
-                }
-                catch ( IOException e )
-                {
-                    throw new UncheckedIOException( e );
-                }
+            dependencies.satisfyDependencies( pageCache );
 
-                // The stores should now be equal in content to the db as it was right after the checkpoint.
-                // Grab a snapshot so that we can compare later.
-                reversedFs.set( crashedFs.snapshot() );
-            }
-        } );
+            monitors = new Monitors();
+            reversedFs = new AtomicReference<>();
+            monitors.addMonitorListener( new RecoveryMonitor()
+            {
+                @Override
+                public void reverseStoreRecoveryCompleted( long checkpointTxId )
+                {
+                    try
+                    {
+                        // Flush the page cache which will fished out of the GlobalModule at the point of constructing the database
+                        pageCache.flushAndForce();
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new UncheckedIOException( e );
+                    }
+
+                    // The stores should now be equal in content to the db as it was right after the checkpoint.
+                    // Grab a snapshot so that we can compare later.
+                    reversedFs.set( crashedFs.snapshot() );
+                }
+            } );
+        }
         DatabaseManagementService managementService =
                 new TestDatabaseManagementServiceBuilder( directory.homePath() ).setFileSystem( crashedFs ).setExternalDependencies(
                         dependencies ).setMonitors( monitors ).impermanent().build();

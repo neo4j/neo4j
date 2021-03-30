@@ -80,6 +80,7 @@ class CrashGenerationCleanerTest
     private static final int PAGE_SIZE = 256;
 
     private PagedFile pagedFile;
+    private PageCache pageCache;
     private final Layout<MutableLong,MutableLong> layout = longLayout().build();
     private final TreeNode<MutableLong,MutableLong> treeNode = new TreeNodeFixedSize<>( PAGE_SIZE, layout );
     private static ExecutorService executorService;
@@ -122,8 +123,7 @@ class CrashGenerationCleanerTest
     @BeforeEach
     void setupPagedFile() throws IOException
     {
-        PageCache pageCache = pageCacheExtension
-                .getPageCache( fileSystem, config().withPageSize( PAGE_SIZE ).withAccessChecks( true ) );
+        pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( PAGE_SIZE ).withAccessChecks( true ) );
         pagedFile = pageCache.map( testDirectory.file( FILE_NAME ), PAGE_SIZE, DATABASE_NAME, immutable.of( CREATE, DELETE_ON_CLOSE ) );
     }
 
@@ -131,6 +131,7 @@ class CrashGenerationCleanerTest
     void teardownPagedFile()
     {
         pagedFile.close();
+        pageCache.close();
     }
 
     @Test

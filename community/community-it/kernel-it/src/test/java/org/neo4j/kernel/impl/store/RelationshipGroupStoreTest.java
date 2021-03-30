@@ -75,11 +75,13 @@ class RelationshipGroupStoreTest
     private int defaultThreshold;
     private GraphDatabaseAPI db;
     private DatabaseManagementService managementService;
+    private PageCache pageCache;
 
     @BeforeEach
     void before()
     {
         defaultThreshold = dense_node_threshold.defaultValue();
+        pageCache = pageCacheExtension.getPageCache( fs );
     }
 
     @AfterEach
@@ -89,6 +91,7 @@ class RelationshipGroupStoreTest
         {
             managementService.shutdown();
         }
+        pageCache.close();
     }
 
     @Test
@@ -160,7 +163,7 @@ class RelationshipGroupStoreTest
 
     private StoreFactory factory( Integer customThreshold )
     {
-        return factory( customThreshold, pageCacheExtension.getPageCache( fs ) );
+        return factory( customThreshold, pageCache );
     }
 
     private StoreFactory factory( Integer customThreshold, PageCache pageCache )
@@ -312,20 +315,21 @@ class RelationshipGroupStoreTest
     void checkingIfRecordIsInUseMustHappenAfterConsistentRead()
     {
         AtomicBoolean nextReadIsInconsistent = new AtomicBoolean( false );
-        PageCache pageCache = pageCacheExtension.getPageCache( fs,
-                config().withInconsistentReads( nextReadIsInconsistent ) );
-        StoreFactory factory = factory( null, pageCache );
-
-        try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( fs, config().withInconsistentReads( nextReadIsInconsistent ) ) )
         {
-            RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
-            RelationshipGroupRecord record = new RelationshipGroupRecord( 1 ).initialize( true, 2, 3, 4, 5, 6,
-                    Record.NO_NEXT_RELATIONSHIP.intValue() );
-            relationshipGroupStore.updateRecord( record, PageCursorTracer.NULL );
-            nextReadIsInconsistent.set( true );
-            // Now the following should not throw any RecordNotInUse exceptions
-            RelationshipGroupRecord readBack = relationshipGroupStore.getRecord( 1, relationshipGroupStore.newRecord(), NORMAL, PageCursorTracer.NULL );
-            assertThat( readBack.toString() ).isEqualTo( record.toString() );
+            StoreFactory factory = factory( null, pageCache );
+
+            try ( NeoStores neoStores = factory.openAllNeoStores( true ) )
+            {
+                RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
+                RelationshipGroupRecord record = new RelationshipGroupRecord( 1 ).initialize( true, 2, 3, 4, 5, 6,
+                        Record.NO_NEXT_RELATIONSHIP.intValue() );
+                relationshipGroupStore.updateRecord( record, PageCursorTracer.NULL );
+                nextReadIsInconsistent.set( true );
+                // Now the following should not throw any RecordNotInUse exceptions
+                RelationshipGroupRecord readBack = relationshipGroupStore.getRecord( 1, relationshipGroupStore.newRecord(), NORMAL, PageCursorTracer.NULL );
+                assertThat( readBack.toString() ).isEqualTo( record.toString() );
+            }
         }
     }
 

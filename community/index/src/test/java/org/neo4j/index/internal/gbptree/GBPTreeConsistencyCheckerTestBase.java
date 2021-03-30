@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.list.primitive.ImmutableLongList;
 import org.eclipse.collections.api.list.primitive.LongList;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,6 +84,12 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY,VALUE>
         layout = getLayout();
         randomValues = random.randomValues();
         isDynamic = !layout.fixedSize();
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        pageCache.close();
     }
 
     protected abstract TestLayout<KEY,VALUE> getLayout();

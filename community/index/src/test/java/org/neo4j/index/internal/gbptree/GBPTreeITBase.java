@@ -20,6 +20,8 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -66,6 +68,7 @@ abstract class GBPTreeITBase<KEY,VALUE>
     private double ratioToKeepInLeftOnSplit;
     private TestLayout<KEY,VALUE> layout;
     private GBPTree<KEY,VALUE> index;
+    private PageCache pageCache;
 
     @Before
     public void setup()
@@ -73,12 +76,20 @@ abstract class GBPTreeITBase<KEY,VALUE>
         ratioToKeepInLeftOnSplit = random.nextBoolean() ? InternalTreeLogic.DEFAULT_SPLIT_RATIO : random.nextDouble();
     }
 
-    private GBPTree<KEY,VALUE> createIndex()
+    @BeforeEach
+    void setUp()
     {
         int pageSize = 512;
         layout = getLayout( random, pageSize );
-        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
-        return index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
+        pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
+        index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
+    }
+
+    @AfterEach
+    void tearDown() throws IOException
+    {
+        index.close();
+        pageCache.close();
     }
 
     private Writer<KEY,VALUE> createWriter( GBPTree<KEY,VALUE> index ) throws IOException
@@ -94,159 +105,150 @@ abstract class GBPTreeITBase<KEY,VALUE>
     void shouldStayCorrectAfterRandomModifications() throws Exception
     {
         // GIVEN
-        try ( GBPTree<KEY,VALUE> index = createIndex() )
+        Comparator<KEY> keyComparator = layout;
+        Map<KEY,VALUE> data = new TreeMap<>( keyComparator );
+        int count = 100;
+        int totalNumberOfRounds = 10;
+        for ( int i = 0; i < count; i++ )
         {
-            Comparator<KEY> keyComparator = layout;
-            Map<KEY,VALUE> data = new TreeMap<>( keyComparator );
-            int count = 100;
-            int totalNumberOfRounds = 10;
+            data.put( randomKey( random.random() ), randomValue( random.random() ) );
+        }
+
+        // WHEN
+        try ( Writer<KEY,VALUE> writer = createWriter( index ) )
+        {
+            for ( Map.Entry<KEY,VALUE> entry : data.entrySet() )
+            {
+                writer.put( entry.getKey(), entry.getValue() );
+            }
+        }
+
+        for ( int round = 0; round < totalNumberOfRounds; round++ )
+        {
+            // THEN
             for ( int i = 0; i < count; i++ )
             {
-                data.put( randomKey( random.random() ), randomValue( random.random() ) );
-            }
-
-            // WHEN
-            try ( Writer<KEY,VALUE> writer = createWriter( index ) )
-            {
-                for ( Map.Entry<KEY,VALUE> entry : data.entrySet() )
+                KEY first = randomKey( random.random() );
+                KEY second = randomKey( random.random() );
+                KEY from;
+                KEY to;
+                if ( layout.keySeed( first ) < layout.keySeed( second ) )
                 {
-                    writer.put( entry.getKey(), entry.getValue() );
+                    from = first;
+                    to = second;
+                }
+                else
+                {
+                    from = second;
+                    to = first;
+                }
+                Map<KEY,VALUE> expectedHits = expectedHits( data, from, to, keyComparator );
+                try ( Seeker<KEY,VALUE> result = index.seek( from, to, NULL ) )
+                {
+                    while ( result.next() )
+                    {
+                        KEY key = result.key();
+                        if ( expectedHits.remove( key ) == null )
+                        {
+                            fail( "Unexpected hit " + key + " when searching for " + from + " - " + to );
+                        }
+
+                        assertTrue( keyComparator.compare( key, from ) >= 0 );
+                        if ( keyComparator.compare( from, to ) != 0 )
+                        {
+                            assertTrue( keyComparator.compare( key, to ) < 0 );
+                        }
+                    }
+                    if ( !expectedHits.isEmpty() )
+                    {
+                        fail( "There were results which were expected to be returned, but weren't:" + expectedHits +
+                                " when searching range " + from + " - " + to );
+                    }
                 }
             }
 
-            for ( int round = 0; round < totalNumberOfRounds; round++ )
-            {
-                // THEN
-                for ( int i = 0; i < count; i++ )
-                {
-                    KEY first = randomKey( random.random() );
-                    KEY second = randomKey( random.random() );
-                    KEY from;
-                    KEY to;
-                    if ( layout.keySeed( first ) < layout.keySeed( second ) )
-                    {
-                        from = first;
-                        to = second;
-                    }
-                    else
-                    {
-                        from = second;
-                        to = first;
-                    }
-                    Map<KEY,VALUE> expectedHits = expectedHits( data, from, to, keyComparator );
-                    try ( Seeker<KEY,VALUE> result = index.seek( from, to, NULL ) )
-                    {
-                        while ( result.next() )
-                        {
-                            KEY key = result.key();
-                            if ( expectedHits.remove( key ) == null )
-                            {
-                                fail( "Unexpected hit " + key + " when searching for " + from + " - " + to );
-                            }
-
-                            assertTrue( keyComparator.compare( key, from ) >= 0 );
-                            if ( keyComparator.compare( from, to ) != 0 )
-                            {
-                                assertTrue( keyComparator.compare( key, to ) < 0 );
-                            }
-                        }
-                        if ( !expectedHits.isEmpty() )
-                        {
-                            fail( "There were results which were expected to be returned, but weren't:" + expectedHits +
-                                    " when searching range " + from + " - " + to );
-                        }
-                    }
-                }
-
-                index.checkpoint( NULL );
-                randomlyModifyIndex( index, data, random.random(), (double) round / totalNumberOfRounds );
-            }
-
-            // and finally
-            index.consistencyCheck( NULL );
+            index.checkpoint( NULL );
+            randomlyModifyIndex( index, data, random.random(), (double) round / totalNumberOfRounds );
         }
+
+        // and finally
+        index.consistencyCheck( NULL );
     }
 
     @Test
     void shouldHandleRemoveEntireTree() throws Exception
     {
         // given
-        try ( GBPTree<KEY,VALUE> index = createIndex() )
+        int numberOfNodes = 200_000;
+        try ( Writer<KEY,VALUE> writer = createWriter( index ) )
         {
-            int numberOfNodes = 200_000;
-            try ( Writer<KEY,VALUE> writer = createWriter( index ) )
+            for ( int i = 0; i < numberOfNodes; i++ )
             {
-                for ( int i = 0; i < numberOfNodes; i++ )
-                {
-                    writer.put( key( i ), value( i ) );
-                }
+                writer.put( key( i ), value( i ) );
             }
-
-            // when
-            BitSet removed = new BitSet();
-            try ( Writer<KEY,VALUE> writer = createWriter( index ) )
-            {
-                for ( int i = 0; i < numberOfNodes - numberOfNodes / 10; i++ )
-                {
-                    int candidate;
-                    do
-                    {
-                        candidate = random.nextInt( max( 1, random.nextInt( numberOfNodes ) ) );
-                    }
-                    while ( removed.get( candidate ) );
-                    removed.set( candidate );
-
-                    writer.remove( key( candidate ) );
-                }
-            }
-
-            int next = 0;
-            try ( Writer<KEY,VALUE> writer = createWriter( index ) )
-            {
-                for ( int i = 0; i < numberOfNodes / 10; i++ )
-                {
-                    next = removed.nextClearBit( next );
-                    removed.set( next );
-                    writer.remove( key( next ) );
-                }
-            }
-
-            // then
-            try ( Seeker<KEY,VALUE> seek = index.seek( key( 0 ), key( numberOfNodes ), NULL ) )
-            {
-                assertFalse( seek.next() );
-            }
-
-            // and finally
-            index.consistencyCheck( NULL );
         }
+
+        // when
+        BitSet removed = new BitSet();
+        try ( Writer<KEY,VALUE> writer = createWriter( index ) )
+        {
+            for ( int i = 0; i < numberOfNodes - numberOfNodes / 10; i++ )
+            {
+                int candidate;
+                do
+                {
+                    candidate = random.nextInt( max( 1, random.nextInt( numberOfNodes ) ) );
+                }
+                while ( removed.get( candidate ) );
+                removed.set( candidate );
+
+                writer.remove( key( candidate ) );
+            }
+        }
+
+        int next = 0;
+        try ( Writer<KEY,VALUE> writer = createWriter( index ) )
+        {
+            for ( int i = 0; i < numberOfNodes / 10; i++ )
+            {
+                next = removed.nextClearBit( next );
+                removed.set( next );
+                writer.remove( key( next ) );
+            }
+        }
+
+        // then
+        try ( Seeker<KEY,VALUE> seek = index.seek( key( 0 ), key( numberOfNodes ), NULL ) )
+        {
+            assertFalse( seek.next() );
+        }
+
+        // and finally
+        index.consistencyCheck( NULL );
     }
 
     @Test
     void shouldHandleDescendingWithEmptyRange() throws IOException
     {
-        long[] seeds = new long[]{0, 1, 4};
-        try ( GBPTree<KEY,VALUE> index = createIndex() )
+        // Write
+        try ( Writer<KEY,VALUE> writer = createWriter( index ) )
         {
-            // Write
-            try ( Writer<KEY,VALUE> writer = createWriter( index ) )
+            long[] seeds = new long[]{0, 1, 4};
+            for ( long seed : seeds )
             {
-                for ( long seed : seeds )
-                {
-                    KEY key = layout.key( seed );
-                    VALUE value = layout.value( 0 );
-                    writer.put( key, value );
-                }
+                KEY key = layout.key( seed );
+                VALUE value = layout.value( 0 );
+                writer.put( key, value );
             }
-
-            KEY from = layout.key( 3 );
-            KEY to = layout.key( 1 );
-            try ( Seeker<KEY,VALUE> seek = index.seek( from, to, NULL ) )
-            {
-                assertFalse( seek.next() );
-            }
-            index.checkpoint( NULL );
         }
+
+        KEY from = layout.key( 3 );
+        KEY to = layout.key( 1 );
+        try ( Seeker<KEY,VALUE> seek = index.seek( from, to, NULL ) )
+        {
+            assertFalse( seek.next() );
+        }
+        index.checkpoint( NULL );
     }
 
     private void randomlyModifyIndex( GBPTree<KEY,VALUE> index, Map<KEY,VALUE> data, Random random, double removeProbability )

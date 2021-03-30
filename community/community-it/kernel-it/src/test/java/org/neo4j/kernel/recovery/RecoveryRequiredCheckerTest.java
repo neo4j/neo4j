@@ -78,18 +78,19 @@ class RecoveryRequiredCheckerTest
     {
         startStopAndCreateDefaultData();
 
-        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
-        RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
-
-        assertThat( recoverer.isRecoveryRequiredAt( databaseLayout, INSTANCE ) ).isEqualTo( false );
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( fileSystem ) )
+        {
+            RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+            assertThat( recoverer.isRecoveryRequiredAt( databaseLayout, INSTANCE ) ).isEqualTo( false );
+        }
     }
 
     @Test
     void shouldWantToRecoverBrokenStore() throws Exception
     {
-        try ( EphemeralFileSystemAbstraction ephemeralFs = createAndCrashWithDefaultConfig() )
+        try ( EphemeralFileSystemAbstraction ephemeralFs = createAndCrashWithDefaultConfig();
+            PageCache pageCache = pageCacheExtension.getPageCache( ephemeralFs ) )
         {
-            PageCache pageCache = pageCacheExtension.getPageCache( ephemeralFs );
             RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( ephemeralFs, pageCache, storageEngineFactory );
 
             assertThat( recoverer.isRecoveryRequiredAt( databaseLayout, INSTANCE ) ).isEqualTo( true );
@@ -99,10 +100,9 @@ class RecoveryRequiredCheckerTest
     @Test
     void shouldBeAbleToRecoverBrokenStore() throws Exception
     {
-        try ( EphemeralFileSystemAbstraction ephemeralFs = createAndCrashWithDefaultConfig() )
+        try ( EphemeralFileSystemAbstraction ephemeralFs = createAndCrashWithDefaultConfig();
+                PageCache pageCache = pageCacheExtension.getPageCache( ephemeralFs ) )
         {
-            PageCache pageCache = pageCacheExtension.getPageCache( ephemeralFs );
-
             RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( ephemeralFs, pageCache, storageEngineFactory );
 
             assertThat( recoverer.isRecoveryRequiredAt( databaseLayout, INSTANCE ) ).isEqualTo( true );
@@ -129,10 +129,11 @@ class RecoveryRequiredCheckerTest
     {
         DatabaseLayout databaseLayout = DatabaseLayout.ofFlat( testDirectory.directory( "dir-without-store" ) );
 
-        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
-        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
-
-        assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( fileSystem ) )
+        {
+            RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+            assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+        }
     }
 
     @Test
@@ -141,13 +142,16 @@ class RecoveryRequiredCheckerTest
         startStopAndCreateDefaultData();
         assertAllIdFilesExist();
 
-        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
-        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
-        assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( fileSystem ) )
+        {
+            RecoveryRequiredChecker checker;
+            checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+            assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
 
-        fileSystem.deleteFileOrThrow( databaseLayout.idNodeStore() );
+            fileSystem.deleteFileOrThrow( databaseLayout.idNodeStore() );
 
-        assertTrue( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+            assertTrue( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+        }
     }
 
     @Test
@@ -156,16 +160,18 @@ class RecoveryRequiredCheckerTest
         startStopAndCreateDefaultData();
         assertAllIdFilesExist();
 
-        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
-        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
-        assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
-
-        for ( Path idFile : databaseLayout.idFiles() )
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( fileSystem ) )
         {
-            fileSystem.deleteFileOrThrow( idFile );
-        }
+            RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+            assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
 
-        assertTrue( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+            for ( Path idFile : databaseLayout.idFiles() )
+            {
+                fileSystem.deleteFileOrThrow( idFile );
+            }
+
+            assertTrue( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+        }
     }
 
     @Test
@@ -175,13 +181,15 @@ class RecoveryRequiredCheckerTest
 
         assertStoreFilesExist();
 
-        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
-        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
-        assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( fileSystem ) )
+        {
+            RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+            assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
 
-        fileSystem.deleteFileOrThrow( databaseLayout.nodeStore() );
+            fileSystem.deleteFileOrThrow( databaseLayout.nodeStore() );
 
-        assertTrue( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+            assertTrue( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+        }
     }
 
     @Test
@@ -191,15 +199,17 @@ class RecoveryRequiredCheckerTest
 
         assertStoreFilesExist();
 
-        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
-        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
-        assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( fileSystem ) )
+        {
+            RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+            assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
 
-        fileSystem.deleteFileOrThrow( databaseLayout.relationshipStore() );
-        fileSystem.deleteFileOrThrow( databaseLayout.propertyStore() );
-        fileSystem.deleteFileOrThrow( databaseLayout.relationshipTypeTokenStore() );
+            fileSystem.deleteFileOrThrow( databaseLayout.relationshipStore() );
+            fileSystem.deleteFileOrThrow( databaseLayout.propertyStore() );
+            fileSystem.deleteFileOrThrow( databaseLayout.relationshipTypeTokenStore() );
 
-        assertTrue( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+            assertTrue( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+        }
     }
 
     @Test
@@ -209,13 +219,15 @@ class RecoveryRequiredCheckerTest
 
         assertStoreFilesExist();
 
-        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
-        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
-        assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( fileSystem ) )
+        {
+            RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+            assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
 
-        fileSystem.deleteFileOrThrow( databaseLayout.countStore() );
+            fileSystem.deleteFileOrThrow( databaseLayout.countStore() );
 
-        assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+            assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+        }
     }
 
     @Test
@@ -225,21 +237,22 @@ class RecoveryRequiredCheckerTest
 
         assertStoreFilesExist();
 
-        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
-        RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
-        assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( fileSystem ) )
+        {
+            RecoveryRequiredChecker checker = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
+            assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
 
-        fileSystem.deleteFileOrThrow( databaseLayout.indexStatisticsStore() );
+            fileSystem.deleteFileOrThrow( databaseLayout.indexStatisticsStore() );
 
-        assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+            assertFalse( checker.isRecoveryRequiredAt( databaseLayout, INSTANCE ) );
+        }
     }
 
     private void recoverBrokenStoreWithConfig( Config config ) throws IOException
     {
-        try ( EphemeralFileSystemAbstraction ephemeralFs = createSomeDataAndCrash( storeDir, config ) )
+        try ( EphemeralFileSystemAbstraction ephemeralFs = createSomeDataAndCrash( storeDir, config );
+                PageCache pageCache = pageCacheExtension.getPageCache( ephemeralFs ) )
         {
-            PageCache pageCache = pageCacheExtension.getPageCache( ephemeralFs );
-
             RecoveryRequiredChecker recoveryChecker = getRecoveryChecker( ephemeralFs, pageCache, storageEngineFactory, config );
 
             assertThat( recoveryChecker.isRecoveryRequiredAt( DatabaseLayout.of( config ), INSTANCE ) ).isEqualTo( true );
