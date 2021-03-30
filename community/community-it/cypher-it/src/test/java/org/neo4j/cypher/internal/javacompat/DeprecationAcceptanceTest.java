@@ -426,7 +426,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     private final Matcher<Notification> deprecatedUseOfPatternExpression =
             deprecation( "A pattern expression should only be used in order to test the existence of a pattern. " +
                          "It should therefore only be used in contexts that evaluate to a boolean, e.g. inside the function exists() or in a WHERE-clause. " +
-                         "All other uses are deprecated." );
+                         "All other uses are deprecated and should be replaced by a pattern comprehension." );
 
     private final Matcher<Notification> deprecatedShowSchemaSyntax =
             deprecation( "The `BRIEF` and `VERBOSE` keywords for `SHOW INDEXES` and `SHOW CONSTRAINTS` are deprecated, " +
