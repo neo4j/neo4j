@@ -96,12 +96,6 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActions
-import org.neo4j.cypher.internal.logical.plans.DatabaseAdministrationLogicalPlan
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.PrivilegePlan
-import org.neo4j.cypher.internal.logical.plans.ResolvedCall
-import org.neo4j.cypher.internal.logical.plans.SecurityAdministrationLogicalPlan
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -123,28 +117,28 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
   override def process(from: BaseState, context: PlannerContext): LogicalPlanState = {
     implicit val idGen: SequentialIdGen = new SequentialIdGen()
-    def planRevokes(source: PrivilegePlan,
+    def planRevokes(source: plans.PrivilegePlan,
                     revokeType: RevokeType,
-                    planRevoke: (PrivilegePlan, String) => PrivilegePlan): PrivilegePlan = revokeType match {
+                    planRevoke: (plans.PrivilegePlan, String) => plans.PrivilegePlan): plans.PrivilegePlan = revokeType match {
       case t: RevokeBothType =>
         val revokeGrant = planRevoke(source, RevokeGrantType()(t.position).relType)
         planRevoke(revokeGrant, RevokeDenyType()(t.position).relType)
       case t => planRevoke(source, t.relType)
     }
 
-    def getSourceForCreateRole(roleName: Either[String, Parameter], ifExistsDo: IfExistsDo): SecurityAdministrationLogicalPlan = ifExistsDo match {
+    def getSourceForCreateRole(roleName: Either[String, Parameter], ifExistsDo: IfExistsDo): plans.SecurityAdministrationLogicalPlan = ifExistsDo match {
       case IfExistsReplace => plans.DropRole(plans.AssertAllowedDbmsActions(None, Seq(DropRoleAction, CreateRoleAction)), roleName)
       case IfExistsDoNothing => plans.DoNothingIfExists(plans.AssertAllowedDbmsActions(CreateRoleAction), "Role", roleName)
       case _ => plans.AssertAllowedDbmsActions(CreateRoleAction)
     }
 
-    def wrapInWait(logicalPlan: DatabaseAdministrationLogicalPlan, databaseName: Either[String,Parameter],
-                   waitUntilComplete: WaitUntilComplete): DatabaseAdministrationLogicalPlan = waitUntilComplete match {
+    def wrapInWait(logicalPlan: plans.DatabaseAdministrationLogicalPlan, databaseName: Either[String,Parameter],
+                   waitUntilComplete: WaitUntilComplete): plans.DatabaseAdministrationLogicalPlan = waitUntilComplete match {
       case NoWait => logicalPlan
       case _ =>  plans.WaitForCompletion(logicalPlan, databaseName, waitUntilComplete)
     }
 
-    val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
+    val maybeLogicalPlan: Option[plans.LogicalPlan] = from.statement() match {
       // SHOW USERS
       case su: ShowUsers => Some(plans.ShowUsers(plans.AssertAllowedDbmsActions(ShowUserAction), su.defaultColumnNames, su.yields, su.returns))
 
@@ -164,7 +158,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // RENAME USER foo [IF EXISTS] TO bar
       case c@RenameUser(fromUserName, toUserName, ifExists) =>
-        val assertAllowed: AssertAllowedDbmsActions = plans.AssertAllowedDbmsActions(RenameUserAction)
+        val assertAllowed = plans.AssertAllowedDbmsActions(RenameUserAction)
         val source = if (ifExists) plans.DoNothingIfNotExists(assertAllowed, "User", fromUserName, "rename") else assertAllowed
         Some(plans.LogSystemCommand(plans.RenameUser(source, fromUserName, toUserName), prettifier.asString(c)))
 
@@ -240,7 +234,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c@GrantRolesToUsers(roleNames, userNames) =>
         val plan = (for (userName <- userNames; roleName <- roleNames) yield {
           roleName -> userName
-        }).foldLeft(plans.AssertAllowedDbmsActions(AssignRoleAction).asInstanceOf[SecurityAdministrationLogicalPlan]) {
+        }).foldLeft(plans.AssertAllowedDbmsActions(AssignRoleAction).asInstanceOf[plans.SecurityAdministrationLogicalPlan]) {
           case (source, (roleName, userName)) => plans.GrantRoleToUser(source, roleName, userName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
@@ -249,7 +243,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c@RevokeRolesFromUsers(roleNames, userNames) =>
         val plan = (for (userName <- userNames; roleName <- roleNames) yield {
           roleName -> userName
-        }).foldLeft(plans.AssertAllowedDbmsActions(RemoveRoleAction).asInstanceOf[SecurityAdministrationLogicalPlan]) {
+        }).foldLeft(plans.AssertAllowedDbmsActions(RemoveRoleAction).asInstanceOf[plans.SecurityAdministrationLogicalPlan]) {
           case (source, (userName, roleName)) => plans.RevokeRoleFromUser(source, userName, roleName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
@@ -258,7 +252,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c@GrantPrivilege(DbmsPrivilege(action), _, qualifiers, roleNames) =>
         val plan = (for (roleName <- roleNames; qualifier <- qualifiers; simpleQualifier <- qualifier.simplify) yield {
           (roleName, simpleQualifier)
-        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
+        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
           case (source, (roleName, simpleQualifier)) => plans.GrantDbmsAction(source, action, simpleQualifier, roleName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
@@ -267,7 +261,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c@DenyPrivilege(DbmsPrivilege(action), _, qualifiers, roleNames) =>
         val plan = (for (roleName <- roleNames; qualifier <- qualifiers; simpleQualifier <- qualifier.simplify) yield {
           (roleName, simpleQualifier)
-        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
+        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
           case (source, (roleName, simpleQualifier)) => plans.DenyDbmsAction(source, action, simpleQualifier, roleName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
@@ -276,7 +270,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c@RevokePrivilege(DbmsPrivilege(action), _, qualifiers, roleNames, revokeType) =>
         val plan = (for (roleName <- roleNames; qualifier <- qualifiers; simpleQualifier <- qualifier.simplify) yield {
           (roleName, simpleQualifier)
-        }).foldLeft(plans.AssertAllowedDbmsActions(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
+        }).foldLeft(plans.AssertAllowedDbmsActions(RemovePrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
           case (previous, (roleName, simpleQualifier)) => planRevokes(previous, revokeType, (s, r) => plans.RevokeDbmsAction(s, action, simpleQualifier, roleName, r))
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
@@ -285,7 +279,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c@GrantPrivilege(DatabasePrivilege(action, dbScopes), _, qualifiers, roleNames) =>
         val plan = (for (dbScope <- dbScopes; roleName <- roleNames; qualifier <- qualifiers; simpleQualifiers <- qualifier.simplify) yield {
           (roleName, simpleQualifiers, dbScope)
-        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
+        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
           case (source, (role, qualifier, dbScope: DatabaseScope)) =>
             plans.GrantDatabaseAction(source, action, dbScope, qualifier, role)
         }
@@ -295,7 +289,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c@DenyPrivilege(DatabasePrivilege(action, dbScopes), _, qualifiers, roleNames) =>
         val plan = (for (dbScope <- dbScopes; roleName <- roleNames; qualifier <- qualifiers; simpleQualifiers <- qualifier.simplify) yield {
           (roleName, simpleQualifiers,  dbScope)
-        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
+        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
          case (source, (role, qualifier, dbScope:DatabaseScope)) =>
             plans.DenyDatabaseAction(source, action, dbScope, qualifier, role)
         }
@@ -305,7 +299,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case c@RevokePrivilege(DatabasePrivilege(action, dbScopes), _, qualifiers, roleNames, revokeType) =>
         val plan = (for (dbScope <- dbScopes; roleName <- roleNames; qualifier <- qualifiers; simpleQualifiers <- qualifier.simplify) yield {
           (roleName, simpleQualifiers, dbScope)
-        }).foldLeft(plans.AssertAllowedDbmsActions(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
+        }).foldLeft(plans.AssertAllowedDbmsActions(RemovePrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
           case (plan, (role, qualifier, dbScope: DatabaseScope)) =>
             planRevokes(plan, revokeType, (s, r) => plans.RevokeDatabaseAction(s, action, dbScope, qualifier, role, r))
         }
@@ -316,7 +310,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val resources = optionalResource.getOrElse(NoResource()(InputPosition.NONE))
         val plan = (for (graphScope <- graphScopes; roleName <- roleNames; qualifier <- qualifiers; simpleQualifiers <- qualifier.simplify; resource <- resources.simplify) yield {
           (roleName, simpleQualifiers, resource, graphScope)
-        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
+        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
           case (source, (roleName, segment, resource, graphScope: GraphScope)) => plans.GrantGraphAction(source, action, resource, graphScope, segment, roleName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
@@ -326,7 +320,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val resources = optionalResource.getOrElse(NoResource()(InputPosition.NONE))
         val plan = (for (graphScope <- graphScopes; roleName <- roleNames; qualifier <- qualifiers; simpleQualifiers <- qualifier.simplify; resource <- resources.simplify) yield {
           (roleName, simpleQualifiers, resource, graphScope)
-        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[PrivilegePlan]) {
+        }).foldLeft(plans.AssertAllowedDbmsActions(AssignPrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
           case (source, (roleName, segment, resource, graphScope: GraphScope)) => plans.DenyGraphAction(source, action, resource, graphScope, segment, roleName)
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
@@ -336,7 +330,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val resources = optionalResource.getOrElse(NoResource()(InputPosition.NONE))
         val plan = (for (graphScope <- graphScopes; roleName <- roleNames; qualifier <- qualifiers; simpleQualifiers <- qualifier.simplify; resource <- resources.simplify) yield {
           (roleName, simpleQualifiers, resource, graphScope)
-        }).foldLeft(plans.AssertAllowedDbmsActions(RemovePrivilegeAction).asInstanceOf[PrivilegePlan]) {
+        }).foldLeft(plans.AssertAllowedDbmsActions(RemovePrivilegeAction).asInstanceOf[plans.PrivilegePlan]) {
           case (source, (roleName, segment, resource, graphScope: GraphScope)) =>
             planRevokes(source, revokeType, (s, r) => plans.RevokeGraphAction(s, action, resource, graphScope, segment, roleName, r))
         }
@@ -417,7 +411,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           plans.EnsureValidNonSystemDatabase(assertAllowed, dbName, "stop"), dbName), dbName, waitUntilComplete))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
-      case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, _, _, _, _, _),returns@Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
+      case Query(None, SingleQuery(Seq(resolved@plans.ResolvedCall(signature, _, _, _, _, _),returns@Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
         val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
         errors.foreach { error => throw context.cypherExceptionFactory.syntaxException(error.msg, error.position) }
         Some(plans.SystemProcedureCall(signature.name.toString, resolved, returns, context.params, checkCredentialsExpired = !signature.allowExpiredCredentials))
