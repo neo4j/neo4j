@@ -80,6 +80,10 @@ public class NonInteractiveShellRunner implements ShellRunner
         }
 
         int exitCode = EXIT_SUCCESS;
+
+        // Executing this could fail but we try anyway to avoid hiding errors
+        statementParser.incompleteStatement().ifPresent( statements::add );
+
         for ( String statement : statements )
         {
             try

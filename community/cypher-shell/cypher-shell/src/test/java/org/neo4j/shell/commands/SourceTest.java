@@ -109,6 +109,14 @@ public class SourceTest
         cmd.execute( "" );
     }
 
+    @Test
+    public void shouldTryToExecuteIncompleteStatements() throws CommandException
+    {
+        cmd.execute( fileFromResource( "invalid.cypher" ) );
+        verify( shell ).execute( "INVALID CYPHER\nWITHOUT SEMICOLON" );
+        verifyNoMoreInteractions( shell );
+    }
+
     private String fileFromResource( String filename )
     {
         return getClass().getResource( filename ).getFile();

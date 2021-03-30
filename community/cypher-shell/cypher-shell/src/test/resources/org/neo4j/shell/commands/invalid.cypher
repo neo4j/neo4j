@@ -1,0 +1,3 @@
+INVALID CYPHER
+WITHOUT SEMICOLON
+// Comment at end
