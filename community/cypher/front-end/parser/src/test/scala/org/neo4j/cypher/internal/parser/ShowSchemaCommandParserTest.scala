@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.DeprecatedSyntax
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.FulltextIndexes
+import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NewSyntax
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
@@ -54,6 +55,10 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
 
     test(s"SHOW FULLTEXT $indexKeyword") {
       yields(_ => query(ShowIndexesClause(FulltextIndexes, brief = false, verbose = false, None, hasYield = false)(pos)))
+    }
+
+    test(s"SHOW LOOKUP $indexKeyword") {
+      yields(_ => query(ShowIndexesClause(LookupIndexes, brief = false, verbose = false, None, hasYield = false)(pos)))
     }
 
     test(s"USE db SHOW $indexKeyword") {
@@ -145,8 +150,8 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
       yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))))
   }
 
-  test("SHOW INDEXES WHERE name = 'GRANT'") {
-    yields(_ => query(ShowIndexesClause(AllIndexes, brief = false, verbose = false,
+  test("SHOW LOOKUP INDEXES WHERE name = 'GRANT'") {
+    yields(_ => query(ShowIndexesClause(LookupIndexes, brief = false, verbose = false,
       Some(where(equals(varFor("name"), literalString("GRANT")))), hasYield = false)(pos)))
   }
 
@@ -244,6 +249,14 @@ class ShowSchemaCommandParserTest extends SchemaCommandsParserTestBase {
   }
 
   test("SHOW FULLTEXT INDEXES VERBOSE") {
+    failsToParse
+  }
+
+  test("SHOW LOOKUP INDEXES BRIEF") {
+    failsToParse
+  }
+
+  test("SHOW LOOKUP INDEXES VERBOSE") {
     failsToParse
   }
 

@@ -23,6 +23,7 @@ import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.FulltextIndexes
+import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowIndexType
 import org.neo4j.cypher.internal.runtime.ClosingIterator
@@ -71,6 +72,10 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
         indexes.filter {
           case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.FULLTEXT)
         }
+      case LookupIndexes =>
+        indexes.filter {
+          case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.LOOKUP)
+        }
     }
 
     val sortedRelevantIndexes: ListMap[IndexDescriptor, IndexInfo] = ListMap(relevantIndexes.toSeq.sortBy(_._1.getName): _*)
@@ -81,13 +86,13 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
         val indexType = indexDescriptor.getIndexType
 
         /*
-         * For btree the create command is the Cypher CREATE INDEX which needs the name to be escaped,
+         * For btree and lookup the create command is the Cypher CREATE INDEX which needs the name to be escaped,
          * in case it contains special characters.
          * For fulltext the create command is a procedure which doesn't require escaping.
         */
         val name = indexDescriptor.getName
         val escapedName = escapeBackticks(name)
-        val createName = if (indexType.equals(IndexType.BTREE)) s"`$escapedName`" else name
+        val createName = if (indexType.equals(IndexType.FULLTEXT)) name else s"`$escapedName`"
 
         val entityType = indexDescriptor.schema.entityType
         val labels = indexInfo.labelsOrTypes
@@ -105,7 +110,7 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
           "populationPercent" -> Values.doubleValue(indexStatus.populationProgress),
           // Tells if the index is only meant to allow one value per key, either "UNIQUE" or "NONUNIQUE"
           "uniqueness" -> Values.stringValue(uniqueness),
-          // The IndexType of this index, either "FULLTEXT" or "BTREE"
+          // The IndexType of this index, either "FULLTEXT", "BTREE" or "LOOKUP"
           "type" -> Values.stringValue(indexType.name),
           // Type of entities this index represents, either "NODE" or "RELATIONSHIP"
           "entityType" -> Values.stringValue(entityType.name),
@@ -119,7 +124,10 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
         if (verbose) {
           val indexConfig = indexDescriptor.getIndexConfig
           briefResult ++ Map(
-            "options" -> extractOptionsMap(providerName, indexConfig),
+            "options" -> {
+              if (indexType.equals(IndexType.LOOKUP)) null
+              else extractOptionsMap(providerName, indexConfig)
+            },
             "failureMessage" -> Values.stringValue(indexInfo.indexStatus.failureMessage),
             "createStatement" -> Values.stringValue(
               createIndexStatement(createName, indexType, entityType, labels, properties, providerName, indexConfig, indexStatus.maybeConstraint))
@@ -188,6 +196,14 @@ object ShowIndexesCommand {
             s"CALL db.index.fulltext.createNodeIndex('$escapedName', $labelsOrTypesArray, $propertiesArray, $fulltextConfig)"
           case EntityType.RELATIONSHIP =>
             s"CALL db.index.fulltext.createRelationshipIndex('$escapedName', $labelsOrTypesArray, $propertiesArray, $fulltextConfig)"
+          case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
+        }
+      case IndexType.LOOKUP =>
+        entityType match {
+          case EntityType.NODE =>
+            s"CREATE LOOKUP INDEX $escapedName FOR (n) ON EACH labels(n) OPTIONS {}"
+          case EntityType.RELATIONSHIP =>
+            s"CREATE LOOKUP INDEX $escapedName FOR ()-[r]-() ON EACH type(r) OPTIONS {}"
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case _ => throw new IllegalArgumentException(s"Did not recognize index type $indexType")

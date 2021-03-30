@@ -35,3 +35,8 @@ case object FulltextIndexes extends ShowIndexType {
   override val prettyPrint: String = "FULLTEXT"
   override val description: String = "fulltextIndexes"
 }
+
+case object LookupIndexes extends ShowIndexType {
+  override val prettyPrint: String = "LOOKUP"
+  override val description: String = "lookupIndexes"
+}

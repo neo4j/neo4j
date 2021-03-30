@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.LoadCSV
+import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
@@ -852,6 +853,7 @@ class Neo4jASTFactory(query: String)
       case "ALL" => AllIndexes
       case "BTREE" => BtreeIndexes
       case "FULLTEXT" => FulltextIndexes
+      case "LOOKUP" => LookupIndexes
     }
     ShowIndexesClause(indexType, brief, verbose, Option(where).map(e => Where(e)(e.position)), hasYield)(p)
   }

@@ -357,6 +357,7 @@ TOKEN [IGNORE_CASE] :
     | < LE: "<=" >
     | < LIMITROWS: "LIMIT" >
     | < LOAD: "LOAD" >
+    | < LOOKUP: "LOOKUP" >
     | < LPAREN: "(" >
     | < LT: "<" >
     | < MATCH: "MATCH" >
@@ -2689,6 +2690,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) :
         | <POPULATED> statement=ShowRoles( start, useClause, false )
         | schemaType=<BTREE> statement = ShowIndexesAllowBrief( start, useClause, schemaType.image )
         | schemaType=<FULLTEXT> statement = ShowIndexesNoBrief( start, useClause, schemaType.image )
+        | schemaType=<LOOKUP> statement = ShowIndexesNoBrief( start, useClause, schemaType.image )
         | schemaType=<UNIQUE> statement = ShowConstraintsAllowBriefAndYield( start, useClause, schemaType.image )
         | schemaType=<NODE> statement = ShowNodeCommand( start, useClause, schemaType.image )
         | schemaType=<PROPERTY> statement = ShowPropertyCommand( start, useClause, schemaType.image )
@@ -2850,7 +2852,7 @@ STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, String schem
 
 STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, String schemaType):
 {
-  // fulltext indexes
+  // fulltext and lookup indexes
   List<CLAUSE> clauses = new ArrayList<>();
   if (useClause != null) {
       clauses.add( useClause );
@@ -3632,6 +3634,7 @@ Token SymbolicNameString() :
         | t=<KEY>
         | t=<LIMITROWS>
         | t=<LOAD>
+        | t=<LOOKUP>
         | t=<MATCH>
         | t=<MERGE>
         | t=<NODE>

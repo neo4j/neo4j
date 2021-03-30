@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.HomeGraphScope
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
+import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NewSyntax
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
@@ -212,6 +213,9 @@ object Additions {
 
       case c@ShowIndexesClause(_, FulltextIndexes, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Using `FULLTEXT` when listing indexes is not supported in this Cypher version.", c.position)
+
+      case c@ShowIndexesClause(_, LookupIndexes, _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("Using `LOOKUP` when listing indexes is not supported in this Cypher version.", c.position)
     }
   }
 

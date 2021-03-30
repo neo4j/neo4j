@@ -84,6 +84,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.JOIN
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.KEY
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.LIMITROWS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.LOAD
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.LOOKUP
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.MATCH
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.MERGE
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.NODE
@@ -215,6 +216,7 @@ object IdentifierTokens {
     KEY,
     LIMITROWS,
     LOAD,
+    LOOKUP,
     MATCH,
     MERGE,
     NODE,

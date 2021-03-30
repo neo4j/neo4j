@@ -324,6 +324,9 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "show FULltEXT index" ->
       "SHOW FULLTEXT INDEXES",
 
+    "show loOKup index" ->
+      "SHOW LOOKUP INDEXES",
+
     "show \nindex\n verbose" ->
       "SHOW ALL INDEXES VERBOSE",
 
@@ -335,8 +338,8 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       """SHOW BTREE INDEXES
         |  WHERE uniqueness = "UNIQUE"""".stripMargin,
 
-    "show index  YIELD *" ->
-      """SHOW ALL INDEXES
+    "show lookup index  YIELD *" ->
+      """SHOW LOOKUP INDEXES
         |YIELD *""".stripMargin,
 
     "show index  YIELD * Return DISTINCT type" ->

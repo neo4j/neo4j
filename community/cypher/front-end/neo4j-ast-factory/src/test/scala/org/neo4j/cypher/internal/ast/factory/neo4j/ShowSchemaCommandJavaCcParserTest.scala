@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.DeprecatedSyntax
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.FulltextIndexes
+import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NewSyntax
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
@@ -59,6 +60,10 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
 
     test(s"SHOW FULLTEXT $indexKeyword") {
       assertJavaCCAST(testName, query(ShowIndexesClause(FulltextIndexes, brief = false, verbose = false, None, hasYield = false)(pos)))
+    }
+
+    test(s"SHOW LOOKUP $indexKeyword") {
+      assertJavaCCAST(testName, query(ShowIndexesClause(LookupIndexes, brief = false, verbose = false, None, hasYield = false)(pos)))
     }
 
     test(s"USE db SHOW $indexKeyword") {
@@ -150,8 +155,8 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
       yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))))
   }
 
-  test("SHOW INDEXES WHERE name = 'GRANT'") {
-    assertJavaCCAST(testName, query(ShowIndexesClause(AllIndexes, brief = false, verbose = false,
+  test("SHOW LOOKUP INDEXES WHERE name = 'GRANT'") {
+    assertJavaCCAST(testName, query(ShowIndexesClause(LookupIndexes, brief = false, verbose = false,
       Some(where(equals(varFor("name"), literalString("GRANT")))), hasYield = false)(pos)))
   }
 
@@ -255,6 +260,14 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
   }
 
   test("SHOW FULLTEXT INDEXES VERBOSE") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW LOOKUP INDEXES BRIEF") {
+    assertSameAST(testName)
+  }
+
+  test("SHOW LOOKUP INDEXES VERBOSE") {
     assertSameAST(testName)
   }
 
@@ -404,6 +417,7 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
         |  "HOME"
         |  "INDEX"
         |  "INDEXES"
+        |  "LOOKUP"
         |  "NODE"
         |  "POPULATED"
         |  "PROPERTY"
@@ -440,6 +454,7 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
         |  "HOME"
         |  "INDEX"
         |  "INDEXES"
+        |  "LOOKUP"
         |  "NODE"
         |  "POPULATED"
         |  "PROPERTY"
@@ -476,6 +491,7 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
         |  "HOME"
         |  "INDEX"
         |  "INDEXES"
+        |  "LOOKUP"
         |  "NODE"
         |  "POPULATED"
         |  "PROPERTY"

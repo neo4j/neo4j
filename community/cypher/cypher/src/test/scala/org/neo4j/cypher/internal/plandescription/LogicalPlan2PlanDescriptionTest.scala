@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.LabelQualifier
+import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
@@ -681,6 +682,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(ShowIndexes(FulltextIndexes, verbose = true, Set.empty), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("fulltextIndexes, allColumns")), Set.empty))
+
+    assertGood(attach(ShowIndexes(LookupIndexes, verbose = false, Set.empty), 1.0),
+      planDescription(id, "ShowIndexes", NoChildren, Seq(details("lookupIndexes, defaultColumns")), Set.empty))
   }
 
   test("CreateUniquePropertyConstraint") {
