@@ -1081,4 +1081,7 @@ object IntermediateRepresentation {
   def unbox(expression: IntermediateRepresentation): Unbox = Unbox(expression)
 
   def self[TYPE](implicit typ: Manifest[TYPE]): IntermediateRepresentation = Self(typeRef(typ))
+
+  def booleanValue(ir: IntermediateRepresentation): IntermediateRepresentation =
+    invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"), ir)
 }
