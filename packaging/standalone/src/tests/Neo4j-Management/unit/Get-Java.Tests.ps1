@@ -31,10 +31,10 @@ InModuleScope Neo4j-Management {
     $javaHome = global:New-MockJavaHome
     Mock Get-Neo4jEnv { $javaHome } -ParameterFilter { $Name -eq 'JAVA_HOME' }
     Mock Test-Path { $false } -ParameterFilter {
-      $Path -like 'Registry::*\JavaSoft\Java Runtime Environment'
+      $Path -like 'Registry::*\JavaSoft\JRE'
     }
     Mock Get-ItemProperty { $null } -ParameterFilter {
-      $Path -like 'Registry::*\JavaSoft\Java Runtime Environment*'
+      $Path -like 'Registry::*\JavaSoft\JRE*'
     }
     Mock Get-JavaVersion { @{ 'isValid' = $true; 'isJava11' = $true } }
 
@@ -71,16 +71,16 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Valid Java install in Registry (32bit Java on 64bit OS)" {
+    Context "Valid JRE install in Registry (32bit JRE on 64bit OS)" {
       Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
-        ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment')
+        ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JRE')
       }
       Mock Get-ItemProperty -Verifiable { return @{ 'CurrentVersion' = '9.9' } } -ParameterFilter {
-        ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment')
+        ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JRE')
       }
       Mock Get-ItemProperty -Verifiable { return @{ 'JavaHome' = $javaHome } } -ParameterFilter {
-        ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment\9.9')
+        ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JRE\9.9')
       }
 
       $result = Get-Java
@@ -94,16 +94,16 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Valid Java install in Registry" {
+    Context "Valid JRE install in Registry" {
       Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
-        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment')
+        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\JRE')
       }
       Mock Get-ItemProperty -Verifiable { return @{ 'CurrentVersion' = '9.9' } } -ParameterFilter {
-        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment')
+        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\JRE')
       }
       Mock Get-ItemProperty -Verifiable { return @{ 'JavaHome' = $javaHome } } -ParameterFilter {
-        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment\9.9')
+        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\JRE\9.9')
       }
 
       $result = Get-Java
@@ -117,17 +117,85 @@ InModuleScope Neo4j-Management {
       }
     }
 
-    Context "Invalid Java install in Registry" {
+    Context "Invalid JRE install in Registry" {
       Mock Test-Path { $false } -ParameterFile { $Path -like "$javaHome\bin\java.exe" }
       Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
       Mock Test-Path -Verifiable { return $true } -ParameterFilter {
-        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment')
+        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\JRE')
       }
       Mock Get-ItemProperty -Verifiable { return @{ 'CurrentVersion' = '9.9' } } -ParameterFilter {
-        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment')
+        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\JRE')
       }
       Mock Get-ItemProperty -Verifiable { return @{ 'JavaHome' = $javaHome } } -ParameterFilter {
-        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment\9.9')
+        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\JRE\9.9')
+      }
+
+      It "should throw if java missing" {
+        { Get-Java -ErrorAction Stop } | Should Throw
+      }
+
+      It "calls verified mocks" {
+        Assert-VerifiableMocks
+      }
+    }
+
+    Context "Valid JDK install in Registry (32bit JDK on 64bit OS)" {
+      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
+      Mock Test-Path -Verifiable { return $true } -ParameterFilter {
+        ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JDK')
+      }
+      Mock Get-ItemProperty -Verifiable { return @{ 'CurrentVersion' = '9.9' } } -ParameterFilter {
+        ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JDK')
+      }
+      Mock Get-ItemProperty -Verifiable { return @{ 'JavaHome' = $javaHome } } -ParameterFilter {
+        ($Path -eq 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JDK\9.9')
+      }
+
+      $result = Get-Java
+
+      It "should return java location from registry" {
+        $result.java | Should Be "$javaHome\bin\java.exe"
+      }
+
+      It "calls verified mocks" {
+        Assert-VerifiableMocks
+      }
+    }
+
+    Context "Valid JDK install in Registry" {
+      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
+      Mock Test-Path -Verifiable { return $true } -ParameterFilter {
+        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\JDK')
+      }
+      Mock Get-ItemProperty -Verifiable { return @{ 'CurrentVersion' = '9.9' } } -ParameterFilter {
+        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\JDK')
+      }
+      Mock Get-ItemProperty -Verifiable { return @{ 'JavaHome' = $javaHome } } -ParameterFilter {
+        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\JDK\9.9')
+      }
+
+      $result = Get-Java
+
+      It "should return java location from registry" {
+        $result.java | Should Be "$javaHome\bin\java.exe"
+      }
+
+      It "calls verified mocks" {
+        Assert-VerifiableMocks
+      }
+    }
+
+    Context "Invalid JDK install in Registry" {
+      Mock Test-Path { $false } -ParameterFile { $Path -like "$javaHome\bin\java.exe" }
+      Mock Get-Neo4jEnv { $null } -ParameterFilter { $Name -eq 'JAVA_HOME' }
+      Mock Test-Path -Verifiable { return $true } -ParameterFilter {
+        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\JDK')
+      }
+      Mock Get-ItemProperty -Verifiable { return @{ 'CurrentVersion' = '9.9' } } -ParameterFilter {
+        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\JDK')
+      }
+      Mock Get-ItemProperty -Verifiable { return @{ 'JavaHome' = $javaHome } } -ParameterFilter {
+        ($Path -eq 'Registry::HKLM\SOFTWARE\JavaSoft\JDK\9.9')
       }
 
       It "should throw if java missing" {
