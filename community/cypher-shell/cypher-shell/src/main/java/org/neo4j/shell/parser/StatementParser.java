@@ -20,6 +20,7 @@
 package org.neo4j.shell.parser;
 
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.Nonnull;
 
 /**
@@ -48,6 +49,14 @@ public interface StatementParser
      */
     @Nonnull
     List<String> consumeStatements();
+
+    /**
+     * Returns any incomplete statement.
+     *
+     * @return the statement that is currently being parsed but has not completed, if any
+     */
+    @Nonnull
+    Optional<String> incompleteStatement();
 
     /**
      * @return false if no text (except whitespace) has been seen since last parsed statement, true otherwise.
