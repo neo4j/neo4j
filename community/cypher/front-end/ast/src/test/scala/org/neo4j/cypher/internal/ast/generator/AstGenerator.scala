@@ -49,6 +49,8 @@ import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
+import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
@@ -56,12 +58,10 @@ import org.neo4j.cypher.internal.ast.CreateElementAction
 import org.neo4j.cypher.internal.ast.CreateIndex
 import org.neo4j.cypher.internal.ast.CreateIndexAction
 import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
-import org.neo4j.cypher.internal.ast.CreateNodeIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreatePropertyKeyAction
-import org.neo4j.cypher.internal.ast.CreateRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
 import org.neo4j.cypher.internal.ast.CreateRole
@@ -1194,17 +1194,17 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield indexType
 
   def _createIndex: Gen[CreateIndex] = for {
-    variable   <- _variable
-    labelName  <- _labelName
-    relType    <- _relTypeName
-    props      <- _listOfProperties
-    name       <- option(_identifier)
-    ifExistsDo <- _ifExistsDo
-    options    <- _mapStringKeys
-    use        <- option(_use)
-    nodeIndex  = CreateNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
-    relIndex   = CreateRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
-    command    <- oneOf(nodeIndex, relIndex)
+    variable        <- _variable
+    labelName       <- _labelName
+    relType         <- _relTypeName
+    props           <- _listOfProperties
+    name            <- option(_identifier)
+    ifExistsDo      <- _ifExistsDo
+    options         <- _mapStringKeys
+    use             <- option(_use)
+    btreeNodeIndex  = CreateBtreeNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
+    btreeRelIndex   = CreateBtreeRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
+    command         <- oneOf(btreeNodeIndex, btreeRelIndex)
   } yield command
 
   def _dropIndex: Gen[DropIndexOnName] = for {

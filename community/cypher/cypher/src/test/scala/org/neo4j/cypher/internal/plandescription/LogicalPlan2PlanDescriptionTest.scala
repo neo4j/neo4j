@@ -116,8 +116,8 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.CopyRolePrivileges
 import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.CreateBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateDatabase
-import org.neo4j.cypher.internal.logical.plans.CreateIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
@@ -626,31 +626,31 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("CreateIndex") {
-    assertGood(attach(CreateIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), Map.empty), 63.2),
+    assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), Map.empty), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR (:Label) ON (prop)")), Set.empty))
 
-    assertGood(attach(CreateIndex(None, Left(label("Label")), List(key("prop")), None, Map.empty), 63.2),
+    assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), None, Map.empty), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty))
 
-    assertGood(attach(CreateIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), Map("indexProvider" -> stringLiteral("native-btree-1.0"))), 63.2),
+    assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), Map("indexProvider" -> stringLiteral("native-btree-1.0"))), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("""INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
 
-    assertGood(attach(CreateIndex(Some(DoNothingIfExistsForIndex(Left(label("Label")), List(key("prop")), None)),
+    assertGood(attach(CreateBtreeIndex(Some(DoNothingIfExistsForIndex(Left(label("Label")), List(key("prop")), None)),
       Left(label("Label")), List(key("prop")), None, Map.empty), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
         planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty)
       ), Seq(details("INDEX FOR (:Label) ON (prop)")), Set.empty))
 
-    assertGood(attach(CreateIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), Map.empty), 63.2),
+    assertGood(attach(CreateBtreeIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), Map.empty), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX `$indexName` FOR ()-[:Label]-() ON (prop)")), Set.empty))
 
-    assertGood(attach(CreateIndex(None, Right(relType("Label")), List(key("prop")), None, Map.empty), 63.2),
+    assertGood(attach(CreateBtreeIndex(None, Right(relType("Label")), List(key("prop")), None, Map.empty), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty))
 
-    assertGood(attach(CreateIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), Map("indexProvider" -> stringLiteral("native-btree-1.0"))), 63.2),
+    assertGood(attach(CreateBtreeIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), Map("indexProvider" -> stringLiteral("native-btree-1.0"))), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("""INDEX `$indexName` FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
 
-    assertGood(attach(CreateIndex(Some(DoNothingIfExistsForIndex(Right(relType("Label")), List(key("prop")), None)),
+    assertGood(attach(CreateBtreeIndex(Some(DoNothingIfExistsForIndex(Right(relType("Label")), List(key("prop")), None)),
       Right(relType("Label")), List(key("prop")), None, Map.empty), 63.2),
       planDescription(id, "CreateIndex", SingleChild(
         planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty)

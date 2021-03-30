@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.logical.plans.ConstraintType
-import org.neo4j.cypher.internal.logical.plans.CreateIndex
+import org.neo4j.cypher.internal.logical.plans.CreateBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
@@ -180,7 +180,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     // CREATE INDEX ON :LABEL(prop)
     // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
     // CREATE INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
-    case CreateIndex(source, entityName, props, name, options) => (context, parameterMapping) =>
+    case CreateBtreeIndex(source, entityName, props, name, options) => (context, parameterMapping) =>
       SchemaExecutionPlan("CreateIndex", ctx => {
         val (indexProvider, indexConfig) = getValidProviderAndConfig(options, "index")
         val (entityId, isNodeIndex) = getEntityInfo(entityName, ctx)

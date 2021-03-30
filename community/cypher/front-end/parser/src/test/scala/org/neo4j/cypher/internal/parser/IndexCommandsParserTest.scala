@@ -44,12 +44,12 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
   // Create index
 
   Seq(
-    ("(n:Person)", nodeIndex: CreateIndexFunction),
-    ("()-[n:R]-()", relIndex: CreateIndexFunction),
-    ("()-[n:R]->()", relIndex: CreateIndexFunction),
-    ("()<-[n:R]-()", relIndex: CreateIndexFunction)
+    ("(n:Person)", btreeNodeIndex: CreateBtreeIndexFunction),
+    ("()-[n:R]-()", btreeRelIndex: CreateBtreeIndexFunction),
+    ("()-[n:R]->()", btreeRelIndex: CreateBtreeIndexFunction),
+    ("()<-[n:R]-()", btreeRelIndex: CreateBtreeIndexFunction)
   ).foreach {
-    case (pattern, createIndex: CreateIndexFunction) =>
+    case (pattern, createIndex: CreateBtreeIndexFunction) =>
       test(s"CREATE INDEX FOR $pattern ON (n.name)") {
         yields(createIndex(List(prop("n", "name")), None, ast.IfExistsThrowError, Map.empty))
       }
@@ -243,17 +243,17 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
 
   // help methods
 
-  type CreateIndexFunction = (List[expressions.Property], Option[String], ast.IfExistsDo, Map[String, expressions.Expression]) => InputPosition => ast.CreateIndex
+  type CreateBtreeIndexFunction = (List[expressions.Property], Option[String], ast.IfExistsDo, Map[String, expressions.Expression]) => InputPosition => ast.CreateIndex
 
-  private def nodeIndex(props: List[expressions.Property],
+  private def btreeNodeIndex(props: List[expressions.Property],
                         name: Option[String],
                         ifExistsDo: ast.IfExistsDo,
                         options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
-    ast.CreateNodeIndex(varFor("n"), labelName("Person"), props, name, ifExistsDo, options)
+    ast.CreateBtreeNodeIndex(varFor("n"), labelName("Person"), props, name, ifExistsDo, options)
 
-  private def relIndex(props: List[expressions.Property],
+  private def btreeRelIndex(props: List[expressions.Property],
                        name: Option[String],
                        ifExistsDo: ast.IfExistsDo,
                        options: Map[String, expressions.Expression]): InputPosition => ast.CreateIndex =
-    ast.CreateRelationshipIndex(varFor("n"), relTypeName("R"), props, name, ifExistsDo, options)
+    ast.CreateBtreeRelationshipIndex(varFor("n"), relTypeName("R"), props, name, ifExistsDo, options)
 }

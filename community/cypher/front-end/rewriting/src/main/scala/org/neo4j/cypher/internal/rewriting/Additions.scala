@@ -17,10 +17,10 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AlterUser
-import org.neo4j.cypher.internal.ast.CreateNodeIndex
+import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
+import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.CreateRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.CreateUser
@@ -64,7 +64,7 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("The USE clause is not supported in this Cypher version.", u.position)
 
       // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:Label) ON (n.prop) [OPTIONS {...}]
-      case c: CreateNodeIndex =>
+      case c: CreateBtreeNodeIndex =>
         throw cypherExceptionFactory.syntaxException("Creating index using this syntax is not supported in this Cypher version.", c.position)
 
       // DROP INDEX name
@@ -193,7 +193,7 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Revoking privileges on `HOME GRAPH` is not supported in this Cypher version.", p.position)
 
       // CREATE INDEX [name] [IF NOT EXISTS] FOR ()-[n:RelType]-() ON (n.prop) [OPTIONS {...}]
-      case c: CreateRelationshipIndex =>
+      case c: CreateBtreeRelationshipIndex =>
         throw cypherExceptionFactory.syntaxException("Relationship property indexes are not supported in this Cypher version.", c.position)
 
       // SHOW {[PROPERTY] EXISTENCE | PROPERTY EXIST[ENCE]} CONSTRAINTS

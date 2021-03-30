@@ -77,13 +77,17 @@ trait SchemaCommand extends Parser
   }
 
   private def CreateIndex: Rule1[ast.CreateIndex] = rule {
-    group(CreateIndexStart ~~ RelationshipIndexPatternSyntax) ~~>>
-      ((name, ifExistsDo, variable, relType, properties, options) => ast.CreateRelationshipIndex(variable, relType, properties.toList, name, ifExistsDo, options)) |
-    group(CreateIndexStart ~~ NodeIndexPatternSyntax) ~~>>
-      ((name, ifExistsDo, variable, label, properties, options) => ast.CreateNodeIndex(variable, label, properties.toList, name, ifExistsDo, options))
+    CreateBtreeIndex
   }
 
-  private def CreateIndexStart: Rule2[Option[String], ast.IfExistsDo] = rule {
+  private def CreateBtreeIndex: Rule1[ast.CreateIndex] = rule {
+    group(CreateBtreeIndexStart ~~ BtreeRelationshipIndexPatternSyntax) ~~>>
+      ((name, ifExistsDo, variable, relType, properties, options) => ast.CreateBtreeRelationshipIndex(variable, relType, properties.toList, name, ifExistsDo, options)) |
+    group(CreateBtreeIndexStart ~~ BtreeNodeIndexPatternSyntax) ~~>>
+      ((name, ifExistsDo, variable, label, properties, options) => ast.CreateBtreeNodeIndex(variable, label, properties.toList, name, ifExistsDo, options))
+  }
+
+  private def CreateBtreeIndexStart: Rule2[Option[String], ast.IfExistsDo] = rule {
     // without name
     group(keyword("CREATE OR REPLACE BTREE INDEX IF NOT EXISTS FOR") | keyword("CREATE OR REPLACE INDEX IF NOT EXISTS FOR")) ~~~> (_ => None) ~> (_ => ast.IfExistsInvalidSyntax) |
     group(keyword("CREATE OR REPLACE BTREE INDEX FOR") | keyword("CREATE OR REPLACE INDEX FOR")) ~~~> (_ => None) ~> (_ => ast.IfExistsReplace) |
@@ -96,12 +100,12 @@ trait SchemaCommand extends Parser
     group((keyword("CREATE BTREE INDEX") | keyword("CREATE INDEX")) ~~ SymbolicNameString ~~ keyword("FOR")) ~~>> (name => _ => Some(name)) ~> (_ => ast.IfExistsThrowError)
   }
 
-  private def NodeIndexPatternSyntax: Rule4[Variable, LabelName, Seq[Property], Map[String, Expression]] = rule {
+  private def BtreeNodeIndexPatternSyntax: Rule4[Variable, LabelName, Seq[Property], Map[String, Expression]] = rule {
     group("(" ~~ Variable ~~ NodeLabel ~~ ")" ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ options) |
     group("(" ~~ Variable ~~ NodeLabel ~~ ")" ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")") ~> (_ => Map.empty)
   }
 
-  private def RelationshipIndexPatternSyntax: Rule4[Variable, RelTypeName, Seq[Property], Map[String, Expression]] = rule {
+  private def BtreeRelationshipIndexPatternSyntax: Rule4[Variable, RelTypeName, Seq[Property], Map[String, Expression]] = rule {
     group(RelationshipPatternSyntax ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")" ~~ options) |
     group(RelationshipPatternSyntax ~~ keyword("ON") ~~ "(" ~~ VariablePropertyExpressions ~~ ")") ~> (_ => Map.empty)
   }

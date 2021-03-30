@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler
 
-import org.neo4j.cypher.internal.ast.CreateNodeIndex
+import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
+import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.CreateRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
@@ -63,7 +63,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
   override def process(from: BaseState, context: PlannerContext): LogicalPlanState = {
     implicit val idGen: SequentialIdGen = new SequentialIdGen()
 
-    def createIndex(entityName: Either[LabelName, RelTypeName],
+    def createBtreeIndex(entityName: Either[LabelName, RelTypeName],
                     props: List[Property],
                     name: Option[String],
                     ifExistsDo: IfExistsDo,
@@ -73,7 +73,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         case IfExistsDoNothing => Some(plans.DoNothingIfExistsForIndex(entityName, propKeys, name))
         case _ => None
       }
-      Some(plans.CreateIndex(source, entityName, propKeys, name, options))
+      Some(plans.CreateBtreeIndex(source, entityName, propKeys, name, options))
     }
 
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
@@ -135,15 +135,15 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         
       // CREATE INDEX ON :LABEL(prop)
       case CreateIndexOldSyntax(label, props, _) =>
-        Some(plans.CreateIndex(None, Left(label), props, None, Map.empty))
+        Some(plans.CreateBtreeIndex(None, Left(label), props, None, Map.empty))
 
       // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
-      case CreateNodeIndex(_, label, props, name, ifExistsDo, options, _) =>
-        createIndex(Left(label), props, name, ifExistsDo, options)
+      case CreateBtreeNodeIndex(_, label, props, name, ifExistsDo, options, _) =>
+        createBtreeIndex(Left(label), props, name, ifExistsDo, options)
 
       // CREATE INDEX [name] [IF NOT EXISTS] FOR ()-[r:RELATIONSHIP_TYPE]->() ON (r.prop) [OPTIONS {...}]
-      case CreateRelationshipIndex(_, relType, props, name, ifExistsDo, options, _) =>
-        createIndex(Right(relType), props, name, ifExistsDo, options)
+      case CreateBtreeRelationshipIndex(_, relType, props, name, ifExistsDo, options, _) =>
+        createBtreeIndex(Right(relType), props, name, ifExistsDo, options)
 
       // DROP INDEX ON :LABEL(prop)
       case DropIndex(label, props, _) =>

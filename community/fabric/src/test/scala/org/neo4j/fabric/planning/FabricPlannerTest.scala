@@ -23,7 +23,7 @@ import org.neo4j.configuration.helpers.NormalizedDatabaseName
 import org.neo4j.cypher.internal.FullyParsedQuery
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.CreateNodeIndex
+import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
@@ -137,7 +137,7 @@ class FabricPlannerTest
 
       parse(remote.query)
         .shouldEqual(
-          CreateNodeIndex(varFor("n"), labelName("Label"), List(prop("n", "prop")), Some("myIndex"), IfExistsThrowError, Map.empty)(pos)
+          CreateBtreeNodeIndex(varFor("n"), labelName("Label"), List(prop("n", "prop")), Some("myIndex"), IfExistsThrowError, Map.empty)(pos)
         )
     }
 
