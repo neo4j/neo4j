@@ -49,6 +49,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
@@ -488,7 +489,7 @@ class GBPTreeGenericCountsStoreTest
         final IllegalStateException e = assertThrows( IllegalStateException.class,
                 () -> new GBPTreeCountsStore( pageCache, file, fs, immediate(), CountsBuilder.EMPTY, readOnly(), PageCacheTracer.NULL, NO_MONITOR,
                         DEFAULT_DATABASE_NAME ) );
-        assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
+        assertTrue( Exceptions.contains( e, t -> t instanceof ReadOnlyDbException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
     }

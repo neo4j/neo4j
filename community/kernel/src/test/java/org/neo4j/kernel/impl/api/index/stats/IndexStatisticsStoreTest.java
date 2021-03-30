@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
@@ -36,6 +35,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Race;
@@ -284,7 +284,7 @@ class IndexStatisticsStoreTest
                 new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), readOnly(), DEFAULT_DATABASE_NAME,
                         PageCacheTracer.NULL );
         final Exception e = assertThrows( Exception.class, indexStatisticsStore::init );
-        assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
+        assertTrue( Exceptions.contains( e, t -> t instanceof ReadOnlyDbException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
     }

@@ -242,7 +242,6 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
     @Override
     public TokenScanWriter newWriter( PageCursorTracer cursorTracer )
     {
-//        assertWritable();
 
         try
         {
@@ -496,7 +495,7 @@ public abstract class NativeTokenScanStore implements TokenScanStore, EntityToke
 
     private NativeTokenScanWriter writer( PageCursorTracer cursorTracer ) throws IOException
     {
-        return singleWriter.initialize( index.writer( cursorTracer ) );
+        return singleWriter.initialize( index.unsafeWriter( cursorTracer ) );
     }
 
     @Override

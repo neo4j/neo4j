@@ -702,7 +702,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
             }
             catch ( Exception roe )
             {
-                throw new TreeFileNotFoundException( "Can not create new tree file in read only mode.", e );
+                throw new TreeFileNotFoundException( "Can not create new tree file in read only mode.", Exceptions.chain( roe, e ) );
             }
             return createNewIndexFile( pageCache, indexFile );
         }

@@ -505,7 +505,7 @@ public class IndexedIdGenerator implements IdGenerator
         commitAndReuseLock.lock();
         try
         {
-            return new IdRangeMarker( idsPerEntry, layout, tree.writer( cursorTracer ), commitAndReuseLock,
+            return new IdRangeMarker( idsPerEntry, layout, tree.unsafeWriter( cursorTracer ), commitAndReuseLock,
                     started ? defaultMerger : recoveryMerger,
                     started, atLeastOneIdOnFreelist, generation, highestWrittenId, bridgeIdGaps, monitor );
         }
@@ -531,7 +531,6 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public void setHighId( long newHighId )
     {
-        assertNotReadOnly();
         // Apparently there's this thing where there's a check that highId is only set if it's higher than the current highId,
         // i.e. highId cannot be set to something lower than it already is. This check is done in the store implementation.
         // But can we rely on it always guarding this, and can this even happen at all? Anyway here's a simple guard for not setting it to something lower.

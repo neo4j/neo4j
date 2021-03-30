@@ -34,7 +34,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
@@ -529,7 +528,7 @@ class IndexedIdGeneratorTest
         final IllegalStateException e = assertThrows( IllegalStateException.class,
                 () -> new IndexedIdGenerator( pageCache, file, immediate(), IdType.LABEL_TOKEN, false, () -> 0, MAX_ID, readOnly(), Config.defaults(),
                         DEFAULT_DATABASE_NAME, NULL ) );
-        assertTrue( Exceptions.contains( e, t -> t instanceof NoSuchFileException ) );
+        assertTrue( Exceptions.contains( e, t -> t instanceof ReadOnlyDbException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
     }
@@ -585,7 +584,7 @@ class IndexedIdGeneratorTest
     @Test
     void shouldNotSetHighIdIfReadOnly() throws IOException
     {
-        assertOperationThrowInReadOnlyMode( idGenerator -> () -> idGenerator.setHighId( 1 ) );
+        assertOperationPermittedInReadOnlyMode( idGenerator -> () -> idGenerator.setHighId( 1 ) );
     }
 
     @Test

@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,6 +57,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
@@ -189,13 +189,6 @@ public class TokenScanStoreTest
     }
 
     @Test
-    void failToRetrieveWriterOnReadOnlyScanStore()
-    {
-        createAndStartReadOnly();
-        assertThrows( UnsupportedOperationException.class, () -> store.newWriter( NULL ) );
-    }
-
-    @Test
     void forceShouldNotForceWriterOnReadOnlyScanStore() throws IOException
     {
         createAndStartReadOnly();
@@ -207,7 +200,7 @@ public class TokenScanStoreTest
     {
         // WHEN
         final Exception exception = assertThrows( Exception.class, () -> start( readOnly() ) );
-        assertTrue( Exceptions.contains( exception, t -> t instanceof NoSuchFileException ) );
+        assertTrue( Exceptions.contains( exception, t -> t instanceof ReadOnlyDbException ) );
         assertTrue( Exceptions.contains( exception, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( exception, t -> t instanceof IllegalStateException ) );
         assertTrue( Exceptions.contains( exception, t -> t.getMessage().contains( "Label scan store" ) ) );
@@ -224,7 +217,7 @@ public class TokenScanStoreTest
         life.add( store );
 
         final Exception exception = assertThrows( Exception.class, () -> life.start() );
-        assertTrue( Exceptions.contains( exception, t -> t instanceof NoSuchFileException ) );
+        assertTrue( Exceptions.contains( exception, t -> t instanceof ReadOnlyDbException ) );
         assertTrue( Exceptions.contains( exception, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( exception, t -> t instanceof IllegalStateException ) );
         assertTrue( Exceptions.contains( exception, t -> t.getMessage().contains( "Relationship type scan store" ) ) );
