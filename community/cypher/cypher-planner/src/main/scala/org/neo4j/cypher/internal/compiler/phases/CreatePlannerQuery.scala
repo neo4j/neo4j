@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer.Pre
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
+import org.neo4j.cypher.internal.rewriting.conditions.aggregationsAreIsolated
 import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -68,6 +69,8 @@ case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlan
     StatementCondition(containsNoNodesOfType[UnionDistinct]),
     // The PlannerQuery we create should already contain disambiguated names
     AmbiguousNamesDisambiguated,
+    // and we want to take advantage of isolated aggregations in the planner
+    StatementCondition(aggregationsAreIsolated),
     InPredicatesCollapsed
   ) ++
     // The PlannerQuery should be created based on normalised predicates
