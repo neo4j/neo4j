@@ -143,27 +143,33 @@ public class Cypher<STATEMENT,
         this.exceptionFactory = exceptionFactory;
     }
 
-  private POS pos(Token t) {
-    return astFactory.inputPosition(t.beginOffset, t.beginLine, t.beginColumn);
-  }
-
-  private <T> Optional<T> setOrThrowIfAlreadySet(Token start, Optional<T> optional, T value, String errorMessage)  throws Exception {
-    if (optional.isEmpty()) {
-      return Optional.of(value);
+    private POS pos( Token t )
+    {
+        return astFactory.inputPosition( t.beginOffset, t.beginLine, t.beginColumn );
     }
-    else {
-      throw exceptionFactory.syntaxException(new ParseException(errorMessage), start.beginOffset, start.beginLine, start.beginColumn);
-    }
-  }
 
-  private void assertNotAlreadySet(Object object, Token token, String errorMessage) throws Exception {
-    if (object != null) {
-        throw exceptionFactory.syntaxException(new ParseException(errorMessage), token.beginOffset, token.beginLine, token.beginColumn);
+    private <T> Optional<T> setOrThrowIfAlreadySet( Token start, Optional<T> optional, T value, String errorMessage ) throws Exception
+    {
+        if ( optional.isEmpty() )
+        {
+            return Optional.of( value );
+        }
+        else
+        {
+            throw exceptionFactory.syntaxException( new ParseException( errorMessage ), start.beginOffset, start.beginLine, start.beginColumn );
+        }
     }
-  }
 
-  private ADMINISTRATION_COMMAND addUseClauseAndCatalog(ADMINISTRATION_COMMAND command, USE_CLAUSE useClause, boolean hasCatalog)
-  {
+    private void assertNotAlreadySet( Object object, Token token, String errorMessage ) throws Exception
+    {
+        if ( object != null )
+        {
+            throw exceptionFactory.syntaxException( new ParseException( errorMessage ), token.beginOffset, token.beginLine, token.beginColumn );
+        }
+    }
+
+    private ADMINISTRATION_COMMAND addUseClauseAndCatalog( ADMINISTRATION_COMMAND command, USE_CLAUSE useClause, boolean hasCatalog )
+    {
       if( hasCatalog )
       {
           return astFactory.hasCatalog(astFactory.useGraph( command, useClause ));
@@ -172,111 +178,104 @@ public class Cypher<STATEMENT,
       {
           return astFactory.useGraph( command, useClause );
       }
-  }
+    }
 }
 
 PARSER_END(Cypher)
 
 TOKEN_MGR_DECLS :
 {
-	public void CommonTokenAction(Token t)
-	{
-	    CypherCharStream ccStream = (CypherCharStream)input_stream;
-		t.beginOffset = ccStream.getBeginOffset();
-		t.endOffset = ccStream.getEndOffset();
-	}
+    public void CommonTokenAction( Token t )
+    {
+        CypherCharStream ccStream = (CypherCharStream) input_stream;
+        t.beginOffset = ccStream.getBeginOffset();
+        t.endOffset = ccStream.getEndOffset();
+    }
 }
 
 SKIP :
 {
-  " "
-| "\t"
-| "\n"
-| "\r"
+    " "
+    | "\t"
+    | "\n"
+    | "\r"
 }
 
 /* COMMENTS */
 
 SPECIAL_TOKEN :
 {
-  < SINGLE_LINE_COMMENT: "//"(~["\n","\r"])* ("\n"|"\r"|"\r\n")? >
+    < SINGLE_LINE_COMMENT: "//"(~["\n","\r"])* ("\n"|"\r"|"\r\n")? >
 }
 
 MORE :
 {
-  <"/**" ~["/"]> { input_stream.backup(1); } : IN_FORMAL_COMMENT
-|
-  "/*" : IN_MULTI_LINE_COMMENT
+    < "/**" ~["/"] > { input_stream.backup( 1 ); } : IN_FORMAL_COMMENT
+    | "/*" : IN_MULTI_LINE_COMMENT
 }
 
 <IN_FORMAL_COMMENT>
 SPECIAL_TOKEN :
 {
-  <FORMAL_COMMENT: "*/" > : DEFAULT
+    < FORMAL_COMMENT: "*/" > : DEFAULT
 }
 
 <IN_MULTI_LINE_COMMENT>
 SPECIAL_TOKEN :
 {
-  <MULTI_LINE_COMMENT: "*/" > : DEFAULT
+    < MULTI_LINE_COMMENT: "*/" > : DEFAULT
 }
 
 <IN_SINGLE_LINE_COMMENT,IN_FORMAL_COMMENT,IN_MULTI_LINE_COMMENT>
 MORE :
 {
-  < ~[] >
+    < ~[] >
 }
 
 /* LITERALS */
 
 TOKEN :
 {
-  < DECIMAL_DOUBLE: (["+","-"])? (
-                                    (["0"-"9"])+ "." (["0"-"9"])+ (<DECIMAL_EXPONENT>)? (<IDENTIFIER>)?
-                                  | "." (["0"-"9"])+ (<DECIMAL_EXPONENT>)? (<IDENTIFIER>)?
-                                  | (["0"-"9"])+ <DECIMAL_EXPONENT> (<IDENTIFIER>)?
-                                  ) >
-|
-  < #DECIMAL_EXPONENT: ["e","E"] (["+","-"])? (["0"-"9"])+ >
-|
-  < UNSIGNED_DECIMAL_INTEGER:
-    ( ["1"-"9"] (["0"-"9"])* ) | "0" >
-|
-  < UNSIGNED_HEX_INTEGER: "0" ["x","X"] (["0"-"9","a"-"f","A"-"F"])+ >
-|
-  < UNSIGNED_OCTAL_INTEGER: "0" ("o")? (["0"-"7"])+ >
+    < DECIMAL_DOUBLE: (["+","-"])? (
+                        ( ["0"-"9"] )+ "." ( ["0"-"9"] )+ ( <DECIMAL_EXPONENT> )? ( <IDENTIFIER> )?
+                        | "." ( ["0"-"9"] )+ ( <DECIMAL_EXPONENT> )? ( <IDENTIFIER> )?
+                        | ( ["0"-"9"] )+ <DECIMAL_EXPONENT> ( <IDENTIFIER> )? ) >
+    | < #DECIMAL_EXPONENT: ["e","E"] ( ["+","-"] )? ( ["0"-"9"] )+ >
+    | < UNSIGNED_DECIMAL_INTEGER: ( ["1"-"9"] ( ["0"-"9"] )* ) | "0" >
+    | < UNSIGNED_HEX_INTEGER: "0" ["x","X"] ( ["0"-"9","a"-"f","A"-"F"] )+ >
+    | < UNSIGNED_OCTAL_INTEGER: "0" ( "o" )? ( ["0"-"7"] )+ >
 }
 
 MORE : { < STRING1_OPEN: "'" > : STRING1 }
-<STRING1> MORE: { "\\\\" { image.delete(image.length()-2, image.length()); image.append("\\"); } }
-<STRING1> MORE: { "\\\'" { image.delete(image.length()-2, image.length()); image.append("'"); } }
-<STRING1> MORE: { "\\\"" { image.delete(image.length()-2, image.length()); image.append("\""); } }
-<STRING1> MORE: { "\\b" { image.delete(image.length()-2, image.length()); image.append("\b"); } }
-<STRING1> MORE: { "\\f" { image.delete(image.length()-2, image.length()); image.append("\f"); } }
-<STRING1> MORE: { "\\n" { image.delete(image.length()-2, image.length()); image.append("\n"); } }
-<STRING1> MORE: { "\\r" { image.delete(image.length()-2, image.length()); image.append("\r"); } }
-<STRING1> MORE: { "\\t" { image.delete(image.length()-2, image.length()); image.append("\t"); } }
+<STRING1> MORE: { "\\\\" { image.delete( image.length() - 2, image.length() ); image.append( "\\" ); } }
+<STRING1> MORE: { "\\\'" { image.delete( image.length() - 2, image.length() ); image.append( "'" ); } }
+<STRING1> MORE: { "\\\"" { image.delete( image.length() - 2, image.length() ); image.append( "\"" ); } }
+<STRING1> MORE: { "\\b" { image.delete( image.length() - 2, image.length() ); image.append( "\b" ); } }
+<STRING1> MORE: { "\\f" { image.delete( image.length() - 2, image.length() ); image.append( "\f" ); } }
+<STRING1> MORE: { "\\n" { image.delete( image.length() - 2, image.length() ); image.append( "\n" ); } }
+<STRING1> MORE: { "\\r" { image.delete( image.length() - 2, image.length() ); image.append( "\r" ); } }
+<STRING1> MORE: { "\\t" { image.delete( image.length() - 2, image.length() ); image.append( "\t" ); } }
 <STRING1> MORE: { "\\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" }
 <STRING1> MORE: { < ~["'"] > }
-<STRING1> TOKEN: { <STRING_LITERAL1: "'"> {matchedToken.image = image.substring(1, image.length()-1); } : DEFAULT }
+<STRING1> TOKEN: { <STRING_LITERAL1: "'"> { matchedToken.image = image.substring( 1, image.length() - 1 ); } : DEFAULT }
 
 MORE : { < STRING2_OPEN: "\"" > : STRING2 }
-<STRING2> MORE: { "\\\\" { image.delete(image.length()-2, image.length()); image.append("\\"); } }
-<STRING2> MORE: { "\\\'" { image.delete(image.length()-2, image.length()); image.append("'"); } }
-<STRING2> MORE: { "\\\"" { image.delete(image.length()-2, image.length()); image.append("\""); } }
-<STRING2> MORE: { "\\b" { image.delete(image.length()-2, image.length()); image.append("\b"); } }
-<STRING2> MORE: { "\\f" { image.delete(image.length()-2, image.length()); image.append("\f"); } }
-<STRING2> MORE: { "\\n" { image.delete(image.length()-2, image.length()); image.append("\n"); } }
-<STRING2> MORE: { "\\r" { image.delete(image.length()-2, image.length()); image.append("\r"); } }
-<STRING2> MORE: { "\\t" { image.delete(image.length()-2, image.length()); image.append("\t"); } }
+<STRING2> MORE: { "\\\\" { image.delete( image.length() - 2, image.length() ); image.append( "\\" ); } }
+<STRING2> MORE: { "\\\'" { image.delete( image.length() - 2, image.length() ); image.append( "'" ); } }
+<STRING2> MORE: { "\\\"" { image.delete( image.length() - 2, image.length() ); image.append( "\"" ); } }
+<STRING2> MORE: { "\\b" { image.delete( image.length() - 2, image.length() ); image.append( "\b" ); } }
+<STRING2> MORE: { "\\f" { image.delete( image.length() - 2, image.length() ); image.append( "\f" ); } }
+<STRING2> MORE: { "\\n" { image.delete( image.length() - 2, image.length() ); image.append( "\n" ); } }
+<STRING2> MORE: { "\\r" { image.delete( image.length() - 2, image.length() ); image.append( "\r" ); } }
+<STRING2> MORE: { "\\t" { image.delete( image.length() - 2, image.length() ); image.append( "\t" ); } }
 <STRING2> MORE: { "\\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" }
 <STRING2> MORE: { < ~["\""] > }
-<STRING2> TOKEN: { <STRING_LITERAL2: "\""> {matchedToken.image = image.substring(1, image.length()-1); } : DEFAULT }
+<STRING2> TOKEN: { <STRING_LITERAL2: "\""> { matchedToken.image = image.substring( 1, image.length() - 1 ); } : DEFAULT }
 
 MORE : { < ESCAPED_SYMBOLIC_NAME_OPEN: "`" > : ESC_SYMB_NAME }
 <ESC_SYMB_NAME> MORE: { < ~["`"] > }
-<ESC_SYMB_NAME> MORE: { "``" { image.delete(image.length()-2, image.length()); image.append("`"); } }
-<ESC_SYMB_NAME> TOKEN: { <ESCAPED_SYMBOLIC_NAME: "`"> {matchedToken.image = image.substring(1, image.length()-1); } : DEFAULT }
+<ESC_SYMB_NAME> MORE: { "``" { image.delete( image.length() - 2, image.length() ); image.append( "`" ); } }
+<ESC_SYMB_NAME> TOKEN: { <ESCAPED_SYMBOLIC_NAME: "`"> { matchedToken.image = image.substring( 1, image.length() - 1 ); } : DEFAULT }
 
 /**
 * add new tokens to SymbolicNameString() if they should be accepted as an identifier as well
@@ -438,682 +437,686 @@ TOKEN [IGNORE_CASE] :
 
 TOKEN :
 {
-  < IDENTIFIER: <LETTER> (<PART_LETTER>)* >
-|
-  < #LETTER:
-      [  // all chars for which Character.isIdentifierStart is true except `$`
-         "A"-"Z",
-         "_",
-         "a"-"z",
-         "\u00a2"-"\u00a5",
-         "\u00aa",
-         "\u00b5",
-         "\u00ba",
-         "\u00c0"-"\u00d6",
-         "\u00d8"-"\u00f6",
-         "\u00f8"-"\u021f",
-         "\u0222"-"\u0233",
-         "\u0250"-"\u02ad",
-         "\u02b0"-"\u02b8",
-         "\u02bb"-"\u02c1",
-         "\u02d0"-"\u02d1",
-         "\u02e0"-"\u02e4",
-         "\u02ee",
-         "\u037a",
-         "\u0386",
-         "\u0388"-"\u038a",
-         "\u038c",
-         "\u038e"-"\u03a1",
-         "\u03a3"-"\u03ce",
-         "\u03d0"-"\u03d7",
-         "\u03da"-"\u03f3",
-         "\u0400"-"\u0481",
-         "\u048c"-"\u04c4",
-         "\u04c7"-"\u04c8",
-         "\u04cb"-"\u04cc",
-         "\u04d0"-"\u04f5",
-         "\u04f8"-"\u04f9",
-         "\u0531"-"\u0556",
-         "\u0559",
-         "\u0561"-"\u0587",
-         "\u05d0"-"\u05ea",
-         "\u05f0"-"\u05f2",
-         "\u0621"-"\u063a",
-         "\u0640"-"\u064a",
-         "\u0671"-"\u06d3",
-         "\u06d5",
-         "\u06e5"-"\u06e6",
-         "\u06fa"-"\u06fc",
-         "\u0710",
-         "\u0712"-"\u072c",
-         "\u0780"-"\u07a5",
-         "\u0905"-"\u0939",
-         "\u093d",
-         "\u0950",
-         "\u0958"-"\u0961",
-         "\u0985"-"\u098c",
-         "\u098f"-"\u0990",
-         "\u0993"-"\u09a8",
-         "\u09aa"-"\u09b0",
-         "\u09b2",
-         "\u09b6"-"\u09b9",
-         "\u09dc"-"\u09dd",
-         "\u09df"-"\u09e1",
-         "\u09f0"-"\u09f3",
-         "\u0a05"-"\u0a0a",
-         "\u0a0f"-"\u0a10",
-         "\u0a13"-"\u0a28",
-         "\u0a2a"-"\u0a30",
-         "\u0a32"-"\u0a33",
-         "\u0a35"-"\u0a36",
-         "\u0a38"-"\u0a39",
-         "\u0a59"-"\u0a5c",
-         "\u0a5e",
-         "\u0a72"-"\u0a74",
-         "\u0a85"-"\u0a8b",
-         "\u0a8d",
-         "\u0a8f"-"\u0a91",
-         "\u0a93"-"\u0aa8",
-         "\u0aaa"-"\u0ab0",
-         "\u0ab2"-"\u0ab3",
-         "\u0ab5"-"\u0ab9",
-         "\u0abd",
-         "\u0ad0",
-         "\u0ae0",
-         "\u0b05"-"\u0b0c",
-         "\u0b0f"-"\u0b10",
-         "\u0b13"-"\u0b28",
-         "\u0b2a"-"\u0b30",
-         "\u0b32"-"\u0b33",
-         "\u0b36"-"\u0b39",
-         "\u0b3d",
-         "\u0b5c"-"\u0b5d",
-         "\u0b5f"-"\u0b61",
-         "\u0b85"-"\u0b8a",
-         "\u0b8e"-"\u0b90",
-         "\u0b92"-"\u0b95",
-         "\u0b99"-"\u0b9a",
-         "\u0b9c",
-         "\u0b9e"-"\u0b9f",
-         "\u0ba3"-"\u0ba4",
-         "\u0ba8"-"\u0baa",
-         "\u0bae"-"\u0bb5",
-         "\u0bb7"-"\u0bb9",
-         "\u0c05"-"\u0c0c",
-         "\u0c0e"-"\u0c10",
-         "\u0c12"-"\u0c28",
-         "\u0c2a"-"\u0c33",
-         "\u0c35"-"\u0c39",
-         "\u0c60"-"\u0c61",
-         "\u0c85"-"\u0c8c",
-         "\u0c8e"-"\u0c90",
-         "\u0c92"-"\u0ca8",
-         "\u0caa"-"\u0cb3",
-         "\u0cb5"-"\u0cb9",
-         "\u0cde",
-         "\u0ce0"-"\u0ce1",
-         "\u0d05"-"\u0d0c",
-         "\u0d0e"-"\u0d10",
-         "\u0d12"-"\u0d28",
-         "\u0d2a"-"\u0d39",
-         "\u0d60"-"\u0d61",
-         "\u0d85"-"\u0d96",
-         "\u0d9a"-"\u0db1",
-         "\u0db3"-"\u0dbb",
-         "\u0dbd",
-         "\u0dc0"-"\u0dc6",
-         "\u0e01"-"\u0e30",
-         "\u0e32"-"\u0e33",
-         "\u0e3f"-"\u0e46",
-         "\u0e81"-"\u0e82",
-         "\u0e84",
-         "\u0e87"-"\u0e88",
-         "\u0e8a",
-         "\u0e8d",
-         "\u0e94"-"\u0e97",
-         "\u0e99"-"\u0e9f",
-         "\u0ea1"-"\u0ea3",
-         "\u0ea5",
-         "\u0ea7",
-         "\u0eaa"-"\u0eab",
-         "\u0ead"-"\u0eb0",
-         "\u0eb2"-"\u0eb3",
-         "\u0ebd",
-         "\u0ec0"-"\u0ec4",
-         "\u0ec6",
-         "\u0edc"-"\u0edd",
-         "\u0f00",
-         "\u0f40"-"\u0f47",
-         "\u0f49"-"\u0f6a",
-         "\u0f88"-"\u0f8b",
-         "\u1000"-"\u1021",
-         "\u1023"-"\u1027",
-         "\u1029"-"\u102a",
-         "\u1050"-"\u1055",
-         "\u10a0"-"\u10c5",
-         "\u10d0"-"\u10f6",
-         "\u1100"-"\u1159",
-         "\u115f"-"\u11a2",
-         "\u11a8"-"\u11f9",
-         "\u1200"-"\u1206",
-         "\u1208"-"\u1246",
-         "\u1248",
-         "\u124a"-"\u124d",
-         "\u1250"-"\u1256",
-         "\u1258",
-         "\u125a"-"\u125d",
-         "\u1260"-"\u1286",
-         "\u1288",
-         "\u128a"-"\u128d",
-         "\u1290"-"\u12ae",
-         "\u12b0",
-         "\u12b2"-"\u12b5",
-         "\u12b8"-"\u12be",
-         "\u12c0",
-         "\u12c2"-"\u12c5",
-         "\u12c8"-"\u12ce",
-         "\u12d0"-"\u12d6",
-         "\u12d8"-"\u12ee",
-         "\u12f0"-"\u130e",
-         "\u1310",
-         "\u1312"-"\u1315",
-         "\u1318"-"\u131e",
-         "\u1320"-"\u1346",
-         "\u1348"-"\u135a",
-         "\u13a0"-"\u13f4",
-         "\u1401"-"\u166c",
-         "\u166f"-"\u1676",
-         "\u1681"-"\u169a",
-         "\u16a0"-"\u16ea",
-         "\u1780"-"\u17b3",
-         "\u17db",
-         "\u1820"-"\u1877",
-         "\u1880"-"\u18a8",
-         "\u1e00"-"\u1e9b",
-         "\u1ea0"-"\u1ef9",
-         "\u1f00"-"\u1f15",
-         "\u1f18"-"\u1f1d",
-         "\u1f20"-"\u1f45",
-         "\u1f48"-"\u1f4d",
-         "\u1f50"-"\u1f57",
-         "\u1f59",
-         "\u1f5b",
-         "\u1f5d",
-         "\u1f5f"-"\u1f7d",
-         "\u1f80"-"\u1fb4",
-         "\u1fb6"-"\u1fbc",
-         "\u1fbe",
-         "\u1fc2"-"\u1fc4",
-         "\u1fc6"-"\u1fcc",
-         "\u1fd0"-"\u1fd3",
-         "\u1fd6"-"\u1fdb",
-         "\u1fe0"-"\u1fec",
-         "\u1ff2"-"\u1ff4",
-         "\u1ff6"-"\u1ffc",
-         "\u203f"-"\u2040",
-         "\u207f",
-         "\u20a0"-"\u20af",
-         "\u2102",
-         "\u2107",
-         "\u210a"-"\u2113",
-         "\u2115",
-         "\u2119"-"\u211d",
-         "\u2124",
-         "\u2126",
-         "\u2128",
-         "\u212a"-"\u212d",
-         "\u212f"-"\u2131",
-         "\u2133"-"\u2139",
-         "\u2160"-"\u2183",
-         "\u3005"-"\u3007",
-         "\u3021"-"\u3029",
-         "\u3031"-"\u3035",
-         "\u3038"-"\u303a",
-         "\u3041"-"\u3094",
-         "\u309d"-"\u309e",
-         "\u30a1"-"\u30fe",
-         "\u3105"-"\u312c",
-         "\u3131"-"\u318e",
-         "\u31a0"-"\u31b7",
-         "\u3400"-"\u4db5",
-         "\u4e00"-"\u9fa5",
-         "\ua000"-"\ua48c",
-         "\uac00"-"\ud7a3",
-         "\uf900"-"\ufa2d",
-         "\ufb00"-"\ufb06",
-         "\ufb13"-"\ufb17",
-         "\ufb1d",
-         "\ufb1f"-"\ufb28",
-         "\ufb2a"-"\ufb36",
-         "\ufb38"-"\ufb3c",
-         "\ufb3e",
-         "\ufb40"-"\ufb41",
-         "\ufb43"-"\ufb44",
-         "\ufb46"-"\ufbb1",
-         "\ufbd3"-"\ufd3d",
-         "\ufd50"-"\ufd8f",
-         "\ufd92"-"\ufdc7",
-         "\ufdf0"-"\ufdfb",
-         "\ufe33"-"\ufe34",
-         "\ufe4d"-"\ufe4f",
-         "\ufe69",
-         "\ufe70"-"\ufe72",
-         "\ufe74",
-         "\ufe76"-"\ufefc",
-         "\uff04",
-         "\uff21"-"\uff3a",
-         "\uff3f",
-         "\uff41"-"\uff5a",
-         "\uff65"-"\uffbe",
-         "\uffc2"-"\uffc7",
-         "\uffca"-"\uffcf",
-         "\uffd2"-"\uffd7",
-         "\uffda"-"\uffdc",
-         "\uffe0"-"\uffe1",
-         "\uffe5"-"\uffe6"
-      ]
-  >
-|
-  < #PART_LETTER:
-      [  // all chars for which Character.isIdentifierPart is true
-         "\u0000"-"\u0008",
-         "\u000e"-"\u001b",
-         "0"-"9",
-         "A"-"Z",
-         "_",
-         "a"-"z",
-         "\u007f"-"\u009f",
-         "\u00a2"-"\u00a5",
-         "\u00aa",
-         "\u00b5",
-         "\u00ba",
-         "\u00c0"-"\u00d6",
-         "\u00d8"-"\u00f6",
-         "\u00f8"-"\u021f",
-         "\u0222"-"\u0233",
-         "\u0250"-"\u02ad",
-         "\u02b0"-"\u02b8",
-         "\u02bb"-"\u02c1",
-         "\u02d0"-"\u02d1",
-         "\u02e0"-"\u02e4",
-         "\u02ee",
-         "\u0300"-"\u034e",
-         "\u0360"-"\u0362",
-         "\u037a",
-         "\u0386",
-         "\u0388"-"\u038a",
-         "\u038c",
-         "\u038e"-"\u03a1",
-         "\u03a3"-"\u03ce",
-         "\u03d0"-"\u03d7",
-         "\u03da"-"\u03f3",
-         "\u0400"-"\u0481",
-         "\u0483"-"\u0486",
-         "\u048c"-"\u04c4",
-         "\u04c7"-"\u04c8",
-         "\u04cb"-"\u04cc",
-         "\u04d0"-"\u04f5",
-         "\u04f8"-"\u04f9",
-         "\u0531"-"\u0556",
-         "\u0559",
-         "\u0561"-"\u0587",
-         "\u0591"-"\u05a1",
-         "\u05a3"-"\u05b9",
-         "\u05bb"-"\u05bd",
-         "\u05bf",
-         "\u05c1"-"\u05c2",
-         "\u05c4",
-         "\u05d0"-"\u05ea",
-         "\u05f0"-"\u05f2",
-         "\u0621"-"\u063a",
-         "\u0640"-"\u0655",
-         "\u0660"-"\u0669",
-         "\u0670"-"\u06d3",
-         "\u06d5"-"\u06dc",
-         "\u06df"-"\u06e8",
-         "\u06ea"-"\u06ed",
-         "\u06f0"-"\u06fc",
-         "\u070f"-"\u072c",
-         "\u0730"-"\u074a",
-         "\u0780"-"\u07b0",
-         "\u0901"-"\u0903",
-         "\u0905"-"\u0939",
-         "\u093c"-"\u094d",
-         "\u0950"-"\u0954",
-         "\u0958"-"\u0963",
-         "\u0966"-"\u096f",
-         "\u0981"-"\u0983",
-         "\u0985"-"\u098c",
-         "\u098f"-"\u0990",
-         "\u0993"-"\u09a8",
-         "\u09aa"-"\u09b0",
-         "\u09b2",
-         "\u09b6"-"\u09b9",
-         "\u09bc",
-         "\u09be"-"\u09c4",
-         "\u09c7"-"\u09c8",
-         "\u09cb"-"\u09cd",
-         "\u09d7",
-         "\u09dc"-"\u09dd",
-         "\u09df"-"\u09e3",
-         "\u09e6"-"\u09f3",
-         "\u0a02",
-         "\u0a05"-"\u0a0a",
-         "\u0a0f"-"\u0a10",
-         "\u0a13"-"\u0a28",
-         "\u0a2a"-"\u0a30",
-         "\u0a32"-"\u0a33",
-         "\u0a35"-"\u0a36",
-         "\u0a38"-"\u0a39",
-         "\u0a3c",
-         "\u0a3e"-"\u0a42",
-         "\u0a47"-"\u0a48",
-         "\u0a4b"-"\u0a4d",
-         "\u0a59"-"\u0a5c",
-         "\u0a5e",
-         "\u0a66"-"\u0a74",
-         "\u0a81"-"\u0a83",
-         "\u0a85"-"\u0a8b",
-         "\u0a8d",
-         "\u0a8f"-"\u0a91",
-         "\u0a93"-"\u0aa8",
-         "\u0aaa"-"\u0ab0",
-         "\u0ab2"-"\u0ab3",
-         "\u0ab5"-"\u0ab9",
-         "\u0abc"-"\u0ac5",
-         "\u0ac7"-"\u0ac9",
-         "\u0acb"-"\u0acd",
-         "\u0ad0",
-         "\u0ae0",
-         "\u0ae6"-"\u0aef",
-         "\u0b01"-"\u0b03",
-         "\u0b05"-"\u0b0c",
-         "\u0b0f"-"\u0b10",
-         "\u0b13"-"\u0b28",
-         "\u0b2a"-"\u0b30",
-         "\u0b32"-"\u0b33",
-         "\u0b36"-"\u0b39",
-         "\u0b3c"-"\u0b43",
-         "\u0b47"-"\u0b48",
-         "\u0b4b"-"\u0b4d",
-         "\u0b56"-"\u0b57",
-         "\u0b5c"-"\u0b5d",
-         "\u0b5f"-"\u0b61",
-         "\u0b66"-"\u0b6f",
-         "\u0b82"-"\u0b83",
-         "\u0b85"-"\u0b8a",
-         "\u0b8e"-"\u0b90",
-         "\u0b92"-"\u0b95",
-         "\u0b99"-"\u0b9a",
-         "\u0b9c",
-         "\u0b9e"-"\u0b9f",
-         "\u0ba3"-"\u0ba4",
-         "\u0ba8"-"\u0baa",
-         "\u0bae"-"\u0bb5",
-         "\u0bb7"-"\u0bb9",
-         "\u0bbe"-"\u0bc2",
-         "\u0bc6"-"\u0bc8",
-         "\u0bca"-"\u0bcd",
-         "\u0bd7",
-         "\u0be7"-"\u0bef",
-         "\u0c01"-"\u0c03",
-         "\u0c05"-"\u0c0c",
-         "\u0c0e"-"\u0c10",
-         "\u0c12"-"\u0c28",
-         "\u0c2a"-"\u0c33",
-         "\u0c35"-"\u0c39",
-         "\u0c3e"-"\u0c44",
-         "\u0c46"-"\u0c48",
-         "\u0c4a"-"\u0c4d",
-         "\u0c55"-"\u0c56",
-         "\u0c60"-"\u0c61",
-         "\u0c66"-"\u0c6f",
-         "\u0c82"-"\u0c83",
-         "\u0c85"-"\u0c8c",
-         "\u0c8e"-"\u0c90",
-         "\u0c92"-"\u0ca8",
-         "\u0caa"-"\u0cb3",
-         "\u0cb5"-"\u0cb9",
-         "\u0cbe"-"\u0cc4",
-         "\u0cc6"-"\u0cc8",
-         "\u0cca"-"\u0ccd",
-         "\u0cd5"-"\u0cd6",
-         "\u0cde",
-         "\u0ce0"-"\u0ce1",
-         "\u0ce6"-"\u0cef",
-         "\u0d02"-"\u0d03",
-         "\u0d05"-"\u0d0c",
-         "\u0d0e"-"\u0d10",
-         "\u0d12"-"\u0d28",
-         "\u0d2a"-"\u0d39",
-         "\u0d3e"-"\u0d43",
-         "\u0d46"-"\u0d48",
-         "\u0d4a"-"\u0d4d",
-         "\u0d57",
-         "\u0d60"-"\u0d61",
-         "\u0d66"-"\u0d6f",
-         "\u0d82"-"\u0d83",
-         "\u0d85"-"\u0d96",
-         "\u0d9a"-"\u0db1",
-         "\u0db3"-"\u0dbb",
-         "\u0dbd",
-         "\u0dc0"-"\u0dc6",
-         "\u0dca",
-         "\u0dcf"-"\u0dd4",
-         "\u0dd6",
-         "\u0dd8"-"\u0ddf",
-         "\u0df2"-"\u0df3",
-         "\u0e01"-"\u0e3a",
-         "\u0e3f"-"\u0e4e",
-         "\u0e50"-"\u0e59",
-         "\u0e81"-"\u0e82",
-         "\u0e84",
-         "\u0e87"-"\u0e88",
-         "\u0e8a",
-         "\u0e8d",
-         "\u0e94"-"\u0e97",
-         "\u0e99"-"\u0e9f",
-         "\u0ea1"-"\u0ea3",
-         "\u0ea5",
-         "\u0ea7",
-         "\u0eaa"-"\u0eab",
-         "\u0ead"-"\u0eb9",
-         "\u0ebb"-"\u0ebd",
-         "\u0ec0"-"\u0ec4",
-         "\u0ec6",
-         "\u0ec8"-"\u0ecd",
-         "\u0ed0"-"\u0ed9",
-         "\u0edc"-"\u0edd",
-         "\u0f00",
-         "\u0f18"-"\u0f19",
-         "\u0f20"-"\u0f29",
-         "\u0f35",
-         "\u0f37",
-         "\u0f39",
-         "\u0f3e"-"\u0f47",
-         "\u0f49"-"\u0f6a",
-         "\u0f71"-"\u0f84",
-         "\u0f86"-"\u0f8b",
-         "\u0f90"-"\u0f97",
-         "\u0f99"-"\u0fbc",
-         "\u0fc6",
-         "\u1000"-"\u1021",
-         "\u1023"-"\u1027",
-         "\u1029"-"\u102a",
-         "\u102c"-"\u1032",
-         "\u1036"-"\u1039",
-         "\u1040"-"\u1049",
-         "\u1050"-"\u1059",
-         "\u10a0"-"\u10c5",
-         "\u10d0"-"\u10f6",
-         "\u1100"-"\u1159",
-         "\u115f"-"\u11a2",
-         "\u11a8"-"\u11f9",
-         "\u1200"-"\u1206",
-         "\u1208"-"\u1246",
-         "\u1248",
-         "\u124a"-"\u124d",
-         "\u1250"-"\u1256",
-         "\u1258",
-         "\u125a"-"\u125d",
-         "\u1260"-"\u1286",
-         "\u1288",
-         "\u128a"-"\u128d",
-         "\u1290"-"\u12ae",
-         "\u12b0",
-         "\u12b2"-"\u12b5",
-         "\u12b8"-"\u12be",
-         "\u12c0",
-         "\u12c2"-"\u12c5",
-         "\u12c8"-"\u12ce",
-         "\u12d0"-"\u12d6",
-         "\u12d8"-"\u12ee",
-         "\u12f0"-"\u130e",
-         "\u1310",
-         "\u1312"-"\u1315",
-         "\u1318"-"\u131e",
-         "\u1320"-"\u1346",
-         "\u1348"-"\u135a",
-         "\u1369"-"\u1371",
-         "\u13a0"-"\u13f4",
-         "\u1401"-"\u166c",
-         "\u166f"-"\u1676",
-         "\u1681"-"\u169a",
-         "\u16a0"-"\u16ea",
-         "\u1780"-"\u17d3",
-         "\u17db",
-         "\u17e0"-"\u17e9",
-         "\u180b"-"\u180e",
-         "\u1810"-"\u1819",
-         "\u1820"-"\u1877",
-         "\u1880"-"\u18a9",
-         "\u1e00"-"\u1e9b",
-         "\u1ea0"-"\u1ef9",
-         "\u1f00"-"\u1f15",
-         "\u1f18"-"\u1f1d",
-         "\u1f20"-"\u1f45",
-         "\u1f48"-"\u1f4d",
-         "\u1f50"-"\u1f57",
-         "\u1f59",
-         "\u1f5b",
-         "\u1f5d",
-         "\u1f5f"-"\u1f7d",
-         "\u1f80"-"\u1fb4",
-         "\u1fb6"-"\u1fbc",
-         "\u1fbe",
-         "\u1fc2"-"\u1fc4",
-         "\u1fc6"-"\u1fcc",
-         "\u1fd0"-"\u1fd3",
-         "\u1fd6"-"\u1fdb",
-         "\u1fe0"-"\u1fec",
-         "\u1ff2"-"\u1ff4",
-         "\u1ff6"-"\u1ffc",
-         "\u200c"-"\u200f",
-         "\u202a"-"\u202e",
-         "\u203f"-"\u2040",
-         "\u206a"-"\u206f",
-         "\u207f",
-         "\u20a0"-"\u20af",
-         "\u20d0"-"\u20dc",
-         "\u20e1",
-         "\u2102",
-         "\u2107",
-         "\u210a"-"\u2113",
-         "\u2115",
-         "\u2119"-"\u211d",
-         "\u2124",
-         "\u2126",
-         "\u2128",
-         "\u212a"-"\u212d",
-         "\u212f"-"\u2131",
-         "\u2133"-"\u2139",
-         "\u2160"-"\u2183",
-         "\u3005"-"\u3007",
-         "\u3021"-"\u302f",
-         "\u3031"-"\u3035",
-         "\u3038"-"\u303a",
-         "\u3041"-"\u3094",
-         "\u3099"-"\u309a",
-         "\u309d"-"\u309e",
-         "\u30a1"-"\u30fe",
-         "\u3105"-"\u312c",
-         "\u3131"-"\u318e",
-         "\u31a0"-"\u31b7",
-         "\u3400"-"\u4db5",
-         "\u4e00"-"\u9fa5",
-         "\ua000"-"\ua48c",
-         "\uac00"-"\ud7a3",
-         "\uf900"-"\ufa2d",
-         "\ufb00"-"\ufb06",
-         "\ufb13"-"\ufb17",
-         "\ufb1d"-"\ufb28",
-         "\ufb2a"-"\ufb36",
-         "\ufb38"-"\ufb3c",
-         "\ufb3e",
-         "\ufb40"-"\ufb41",
-         "\ufb43"-"\ufb44",
-         "\ufb46"-"\ufbb1",
-         "\ufbd3"-"\ufd3d",
-         "\ufd50"-"\ufd8f",
-         "\ufd92"-"\ufdc7",
-         "\ufdf0"-"\ufdfb",
-         "\ufe20"-"\ufe23",
-         "\ufe33"-"\ufe34",
-         "\ufe4d"-"\ufe4f",
-         "\ufe69",
-         "\ufe70"-"\ufe72",
-         "\ufe74",
-         "\ufe76"-"\ufefc",
-         "\ufeff",
-         "\uff04",
-         "\uff10"-"\uff19",
-         "\uff21"-"\uff3a",
-         "\uff3f",
-         "\uff41"-"\uff5a",
-         "\uff65"-"\uffbe",
-         "\uffc2"-"\uffc7",
-         "\uffca"-"\uffcf",
-         "\uffd2"-"\uffd7",
-         "\uffda"-"\uffdc",
-         "\uffe0"-"\uffe1",
-         "\uffe5"-"\uffe6",
-         "\ufff9"-"\ufffb"
-      ]
-  >
+    < IDENTIFIER: <LETTER> (<PART_LETTER>)* >
+    | < #LETTER:
+        [  // all chars for which Character.isIdentifierStart is true except `$`
+            "A"-"Z",
+            "_",
+            "a"-"z",
+            "\u00a2"-"\u00a5",
+            "\u00aa",
+            "\u00b5",
+            "\u00ba",
+            "\u00c0"-"\u00d6",
+            "\u00d8"-"\u00f6",
+            "\u00f8"-"\u021f",
+            "\u0222"-"\u0233",
+            "\u0250"-"\u02ad",
+            "\u02b0"-"\u02b8",
+            "\u02bb"-"\u02c1",
+            "\u02d0"-"\u02d1",
+            "\u02e0"-"\u02e4",
+            "\u02ee",
+            "\u037a",
+            "\u0386",
+            "\u0388"-"\u038a",
+            "\u038c",
+            "\u038e"-"\u03a1",
+            "\u03a3"-"\u03ce",
+            "\u03d0"-"\u03d7",
+            "\u03da"-"\u03f3",
+            "\u0400"-"\u0481",
+            "\u048c"-"\u04c4",
+            "\u04c7"-"\u04c8",
+            "\u04cb"-"\u04cc",
+            "\u04d0"-"\u04f5",
+            "\u04f8"-"\u04f9",
+            "\u0531"-"\u0556",
+            "\u0559",
+            "\u0561"-"\u0587",
+            "\u05d0"-"\u05ea",
+            "\u05f0"-"\u05f2",
+            "\u0621"-"\u063a",
+            "\u0640"-"\u064a",
+            "\u0671"-"\u06d3",
+            "\u06d5",
+            "\u06e5"-"\u06e6",
+            "\u06fa"-"\u06fc",
+            "\u0710",
+            "\u0712"-"\u072c",
+            "\u0780"-"\u07a5",
+            "\u0905"-"\u0939",
+            "\u093d",
+            "\u0950",
+            "\u0958"-"\u0961",
+            "\u0985"-"\u098c",
+            "\u098f"-"\u0990",
+            "\u0993"-"\u09a8",
+            "\u09aa"-"\u09b0",
+            "\u09b2",
+            "\u09b6"-"\u09b9",
+            "\u09dc"-"\u09dd",
+            "\u09df"-"\u09e1",
+            "\u09f0"-"\u09f3",
+            "\u0a05"-"\u0a0a",
+            "\u0a0f"-"\u0a10",
+            "\u0a13"-"\u0a28",
+            "\u0a2a"-"\u0a30",
+            "\u0a32"-"\u0a33",
+            "\u0a35"-"\u0a36",
+            "\u0a38"-"\u0a39",
+            "\u0a59"-"\u0a5c",
+            "\u0a5e",
+            "\u0a72"-"\u0a74",
+            "\u0a85"-"\u0a8b",
+            "\u0a8d",
+            "\u0a8f"-"\u0a91",
+            "\u0a93"-"\u0aa8",
+            "\u0aaa"-"\u0ab0",
+            "\u0ab2"-"\u0ab3",
+            "\u0ab5"-"\u0ab9",
+            "\u0abd",
+            "\u0ad0",
+            "\u0ae0",
+            "\u0b05"-"\u0b0c",
+            "\u0b0f"-"\u0b10",
+            "\u0b13"-"\u0b28",
+            "\u0b2a"-"\u0b30",
+            "\u0b32"-"\u0b33",
+            "\u0b36"-"\u0b39",
+            "\u0b3d",
+            "\u0b5c"-"\u0b5d",
+            "\u0b5f"-"\u0b61",
+            "\u0b85"-"\u0b8a",
+            "\u0b8e"-"\u0b90",
+            "\u0b92"-"\u0b95",
+            "\u0b99"-"\u0b9a",
+            "\u0b9c",
+            "\u0b9e"-"\u0b9f",
+            "\u0ba3"-"\u0ba4",
+            "\u0ba8"-"\u0baa",
+            "\u0bae"-"\u0bb5",
+            "\u0bb7"-"\u0bb9",
+            "\u0c05"-"\u0c0c",
+            "\u0c0e"-"\u0c10",
+            "\u0c12"-"\u0c28",
+            "\u0c2a"-"\u0c33",
+            "\u0c35"-"\u0c39",
+            "\u0c60"-"\u0c61",
+            "\u0c85"-"\u0c8c",
+            "\u0c8e"-"\u0c90",
+            "\u0c92"-"\u0ca8",
+            "\u0caa"-"\u0cb3",
+            "\u0cb5"-"\u0cb9",
+            "\u0cde",
+            "\u0ce0"-"\u0ce1",
+            "\u0d05"-"\u0d0c",
+            "\u0d0e"-"\u0d10",
+            "\u0d12"-"\u0d28",
+            "\u0d2a"-"\u0d39",
+            "\u0d60"-"\u0d61",
+            "\u0d85"-"\u0d96",
+            "\u0d9a"-"\u0db1",
+            "\u0db3"-"\u0dbb",
+            "\u0dbd",
+            "\u0dc0"-"\u0dc6",
+            "\u0e01"-"\u0e30",
+            "\u0e32"-"\u0e33",
+            "\u0e3f"-"\u0e46",
+            "\u0e81"-"\u0e82",
+            "\u0e84",
+            "\u0e87"-"\u0e88",
+            "\u0e8a",
+            "\u0e8d",
+            "\u0e94"-"\u0e97",
+            "\u0e99"-"\u0e9f",
+            "\u0ea1"-"\u0ea3",
+            "\u0ea5",
+            "\u0ea7",
+            "\u0eaa"-"\u0eab",
+            "\u0ead"-"\u0eb0",
+            "\u0eb2"-"\u0eb3",
+            "\u0ebd",
+            "\u0ec0"-"\u0ec4",
+            "\u0ec6",
+            "\u0edc"-"\u0edd",
+            "\u0f00",
+            "\u0f40"-"\u0f47",
+            "\u0f49"-"\u0f6a",
+            "\u0f88"-"\u0f8b",
+            "\u1000"-"\u1021",
+            "\u1023"-"\u1027",
+            "\u1029"-"\u102a",
+            "\u1050"-"\u1055",
+            "\u10a0"-"\u10c5",
+            "\u10d0"-"\u10f6",
+            "\u1100"-"\u1159",
+            "\u115f"-"\u11a2",
+            "\u11a8"-"\u11f9",
+            "\u1200"-"\u1206",
+            "\u1208"-"\u1246",
+            "\u1248",
+            "\u124a"-"\u124d",
+            "\u1250"-"\u1256",
+            "\u1258",
+            "\u125a"-"\u125d",
+            "\u1260"-"\u1286",
+            "\u1288",
+            "\u128a"-"\u128d",
+            "\u1290"-"\u12ae",
+            "\u12b0",
+            "\u12b2"-"\u12b5",
+            "\u12b8"-"\u12be",
+            "\u12c0",
+            "\u12c2"-"\u12c5",
+            "\u12c8"-"\u12ce",
+            "\u12d0"-"\u12d6",
+            "\u12d8"-"\u12ee",
+            "\u12f0"-"\u130e",
+            "\u1310",
+            "\u1312"-"\u1315",
+            "\u1318"-"\u131e",
+            "\u1320"-"\u1346",
+            "\u1348"-"\u135a",
+            "\u13a0"-"\u13f4",
+            "\u1401"-"\u166c",
+            "\u166f"-"\u1676",
+            "\u1681"-"\u169a",
+            "\u16a0"-"\u16ea",
+            "\u1780"-"\u17b3",
+            "\u17db",
+            "\u1820"-"\u1877",
+            "\u1880"-"\u18a8",
+            "\u1e00"-"\u1e9b",
+            "\u1ea0"-"\u1ef9",
+            "\u1f00"-"\u1f15",
+            "\u1f18"-"\u1f1d",
+            "\u1f20"-"\u1f45",
+            "\u1f48"-"\u1f4d",
+            "\u1f50"-"\u1f57",
+            "\u1f59",
+            "\u1f5b",
+            "\u1f5d",
+            "\u1f5f"-"\u1f7d",
+            "\u1f80"-"\u1fb4",
+            "\u1fb6"-"\u1fbc",
+            "\u1fbe",
+            "\u1fc2"-"\u1fc4",
+            "\u1fc6"-"\u1fcc",
+            "\u1fd0"-"\u1fd3",
+            "\u1fd6"-"\u1fdb",
+            "\u1fe0"-"\u1fec",
+            "\u1ff2"-"\u1ff4",
+            "\u1ff6"-"\u1ffc",
+            "\u203f"-"\u2040",
+            "\u207f",
+            "\u20a0"-"\u20af",
+            "\u2102",
+            "\u2107",
+            "\u210a"-"\u2113",
+            "\u2115",
+            "\u2119"-"\u211d",
+            "\u2124",
+            "\u2126",
+            "\u2128",
+            "\u212a"-"\u212d",
+            "\u212f"-"\u2131",
+            "\u2133"-"\u2139",
+            "\u2160"-"\u2183",
+            "\u3005"-"\u3007",
+            "\u3021"-"\u3029",
+            "\u3031"-"\u3035",
+            "\u3038"-"\u303a",
+            "\u3041"-"\u3094",
+            "\u309d"-"\u309e",
+            "\u30a1"-"\u30fe",
+            "\u3105"-"\u312c",
+            "\u3131"-"\u318e",
+            "\u31a0"-"\u31b7",
+            "\u3400"-"\u4db5",
+            "\u4e00"-"\u9fa5",
+            "\ua000"-"\ua48c",
+            "\uac00"-"\ud7a3",
+            "\uf900"-"\ufa2d",
+            "\ufb00"-"\ufb06",
+            "\ufb13"-"\ufb17",
+            "\ufb1d",
+            "\ufb1f"-"\ufb28",
+            "\ufb2a"-"\ufb36",
+            "\ufb38"-"\ufb3c",
+            "\ufb3e",
+            "\ufb40"-"\ufb41",
+            "\ufb43"-"\ufb44",
+            "\ufb46"-"\ufbb1",
+            "\ufbd3"-"\ufd3d",
+            "\ufd50"-"\ufd8f",
+            "\ufd92"-"\ufdc7",
+            "\ufdf0"-"\ufdfb",
+            "\ufe33"-"\ufe34",
+            "\ufe4d"-"\ufe4f",
+            "\ufe69",
+            "\ufe70"-"\ufe72",
+            "\ufe74",
+            "\ufe76"-"\ufefc",
+            "\uff04",
+            "\uff21"-"\uff3a",
+            "\uff3f",
+            "\uff41"-"\uff5a",
+            "\uff65"-"\uffbe",
+            "\uffc2"-"\uffc7",
+            "\uffca"-"\uffcf",
+            "\uffd2"-"\uffd7",
+            "\uffda"-"\uffdc",
+            "\uffe0"-"\uffe1",
+            "\uffe5"-"\uffe6"
+        ] >
+    | < #PART_LETTER:
+        [  // all chars for which Character.isIdentifierPart is true
+            "\u0000"-"\u0008",
+            "\u000e"-"\u001b",
+            "0"-"9",
+            "A"-"Z",
+            "_",
+            "a"-"z",
+            "\u007f"-"\u009f",
+            "\u00a2"-"\u00a5",
+            "\u00aa",
+            "\u00b5",
+            "\u00ba",
+            "\u00c0"-"\u00d6",
+            "\u00d8"-"\u00f6",
+            "\u00f8"-"\u021f",
+            "\u0222"-"\u0233",
+            "\u0250"-"\u02ad",
+            "\u02b0"-"\u02b8",
+            "\u02bb"-"\u02c1",
+            "\u02d0"-"\u02d1",
+            "\u02e0"-"\u02e4",
+            "\u02ee",
+            "\u0300"-"\u034e",
+            "\u0360"-"\u0362",
+            "\u037a",
+            "\u0386",
+            "\u0388"-"\u038a",
+            "\u038c",
+            "\u038e"-"\u03a1",
+            "\u03a3"-"\u03ce",
+            "\u03d0"-"\u03d7",
+            "\u03da"-"\u03f3",
+            "\u0400"-"\u0481",
+            "\u0483"-"\u0486",
+            "\u048c"-"\u04c4",
+            "\u04c7"-"\u04c8",
+            "\u04cb"-"\u04cc",
+            "\u04d0"-"\u04f5",
+            "\u04f8"-"\u04f9",
+            "\u0531"-"\u0556",
+            "\u0559",
+            "\u0561"-"\u0587",
+            "\u0591"-"\u05a1",
+            "\u05a3"-"\u05b9",
+            "\u05bb"-"\u05bd",
+            "\u05bf",
+            "\u05c1"-"\u05c2",
+            "\u05c4",
+            "\u05d0"-"\u05ea",
+            "\u05f0"-"\u05f2",
+            "\u0621"-"\u063a",
+            "\u0640"-"\u0655",
+            "\u0660"-"\u0669",
+            "\u0670"-"\u06d3",
+            "\u06d5"-"\u06dc",
+            "\u06df"-"\u06e8",
+            "\u06ea"-"\u06ed",
+            "\u06f0"-"\u06fc",
+            "\u070f"-"\u072c",
+            "\u0730"-"\u074a",
+            "\u0780"-"\u07b0",
+            "\u0901"-"\u0903",
+            "\u0905"-"\u0939",
+            "\u093c"-"\u094d",
+            "\u0950"-"\u0954",
+            "\u0958"-"\u0963",
+            "\u0966"-"\u096f",
+            "\u0981"-"\u0983",
+            "\u0985"-"\u098c",
+            "\u098f"-"\u0990",
+            "\u0993"-"\u09a8",
+            "\u09aa"-"\u09b0",
+            "\u09b2",
+            "\u09b6"-"\u09b9",
+            "\u09bc",
+            "\u09be"-"\u09c4",
+            "\u09c7"-"\u09c8",
+            "\u09cb"-"\u09cd",
+            "\u09d7",
+            "\u09dc"-"\u09dd",
+            "\u09df"-"\u09e3",
+            "\u09e6"-"\u09f3",
+            "\u0a02",
+            "\u0a05"-"\u0a0a",
+            "\u0a0f"-"\u0a10",
+            "\u0a13"-"\u0a28",
+            "\u0a2a"-"\u0a30",
+            "\u0a32"-"\u0a33",
+            "\u0a35"-"\u0a36",
+            "\u0a38"-"\u0a39",
+            "\u0a3c",
+            "\u0a3e"-"\u0a42",
+            "\u0a47"-"\u0a48",
+            "\u0a4b"-"\u0a4d",
+            "\u0a59"-"\u0a5c",
+            "\u0a5e",
+            "\u0a66"-"\u0a74",
+            "\u0a81"-"\u0a83",
+            "\u0a85"-"\u0a8b",
+            "\u0a8d",
+            "\u0a8f"-"\u0a91",
+            "\u0a93"-"\u0aa8",
+            "\u0aaa"-"\u0ab0",
+            "\u0ab2"-"\u0ab3",
+            "\u0ab5"-"\u0ab9",
+            "\u0abc"-"\u0ac5",
+            "\u0ac7"-"\u0ac9",
+            "\u0acb"-"\u0acd",
+            "\u0ad0",
+            "\u0ae0",
+            "\u0ae6"-"\u0aef",
+            "\u0b01"-"\u0b03",
+            "\u0b05"-"\u0b0c",
+            "\u0b0f"-"\u0b10",
+            "\u0b13"-"\u0b28",
+            "\u0b2a"-"\u0b30",
+            "\u0b32"-"\u0b33",
+            "\u0b36"-"\u0b39",
+            "\u0b3c"-"\u0b43",
+            "\u0b47"-"\u0b48",
+            "\u0b4b"-"\u0b4d",
+            "\u0b56"-"\u0b57",
+            "\u0b5c"-"\u0b5d",
+            "\u0b5f"-"\u0b61",
+            "\u0b66"-"\u0b6f",
+            "\u0b82"-"\u0b83",
+            "\u0b85"-"\u0b8a",
+            "\u0b8e"-"\u0b90",
+            "\u0b92"-"\u0b95",
+            "\u0b99"-"\u0b9a",
+            "\u0b9c",
+            "\u0b9e"-"\u0b9f",
+            "\u0ba3"-"\u0ba4",
+            "\u0ba8"-"\u0baa",
+            "\u0bae"-"\u0bb5",
+            "\u0bb7"-"\u0bb9",
+            "\u0bbe"-"\u0bc2",
+            "\u0bc6"-"\u0bc8",
+            "\u0bca"-"\u0bcd",
+            "\u0bd7",
+            "\u0be7"-"\u0bef",
+            "\u0c01"-"\u0c03",
+            "\u0c05"-"\u0c0c",
+            "\u0c0e"-"\u0c10",
+            "\u0c12"-"\u0c28",
+            "\u0c2a"-"\u0c33",
+            "\u0c35"-"\u0c39",
+            "\u0c3e"-"\u0c44",
+            "\u0c46"-"\u0c48",
+            "\u0c4a"-"\u0c4d",
+            "\u0c55"-"\u0c56",
+            "\u0c60"-"\u0c61",
+            "\u0c66"-"\u0c6f",
+            "\u0c82"-"\u0c83",
+            "\u0c85"-"\u0c8c",
+            "\u0c8e"-"\u0c90",
+            "\u0c92"-"\u0ca8",
+            "\u0caa"-"\u0cb3",
+            "\u0cb5"-"\u0cb9",
+            "\u0cbe"-"\u0cc4",
+            "\u0cc6"-"\u0cc8",
+            "\u0cca"-"\u0ccd",
+            "\u0cd5"-"\u0cd6",
+            "\u0cde",
+            "\u0ce0"-"\u0ce1",
+            "\u0ce6"-"\u0cef",
+            "\u0d02"-"\u0d03",
+            "\u0d05"-"\u0d0c",
+            "\u0d0e"-"\u0d10",
+            "\u0d12"-"\u0d28",
+            "\u0d2a"-"\u0d39",
+            "\u0d3e"-"\u0d43",
+            "\u0d46"-"\u0d48",
+            "\u0d4a"-"\u0d4d",
+            "\u0d57",
+            "\u0d60"-"\u0d61",
+            "\u0d66"-"\u0d6f",
+            "\u0d82"-"\u0d83",
+            "\u0d85"-"\u0d96",
+            "\u0d9a"-"\u0db1",
+            "\u0db3"-"\u0dbb",
+            "\u0dbd",
+            "\u0dc0"-"\u0dc6",
+            "\u0dca",
+            "\u0dcf"-"\u0dd4",
+            "\u0dd6",
+            "\u0dd8"-"\u0ddf",
+            "\u0df2"-"\u0df3",
+            "\u0e01"-"\u0e3a",
+            "\u0e3f"-"\u0e4e",
+            "\u0e50"-"\u0e59",
+            "\u0e81"-"\u0e82",
+            "\u0e84",
+            "\u0e87"-"\u0e88",
+            "\u0e8a",
+            "\u0e8d",
+            "\u0e94"-"\u0e97",
+            "\u0e99"-"\u0e9f",
+            "\u0ea1"-"\u0ea3",
+            "\u0ea5",
+            "\u0ea7",
+            "\u0eaa"-"\u0eab",
+            "\u0ead"-"\u0eb9",
+            "\u0ebb"-"\u0ebd",
+            "\u0ec0"-"\u0ec4",
+            "\u0ec6",
+            "\u0ec8"-"\u0ecd",
+            "\u0ed0"-"\u0ed9",
+            "\u0edc"-"\u0edd",
+            "\u0f00",
+            "\u0f18"-"\u0f19",
+            "\u0f20"-"\u0f29",
+            "\u0f35",
+            "\u0f37",
+            "\u0f39",
+            "\u0f3e"-"\u0f47",
+            "\u0f49"-"\u0f6a",
+            "\u0f71"-"\u0f84",
+            "\u0f86"-"\u0f8b",
+            "\u0f90"-"\u0f97",
+            "\u0f99"-"\u0fbc",
+            "\u0fc6",
+            "\u1000"-"\u1021",
+            "\u1023"-"\u1027",
+            "\u1029"-"\u102a",
+            "\u102c"-"\u1032",
+            "\u1036"-"\u1039",
+            "\u1040"-"\u1049",
+            "\u1050"-"\u1059",
+            "\u10a0"-"\u10c5",
+            "\u10d0"-"\u10f6",
+            "\u1100"-"\u1159",
+            "\u115f"-"\u11a2",
+            "\u11a8"-"\u11f9",
+            "\u1200"-"\u1206",
+            "\u1208"-"\u1246",
+            "\u1248",
+            "\u124a"-"\u124d",
+            "\u1250"-"\u1256",
+            "\u1258",
+            "\u125a"-"\u125d",
+            "\u1260"-"\u1286",
+            "\u1288",
+            "\u128a"-"\u128d",
+            "\u1290"-"\u12ae",
+            "\u12b0",
+            "\u12b2"-"\u12b5",
+            "\u12b8"-"\u12be",
+            "\u12c0",
+            "\u12c2"-"\u12c5",
+            "\u12c8"-"\u12ce",
+            "\u12d0"-"\u12d6",
+            "\u12d8"-"\u12ee",
+            "\u12f0"-"\u130e",
+            "\u1310",
+            "\u1312"-"\u1315",
+            "\u1318"-"\u131e",
+            "\u1320"-"\u1346",
+            "\u1348"-"\u135a",
+            "\u1369"-"\u1371",
+            "\u13a0"-"\u13f4",
+            "\u1401"-"\u166c",
+            "\u166f"-"\u1676",
+            "\u1681"-"\u169a",
+            "\u16a0"-"\u16ea",
+            "\u1780"-"\u17d3",
+            "\u17db",
+            "\u17e0"-"\u17e9",
+            "\u180b"-"\u180e",
+            "\u1810"-"\u1819",
+            "\u1820"-"\u1877",
+            "\u1880"-"\u18a9",
+            "\u1e00"-"\u1e9b",
+            "\u1ea0"-"\u1ef9",
+            "\u1f00"-"\u1f15",
+            "\u1f18"-"\u1f1d",
+            "\u1f20"-"\u1f45",
+            "\u1f48"-"\u1f4d",
+            "\u1f50"-"\u1f57",
+            "\u1f59",
+            "\u1f5b",
+            "\u1f5d",
+            "\u1f5f"-"\u1f7d",
+            "\u1f80"-"\u1fb4",
+            "\u1fb6"-"\u1fbc",
+            "\u1fbe",
+            "\u1fc2"-"\u1fc4",
+            "\u1fc6"-"\u1fcc",
+            "\u1fd0"-"\u1fd3",
+            "\u1fd6"-"\u1fdb",
+            "\u1fe0"-"\u1fec",
+            "\u1ff2"-"\u1ff4",
+            "\u1ff6"-"\u1ffc",
+            "\u200c"-"\u200f",
+            "\u202a"-"\u202e",
+            "\u203f"-"\u2040",
+            "\u206a"-"\u206f",
+            "\u207f",
+            "\u20a0"-"\u20af",
+            "\u20d0"-"\u20dc",
+            "\u20e1",
+            "\u2102",
+            "\u2107",
+            "\u210a"-"\u2113",
+            "\u2115",
+            "\u2119"-"\u211d",
+            "\u2124",
+            "\u2126",
+            "\u2128",
+            "\u212a"-"\u212d",
+            "\u212f"-"\u2131",
+            "\u2133"-"\u2139",
+            "\u2160"-"\u2183",
+            "\u3005"-"\u3007",
+            "\u3021"-"\u302f",
+            "\u3031"-"\u3035",
+            "\u3038"-"\u303a",
+            "\u3041"-"\u3094",
+            "\u3099"-"\u309a",
+            "\u309d"-"\u309e",
+            "\u30a1"-"\u30fe",
+            "\u3105"-"\u312c",
+            "\u3131"-"\u318e",
+            "\u31a0"-"\u31b7",
+            "\u3400"-"\u4db5",
+            "\u4e00"-"\u9fa5",
+            "\ua000"-"\ua48c",
+            "\uac00"-"\ud7a3",
+            "\uf900"-"\ufa2d",
+            "\ufb00"-"\ufb06",
+            "\ufb13"-"\ufb17",
+            "\ufb1d"-"\ufb28",
+            "\ufb2a"-"\ufb36",
+            "\ufb38"-"\ufb3c",
+            "\ufb3e",
+            "\ufb40"-"\ufb41",
+            "\ufb43"-"\ufb44",
+            "\ufb46"-"\ufbb1",
+            "\ufbd3"-"\ufd3d",
+            "\ufd50"-"\ufd8f",
+            "\ufd92"-"\ufdc7",
+            "\ufdf0"-"\ufdfb",
+            "\ufe20"-"\ufe23",
+            "\ufe33"-"\ufe34",
+            "\ufe4d"-"\ufe4f",
+            "\ufe69",
+            "\ufe70"-"\ufe72",
+            "\ufe74",
+            "\ufe76"-"\ufefc",
+            "\ufeff",
+            "\uff04",
+            "\uff10"-"\uff19",
+            "\uff21"-"\uff3a",
+            "\uff3f",
+            "\uff41"-"\uff5a",
+            "\uff65"-"\uffbe",
+            "\uffc2"-"\uffc7",
+            "\uffca"-"\uffcf",
+            "\uffd2"-"\uffd7",
+            "\uffda"-"\uffdc",
+            "\uffe0"-"\uffe1",
+            "\uffe5"-"\uffe6",
+            "\ufff9"-"\ufffb"
+        ] >
 }
 
 TOKEN :
 {
-  < ARROW_LINE: ["\u002d", "\u00ad", "\u2010", "\u2011", "\u2012", "\u2013", "\u2014", "\u2015", "\ufe58", "\ufe63", "\uff0d"] >
-| < ARROW_LEFT_HEAD: ["\u27e8", "\u3008", "\ufe64", "\uff1c"] >
-| < ARROW_RIGHT_HEAD: ["\u27e9", "\u3009", "\ufe65", "\uff1e"] >
+    < ARROW_LINE: ["\u002d", "\u00ad", "\u2010", "\u2011", "\u2012", "\u2013", "\u2014", "\u2015", "\ufe58", "\ufe63", "\uff0d"] >
+    | < ARROW_LEFT_HEAD: ["\u27e8", "\u3008", "\ufe64", "\uff1c"] >
+    | < ARROW_RIGHT_HEAD: ["\u27e9", "\u3009", "\ufe65", "\uff1e"] >
 }
 
-<*> TOKEN : { <UNKNOWN: ~["$", ",", ":", ";", " ", "\t", "\n", "\r"]> }
+<*> TOKEN :
+{
+    < UNKNOWN: ~["$", ",", ":", ";", " ", "\t", "\n", "\r"] >
+}
 
 /** Root production. */
 List<STATEMENT> Statements() throws Exception :
 {
-  STATEMENT x;
-  List<STATEMENT> stmts = new ArrayList<>();
+    STATEMENT x;
+    List<STATEMENT> stmts = new ArrayList<>();
 }
 {
-  try {
-    x=Statement() { stmts.add(x); }
-    ( LOOKAHEAD(2) ";" x=Statement() { stmts.add(x); } )* ( LOOKAHEAD(2) ";" )? <EOF>
-    { return stmts; }
-  } catch (ParseException e) {
-    Token t = e.currentToken.next;
-    if (e.getMessage().contains( "Encountered \"<EOF>\"" )) {
-        throw exceptionFactory.syntaxException(t.image, ParseExceptions.expected(e.expectedTokenSequences, e.tokenImage), e,
-                                               t.endOffset + 1, t.endLine, t.endColumn + 1);
-    } else  {
-        throw exceptionFactory.syntaxException(t.image, ParseExceptions.expected(e.expectedTokenSequences, e.tokenImage), e,
-                                               t.beginOffset, t.beginLine, t.beginColumn);
+    try {
+        x=Statement() { stmts.add( x ); }
+        ( LOOKAHEAD(2) ";" x=Statement() { stmts.add( x ); } )* ( LOOKAHEAD(2) ";" )? <EOF>
+        {
+            return stmts;
+        }
+    } catch ( ParseException e ) {
+        Token t = e.currentToken.next;
+        if ( e.getMessage().contains( "Encountered \"<EOF>\"" ) )
+        {
+            throw exceptionFactory.syntaxException( t.image, ParseExceptions.expected( e.expectedTokenSequences, e.tokenImage ), e,
+                                                   t.endOffset + 1, t.endLine, t.endColumn + 1 );
+        }
+        else
+        {
+            throw exceptionFactory.syntaxException( t.image, ParseExceptions.expected( e.expectedTokenSequences, e.tokenImage ), e,
+                                                   t.beginOffset, t.beginLine, t.beginColumn );
+        }
+    } catch ( InvalidUnicodeLiteral e ) {
+        throw exceptionFactory.syntaxException( e, e.offset, e.line, e.column );
     }
-  } catch (InvalidUnicodeLiteral e) {
-    throw exceptionFactory.syntaxException(e, e.offset, e.line, e.column);
-  }
 }
 
 STATEMENT Statement() throws Exception:
@@ -1124,632 +1127,741 @@ STATEMENT Statement() throws Exception:
 {
     (
         statement=PeriodicCommitQuery()
-        | ( useClause = UseClause() )? statement=SingleQueryOrAdministrationCommand(useClause)
+        | ( useClause=UseClause() )? statement=SingleQueryOrAdministrationCommand(useClause)
     )
     {
         return statement;
     }
 }
 
-STATEMENT SingleQueryOrAdministrationCommand(USE_CLAUSE useClause) throws Exception:
+STATEMENT SingleQueryOrAdministrationCommand( USE_CLAUSE useClause ) throws Exception:
 {
     STATEMENT statement = null;
     QUERY query = null;
 }
 {
     (
-        LOOKAHEAD(2) statement=CreateAdministrationCommand(useClause) // CREATE admin thing vs CREATE graph thing
-        | statement=ShowCommand(useClause)
-        | <CATALOG> (statement=AdministrationCommand(useClause, true) | statement=ShowAdministrationCommandAfterCatalog(useClause))
-        | statement=AdministrationCommand(useClause, false)
-        | query=SingleQuery(useClause) ( query=Union(query) )*
+        LOOKAHEAD(2) statement=CreateAdministrationCommand( useClause ) // CREATE admin thing vs CREATE graph thing
+        | statement=ShowCommand( useClause )
+        | <CATALOG> ( statement=AdministrationCommand( useClause, true ) | statement=ShowAdministrationCommandAfterCatalog( useClause ) )
+        | statement=AdministrationCommand( useClause, false )
+        | query=SingleQuery( useClause ) ( query=Union(query) )*
     )
     {
-        if (query != null) {
-            return query;
-        }
-        return statement;
+        return ( query != null ) ? query : statement;
     }
 }
 
 QUERY PeriodicCommitQuery() :
 {
-  Token t;
-  Token batchSize = null;
-  CLAUSE loadCsv;
-  List<CLAUSE> queryBody;
+    Token t;
+    Token batchSize = null;
+    CLAUSE loadCsv;
+    List<CLAUSE> queryBody;
 }
 {
-  <USING> t=<PERIODIC> <COMMIT> ( batchSize=<UNSIGNED_DECIMAL_INTEGER> )?
-  loadCsv=LoadCSVClause()
-  queryBody=PeriodicCommitQueryBody()
-  { return astFactory.periodicCommitQuery(pos(t), batchSize == null ? null : batchSize.image, loadCsv, queryBody); }
+    <USING> t=<PERIODIC> <COMMIT> ( batchSize=<UNSIGNED_DECIMAL_INTEGER> )?
+    loadCsv=LoadCSVClause()
+    queryBody=PeriodicCommitQueryBody()
+    {
+        return astFactory.periodicCommitQuery( pos( t ), batchSize == null ? null : batchSize.image, loadCsv, queryBody );
+    }
 }
 
 List<CLAUSE> PeriodicCommitQueryBody() :
 {
-  CLAUSE x;
-  List<CLAUSE> clauses = new ArrayList<>();
+    CLAUSE x;
+    List<CLAUSE> clauses = new ArrayList<>();
 }
 {
-  ( x=Clause() { clauses.add(x); } )*
-  { return clauses; }
+    ( x=Clause() { clauses.add( x ); } )*
+    {
+        return clauses;
+    }
 }
 
 QUERY RegularQuery() :
-{QUERY x;}
 {
-  x=SingleQuery(null) ( x=Union(x) )*
-  { return x; }
+    QUERY x;
+}
+{
+    x=SingleQuery(null) ( x=Union(x) )*
+    {
+        return x;
+    }
 }
 
-QUERY Union(QUERY lhs) :
+QUERY Union( QUERY lhs ) :
 {
-  Token t;
-  QUERY rhs;
-  boolean all = false;
+    Token t;
+    QUERY rhs;
+    boolean all = false;
 }
 {
-  t=<UNION> ( <ALL> { all = true; } )? rhs=SingleQuery(null)
-  { return astFactory.newUnion(pos(t), lhs, rhs, all); }
+    t=<UNION> ( <ALL> { all = true; } )? rhs=SingleQuery( null )
+    {
+        return astFactory.newUnion( pos( t ), lhs, rhs, all );
+    }
 }
 
-QUERY SingleQuery(CLAUSE useClause) :
+QUERY SingleQuery( CLAUSE useClause ) :
 {
-  CLAUSE x;
-  List<CLAUSE> clauses = new ArrayList<>();
-  if (useClause != null) {
-      clauses.add(useClause);
-  }
+    CLAUSE x;
+    List<CLAUSE> clauses = new ArrayList<>();
+    if ( useClause != null )
+    {
+      clauses.add( useClause );
+    }
 }
 {
-  ( x=Clause() { clauses.add(x); } )+
-  { return astFactory.newSingleQuery(clauses); }
+    ( x=Clause() { clauses.add( x ); } )+
+    {
+        return astFactory.newSingleQuery( clauses );
+    }
 }
 
 CLAUSE Clause() :
-{CLAUSE x = null;}
 {
-  (
-    x=UseClause()
-  | x=ReturnClause()
-  | x=CreateClause() // because create index/constraint
-  | x=DeleteClause()
-  | x=SetClause()
-  | x=RemoveClause()
-  | x=MatchClause()
-  | x=MergeClause()
-  | x=WithClause()
-  | x=UnwindClause()
-  | LOOKAHEAD(2) x=CallClause() // because subqueries also start with CALL
-  | x=SubqueryClause()
-  | x=LoadCSVClause()
-  | x=ForeachClause()
-  )
-  { return x; }
+    CLAUSE x = null;
+}
+{
+    (
+        x=UseClause()
+        | x=ReturnClause()
+        | x=CreateClause() // because create index/constraint
+        | x=DeleteClause()
+        | x=SetClause()
+        | x=RemoveClause()
+        | x=MatchClause()
+        | x=MergeClause()
+        | x=WithClause()
+        | x=UnwindClause()
+        | LOOKAHEAD(2) x=CallClause() // because subqueries also start with CALL
+        | x=SubqueryClause()
+        | x=LoadCSVClause()
+        | x=ForeachClause()
+    )
+    {
+        return x;
+    }
 }
 
 // USE
 
 USE_CLAUSE UseClause() :
 {
-  Token t;
-  EXPRESSION e;
+    Token t;
+    EXPRESSION e;
 }
 {
-  t=<USE> ( LOOKAHEAD(2) <GRAPH> )? e=Expression()
-  { return astFactory.useClause(pos(t), e); }
+    t=<USE> ( LOOKAHEAD( 2 ) <GRAPH> )? e=Expression()
+    {
+        return astFactory.useClause(  pos( t ), e );
+    }
 }
 
 // RETURN
 
 RETURN_CLAUSE ReturnClause() :
 {
-  Token t;
-  RETURN_CLAUSE clause = null;
+    Token t;
+    RETURN_CLAUSE clause = null;
 }
 {
-  t=<RETURN>
-  clause=ReturnBody(t)
-  {
-    return clause;
-  }
+    t=<RETURN>
+    clause=ReturnBody( t )
+    {
+        return clause;
+    }
 }
 
-RETURN_CLAUSE ReturnBody(Token t) :
+RETURN_CLAUSE ReturnBody( Token t ) :
 {
-  boolean distinct = false;
-  boolean returnAll = false;
-  List<ORDER_ITEM> order = new ArrayList<>();
-  EXPRESSION skip = null;
-  EXPRESSION limit = null;
-  RETURN_ITEM x;
-  List<RETURN_ITEM> returnItems = new ArrayList<>();
+    boolean distinct = false;
+    boolean returnAll = false;
+    List<ORDER_ITEM> order = new ArrayList<>();
+    EXPRESSION skip = null;
+    EXPRESSION limit = null;
+    RETURN_ITEM x;
+    List<RETURN_ITEM> returnItems = new ArrayList<>();
 }
 {
-  ( LOOKAHEAD(2) <DISTINCT> { distinct = true; } )?
-  (
-    <TIMES>        { returnAll = true; }      ( "," x=ReturnItem() { returnItems.add(x); } )*
-  | x=ReturnItem() { returnItems.add(x); } ( "," x=ReturnItem() { returnItems.add(x); } )*
-  ) ( order=Order() )? ( skip=Skip() )? ( limit=Limit() )?
-  {
-    return astFactory.newReturnClause(pos(t), distinct, returnAll, returnItems, order, skip, limit);
-  }
+    ( LOOKAHEAD( 2 ) <DISTINCT> { distinct = true; } )?
+    (
+        <TIMES> { returnAll = true; } ( "," x=ReturnItem() { returnItems.add( x ); } )*
+        | x=ReturnItem() { returnItems.add( x ); } ( "," x=ReturnItem() { returnItems.add( x ); } )*
+    ) ( order=Order() )? ( skip=Skip() )? ( limit=Limit() )?
+    {
+        return astFactory.newReturnClause(  pos( t ), distinct, returnAll, returnItems, order, skip, limit );
+    }
 }
 
 RETURN_ITEM ReturnItem() :
 {
-  EXPRESSION e;
-  VARIABLE v = null;
-  Token eStart;
-  Token eEnd;
+    EXPRESSION e;
+    VARIABLE v = null;
+    Token eStart;
+    Token eEnd;
 }
 {
-  { eStart = token; }
-  e=Expression() { eEnd = token; } ( <AS> v=Variable() )?
-  {
-    if (v != null) {
-        return astFactory.newReturnItem(pos(eStart), e, v);
+    { eStart = token; }
+    e=Expression() { eEnd = token; } ( <AS> v=Variable() )?
+    {
+        if ( v != null )
+        {
+            return astFactory.newReturnItem( pos( eStart ), e, v );
+        }
+        else
+        {
+            return astFactory.newReturnItem( pos( eStart ), e, eStart.next.beginOffset, eEnd.endOffset );
+        }
     }
-    else {
-        return astFactory.newReturnItem(pos(eStart), e, eStart.next.beginOffset, eEnd.endOffset );
-    }
-  }
 }
 
 List<ORDER_ITEM> Order() :
 {
-  ORDER_ITEM o;
-  List<ORDER_ITEM> items = new ArrayList<>();
+    ORDER_ITEM o;
+    List<ORDER_ITEM> items = new ArrayList<>();
 }
 {
-  <ORDER> <BY> o=OrderItem() {items.add(o);} ( "," o=OrderItem() {items.add(o);} )*
-  { return items; }
+    <ORDER> <BY> o=OrderItem() { items.add( o ); } ( "," o=OrderItem() {items.add( o ); } )*
+    {
+        return items;
+    }
 }
 
 ORDER_ITEM OrderItem() :
-{EXPRESSION e;}
 {
-  e=Expression()
-  (
-    <DESC> { return astFactory.orderDesc(e); }
-  | ( <ASC> )? { return astFactory.orderAsc(e); }
-  )
+    EXPRESSION e;
+}
+{
+    e=Expression()
+    (
+        <DESC> { return astFactory.orderDesc( e ); }
+        | ( <ASC> )? { return astFactory.orderAsc( e ); }
+    )
 }
 
 EXPRESSION Skip() :
-{ EXPRESSION e; }
 {
-  <SKIPROWS> e=Expression()
-  { return e; }
+    EXPRESSION e;
+}
+{
+    <SKIPROWS> e=Expression()
+    {
+        return e;
+    }
 }
 
 EXPRESSION Limit() :
-{ EXPRESSION e; }
 {
-  <LIMITROWS> e=Expression()
-  { return e; }
+    EXPRESSION e; }
+{
+    <LIMITROWS> e=Expression()
+    {
+        return e;
+    }
 }
 
 // WITH
 
 CLAUSE WithClause() :
 {
-  Token t;
-  RETURN_CLAUSE returnClause;
-  EXPRESSION where = null;
+    Token t;
+    RETURN_CLAUSE returnClause;
+    EXPRESSION where = null;
 }
 {
-  t=<WITH> returnClause=ReturnBody(t) ( where=Where() )?
-  { return astFactory.withClause(pos(t), returnClause, where); }
+    t=<WITH> returnClause=ReturnBody( t ) ( where=Where() )?
+    {
+        return astFactory.withClause( pos( t ), returnClause, where );
+    }
 }
 
 // CREATE
 
 CLAUSE CreateClause() :
 {
- Token t;
- List<PATTERN> patterns;
+    Token t;
+    List<PATTERN> patterns;
 }
 {
-  t=<CREATE> patterns=PatternList()
-  { return astFactory.createClause(pos(t), patterns); }
+    t=<CREATE> patterns=PatternList()
+    {
+        return astFactory.createClause( pos( t ), patterns );
+    }
 }
 
 // SET
 
 SET_CLAUSE SetClause() :
 {
-  Token t;
-  SET_ITEM x;
-  List<SET_ITEM> items = new ArrayList<>();
+    Token t;
+    SET_ITEM item;
+    List<SET_ITEM> items = new ArrayList<>();
 }
 {
-  t=<SET> x=SetItem() {items.add(x);} ( "," x=SetItem() {items.add(x);} )*
-  { return astFactory.setClause(pos(t), items); }
+    t=<SET> item=SetItem() { items.add( item ); } ( "," item=SetItem() { items.add( item ); } )*
+    {
+        return astFactory.setClause( pos( t ), items );
+    }
 }
 
 SET_ITEM SetItem() :
 {
- EXPRESSION e;
- PROPERTY p;
- VARIABLE v;
- List<StringPos<POS>> labels; }
+    EXPRESSION e;
+    PROPERTY p;
+    VARIABLE v;
+    List<StringPos<POS>> labels;
+}
 {
-  LOOKAHEAD(2) p=PropertyExpression() <EQ> e=Expression() { return astFactory.setProperty(p, e); }
-| LOOKAHEAD(2) v=Variable() <EQ> e=Expression() { return astFactory.setVariable(v, e); }
-| LOOKAHEAD(2) v=Variable() "+=" e=Expression() { return astFactory.addAndSetVariable(v, e); }
-| v=Variable() labels=NodeLabels() { return astFactory.setLabels(v, labels); }
+    LOOKAHEAD( 2 ) p=PropertyExpression() <EQ> e=Expression() { return astFactory.setProperty( p, e ); }
+    | LOOKAHEAD( 2 ) v=Variable() <EQ> e=Expression() { return astFactory.setVariable( v, e ); }
+    | LOOKAHEAD( 2 ) v = Variable() "+=" e=Expression() { return astFactory.addAndSetVariable( v, e ); }
+    | v = Variable() labels = NodeLabels() { return astFactory.setLabels( v, labels ); }
 }
 
 // REMOVE
 
 CLAUSE RemoveClause() :
 {
-  Token t;
-  REMOVE_ITEM x;
-  List<REMOVE_ITEM> items = new ArrayList<>();
+    Token t;
+    REMOVE_ITEM item;
+    List<REMOVE_ITEM> items = new ArrayList<>();
 }
 {
-  t=<REMOVE> x=RemoveItem() { items.add(x); } ( "," x=RemoveItem() { items.add(x); })*
-  { return astFactory.removeClause(pos(t), items); }
+    t=<REMOVE> item=RemoveItem() { items.add( item ); } ( "," item=RemoveItem() { items.add( item ); })*
+    {
+        return astFactory.removeClause( pos( t ), items );
+    }
 }
 
 REMOVE_ITEM RemoveItem() :
 {
- EXPRESSION e;
- PROPERTY p;
- VARIABLE v;
- List<StringPos<POS>> labels; }
+    EXPRESSION e;
+    PROPERTY p;
+    VARIABLE v;
+    List<StringPos<POS>> labels;
+}
 {
-  LOOKAHEAD(2) p=PropertyExpression() { return astFactory.removeProperty(p); }
-| v=Variable() labels=NodeLabels() { return astFactory.removeLabels(v, labels); }
+    LOOKAHEAD(2) p=PropertyExpression() { return astFactory.removeProperty( p ); }
+    | v=Variable() labels=NodeLabels() { return astFactory.removeLabels( v, labels ); }
 }
 
 // DELETE
 
 CLAUSE DeleteClause() :
 {
-  Token t;
-  boolean detach = false;
-  EXPRESSION e;
-  List<EXPRESSION> list = new ArrayList<>();
+    Token t;
+    boolean detach = false;
+    EXPRESSION e;
+    List<EXPRESSION> list = new ArrayList<>();
 }
 {
-  ( <DETACH> {detach=true;} )? t=<DELETE> e=Expression() {list.add(e);} ( "," e=Expression() {list.add(e);} )*
-  { return astFactory.deleteClause(pos(t), detach, list); }
+    ( <DETACH> { detach = true; } )? t=<DELETE> e=Expression() {list.add( e );} ( "," e=Expression() { list.add( e ); } )*
+    {
+        return astFactory.deleteClause( pos( t ), detach, list );
+    }
 }
 
 // MATCH
 
 CLAUSE MatchClause() :
 {
-  Token t;
-  boolean optional = false;
-  List<PATTERN> patterns;
-  List<HINT> hints;
-  EXPRESSION where = null;
+    Token t;
+    boolean optional = false;
+    List<PATTERN> patterns;
+    List<HINT> hints;
+    EXPRESSION where = null;
 }
 {
-  ( <OPTIONAL> {optional = true;} )? t=<MATCH> patterns=PatternList() hints=Hints() ( where=Where() )?
-  { return astFactory.matchClause(pos(t), optional, patterns, hints, where); }
+    ( <OPTIONAL> { optional = true; } )? t=<MATCH> patterns=PatternList() hints=Hints() ( where=Where() )?
+    {
+        return astFactory.matchClause( pos( t ), optional, patterns, hints, where );
+    }
 }
 
 List<HINT> Hints() :
 {
-  Token t;
+    Token t;
     boolean seek;
     VARIABLE v;
     Token label;
     List<String> propNames;
     List<VARIABLE> joinVariables;
-  HINT h;
-  List<HINT> hints = null;
+    HINT hint;
+    List<HINT> hints = null;
 }
 {
-  ( t=<USING> (
-      <INDEX> {seek=false;} ( LOOKAHEAD(2) <SEEK> {seek=true;} )? v=Variable() label=NodeLabel()
-        <LPAREN> propNames=SymbolicNameList1() <RPAREN>
-        { h=astFactory.usingIndexHint(pos(t), v, label.image, propNames, seek); }
-    | <JOIN> <ON> joinVariables=VariableList1() { h=astFactory.usingJoin(pos(t), joinVariables); }
-    | <SCAN> v=Variable() label=NodeLabel() { h=astFactory.usingScan(pos(t), v, label.image); }
-    )
-    {
-        if (hints == null) {
-            hints = new ArrayList<>();
+    ( t=<USING>
+        (
+            <INDEX> { seek = false; } ( LOOKAHEAD( 2 ) <SEEK> { seek = true; } )? v=Variable() label=NodeLabel()
+                <LPAREN> propNames=SymbolicNameList1() <RPAREN>
+                { hint = astFactory.usingIndexHint( pos( t ), v, label.image, propNames, seek ); }
+            | <JOIN> <ON> joinVariables=VariableList1() { hint = astFactory.usingJoin( pos( t ), joinVariables ); }
+            | <SCAN> v=Variable() label=NodeLabel() { hint = astFactory.usingScan( pos( t ), v, label.image ); }
+        )
+        {
+            if ( hints == null )
+            {
+                hints = new ArrayList<>();
+            }
+            hints.add( hint );
         }
-        hints.add(h);
+    )*
+    {
+        return hints;
     }
-  )*
-  { return hints; }
 }
 
 // MERGE
 
 CLAUSE MergeClause() :
 {
-  Token t;
-  PATTERN p;
-  SET_CLAUSE c;
-  ArrayList<SET_CLAUSE> clauses = new ArrayList<>();
-  ArrayList<ASTFactory.MergeActionType> actionTypes = new ArrayList<>();
+    Token t;
+    PATTERN p;
+    SET_CLAUSE c;
+    ArrayList<SET_CLAUSE> clauses = new ArrayList<>();
+    ArrayList<ASTFactory.MergeActionType> actionTypes = new ArrayList<>();
 }
 {
-  t=<MERGE> p=Pattern()
-  (
-    <ON> (
-     <MATCH> c=SetClause() {clauses.add(c); actionTypes.add(ASTFactory.MergeActionType.OnMatch);}
-    | <CREATE> c=SetClause() {clauses.add(c); actionTypes.add(ASTFactory.MergeActionType.OnCreate);}
-    )
-  )*
-  { return astFactory.mergeClause(pos(t), p, clauses, actionTypes); }
+    t=<MERGE> p=Pattern()
+    (
+        <ON> (
+            <MATCH> c=SetClause() { clauses.add( c ); actionTypes.add( ASTFactory.MergeActionType.OnMatch ); }
+            | <CREATE> c=SetClause() { clauses.add( c ); actionTypes.add( ASTFactory.MergeActionType.OnCreate ); }
+        )
+    )*
+    {
+        return astFactory.mergeClause( pos( t ), p, clauses, actionTypes );
+    }
 }
 
 // UNWIND
 
 CLAUSE UnwindClause() :
-{Token t; EXPRESSION e; VARIABLE v;}
 {
-  t=<UNWIND> e=Expression() <AS> v=Variable()
-  { return astFactory.unwindClause(pos(t), e, v); }
+    Token t;
+    EXPRESSION e;
+    VARIABLE v;}
+{
+    t=<UNWIND> e=Expression() <AS> v=Variable()
+    {
+        return astFactory.unwindClause( pos( t ), e, v );
+    }
 }
 
 // CALL
 
 CLAUSE CallClause() :
 {
-  Token t;
-  List<String> namespace;
-  String name;
-  EXPRESSION e;
-  List<EXPRESSION> arguments = null;
-  boolean yieldAll = false;
-  CALL_RESULT_ITEM x;
-  List<CALL_RESULT_ITEM> items = null;
-  EXPRESSION where = null;
+    Token t;
+    List<String> namespace;
+    String name;
+    EXPRESSION e;
+    List<EXPRESSION> arguments = null;
+    boolean yieldAll = false;
+    CALL_RESULT_ITEM x;
+    List<CALL_RESULT_ITEM> items = null;
+    EXPRESSION where = null;
 }
 {
-  t=<CALL> namespace=Namespace() name=ProcedureName()
-  ( <LPAREN> { arguments = new ArrayList<>(); }
-    ( LOOKAHEAD(2) e=Expression() { arguments.add(e); })? ( "," e=Expression() { arguments.add(e); })*
-    <RPAREN>
-  )?
-  (<YIELD> ( <TIMES> {yieldAll = true;} |
-    { items = new ArrayList<>(); }
-        x=ProcedureResultItem() { items.add(x); }
-        ( "," x=ProcedureResultItem() { items.add(x); })*
-        ( where=Where() )?
-  ))?
-  {
-    return astFactory.callClause(pos(t),
-                                namespace,
-                                name,
-                                arguments,
-                                yieldAll,
-                                items,
-                                where);
-  }
+    t=<CALL> namespace=Namespace() name=ProcedureName()
+    ( <LPAREN> { arguments = new ArrayList<>(); }
+        ( LOOKAHEAD( 2 ) e=Expression() { arguments.add( e ); })? ( "," e=Expression() { arguments.add( e ); })*
+        <RPAREN>
+    )?
+    ( <YIELD> (
+        <TIMES> { yieldAll = true; }
+        | { items = new ArrayList<>(); }
+            x=ProcedureResultItem() { items.add( x ); }
+            ( "," x=ProcedureResultItem() { items.add( x ); })*
+            ( where=Where() )?
+        )
+    )?
+    {
+        return astFactory.callClause( pos( t ),
+                                     namespace,
+                                     name,
+                                     arguments,
+                                     yieldAll,
+                                     items,
+                                     where );
+    }
 }
 
 String ProcedureName() :
-{ Token t; }
 {
-  t=SymbolicNameString()
-  { return t.image; }
+    Token t;
+}
+{
+    t=SymbolicNameString()
+    {
+        return t.image;
+    }
 }
 
 CALL_RESULT_ITEM ProcedureResultItem() :
 {
-  Token t;
-  VARIABLE v = null;
+    Token t;
+    VARIABLE v = null;
 }
 {
-  t=SymbolicNameString() ( <AS> v=Variable() )?
-  {
-    return astFactory.callResultItem(pos(t), t.image,  v);
-  }
+    t=SymbolicNameString() ( <AS> v=Variable() )?
+    {
+        return astFactory.callResultItem( pos( t ), t.image,  v );
+    }
 }
 
 // LOAD CSV
 
 CLAUSE LoadCSVClause() :
 {
-  Token t;
-  boolean headers = false;
-  EXPRESSION source;
-  VARIABLE v;
-  Token sep = null;
+    Token t;
+    boolean headers = false;
+    EXPRESSION source;
+    VARIABLE v;
+    Token sep = null;
 }
 {
-  t=<LOAD> <CSV>
-  ( <WITH> <HEADERS> {headers=true;} )?
-  <FROM> source=Expression() <AS> v=Variable()
-  ( <FIELDTERMINATOR> ( sep=<STRING_LITERAL1> | sep=<STRING_LITERAL2> ) )?
-  {
-    return astFactory.loadCsvClause(pos(t), headers, source, v, sep == null ? null : sep.image );
-  }
+    t=<LOAD> <CSV>
+    ( <WITH> <HEADERS> { headers = true; } )?
+    <FROM> source=Expression() <AS> v=Variable()
+    ( <FIELDTERMINATOR> ( sep=<STRING_LITERAL1> | sep=<STRING_LITERAL2> ) )?
+    {
+        return astFactory.loadCsvClause( pos( t ), headers, source, v, sep == null ? null : sep.image );
+    }
 }
 
 // FOREACH
 
 CLAUSE ForeachClause() :
 {
-  Token t;
-  VARIABLE v;
-  EXPRESSION list;
-  CLAUSE c;
-  List<CLAUSE> clauses = new ArrayList<>();
+    Token t;
+    VARIABLE v;
+    EXPRESSION list;
+    CLAUSE c;
+    List<CLAUSE> clauses = new ArrayList<>();
 }
 {
-  t=<FOREACH> <LPAREN> v=Variable() <IN> list=Expression() <BAR>
-  ( c=Clause() { clauses.add(c); } )+
-  <RPAREN>
-  { return astFactory.foreachClause(pos(t), v, list, clauses); }
+    t=<FOREACH> <LPAREN> v=Variable() <IN> list=Expression() <BAR>
+    ( c=Clause() { clauses.add( c ); } )+
+    <RPAREN>
+    {
+        return astFactory.foreachClause( pos( t ), v, list, clauses );
+    }
 }
 
 CLAUSE SubqueryClause() :
 {
-  Token t;
-  QUERY q;
+    Token t;
+    QUERY q;
 }
 {
-  t=<CALL>
-  <LCURLY>
-  ( q=PeriodicCommitQuery() | q=RegularQuery() )
-  <RCURLY>
-  { return astFactory.subqueryClause(pos(t), q); }
+    t=<CALL>
+    <LCURLY>
+    ( q=PeriodicCommitQuery() | q=RegularQuery() )
+    <RCURLY>
+    {
+        return astFactory.subqueryClause( pos( t ), q );
+    }
 }
 
 // WHERE
 
 EXPRESSION Where() :
-{ EXPRESSION e; }
 {
-  <WHERE> e=Expression()
-  { return e; }
+    EXPRESSION e;
+}
+{
+    <WHERE> e=Expression()
+    {
+        return e;
+    }
 }
 
 // PATTERN
 
 List<PATTERN> PatternList() :
 {
-  PATTERN p;
-  List<PATTERN> patterns = new ArrayList<>();
+    PATTERN p;
+    List<PATTERN> patterns = new ArrayList<>();
 }
 {
-  p=Pattern() {patterns.add(p);} ( "," p=Pattern() {patterns.add(p);} )*
-  { return patterns; }
+    p=Pattern() { patterns.add( p ); } ( "," p=Pattern() { patterns.add( p ); } )*
+    {
+        return patterns;
+    }
 }
 
 PATTERN Pattern() :
 {
-  VARIABLE v;
-  PATTERN p;
+    VARIABLE v;
+    PATTERN p;
 }
 {
-  LOOKAHEAD(2) v=Variable() <EQ> p=AnonymousPattern() { return astFactory.namedPattern(v, p); }
-| p=AnonymousPattern() { return p; }
+    LOOKAHEAD( 2 ) v=Variable() <EQ> p=AnonymousPattern() { return astFactory.namedPattern( v, p ); }
+    | p=AnonymousPattern() { return p; }
 }
 
 PATTERN AnonymousPattern() :
-{PATTERN p;}
 {
-  (
-    p=ShortestPathPattern()
-  | LOOKAHEAD(3) p=EveryPathPattern()
-  | <LPAREN> p=AnonymousPattern() <RPAREN>
-  )
-  { return p; }
+    PATTERN p;
+}
+{
+    (
+        p=ShortestPathPattern()
+        | LOOKAHEAD( 3 ) p=EveryPathPattern()
+        | <LPAREN> p=AnonymousPattern() <RPAREN>
+    )
+    {
+        return p;
+    }
 }
 
 PATTERN ShortestPathPattern() :
-{ Token t; PATTERN p; }
 {
-  t=<SHORTEST_PATH> <LPAREN> p=EveryPathPattern() <RPAREN> { return astFactory.shortestPathPattern(pos(t), p); }
-| t=<ALL_SHORTEST_PATH> <LPAREN> p=EveryPathPattern() <RPAREN> { return astFactory.allShortestPathsPattern(pos(t), p); }
+    Token t;
+    PATTERN p;
+}
+{
+    t=<SHORTEST_PATH> <LPAREN> p=EveryPathPattern() <RPAREN> { return astFactory.shortestPathPattern( pos( t ), p ); }
+    | t=<ALL_SHORTEST_PATH> <LPAREN> p=EveryPathPattern() <RPAREN> { return astFactory.allShortestPathsPattern( pos( t ), p ); }
 }
 
 PATTERN EveryPathPattern() :
 {
-  NODE_PATTERN n;
-  REL_PATTERN r;
-  List<REL_PATTERN> relationships = new ArrayList<>();
-  List<NODE_PATTERN> nodes = new ArrayList<>();
+    NODE_PATTERN n;
+    REL_PATTERN r;
+    List<REL_PATTERN> relationships = new ArrayList<>();
+    List<NODE_PATTERN> nodes = new ArrayList<>();
 }
 {
-  n=NodePattern() {nodes.add(n);} ( LOOKAHEAD(2) r=RelationshipPattern() {relationships.add(r);} n=NodePattern() {nodes.add(n);} )*
-  { return astFactory.everyPathPattern(nodes, relationships); }
+    n=NodePattern() { nodes.add( n ); }
+    (
+        LOOKAHEAD( 2 ) r=RelationshipPattern() { relationships.add( r ); }
+        n=NodePattern() { nodes.add( n ); }
+    )*
+    {
+        return astFactory.everyPathPattern( nodes, relationships );
+    }
 }
 
 PATTERN EveryPathPatternNonEmpty() :
 {
-  NODE_PATTERN n;
-  REL_PATTERN r;
-  List<REL_PATTERN> relationships = new ArrayList<>();
-  List<NODE_PATTERN> nodes = new ArrayList<>();
+    NODE_PATTERN n;
+    REL_PATTERN r;
+    List<REL_PATTERN> relationships = new ArrayList<>();
+    List<NODE_PATTERN> nodes = new ArrayList<>();
 }
 {
-  n=NodePattern() {nodes.add(n);} ( LOOKAHEAD(2) r=RelationshipPattern() {relationships.add(r);} n=NodePattern() {nodes.add(n);} )+
-  { return astFactory.everyPathPattern(nodes, relationships); }
+    n=NodePattern() { nodes.add( n ); }
+    (
+        LOOKAHEAD( 2 ) r=RelationshipPattern() {relationships.add( r );}
+        n=NodePattern() { nodes.add( n ); }
+    )+
+    {
+        return astFactory.everyPathPattern( nodes, relationships );
+    }
 }
 
 NODE_PATTERN NodePattern() :
 {
-  Token t;
-  VARIABLE v = null;
-  List<StringPos<POS>> labels = new ArrayList<>();
-  EXPRESSION properties = null;
+    Token t;
+    VARIABLE v = null;
+    List<StringPos<POS>> labels = new ArrayList<>();
+    EXPRESSION properties = null;
 }
 {
-  t=<LPAREN> ( v=Variable() )? ( labels=NodeLabels() )? ( properties=Properties() )? <RPAREN>
-  { return astFactory.nodePattern(pos(t), v, labels, properties); }
+    t=<LPAREN>
+        ( v=Variable() )?
+        ( labels=NodeLabels() )?
+        ( properties=Properties() )?
+    <RPAREN>
+    {
+        return astFactory.nodePattern( pos( t ), v, labels, properties );
+    }
 }
 
 List<StringPos<POS>> NodeLabels() :
 {
-  Token label;
-  List<StringPos<POS>> labels = new ArrayList<>();
+    Token label;
+    List<StringPos<POS>> labels = new ArrayList<>();
 }
 {
-  ( LOOKAHEAD(2) label=NodeLabel() { labels.add(new StringPos<>(label.image, pos(label))); } )+
-  { return labels; }
+    ( LOOKAHEAD( 2 ) label=NodeLabel() { labels.add( new StringPos<>( label.image, pos( label ) ) ); } )+
+    {
+        return labels;
+    }
 }
 
 EXPRESSION HasLabels(EXPRESSION subject) :
 {
-  List<StringPos<POS>> labels;
+    List<StringPos<POS>> labels;
 }
 {
-  labels=NodeLabels()
-  { return astFactory.hasLabelsOrTypes(subject, labels); }
+    labels=NodeLabels()
+    {
+        return astFactory.hasLabelsOrTypes( subject, labels );
+    }
 }
 
 Token NodeLabel() :
-{Token t;}
 {
-  ":" t=SymbolicNameString()
-  {return t;}
+    Token t;
+}
+{
+    ":" t=SymbolicNameString()
+    {
+        return t;
+    }
 }
 
 EXPRESSION Properties() :
-{ EXPRESSION e; }
 {
-  (
-    LOOKAHEAD(3) e=MapLiteral()
-  | e=Parameter()
-  | e=OldParameter()
-  )
-  { return e; }
+    EXPRESSION e;
+}
+{
+    (
+        LOOKAHEAD( 3 ) e=MapLiteral()
+        | e=Parameter()
+        | e=OldParameter()
+    )
+    {
+        return e;
+    }
 }
 
 REL_PATTERN RelationshipPattern() :
 {
-  Token firstToken = token.next;
-  Token t;
-  boolean left = false;
-  boolean right = false;
-  VARIABLE v = null;
-  List<StringPos<POS>> relTypes = new ArrayList<>();
-  boolean legacyTypeSeparator = false;
-  PATH_LENGTH pathLength = null;
-  EXPRESSION properties = null;
+    Token firstToken = token.next;
+    Token t;
+    boolean left = false;
+    boolean right = false;
+    VARIABLE v = null;
+    List<StringPos<POS>> relTypes = new ArrayList<>();
+    boolean legacyTypeSeparator = false;
+    PATH_LENGTH pathLength = null;
+    EXPRESSION properties = null;
 }
 {
-  ( LeftArrow() { left = true; })? ArrowLine()
-  ( <LBRACKET> ( v=Variable() )?
-    ( ":" t=SymbolicNameString()
-        {
+    ( LeftArrow() { left = true; })? ArrowLine()
+    ( <LBRACKET> ( v=Variable() )?
+        ( ":" t=SymbolicNameString()
+            {
                 relTypes = new ArrayList<>();
-                relTypes.add(new StringPos<>(t.image, pos(t)));
-        }
-        ( <BAR> ( ":" {legacyTypeSeparator = true; })? t=SymbolicNameString() { relTypes.add(new StringPos<>(t.image, pos(t))); })*
+                relTypes.add(new StringPos<>( t.image,  pos( t ) ) );
+            }
+            ( <BAR> ( ":" {legacyTypeSeparator = true; })? t=SymbolicNameString() { relTypes.add( new StringPos<>( t.image,  pos( t ) ) ); })*
+        )?
+        ( pathLength=PathLength() )?
+        ( properties=Properties() )?
+        <RBRACKET>
     )?
-    ( pathLength=PathLength() )?
-    ( properties=Properties() )?
-    <RBRACKET>
-  )?
-  ArrowLine() ( RightArrow() { right = true; } )?
-  { return astFactory.relationshipPattern(pos(firstToken), left, right, v, relTypes, pathLength, properties, legacyTypeSeparator); }
+    ArrowLine() ( RightArrow() { right = true; } )?
+    {
+        return astFactory.relationshipPattern( pos( firstToken ), left, right, v, relTypes, pathLength, properties, legacyTypeSeparator );
+    }
 }
 
 void LeftArrow() :
@@ -1771,565 +1883,680 @@ void RightArrow() :
 }
 
 PATH_LENGTH PathLength() :
-{ Token t; PATH_LENGTH p = null; }
 {
-  t=<TIMES> (
-    p=PathLengthLiteral(t)
-  )?
-  { return p == null ? astFactory.pathLength(pos(t), null, null) : p; }
+    Token t;
+    PATH_LENGTH p = null;
+}
+{
+    t=<TIMES> ( p=PathLengthLiteral( t ) )?
+    {
+        return p == null ? astFactory.pathLength( pos( t ), null, null ) : p;
+    }
 }
 
-PATH_LENGTH PathLengthLiteral(Token t) :
+PATH_LENGTH PathLengthLiteral( Token t ) :
 {
-  Token v1 = null;
-  Token v2 = null;
+    Token v1 = null;
+    Token v2 = null;
 }
 {
-  LOOKAHEAD(2) ( v1=<UNSIGNED_DECIMAL_INTEGER> )? <DOTDOT> ( v2=<UNSIGNED_DECIMAL_INTEGER> )?
-    { return astFactory.pathLength(pos(t), v1 == null ? "" : v1.image, v2 == null ? "" : v2.image); }
-| v1=<UNSIGNED_DECIMAL_INTEGER>
-    { String v = v1 == null ? "" : v1.image; return astFactory.pathLength(pos(t), v, v); }
+    LOOKAHEAD( 2 ) ( v1=<UNSIGNED_DECIMAL_INTEGER> )? <DOTDOT> ( v2=<UNSIGNED_DECIMAL_INTEGER> )?
+        {
+            return astFactory.pathLength( pos( t ), v1 == null ? "" : v1.image, v2 == null ? "" : v2.image );
+        }
+    | v1=<UNSIGNED_DECIMAL_INTEGER>
+        {
+            String v = v1 == null ? "" : v1.image;
+            return astFactory.pathLength( pos( t ), v, v);
+        }
 }
 
 // EXPRESSIONS
 
 EXPRESSION Expression() :
-{EXPRESSION e;}
 {
-  e=Expression12()
-  {return e;}
+    EXPRESSION e;
+}
+{
+    e=Expression12()
+    {
+        return e;
+    }
 }
 
 EXPRESSION Expression12() :
 {
-  Token t;
-  EXPRESSION e;
-  EXPRESSION temp;
+    Token t;
+    EXPRESSION e;
+    EXPRESSION temp;
 }
 {
-  e=Expression11() (t=<OR> temp=Expression11() { e = astFactory.or(pos(t), e, temp); } )*
-  {return e;}
+    e=Expression11() ( t=<OR> temp=Expression11() { e = astFactory.or( pos( t ), e, temp ); } )*
+    {
+        return e;
+    }
 }
 
 EXPRESSION Expression11() :
 {
-  Token t;
-  EXPRESSION e;
-  EXPRESSION temp;
+    Token t;
+    EXPRESSION e;
+    EXPRESSION temp;
 }
 {
-  e=Expression10() (t=<XOR> temp=Expression10() { e = astFactory.xor(pos(t), e, temp); } )*
-  {return e;}
+    e=Expression10() ( t=<XOR> temp=Expression10() { e = astFactory.xor( pos( t ), e, temp ); } )*
+    {
+        return e;
+    }
 }
 
 EXPRESSION Expression10() :
 {
-  Token t;
-  EXPRESSION e;
-  EXPRESSION temp;
+    Token t;
+    EXPRESSION e;
+    EXPRESSION temp;
 }
 {
-  e=Expression9() (t=<AND> temp=Expression9() { e = astFactory.and(pos(t), e, temp); } )*
-  {return e;}
+    e=Expression9() (t=<AND> temp=Expression9() { e = astFactory.and( pos( t ), e, temp ); } )*
+    {
+        return e;
+    }
 }
 
 EXPRESSION Expression9() :
 {
-  EXPRESSION e;
+    EXPRESSION e;
 }
 {
-  (
-    LOOKAHEAD(3) <NOT> e=Expression9() { e = astFactory.not(e); }
-  | e=Expression8()
-  )
-  { return e; }
+    (
+        LOOKAHEAD( 3 ) <NOT> e=Expression9() { e = astFactory.not( e ); }
+        | e=Expression8()
+    )
+    {
+        return e;
+    }
 }
 
 EXPRESSION Expression8() :
 {
-  Token t;
-  EXPRESSION e;
-  EXPRESSION lhs;
-  EXPRESSION rhs;
-  List<EXPRESSION> expressions = null;
+    Token t;
+    EXPRESSION e;
+    EXPRESSION lhs;
+    EXPRESSION rhs;
+    List<EXPRESSION> expressions = new ArrayList();
 }
 {
-  e=Expression7() {lhs = e;} ( LOOKAHEAD(2)
-      t=<EQ>  rhs=Expression7() { if (expressions == null) {expressions = new ArrayList<>();} expressions.add(astFactory.eq(pos(t), lhs, rhs)); lhs = rhs; }
-    | t=<NEQ> rhs=Expression7() { if (expressions == null) {expressions = new ArrayList<>();} expressions.add(astFactory.neq(pos(t), lhs, rhs)); lhs = rhs; }
-    | t=<NEQ2> rhs=Expression7() { if (expressions == null) {expressions = new ArrayList<>();} expressions.add(astFactory.neq2(pos(t), lhs, rhs)); lhs = rhs; }
-    | t=<LE> rhs=Expression7() { if (expressions == null) {expressions = new ArrayList<>();} expressions.add(astFactory.lte(pos(t), lhs, rhs)); lhs = rhs; }
-    | t=<GE> rhs=Expression7() { if (expressions == null) {expressions = new ArrayList<>();} expressions.add(astFactory.gte(pos(t), lhs, rhs)); lhs = rhs; }
-    | t=<LT>  rhs=Expression7() { if (expressions == null) {expressions = new ArrayList<>();} expressions.add(astFactory.lt(pos(t), lhs, rhs)); lhs = rhs; }
-    | t=<GT>  rhs=Expression7() { if (expressions == null) {expressions = new ArrayList<>();} expressions.add(astFactory.gt(pos(t), lhs, rhs)); lhs = rhs; }
-  )*
-  {
-    if (expressions == null) return e;
-    else if (expressions.size() == 1) return expressions.get(0);
-    else return astFactory.ands(expressions);
-  }
+    e=Expression7() { lhs = e; } (
+        LOOKAHEAD( 2 ) t=<EQ>  rhs=Expression7() { expressions.add( astFactory.eq( pos( t ), lhs, rhs)); lhs = rhs; }
+        | t=<NEQ> rhs=Expression7() { expressions.add( astFactory.neq( pos( t ), lhs, rhs ) ); lhs = rhs; }
+        | t=<NEQ2> rhs=Expression7() { expressions.add( astFactory.neq2( pos( t ), lhs, rhs ) ); lhs = rhs; }
+        | t=<LE> rhs=Expression7() { expressions.add( astFactory.lte( pos( t ), lhs, rhs ) ); lhs = rhs; }
+        | t=<GE> rhs=Expression7() { expressions.add( astFactory.gte( pos( t ), lhs, rhs ) ); lhs = rhs; }
+        | t=<LT> rhs=Expression7() { expressions.add( astFactory.lt( pos( t ), lhs, rhs ) ); lhs = rhs; }
+        | t=<GT> rhs=Expression7() { expressions.add( astFactory.gt( pos( t ), lhs, rhs ) ); lhs = rhs; }
+    )*
+    {
+        if ( expressions.isEmpty() )
+        {
+            return e;
+        }
+        else if ( expressions.size() == 1 )
+        {
+            return expressions.get( 0 );
+        }
+        else
+        {
+            return astFactory.ands( expressions );
+        }
+    }
 }
 
 EXPRESSION Expression7() :
 {
-  EXPRESSION e;
+    EXPRESSION e;
 }
 {
-  e=Expression6() ( e=ComparisonExpression6(e) )?
-  { return e; }
+    e=Expression6() ( e=ComparisonExpression6( e ) )?
+    {
+        return e;
+    }
 }
 
-EXPRESSION ComparisonExpression6(EXPRESSION lhs) :
+EXPRESSION ComparisonExpression6( EXPRESSION lhs ) :
 {
-  Token t;
-  EXPRESSION rhs;
+    Token t;
+    EXPRESSION rhs;
 }
 {
-  LOOKAHEAD(2)
-  t=<REGEQ> rhs=Expression6() { return astFactory.regeq(pos(t), lhs, rhs); }
-| t=<STARTS> <WITH> rhs=Expression6() { return astFactory.startsWith(pos(t), lhs, rhs); }
-| t=<ENDS> <WITH> rhs=Expression6() { return astFactory.endsWith(pos(t), lhs, rhs); }
-| t=<CONTAINS> rhs=Expression6() { return astFactory.contains(pos(t), lhs, rhs); }
-| t=<IN> rhs=Expression6() { return astFactory.in(pos(t), lhs, rhs); }
-| t=<IS> (
-    <NULL> { return astFactory.isNull(lhs); }
-  | <NOT> <NULL> { return astFactory.not(astFactory.isNull(lhs)); }
-  )
+    LOOKAHEAD( 2 ) t=<REGEQ> rhs=Expression6() { return astFactory.regeq( pos( t ), lhs, rhs ); }
+    | t=<STARTS> <WITH> rhs=Expression6() { return astFactory.startsWith( pos( t ), lhs, rhs ); }
+    | t=<ENDS> <WITH> rhs=Expression6() { return astFactory.endsWith( pos( t ), lhs, rhs ); }
+    | t=<CONTAINS> rhs=Expression6() { return astFactory.contains( pos( t ), lhs, rhs ); }
+    | t=<IN> rhs=Expression6() { return astFactory.in( pos( t ), lhs, rhs ); }
+    | t=<IS> (
+        <NULL> { return astFactory.isNull( lhs ); }
+        | <NOT> <NULL> { return astFactory.not( astFactory.isNull( lhs ) ); }
+    )
 }
 
 EXPRESSION Expression6() :
 {
-  Token t;
-  EXPRESSION lhs;
-  EXPRESSION rhs;
+    Token t;
+    EXPRESSION lhs;
+    EXPRESSION rhs;
 }
 {
-  lhs=Expression5() (
-    t=<PLUS> rhs=Expression5() { lhs = astFactory.plus(pos(t), lhs, rhs); }
-  | t=<MINUS> rhs=Expression5() { lhs = astFactory.minus(pos(t), lhs, rhs); }
-  )*
-  { return lhs; }
+    lhs=Expression5() (
+        t=<PLUS> rhs=Expression5() { lhs = astFactory.plus( pos( t ), lhs, rhs); }
+        | t=<MINUS> rhs=Expression5() { lhs = astFactory.minus( pos( t ), lhs, rhs); }
+    )*
+    {
+        return lhs;
+    }
 }
 
 EXPRESSION Expression5() :
 {
-  Token t;
-  EXPRESSION lhs;
-  EXPRESSION rhs;
+    Token t;
+    EXPRESSION lhs;
+    EXPRESSION rhs;
 }
 {
-  lhs=Expression4() (
-    t=<TIMES> rhs=Expression4() { lhs = astFactory.multiply(pos(t), lhs, rhs); }
-  | t=<DIVIDE> rhs=Expression4() { lhs = astFactory.divide(pos(t), lhs, rhs); }
-  | t=<MODULO> rhs=Expression4() { lhs = astFactory.modulo(pos(t), lhs, rhs); }
-  )*
-  { return lhs; }
+    lhs=Expression4() (
+        t=<TIMES> rhs=Expression4() { lhs = astFactory.multiply( pos( t ), lhs, rhs ); }
+        | t=<DIVIDE> rhs=Expression4() { lhs = astFactory.divide( pos( t ), lhs, rhs ); }
+        | t=<MODULO> rhs=Expression4() { lhs = astFactory.modulo( pos( t ), lhs, rhs ); }
+    )*
+    {
+        return lhs;
+    }
 }
 
 EXPRESSION Expression4() :
 {
-  Token t;
-  EXPRESSION lhs;
-  EXPRESSION rhs;
+    Token t;
+    EXPRESSION lhs;
+    EXPRESSION rhs;
 }
 {
-  lhs=Expression3() ( t=<POW> rhs=Expression3() { lhs = astFactory.pow(pos(t), lhs, rhs); } )*
-  { return lhs; }
+    lhs=Expression3() ( t=<POW> rhs=Expression3() { lhs = astFactory.pow( pos( t ), lhs, rhs ); } )*
+    {
+        return lhs;
+    }
 }
 
 EXPRESSION Expression3() :
 {
-  EXPRESSION e;
+    EXPRESSION e;
 }
 {
-  (
-    LOOKAHEAD(3) e=Expression2()
-  | <PLUS> e=Expression2() { e = astFactory.unaryPlus(e); }
-  | <MINUS> e=Expression2() { e = astFactory.unaryMinus(e); }
-  )
-  { return e; }
+    (
+        LOOKAHEAD(3) e=Expression2()
+        | <PLUS> e=Expression2() { e = astFactory.unaryPlus( e ); }
+        | <MINUS> e=Expression2() { e = astFactory.unaryMinus( e ); }
+    )
+    {
+        return e;
+    }
 }
 
 EXPRESSION Expression2() :
 {
-  EXPRESSION e;
+    EXPRESSION e;
 }
 {
-  e=Expression1() ( e=PostFix1(e) )*
-  { return e; }
-}
-
-EXPRESSION PostFix1(EXPRESSION subject) :
-{
-  Token t;
-  EXPRESSION e1 = null;
-  EXPRESSION e2 = null;
-  EXPRESSION ret;
-}
-{
-  (
-    ret=Property(subject)
-  | ret=HasLabels(subject)
-  | LOOKAHEAD(<LBRACKET> Expression() <RBRACKET>) <LBRACKET> e1=Expression() <RBRACKET> { ret=astFactory.listLookup(subject, e1); }
-  | t=<LBRACKET> ( e1=Expression() )? <DOTDOT> ( e2=Expression() )? <RBRACKET> { ret=astFactory.listSlice(pos(t), subject, e1, e2); }
-  )
-  { return ret; }
+    e=Expression1() ( e=PostFix1( e ) )*
+    {
+        return e;
+    }
 }
 
-PROPERTY Property(EXPRESSION subject) :
+EXPRESSION PostFix1( EXPRESSION subject ) :
 {
-  EXPRESSION e;
-  StringPos<POS> propKeyName;
+    Token t;
+    EXPRESSION e1 = null;
+    EXPRESSION e2 = null;
+    EXPRESSION ret;
 }
 {
-  <DOT> propKeyName=PropertyKeyName() { return astFactory.property(subject, propKeyName); }
+    (
+        ret=Property( subject )
+        | ret=HasLabels( subject )
+        | LOOKAHEAD(<LBRACKET> Expression() <RBRACKET>) <LBRACKET> e1=Expression() <RBRACKET> { ret=astFactory.listLookup( subject, e1 ); }
+        | t=<LBRACKET> ( e1=Expression() )? <DOTDOT> ( e2=Expression() )? <RBRACKET> { ret=astFactory.listSlice( pos( t ), subject, e1, e2 ); }
+    )
+    {
+        return ret;
+    }
+}
+
+PROPERTY Property( EXPRESSION subject ) :
+{
+    EXPRESSION e;
+    StringPos<POS> propKeyName;
+}
+{
+    <DOT> propKeyName=PropertyKeyName()
+    {
+        return astFactory.property( subject, propKeyName );
+    }
 }
 
 PROPERTY PropertyExpression() :
 {
-  EXPRESSION subject;
-  PROPERTY p;
+    EXPRESSION subject;
+    PROPERTY p;
 }
 {
-  subject=Expression1() ( p=Property(subject) { subject = p; } )+
-  { return p; }
+    subject=Expression1() ( p=Property( subject ) { subject = p; } )+
+    {
+        return p;
+    }
 }
 
 EXPRESSION Expression1() :
-{EXPRESSION e = null; Token t;}
 {
-  (
-    e=NumberLiteral()
-  | e=StringLiteral()
-  | e=Parameter()
-  | t=<TRUE> { e = astFactory.newTrueLiteral(pos(t)); }
-  | t=<FALSE> { e = astFactory.newFalseLiteral(pos(t)); }
-  | LOOKAHEAD(2) t=<NULL> { e = astFactory.newNullLiteral(pos(t)); }
-  | LOOKAHEAD(3) e=CaseExpression()
-  | LOOKAHEAD(3) t=<COUNT> <LPAREN> <TIMES> <RPAREN> { e = astFactory.newCountStar(pos(t)); }
-  | LOOKAHEAD(3) e=MapLiteral()
-  | LOOKAHEAD(3) e=ExistsSubQuery() // `exists { match` should not be a map-projection
-  | LOOKAHEAD(2) e=MapProjection()
-  | e=OldParameter()
-  | LOOKAHEAD(3) e=ListComprehension() // before literal because it takes precedence
-  | LOOKAHEAD(PatternComprehensionPrefix()) e=PatternComprehension() // Only after matching up to "WHERE" or "|" can we be sure it is a PatternComprehension and not a ListLiteral.
-  | LOOKAHEAD(3) e=ListLiteral()
-  | LOOKAHEAD(3) e=FilterExpression()
-  | LOOKAHEAD(3) e=ExtractExpression()
-  | LOOKAHEAD(3) e=ReduceExpression()
-  | LOOKAHEAD(3) e=AllExpression()
-  | LOOKAHEAD(3) e=AnyExpression()
-  | LOOKAHEAD(3) e=NoneExpression()
-  | LOOKAHEAD(3) e=SingleExpression()
-  | LOOKAHEAD(NodePattern() RelationshipPattern()) e=PatternExpression()
-  | LOOKAHEAD(2) e=ShortestPathExpression()
-  | <LPAREN> e=Expression() <RPAREN>
-  | LOOKAHEAD((SymbolicNameString() <DOT>)* SymbolicNameString() <LPAREN>) e=FunctionInvocation()
-  | e=Variable()
-  )
-  { return e; }
+    EXPRESSION e = null;
+    Token t;
+}
+{
+    (
+        e=NumberLiteral()
+        | e=StringLiteral()
+        | e=Parameter()
+        | t=<TRUE> { e = astFactory.newTrueLiteral( pos( t ) ); }
+        | t=<FALSE> { e = astFactory.newFalseLiteral( pos( t ) ); }
+        | LOOKAHEAD( 2 ) t=<NULL> { e = astFactory.newNullLiteral( pos( t ) ); }
+        | LOOKAHEAD( 3 ) e=CaseExpression()
+        | LOOKAHEAD( 3 ) t=<COUNT> <LPAREN> <TIMES> <RPAREN> { e = astFactory.newCountStar( pos( t ) ); }
+        | LOOKAHEAD( 3 ) e=MapLiteral()
+        | LOOKAHEAD( 3 ) e=ExistsSubQuery() // `exists { match` should not be a map-projection
+        | LOOKAHEAD( 2 ) e=MapProjection()
+        | e=OldParameter()
+        | LOOKAHEAD( 3 ) e=ListComprehension() // before literal because it takes precedence
+        | LOOKAHEAD( PatternComprehensionPrefix() ) e=PatternComprehension() // Only after matching up to "WHERE" or "|" can we be sure it is a PatternComprehension and not a ListLiteral.
+        | LOOKAHEAD( 3 ) e=ListLiteral()
+        | LOOKAHEAD( 3 ) e=FilterExpression()
+        | LOOKAHEAD( 3 ) e=ExtractExpression()
+        | LOOKAHEAD( 3 ) e=ReduceExpression()
+        | LOOKAHEAD( 3 ) e=AllExpression()
+        | LOOKAHEAD( 3 ) e=AnyExpression()
+        | LOOKAHEAD( 3 ) e=NoneExpression()
+        | LOOKAHEAD( 3 ) e=SingleExpression()
+        | LOOKAHEAD( NodePattern() RelationshipPattern() ) e=PatternExpression()
+        | LOOKAHEAD( 2 ) e=ShortestPathExpression()
+        | <LPAREN> e=Expression() <RPAREN>
+        | LOOKAHEAD( (SymbolicNameString() <DOT> )* SymbolicNameString() <LPAREN> ) e=FunctionInvocation()
+        | e=Variable()
+    )
+    {
+        return e;
+    }
 }
 
 EXPRESSION CaseExpression() :
 {
-  Token t;
-  EXPRESSION e = null;
-  EXPRESSION x;
-  List<EXPRESSION> when = new ArrayList<>();
-  List<EXPRESSION> then = new ArrayList<>();
-  EXPRESSION elseCase = null;
+    Token t;
+    EXPRESSION caseExpr = null;
+    EXPRESSION e;
+    List<EXPRESSION> when = new ArrayList<>();
+    List<EXPRESSION> then = new ArrayList<>();
+    EXPRESSION elseCase = null;
 }
 {
-  t=<CASE> (
-    LOOKAHEAD(e=Expression() <WHEN>) e=Expression() <WHEN>
-  | <WHEN> )
-  x=Expression() {when.add(x);} <THEN> x=Expression() {then.add(x);}
-  ( <WHEN> x=Expression() {when.add(x);} <THEN> x=Expression() {then.add(x);} )*
-  ( <ELSE> elseCase=Expression() )?
-  <END>
-  { return astFactory.caseExpression(pos(t), e, when, then, elseCase); }
+    t=<CASE>
+    (
+        LOOKAHEAD( Expression() <WHEN> ) caseExpr=Expression() <WHEN>
+        | <WHEN>
+    ) e=Expression() { when.add( e ); }
+    <THEN> e=Expression() { then.add( e ); }
+    (
+        <WHEN> e=Expression() { when.add( e ); }
+        <THEN> e=Expression() {then.add( e );}
+    )*
+    ( <ELSE> elseCase=Expression() )?
+    <END>
+    {
+        return astFactory.caseExpression( pos( t ), caseExpr, when, then, elseCase);
+    }
 }
 
 EXPRESSION ListComprehension() :
 {
-  Token t;
-  VARIABLE v;
-  EXPRESSION e;
-  EXPRESSION where = null;
-  EXPRESSION projection = null;
+    Token t;
+    VARIABLE v;
+    EXPRESSION e;
+    EXPRESSION where = null;
+    EXPRESSION projection = null;
 }
 {
-  t=<LBRACKET> v=Variable() <IN> e=Expression() ( where=Where() )? ( <BAR> projection=Expression() )? <RBRACKET>
-  { return astFactory.listComprehension(pos(t), v, e, where, projection); }
+    t=<LBRACKET> v=Variable() <IN> e=Expression() ( where=Where() )? ( <BAR> projection=Expression() )? <RBRACKET>
+    {
+        return astFactory.listComprehension( pos( t ), v, e, where, projection );
+    }
 }
 
 EXPRESSION PatternComprehension() :
 {
-  Token t;
-  VARIABLE v = null;
-  PATTERN p;
-  EXPRESSION where = null;
-  EXPRESSION projection = null;
+    Token t;
+    VARIABLE v = null;
+    PATTERN p;
+    EXPRESSION where = null;
+    EXPRESSION projection = null;
 }
 {
-  t=<LBRACKET> ( v=Variable() <EQ> )? p=EveryPathPatternNonEmpty() ( where=Where() )? <BAR> projection=Expression() <RBRACKET>
-  { return astFactory.patternComprehension(pos(t), v, p, where, projection); }
+    t=<LBRACKET> ( v=Variable() <EQ> )? p=EveryPathPatternNonEmpty() ( where=Where() )? <BAR> projection=Expression() <RBRACKET>
+    {
+        return astFactory.patternComprehension( pos( t ), v, p, where, projection );
+    }
 }
 
 void PatternComprehensionPrefix() :
 {}
 {
-  <LBRACKET> ( Variable() <EQ> )? EveryPathPattern() (<WHERE> | <BAR>)
+    <LBRACKET> ( Variable() <EQ> )? EveryPathPattern() ( <WHERE> | <BAR> )
 }
 
 EXPRESSION FilterExpression() :
 {
-  Token t;
-  VARIABLE v;
-  EXPRESSION e;
-  EXPRESSION where = null;
+    Token t;
+    VARIABLE v;
+    EXPRESSION e;
+    EXPRESSION where = null;
 }
 {
-  t=<FILTER> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
-  { return astFactory.filterExpression(pos(t), v, e, where); }
+    t=<FILTER> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
+    {
+        return astFactory.filterExpression( pos( t ), v, e, where );
+    }
 }
 
 EXPRESSION ExtractExpression() :
 {
-  Token t;
-  VARIABLE v;
-  EXPRESSION e;
-  EXPRESSION where = null;
-  EXPRESSION projection = null;
+    Token t;
+    VARIABLE v;
+    EXPRESSION e;
+    EXPRESSION where = null;
+    EXPRESSION projection = null;
 }
 {
-  t=<EXTRACT> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? ( <BAR> projection=Expression() )? <RPAREN>
-  { return astFactory.extractExpression(pos(t), v, e, where, projection); }
+    t=<EXTRACT> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? ( <BAR> projection=Expression() )? <RPAREN>
+    {
+        return astFactory.extractExpression( pos( t ), v, e, where, projection );
+    }
 }
 
 EXPRESSION ReduceExpression() :
 {
-  Token t;
-  VARIABLE acc;
-  EXPRESSION accExpr;
-  VARIABLE v;
-  EXPRESSION vExpr;
-  EXPRESSION innerExpr;
+    Token t;
+    VARIABLE acc;
+    EXPRESSION accExpr;
+    VARIABLE v;
+    EXPRESSION vExpr;
+    EXPRESSION innerExpr;
 }
 {
-  t=<REDUCE> <LPAREN>
-    acc=Variable() <EQ> accExpr=Expression()
-    "," v=Variable() <IN> vExpr=Expression()
-    <BAR> innerExpr=Expression()
-  <RPAREN>
-  { return astFactory.reduceExpression(pos(t), acc, accExpr, v, vExpr, innerExpr); }
+    t=<REDUCE>
+    <LPAREN>
+        acc=Variable() <EQ> accExpr=Expression()
+        "," v=Variable() <IN> vExpr=Expression()
+        <BAR> innerExpr=Expression()
+    <RPAREN>
+    {
+        return astFactory.reduceExpression( pos( t ), acc, accExpr, v, vExpr, innerExpr );
+    }
 }
 
 EXPRESSION AllExpression() :
 {
-  Token t;
-  VARIABLE v;
-  EXPRESSION e;
-  EXPRESSION where = null;
+    Token t;
+    VARIABLE v;
+    EXPRESSION e;
+    EXPRESSION where = null;
 }
 {
-  t=<ALL> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
-  { return astFactory.allExpression(pos(t), v, e, where); }
+    t=<ALL> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
+    {
+        return astFactory.allExpression( pos( t ), v, e, where );
+    }
 }
 
 EXPRESSION AnyExpression() :
 {
-  Token t;
-  VARIABLE v;
-  EXPRESSION e;
-  EXPRESSION where = null;
+    Token t;
+    VARIABLE v;
+    EXPRESSION e;
+    EXPRESSION where = null;
 }
 {
-  t=<ANY> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
-  { return astFactory.anyExpression(pos(t), v, e, where); }
+    t=<ANY> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
+    {
+        return astFactory.anyExpression( pos( t ), v, e, where );
+    }
 }
 
 EXPRESSION NoneExpression() :
 {
-  Token t;
-  VARIABLE v;
-  EXPRESSION e;
-  EXPRESSION where = null;
+    Token t;
+    VARIABLE v;
+    EXPRESSION e;
+    EXPRESSION where = null;
 }
 {
-  t=<NONE> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
-  { return astFactory.noneExpression(pos(t), v, e, where); }
+    t=<NONE> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
+    {
+        return astFactory.noneExpression( pos( t ), v, e, where );
+    }
 }
 
 EXPRESSION SingleExpression() :
 {
-  Token t;
-  VARIABLE v;
-  EXPRESSION e;
-  EXPRESSION where = null;
+    Token t;
+    VARIABLE v;
+    EXPRESSION e;
+    EXPRESSION where = null;
 }
 {
-  t=<SINGLE> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
-  { return astFactory.singleExpression(pos(t), v, e, where); }
+    t=<SINGLE> <LPAREN> v=Variable() <IN> e=Expression() ( where=Where() )? <RPAREN>
+    {
+        return astFactory.singleExpression( pos( t ), v, e, where );
+    }
 }
 
 EXPRESSION PatternExpression() :
-{ PATTERN p; Token t; }
 {
-  { t = token; }
-  p=EveryPathPatternNonEmpty()
-  { return astFactory.patternExpression(pos(t.next), p); }
+    PATTERN p;
+    Token t;
+}
+{
+    { t = token; }
+    p=EveryPathPatternNonEmpty()
+    {
+        return astFactory.patternExpression( pos( t.next ), p );
+    }
 }
 
 EXPRESSION ShortestPathExpression() :
-{ PATTERN p; Token t; }
 {
-  { t = token; }
-  p=ShortestPathPattern()
-  { return astFactory.patternExpression(pos(t.next), p); }
+    PATTERN p;
+    Token t;
+}
+{
+    { t = token; }
+    p=ShortestPathPattern()
+    {
+        return astFactory.patternExpression( pos( t.next ), p );
+    }
 }
 
 EXPRESSION MapProjection() :
 {
-  Token t;
-  VARIABLE v;
-  MAP_PROJECTION_ITEM x;
-  List<MAP_PROJECTION_ITEM> items = new ArrayList<>();
+    Token t;
+    VARIABLE v;
+    MAP_PROJECTION_ITEM x;
+    List<MAP_PROJECTION_ITEM> items = new ArrayList<>();
 }
 {
-  v=Variable() t=<LCURLY> ( x=MapProjectionItem() {items.add(x);} )? ( "," x=MapProjectionItem() {items.add(x);} )* <RCURLY>
-  { return astFactory.mapProjection(pos(t), v, items); }
+    v=Variable() t=<LCURLY> ( x=MapProjectionItem() { items.add( x ); } )? ( "," x=MapProjectionItem() { items.add( x ); } )* <RCURLY>
+    {
+        return astFactory.mapProjection( pos( t ), v, items );
+    }
 }
 
 MAP_PROJECTION_ITEM MapProjectionItem() :
 {
-  Token t;
-  StringPos<POS> p;
-  EXPRESSION e;
-  VARIABLE v;
+    Token t;
+    StringPos<POS> p;
+    EXPRESSION e;
+    VARIABLE v;
 }
 {
-  LOOKAHEAD(2) p=PropertyKeyName() ":" e=Expression() { return astFactory.mapProjectionLiteralEntry(p, e); }
-| LOOKAHEAD(2) <DOT> p=PropertyKeyName() { return astFactory.mapProjectionProperty(p); }
-| v=Variable() { return astFactory.mapProjectionVariable(v); }
-| <DOT> t=<TIMES> { return astFactory.mapProjectionAll(pos(t)); }
+    LOOKAHEAD( 2 ) p=PropertyKeyName() ":" e=Expression() { return astFactory.mapProjectionLiteralEntry( p, e ); }
+    | LOOKAHEAD( 2 ) <DOT> p=PropertyKeyName() { return astFactory.mapProjectionProperty( p ); }
+    | v=Variable() { return astFactory.mapProjectionVariable( v ); }
+    | <DOT> t=<TIMES> { return astFactory.mapProjectionAll( pos( t ) ); }
 }
 
 EXPRESSION ExistsSubQuery() :
 {
-  Token t;
-  List<PATTERN> patterns;
-  EXPRESSION where = null;
+    Token t;
+    List<PATTERN> patterns;
+    EXPRESSION where = null;
 }
 {
-  t=<EXISTS> <LCURLY> ( LOOKAHEAD(2) <MATCH> )? patterns=PatternList() ( where=Where() )? <RCURLY>
-  { return astFactory.existsSubQuery(pos(t), patterns, where); }
+    t=<EXISTS> <LCURLY> ( LOOKAHEAD( 2 ) <MATCH> )? patterns=PatternList() ( where=Where() )? <RCURLY>
+    {
+        return astFactory.existsSubQuery( pos( t ), patterns, where );
+    }
 }
 
 EXPRESSION Literal() :
-{Token t; EXPRESSION e;}
 {
-  (
-    e=NumberLiteral()
-  | e=StringLiteral()
-  | e=Parameter()
-  | t=<TRUE> { e = astFactory.newTrueLiteral(pos(t)); }
-  | t=<FALSE> { e = astFactory.newFalseLiteral(pos(t)); }
-  | LOOKAHEAD(2) t=<NULL> { e = astFactory.newNullLiteral(pos(t)); }
-  | e=ListLiteralOfLiterals()
-  | e=MapLiteralOfLiterals()
-  | e=FunctionInvocation() // for spatial and temporal constructors
-  )
-  { return e; }
+    Token t;
+    EXPRESSION e;
+}
+{
+    (
+        e=NumberLiteral()
+        | e=StringLiteral()
+        | e=Parameter()
+        | t=<TRUE> { e = astFactory.newTrueLiteral( pos( t ) ); }
+        | t=<FALSE> { e = astFactory.newFalseLiteral( pos( t ) ); }
+        | LOOKAHEAD( 2 ) t=<NULL> { e = astFactory.newNullLiteral( pos( t ) ); }
+        | e=ListLiteralOfLiterals()
+        | e=MapLiteralOfLiterals()
+        | e=FunctionInvocation() // for spatial and temporal constructors
+    )
+    {
+        return e;
+    }
 }
 
 EXPRESSION ListLiteralOfLiterals() :
 {
-  Token t;
-  EXPRESSION e;
-  List<EXPRESSION> list = new ArrayList<>();
+    Token t;
+    EXPRESSION e;
+    List<EXPRESSION> list = new ArrayList<>();
 }
 {
-  t=<LBRACKET> ( e=Literal() {list.add(e);} )? ( "," e=Literal() {list.add(e);} )* <RBRACKET>
-  { return astFactory.listLiteral(pos(t), list); }
+    t=<LBRACKET> ( e=Literal() { list.add(e); } )? ( "," e=Literal() {list.add( e ); } )* <RBRACKET>
+    {
+        return astFactory.listLiteral( pos( t ), list );
+    }
 }
 
 EXPRESSION MapLiteralOfLiterals() :
 {
-  Token t;
-  StringPos<POS> key;
-  EXPRESSION value;
-  List<StringPos<POS>> keys = new ArrayList<>();
-  List<EXPRESSION> values = new ArrayList<>();
+    Token t;
+    StringPos<POS> key;
+    EXPRESSION value;
+    List<StringPos<POS>> keys = new ArrayList<>();
+    List<EXPRESSION> values = new ArrayList<>();
 }
 {
-  t=<LCURLY> ( key=PropertyKeyName() ":" value=Literal() {keys.add(key); values.add(value);} )?
-           ( "," key=PropertyKeyName() ":" value=Literal() {keys.add(key); values.add(value);} )* <RCURLY>
-  { return astFactory.mapLiteral(pos(t), keys, values); }
+    t=<LCURLY> ( key=PropertyKeyName() ":" value=Literal() {keys.add( key ); values.add( value ); } )?
+           ( "," key=PropertyKeyName() ":" value=Literal() {keys.add( key ); values.add( value ); } )* <RCURLY>
+    {
+        return astFactory.mapLiteral( pos( t ), keys, values );
+    }
 }
 
 EXPRESSION StringLiteral() :
-{ Token t; }
 {
-  t=<STRING_LITERAL1> { return astFactory.newString(pos(t), token.image); }
-| t=<STRING_LITERAL2> { return astFactory.newString(pos(t), token.image); }
+    Token t;
+}
+{
+    t=<STRING_LITERAL1> { return astFactory.newString( pos( t ), token.image ); }
+    | t=<STRING_LITERAL2> { return astFactory.newString( pos( t ), token.image ); }
 }
 
 EXPRESSION NumberLiteral() :
-{Token t; boolean negated = false;}
 {
-  t=<DECIMAL_DOUBLE> { return astFactory.newDouble(pos(t), token.image); }
-| ( <MINUS> {negated = true;})?
-  ( t=<UNSIGNED_DECIMAL_INTEGER> { return astFactory.newDecimalInteger(pos(t), token.image, negated); }
-  | t=<UNSIGNED_HEX_INTEGER> { return astFactory.newHexInteger(pos(t), token.image, negated); }
-  | t=<UNSIGNED_OCTAL_INTEGER> { return astFactory.newOctalInteger(pos(t), token.image, negated); }
-  )
+    Token t;
+    boolean negated = false;
+}
+{
+    t=<DECIMAL_DOUBLE> { return astFactory.newDouble( pos( t ), token.image ); }
+    | ( <MINUS> { negated = true; })?
+    (
+        t=<UNSIGNED_DECIMAL_INTEGER> { return astFactory.newDecimalInteger( pos( t ), token.image, negated ); }
+        | t=<UNSIGNED_HEX_INTEGER> { return astFactory.newHexInteger( pos( t ), token.image, negated ); }
+        | t=<UNSIGNED_OCTAL_INTEGER> { return astFactory.newOctalInteger( pos( t ), token.image, negated ); }
+    )
 }
 
 EXPRESSION SignedIntegerLiteral():
 {
- Token sign = null;
- Token number;
- boolean negated = false;
+    Token sign = null;
+    Token number;
+    boolean negated = false;
 }
 {
-  ( sign=<MINUS> { negated = true; })?
-  number=<UNSIGNED_DECIMAL_INTEGER>
-  {
-    return astFactory.newDecimalInteger(pos(sign != null ? sign : number), token.image, negated);
-  }
+    ( sign=<MINUS> { negated = true; })?
+    number=<UNSIGNED_DECIMAL_INTEGER>
+    {
+        return astFactory.newDecimalInteger( pos( sign != null ? sign : number ), token.image, negated );
+    }
 }
 
 EXPRESSION ListLiteral() :
 {
-  Token t;
-  EXPRESSION e;
-  List<EXPRESSION> list = new ArrayList<>();
+    Token t;
+    EXPRESSION e;
+    List<EXPRESSION> list = new ArrayList<>();
 }
 {
-  t=<LBRACKET> ( e=Expression() {list.add(e);} )? ( "," e=Expression() {list.add(e);} )* <RBRACKET>
-  { return astFactory.listLiteral(pos(t), list); }
+    t=<LBRACKET> ( e=Expression() { list.add( e ); } )? ( "," e=Expression() { list.add( e ); } )* <RBRACKET>
+    {
+        return astFactory.listLiteral( pos( t ), list );
+    }
 }
 
 EXPRESSION MapLiteral() :
 {
-  Token t;
-  StringPos<POS> key;
-  EXPRESSION value;
-  List<StringPos<POS>> keys = new ArrayList<>();
-  List<EXPRESSION> values = new ArrayList<>();
+    Token t;
+    StringPos<POS> key;
+    EXPRESSION value;
+    List<StringPos<POS>> keys = new ArrayList<>();
+    List<EXPRESSION> values = new ArrayList<>();
 }
 {
-  t=<LCURLY> ( key=PropertyKeyName() ":" value=Expression() {keys.add(key); values.add(value);} )?
-           ( "," key=PropertyKeyName() ":" value=Expression() {keys.add(key); values.add(value);} )* <RCURLY>
-  { return astFactory.mapLiteral(pos(t), keys, values); }
+    t=<LCURLY> ( key=PropertyKeyName() ":" value=Expression() { keys.add( key ); values.add( value ); } )?
+           ( "," key=PropertyKeyName() ":" value=Expression() { keys.add( key ); values.add( value ); } )* <RCURLY>
+    {
+        return astFactory.mapLiteral( pos( t ), keys, values);
+    }
 }
 
 StringPos<POS> PropertyKeyName() :
-{Token t;}
 {
-  t=SymbolicNameString()
-  { return new StringPos<POS>(t.image, pos(t)); }
+    Token t;
+}
+{
+    t=SymbolicNameString()
+    {
+        return new StringPos<POS>( t.image,  pos( t ) );
+    }
 }
 
 EXPRESSION Parameter() :
@@ -2338,10 +2565,10 @@ EXPRESSION Parameter() :
     VARIABLE v;
 }
 {
-  t="$" (
-    v=Variable() { return astFactory.newParameter(pos(t), v); }
-  | <UNSIGNED_DECIMAL_INTEGER> { return astFactory.newParameter(pos(t), token.image); }
-  )
+    t="$" (
+        v=Variable() { return astFactory.newParameter( pos( t ), v ); }
+        | <UNSIGNED_DECIMAL_INTEGER> { return astFactory.newParameter( pos( t ), token.image ); }
+    )
 }
 
 PARAMETER StringParameter() :
@@ -2350,180 +2577,211 @@ PARAMETER StringParameter() :
     VARIABLE v;
 }
 {
-  t="$" (
-    v=Variable() { return astFactory.newStringParameter(pos(t), v); }
-  | <UNSIGNED_DECIMAL_INTEGER> { return astFactory.newStringParameter(pos(t), token.image); }
-  )
+    t="$" (
+        v=Variable() { return astFactory.newStringParameter( pos( t ), v ); }
+        | <UNSIGNED_DECIMAL_INTEGER> { return astFactory.newStringParameter( pos( t ), token.image ); }
+    )
 }
 
 EXPRESSION OldParameter() :
-{Token t; VARIABLE v;}
 {
-  t=<LCURLY> v=Variable() <RCURLY>
-  { return astFactory.oldParameter(pos(t), v); }
+    Token t;
+    VARIABLE v;
+}
+{
+    t=<LCURLY> v=Variable() <RCURLY>
+    {
+        return astFactory.oldParameter( pos( t ), v );
+    }
 }
 
 EXPRESSION FunctionInvocation() :
 {
-  Token before = token;
-  List<String> namespace;
-  String name;
-  boolean distinct = false;
-  EXPRESSION e;
-  List<EXPRESSION> arguments = new ArrayList<>();
+    Token before = token;
+    List<String> namespace;
+    String name;
+    boolean distinct = false;
+    EXPRESSION e;
+    List<EXPRESSION> arguments = new ArrayList<>();
 }
 {
-  namespace=Namespace() name=FunctionName()
-  <LPAREN>
-  ( LOOKAHEAD(2) <DISTINCT> { distinct=true; })?
-  ( e=Expression() {arguments.add(e);} )? ( "," e=Expression() {arguments.add(e);} )*
-  <RPAREN>
-  { return astFactory.functionInvocation(pos(before.next), namespace, name, distinct, arguments);}
+    namespace=Namespace() name=FunctionName()
+    <LPAREN>
+        ( LOOKAHEAD( 2 ) <DISTINCT> { distinct=true; })?
+        ( e=Expression() { arguments.add( e ); } )? ( "," e=Expression() { arguments.add( e ); } )*
+    <RPAREN>
+    {
+        return astFactory.functionInvocation( pos( before.next ), namespace, name, distinct, arguments );
+    }
 }
 
 List<String> Namespace() :
 {
-  Token t;
-  List<String> parts = new ArrayList<>();
+    Token t;
+    List<String> parts = new ArrayList<>();
 }
 {
-  ( LOOKAHEAD(2) t=SymbolicNameString() { parts.add(t.image); } <DOT> )*
-  { return parts; }
+    ( LOOKAHEAD( 2 ) t=SymbolicNameString() { parts.add( t.image ); } <DOT> )*
+    {
+        return parts;
+    }
 }
 
 String FunctionName() :
-{ Token t; }
 {
-  t=SymbolicNameString()
-  { return t.image; }
+    Token t;
+}
+{
+    t=SymbolicNameString()
+    {
+        return t.image;
+    }
 }
 
 List<VARIABLE> VariableList1() :
 {
-  Token t;
-  List<VARIABLE> list = new ArrayList<>();
+    Token t;
+    List<VARIABLE> list = new ArrayList<>();
 }
 {
-  t=SymbolicNameString() { list.add(astFactory.newVariable(pos(t), t.image)); }
-  ( "," t=SymbolicNameString() { list.add(astFactory.newVariable(pos(t), t.image)); })*
-  {
-    return list;
-  }
+    t=SymbolicNameString() { list.add( astFactory.newVariable( pos( t ), t.image ) ); }
+    ( "," t=SymbolicNameString() { list.add( astFactory.newVariable( pos( t ), t.image) ); })*
+    {
+        return list;
+    }
 }
 
 VARIABLE Variable() :
-{Token t;}
 {
-  t=SymbolicNameString()
-  {
-    return astFactory.newVariable(pos(t), t.image);
-  }
+    Token t;
+}
+{
+    t=SymbolicNameString()
+    {
+        return astFactory.newVariable( pos( t ), t.image );
+    }
 }
 
 List<String> SymbolicNameList1() :
 {
-  Token n;
-  List<String> list = new ArrayList<>();
+    Token n;
+    List<String> list = new ArrayList<>();
 }
 {
-  n=SymbolicNameString() {list.add(n.image);} ( "," n=SymbolicNameString() {list.add(n.image);} )*
-  {
-    return list;
-  }
+    n=SymbolicNameString() { list.add(n.image); } ( "," n=SymbolicNameString() { list.add( n.image ); } )*
+    {
+        return list;
+    }
 }
 
 // SHOW commands
 
-STATEMENT ShowCommand(USE_CLAUSE useClause) :
+STATEMENT ShowCommand( USE_CLAUSE useClause ) :
 {
-  Token start = null;
-  Token schemaType = null;
-  STATEMENT statement = null;
+    Token start = null;
+    Token schemaType = null;
+    STATEMENT statement = null;
 }
 {
-  start = <SHOW>
-  ( schemaType = <ALL> statement = ShowAllCommand(start, useClause, schemaType.image)
-    | <POPULATED> statement = ShowRoles(start, useClause, false)
-    | schemaType = <BTREE> statement = ShowIndexesAllowBrief(start, useClause, schemaType.image)
-    | schemaType = <FULLTEXT> statement = ShowIndexesNoBrief(start, useClause, schemaType.image)
-    | schemaType = <UNIQUE> statement = ShowConstraintsAllowBriefAndYield(start, useClause, schemaType.image)
-    | schemaType = <NODE> statement = ShowNodeCommand(start, useClause, schemaType.image)
-    | schemaType = <PROPERTY> statement = ShowPropertyCommand(start, useClause, schemaType.image)
-    | schemaType = <EXISTENCE> statement = ShowConstraintsAllowYield(start, useClause, schemaType.image)
-    | schemaType = <EXISTS> statement = ShowConstraintsAllowBrief(start, useClause, schemaType.image)
-    | schemaType = <EXIST> statement = ShowConstraintsAllowBriefAndYield(start, useClause, schemaType.image)
-    | schemaType = <RELATIONSHIP> statement = ShowRelationshipCommand(start, useClause, schemaType.image)
-    | schemaType = <REL> statement = ShowRelCommand(start, useClause, schemaType.image)
-    | statement = ShowRoles(start, useClause, true)
-    | statement = ShowIndexesAllowBrief(start, useClause, "ALL") // <ALL>.image
-    | statement = ShowDatabase(start, useClause)
-    | statement = ShowUsers(start, useClause)
-    | statement = ShowCurrentUser(start, useClause)
-    | statement = ShowConstraintsAllowBriefAndYield(start, useClause, "ALL") // <ALL>.image
-  ) { return statement; }
-}
-
-STATEMENT ShowAllCommand(Token start, USE_CLAUSE useClause, String schemaType) :
-{
-
-  STATEMENT statement = null;
-}
-{
-    (statement = ShowRoles(start, useClause, true)
-    | statement = ShowIndexesAllowBrief(start, useClause, schemaType)
-    | statement = ShowConstraintsAllowBriefAndYield(start, useClause, schemaType))
+    start=<SHOW>
+    (
+        schemaType=<ALL> statement=ShowAllCommand( start, useClause, schemaType.image )
+        | <POPULATED> statement=ShowRoles( start, useClause, false )
+        | schemaType=<BTREE> statement = ShowIndexesAllowBrief( start, useClause, schemaType.image )
+        | schemaType=<FULLTEXT> statement = ShowIndexesNoBrief( start, useClause, schemaType.image )
+        | schemaType=<UNIQUE> statement = ShowConstraintsAllowBriefAndYield( start, useClause, schemaType.image )
+        | schemaType=<NODE> statement = ShowNodeCommand( start, useClause, schemaType.image )
+        | schemaType=<PROPERTY> statement = ShowPropertyCommand( start, useClause, schemaType.image )
+        | schemaType=<EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, schemaType.image )
+        | schemaType=<EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, schemaType.image )
+        | schemaType=<EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, schemaType.image )
+        | schemaType=<RELATIONSHIP> statement=ShowRelationshipCommand( start, useClause, schemaType.image )
+        | schemaType=<REL> statement=ShowRelCommand( start, useClause, schemaType.image )
+        | statement=ShowRoles( start, useClause, true )
+        | statement=ShowIndexesAllowBrief( start, useClause, "ALL" ) // <ALL>.image
+        | statement=ShowDatabase( start, useClause )
+        | statement=ShowUsers( start, useClause )
+        | statement=ShowCurrentUser( start, useClause )
+        | statement=ShowConstraintsAllowBriefAndYield( start, useClause, "ALL" ) // <ALL>.image
+    )
     {
         return statement;
     }
 }
 
-STATEMENT ShowNodeCommand(Token start, USE_CLAUSE useClause, String initialConstraintType) :
+STATEMENT ShowAllCommand( Token start, USE_CLAUSE useClause, String schemaType ) :
 {
-  Token constraintType = null;
-  STATEMENT statement = null;
+    STATEMENT statement = null;
+}
+{
+    (
+        statement = ShowRoles( start, useClause, true )
+        | statement = ShowIndexesAllowBrief( start, useClause, schemaType )
+        | statement = ShowConstraintsAllowBriefAndYield( start, useClause, schemaType )
+    )
+    {
+        return statement;
+    }
+}
+
+STATEMENT ShowNodeCommand( Token start, USE_CLAUSE useClause, String initialConstraintType ) :
+{
+    Token constraintType = null;
+    STATEMENT statement = null;
 }
 {
     // Needs to add <NODE> to the type
-    ( constraintType = <KEY> statement = ShowConstraintsAllowBriefAndYield(start, useClause, initialConstraintType + " " + constraintType)
-    | constraintType = <PROPERTY> statement = ShowPropertyCommand(start, useClause, initialConstraintType + " " + constraintType)
-    | constraintType = <EXISTENCE> statement = ShowConstraintsAllowYield(start, useClause, initialConstraintType + " " + constraintType)
-    | constraintType = <EXISTS> statement = ShowConstraintsAllowBrief(start, useClause, initialConstraintType + " " + constraintType)
-    | constraintType = <EXIST> statement = ShowConstraintsAllowBriefAndYield(start, useClause, initialConstraintType + " " + constraintType)
-    ) { return statement; }
+    (
+        constraintType=<KEY> statement = ShowConstraintsAllowBriefAndYield( start, useClause, initialConstraintType + " " + constraintType )
+        | constraintType=<PROPERTY> statement=ShowPropertyCommand( start, useClause, initialConstraintType + " " + constraintType )
+        | constraintType=<EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, initialConstraintType + " " + constraintType )
+        | constraintType=<EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, initialConstraintType + " " + constraintType )
+        | constraintType=<EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, initialConstraintType + " " + constraintType )
+    )
+    {
+        return statement;
+    }
 }
 
-STATEMENT ShowRelationshipCommand(Token start, USE_CLAUSE useClause, String initialConstraintType) :
+STATEMENT ShowRelationshipCommand( Token start, USE_CLAUSE useClause, String initialConstraintType ) :
 {
-  Token constraintType = null;
-  STATEMENT statement = null;
+    Token constraintType = null;
+    STATEMENT statement = null;
 }
 {
-    ( constraintType = <PROPERTY> statement = ShowPropertyCommand(start, useClause, initialConstraintType + " " + constraintType)
-    | constraintType = <EXISTENCE> statement = ShowConstraintsAllowYield(start, useClause, initialConstraintType + " " + constraintType)
-    | constraintType = <EXISTS> statement = ShowConstraintsAllowBrief(start, useClause, initialConstraintType + " " + constraintType)
-    | constraintType = <EXIST> statement = ShowConstraintsAllowBriefAndYield(start, useClause, initialConstraintType + " " + constraintType)
-    ) { return statement; }
-}
-
-STATEMENT ShowRelCommand(Token start, USE_CLAUSE useClause, String constraintType) :
-{
-  STATEMENT statement = null;
-}
-{
-    ( <PROPERTY> statement = ShowPropertyCommand(start, useClause, constraintType)
-    | <EXISTENCE> statement = ShowConstraintsAllowYield(start, useClause, constraintType)
-    | <EXIST> statement = ShowConstraintsAllowYield(start, useClause, constraintType)
-    ) { return statement; }
+    (
+        constraintType=<PROPERTY> statement=ShowPropertyCommand( start, useClause, initialConstraintType + " " + constraintType )
+        | constraintType=<EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, initialConstraintType + " " + constraintType )
+        | constraintType=<EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, initialConstraintType + " " + constraintType )
+        | constraintType=<EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, initialConstraintType + " " + constraintType )
+    )
+    {
+        return statement;
+    }
 }
 
-STATEMENT ShowPropertyCommand(Token start, USE_CLAUSE useClause, String constraintType) :
+STATEMENT ShowRelCommand( Token start, USE_CLAUSE useClause, String constraintType ) :
 {
-
-  STATEMENT statement = null;
+    STATEMENT statement = null;
 }
 {
-    ( <EXISTENCE> statement = ShowConstraintsAllowYield(start, useClause, constraintType)
-    | <EXIST> statement = ShowConstraintsAllowYield(start, useClause, constraintType)
+    (
+        <PROPERTY> statement=ShowPropertyCommand( start, useClause, constraintType )
+        | <EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, constraintType )
+        | <EXIST> statement=ShowConstraintsAllowYield( start, useClause, constraintType )
+    )
+    {
+        return statement;
+    }
+}
+
+STATEMENT ShowPropertyCommand( Token start, USE_CLAUSE useClause, String constraintType ) :
+{
+    STATEMENT statement = null;
+}
+{
+    ( <EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, constraintType )
+    | <EXIST> statement=ShowConstraintsAllowYield( start, useClause, constraintType )
     ) { return statement; }
 }
 
@@ -2541,32 +2799,37 @@ YIELD YieldClause():
 {
     start=<YIELD>
     ( <TIMES> { returnAll = true; }  |
-    ( item=ReturnItem() { returnItems.add(item); } ("," item=ReturnItem() { returnItems.add(item); } )*))
+    ( item=ReturnItem() { returnItems.add( item ); } ("," item=ReturnItem() { returnItems.add( item ); } )*))
     ( orders=Order() )?
     ( <SKIPROWS> skip=SignedIntegerLiteral() )?
     ( <LIMITROWS> limit=SignedIntegerLiteral() )?
     ( where = Where() ) ?
     {
-        return astFactory.yieldClause(pos(start), returnAll, returnItems, orders, skip, limit, where);
+        return astFactory.yieldClause( pos( start ), returnAll, returnItems, orders, skip, limit, where );
     }
 }
 
-STATEMENT ShowIndexesAllowBrief(Token start, USE_CLAUSE useClause, String schemaType):
+STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, String schemaType ):
 {
-  // all and btree indexes
-  List<CLAUSE> clauses = new ArrayList<>();
-  if (useClause != null) {
+    // all and btree indexes
+    List<CLAUSE> clauses = new ArrayList<>();
+    if ( useClause != null )
+    {
       clauses.add( useClause );
-  }
-  boolean brief = false;
-  boolean verbose = false;
-  EXPRESSION where = null;
-  YIELD yieldClause = null;
-  RETURN_CLAUSE returnClause = null;
+    }
+    boolean brief = false;
+    boolean verbose = false;
+    EXPRESSION where = null;
+    YIELD yieldClause = null;
+    RETURN_CLAUSE returnClause = null;
 }
 {
-    (<INDEX>|<INDEXES>)
-    ( ( ( <BRIEF> { brief = true; } | <VERBOSE> { verbose = true; }) (<OUTPUT>)? ) | (yieldClause = YieldClause() ( returnClause=ReturnClause() )?) | where = Where() )?
+    ( <INDEX> | <INDEXES> )
+    (
+        ( ( <BRIEF> { brief = true; } | <VERBOSE> { verbose = true; } ) ( <OUTPUT> )? )
+        | ( yieldClause=YieldClause() ( returnClause=ReturnClause() )? )
+        | where= Where()
+    )?
     {
         if ( yieldClause != null )
         {
@@ -2597,7 +2860,7 @@ STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, String schemaTyp
   RETURN_CLAUSE returnClause = null;
 }
 {
-    (<INDEX>|<INDEXES>)
+    ( <INDEX> | <INDEXES> )
     ( (yieldClause = YieldClause() ( returnClause=ReturnClause() )?) | where = Where() )?
     {
         if ( yieldClause != null )
@@ -2617,22 +2880,27 @@ STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, String schemaTyp
     }
 }
 
-STATEMENT ShowConstraintsAllowBriefAndYield(Token start, USE_CLAUSE useClause, String constraintType):
+STATEMENT ShowConstraintsAllowBriefAndYield( Token start, USE_CLAUSE useClause, String constraintType ):
 {
-  // all, node key, uniqueness and old valid existence constraints
-  List<CLAUSE> clauses = new ArrayList<>();
-  if (useClause != null) {
-      clauses.add( useClause );
-  }
-  boolean brief = false;
-  boolean verbose = false;
-  EXPRESSION where = null;
-  YIELD yieldClause = null;
-  RETURN_CLAUSE returnClause = null;
+    // all, node key, uniqueness and old valid existence constraints
+    List<CLAUSE> clauses = new ArrayList<>();
+    if ( useClause != null )
+    {
+        clauses.add( useClause );
+    }
+    boolean brief = false;
+    boolean verbose = false;
+    EXPRESSION where = null;
+    YIELD yieldClause = null;
+    RETURN_CLAUSE returnClause = null;
 }
 {
-    (<CONSTRAINT>|<CONSTRAINTS>)
-    ( ( ( <BRIEF> { brief = true; } | <VERBOSE> { verbose = true; }) (<OUTPUT>)? ) | (yieldClause = YieldClause() ( returnClause=ReturnClause() )?) | where = Where() )?
+    ( <CONSTRAINT> | <CONSTRAINTS> )
+    (
+        ( ( <BRIEF> { brief = true; } | <VERBOSE> { verbose = true; }) (<OUTPUT>)? )
+        | ( yieldClause=YieldClause() ( returnClause=ReturnClause() )?)
+        | where = Where()
+    )?
     {
         if ( yieldClause != null )
         {
@@ -2651,18 +2919,19 @@ STATEMENT ShowConstraintsAllowBriefAndYield(Token start, USE_CLAUSE useClause, S
     }
 }
 
-STATEMENT ShowConstraintsAllowBrief(Token start, USE_CLAUSE useClause, String constraintType):
+STATEMENT ShowConstraintsAllowBrief( Token start, USE_CLAUSE useClause, String constraintType ):
 {
-  // old deprecated existence constraints
-  List<CLAUSE> clauses = new ArrayList<>();
-  if (useClause != null) {
-      clauses.add( useClause );
-  }
-  boolean brief = false;
-  boolean verbose = false;
+    // old deprecated existence constraints
+    List<CLAUSE> clauses = new ArrayList<>();
+    if ( useClause != null )
+    {
+        clauses.add( useClause );
+    }
+    boolean brief = false;
+    boolean verbose = false;
 }
 {
-    (<CONSTRAINT>|<CONSTRAINTS>)
+    ( <CONSTRAINT> | <CONSTRAINTS> )
     ( ( <BRIEF> { brief = true; } | <VERBOSE> { verbose = true; }) (<OUTPUT>)? )?
     {
         clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, brief, verbose, null, false ) );
@@ -2670,20 +2939,24 @@ STATEMENT ShowConstraintsAllowBrief(Token start, USE_CLAUSE useClause, String co
     }
 }
 
-STATEMENT ShowConstraintsAllowYield(Token start, USE_CLAUSE useClause, String constraintType):
+STATEMENT ShowConstraintsAllowYield( Token start, USE_CLAUSE useClause, String constraintType ):
 {
-  // new existence constraints
-  List<CLAUSE> clauses = new ArrayList<>();
-  if (useClause != null) {
-      clauses.add( useClause );
-  }
-  EXPRESSION where = null;
-  YIELD yieldClause = null;
-  RETURN_CLAUSE returnClause = null;
+    // new existence constraints
+    List<CLAUSE> clauses = new ArrayList<>();
+    if (useClause != null)
+    {
+        clauses.add( useClause );
+    }
+    EXPRESSION where = null;
+    YIELD yieldClause = null;
+    RETURN_CLAUSE returnClause = null;
 }
 {
-    (<CONSTRAINT>|<CONSTRAINTS>)
-    ( (yieldClause = YieldClause() ( returnClause=ReturnClause() )?) | where = Where() )?
+    ( <CONSTRAINT> | <CONSTRAINTS> )
+    (
+        ( yieldClause = YieldClause() ( returnClause=ReturnClause() ) ? )
+        | where = Where()
+    )?
     {
         if ( yieldClause != null )
         {
@@ -2704,26 +2977,26 @@ STATEMENT ShowConstraintsAllowYield(Token start, USE_CLAUSE useClause, String co
 
 // Administration Commands
 
-ADMINISTRATION_COMMAND ShowAdministrationCommandAfterCatalog(USE_CLAUSE useClause):
+ADMINISTRATION_COMMAND ShowAdministrationCommandAfterCatalog( USE_CLAUSE useClause ):
 {
     Token show = null;
     ADMINISTRATION_COMMAND s;
     boolean showAll = true;
 }
 {
-    show = <SHOW>
+    show=<SHOW>
     (
-       ((<POPULATED> { showAll = false; }) | <ALL>)? s = ShowRoles(show, useClause, showAll)
-       | s = ShowDatabase(show, useClause)
-       | s = ShowUsers(show, useClause)
-       | s = ShowCurrentUser(show, useClause)
+       ( ( <POPULATED> { showAll = false; }) | <ALL> )? s=ShowRoles( show, useClause, showAll )
+       | s=ShowDatabase( show, useClause )
+       | s=ShowUsers( show, useClause )
+       | s=ShowCurrentUser( show, useClause )
     )
     {
-        return astFactory.hasCatalog(s);
+        return astFactory.hasCatalog( s );
     }
 }
 
-ADMINISTRATION_COMMAND CreateAdministrationCommand(USE_CLAUSE useClause) throws Exception:
+ADMINISTRATION_COMMAND CreateAdministrationCommand( USE_CLAUSE useClause ) throws Exception:
 {
     Token start;
     boolean replace = false;
@@ -2731,30 +3004,30 @@ ADMINISTRATION_COMMAND CreateAdministrationCommand(USE_CLAUSE useClause) throws 
     ADMINISTRATION_COMMAND command;
 }
 {
-    (<CATALOG> { hasCatalog = true; })?
+    (<CATALOG> { hasCatalog = true; } )?
     start=<CREATE> (<OR> <REPLACE> { replace = true; })? (
-        command=CreateRole(start, replace)
-        | command=CreateUser(start, replace)
-        | command=CreateDatabase(start, replace)
+        command=CreateRole( start, replace )
+        | command=CreateUser( start, replace )
+        | command=CreateDatabase( start, replace )
     )
     {
         return addUseClauseAndCatalog( command, useClause, hasCatalog );
     }
 }
 
-ADMINISTRATION_COMMAND AdministrationCommand(USE_CLAUSE useClause, boolean hasCatalog) throws Exception:
+ADMINISTRATION_COMMAND AdministrationCommand( USE_CLAUSE useClause, boolean hasCatalog ) throws Exception:
 {
     ADMINISTRATION_COMMAND s;
 }
 {
     (
-        s = DropCommand()
-        | s = AlterUserCommand()
-        | s = RenameCommand()
-        | s = GrantRole()
-        | s = RevokeRole()
-        | s = StartDatabase()
-        | s = StopDatabase()
+        s=DropCommand()
+        | s=AlterUserCommand()
+        | s=RenameCommand()
+        | s=GrantRole()
+        | s=RevokeRole()
+        | s=StartDatabase()
+        | s=StopDatabase()
     )
     {
         return addUseClauseAndCatalog( s, useClause, hasCatalog );
@@ -2769,9 +3042,9 @@ ADMINISTRATION_COMMAND DropCommand():
 {
     start=<DROP>
     (
-        c = DropRole(start)
-        | c = DropUser(start)
-        | c = DropDatabase(start)
+        c=DropRole( start )
+        | c=DropUser( start )
+        | c=DropDatabase( start )
     )
     {
         return c;
@@ -2781,21 +3054,21 @@ ADMINISTRATION_COMMAND DropCommand():
 ADMINISTRATION_COMMAND RenameCommand():
 {
     Token start;
-    ADMINISTRATION_COMMAND c;
+    ADMINISTRATION_COMMAND command;
 }
 {
     start=<RENAME>
     (
-        c=RenameRole(start)
+        command=RenameRole( start )
     )
     {
-        return c;
+        return command;
     }
 }
 
 // Role commands
 
-ADMINISTRATION_COMMAND CreateRole(Token start, boolean replace):
+ADMINISTRATION_COMMAND CreateRole( Token start, boolean replace ):
 {
     Either<String, PARAMETER> roleName = null;
     Either<String, PARAMETER>  sourceRoleName = null;
@@ -2804,14 +3077,14 @@ ADMINISTRATION_COMMAND CreateRole(Token start, boolean replace):
 {
     <ROLE>
     roleName=SymbolicNameOrStringParameter()
-    (<IF> <NOT> <EXISTS> { ifNotExists = true; })?
-    (<AS> <COPY> <OF> sourceRoleName=SymbolicNameOrStringParameter())?
+    ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
+    ( <AS> <COPY> <OF> sourceRoleName=SymbolicNameOrStringParameter() )?
     {
-        return astFactory.createRole( pos(start), replace, roleName, sourceRoleName, ifNotExists );
+        return astFactory.createRole( pos( start ), replace, roleName, sourceRoleName, ifNotExists );
     }
 }
 
-ADMINISTRATION_COMMAND DropRole(Token start):
+ADMINISTRATION_COMMAND DropRole( Token start ):
 {
     Either<String, PARAMETER> roleName = null;
     boolean ifExists = false;
@@ -2819,13 +3092,13 @@ ADMINISTRATION_COMMAND DropRole(Token start):
 {
     <ROLE>
     roleName=SymbolicNameOrStringParameter()
-    (<IF> <EXISTS> {ifExists = true;})?
+    ( <IF> <EXISTS> { ifExists = true; } )?
     {
-        return astFactory.dropRole( pos(start), roleName, ifExists );
+        return astFactory.dropRole( pos( start ), roleName, ifExists );
     }
 }
 
-ADMINISTRATION_COMMAND RenameRole(Token start):
+ADMINISTRATION_COMMAND RenameRole( Token start ):
 {
     Either<String, PARAMETER> fromRoleName = null;
     Either<String, PARAMETER> toRoleName = null;
@@ -2834,15 +3107,15 @@ ADMINISTRATION_COMMAND RenameRole(Token start):
 {
     <ROLE>
     fromRoleName=SymbolicNameOrStringParameter()
-    (<IF> <EXISTS> {ifExists = true;})?
+    ( <IF> <EXISTS> { ifExists = true; } )?
     <TO>
     toRoleName=SymbolicNameOrStringParameter()
     {
-        return astFactory.renameRole( pos(start), fromRoleName, toRoleName, ifExists );
+        return astFactory.renameRole( pos( start ), fromRoleName, toRoleName, ifExists );
     }
 }
 
-ADMINISTRATION_COMMAND ShowRoles(Token start, USE_CLAUSE useClause, boolean showAll):
+ADMINISTRATION_COMMAND ShowRoles( Token start, USE_CLAUSE useClause, boolean showAll ):
 {
     boolean withUsers = false;
     YIELD yield = null;
@@ -2851,11 +3124,13 @@ ADMINISTRATION_COMMAND ShowRoles(Token start, USE_CLAUSE useClause, boolean show
 }
 {
     <ROLES>
-    (<WITH> <USERS> { withUsers = true; })?
-     ( ( yield = YieldClause() (returnClause = ReturnClause())? )
-       | (where = Where()) )?
+    ( <WITH> <USERS> { withUsers = true; } )?
+    (
+        ( yield = YieldClause() ( returnClause = ReturnClause() )? )
+        | ( where = Where() )
+    )?
     {
-        return astFactory.useGraph(astFactory.showRoles( pos(start), withUsers, showAll, yield, returnClause, where ), useClause);
+        return astFactory.useGraph( astFactory.showRoles( pos( start ), withUsers, showAll, yield, returnClause, where ), useClause );
     }
 }
 
@@ -2866,9 +3141,9 @@ ADMINISTRATION_COMMAND GrantRole():
     List<Either<String, PARAMETER>> users;
 }
 {
-    start = <GRANT> (<ROLE> | <ROLES>) roles=SymbolicNamerOrStringParameterList() <TO> users=SymbolicNamerOrStringParameterList()
+    start = <GRANT> ( <ROLE> | <ROLES> ) roles=SymbolicNamerOrStringParameterList() <TO> users=SymbolicNamerOrStringParameterList()
     {
-        return astFactory.grantRoles( pos(start), roles, users );
+        return astFactory.grantRoles( pos( start ), roles, users );
     }
 }
 
@@ -2879,15 +3154,15 @@ ADMINISTRATION_COMMAND RevokeRole():
     List<Either<String, PARAMETER>> users;
 }
 {
-    start = <REVOKE> (<ROLE> | <ROLES>) roles=SymbolicNamerOrStringParameterList() <FROM> users=SymbolicNamerOrStringParameterList()
+    start = <REVOKE> ( <ROLE> | <ROLES> ) roles=SymbolicNamerOrStringParameterList() <FROM> users=SymbolicNamerOrStringParameterList()
     {
-        return astFactory.revokeRoles( pos(start), roles, users  );
+        return astFactory.revokeRoles( pos( start ), roles, users );
     }
 }
 
 // User commands
 
-ADMINISTRATION_COMMAND CreateUser(Token start, boolean replace) throws Exception:
+ADMINISTRATION_COMMAND CreateUser( Token start, boolean replace ) throws Exception:
 {
     Token set = null;
     Either<String, PARAMETER> username = null;
@@ -2901,20 +3176,26 @@ ADMINISTRATION_COMMAND CreateUser(Token start, boolean replace) throws Exception
 {
     <USER>
     username=SymbolicNameOrStringParameter()
-    (<IF> <NOT> <EXISTS> { ifNotExists = true; })?
-    <SET> ((<PLAINTEXT> { encrypted = false; }) | (<ENCRYPTED> { encrypted = true; }) )? <PASSWORD>
-    password=passwordExpression() (changeRequired=PasswordChangeRequired(start, changeRequired))?
-    (set=<SET> (<PASSWORD> changeRequired=PasswordChangeRequired(set, changeRequired)
-    | suspended=UserStatus(set, suspended)
-    | homeDatabase=HomeDatabase(set, homeDatabase)
-    ))*
+    ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
+    <SET> (
+        ( <PLAINTEXT> { encrypted = false; })
+        | ( <ENCRYPTED> { encrypted = true; })
+        )?
+        <PASSWORD> password=passwordExpression() ( changeRequired=PasswordChangeRequired( start, changeRequired ) )?
+    (
+        set=<SET> (
+            <PASSWORD> changeRequired=PasswordChangeRequired( set, changeRequired )
+            | suspended=UserStatus( set, suspended )
+            | homeDatabase=HomeDatabase( set, homeDatabase )
+        )
+    )*
     {
-        return astFactory.createUser( pos(start), replace, ifNotExists, username, password, encrypted,
-            changeRequired.orElse(true), suspended.orElse(null), homeDatabase.orElse(null) );
+        return astFactory.createUser( pos( start ), replace, ifNotExists, username, password, encrypted,
+                                      changeRequired.orElse( true ), suspended.orElse( null ), homeDatabase.orElse( null ) );
     }
 }
 
-ADMINISTRATION_COMMAND DropUser(Token start) :
+ADMINISTRATION_COMMAND DropUser( Token start ) :
 {
     Either<String, PARAMETER> username = null;
     boolean ifExists = false;
@@ -2922,36 +3203,40 @@ ADMINISTRATION_COMMAND DropUser(Token start) :
 {
     <USER>
     username=SymbolicNameOrStringParameter()
-    (<IF> <EXISTS> { ifExists = true; })?
+    ( <IF> <EXISTS> { ifExists = true; } )?
     {
-        return astFactory.dropUser( pos(start), ifExists, username );
+        return astFactory.dropUser( pos( start ), ifExists, username );
     }
 }
 
 ADMINISTRATION_COMMAND AlterUserCommand() throws Exception:
 {
-  Token start = null;
-  ADMINISTRATION_COMMAND statement = null;
+    Token start = null;
+    ADMINISTRATION_COMMAND statement = null;
 }
 {
     start=<ALTER> (
-        statement=AlterCurrentUser(start)
-        | statement=AlterUser(start)
+        statement=AlterCurrentUser( start )
+        | statement=AlterUser( start )
     )
-    { return statement; }
+    {
+        return statement;
+    }
 }
 
-ADMINISTRATION_COMMAND AlterCurrentUser(Token start) throws Exception:
+ADMINISTRATION_COMMAND AlterCurrentUser( Token start ) throws Exception:
 {
-  EXPRESSION currentPassword = null;
-  EXPRESSION newPassword = null;
+    EXPRESSION currentPassword = null;
+    EXPRESSION newPassword = null;
 }
 {
     <CURRENT> <USER> <SET> <PASSWORD> <FROM> currentPassword=passwordExpression() <TO> newPassword=passwordExpression()
-    { return astFactory.setOwnPassword(pos(start), currentPassword, newPassword); }
+    {
+        return astFactory.setOwnPassword( pos( start ), currentPassword, newPassword);
+    }
 }
 
-ADMINISTRATION_COMMAND AlterUser(Token start) throws Exception:
+ADMINISTRATION_COMMAND AlterUser( Token start ) throws Exception:
 {
     Token set = null;
     Either<String, PARAMETER> username = null;
@@ -2967,27 +3252,31 @@ ADMINISTRATION_COMMAND AlterUser(Token start) throws Exception:
 {
     <USER>
     username=SymbolicNameOrStringParameter()
-    (<IF> <EXISTS> { ifExists = true; })?
-    ((
-        set=<SET> (
-            <PLAINTEXT> { assertNotAlreadySet(password, set, passwordSetError); } <PASSWORD> password=SetPassword(set, password) (changeRequired=PasswordChangeRequired(set, changeRequired))?
-            | <ENCRYPTED> { assertNotAlreadySet(password, set, passwordSetError); encrypted = true; } <PASSWORD> password=SetPassword(set, password) (changeRequired=PasswordChangeRequired(set, changeRequired))?
-            | <PASSWORD> (
-                changeRequired=PasswordChangeRequired(set, changeRequired)
-                | password=SetPassword(set, password) (changeRequired=PasswordChangeRequired(set, changeRequired))?
+    ( <IF> <EXISTS> { ifExists = true; } )?
+    (
+        (
+            set=<SET> (
+                <PLAINTEXT> { assertNotAlreadySet( password, set, passwordSetError ); }
+                    <PASSWORD> password=SetPassword( set, password ) ( changeRequired=PasswordChangeRequired( set, changeRequired ) )?
+                | <ENCRYPTED> { assertNotAlreadySet( password, set, passwordSetError ); encrypted = true; }
+                    <PASSWORD> password=SetPassword( set, password ) ( changeRequired=PasswordChangeRequired( set, changeRequired ) )?
+                | <PASSWORD> (
+                    changeRequired=PasswordChangeRequired( set, changeRequired )
+                    | password=SetPassword( set, password ) ( changeRequired=PasswordChangeRequired( set, changeRequired ) )?
+                )
+                | suspended=UserStatus( set, suspended )
+                | homeDatabase=HomeDatabase( set, homeDatabase )
             )
-            | suspended=UserStatus(set, suspended)
-            | homeDatabase=HomeDatabase(set, homeDatabase)
-        )
-    )+
-    | <REMOVE> <HOME> <DATABASE> { removeHome = true; })
+        )+
+        | <REMOVE> <HOME> <DATABASE> { removeHome = true; }
+    )
     {
-        return astFactory.alterUser( pos(start), ifExists, username, password, encrypted,
-            changeRequired.orElse(null), suspended.orElse(null), homeDatabase.orElse(null), removeHome );
+        return astFactory.alterUser( pos( start ), ifExists, username, password, encrypted,
+            changeRequired.orElse( null ), suspended.orElse( null ), homeDatabase.orElse( null ), removeHome );
     }
 }
 
-EXPRESSION SetPassword(Token start, EXPRESSION password) throws Exception:
+EXPRESSION SetPassword( Token start, EXPRESSION password ) throws Exception:
 {
     String errorMessage = "Duplicate SET PASSWORD clause";
     EXPRESSION newPassword = null;
@@ -2995,8 +3284,8 @@ EXPRESSION SetPassword(Token start, EXPRESSION password) throws Exception:
 {
     newPassword=passwordExpression()
     {
-        if (password != null) {
-            throw exceptionFactory.syntaxException(new ParseException(errorMessage), start.beginOffset, start.beginLine, start.beginColumn);
+        if ( password != null ) {
+            throw exceptionFactory.syntaxException( new ParseException( errorMessage ), start.beginOffset, start.beginLine, start.beginColumn );
         }
         return newPassword;
     }
@@ -3025,99 +3314,109 @@ EXPRESSION passwordExpression():
     }
 }
 
-Optional<Boolean> PasswordChangeRequired(Token start, Optional<Boolean> changeRequired) throws Exception:
+Optional<Boolean> PasswordChangeRequired( Token start, Optional<Boolean> changeRequired ) throws Exception:
 {
     String errorMessage = "Duplicate SET PASSWORD CHANGE [NOT] REQUIRED clause";
     boolean required = true;
 }
 {
-    <CHANGE> (<NOT> {required = false;})? <REQUIRED>
-    { return setOrThrowIfAlreadySet(start, changeRequired, required, errorMessage); }
+    <CHANGE> ( <NOT> { required = false; } )? <REQUIRED>
+    {
+        return setOrThrowIfAlreadySet( start, changeRequired, required, errorMessage );
+    }
 }
 
-Optional<Boolean> UserStatus(Token start, Optional<Boolean> suspended) throws Exception:
+Optional<Boolean> UserStatus( Token start, Optional<Boolean> suspended ) throws Exception:
 {
     String errorMessage = "Duplicate SET STATUS {SUSPENDED|ACTIVE} clause";
     boolean suspend = false;
 }
 {
     <STATUS> (
-        <SUSPENDED> {suspend = true;}
-        | <ACTIVE> {suspend = false;}
-    )  { return setOrThrowIfAlreadySet(start, suspended, suspend, errorMessage); }
+        <SUSPENDED> { suspend = true; }
+        | <ACTIVE> { suspend = false; }
+    )
+    {
+        return setOrThrowIfAlreadySet( start, suspended, suspend, errorMessage );
+    }
 }
 
-Optional<Either<String, PARAMETER>> HomeDatabase(Token start, Optional<Either<String, PARAMETER>> homeDatabase) throws Exception:
+Optional<Either<String, PARAMETER>> HomeDatabase( Token start, Optional<Either<String, PARAMETER>> homeDatabase ) throws Exception:
 {
     String errorMessage = "Duplicate SET HOME DATABASE clause";
     Either<String, PARAMETER> home = null;
 }
 {
     <HOME> <DATABASE> home=SymbolicDatabaseNameStringOrParameter()
-    { return setOrThrowIfAlreadySet(start, homeDatabase, home, errorMessage); }
+    {
+        return setOrThrowIfAlreadySet( start, homeDatabase, home, errorMessage );
+    }
 }
 
-ADMINISTRATION_COMMAND ShowUsers(Token start, USE_CLAUSE useClause):
+ADMINISTRATION_COMMAND ShowUsers( Token start, USE_CLAUSE useClause ):
 {
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
     EXPRESSION where = null;
 }
 {
-   <USERS> ( ( yield = YieldClause() (returnClause = ReturnClause())? )
-          | (where = Where()) )?
-   {
-        return astFactory.useGraph(astFactory.showUsers(pos(start), yield, returnClause, where), useClause);
-   }
+    <USERS> (
+        ( yield = YieldClause() ( returnClause = ReturnClause() )? )
+        | where = Where()
+    )?
+    {
+        return astFactory.useGraph( astFactory.showUsers( pos( start ), yield, returnClause, where ), useClause );
+    }
 }
 
-ADMINISTRATION_COMMAND ShowCurrentUser(Token start, USE_CLAUSE useClause):
+ADMINISTRATION_COMMAND ShowCurrentUser( Token start, USE_CLAUSE useClause ):
 {
     YIELD yield = null;
     RETURN_CLAUSE returnClause = null;
     EXPRESSION where = null;
 }
 {
-   <CURRENT> <USER> ( ( yield = YieldClause() (returnClause = ReturnClause())? )
-          | (where = Where()) )?
-   {
-        return astFactory.useGraph(astFactory.showCurrentUser(pos(start), yield, returnClause, where), useClause);
-   }
+    <CURRENT> <USER> (
+        ( yield = YieldClause() ( returnClause = ReturnClause() )? )
+        | where = Where() )?
+    {
+        return astFactory.useGraph( astFactory.showCurrentUser( pos( start ), yield, returnClause, where ), useClause );
+    }
 }
 
 // Database commands
 
-ADMINISTRATION_COMMAND CreateDatabase(Token start, boolean replace):
+ADMINISTRATION_COMMAND CreateDatabase( Token start, boolean replace ):
 {
     Either<String, PARAMETER> databaseName = null;
     boolean ifNotExists = false;
-    WAIT_CLAUSE wait = astFactory.wait(false, -1);
+    WAIT_CLAUSE wait = astFactory.wait( false, -1 );
 }
 {
     <DATABASE>
     databaseName=SymbolicDatabaseNameStringOrParameter()
-    (<IF> <NOT> <EXISTS> { ifNotExists = true; })?
-    (wait = WaitClause())?
+    ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
+    ( wait = WaitClause() )?
     {
-       return astFactory.createDatabase( pos(start), replace, databaseName, ifNotExists, wait );
+       return astFactory.createDatabase( pos( start ), replace, databaseName, ifNotExists, wait );
     }
 }
 
-ADMINISTRATION_COMMAND DropDatabase(Token start):
+ADMINISTRATION_COMMAND DropDatabase( Token start ):
 {
     Either<String, PARAMETER> databaseName = null;
     boolean ifExists = false;
-    WAIT_CLAUSE wait = astFactory.wait(false, -1);
+    WAIT_CLAUSE wait = astFactory.wait( false, -1 );
     boolean dumpData = false;
 }
 {
     <DATABASE>
     databaseName=SymbolicDatabaseNameStringOrParameter()
-    (<IF> <EXISTS> {ifExists = true;})?
-    ((<DUMP> { dumpData = true; } | <DESTROY>) <DATA>)?
-    (wait = WaitClause())?
+    ( <IF> <EXISTS> { ifExists = true; } )?
+    ( ( <DUMP> { dumpData = true; } | <DESTROY> ) <DATA> )?
+    ( wait = WaitClause() )?
     {
-        return astFactory.dropDatabase( pos(start), databaseName, ifExists, dumpData, wait );
+        return astFactory.dropDatabase( pos( start ), databaseName, ifExists, dumpData, wait );
     }
 }
 
@@ -3125,12 +3424,12 @@ ADMINISTRATION_COMMAND StartDatabase():
 {
     Token start;
     Either<String, PARAMETER> databaseName;
-    WAIT_CLAUSE wait = astFactory.wait(false, -1);
+    WAIT_CLAUSE wait = astFactory.wait( false, -1 );
 }
 {
-    start=<START> <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter() (wait=WaitClause())?
+    start=<START> <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter() ( wait=WaitClause() )?
     {
-      return astFactory.startDatabase(pos(start), databaseName, wait);
+      return astFactory.startDatabase( pos( start ), databaseName, wait );
     }
 }
 
@@ -3138,34 +3437,35 @@ ADMINISTRATION_COMMAND StopDatabase():
 {
     Token start;
     Either<String, PARAMETER> databaseName;
-    WAIT_CLAUSE wait = astFactory.wait(false, -1);
+    WAIT_CLAUSE wait = astFactory.wait( false, -1 );
 }
 {
-    start=<STOP> <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter() (wait=WaitClause())?
+    start=<STOP> <DATABASE> databaseName=SymbolicDatabaseNameStringOrParameter() ( wait=WaitClause() )?
     {
-      return astFactory.stopDatabase(pos(start), databaseName, wait);
+      return astFactory.stopDatabase( pos( start ), databaseName, wait );
     }
 }
 
 WAIT_CLAUSE WaitClause():
 {
- Token number = null;
- boolean wait = false;
+    Token number = null;
+    boolean wait = false;
 }
 {
     (
-        <WAIT> { wait = true; } (number=<UNSIGNED_DECIMAL_INTEGER> (<SEC> | <SECOND> | <SECONDS>)? )?
+        <WAIT> { wait = true; } ( number=<UNSIGNED_DECIMAL_INTEGER> ( <SEC> | <SECOND> | <SECONDS> )? )?
         | <NOWAIT>
     )
     {
-        if (number != null) {
-            return astFactory.wait(wait, Long.parseLong(number.image));
+        if ( number != null )
+        {
+            return astFactory.wait( wait, Long.parseLong( number.image) );
         }
-        return astFactory.wait(wait, -1) ;
+        return astFactory.wait( wait, -1 ) ;
     }
 }
 
-ADMINISTRATION_COMMAND ShowDatabase(Token start, USE_CLAUSE useClause):
+ADMINISTRATION_COMMAND ShowDatabase( Token start, USE_CLAUSE useClause ):
 {
     DATABASE_SCOPE scope;
     YIELD yield = null;
@@ -3174,43 +3474,47 @@ ADMINISTRATION_COMMAND ShowDatabase(Token start, USE_CLAUSE useClause):
 }
 {
    scope = DatabaseScope()
-        ( ( yield = YieldClause() (returnClause = ReturnClause())? )
-          | (where = Where()) )?
+        (
+            ( yield = YieldClause() ( returnClause = ReturnClause() )? )
+            | ( where = Where() )
+        )?
    {
-        return astFactory.useGraph(astFactory.showDatabase(pos(start), scope, yield, returnClause, where), useClause);
+        return astFactory.useGraph( astFactory.showDatabase( pos( start ), scope, yield, returnClause, where), useClause );
    }
 }
 
 DATABASE_SCOPE DatabaseScope():
 {
-  Token start = null;
-  Either<String, PARAMETER> name = null;
-  boolean isDefault = false;
-  boolean isHome = false;
+    Token start = null;
+    Either<String, PARAMETER> name = null;
+    boolean isDefault = false;
+    boolean isHome = false;
 }
 {
-
-  (
+    (
         start=<DATABASE> name=SymbolicDatabaseNameStringOrParameter()
-      | start=<DATABASES>
-      | start=<DEFAULT_TOKEN> <DATABASE> { isDefault = true; }
-      | start=<HOME> <DATABASE> { isHome = true; }
-  )
+        | start=<DATABASES>
+        | start=<DEFAULT_TOKEN> <DATABASE> { isDefault = true; }
+        | start=<HOME> <DATABASE> { isHome = true; }
+    )
   {
-    return astFactory.databaseScope(pos(start), name, isDefault, isHome);
+    return astFactory.databaseScope( pos( start ), name, isDefault, isHome );
   }
 }
 
 Either<String, PARAMETER> SymbolicDatabaseNameStringOrParameter():
 {
-   Token nameToken;
-   StringBuilder nameBuilder;
-   PARAMETER parameter;
+    Token nameToken;
+    StringBuilder nameBuilder;
+    PARAMETER parameter;
 }
 {
-   nameToken=SymbolicNameString() { nameBuilder =new StringBuilder(nameToken.image); }
-   (<DOT> nameToken=SymbolicNameString() { nameBuilder.append("."); nameBuilder.append(nameToken.image);})* { return new Left<String, PARAMETER>(nameBuilder.toString()); }
-   | parameter=StringParameter() { return new Right<String, PARAMETER>(parameter); }
+    nameToken=SymbolicNameString() { nameBuilder =new StringBuilder( nameToken.image ); }
+        ( <DOT> nameToken=SymbolicNameString() { nameBuilder.append( "." ); nameBuilder.append( nameToken.image ); } )*
+        {
+            return new Left<String, PARAMETER>( nameBuilder.toString() );
+        }
+    | parameter=StringParameter() { return new Right<String, PARAMETER>( parameter ); }
 }
 
 List<Either<String, PARAMETER>> SymbolicNamerOrStringParameterList() :
@@ -3219,7 +3523,8 @@ List<Either<String, PARAMETER>> SymbolicNamerOrStringParameterList() :
     List<Either<String, PARAMETER>> list = new ArrayList<>();
 }
 {
-    entry=SymbolicNameOrStringParameter() {list.add(entry);} ( "," entry=SymbolicNameOrStringParameter() {list.add(entry);} )*
+    entry=SymbolicNameOrStringParameter() { list.add( entry ); }
+    ( "," entry=SymbolicNameOrStringParameter() { list.add( entry ); } )*
     {
         return list;
     }
@@ -3227,147 +3532,151 @@ List<Either<String, PARAMETER>> SymbolicNamerOrStringParameterList() :
 
 Either<String, PARAMETER> SymbolicNameOrStringParameter():
 {
-   Token name;
-   PARAMETER parameter;
+    Token name;
+    PARAMETER parameter;
 }
 {
-   name=SymbolicNameString() { return new Left<String, PARAMETER>(name.image); }
-   | parameter=StringParameter() { return new Right<String, PARAMETER>(parameter); }
+    name=SymbolicNameString() { return new Left<String, PARAMETER>( name.image ); }
+    | parameter=StringParameter() { return new Right<String, PARAMETER>( parameter ); }
 }
 
 Token SymbolicNameString() :
-{Token t;}
 {
-  (
+    Token t;
+}
+{
+    (
+        t=<IDENTIFIER>
+        | t=<ESCAPED_SYMBOLIC_NAME>
 
-    t=<IDENTIFIER>
-    | t=<ESCAPED_SYMBOLIC_NAME>
-
-    //list of allowed keywords
-    | t=<ACTIVE>
-    | t=<ALL_SHORTEST_PATH>
-    | t=<ALL>
-    | t=<ALTER>
-    | t=<AND>
-    | t=<ANY>
-    | t=<AS>
-    | t=<ASC>
-    | t=<ASSERT>
-    | t=<BRIEF>
-    | t=<BTREE>
-    | t=<BY>
-    | t=<CALL>
-    | t=<CASE>
-    | t=<CATALOG>
-    | t=<CHANGE>
-    | t=<COMMIT>
-    | t=<CONSTRAINT>
-    | t=<CONSTRAINTS>
-    | t=<CONTAINS>
-    | t=<COPY>
-    | t=<COUNT>
-    | t=<CREATE>
-    | t=<CSV>
-    | t=<CURRENT>
-    | t=<DATA>
-    | t=<DATABASE>
-    | t=<DATABASES>
-    | t=<DBMS>
-    | t=<DEFAULT_TOKEN>
-    | t=<DELETE>
-    | t=<DESC>
-    | t=<DESTROY>
-    | t=<DETACH>
-    | t=<DISTINCT>
-    | t=<DROP>
-    | t=<DUMP>
-    | t=<ELSE>
-    | t=<ENCRYPTED>
-    | t=<END>
-    | t=<ENDS>
-    | t=<EXIST>
-    | t=<EXISTENCE>
-    | t=<EXISTS>
-    | t=<EXTRACT>
-    | t=<FALSE>
-    | t=<FIELDTERMINATOR>
-    | t=<FILTER>
-    | t=<FOREACH>
-    | t=<FROM>
-    | t=<FULLTEXT>
-    | t=<GRANT>
-    | t=<GRAPH>
-    | t=<HEADERS>
-    | t=<HOME>
-    | t=<IF>
-    | t=<IN>
-    | t=<INDEX>
-    | t=<INDEXES>
-    | t=<IS>
-    | t=<JOIN>
-    | t=<KEY>
-    | t=<LIMITROWS>
-    | t=<LOAD>
-    | t=<MATCH>
-    | t=<MERGE>
-    | t=<NODE>
-    | t=<NONE>
-    | t=<NOT>
-    | t=<NOWAIT>
-    | t=<NULL>
-    | t=<OF>
-    | t=<ON>
-    | t=<OPTIONAL>
-    | t=<OR>
-    | t=<ORDER>
-    | t=<OUTPUT>
-    | t=<PASSWORD>
-    | t=<PERIODIC>
-    | t=<PLAINTEXT>
-    | t=<POPULATED>
-    | t=<PROPERTY>
-    | t=<REDUCE>
-    | t=<REL>
-    | t=<RELATIONSHIP>
-    | t=<REMOVE>
-    | t=<RENAME>
-    | t=<REPLACE>
-    | t=<REQUIRED>
-    | t=<RETURN>
-    | t=<REVOKE>
-    | t=<ROLE>
-    | t=<ROLES>
-    | t=<SCAN>
-    | t=<SEC>
-    | t=<SECOND>
-    | t=<SECONDS>
-    | t=<SEEK>
-    | t=<SET>
-    | t=<SHORTEST_PATH>
-    | t=<SHOW>
-    | t=<SINGLE>
-    | t=<SKIPROWS>
-    | t=<START>
-    | t=<STARTS>
-    | t=<STATUS>
-    | t=<STOP>
-    | t=<SUSPENDED>
-    | t=<THEN>
-    | t=<TO>
-    | t=<TRUE>
-    | t=<UNION>
-    | t=<UNIQUE>
-    | t=<UNWIND>
-    | t=<USE>
-    | t=<USER>
-    | t=<USERS>
-    | t=<USING>
-    | t=<VERBOSE>
-    | t=<WAIT>
-    | t=<WHEN>
-    | t=<WHERE>
-    | t=<WITH>
-    | t=<XOR>
-    | t=<YIELD>
-  ) { return t; }
+        //list of allowed keywords
+        | t=<ACTIVE>
+        | t=<ALL_SHORTEST_PATH>
+        | t=<ALL>
+        | t=<ALTER>
+        | t=<AND>
+        | t=<ANY>
+        | t=<AS>
+        | t=<ASC>
+        | t=<ASSERT>
+        | t=<BRIEF>
+        | t=<BTREE>
+        | t=<BY>
+        | t=<CALL>
+        | t=<CASE>
+        | t=<CATALOG>
+        | t=<CHANGE>
+        | t=<COMMIT>
+        | t=<CONSTRAINT>
+         | t=<CONSTRAINTS>
+        | t=<CONTAINS>
+        | t=<COPY>
+        | t=<COUNT>
+        | t=<CREATE>
+        | t=<CSV>
+        | t=<CURRENT>
+        | t=<DATA>
+        | t=<DATABASE>
+        | t=<DATABASES>
+        | t=<DBMS>
+        | t=<DEFAULT_TOKEN>
+        | t=<DELETE>
+        | t=<DESC>
+        | t=<DESTROY>
+        | t=<DETACH>
+        | t=<DISTINCT>
+        | t=<DROP>
+        | t=<DUMP>
+        | t=<ELSE>
+        | t=<ENCRYPTED>
+        | t=<END>
+        | t=<ENDS>
+        | t=<EXIST>
+        | t=<EXISTENCE>
+        | t=<EXISTS>
+        | t=<EXTRACT>
+        | t=<FALSE>
+        | t=<FIELDTERMINATOR>
+        | t=<FILTER>
+        | t=<FOREACH>
+        | t=<FROM>
+        | t=<FULLTEXT>
+        | t=<GRANT>
+        | t=<GRAPH>
+        | t=<HEADERS>
+        | t=<HOME>
+        | t=<IF>
+        | t=<IN>
+        | t=<INDEX>
+        | t=<INDEXES>
+        | t=<IS>
+        | t=<JOIN>
+        | t=<KEY>
+        | t=<LIMITROWS>
+        | t=<LOAD>
+        | t=<MATCH>
+        | t=<MERGE>
+        | t=<NODE>
+        | t=<NONE>
+        | t=<NOT>
+        | t=<NOWAIT>
+        | t=<NULL>
+        | t=<OF>
+        | t=<ON>
+        | t=<OPTIONAL>
+        | t=<OR>
+        | t=<ORDER>
+        | t=<OUTPUT>
+        | t=<PASSWORD>
+        | t=<PERIODIC>
+        | t=<PLAINTEXT>
+        | t=<POPULATED>
+        | t=<PROPERTY>
+        | t=<REDUCE>
+        | t=<REL>
+        | t=<RELATIONSHIP>
+        | t=<REMOVE>
+        | t=<RENAME>
+        | t=<REPLACE>
+        | t=<REQUIRED>
+        | t=<RETURN>
+        | t=<REVOKE>
+        | t=<ROLE>
+        | t=<ROLES>
+        | t=<SCAN>
+        | t=<SEC>
+        | t=<SECOND>
+        | t=<SECONDS>
+        | t=<SEEK>
+        | t=<SET>
+        | t=<SHORTEST_PATH>
+        | t=<SHOW>
+        | t=<SINGLE>
+        | t=<SKIPROWS>
+        | t=<START>
+        | t=<STARTS>
+        | t=<STATUS>
+        | t=<STOP>
+        | t=<SUSPENDED>
+        | t=<THEN>
+        | t=<TO>
+        | t=<TRUE>
+        | t=<UNION>
+        | t=<UNIQUE>
+        | t=<UNWIND>
+        | t=<USE>
+        | t=<USER>
+        | t=<USERS>
+        | t=<USING>
+        | t=<VERBOSE>
+        | t=<WAIT>
+        | t=<WHEN>
+        | t=<WHERE>
+        | t=<WITH>
+        | t=<XOR>
+        | t=<YIELD>
+    )
+    {
+        return t;
+    }
 }
