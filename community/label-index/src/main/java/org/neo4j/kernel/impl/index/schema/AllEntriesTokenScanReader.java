@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.Collections;
+import java.util.Iterator;
+
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 
 /**
@@ -31,4 +34,30 @@ public interface AllEntriesTokenScanReader extends BoundedIterable<EntityTokenRa
      * has the same range size.
      */
     int rangeSize();
+
+    AllEntriesTokenScanReader EMPTY = new AllEntriesTokenScanReader()
+    {
+        @Override
+        public int rangeSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long maxCount()
+        {
+            return 0;
+        }
+
+        @Override
+        public void close()
+        {
+        }
+
+        @Override
+        public Iterator<EntityTokenRange> iterator()
+        {
+            return Collections.emptyIterator();
+        }
+    };
 }

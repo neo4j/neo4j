@@ -117,8 +117,7 @@ class RelationshipChecker implements Checker
         try ( RecordStorageReader reader = new RecordStorageReader( neoStores );
               var cursorTracer = context.pageCacheTracer.createPageCursorTracer( RELATIONSHIP_RANGE_CHECKER_TAG );
               RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor( cursorTracer );
-              AllEntriesTokenScanReader relationshipTypeReader = relationshipTypeScanStore
-                      .allEntityTokenRanges( fromRelationshipId, last ? Long.MAX_VALUE : toRelationshipId, cursorTracer );
+              AllEntriesTokenScanReader relationshipTypeReader = getRelationshipTypeIndexReader( fromRelationshipId, toRelationshipId, last, cursorTracer );
               SafePropertyChainReader property = new SafePropertyChainReader( context, cursorTracer );
               SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, indexes, cursorTracer,
                       context.memoryTracker ) )
@@ -200,7 +199,7 @@ class RelationshipChecker implements Checker
                     observedCounts.incrementRelationshipTypeCounts( counter, relationshipCursor );
 
                     // Relationship type index
-                    if ( context.consistencyFlags.isCheckRelationshipTypeScanStore() )
+                    if ( relationshipTypeReader != AllEntriesTokenScanReader.EMPTY )
                     {
                         checkRelationshipVsRelationshipTypeIndex( relationshipCursor, relationshipTypeRangeIterator, typeIndexState, relationshipId,
                                 relationshipCursor.type(), fromRelationshipId, cursorTracer );
@@ -208,13 +207,27 @@ class RelationshipChecker implements Checker
                 }
                 observedCounts.incrementRelationshipNodeCounts( counter, relationshipCursor, startNodeIsWithinRange, endNodeIsWithinRange );
             }
-            if ( !context.isCancelled() && context.consistencyFlags.isCheckRelationshipTypeScanStore() )
+            if ( !context.isCancelled() && relationshipTypeReader != AllEntriesTokenScanReader.EMPTY )
             {
                 reportRemainingRelationshipTypeIndexEntries( relationshipTypeRangeIterator, typeIndexState, last ? Long.MAX_VALUE : toRelationshipId,
                         cursorTracer );
             }
             localProgress.done();
         }
+    }
+
+    private AllEntriesTokenScanReader getRelationshipTypeIndexReader( long fromRelationshipId, long toRelationshipId, boolean last,
+            PageCursorTracer cursorTracer )
+    {
+        if ( context.useScanStoresAsTokenIndexes )
+        {
+            if ( context.relationshipTypeIndex != null )
+            {
+                return context.relationshipTypeIndex.allEntityTokenRanges( fromRelationshipId, last ? Long.MAX_VALUE : toRelationshipId,
+                        cursorTracer );
+            }
+        }
+        return AllEntriesTokenScanReader.EMPTY;
     }
 
     private void checkRelationshipVsRelationshipTypeIndex( RecordRelationshipScanCursor relationshipCursor,

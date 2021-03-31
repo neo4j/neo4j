@@ -69,6 +69,7 @@ class CheckerContext
     final MemoryTracker memoryTracker;
     final long highNodeId;
     final TokenIndexAccessor nodeLabelIndex;
+    final TokenIndexAccessor relationshipTypeIndex;
     private final boolean debug;
     private final AtomicBoolean cancelled;
 
@@ -122,6 +123,7 @@ class CheckerContext
         this.highNodeId = neoStores.getNodeStore().getHighId();
         this.indexAccessors = indexAccessors;
         this.nodeLabelIndex = indexAccessors.nodeLabelIndex();
+        this.relationshipTypeIndex = indexAccessors.relationshipTypeIndex();
         this.debug = debug;
         this.consistencyFlags = consistencyFlags;
         this.useScanStoresAsTokenIndexes = useScanStoresAsTokenIndexes;

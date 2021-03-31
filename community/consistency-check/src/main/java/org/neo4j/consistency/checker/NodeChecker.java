@@ -83,32 +83,6 @@ class NodeChecker implements Checker
     private final TokenHolders tokenHolders;
     private final NeoStores neoStores;
     private final List<IndexDescriptor> smallIndexes;
-    private static final AllEntriesTokenScanReader NO_LABEL_INDEX_CHECKER = new AllEntriesTokenScanReader()
-    {
-        @Override
-        public int rangeSize()
-        {
-            return 0;
-        }
-
-        @Override
-        public long maxCount()
-        {
-            return 0;
-        }
-
-        @Override
-        public void close() throws Exception
-        {
-
-        }
-
-        @Override
-        public Iterator<EntityTokenRange> iterator()
-        {
-            return null;
-        }
-    };
 
     NodeChecker( CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties )
     {
@@ -153,7 +127,7 @@ class NodeChecker implements Checker
                 return context.nodeLabelIndex.allEntityTokenRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
                         cursorTracer );
             }
-            return NO_LABEL_INDEX_CHECKER;
+            return AllEntriesTokenScanReader.EMPTY;
         }
         return context.labelScanStore.allEntityTokenRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
                 cursorTracer );
@@ -227,7 +201,7 @@ class NodeChecker implements Checker
                 boolean propertyChainIsOk = property.read( propertyValues, nodeCursor, reporter::forNode, cursorTracer );
 
                 // Label index
-                if ( labelIndexReader != NO_LABEL_INDEX_CHECKER )
+                if ( labelIndexReader != AllEntriesTokenScanReader.EMPTY )
                 {
                     checkNodeVsLabelIndex( nodeCursor, nodeLabelRangeIterator, labelIndexState, nodeId, labels, fromNodeId, cursorTracer );
                 }
@@ -246,7 +220,7 @@ class NodeChecker implements Checker
                 }
                 // Large indexes are checked elsewhere, more efficiently than per-entity
             }
-            if ( !context.isCancelled() && labelIndexReader != NO_LABEL_INDEX_CHECKER )
+            if ( !context.isCancelled() && labelIndexReader != AllEntriesTokenScanReader.EMPTY )
             {
                 reportRemainingLabelIndexEntries( nodeLabelRangeIterator, labelIndexState, last ? Long.MAX_VALUE : toNodeId, cursorTracer );
             }

@@ -56,7 +56,7 @@ public class IndexAccessors implements Closeable
     private final List<IndexDescriptor> notOnlineIndexRules = new ArrayList<>();
     private final List<IndexDescriptor> inconsistentRules = new ArrayList<>();
     private TokenIndexAccessor nodeLabelIndex;
-    private TokenIndexAccessor relationshipTokenIndex;
+    private TokenIndexAccessor relationshipTypeIndex;
 
     public IndexAccessors(
             IndexProviderMap providers,
@@ -137,7 +137,7 @@ public class IndexAccessors implements Closeable
                     }
                     else
                     {
-                        relationshipTokenIndex = (TokenIndexAccessor) accessor;
+                        relationshipTypeIndex = (TokenIndexAccessor) accessor;
                     }
                     onlineIndexRules.remove( i-- );
                 }
@@ -187,12 +187,19 @@ public class IndexAccessors implements Closeable
     }
 
     /**
-     * TOken Accessor or null TODO
-     * @return
+     * @return {@link TokenIndexAccessor} for node label index or null
      */
     public TokenIndexAccessor nodeLabelIndex()
     {
         return nodeLabelIndex;
+    }
+
+    /**
+     * @return {@link TokenIndexAccessor} for relationship type index or null
+     */
+    public TokenIndexAccessor relationshipTypeIndex()
+    {
+        return relationshipTypeIndex;
     }
 
     public IndexReaders readers()
