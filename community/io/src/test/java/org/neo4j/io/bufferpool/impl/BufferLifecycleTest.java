@@ -26,6 +26,7 @@ import org.mockito.ArgumentCaptor;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
@@ -36,6 +37,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class BufferLifecycleTest
 {
@@ -49,7 +51,15 @@ class BufferLifecycleTest
     {
         var buckets = List.of( "1K:1", "2K:1", "4K:1" );
         var poolConfig = new NeoBufferPoolConfigOverride( null, buckets );
-        bufferPool = new NeoByteBufferPool( poolConfig, memoryTracker, jobScheduler );
+        bufferPool = new NeoByteBufferPool( poolConfig, null, jobScheduler )
+        {
+            MemoryMonitor crateMemoryMonitor( MemoryPools memoryPools )
+            {
+                MemoryMonitor memoryMonitor = mock( MemoryMonitor.class );
+                when( memoryMonitor.getMemoryTracker() ).thenReturn( memoryTracker );
+                return memoryMonitor;
+            }
+        };
     }
 
     @Test

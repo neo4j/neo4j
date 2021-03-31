@@ -21,6 +21,8 @@ package org.neo4j.io.bufferpool;
 
 import java.nio.ByteBuffer;
 
+import org.neo4j.memory.MemoryTracker;
+
 /**
  * A native (direct) {@link ByteBuffer} pool.
  * <p>
@@ -65,4 +67,15 @@ public interface ByteBufferManger
      * If this method does not seem exactly logical, it is because its existence is dictated by Netty's APIs.
      */
     int recommendNewCapacity( int minNewCapacity, int maxCapacity );
+
+    /**
+     * This buffer manager works only with direct buffers, but it allows also monitoring memory used by heap buffers.
+     * This feature is useful if the user wants to create heap buffers with memory consumption monitored
+     * by the same memory pool as direct buffers created by this buffer manager.
+     * <p>
+     * Because of the special use case for this memory tracker, the only operations
+     * guaranteed to be supported by the returned  memory tracker implementation are
+     * {@link MemoryTracker#allocateHeap(long)} and {@link MemoryTracker#releaseHeap(long)}.
+     */
+    MemoryTracker getHeapBufferMemoryTracker();
 }

@@ -110,13 +110,13 @@ public class NettyMemoryManagerWrapper implements ByteBufAllocator
         // So there is no point doing anything smart performance-wise.
         // If this is used on a hot code path, it should be detected in benchmarks and fixed
         // by switching to direct buffers
-        return new UnpooledHeapByteBuf( new HeapBufferAllocator( pooledBufferManger ), initialCapacity, maxCapacity );
+        return new HeapBuffer( initialCapacity, maxCapacity );
     }
 
     @Override
     public ByteBuf directBuffer()
     {
-        return newDirectBuffer( pooledBufferManger, this, DEFAULT_INITIAL_CAPACITY, false, DEFAULT_MAX_CAPACITY );
+        return newDirectBuffer( DEFAULT_INITIAL_CAPACITY, false, DEFAULT_MAX_CAPACITY );
     }
 
     @Override
@@ -128,7 +128,7 @@ public class NettyMemoryManagerWrapper implements ByteBufAllocator
     @Override
     public ByteBuf directBuffer( int initialCapacity, int maxCapacity )
     {
-        return newDirectBuffer( pooledBufferManger, this, initialCapacity, true, maxCapacity );
+        return newDirectBuffer( initialCapacity, true, maxCapacity );
     }
 
     @Override
@@ -236,10 +236,9 @@ public class NettyMemoryManagerWrapper implements ByteBufAllocator
     // And 'forceInitialCapacity'?
     // It specifies that the 'initialCapacity' argument comes from the allocator caller
     // and therefore the underlying NIO buffer cannot have capacity larger than that.
-    private ByteBuf newDirectBuffer( ByteBufferManger pooledBufferManger, ByteBufAllocator alloc, int initialCapacity, boolean forceInitialCapacity,
-            int maxCapacity )
+    private ByteBuf newDirectBuffer( int initialCapacity, boolean forceInitialCapacity, int maxCapacity )
     {
-        return new UnpooledDirectByteBuf( alloc, initialCapacity, maxCapacity )
+        return new UnpooledDirectByteBuf( this, initialCapacity, maxCapacity )
         {
             // Getting the original buffer from a buffer slice
             // is not super cheap, so in order to avoid that operation
@@ -275,6 +274,30 @@ public class NettyMemoryManagerWrapper implements ByteBufAllocator
                 pooledBufferManger.release( buffer );
             }
         };
+    }
+
+    private class HeapBuffer extends UnpooledHeapByteBuf
+    {
+
+        HeapBuffer( int initialCapacity, int maxCapacity )
+        {
+            super( new HeapBufferAllocator( pooledBufferManger ), initialCapacity, maxCapacity );
+        }
+
+        @Override
+        protected byte[] allocateArray( int initialCapacity )
+        {
+            pooledBufferManger.getHeapBufferMemoryTracker().allocateHeap( initialCapacity );
+            return super.allocateArray( initialCapacity );
+        }
+
+        @Override
+        protected void freeArray( byte[] array )
+        {
+            int length = array.length;
+            super.freeArray( array );
+            pooledBufferManger.getHeapBufferMemoryTracker().releaseHeap( length );
+        }
     }
 
     private static class HeapBufferAllocator extends NettyMemoryManagerWrapper

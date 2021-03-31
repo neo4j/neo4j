@@ -20,57 +20,65 @@
 package org.neo4j.buffer;
 
 import io.netty.buffer.ByteBuf;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.util.List;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.bufferpool.ByteBufferManger;
-import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.memory.MemoryTracker;
+import org.neo4j.io.bufferpool.impl.NeoBufferPoolConfigOverride;
+import org.neo4j.io.bufferpool.impl.NeoByteBufferPool;
+import org.neo4j.memory.MemoryGroup;
+import org.neo4j.memory.MemoryPool;
+import org.neo4j.memory.MemoryPools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
-class HeapBufferTest
+class HeapMemoryMonitoringTest
 {
-    private final NettyMemoryManagerWrapper nettyBufferAllocator = new NettyMemoryManagerWrapper( new ThrowingBufferPool() );
+    private final MemoryPools memoryPools = new MemoryPools();
+    private final NeoBufferPoolConfigOverride configOverride = new NeoBufferPoolConfigOverride( Duration.ZERO, List.of() );
+    private final ByteBufferManger byteBufferManger = new NeoByteBufferPool( configOverride, memoryPools, null );
+    private final NettyMemoryManagerWrapper nettyBufferAllocator = new NettyMemoryManagerWrapper( byteBufferManger );
+    private MemoryPool memoryPool;
+
+    @BeforeEach
+    void beforeEach()
+    {
+        memoryPool = memoryPools.getPools().stream()
+                                .filter( pool -> pool.group() == MemoryGroup.CENTRAL_BYTE_BUFFER_MANAGER )
+                                .findFirst()
+                                .get();
+    }
 
     @Test
     void testBasicAllocation()
     {
         ByteBuf buf = nettyBufferAllocator.heapBuffer( 1500, 10_000 );
 
-        assertEquals( 1500, buf.capacity() );
-        assertEquals( 10_000, buf.maxCapacity() );
-        assertFalse( buf.isDirect() );
-
+        verifyMemory( 1500 );
         write( buf, 1000 );
         buf.release();
+        verifyMemory( 0 );
     }
 
     @Test
     void testBufferGrow()
     {
         ByteBuf buf = nettyBufferAllocator.heapBuffer( 1500, 20_000 );
+
         write( buf, 1000 );
-        assertEquals( 1500, buf.capacity() );
+        verifyMemory( 1500 );
         write( buf, 1000 );
-        assertEquals( 2048, buf.capacity() );
+        verifyMemory( ByteUnit.kibiBytes( 2 ) );
         write( buf, 1000 );
-        assertEquals( 4096, buf.capacity() );
+        verifyMemory( ByteUnit.kibiBytes( 4 ) );
         write( buf, 10_000 );
-        assertEquals( 16_384, buf.capacity() );
+        verifyMemory( ByteUnit.kibiBytes( 16 ) );
         buf.release();
-    }
-
-    @Test
-    void testDefaultCapacities()
-    {
-        ByteBuf buf = nettyBufferAllocator.heapBuffer();
-
-        assertEquals( 256, buf.capacity() );
-        assertEquals( Integer.MAX_VALUE, buf.maxCapacity() );
-        buf.release();
+        verifyMemory( ByteUnit.kibiBytes( 0 ) );
     }
 
     @Test
@@ -78,30 +86,27 @@ class HeapBufferTest
     {
         ByteBuf buf = nettyBufferAllocator.compositeHeapBuffer( 10 );
 
-        assertEquals( 0, buf.capacity() );
-        assertEquals( Integer.MAX_VALUE, buf.maxCapacity() );
-        assertFalse( buf.isDirect() );
-
         write( buf, 1000 );
-
-        assertEquals( 1024, buf.capacity() );
-
+        verifyMemory( ByteUnit.kibiBytes( 1 ) );
         buf.release();
+        verifyMemory( ByteUnit.kibiBytes( 0 ) );
     }
 
     @Test
     void testCompositeBufferGrow()
     {
         ByteBuf buf = nettyBufferAllocator.compositeHeapBuffer( 10 );
+
         write( buf, 1000 );
-        assertEquals( 1024, buf.capacity() );
+        verifyMemory( ByteUnit.kibiBytes( 1 ) );
         write( buf, 1000 );
-        assertEquals( 2048, buf.capacity() );
+        verifyMemory( ByteUnit.kibiBytes( 2 ) );
         write( buf, 1000 );
-        assertEquals( 4096, buf.capacity() );
+        verifyMemory( ByteUnit.kibiBytes( 4 ) );
         write( buf, 10_000 );
-        assertEquals( 16384, buf.capacity() );
+        verifyMemory( ByteUnit.kibiBytes( 16 ) );
         buf.release();
+        verifyMemory( ByteUnit.kibiBytes( 0 ) );
     }
 
     private void write( ByteBuf buf, int size )
@@ -112,31 +117,9 @@ class HeapBufferTest
         }
     }
 
-    private static class ThrowingBufferPool implements ByteBufferManger
+    private void verifyMemory( long expectedHeap )
     {
-
-        @Override
-        public ByteBuffer acquire( int size )
-        {
-            throw new IllegalStateException( "Trying to acquire ByteBuffer" );
-        }
-
-        @Override
-        public void release( ByteBuffer buffer )
-        {
-            throw new IllegalStateException( "Trying to release ByteBuffer" );
-        }
-
-        @Override
-        public int recommendNewCapacity( int minNewCapacity, int maxCapacity )
-        {
-            throw new IllegalStateException( "Trying to recommend new capacity" );
-        }
-
-        @Override
-        public MemoryTracker getHeapBufferMemoryTracker()
-        {
-            return EmptyMemoryTracker.INSTANCE;
-        }
+        assertEquals( 0, memoryPool.usedNative() );
+        assertEquals( expectedHeap, memoryPool.usedHeap() );
     }
 }

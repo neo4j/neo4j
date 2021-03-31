@@ -668,10 +668,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Boolean> io_controller_consider_external_io =
             newBuilder( "unsupported.dbms.io.controller.consider.external.enabled", BOOL, false ).dynamic().build();
 
-    // should neo byte buffer pool be used for network stack buffers?
     @Internal
-    public static Setting<Boolean> neo_network_buffer_pool =
-            newBuilder( "unsupported.dbms.memory.neo_network_buffer_pool", BOOL, false ).build();
+    @Description( "Whether or not DBMS's byte buffer manager should be used for network stack buffers instead " +
+            "of each network library managing its buffers on its own" )
+    public static Setting<Boolean> managed_network_buffers =
+            newBuilder( "unsupported.dbms.memory.managed_network_buffers", BOOL, false ).build();
 
     @Internal
     public static Setting<Duration> neo_byte_buffer_pool_collection_interval_override =

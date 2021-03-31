@@ -26,6 +26,7 @@ public enum MemoryGroup
     PAGE_CACHE( "Page Cache" ),
     OTHER( "Other" ),
     RECENT_QUERY_BUFFER( "Recent Query Buffer" ),
+    CENTRAL_BYTE_BUFFER_MANAGER( "Central Byte Buffer Manager" ),
     NO_TRACKING( "No Tracking" );
 
     private final String name;

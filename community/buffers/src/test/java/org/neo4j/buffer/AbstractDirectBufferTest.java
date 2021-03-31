@@ -31,7 +31,8 @@ import java.util.List;
 import org.neo4j.io.bufferpool.ByteBufferManger;
 import org.neo4j.io.bufferpool.impl.NeoByteBufferPool;
 import org.neo4j.io.bufferpool.impl.NeoBufferPoolConfigOverride;
-import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryPools;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -45,7 +46,7 @@ abstract class AbstractDirectBufferTest
     {
         var buckets = List.of("1K:1", "2K:1", "4K:1", "8K:1");
         var poolConfig = new NeoBufferPoolConfigOverride( Duration.ZERO, buckets );
-        var bufferManger = new NeoByteBufferPool( poolConfig, EmptyMemoryTracker.INSTANCE, null );
+        var bufferManger = new NeoByteBufferPool( poolConfig, new MemoryPools(), null );
         tracingPoolWrapper = new TracingPoolWrapper( bufferManger );
         nettyBufferAllocator = new NettyMemoryManagerWrapper( tracingPoolWrapper );
     }
@@ -105,6 +106,12 @@ abstract class AbstractDirectBufferTest
         public int recommendNewCapacity( int minNewCapacity, int maxCapacity )
         {
             return wrappedPool.recommendNewCapacity( minNewCapacity, maxCapacity );
+        }
+
+        @Override
+        public MemoryTracker getHeapBufferMemoryTracker()
+        {
+            return wrappedPool.getHeapBufferMemoryTracker();
         }
     }
 }

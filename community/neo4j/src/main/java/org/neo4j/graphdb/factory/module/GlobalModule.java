@@ -84,7 +84,6 @@ import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.LogConfig;
 import org.neo4j.logging.log4j.Neo4jLoggerContext;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
@@ -190,8 +189,6 @@ public class GlobalModule
         JobScheduler createdOrResolvedScheduler = tryResolveOrCreate( JobScheduler.class, this::createJobScheduler );
         jobScheduler = globalLife.add( globalDependencies.satisfyDependency( createdOrResolvedScheduler ) );
 
-        centralBufferMangerHolder = crateCentralBufferManger();
-
         fileLockerService = createFileLockerService();
         Locker storeLocker = fileLockerService.createStoreLocker( fileSystem, neo4jLayout );
         globalLife.add( globalDependencies.satisfyDependency( new LockerLifecycleAdapter( storeLocker ) ) );
@@ -205,6 +202,8 @@ public class GlobalModule
                 memoryPools.pool( MemoryGroup.TRANSACTION, globalConfig.get( memory_transaction_global_max_size ), memory_transaction_global_max_size.name() );
         globalConfig.addListener( memory_transaction_global_max_size, ( before, after ) -> transactionsMemoryPool.setSize( after ) );
         globalDependencies.satisfyDependency( memoryPools );
+
+        centralBufferMangerHolder = crateCentralBufferManger();
 
         recentQueryBuffer = new RecentQueryBuffer( globalConfig.get( data_collector_max_recent_query_count ),
                                                    memoryPools.pool( MemoryGroup.RECENT_QUERY_BUFFER, 0, null ).getPoolMemoryTracker() );
@@ -423,7 +422,7 @@ public class GlobalModule
     private CentralBufferMangerHolder crateCentralBufferManger()
     {
         // since network buffers are currently the only use of the central byte buffer manager ...
-        if ( !globalConfig.get( GraphDatabaseInternalSettings.neo_network_buffer_pool ) )
+        if ( !globalConfig.get( GraphDatabaseInternalSettings.managed_network_buffers ) )
         {
             return CentralBufferMangerHolder.EMPTY;
         }
@@ -432,7 +431,7 @@ public class GlobalModule
                 globalConfig.get( GraphDatabaseInternalSettings.neo_byte_buffer_pool_buckets_override )
         );
 
-        var bufferPool = new NeoByteBufferPool( configOverride, EmptyMemoryTracker.INSTANCE, jobScheduler );
+        var bufferPool = new NeoByteBufferPool( configOverride, memoryPools, jobScheduler );
         globalLife.add( bufferPool );
         var nettyAllocator = new NettyMemoryManagerWrapper( bufferPool );
         return new CentralBufferMangerHolder( nettyAllocator, bufferPool );

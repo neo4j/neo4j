@@ -29,11 +29,13 @@ import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.io.bufferpool.ByteBufferManger;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * Design notes:
@@ -63,14 +65,15 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
     private final JobScheduler jobScheduler;
     private final Duration collectionInterval;
     private final Bucket[] buckets;
-    private final MemoryTracker memoryTracker;
+    private final MemoryMonitor memoryMonitor;
     private final int maxPooledBufferCapacity;
 
     private JobHandle<?> collectionJob;
 
-    public NeoByteBufferPool( NeoBufferPoolConfigOverride configOverride, MemoryTracker memoryTracker, JobScheduler jobScheduler )
+    public NeoByteBufferPool( NeoBufferPoolConfigOverride configOverride, MemoryPools memoryPools, JobScheduler jobScheduler )
     {
         this.jobScheduler = jobScheduler;
+        this.memoryMonitor = crateMemoryMonitor( memoryPools );
         if ( configOverride.getCollectionInterval() == null )
         {
             collectionInterval = DEFAULT_COLLECTION_INTERVAL;
@@ -80,10 +83,19 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
             collectionInterval = configOverride.getCollectionInterval();
         }
 
-        var bucketBootstrapper = new BucketBootstrapper( configOverride, memoryTracker );
+        var bucketBootstrapper = new BucketBootstrapper( configOverride, memoryMonitor.getMemoryTracker() );
         buckets = bucketBootstrapper.getBuckets().toArray( new Bucket[0] );
         maxPooledBufferCapacity = bucketBootstrapper.getMaxPooledBufferCapacity();
-        this.memoryTracker = memoryTracker;
+    }
+
+    /**
+     * The monitoring framework is a great tool for verifying that
+     * the pool is doing what it is supposed to.
+     */
+    @VisibleForTesting
+    MemoryMonitor crateMemoryMonitor( MemoryPools memoryPools )
+    {
+        return new MemoryMonitor( memoryPools );
     }
 
     @Override
@@ -123,7 +135,7 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
     {
         if ( size > maxPooledBufferCapacity )
         {
-            return ByteBuffers.allocateDirect( size, memoryTracker );
+            return ByteBuffers.allocateDirect( size, memoryMonitor.getMemoryTracker() );
         }
 
         var bucket = getBucketFor( size );
@@ -141,7 +153,7 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
 
         if ( buffer.capacity() > maxPooledBufferCapacity )
         {
-            ByteBuffers.releaseBuffer( buffer, memoryTracker );
+            ByteBuffers.releaseBuffer( buffer, memoryMonitor.getMemoryTracker() );
             return;
         }
 
@@ -163,6 +175,12 @@ public class NeoByteBufferPool extends LifecycleAdapter implements ByteBufferMan
         }
 
         return Math.min( getBucketFor( minNewCapacity ).getBufferCapacity(), maxCapacity );
+    }
+
+    @Override
+    public MemoryTracker getHeapBufferMemoryTracker()
+    {
+        return memoryMonitor.getMemoryTracker();
     }
 
     private Bucket getBucketFor( int size )
