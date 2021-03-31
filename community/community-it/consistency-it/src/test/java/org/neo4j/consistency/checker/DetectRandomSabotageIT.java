@@ -31,7 +31,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -61,8 +63,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.IndexCreator;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
@@ -72,8 +77,8 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.OnlineIndexProxy;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
@@ -111,11 +116,13 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.System.currentTimeMillis;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
+import static org.neo4j.internal.schema.IndexType.BTREE;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
@@ -138,6 +145,7 @@ public class DetectRandomSabotageIT
     protected RandomRule random;
 
     private DatabaseManagementService dbms;
+    private GraphDatabaseAPI db;
     private NeoStores neoStores;
     private DependencyResolver resolver;
 
@@ -155,7 +163,7 @@ public class DetectRandomSabotageIT
     protected void setUp()
     {
         dbms = getDbms( directory.homePath() );
-        GraphDatabaseAPI db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
+        db = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
 
         // Create some nodes
         MutableLongList nodeIds = createNodes( db );
@@ -202,16 +210,25 @@ public class DetectRandomSabotageIT
     void shouldDetectRandomSabotage() throws Exception
     {
         // given
-        SabotageType type = random.among( SabotageType.values() );
+        SabotageType type = random.among( getValidSabotageTypes() );
 
         // when
-        Sabotage sabotage = type.run( random, neoStores, resolver );
+        Sabotage sabotage = type.run( random, neoStores, resolver, db );
 
         // then
         ConsistencyCheckService.Result result = shutDownAndRunConsistencyChecker();
         boolean hasSomeErrorOrWarning = result.summary().getTotalInconsistencyCount() > 0 || result.summary().getTotalWarningCount() > 0;
         assertTrue( hasSomeErrorOrWarning );
         // TODO also assert there being a report about the sabotaged area
+    }
+
+    SabotageType[] getValidSabotageTypes()
+    {
+        List<SabotageType> sabotageTypes = new ArrayList<>( Arrays.asList( SabotageType.values() ) );
+        // Those two are only used when RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes is true
+        sabotageTypes.remove( SabotageType.NODE_LABEL_INDEX_ENTRY );
+        sabotageTypes.remove( SabotageType.RELATIONSHIP_TYPE_INDEX_ENTRY );
+        return sabotageTypes.toArray(SabotageType[]::new);
     }
 
     /* Failures/bugs found by the random sabotage are fixed and tested below, if they don't fit into any other FullCheck IT*/
@@ -439,12 +456,12 @@ public class DetectRandomSabotageIT
         <VALUE> void setConfig( TARGET target, Setting<VALUE> setting, VALUE value );
     }
 
-    private enum SabotageType
+    enum SabotageType
     {
         NODE_PROP
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         return loadChangeUpdate( random, stores.getNodeStore(), usedRecord(), PrimitiveRecord::getNextProp, PrimitiveRecord::setNextProp,
                                 () -> randomLargeSometimesNegative( random ) );
@@ -453,7 +470,7 @@ public class DetectRandomSabotageIT
         NODE_REL
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         return loadChangeUpdate( random, stores.getNodeStore(), usedRecord(), NodeRecord::getNextRel, NodeRecord::setNextRel );
                     }
@@ -461,7 +478,7 @@ public class DetectRandomSabotageIT
         NODE_LABELS
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         NodeStore store = stores.getNodeStore();
                         NodeRecord node = randomRecord( random, store, usedRecord() );
@@ -498,7 +515,7 @@ public class DetectRandomSabotageIT
         NODE_IN_USE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         return setRandomRecordNotInUse( random, stores.getNodeStore() );
                     }
@@ -506,7 +523,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_CHAIN
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         RelationshipStore store = stores.getRelationshipStore();
                         RelationshipRecord relationship = randomRecord( random, store, usedRecord() );
@@ -542,7 +559,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_NODES
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         boolean startNode = random.nextBoolean();
                         ToLongFunction<RelationshipRecord> getter = startNode ? RelationshipRecord::getFirstNode : RelationshipRecord::getSecondNode;
@@ -553,7 +570,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_PROP
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         return loadChangeUpdate( random, stores.getRelationshipStore(), usedRecord(), PrimitiveRecord::getNextProp,
                                 PrimitiveRecord::setNextProp, () -> randomIdOrSometimesDefault( random, NULL_REFERENCE.longValue(), propertyId ->
@@ -574,7 +591,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_TYPE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         return loadChangeUpdate( random, stores.getRelationshipStore(), usedRecord(), RelationshipRecord::getType,
                                 ( relationship, type ) -> relationship.setType( type.intValue() ),
@@ -584,7 +601,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_IN_USE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         return setRandomRecordNotInUse( random, stores.getRelationshipStore() );
                     }
@@ -592,7 +609,7 @@ public class DetectRandomSabotageIT
         PROPERTY_CHAIN
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         boolean prev = random.nextBoolean();
                         if ( prev )
@@ -609,7 +626,7 @@ public class DetectRandomSabotageIT
         PROPERTY_IN_USE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         return setRandomRecordNotInUse( random, stores.getPropertyStore() );
                     }
@@ -618,7 +635,7 @@ public class DetectRandomSabotageIT
         STRING_LENGTH
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         return loadChangeUpdateDynamicChain( random, stores.getPropertyStore(), stores.getPropertyStore().getStringStore(),
                                 PropertyType.STRING, record ->
@@ -629,7 +646,7 @@ public class DetectRandomSabotageIT
         STRING_IN_USE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         return setRandomRecordNotInUse( random, stores.getPropertyStore().getStringStore() );
                     }
@@ -637,7 +654,7 @@ public class DetectRandomSabotageIT
         ARRAY_CHAIN
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         return loadChangeUpdateDynamicChain( random, stores.getPropertyStore(), stores.getPropertyStore().getArrayStore(),
                                 PropertyType.ARRAY, record ->
@@ -648,7 +665,7 @@ public class DetectRandomSabotageIT
         ARRAY_LENGTH
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         return loadChangeUpdateDynamicChain( random, stores.getPropertyStore(), stores.getPropertyStore().getArrayStore(),
                                 PropertyType.ARRAY, record ->
@@ -659,7 +676,7 @@ public class DetectRandomSabotageIT
         ARRAY_IN_USE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         return setRandomRecordNotInUse( random, stores.getPropertyStore().getArrayStore() );
                     }
@@ -667,7 +684,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_GROUP_CHAIN
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         // prev isn't stored in the record format
                         return loadChangeUpdate( random, stores.getRelationshipGroupStore(), usedRecord(), RelationshipGroupRecord::getNext,
@@ -677,7 +694,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_GROUP_TYPE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         return loadChangeUpdate( random, stores.getRelationshipGroupStore(), usedRecord(), RelationshipGroupRecord::getType,
                                 ( group, type ) -> group.setType( type.intValue() ),
@@ -687,7 +704,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_GROUP_FIRST_RELATIONSHIP
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         ToLongFunction<RelationshipGroupRecord> getter;
                         BiConsumer<RelationshipGroupRecord,Long> setter;
@@ -713,7 +730,7 @@ public class DetectRandomSabotageIT
         RELATIONSHIP_GROUP_IN_USE
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies )
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db )
                     {
                         return setRandomRecordNotInUse( random, stores.getRelationshipGroupStore() );
                     }
@@ -721,16 +738,25 @@ public class DetectRandomSabotageIT
         SCHEMA_INDEX_ENTRY
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies ) throws Exception
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db ) throws Exception
                     {
                         IndexingService indexing = otherDependencies.resolveDependency( IndexingService.class );
                         boolean add = random.nextBoolean();
                         long[] indexIds = indexing.getIndexIds().toArray();
-                        long indexId = indexIds[random.nextInt( indexIds.length )];
-                        IndexProxy indexProxy = indexing.getIndexProxy( indexId );
-                        while ( indexProxy instanceof AbstractDelegatingIndexProxy )
+                        IndexProxy indexProxy = null;
+                        while ( indexProxy == null )
                         {
-                            indexProxy = ((AbstractDelegatingIndexProxy) indexProxy).getDelegate();
+                            // Make sure we get an index proxy representing a BTREE index (and not e.g. TokenIndex)
+                            long indexId = indexIds[random.nextInt( indexIds.length )];
+                            indexProxy = indexing.getIndexProxy( indexId );
+                            while ( indexProxy instanceof AbstractDelegatingIndexProxy )
+                            {
+                                indexProxy = ((AbstractDelegatingIndexProxy) indexProxy).getDelegate();
+                            }
+                            if ( indexProxy.getDescriptor().getIndexType() != BTREE )
+                            {
+                                indexProxy = null;
+                            }
                         }
                         IndexAccessor accessor = ((OnlineIndexProxy) indexProxy).accessor();
                         long selectedEntityId = -1;
@@ -780,10 +806,10 @@ public class DetectRandomSabotageIT
                                 userDescription ); // TODO more specific
                     }
                 },
-        LABEL_INDEX_ENTRY
+        LABEL_SCAN_STORE_ENTRY
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies ) throws Exception
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db ) throws Exception
                     {
                         LabelScanStore labelIndex = otherDependencies.resolveDependency( LabelScanStore.class );
                         boolean add = random.nextBoolean();
@@ -833,12 +859,99 @@ public class DetectRandomSabotageIT
                         return new Sabotage( String.format( "%s labelId:%d node:%s", add ? "Add" : "Remove", labelId, nodeRecord ), nodeRecord.toString() );
                     }
                 },
+        NODE_LABEL_INDEX_ENTRY
+                {
+                    @Override
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db ) throws Exception
+                    {
+                        IndexDescriptor nliDescriptor = null;
+                        try ( Transaction tx = db.beginTx() )
+                        {
+                            Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
+                            for ( IndexDefinition indexDefinition : indexes )
+                            {
+                                if ( indexDefinition.getIndexType() == IndexType.LOOKUP && indexDefinition.isNodeIndex() )
+                                {
+                                    nliDescriptor = ((IndexDefinitionImpl) indexDefinition).getIndexReference();
+                                    break;
+                                }
+                            }
+                            tx.commit();
+                        }
+                        assertNotNull( nliDescriptor );
+                        IndexingService indexingService = otherDependencies.resolveDependency( IndexingService.class );
+                        IndexProxy nliProxy = indexingService.getIndexProxy( nliDescriptor );
+
+                        boolean add = random.nextBoolean();
+                        NodeStore store = stores.getNodeStore();
+                        NodeRecord nodeRecord = randomRecord( random, store, r -> add || (r.inUse() && r.getLabelField() != NO_LABELS_FIELD.longValue()) );
+                        TokenHolders tokenHolders = otherDependencies.resolveDependency( TokenHolders.class );
+                        Set<String> labelNames = new HashSet<>( Arrays.asList( TOKEN_NAMES ) );
+                        int labelId;
+                        try ( IndexUpdater writer = nliProxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+                        {
+                            if ( nodeRecord.inUse() )
+                            {
+                                // Our node is in use, make sure it's a label it doesn't already have
+                                NodeLabels labelsField = NodeLabelsField.parseLabelsField( nodeRecord );
+                                long[] labelsBefore = labelsField.get( store, NULL );
+                                for ( long labelIdBefore : labelsBefore )
+                                {
+                                    labelNames.remove( tokenHolders.labelTokens().getTokenById( (int) labelIdBefore ).name() );
+                                }
+                                if ( add )
+                                {
+                                    // Add a label to an existing node (in the label index only)
+                                    labelId = labelNames.isEmpty()
+                                              ? 9999
+                                              : tokenHolders.labelTokens().getIdByName( random.among( new ArrayList<>( labelNames ) ) );
+                                    long[] labelsAfter = Arrays.copyOf( labelsBefore, labelsBefore.length + 1 );
+                                    labelsAfter[labelsBefore.length] = labelId;
+                                    Arrays.sort( labelsAfter );
+                                    writer.process( IndexEntryUpdate.change( nodeRecord.getId(), nliDescriptor, labelsBefore, labelsAfter ) );
+                                }
+                                else
+                                {
+                                    // Remove a label from an existing node (in the label index only)
+                                    MutableLongList labels = LongLists.mutable.of( Arrays.copyOf( labelsBefore, labelsBefore.length ) );
+                                    labelId = (int) labels.removeAtIndex( random.nextInt( labels.size() ) );
+                                    long[] labelsAfter = labels.toSortedArray(); // With one of the labels removed
+                                    writer.process( IndexEntryUpdate.change( nodeRecord.getId(), nliDescriptor, labelsBefore, labelsAfter ) );
+                                }
+                            }
+                            else // Getting here means the we're adding something (see above when selecting the node)
+                            {
+                                // Add a label to a non-existent node (in the label index only)
+                                labelId = tokenHolders.labelTokens().getIdByName( random.among( TOKEN_NAMES ) );
+                                writer.process( IndexEntryUpdate.change( nodeRecord.getId(), nliDescriptor, EMPTY_LONG_ARRAY, new long[]{labelId} ) );
+                            }
+                        }
+                        return new Sabotage( String.format( "%s labelId:%d node:%s", add ? "Add" : "Remove", labelId, nodeRecord ), nodeRecord.toString() );
+                    }
+                },
         RELATIONSHIP_TYPE_INDEX_ENTRY
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies ) throws Exception
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db ) throws Exception
                     {
-                        RelationshipTypeScanStore relationshipTypeIndex = otherDependencies.resolveDependency( RelationshipTypeScanStore.class );
+                        IndexDescriptor rtiDescriptor = null;
+                        try ( Transaction tx = db.beginTx() )
+                        {
+                            Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
+                            for ( IndexDefinition indexDefinition : indexes )
+                            {
+                                if ( indexDefinition.getIndexType() == IndexType.LOOKUP && indexDefinition.isRelationshipIndex() )
+                                {
+                                    rtiDescriptor = ((IndexDefinitionImpl) indexDefinition).getIndexReference();
+                                    break;
+                                }
+                            }
+                            tx.commit();
+                        }
+                        assertNotNull( rtiDescriptor );
+                        IndexingService indexingService = otherDependencies.resolveDependency( IndexingService.class );
+                        IndexProxy rtiProxy = indexingService.getIndexProxy( rtiDescriptor );
+
                         RelationshipStore store = stores.getRelationshipStore();
                         RelationshipRecord relationshipRecord = randomRecord( random, store, r -> true );
                         TokenHolders tokenHolders = otherDependencies.resolveDependency( TokenHolders.class );
@@ -848,7 +961,7 @@ public class DetectRandomSabotageIT
                         int typeId;
                         long[] typesAfter;
                         String operation;
-                        try ( TokenScanWriter writer = relationshipTypeIndex.newWriter( NULL ) )
+                        try ( IndexUpdater writer = rtiProxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
                         {
                             if ( relationshipRecord.inUse() )
                             {
@@ -876,14 +989,14 @@ public class DetectRandomSabotageIT
                                     typeId = typeBefore;
                                     typesAfter = EMPTY_LONG_ARRAY;
                                 }
-                                writer.write( EntityTokenUpdate.tokenChanges( relationshipRecord.getId(), typesBefore, typesAfter ) );
+                                writer.process( IndexEntryUpdate.change( relationshipRecord.getId(), rtiDescriptor, typesBefore, typesAfter ) );
                             }
                             else
                             {
                                 // Getting here means the we're adding something (see above when selecting the relationship)
                                 operation = "Add relationship type to a non-existing relationship (in relationship type index only)";
                                 typeId = tokenHolders.labelTokens().getIdByName( random.among( TOKEN_NAMES ) );
-                                writer.write( EntityTokenUpdate.tokenChanges( relationshipRecord.getId(), EMPTY_LONG_ARRAY, new long[]{typeId} ) );
+                                writer.process( IndexEntryUpdate.change( relationshipRecord.getId(), rtiDescriptor, EMPTY_LONG_ARRAY, new long[]{typeId} ) );
                             }
                         }
                         String description = String.format( "%s relationshipTypeId:%d relationship:%s", operation, typeId, relationshipRecord );
@@ -893,7 +1006,7 @@ public class DetectRandomSabotageIT
         GRAPH_ENTITY_USES_INTERNAL_TOKEN
                 {
                     @Override
-                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies ) throws Exception
+                    Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db ) throws Exception
                     {
                         TokenHolders tokenHolders = otherDependencies.resolveDependency( TokenHolders.class );
                         String tokenName = "Token-" + currentTimeMillis();
@@ -1041,7 +1154,7 @@ public class DetectRandomSabotageIT
             return record;
         }
 
-        abstract Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies ) throws Exception;
+        abstract Sabotage run( RandomRule random, NeoStores stores, DependencyResolver otherDependencies, GraphDatabaseAPI db ) throws Exception;
     }
 
     private static class Sabotage
