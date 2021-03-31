@@ -116,6 +116,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexContainsSca
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexEndsWithScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexSeekTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipIndexStartsWithSeekTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipTypeScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RemoveLabelsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RightOuterHashJoinTestBase
@@ -178,6 +179,7 @@ class InterpretedNodeIndexSeekTest extends NodeIndexSeekTestBase(COMMUNITY.EDITI
                                    with NodeLockingUniqueIndexSeekTestBase[CommunityRuntimeContext]
 class InterpretedRelationshipIndexSeekTest extends RelationshipIndexSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedRelationshipIndexScanTest extends RelationshipIndexScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedRelationshipIndexStartsWithSeekTest extends RelationshipIndexStartsWithSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedRelationshipIndexContainsScanTest extends RelationshipIndexContainsScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedRelationshipIndexEndsWithScanTest extends RelationshipIndexEndsWithScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexPointDistanceSeekTest extends NodeIndexPointDistanceSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

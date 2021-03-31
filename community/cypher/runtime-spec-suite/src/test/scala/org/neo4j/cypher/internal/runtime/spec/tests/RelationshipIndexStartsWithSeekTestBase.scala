@@ -1,0 +1,228 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.runtime.spec.tests
+
+import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.exceptions.CypherTypeException
+
+abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
+                                                             edition: Edition[CONTEXT],
+                                                             runtime: CypherRuntime[CONTEXT],
+                                                             sizeHint: Int
+                                                           ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+
+  test("should be case sensitive for STARTS WITH with indexes directed seek") {
+    given {
+      relationshipIndex("R", "text")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
+        case (r, _) => r.setProperty("text", "case")
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("text")
+      .projection("r.text AS text")
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH 'ca')]->(y)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = List.fill(sizeHint / 2)("case")
+    runtimeResult should beColumns("text").withRows(singleColumn(expected))
+  }
+
+  test("should be case sensitive for STARTS WITH with indexes undirected seek") {
+    given {
+      relationshipIndex("R", "text")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
+        case (r, _) => r.setProperty("text", "case")
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("text")
+      .projection("r.text AS text")
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH 'ca')]-(y)")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = List.fill(sizeHint)("case")
+    runtimeResult should beColumns("text").withRows(singleColumn(expected))
+  }
+
+
+  test("should handle null input directed") {
+    given {
+      relationshipIndex("R", "text")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
+        case (r, _) => r.setProperty("text", "case")
+      }
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("text")
+      .projection("r.text AS text")
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH ???)]->(y)", paramExpr = Some(nullLiteral))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("text").withNoRows()
+  }
+
+  test("should handle null input undirected") {
+    given {
+      relationshipIndex("R", "text")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
+        case (r, _) => r.setProperty("text", "case")
+      }
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("text")
+      .projection("r.text AS text")
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH ???)]-(y)", paramExpr = Some(nullLiteral))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("text").withNoRows()
+  }
+
+
+  test("should handle non-text input directed") {
+    given {
+      relationshipIndex("R", "text")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
+        case (r, _) => r.setProperty("text", "case")
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("text")
+      .projection("r.text AS text")
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH 1337)]->(y)")
+      .build()
+
+
+    // then
+    a [CypherTypeException] should be thrownBy consume(execute(logicalQuery, runtime))
+  }
+
+  test("should handle non-text input undirected") {
+    given {
+      relationshipIndex("R", "text")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
+        case (r, _) => r.setProperty("text", "case")
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("text")
+      .projection("r.text AS text")
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH 1337)]-(y)")
+      .build()
+
+
+    // then
+    a [CypherTypeException] should be thrownBy consume(execute(logicalQuery, runtime))
+  }
+
+  test("should cache properties directed") {
+    val relationships = given {
+      relationshipIndex("R", "text")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("text", i.toString)
+      }
+      rels
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "text")
+      .projection("cacheR[r.text] AS text")
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH '1')]->(y)", GetValue)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships.zipWithIndex.collect{ case (r, i) if i.toString.startsWith("1") => Array(r, i.toString)}
+    runtimeResult should beColumns("r", "text").withRows(expected)
+  }
+
+  test("should cache properties undirected") {
+    val relationships = given {
+      relationshipIndex("R", "text")
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach {
+        case (r, i) => r.setProperty("text", i.toString)
+      }
+      rels
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r", "text")
+      .projection("cacheR[r.text] AS text")
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH '1')]-(y)", GetValue)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = relationships.zipWithIndex.flatMap {
+      case (r, i) if i.toString.startsWith("1") =>
+        Seq(
+          Array(r, i.toString),
+          Array(r, i.toString)
+        )
+      case _ => Seq.empty
+    }
+    runtimeResult should beColumns("r", "text").withRows(expected)
+  }
+}
