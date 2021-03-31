@@ -78,13 +78,18 @@ public interface TokenScanStore extends Lifecycle, ConsistencyCheckable
             FullStoreChangeStream fullStoreChangeStream, boolean readOnly, Monitors monitors, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             Config config, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
+        if ( config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes )
+             && config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
+        {
+            throw new IllegalStateException( "Settings 'enable_scan_stores_as_token_indexes' and 'enable_relationship_type_scan_store' " +
+                                             "are incompatible with each other." );
+        }
         if ( config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
         {
             return relationshipTypeScanStore( pageCache, directoryStructure, fs, fullStoreChangeStream, readOnly, monitors, recoveryCleanupWorkCollector,
                     config, cacheTracer, memoryTracker );
         }
-        return EmptyingTokenScanStore.emptyRtss( fs, directoryStructure, readOnly,
-                !config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) );
+        return EmptyingTokenScanStore.emptyRtss( fs, directoryStructure, readOnly, true );
     }
 
     /**
