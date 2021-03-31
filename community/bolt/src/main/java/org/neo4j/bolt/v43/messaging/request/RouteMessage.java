@@ -19,9 +19,11 @@
  */
 package org.neo4j.bolt.v43.messaging.request;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.values.virtual.MapValue;
 
 /**
@@ -33,17 +35,24 @@ public class RouteMessage implements RequestMessage
     private static final String NAME = "ROUTE";
 
     private final MapValue requestContext;
+    private final List<Bookmark> bookmarks;
     private final String databaseName;
 
-    public RouteMessage( MapValue requestContext, String databaseName )
+    public RouteMessage( MapValue requestContext, List<Bookmark> bookmarks, String databaseName )
     {
         this.databaseName = databaseName;
         this.requestContext = requestContext;
+        this.bookmarks = bookmarks;
     }
 
     public MapValue getRequestContext()
     {
         return requestContext;
+    }
+
+    public List<Bookmark> getBookmarks()
+    {
+        return bookmarks;
     }
 
     public String getDatabaseName()
@@ -69,7 +78,8 @@ public class RouteMessage implements RequestMessage
         if ( o instanceof RouteMessage )
         {
             RouteMessage that = (RouteMessage) o;
-            return Objects.equals( requestContext, that.requestContext ) && Objects.equals( databaseName, that.databaseName );
+            return Objects.equals( requestContext, that.requestContext ) && Objects.equals( databaseName, that.databaseName )
+                    && Objects.equals( this.bookmarks, that.bookmarks );
         }
         else
         {
@@ -80,6 +90,6 @@ public class RouteMessage implements RequestMessage
     @Override
     public int hashCode()
     {
-        return Objects.hash( requestContext, databaseName );
+        return Objects.hash( requestContext, bookmarks, databaseName );
     }
 }

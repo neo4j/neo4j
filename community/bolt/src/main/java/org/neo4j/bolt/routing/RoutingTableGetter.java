@@ -19,8 +19,10 @@
  */
 package org.neo4j.bolt.routing;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.values.virtual.MapValue;
 
@@ -34,8 +36,10 @@ public interface RoutingTableGetter
      *
      * @param statementProcessor The statement processor which will be used to get the routing information.
      * @param routingContext Meta information used by the routing procedure to create the routing table.
+     * @param bookmarks the bookmark required to wait for before executing.
      * @param databaseName The name of the database from the routing table will be get.
      * @return A promise of a routing table
      */
-    CompletableFuture<MapValue> get( StatementProcessor statementProcessor, MapValue routingContext, String databaseName );
+    CompletableFuture<MapValue> get( StatementProcessor statementProcessor, MapValue routingContext, List<Bookmark> bookmarks,
+                                     String databaseName );
 }

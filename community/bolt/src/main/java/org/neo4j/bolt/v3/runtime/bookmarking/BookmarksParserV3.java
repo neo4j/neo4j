@@ -21,6 +21,7 @@ package org.neo4j.bolt.v3.runtime.bookmarking;
 
 import java.util.List;
 
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.BookmarksParser;
 import org.neo4j.values.AnyValue;
@@ -41,6 +42,12 @@ public final class BookmarksParserV3 implements BookmarksParser
 
     private BookmarksParserV3()
     {
+    }
+
+    @Override
+    public List<Bookmark> parseBookmarks( AnyValue anyValue ) throws BoltIOException
+    {
+        return parseBookmarks( anyValue );
     }
 
     @Override

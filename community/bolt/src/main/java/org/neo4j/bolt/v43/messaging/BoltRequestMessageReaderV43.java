@@ -76,7 +76,7 @@ public class BoltRequestMessageReaderV43 extends BoltRequestMessageReader
                 new ResetMessageDecoder( connection, defaultHandler ),
                 new GoodbyeMessageDecoder( connection, defaultHandler ),
                 // New in 4.3
-                new RouteMessageDecoder( defaultHandler )
+                new RouteMessageDecoder( defaultHandler, bookmarksParser )
         );
     }
 

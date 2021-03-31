@@ -22,9 +22,12 @@ package org.neo4j.bolt.runtime;
 import java.util.List;
 
 import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
 public interface BookmarksParser
 {
+    List<Bookmark> parseBookmarks( AnyValue anyValue ) throws BoltIOException;
+
     List<Bookmark> parseBookmarks( MapValue metadata ) throws BoltIOException;
 }

@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
@@ -159,7 +160,7 @@ class RouteMessageHandleStateDecoratorTest
     @Test
     void shouldProcessTheRoutingMessageAndSetTheRoutingTableOnTheMetadata() throws Exception
     {
-        var routingMessage = new RouteMessage( new MapValueBuilder().build(), "databaseName" );
+        var routingMessage = new RouteMessage( new MapValueBuilder().build(), List.of(), "databaseName" );
         var state = mock( BoltStateMachineState.class );
         var failedState = mock( FailedState.class );
         var routingTableGetter = mock( RoutingTableGetter.class );
@@ -178,7 +179,7 @@ class RouteMessageHandleStateDecoratorTest
     @Test
     void shouldHandleFatalFailureIfTheRoutingTableFailedToBeGot() throws Exception
     {
-        var routingMessage = new RouteMessage( new MapValueBuilder().build(), "databaseName" );
+        var routingMessage = new RouteMessage( new MapValueBuilder().build(), List.of(), "databaseName" );
         var state = mock( BoltStateMachineState.class );
         var failedState = mock( FailedState.class );
         var routingTableGetter = mock( RoutingTableGetter.class );
@@ -196,7 +197,7 @@ class RouteMessageHandleStateDecoratorTest
     @Test
     void shouldHandleFatalFailureIfGetRoutingTableThrowsAnException() throws Exception
     {
-        var routingMessage = new RouteMessage( new MapValueBuilder().build(), "databaseName" );
+        var routingMessage = new RouteMessage( new MapValueBuilder().build(), List.of(), "databaseName" );
         var state = mock( BoltStateMachineState.class );
         var failedState = mock( FailedState.class );
         var routingTableGetter = mock( RoutingTableGetter.class );
@@ -216,7 +217,7 @@ class RouteMessageHandleStateDecoratorTest
         var runtimeException = new RuntimeException( "Something happened" );
         doThrow( runtimeException )
                 .when( routingTableGetter )
-                .get( statementProcessor, routingMessage.getRequestContext(), routingMessage.getDatabaseName() );
+                .get( statementProcessor, routingMessage.getRequestContext(), routingMessage.getBookmarks(), routingMessage.getDatabaseName() );
         return runtimeException;
     }
 
@@ -226,7 +227,7 @@ class RouteMessageHandleStateDecoratorTest
         var runtimeException = new RuntimeException( "Something happened" );
         doReturn( CompletableFuture.failedFuture( runtimeException ) )
                 .when( routingTableGetter )
-                .get( statementProcessor, routingMessage.getRequestContext(), routingMessage.getDatabaseName() );
+                .get( statementProcessor, routingMessage.getRequestContext(), routingMessage.getBookmarks(), routingMessage.getDatabaseName() );
         return runtimeException;
     }
 
@@ -242,7 +243,7 @@ class RouteMessageHandleStateDecoratorTest
         var routingTable = routingTable();
         doReturn( CompletableFuture.completedFuture( routingTable ) )
                 .when( routingTableGetter )
-                .get( statementProcessor, routingMessage.getRequestContext(), routingMessage.getDatabaseName() );
+                .get( statementProcessor, routingMessage.getRequestContext(), routingMessage.getBookmarks(), routingMessage.getDatabaseName() );
         return routingTable;
     }
 

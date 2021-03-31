@@ -68,7 +68,7 @@ class ProcedureRoutingTableGetterTest
 
         doReturn( mock( StatementMetadata.class ) ).when( statementProcessor ).run( anyString(), any(), any(), any(), any(), any() );
 
-        getter.get( statementProcessor, routingTableContext, databaseName );
+        getter.get( statementProcessor, routingTableContext, List.of(), databaseName );
 
         verify( statementProcessor )
                 .run( "CALL dbms.routing.getRoutingTable($routingContext, $databaseName)",
@@ -95,7 +95,7 @@ class ProcedureRoutingTableGetterTest
             recordConsumer.endRecord();
         } );
 
-        var future = getter.get( statementProcessor, getRoutingTableContext(), "dbName" );
+        var future = getter.get( statementProcessor, getRoutingTableContext(), List.of(), "dbName" );
 
         var routingTable = future.get( 100, TimeUnit.MILLISECONDS );
 
@@ -119,7 +119,7 @@ class ProcedureRoutingTableGetterTest
             recordConsumer.onError();
         } );
 
-        var future = getter.get( statementProcessor, getRoutingTableContext(), "dbName" );
+        var future = getter.get( statementProcessor, getRoutingTableContext(), List.of(), "dbName" );
 
         try
         {
@@ -140,7 +140,7 @@ class ProcedureRoutingTableGetterTest
 
         doThrow( expectedException ).when( statementProcessor ).run( anyString(), any(), any(), any(), any(), any() );
 
-        var future = getter.get( statementProcessor, getRoutingTableContext(), "dbName" );
+        var future = getter.get( statementProcessor, getRoutingTableContext(), List.of(), "dbName" );
 
         try
         {
@@ -164,7 +164,7 @@ class ProcedureRoutingTableGetterTest
         doReturn( statementMetadata ).when( statementProcessor ).run( anyString(), any(), any(), any(), any(), any() );
         doReturn( queryId ).when( statementMetadata ).queryId();
         doThrow( expectedException ).when( statementProcessor ).streamResult( anyInt(), any() );
-        var future = getter.get( statementProcessor, getRoutingTableContext(), "dbName" );
+        var future = getter.get( statementProcessor, getRoutingTableContext(), List.of(), "dbName" );
 
         try
         {

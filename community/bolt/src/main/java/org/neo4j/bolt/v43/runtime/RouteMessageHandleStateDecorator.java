@@ -106,7 +106,7 @@ public class RouteMessageHandleStateDecorator<T extends BoltStateMachineState> i
         try
         {
             var statementProcessor = getStatementProcessor( message, context );
-            routingTableGetter.get( statementProcessor, message.getRequestContext(), message.getDatabaseName() )
+            routingTableGetter.get( statementProcessor, message.getRequestContext(), message.getBookmarks(), message.getDatabaseName() )
                               .thenAccept( routingTable -> context.connectionState().onMetadata( ROUTING_TABLE_KEY, routingTable ) )
                               .join();
             return this;

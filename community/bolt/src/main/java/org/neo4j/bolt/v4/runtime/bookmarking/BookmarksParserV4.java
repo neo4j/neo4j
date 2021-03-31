@@ -57,22 +57,28 @@ public final class BookmarksParserV4 implements BookmarksParser
     }
 
     @Override
+    public List<Bookmark> parseBookmarks( AnyValue anyValue ) throws BoltIOException
+    {
+        if ( anyValue == Values.NO_VALUE )
+        {
+            return List.of();
+        }
+        else if ( anyValue instanceof ListValue )
+        {
+            return parseBookmarks( (ListValue) anyValue );
+        }
+        else
+        {
+            throw newInvalidBookmarkError( String.format( "Supplied bookmarks '%s' is not a List.", anyValue ) );
+        }
+    }
+
+    @Override
     public List<Bookmark> parseBookmarks( MapValue metadata ) throws BoltIOException
     {
         var bookmarksObject = metadata.get( BOOKMARKS_KEY );
 
-        if ( bookmarksObject == Values.NO_VALUE )
-        {
-            return List.of();
-        }
-        else if ( bookmarksObject instanceof ListValue )
-        {
-            return parseBookmarks( (ListValue) bookmarksObject );
-        }
-        else
-        {
-            throw newInvalidBookmarkError( String.format( "Supplied bookmarks '%s' is not a List.", bookmarksObject ) );
-        }
+        return parseBookmarks( bookmarksObject );
     }
 
     private List<Bookmark> parseBookmarks( ListValue bookmarks ) throws BookmarkParsingException

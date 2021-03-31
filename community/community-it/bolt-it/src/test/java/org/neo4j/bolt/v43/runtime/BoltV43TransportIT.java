@@ -57,7 +57,6 @@ import org.neo4j.bolt.v43.messaging.request.RouteMessage;
 import org.neo4j.configuration.Config;
 import org.neo4j.fabric.FabricDatabaseManager;
 import org.neo4j.internal.helpers.HostnamePort;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -133,7 +132,34 @@ public class BoltV43TransportIT
 
         negotiateBoltV43();
 
-        connection.send( util.chunk( new RouteMessage( new MapValueBuilder().build(), null ) ) );
+        connection.send( util.chunk( new RouteMessage( new MapValueBuilder().build(),
+                                                       List.of(), null ) ) );
+
+        assertThat( connection ).satisfies( util.eventuallyReceives(
+                msgSuccess( metadata ->
+                            {
+                                assertThat( metadata.containsKey( "rt" ) ).isTrue();
+                                assertThat( metadata.get( "rt" ) )
+                                        .isInstanceOf( Map.class )
+                                        .satisfies( rt -> assertRoutingTableHasCorrectShape( (Map<?,?>) rt ) );
+                            } )
+        ) );
+    }
+
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "argumentsProvider" )
+    public void shouldReturnTheRoutingTableInTheSuccessMessageWhenItReceivesTheRouteMessageWithBookmark( Class<? extends TransportConnection> connectionClass )
+            throws Exception
+    {
+        init( connectionClass );
+
+        negotiateBoltV43();
+
+        var lastClosedTransactionId = getLastClosedTransactionId();
+        var routeBookmark = new BookmarkWithDatabaseId( lastClosedTransactionId, getDatabaseId() );
+
+        connection.send( util.chunk( new RouteMessage( new MapValueBuilder().build(),
+                                                       List.of( routeBookmark ), null ) ) );
 
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess( metadata ->
@@ -156,7 +182,7 @@ public class BoltV43TransportIT
         negotiateBoltV43();
 
         connection.send( util.chunk( new RouteMessage(
-                new MapValueBuilder().build(), "DOESNT_EXIST!" ) ) );
+                new MapValueBuilder().build(), List.of(), "DOESNT_EXIST!" ) ) );
 
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgFailure()
@@ -165,7 +191,7 @@ public class BoltV43TransportIT
         connection.send( util.chunk( ResetMessage.INSTANCE ) );
         assertThat( connection ).satisfies( util.eventuallyReceives( msgSuccess() ) );
 
-        connection.send( util.chunk( new RouteMessage( new MapValueBuilder().build(), null ) ) );
+        connection.send( util.chunk( new RouteMessage( new MapValueBuilder().build(), List.of(), null ) ) );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess( metadata ->
                             {

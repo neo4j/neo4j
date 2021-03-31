@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v43.messaging;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -161,7 +162,7 @@ public class BoltV43Messages
 
     public static RequestMessage route()
     {
-        return new RouteMessage( new MapValueBuilder().build(), null );
+        return new RouteMessage( new MapValueBuilder().build(), List.of(), null );
     }
 
     public static RequestMessage Interrupted()

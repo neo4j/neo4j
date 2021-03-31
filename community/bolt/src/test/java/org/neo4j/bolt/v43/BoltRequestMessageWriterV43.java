@@ -21,6 +21,7 @@ package org.neo4j.bolt.v43;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.stream.Collectors;
 
 import org.neo4j.bolt.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.messaging.RequestMessage;
@@ -28,6 +29,7 @@ import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.v4.BoltRequestMessageWriterV4;
 import org.neo4j.bolt.v43.messaging.request.RouteMessage;
 
+import static org.neo4j.kernel.impl.util.ValueUtils.asListValue;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
@@ -60,6 +62,7 @@ public class BoltRequestMessageWriterV43 extends BoltRequestMessageWriterV4
         {
             packer.packStructHeader( 0, RouteMessage.SIGNATURE );
             packer.pack( message.getRequestContext() );
+            packer.pack( asListValue( message.getBookmarks().stream().map( Object::toString ).collect( Collectors.toList() ) ) );
             if ( message.getDatabaseName() != null )
             {
                 packer.pack( message.getDatabaseName() );

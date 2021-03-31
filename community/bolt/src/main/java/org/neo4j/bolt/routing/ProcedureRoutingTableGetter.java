@@ -28,6 +28,7 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.bolt.messaging.ResultConsumer;
 import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.bolt.runtime.BoltResult;
+import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.values.AnyValue;
@@ -45,7 +46,7 @@ public class ProcedureRoutingTableGetter implements RoutingTableGetter
     private static final String DATABASE_NAME_PARAM = "databaseName";
 
     @Override
-    public CompletableFuture<MapValue> get( StatementProcessor statementProcessor, MapValue routingContext, String databaseName )
+    public CompletableFuture<MapValue> get( StatementProcessor statementProcessor, MapValue routingContext, List<Bookmark> bookmarks, String databaseName )
     {
         var params = getParams( routingContext, databaseName );
 
@@ -54,7 +55,7 @@ public class ProcedureRoutingTableGetter implements RoutingTableGetter
         try
         {
             StatementMetadata statementMetadata =
-                    statementProcessor.run( GET_ROUTING_TABLE_STATEMENT, params, List.of(), null, AccessMode.READ, Map.of() );
+                    statementProcessor.run( GET_ROUTING_TABLE_STATEMENT, params, bookmarks, null, AccessMode.READ, Map.of() );
 
             statementProcessor.streamResult( statementMetadata.queryId(), new RoutingTableConsumer( future ) );
         }
