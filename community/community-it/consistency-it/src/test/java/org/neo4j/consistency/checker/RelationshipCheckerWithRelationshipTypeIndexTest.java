@@ -63,7 +63,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 
 @ExtendWith( RandomExtension.class )
-class RelationshipCheckerWithRelationshipTypeScanStoreTest extends CheckerTestBase
+class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
 {
     private int type;
     private int lowerType;
