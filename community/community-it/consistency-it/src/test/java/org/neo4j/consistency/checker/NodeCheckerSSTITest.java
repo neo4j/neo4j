@@ -19,8 +19,6 @@
  */
 package org.neo4j.consistency.checker;
 
-import java.io.IOException;
-
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -68,7 +66,8 @@ class NodeCheckerSSTITest extends NodeCheckerTest
         try
         {
             indexProxy = indexingService.getIndexProxy( nli );
-        } catch ( IndexNotFoundKernelException e )
+        }
+        catch ( IndexNotFoundKernelException e )
         {
             throw new RuntimeException( e );
         }

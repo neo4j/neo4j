@@ -86,7 +86,8 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase
         try
         {
             rtiProxy = indexingService.getIndexProxy( rtiDescriptor );
-        } catch ( IndexNotFoundKernelException e )
+        }
+        catch ( IndexNotFoundKernelException e )
         {
             throw new RuntimeException( e );
         }
