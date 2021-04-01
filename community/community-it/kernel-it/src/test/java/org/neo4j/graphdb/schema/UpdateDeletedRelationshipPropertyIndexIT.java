@@ -21,9 +21,20 @@
 package org.neo4j.graphdb.schema;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
+import org.neo4j.test.extension.ImpermanentDbmsExtension;
 
+@ImpermanentDbmsExtension( configurationCallback = "configuration" )
 class UpdateDeletedRelationshipPropertyIndexIT extends UpdateDeletedRelationshipIndexBase
 {
+    @ExtensionCallback
+    void configuration( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
+    }
+
     @Override
     protected IndexDefinition indexCreate()
     {
