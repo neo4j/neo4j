@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.DynamicConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.LabelTokenConsistencyReport;
@@ -38,6 +39,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
@@ -45,6 +47,7 @@ import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -126,6 +129,27 @@ class SchemaCheckerTest extends CheckerTestBase
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( label1, propertyKey1 ) )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
+                    .materialise( schemaStore.nextId( cursorTracer ) );
+            schemaStorage.writeSchemaRule( index, cursorTracer, INSTANCE );
+        }
+
+        // when
+        check();
+
+        // then
+        expect( SchemaConsistencyReport.class, report -> report.schemaRuleNotOnline( any() ) );
+    }
+
+    @Test
+    void shouldReportSchemaRuleForTokenIndexNotOnline() throws Exception
+    {
+        // given
+        try ( AutoCloseable ignored = tx() )
+        {
+            var cursorTracer = PageCursorTracer.NULL;
+            IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptor.forAllEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR )
+                    .withName( NAME )
+                    .withIndexType( IndexType.LOOKUP )
                     .materialise( schemaStore.nextId( cursorTracer ) );
             schemaStorage.writeSchemaRule( index, cursorTracer, INSTANCE );
         }
