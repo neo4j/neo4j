@@ -36,8 +36,8 @@ import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 class PopulatingIndexProxyTest
 {
     private final IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withName( "index" ).materialise( 13 );
-    private final IndexRepresentation indexRepresentation =
-            new ValueIndexRepresentation( index, mock( IndexStatisticsStore.class ), SchemaTestUtil.SIMPLE_NAME_LOOKUP );
+    private final IndexProxyStrategy indexProxyStrategy =
+            new ValueIndexProxyStrategy( index, mock( IndexStatisticsStore.class ), SchemaTestUtil.SIMPLE_NAME_LOOKUP );
     private final IndexPopulationJob indexPopulationJob = mock( IndexPopulationJob.class );
     private final IndexPopulation indexPopulation = mock( IndexPopulation.class );
     private PopulatingIndexProxy populatingIndexProxy;
@@ -45,7 +45,7 @@ class PopulatingIndexProxyTest
     @BeforeEach
     void setUp()
     {
-        populatingIndexProxy = new PopulatingIndexProxy( indexRepresentation, indexPopulationJob, indexPopulation );
+        populatingIndexProxy = new PopulatingIndexProxy( indexProxyStrategy, indexPopulationJob, indexPopulation );
     }
 
     @Test

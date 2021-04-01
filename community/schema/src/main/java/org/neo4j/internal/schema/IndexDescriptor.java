@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 
 import static java.util.Objects.requireNonNull;
@@ -40,6 +41,11 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
     public static final long INJECTED_NLI_ID = -2;
     public static final String NLI_GENERATED_NAME =
             "__org_neo4j_schema_index_label_scan_store_converted_to_token_index";
+    public static final IndexPrototype NLI_PROTOTYPE = IndexPrototype.forSchema( SchemaDescriptor.forAllEntityTokens( EntityType.NODE ),
+            new IndexProviderDescriptor( "token", "1.0" ) )
+                                                                     .withIndexType( IndexType.LOOKUP )
+                                                                     .withName( IndexDescriptor.NLI_GENERATED_NAME );
+    public static final IndexDescriptor INJECTED_NLI = NLI_PROTOTYPE.materialise( IndexDescriptor.INJECTED_NLI_ID );
 
     private final long id;
     private final String name;

@@ -634,34 +634,40 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      */
     public void createIndexes( boolean verifyBeforeFlipping, Subject subject, IndexDescriptor... rules )
     {
-        IndexProxy nli = indexMapRef.indexMapSnapshot().getIndexProxy( IndexDescriptor.INJECTED_NLI_ID );
-        IndexDescriptor[] newlyCreated = rules;
-        if ( nli != null )
-        {
-            List<IndexDescriptor> filteredRules = new ArrayList<>();
-            for ( IndexDescriptor rule : rules )
-            {
-                if ( rule.schema().isAnyTokenSchemaDescriptor() && rule.schema().entityType() == NODE )
-                {
-                    nli.changeIdentity( rule );
-
-                    indexMapRef.modify( indexMap -> {
-                        indexMap.putIndexProxy( nli );
-                        indexMap.removeIndexProxy( IndexDescriptor.INJECTED_NLI_ID );
-                        return indexMap;
-                    } );
-                }
-                else
-                {
-                    filteredRules.add( rule );
-                }
-            }
-            newlyCreated = filteredRules.toArray( new IndexDescriptor[]{} );
-        }
-
+        IndexDescriptor[] newlyCreated = filterOutAndHandleInjectedTokenIndex( rules );
         IndexPopulationStarter populationStarter = new IndexPopulationStarter( verifyBeforeFlipping, subject, newlyCreated );
         indexMapRef.modify( populationStarter );
         populationStarter.startPopulation();
+    }
+
+    private IndexDescriptor[] filterOutAndHandleInjectedTokenIndex( IndexDescriptor[] rules )
+    {
+        IndexProxy nli = indexMapRef.indexMapSnapshot().getIndexProxy( IndexDescriptor.INJECTED_NLI_ID );
+        if ( nli == null )
+        {
+            return rules;
+        }
+
+        List<IndexDescriptor> filteredRules = new ArrayList<>();
+        for ( IndexDescriptor rule : rules )
+        {
+            if ( rule.schema().isAnyTokenSchemaDescriptor() && rule.schema().entityType() == NODE )
+            {
+                nli.changeIdentity( rule );
+
+                indexMapRef.modify( indexMap ->
+                {
+                    indexMap.putIndexProxy( nli );
+                    indexMap.removeIndexProxy( IndexDescriptor.INJECTED_NLI_ID );
+                    return indexMap;
+                } );
+            }
+            else
+            {
+                filteredRules.add( rule );
+            }
+        }
+        return filteredRules.toArray( IndexDescriptor[]::new );
     }
 
     private void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<IndexDescriptor> indexUpdate,

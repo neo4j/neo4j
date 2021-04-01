@@ -47,7 +47,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.index_popula
 /**
  * A background job for initially populating one or more index over existing data in the database.
  * Use provided store view to scan store. Participating {@link IndexPopulator} are added with
- * {@link #addPopulator(IndexPopulator, IndexRepresentation, FlippableIndexProxy, FailedIndexProxyFactory)}
+ * {@link #addPopulator(IndexPopulator, IndexProxyStrategy, FlippableIndexProxy, FailedIndexProxyFactory)}
  * before {@link #run() running} this job.
  */
 public class IndexPopulationJob implements Runnable
@@ -68,7 +68,7 @@ public class IndexPopulationJob implements Runnable
     /**
      * A list of all indexes populated by this job.
      */
-    private final List<IndexRepresentation> populatedIndexes = new ArrayList<>();
+    private final List<IndexProxyStrategy> populatedIndexes = new ArrayList<>();
 
     private volatile StoreScan storeScan;
     private volatile boolean stopped;
@@ -98,16 +98,16 @@ public class IndexPopulationJob implements Runnable
      * Adds an {@link IndexPopulator} to be populated in this store scan. All participating populators must
      * be added before calling {@link #run()}.
      *  @param populator {@link IndexPopulator} to participate.
-     * @param indexRepresentation {@link IndexRepresentation} meta information about index.
+     * @param indexProxyStrategy {@link IndexProxyStrategy} meta information about index.
      * @param flipper {@link FlippableIndexProxy} to call after a successful population.
      * @param failedIndexProxyFactory {@link FailedIndexProxyFactory} to use after an unsuccessful population.
      */
-    MultipleIndexPopulator.IndexPopulation addPopulator( IndexPopulator populator, IndexRepresentation indexRepresentation,
+    MultipleIndexPopulator.IndexPopulation addPopulator( IndexPopulator populator, IndexProxyStrategy indexProxyStrategy,
             FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         assert storeScan == null : "Population have already started, too late to add populators at this point";
-        populatedIndexes.add( indexRepresentation );
-        return this.multiPopulator.addPopulator( populator, indexRepresentation, flipper, failedIndexProxyFactory );
+        populatedIndexes.add( indexProxyStrategy );
+        return this.multiPopulator.addPopulator( populator, indexProxyStrategy, flipper, failedIndexProxyFactory );
     }
 
     /**

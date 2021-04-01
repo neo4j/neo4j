@@ -29,13 +29,13 @@ import org.neo4j.kernel.api.index.IndexSample;
  * <p>
  * Also collecting statistics on token indexes is not needed and therefore not supported.
  */
-class TokenIndexRepresentation implements IndexRepresentation
+class TokenIndexProxyStrategy implements IndexProxyStrategy
 {
     private volatile IndexDescriptor descriptor;
     private final TokenNameLookup tokenNameLookup;
     private final boolean allowToChangeDescriptor;
 
-    TokenIndexRepresentation( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup, boolean allowToChangeDescriptor )
+    TokenIndexProxyStrategy( IndexDescriptor descriptor, TokenNameLookup tokenNameLookup, boolean allowToChangeDescriptor )
     {
         this.descriptor = descriptor;
         this.tokenNameLookup = tokenNameLookup;

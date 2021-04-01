@@ -1092,7 +1092,7 @@ class IndexingServiceTest
             IndexPopulationFailure indexFailure = IndexPopulationFailure.failure( expectedCause );
 
             flippableIndexProxy.flipTo(
-                    new FailedIndexProxy( new ValueIndexRepresentation( indexRule, mock( IndexStatisticsStore.class ), nameLookup ),
+                    new FailedIndexProxy( new ValueIndexProxyStrategy( indexRule, mock( IndexStatisticsStore.class ), nameLookup ),
                             mock( IndexPopulator.class ),
                             indexFailure,
                             internalLogProvider )

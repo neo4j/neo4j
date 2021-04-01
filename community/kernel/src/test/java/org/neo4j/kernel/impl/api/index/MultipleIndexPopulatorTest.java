@@ -642,8 +642,8 @@ class MultipleIndexPopulatorTest
     private IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, IndexDescriptor descriptor, IndexPopulator indexPopulator,
         FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        IndexRepresentation indexRepresentation = new ValueIndexRepresentation( descriptor, indexStatisticsStore, tokens );
-        return multipleIndexPopulator.addPopulator( indexPopulator, indexRepresentation, flippableIndexProxy, failedIndexProxyFactory );
+        IndexProxyStrategy indexProxyStrategy = new ValueIndexProxyStrategy( descriptor, indexStatisticsStore, tokens );
+        return multipleIndexPopulator.addPopulator( indexPopulator, indexProxyStrategy, flippableIndexProxy, failedIndexProxyFactory );
     }
 
     private IndexPopulation addPopulator( IndexPopulator indexPopulator, int id ) throws FlipFailedKernelException

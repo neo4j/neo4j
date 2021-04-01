@@ -38,17 +38,17 @@ import static org.neo4j.internal.helpers.collection.Iterators.emptyResourceItera
 
 public class FailedIndexProxy extends AbstractSwallowingIndexProxy
 {
-    private final IndexRepresentation indexRepresentation;
+    private final IndexProxyStrategy indexProxyStrategy;
     private final MinimalIndexAccessor minimalIndexAccessor;
     private final Log log;
 
-    FailedIndexProxy( IndexRepresentation indexRepresentation,
+    FailedIndexProxy( IndexProxyStrategy indexProxyStrategy,
             MinimalIndexAccessor minimalIndexAccessor,
             IndexPopulationFailure populationFailure,
             LogProvider logProvider )
     {
-        super( indexRepresentation, populationFailure );
-        this.indexRepresentation = indexRepresentation;
+        super( indexProxyStrategy, populationFailure );
+        this.indexProxyStrategy = indexProxyStrategy;
         this.minimalIndexAccessor = minimalIndexAccessor;
         this.log = logProvider.getLog( getClass() );
     }
@@ -62,14 +62,14 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     @Override
     public void changeIdentity( IndexDescriptor descriptor )
     {
-        indexRepresentation.changeIndexDescriptor( descriptor );
+        indexProxyStrategy.changeIndexDescriptor( descriptor );
     }
 
     @Override
     public void drop()
     {
-        indexRepresentation.removeStatisticsForIndex();
-        String message = "FailedIndexProxy#drop index on " + indexRepresentation.getIndexUserDescription() + " dropped due to:\n" +
+        indexProxyStrategy.removeStatisticsForIndex();
+        String message = "FailedIndexProxy#drop index on " + indexProxyStrategy.getIndexUserDescription() + " dropped due to:\n" +
                      getPopulationFailure().asString();
         log.info( message );
         minimalIndexAccessor.drop();
@@ -89,7 +89,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
 
     private IndexPopulationFailedKernelException failureCause()
     {
-        return getPopulationFailure().asIndexPopulationFailure( getDescriptor().schema(), indexRepresentation.getIndexUserDescription() );
+        return getPopulationFailure().asIndexPopulationFailure( getDescriptor().schema(), indexProxyStrategy.getIndexUserDescription() );
     }
 
     @Override

@@ -183,7 +183,7 @@ public class Operations implements Write, SchemaWrite
         this.memoryTracker = memoryTracker;
         additionLockVerification = config.get( additional_lock_verification );
         relationshipPropertyIndexesEnabled = config.get( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes );
-        usingTokenIndexes = config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes );
+        usingTokenIndexes = allStoreHolder.scanStoreAsTokenIndexEnabled();
     }
 
     public void initialize()

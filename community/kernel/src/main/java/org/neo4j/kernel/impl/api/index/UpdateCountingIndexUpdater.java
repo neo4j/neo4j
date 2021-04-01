@@ -25,13 +25,13 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 public class UpdateCountingIndexUpdater implements IndexUpdater
 {
-    private final IndexRepresentation indexRepresentation;
+    private final IndexProxyStrategy indexProxyStrategy;
     private final IndexUpdater delegate;
     private long updates;
 
-    public UpdateCountingIndexUpdater( IndexRepresentation indexRepresentation, IndexUpdater delegate )
+    public UpdateCountingIndexUpdater( IndexProxyStrategy indexProxyStrategy, IndexUpdater delegate )
     {
-        this.indexRepresentation = indexRepresentation;
+        this.indexProxyStrategy = indexProxyStrategy;
         this.delegate = delegate;
     }
 
@@ -46,6 +46,6 @@ public class UpdateCountingIndexUpdater implements IndexUpdater
     public void close() throws IndexEntryConflictException
     {
         delegate.close();
-        indexRepresentation.incrementUpdateStatisticsForIndex( updates );
+        indexProxyStrategy.incrementUpdateStatisticsForIndex( updates );
     }
 }

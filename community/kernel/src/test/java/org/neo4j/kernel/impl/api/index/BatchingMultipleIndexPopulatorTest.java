@@ -229,9 +229,9 @@ public class BatchingMultipleIndexPopulatorTest
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget( indexProxyFactory );
 
-        IndexRepresentation indexRepresentation = new ValueIndexRepresentation( descriptor, mock( IndexStatisticsStore.class ), tokens );
+        IndexProxyStrategy indexProxyStrategy = new ValueIndexProxyStrategy( descriptor, mock( IndexStatisticsStore.class ), tokens );
         batchingPopulator.addPopulator( populator,
-                indexRepresentation,
+                indexProxyStrategy,
                 flipper,
                 failedIndexProxyFactory );
 

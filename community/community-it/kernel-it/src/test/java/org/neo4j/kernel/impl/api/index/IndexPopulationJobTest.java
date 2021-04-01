@@ -870,8 +870,8 @@ class IndexPopulationJobTest
         IndexPopulationJob job =
                 new IndexPopulationJob( multiPopulator, NO_MONITOR, false, pageCacheTracer, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
         IndexDescriptor descriptor = prototype.withName( "index_" + indexId ).materialise( indexId );
-        IndexRepresentation indexRepresentation = new ValueIndexRepresentation( descriptor, indexStatisticsStore, tokens );
-        job.addPopulator( populator, indexRepresentation, flipper, failureDelegateFactory );
+        IndexProxyStrategy indexProxyStrategy = new ValueIndexProxyStrategy( descriptor, indexStatisticsStore, tokens );
+        job.addPopulator( populator, indexProxyStrategy, flipper, failureDelegateFactory );
         return job;
     }
 

@@ -26,15 +26,15 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactory
 {
-    private final IndexRepresentation indexRepresentation;
+    private final IndexProxyStrategy indexProxyStrategy;
     private final MinimalIndexAccessor minimalIndexAccessor;
     private final LogProvider logProvider;
 
-    FailedPopulatingIndexProxyFactory( IndexRepresentation indexRepresentation,
+    FailedPopulatingIndexProxyFactory( IndexProxyStrategy indexProxyStrategy,
             MinimalIndexAccessor minimalIndexAccessor,
             LogProvider logProvider )
     {
-        this.indexRepresentation = indexRepresentation;
+        this.indexProxyStrategy = indexProxyStrategy;
         this.minimalIndexAccessor = minimalIndexAccessor;
         this.logProvider = logProvider;
     }
@@ -42,6 +42,6 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
     @Override
     public IndexProxy create( Throwable failure )
     {
-        return new FailedIndexProxy( indexRepresentation, minimalIndexAccessor, failure( failure ), logProvider );
+        return new FailedIndexProxy( indexProxyStrategy, minimalIndexAccessor, failure( failure ), logProvider );
     }
 }

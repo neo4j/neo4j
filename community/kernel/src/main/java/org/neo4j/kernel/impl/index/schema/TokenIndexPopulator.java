@@ -187,9 +187,7 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
     @Override
     public IndexSample sample( PageCursorTracer cursorTracer )
     {
-        // Statistics for token indexes are not needed and therefore not supported
-        // A layer higher up is expected to disregard this sample.
-        return new IndexSample();
+        throw new UnsupportedOperationException( "Token indexes does not support index sampling" );
     }
 
     private void assertNotDropped()

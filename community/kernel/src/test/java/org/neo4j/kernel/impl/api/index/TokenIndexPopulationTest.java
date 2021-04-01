@@ -92,9 +92,8 @@ class TokenIndexPopulationTest
                                    .withIndexType( IndexType.LOOKUP )
                                    .materialise( 123 );
 
-        multipleIndexPopulator = new MultipleIndexPopulator( storeView, NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ),
-                mock( IndexStatisticsStore.class ), jobScheduler, new InMemoryTokens(), PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE, "", AUTH_DISABLED,
-                Config.defaults() );
+        multipleIndexPopulator = new MultipleIndexPopulator( storeView, NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), jobScheduler,
+                new InMemoryTokens(), PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE, "", AUTH_DISABLED, Config.defaults() );
     }
 
     @Test
@@ -215,10 +214,22 @@ class TokenIndexPopulationTest
 
     private void addIndexPopulator( IndexPopulator populator, IndexDescriptor descriptor )
     {
+        IndexProxyStrategy indexProxyStrategy;
+        if ( descriptor.getIndexType() == IndexType.LOOKUP )
+        {
+            indexProxyStrategy = new TokenIndexProxyStrategy( descriptor, new InMemoryTokens(), false );
+        }
+        else
+        {
+            indexProxyStrategy = new ValueIndexProxyStrategy( TestIndexDescriptorFactory.forLabel( 1, 1 ),
+                    mock( IndexStatisticsStore.class ),
+                    new InMemoryTokens() );
+        }
+
         multipleIndexPopulator.addPopulator( populator,
-                descriptor,
+                indexProxyStrategy,
                 mock( FlippableIndexProxy.class ),
-                mock( FailedIndexProxyFactory.class ), "testIndex" );
+                mock( FailedIndexProxyFactory.class ) );
     }
 
     private static class IndexEntryUpdateScan implements StoreScan

@@ -28,11 +28,10 @@ import org.neo4j.kernel.api.index.IndexSample;
  * main purpose being the ability to change an index descriptor.
  * A proxy can represent only one index, but there is a special case when
  * two different descriptors represent the same index at a different point in time.
- * So the only purpose of this abstraction is to support this special case.
  * <p>
  * This is also a link to index statistics.
  */
-interface IndexRepresentation
+interface IndexProxyStrategy
 {
     IndexDescriptor getIndexDescriptor();
 

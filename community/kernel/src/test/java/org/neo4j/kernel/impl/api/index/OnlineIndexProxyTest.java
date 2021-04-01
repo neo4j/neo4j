@@ -39,13 +39,13 @@ class OnlineIndexProxyTest
     private final IndexAccessor accessor = mock( IndexAccessor.class );
     private final IndexStoreView storeView = mock( IndexStoreView.class );
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
-    private final IndexRepresentation indexRepresentation = new ValueIndexRepresentation( descriptor, indexStatisticsStore, SchemaTestUtil.SIMPLE_NAME_LOOKUP );
+    private final IndexProxyStrategy indexProxyStrategy = new ValueIndexProxyStrategy( descriptor, indexStatisticsStore, SchemaTestUtil.SIMPLE_NAME_LOOKUP );
 
     @Test
     void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped()
     {
         // given
-        OnlineIndexProxy index = new OnlineIndexProxy( indexRepresentation, accessor, false );
+        OnlineIndexProxy index = new OnlineIndexProxy( indexProxyStrategy, accessor, false );
 
         // when
         index.drop();

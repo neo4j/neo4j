@@ -152,9 +152,9 @@ class IndexPopulationTest
         };
     }
 
-    private IndexRepresentation dummyIndex()
+    private IndexProxyStrategy dummyIndex()
     {
-        return new ValueIndexRepresentation( TestIndexDescriptorFactory.forLabel( 0, 0 ), indexStatisticsStore, tokens );
+        return new ValueIndexProxyStrategy( TestIndexDescriptorFactory.forLabel( 0, 0 ), indexStatisticsStore, tokens );
     }
 
     private IndexEntryUpdate<LabelSchemaDescriptor> someUpdate()

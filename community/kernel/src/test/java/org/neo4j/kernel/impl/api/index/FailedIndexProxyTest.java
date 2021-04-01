@@ -49,13 +49,13 @@ class FailedIndexProxyTest
     {
         // given
         String userDescription = "description";
-        IndexRepresentation indexRepresentation = new ValueIndexRepresentation(
+        IndexProxyStrategy indexProxyStrategy = new ValueIndexProxyStrategy(
                 forSchema( forLabel( 1, 2 ), IndexProviderDescriptor.UNDECIDED ).withName( userDescription ).materialise( 1 ),
                 indexStatisticsStore,
                 SchemaTestUtil.SIMPLE_NAME_LOOKUP
         );
         FailedIndexProxy index =
-                new FailedIndexProxy( indexRepresentation, minimalIndexAccessor, indexPopulationFailure, NullLogProvider.getInstance() );
+                new FailedIndexProxy( indexProxyStrategy, minimalIndexAccessor, indexPopulationFailure, NullLogProvider.getInstance() );
 
         // when
         index.drop();
@@ -73,12 +73,12 @@ class FailedIndexProxyTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
 
         // when
-        IndexRepresentation indexRepresentation = new ValueIndexRepresentation(
+        IndexProxyStrategy indexProxyStrategy = new ValueIndexProxyStrategy(
                 forSchema( forLabel( 0, 0 ), IndexProviderDescriptor.UNDECIDED ).withName( "foo" ).materialise( 1 ),
                 indexStatisticsStore,
                 SchemaTestUtil.SIMPLE_NAME_LOOKUP
         );
-        new FailedIndexProxy( indexRepresentation, mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ), logProvider ).drop();
+        new FailedIndexProxy( indexProxyStrategy, mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ), logProvider ).drop();
 
         // then
         assertThat( logProvider ).forClass( FailedIndexProxy.class ).forLevel( INFO )

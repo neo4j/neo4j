@@ -30,9 +30,9 @@ import org.neo4j.values.storable.Value;
 
 public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
 {
-    RecoveringIndexProxy( IndexRepresentation indexRepresentation )
+    RecoveringIndexProxy( IndexProxyStrategy indexProxyStrategy )
     {
-        super( indexRepresentation, null );
+        super( indexProxyStrategy, null );
     }
 
     @Override

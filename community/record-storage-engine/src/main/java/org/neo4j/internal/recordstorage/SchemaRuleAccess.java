@@ -45,7 +45,6 @@ public interface SchemaRuleAccess
         return new SchemaStorage( store, tokenHolders, versionRepository, tokenIndexFeatureOn );
     }
 
-    //TODO change me so that all places uses the correct version. what ever that may be :/
     static SchemaRuleAccess getSchemaRuleAccess( SchemaStore store, TokenHolders tokenHolders )
     {
         return new SchemaStorage( store, tokenHolders, () -> KernelVersion.LATEST, false );

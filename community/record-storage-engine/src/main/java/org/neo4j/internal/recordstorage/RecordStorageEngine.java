@@ -427,8 +427,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         var commands = new ArrayList<StorageCommand>();
         commands.add( new Command.MetaDataCommand( serialization, before, after ) );
 
-        //TODO change to the version for the drop this goes into
-        if ( usingTokenIndexes && currentVersion.isLessThan( KernelVersion.V4_3_D3 ) )
+        if ( usingTokenIndexes && currentVersion.isLessThan( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED ) )
         {
             commands.add( createSchemaUpgradeCommand( serialization ) );
         }

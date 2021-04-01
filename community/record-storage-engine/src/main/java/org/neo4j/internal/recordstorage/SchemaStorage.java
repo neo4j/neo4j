@@ -260,14 +260,11 @@ public class SchemaStorage implements SchemaRuleAccess, org.neo4j.kernel.impl.st
     {
         long startId = schemaStore.getNumberOfReservedLowIds();
         long endId = schemaStore.getHighId();
-        //TODO fix version check to correct version
         Stream<IndexDescriptor> nli = Stream.empty();
-        if ( tokenIndexFeatureOn && versionSupplier.kernelVersion().isLessThan( KernelVersion.V4_3_D3 ) )
+        if ( tokenIndexFeatureOn && versionSupplier.kernelVersion().isLessThan( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED )
+                && KernelVersion.LATEST.isAtLeast( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED ) )
         {
-            nli = Stream.of( IndexPrototype.forSchema( SchemaDescriptor.forAllEntityTokens( EntityType.NODE ), new IndexProviderDescriptor( "token", "1.0" ) )
-                            .withIndexType( IndexType.LOOKUP )
-                            .withName( IndexDescriptor.NLI_GENERATED_NAME )
-                            .materialise( IndexDescriptor.INJECTED_NLI_ID ) );
+            nli = Stream.of( IndexDescriptor.INJECTED_NLI );
         }
 
         return Stream.concat( LongStream.range( startId, endId )

@@ -40,7 +40,7 @@ import org.neo4j.values.storable.Value;
 
 public class OnlineIndexProxy implements IndexProxy
 {
-    private final IndexRepresentation indexRepresentation;
+    private final IndexProxyStrategy indexProxyStrategy;
     final IndexAccessor accessor;
     private boolean started;
 
@@ -70,10 +70,10 @@ public class OnlineIndexProxy implements IndexProxy
     //   slightly more costly, but shouldn't make that big of a difference hopefully.
     private final boolean forcedIdempotentMode;
 
-    OnlineIndexProxy( IndexRepresentation indexRepresentation, IndexAccessor accessor, boolean forcedIdempotentMode )
+    OnlineIndexProxy( IndexProxyStrategy indexProxyStrategy, IndexAccessor accessor, boolean forcedIdempotentMode )
     {
         assert accessor != null;
-        this.indexRepresentation = indexRepresentation;
+        this.indexProxyStrategy = indexProxyStrategy;
         this.accessor = accessor;
         this.forcedIdempotentMode = forcedIdempotentMode;
     }
@@ -108,26 +108,26 @@ public class OnlineIndexProxy implements IndexProxy
 
     private IndexUpdater updateCountingUpdater( final IndexUpdater indexUpdater )
     {
-        return new UpdateCountingIndexUpdater( indexRepresentation, indexUpdater );
+        return new UpdateCountingIndexUpdater( indexProxyStrategy, indexUpdater );
     }
 
     @Override
     public void drop()
     {
-        indexRepresentation.removeStatisticsForIndex();
+        indexProxyStrategy.removeStatisticsForIndex();
         accessor.drop();
     }
 
     @Override
     public IndexDescriptor getDescriptor()
     {
-        return indexRepresentation.getIndexDescriptor();
+        return indexProxyStrategy.getIndexDescriptor();
     }
 
     @Override
     public void changeIdentity( IndexDescriptor descriptor )
     {
-        indexRepresentation.changeIndexDescriptor( descriptor );
+        indexProxyStrategy.changeIndexDescriptor( descriptor );
     }
 
     @Override
@@ -217,7 +217,7 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + indexRepresentation.getIndexDescriptor() + "]";
+        return getClass().getSimpleName() + "[accessor:" + accessor + ", descriptor:" + indexProxyStrategy.getIndexDescriptor() + "]";
     }
 
     @Override
