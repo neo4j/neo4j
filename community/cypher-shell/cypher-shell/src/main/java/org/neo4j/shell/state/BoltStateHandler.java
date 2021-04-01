@@ -162,9 +162,16 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         {
             throw new CommandException( "There is no open transaction to commit" );
         }
-        tx.commit();
-        tx.close();
-        tx = null;
+
+        try
+        {
+            tx.commit();
+            tx.close();
+        }
+        finally
+        {
+            tx = null;
+        }
     }
 
     @Override
@@ -178,9 +185,16 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         {
             throw new CommandException( "There is no open transaction to rollback" );
         }
-        tx.rollback();
-        tx.close();
-        tx = null;
+
+        try
+        {
+            tx.rollback();
+            tx.close();
+        }
+        finally
+        {
+            tx = null;
+        }
     }
 
     /**
