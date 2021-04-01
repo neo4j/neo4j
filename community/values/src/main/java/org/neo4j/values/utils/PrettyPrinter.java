@@ -57,6 +57,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     private final String quoteMark;
     private final StringBuilder builder;
     private final EntityMode entityMode;
+    private final Counter counter;
 
     public PrettyPrinter()
     {
@@ -65,15 +66,21 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
 
     public PrettyPrinter( EntityMode entityMode )
     {
-        this( "\"", entityMode );
+        this( "\"", entityMode, Integer.MAX_VALUE );
     }
 
     public PrettyPrinter( String quoteMark, EntityMode entityMode )
     {
+        this( quoteMark, entityMode, Integer.MAX_VALUE );
+    }
+
+    public PrettyPrinter( String quoteMark, EntityMode entityMode, int maxLength )
+    {
         this.quoteMark = quoteMark;
         this.entityMode = entityMode;
+        this.counter = new Counter( maxLength );
         builder = new StringBuilder( 64 );
-        stack.push( new ValueWriter( builder, quoteMark ) );
+        stack.push( new ValueWriter( builder, quoteMark, counter ) );
     }
 
     @Override
@@ -85,18 +92,22 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     @Override
     public void writeNodeReference( long nodeId )
     {
-        append( "(id=" ).append( String.valueOf( nodeId ) ).append( ")" );
+        append( "(id=" );
+        append( String.valueOf( nodeId ) );
+        append( ")" );
     }
 
     @Override
     public void writeNode( long nodeId, TextArray labels, MapValue properties )
     {
-        append( "(id=" ).append( String.valueOf( nodeId ) );
+        append( "(id=" );
+        append( String.valueOf( nodeId ) );
         String sep = " ";
         for ( int i = 0; i < labels.length(); i++ )
         {
             append( sep );
-            append( ":" ).append( labels.stringValue( i ) );
+            append( ":" );
+            append( labels.stringValue( i ) );
             sep = "";
         }
         if ( properties.size() > 0 )
@@ -111,13 +122,18 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     @Override
     public void writeRelationshipReference( long relId )
     {
-        append( "-[id=" ).append( String.valueOf( relId ) ).append( "]-" );
+        append( "-[id=" );
+        append( String.valueOf( relId ) );
+        append( "]-" );
     }
 
     @Override
     public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
     {
-        append( "-[id=" ).append( String.valueOf( relId ) ).append( " :" ).append( type.stringValue() );
+        append( "-[id=" );
+        append( String.valueOf( relId ) );
+        append( " :" );
+        append( type.stringValue() );
         if ( properties.size() > 0 )
         {
             append( " " );
@@ -129,7 +145,9 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     @Override
     public void beginMap( int size )
     {
-        stack.push( new MapWriter( builder, quoteMark ) );
+        assert !stack.isEmpty();
+        stack.peek().nest();
+        stack.push( new MapWriter( builder, quoteMark, counter ) );
     }
 
     @Override
@@ -146,7 +164,9 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     @Override
     public void beginList( int size )
     {
-        stack.push( new ListWriter( builder, quoteMark ) );
+        assert !stack.isEmpty();
+        stack.peek().nest();
+        stack.push( new ListWriter( builder, quoteMark, counter ) );
     }
 
     @Override
@@ -307,7 +327,8 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     @Override
     public void beginArray( int size, ArrayType arrayType )
     {
-        stack.push( new ListWriter( builder, quoteMark ) );
+        stack.peek().nest();
+        stack.push( new ListWriter( builder, quoteMark, counter ) );
     }
 
     @Override
@@ -345,49 +366,58 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         target.append( builder );
     }
 
-    private Writer append( String value )
+    private void append( String value )
     {
+        if ( counter.isDone() )
+        {
+            return;
+        }
         assert !stack.isEmpty();
-        Writer head = stack.peek();
-        head.append( value );
-        return head;
+        stack.peek().append( value );
     }
 
     private void appendQuoted( String value )
     {
+        if ( counter.isDone() )
+        {
+            return;
+        }
         assert !stack.isEmpty();
-        Writer head = stack.peek();
-        head.appendQuoted( value );
+        stack.peek().appendQuoted( value );
     }
 
     private interface Writer
     {
-        Writer append( String value );
+        void append( String value );
 
         void appendQuoted( String value );
 
         void next();
 
         void done();
+
+        void nest();
     }
 
     private abstract static class BaseWriter implements Writer
     {
         protected final StringBuilder builder;
+        protected Counter counter;
         private final String quoteMark;
 
-        protected BaseWriter( StringBuilder builder, String quoteMark )
+        protected BaseWriter( StringBuilder builder, String quoteMark, Counter counter )
         {
             this.builder = builder;
             this.quoteMark = quoteMark;
+            this.counter = counter;
         }
 
         @Override
         public void appendQuoted( String value )
         {
-            builder.append( quoteMark );
+            write( quoteMark );
             this.append( value );
-            builder.append( quoteMark );
+            write( quoteMark );
         }
 
         @Override
@@ -399,20 +429,36 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         public void done()
         {
         }
+
+        @Override
+        public void nest()
+        {
+        }
+
+        protected void write( String value )
+        {
+            int remaining = counter.remaining();
+            if ( remaining <= 0 )
+            {
+                return;
+            }
+            int charsToWrite = Math.min( remaining, value.length() );
+            builder.append( value.subSequence( 0, charsToWrite ) );
+            counter.decrement( charsToWrite );
+        }
     }
 
     private static class ValueWriter extends BaseWriter
     {
-        private ValueWriter( StringBuilder builder, String quoteMark )
+        private ValueWriter( StringBuilder builder, String quoteMark, Counter counter )
         {
-            super( builder, quoteMark );
+            super( builder, quoteMark, counter );
         }
 
         @Override
-        public Writer append( String value )
+        public void append( String value )
         {
-            builder.append( value );
-            return this;
+            write( value );
         }
     }
 
@@ -421,26 +467,27 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         private boolean writeKey = true;
         private String sep = "";
 
-        MapWriter( StringBuilder builder, String quoteMark )
+        MapWriter( StringBuilder builder, String quoteMark, Counter counter )
         {
-            super( builder, quoteMark );
-            builder.append( '{' );
+            super( builder, quoteMark, counter );
+            write( "{" );
         }
 
         @Override
-        public Writer append( String value )
+        public void append( String value )
         {
             if ( writeKey )
             {
-                builder.append( sep ).append( value ).append( ": " );
+                write( sep );
+                write( value );
+                write( ": " );
             }
             else
             {
-                builder.append( value );
+                write( value );
             }
             writeKey = !writeKey;
             sep = ", ";
-            return this;
         }
 
         @Override
@@ -465,7 +512,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         @Override
         public void done()
         {
-            builder.append( '}' );
+            write( "}" );
         }
     }
 
@@ -473,31 +520,65 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     {
         private String sep = "";
 
-        ListWriter( StringBuilder builder, String quoteMark )
+        ListWriter( StringBuilder builder, String quoteMark, Counter counter )
         {
-            super( builder, quoteMark );
-            builder.append( '[' );
+            super( builder, quoteMark, counter );
+            write( "[" );
         }
 
         @Override
-        public Writer append( String value )
+        public void append( String value )
         {
-            builder.append( sep ).append( value );
+            write( sep );
+            write( value );
             sep = ", ";
-            return this;
         }
 
         @Override
         public void appendQuoted( String value )
         {
-            builder.append( sep ).append( quoteMark ).append( value ).append( quoteMark );
+            write( sep );
+            write( quoteMark );
+            write( value );
+            write( quoteMark );
             sep = ", ";
         }
 
         @Override
         public void done()
         {
-            builder.append( ']' );
+            write( "]" );
+        }
+
+        @Override
+        public void nest()
+        {
+            write( sep );
+        }
+    }
+
+    private static final class Counter
+    {
+        private int count;
+
+        Counter( int count )
+        {
+            this.count = count;
+        }
+
+        void decrement( int n )
+        {
+            count -= n;
+        }
+
+        int remaining()
+        {
+            return count;
+        }
+
+        public boolean isDone()
+        {
+            return count <= 0;
         }
     }
 }

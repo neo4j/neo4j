@@ -22,6 +22,8 @@ package org.neo4j.values.utils;
 import org.junit.jupiter.api.Test;
 
 import java.time.ZoneOffset;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -261,17 +263,73 @@ class PrettyPrinterTest
     }
 
     @Test
+    void shouldHandleNestedMaps()
+    {
+        // Given
+        PrettyPrinter printer = new PrettyPrinter();
+        MapValue mapValue = props( "k1", intValue( 42 ), "k2", props( "k3", intValue( 1337 ) ) );
+
+        // When
+        mapValue.writeTo( printer );
+
+        // Then
+        assertThat( printer.value() ).isEqualTo( "{k1: 42, k2: {k3: 1337}}" );
+    }
+
+    @Test
     void shouldHandleLists()
     {
         // Given
         PrettyPrinter printer = new PrettyPrinter();
-        ListValue list = VirtualValues.list( stringValue( "foo" ), byteValue( (byte) 42 ) );
+        ListValue list = list( stringValue( "foo" ), byteValue( (byte) 42 ) );
 
         // When
         list.writeTo( printer );
 
         // Then
         assertThat( printer.value() ).isEqualTo( "[\"foo\", 42]" );
+    }
+
+    @Test
+    void shouldHandleNestedLists()
+    {
+        // Given
+        PrettyPrinter printer = new PrettyPrinter();
+        ListValue list = list( intValue(1), list(intValue( 2 ), intValue( 3 ) ), intValue( 4 ) );
+
+        // When
+        list.writeTo( printer );
+
+        // Then
+        assertThat( printer.value() ).isEqualTo( "[1, [2, 3], 4]" );
+    }
+
+    @Test
+    void shouldHandleListsWithListsAndMaps()
+    {
+        // Given
+        PrettyPrinter printer = new PrettyPrinter();
+        ListValue list = list( intValue(1), list(intValue( 2 ), props( "k", intValue( 3 ) )) );
+
+        // When
+        list.writeTo( printer );
+
+        // Then
+        assertThat( printer.value() ).isEqualTo( "[1, [2, {k: 3}]]" );
+    }
+
+    @Test
+    void shouldHandleListsWithListsAndMaps1()
+    {
+        // Given
+        PrettyPrinter printer = new PrettyPrinter();
+        ListValue list = list( intValue(1), props( "k", intValue( 3 ) ));
+
+        // When
+        list.writeTo( printer );
+
+        // Then
+        assertThat( printer.value() ).isEqualTo( "[1, {k: 3}]" );
     }
 
     @Test
@@ -433,6 +491,29 @@ class PrettyPrinterTest
         datetime.writeTo( printer );
 
         assertEquals( "{datetime: \"1988-04-19T10:12:59.112233445+03:15\"}", printer.value() );
+    }
+
+    @Test
+    void shouldLimitTheNumberOfCharacters()
+    {
+        // Given
+        Map<AnyValue, String> toTest = Map.of(
+                stringValue( "This is a long string" ), "\"This",
+                props( "k", intValue( 1337 ) ), "{k: 133",
+                list( intValue( 1 ), intValue( 2 ), stringValue( "3" ), intValue( 4 ) ), "[1, 2, \"3\",",
+                list( intValue( 1 ),
+                      list( intValue( 1 ), props( "k", intValue( 42 ))),
+                      props("foo", props("bar", intValue( 32 ))) ), "[1, [1, {k: 42}], {foo: {bar: 3"
+        );
+
+        for ( Entry<AnyValue,String> entry : toTest.entrySet() )
+        {
+            var given = entry.getKey();
+            var expected = entry.getValue();
+            PrettyPrinter printer = new PrettyPrinter( "\"", FULL, expected.length() );
+            given.writeTo( printer );
+            assertThat( printer.value() ).isEqualTo( expected );
+        }
     }
 
     private MapValue props( Object... keyValue )
