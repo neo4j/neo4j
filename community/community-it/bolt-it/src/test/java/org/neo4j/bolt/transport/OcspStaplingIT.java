@@ -73,7 +73,7 @@ import static org.neo4j.configuration.ssl.SslPolicyScope.BOLT;
 
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
-public class OcspStaplingIT
+class OcspStaplingIT
 {
     private static Path endUserKeyFile;
     private static Path endUserCertFile;
@@ -87,7 +87,7 @@ public class OcspStaplingIT
     private Neo4jWithSocket server;
 
     @BeforeEach
-    public void setup( TestInfo testInfo ) throws IOException
+    void setup( TestInfo testInfo ) throws IOException
     {
         server.setConfigure( settings ->
                              {
@@ -105,7 +105,7 @@ public class OcspStaplingIT
     }
 
     @Test
-    public void shouldReturnCertificatesWithStapledOcspResponses() throws Exception
+    void shouldReturnCertificatesWithStapledOcspResponses() throws Exception
     {
         // Given
         X509Certificate rootCertificate = loadCertificateFromDisk();
@@ -140,7 +140,7 @@ public class OcspStaplingIT
     }
 
     @BeforeAll
-    public static void setup() throws Exception
+    static void setup() throws Exception
     {
         int jettyServerPortNo = startOcspMock();
 

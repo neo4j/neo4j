@@ -23,6 +23,7 @@ import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.AbstractThrowableAssert;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.neo4j.logging.AssertableLogProvider.LogCall;
 
@@ -120,6 +121,17 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider>
         return this;
     }
 
+    public LogAssert containsMessageWithArgumentsContaining( String message, Object... arguments )
+    {
+        isNotNull();
+        if ( !haveMessageWithArgumentsContaining( message, arguments ) )
+        {
+            failWithMessage( "Expected log to contain messages: `%s` with arguments containing: `%s`. " +
+                    "But no matches found in:%n%s", message, Arrays.toString( arguments ), actual.serialize() );
+        }
+        return this;
+    }
+
     public LogAssert doesNotContainMessageWithArguments( String message, Object... arguments )
     {
         isNotNull();
@@ -194,7 +206,15 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider>
     {
         var logCalls = actual.getLogCalls();
         return logCalls.stream().anyMatch( call -> matchedLogger( call )
-                && matchedLevel( call ) && Arrays.equals( call.getArguments(), arguments ) &&
+                && matchedLevel( call ) && matchedArguments( call, arguments ) &&
+                matchedMessage( message, call ) );
+    }
+
+    private boolean haveMessageWithArgumentsContaining( String message, Object... arguments )
+    {
+        var logCalls = actual.getLogCalls();
+        return logCalls.stream().anyMatch( call -> matchedLogger( call )
+                && matchedLevel( call ) && matchedArgumentsContains( call, arguments ) &&
                 matchedMessage( message, call ) );
     }
 
@@ -212,6 +232,24 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider>
         return logCalls.stream().filter( call -> matchedLogger( call ) &&
                 matchedLevel( call ) &&
                 matchedMessage( message, call ) ).count();
+    }
+
+    private static boolean matchedArgumentsContains( LogCall call, Object[] arguments )
+    {
+        Object[] callArguments = call.getArguments();
+        for ( int i = 0; i < arguments.length; i++ )
+        {
+            if ( !Objects.toString( callArguments[i] ).contains( Objects.toString( arguments[i] ) ) )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean matchedArguments( LogCall call, Object[] arguments )
+    {
+        return Arrays.equals( call.getArguments(), arguments );
     }
 
     private static boolean matchedMessage( String message, LogCall call )
