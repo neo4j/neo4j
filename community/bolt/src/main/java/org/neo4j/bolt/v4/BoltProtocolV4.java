@@ -24,7 +24,6 @@ import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BookmarksParser;
@@ -35,6 +34,7 @@ import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
 import org.neo4j.bolt.v4.messaging.BoltRequestMessageReaderV4;
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Bolt protocol V4. It hosts all the components that are specific to BoltV4
@@ -44,15 +44,9 @@ public class BoltProtocolV4 extends AbstractBoltProtocol
     public static final BoltProtocolVersion VERSION = new BoltProtocolVersion( 4, 0 );
 
     public BoltProtocolV4( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
-            Config config, BookmarksParser bookmarksParser, LogService logging, TransportThrottleGroup throttleGroup )
+            Config config, BookmarksParser bookmarksParser, LogService logging, TransportThrottleGroup throttleGroup, MemoryTracker memoryTracker )
     {
-        super( channel, connectionFactory, stateMachineFactory, config, bookmarksParser, logging, throttleGroup );
-    }
-
-    @Override
-    protected Neo4jPack createPack()
-    {
-        return new Neo4jPackV2();
+        super( channel, connectionFactory, stateMachineFactory, config, bookmarksParser, logging, throttleGroup, memoryTracker );
     }
 
     @Override
@@ -63,16 +57,20 @@ public class BoltProtocolV4 extends AbstractBoltProtocol
 
     @Override
     protected BoltRequestMessageReader createMessageReader( BoltConnection connection,
-            BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging )
+                                                            BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging,
+                                                            MemoryTracker memoryTracker )
     {
+        memoryTracker.allocateHeap( BoltRequestMessageReaderV4.SHALLOW_SIZE );
         return new BoltRequestMessageReaderV4( connection, messageWriter, bookmarksParser, logging );
     }
 
     @Override
     protected BoltResponseMessageWriter createMessageWriter( Neo4jPack neo4jPack,
-            LogService logging )
+                                                             LogService logging, MemoryTracker memoryTracker )
     {
-        var output = createPackOutput();
+        var output = createPackOutput( memoryTracker );
+
+        memoryTracker.allocateHeap( BoltResponseMessageWriterV3.SHALLOW_SIZE );
         return new BoltResponseMessageWriterV3( neo4jPack, output, logging );
     }
 }

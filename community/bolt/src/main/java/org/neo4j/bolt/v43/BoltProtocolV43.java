@@ -26,7 +26,6 @@ import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.packstream.Neo4jPack;
-import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BookmarksParser;
@@ -37,6 +36,7 @@ import org.neo4j.bolt.v41.messaging.BoltResponseMessageWriterV41;
 import org.neo4j.bolt.v43.messaging.BoltRequestMessageReaderV43;
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.SystemNanoClock;
 
 /**
@@ -50,30 +50,26 @@ public class BoltProtocolV43 extends AbstractBoltProtocol
 
     public BoltProtocolV43( BoltChannel channel, BoltConnectionFactory connectionFactory,
                             BoltStateMachineFactory stateMachineFactory, Config config, BookmarksParser bookmarksParser, LogService logging,
-                            TransportThrottleGroup throttleGroup, SystemNanoClock clock, Duration keepAliveInterval )
+                            TransportThrottleGroup throttleGroup, SystemNanoClock clock, Duration keepAliveInterval, MemoryTracker memoryTracker )
     {
-        super( channel, connectionFactory, stateMachineFactory, config, bookmarksParser, logging, throttleGroup );
+        super( channel, connectionFactory, stateMachineFactory, config, bookmarksParser, logging, throttleGroup, memoryTracker );
         this.clock = clock;
         this.keepAliveInterval = keepAliveInterval;
     }
 
     @Override
-    protected Neo4jPack createPack()
-    {
-        return new Neo4jPackV2();
-    }
-
-    @Override
     protected BoltRequestMessageReader createMessageReader( BoltConnection connection, BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser,
-                                                            LogService logging )
+                                                            LogService logging, MemoryTracker memoryTracker )
     {
+        memoryTracker.allocateHeap( BoltRequestMessageReaderV43.SHALLOW_SIZE );
         return new BoltRequestMessageReaderV43( connection, messageWriter, bookmarksParser, logging );
     }
 
     @Override
-    protected BoltResponseMessageWriter createMessageWriter( Neo4jPack neo4jPack, LogService logging )
+    protected BoltResponseMessageWriter createMessageWriter( Neo4jPack neo4jPack, LogService logging, MemoryTracker memoryTracker )
     {
-        return new BoltResponseMessageWriterV41( neo4jPack, createPackOutput(), logging, clock, keepAliveInterval );
+        memoryTracker.allocateHeap( BoltResponseMessageWriterV41.SHALLOW_SIZE );
+        return new BoltResponseMessageWriterV41( neo4jPack, createPackOutput( memoryTracker ), logging, clock, keepAliveInterval );
     }
 
     @Override

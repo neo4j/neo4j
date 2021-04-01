@@ -26,9 +26,12 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.logging.Log;
+import org.neo4j.memory.HeapEstimator;
 
 public class HouseKeeper extends ChannelInboundHandlerAdapter
 {
+    public static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( HouseKeeper.class );
+
     private final BoltConnection connection;
     private final Log log;
     private boolean failed;

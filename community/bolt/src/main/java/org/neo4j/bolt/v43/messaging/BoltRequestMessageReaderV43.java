@@ -42,6 +42,7 @@ import org.neo4j.bolt.v41.messaging.decoder.HelloMessageDecoder;
 import org.neo4j.bolt.v43.messaging.decoder.RouteMessageDecoder;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.HeapEstimator;
 
 /**
  * BoltRequestMessageReaderV43 is responsible for decoding the requests done for the bolt server using the protocol 4.3
@@ -52,6 +53,8 @@ import org.neo4j.logging.internal.LogService;
  */
 public class BoltRequestMessageReaderV43 extends BoltRequestMessageReader
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOf( BoltRequestMessageReaderV43.class );
+
     public BoltRequestMessageReaderV43( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter, BookmarksParser bookmarksParser,
                                         LogService logService )
     {

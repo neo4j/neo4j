@@ -107,6 +107,7 @@ public abstract class AbstractTransactionStateMachineSPI implements TransactionS
     @Override
     public void transactionClosed()
     {
+        boltGraphDatabaseServiceSPI.freeTransaction();
         resourceReleaseManager.releaseStatementProcessor();
     }
 

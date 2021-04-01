@@ -49,7 +49,7 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachineFactory;
 import org.neo4j.bolt.runtime.statemachine.impl.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
-import org.neo4j.bolt.transport.BoltNettyMemoryPool;
+import org.neo4j.bolt.transport.BoltMemoryPool;
 import org.neo4j.bolt.transport.BoltProtocolFactory;
 import org.neo4j.bolt.transport.DefaultBoltProtocolFactory;
 import org.neo4j.bolt.transport.Netty4LoggerFactory;
@@ -109,6 +109,8 @@ public class BoltServer extends LifecycleAdapter
 
     private final LifeSupport life = new LifeSupport();
 
+    private BoltMemoryPool boltMemoryPool;
+
     public BoltServer( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI, JobScheduler jobScheduler,
                        ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker,
                        DatabaseIdRepository databaseIdRepository, Config config, SystemNanoClock clock,
@@ -138,6 +140,9 @@ public class BoltServer extends LifecycleAdapter
     public void init()
     {
         Log log = logService.getInternalLog( BoltServer.class );
+
+        boltMemoryPool = new BoltMemoryPool( memoryPools, NETTY_BUF_ALLOCATOR.metric() );
+        life.add( new BoltMemoryPoolLifeCycleAdapter( boltMemoryPool ) );
 
         InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logService.getInternalLogProvider() ) );
 
@@ -262,7 +267,7 @@ public class BoltServer extends LifecycleAdapter
         long maxMessageSize = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes );
 
         return new SocketTransport( BoltConnector.NAME, internalListenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
-                throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, bufferAllocator );
+                throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, bufferAllocator, boltMemoryPool );
     }
 
     private ProtocolInitializer createLoopbackProtocolInitializer( BoltProtocolFactory boltProtocolFactory, TransportThrottleGroup throttleGroup )
@@ -301,7 +306,8 @@ public class BoltServer extends LifecycleAdapter
             long maxMessageSize = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes );
 
             return new SocketTransport( BoltConnectorInternalSettings.LOOPBACK_NAME, loopbackListenAddress, null, false, logService.getInternalLogProvider(),
-                                        throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, BoltServer.NETTY_BUF_ALLOCATOR );
+                                        throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, BoltServer.NETTY_BUF_ALLOCATOR,
+                                        boltMemoryPool );
         }
         else
         {
@@ -352,7 +358,7 @@ public class BoltServer extends LifecycleAdapter
         long maxMessageSize = config.get( BoltConnectorInternalSettings.unsupported_bolt_unauth_connection_max_inbound_bytes );
 
         return new SocketTransport( BoltConnector.NAME, listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
-                                    throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, bufferAllocator );
+                                    throttleGroup, boltProtocolFactory, connectionTracker, channelTimeout, maxMessageSize, bufferAllocator, boltMemoryPool );
     }
 
     private ByteBufAllocator getBufferAllocator()
@@ -363,8 +369,6 @@ public class BoltServer extends LifecycleAdapter
         {
             return centralBufferMangerHolder.getNettyBufferAllocator();
         }
-
-        var boltMemoryPool = new BoltNettyMemoryPool( memoryPools, NETTY_BUF_ALLOCATOR.metric() );
 
         life.add( new BoltMemoryPoolLifeCycleAdapter( boltMemoryPool ) );
         return NETTY_BUF_ALLOCATOR;
@@ -423,9 +427,9 @@ public class BoltServer extends LifecycleAdapter
 
     private static class BoltMemoryPoolLifeCycleAdapter extends LifecycleAdapter
     {
-        private final BoltNettyMemoryPool pool;
+        private final BoltMemoryPool pool;
 
-        private BoltMemoryPoolLifeCycleAdapter( BoltNettyMemoryPool pool )
+        private BoltMemoryPoolLifeCycleAdapter( BoltMemoryPool pool )
         {
             this.pool = pool;
         }

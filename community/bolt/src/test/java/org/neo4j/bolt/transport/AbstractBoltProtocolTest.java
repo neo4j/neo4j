@@ -44,12 +44,16 @@ import org.neo4j.bolt.transport.pipeline.MessageDecoder;
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
 
@@ -69,10 +73,12 @@ class AbstractBoltProtocolTest
         // Given
         BoltChannel boltChannel = newTestBoltChannel( channel );
         BoltConnectionFactory connectionFactory = mock( BoltConnectionFactory.class );
+        var memoryTracker = mock( MemoryTracker.class );
+
         when( connectionFactory.newConnection( eq( boltChannel ), any(), any() ) ).thenReturn( mock( BoltConnection.class ) );
         BoltProtocol boltProtocol =
                 new TestAbstractBoltProtocol( boltChannel, connectionFactory, mock( BoltStateMachineFactory.class ), Config.defaults(),
-                        NullLogService.getInstance(), mock( TransportThrottleGroup.class ) );
+                        NullLogService.getInstance(), mock( TransportThrottleGroup.class ), memoryTracker );
 
         // When
         boltProtocol.install();
@@ -86,31 +92,52 @@ class AbstractBoltProtocolTest
         assertFalse( handlers.hasNext() );
     }
 
+    @Test
+    void shouldAllocateMemory()
+    {
+        var boltChannel = newTestBoltChannel( channel );
+        var connectionFactory = mock( BoltConnectionFactory.class );
+        var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
+
+        when( connectionFactory.newConnection( eq( boltChannel ), any(), any() ) )
+                .thenReturn( mock( BoltConnection.class ) );
+
+        var boltProtocol = new TestAbstractBoltProtocol( boltChannel, connectionFactory, mock( BoltStateMachineFactory.class ),
+                                                         Config.defaults(), NullLogService.getInstance(), mock( TransportThrottleGroup.class ), memoryTracker );
+
+        boltProtocol.install();
+
+        verify( memoryTracker )
+                .allocateHeap( ChunkDecoder.SHALLOW_SIZE + MessageAccumulator.SHALLOW_SIZE + MessageDecoder.SHALLOW_SIZE + HouseKeeper.SHALLOW_SIZE );
+        verifyNoMoreInteractions( memoryTracker );
+    }
+
     private static class TestAbstractBoltProtocol extends AbstractBoltProtocol
     {
         private static final BoltProtocolVersion DUMMY_VERSION = new BoltProtocolVersion( 0, 0 );
 
         TestAbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory, BoltStateMachineFactory stateMachineFactory,
-                                  Config config, LogService logging, TransportThrottleGroup throttleGroup )
+                                  Config config, LogService logging, TransportThrottleGroup throttleGroup, MemoryTracker memoryTracker )
         {
-            super( channel, connectionFactory, stateMachineFactory, config, logging, throttleGroup );
+            super( channel, connectionFactory, stateMachineFactory, config, logging, throttleGroup, memoryTracker );
         }
 
         @Override
-        protected Neo4jPack createPack()
+        public Neo4jPack createPack( MemoryTracker memoryTracker )
         {
             return mock( Neo4jPack.class );
         }
 
         @Override
         protected BoltRequestMessageReader createMessageReader( BoltConnection connection,
-                BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging )
+                                                                BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging,
+                                                                MemoryTracker memoryTracker )
         {
             return mock( BoltRequestMessageReader.class );
         }
 
         @Override
-        protected BoltResponseMessageWriter createMessageWriter( Neo4jPack neo4jPack, LogService logging )
+        protected BoltResponseMessageWriter createMessageWriter( Neo4jPack neo4jPack, LogService logging, MemoryTracker memoryTracker )
         {
             return mock( BoltResponseMessageWriter.class );
         }

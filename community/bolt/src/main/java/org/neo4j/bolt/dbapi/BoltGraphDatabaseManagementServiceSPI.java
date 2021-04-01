@@ -23,13 +23,14 @@ import java.util.Optional;
 
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.availability.UnavailableException;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * A service used for database look up. This is the main entry point of the bolt - DB facade.
  */
 public interface BoltGraphDatabaseManagementServiceSPI
 {
-    BoltGraphDatabaseServiceSPI database( String databaseName ) throws UnavailableException, DatabaseNotFoundException;
+    BoltGraphDatabaseServiceSPI database( String databaseName, MemoryTracker memoryTracker ) throws UnavailableException, DatabaseNotFoundException;
 
     /**
      * The state-carrying part of a bookmark consists of a long representing a transaction ID, if a transaction state cannot be represented as a single long,

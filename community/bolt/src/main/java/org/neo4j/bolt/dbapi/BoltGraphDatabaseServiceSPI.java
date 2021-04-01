@@ -42,4 +42,6 @@ public interface BoltGraphDatabaseServiceSPI
     boolean isPeriodicCommit( String query );
 
     NamedDatabaseId getNamedDatabaseId();
+
+    void freeTransaction();
 }

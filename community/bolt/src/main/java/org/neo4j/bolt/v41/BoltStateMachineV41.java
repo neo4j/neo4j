@@ -24,24 +24,34 @@ import java.time.Clock;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.impl.AbstractBoltStateMachine;
-import org.neo4j.bolt.v41.runtime.ConnectedState;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v4.runtime.AutoCommitState;
 import org.neo4j.bolt.v4.runtime.FailedState;
 import org.neo4j.bolt.v4.runtime.InTransactionState;
 import org.neo4j.bolt.v4.runtime.ReadyState;
+import org.neo4j.bolt.v41.runtime.ConnectedState;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
 
 public class BoltStateMachineV41 extends AbstractBoltStateMachine
 {
-    public BoltStateMachineV41( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock, DefaultDatabaseResolver defaultDatabaseResolver )
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltStateMachineV41.class );
+
+    public BoltStateMachineV41( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock, DefaultDatabaseResolver defaultDatabaseResolver,
+                                MemoryTracker memoryTracker )
     {
-        super( boltSPI, boltChannel, clock, defaultDatabaseResolver );
+        super( boltSPI, boltChannel, clock, defaultDatabaseResolver, memoryTracker );
     }
 
     @Override
-    protected States buildStates()
+    protected States buildStates( MemoryTracker memoryTracker )
     {
+        memoryTracker.allocateHeap(
+                ConnectedState.SHALLOW_SIZE + ReadyState.SHALLOW_SIZE
+                + AutoCommitState.SHALLOW_SIZE + InTransactionState.SHALLOW_SIZE
+                + FailedState.SHALLOW_SIZE + InterruptedState.SHALLOW_SIZE );
+
         ConnectedState connected = new ConnectedState(); //v4.1
         ReadyState ready = new ReadyState(); // v4
         AutoCommitState autoCommitState = new AutoCommitState(); // v4

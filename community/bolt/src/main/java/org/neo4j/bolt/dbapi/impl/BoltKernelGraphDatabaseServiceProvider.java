@@ -42,17 +42,23 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
 
 public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabaseServiceSPI
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltKernelGraphDatabaseServiceProvider.class );
+
     private final TransactionIdTracker transactionIdTracker;
     private final GraphDatabaseAPI databaseAPI;
     private final QueryExecutionEngine queryExecutionEngine;
     private final TransactionalContextFactory transactionalContextFactory;
     private final NamedDatabaseId namedDatabaseId;
     private final Duration perBookmarkTimeout;
+    private final MemoryTracker memoryTracker;
 
-    public BoltKernelGraphDatabaseServiceProvider( GraphDatabaseAPI databaseAPI, TransactionIdTracker transactionIdTracker, Duration perBookmarkTimeout )
+    public BoltKernelGraphDatabaseServiceProvider( GraphDatabaseAPI databaseAPI, TransactionIdTracker transactionIdTracker, Duration perBookmarkTimeout,
+                                                   MemoryTracker memoryTracker )
     {
         this.databaseAPI = databaseAPI;
         this.queryExecutionEngine = resolveDependency( databaseAPI, QueryExecutionEngine.class );
@@ -60,6 +66,7 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
         this.transactionalContextFactory = newTransactionalContextFactory( databaseAPI );
         this.namedDatabaseId = resolveDependency( databaseAPI, Database.class ).getNamedDatabaseId();
         this.perBookmarkTimeout = perBookmarkTimeout;
+        this.memoryTracker = memoryTracker.getScopedMemoryTracker();
     }
 
     private static <T> T resolveDependency( GraphDatabaseAPI databaseContext, Class<T> clazz )
@@ -96,9 +103,14 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
         KernelTransaction kernelTransaction = topLevelInternalTransaction.kernelTransaction();
         if ( KernelTransaction.Type.IMPLICIT == type )
         {
+            memoryTracker.allocateHeap( PeriodicBoltKernelTransaction.SHALLOW_SIZE );
+
             return new PeriodicBoltKernelTransaction( queryExecutionEngine, transactionalContextFactory,
                     topLevelInternalTransaction, this::bookmarkWithTxId );
         }
+
+        memoryTracker.allocateHeap( BoltKernelTransaction.SHALLOW_SIZE );
+
         return new BoltKernelTransaction( queryExecutionEngine, transactionalContextFactory, kernelTransaction, topLevelInternalTransaction,
                 this::bookmarkWithTxId );
     }
@@ -145,5 +157,11 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
             return namedDatabaseId;
         }
         return specifiedDatabaseId;
+    }
+
+    @Override
+    public void freeTransaction()
+    {
+        memoryTracker.reset();
     }
 }

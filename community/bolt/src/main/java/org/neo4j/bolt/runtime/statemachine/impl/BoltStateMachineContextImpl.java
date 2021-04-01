@@ -35,29 +35,34 @@ import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
 import static org.neo4j.bolt.runtime.statemachine.StatementProcessor.EMPTY;
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
 public class BoltStateMachineContextImpl implements StateMachineContext, StatementProcessorReleaseManager
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltStateMachineContextImpl.class );
+
     private final BoltStateMachine machine;
     private final BoltChannel boltChannel;
     private final BoltStateMachineSPI spi;
     private final MutableConnectionState connectionState;
     private final Clock clock;
     private final DefaultDatabaseResolver defaultDatabaseResolver;
+    private final MemoryTracker memoryTracker;
     private StatementProcessorProvider statementProcessorProvider;
 
     public BoltStateMachineContextImpl( BoltStateMachine machine, BoltChannel boltChannel, BoltStateMachineSPI spi, MutableConnectionState connectionState,
-                                        Clock clock, DefaultDatabaseResolver defaultDatabaseResolver )
+                                        Clock clock, DefaultDatabaseResolver defaultDatabaseResolver, MemoryTracker memoryTracker )
     {
         this.machine = machine;
         this.boltChannel = boltChannel;
         this.spi = spi;
         this.connectionState = connectionState;
         this.clock = clock;
+        this.memoryTracker = memoryTracker;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
     }
 
@@ -113,7 +118,7 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     public void initStatementProcessorProvider( AuthenticationResult authResult, RoutingContext routingContext )
     {
         TransactionStateMachineSPIProvider transactionSpiProvider = spi.transactionStateMachineSPIProvider();
-        setStatementProcessorProvider( new StatementProcessorProvider( authResult, transactionSpiProvider, clock, this, routingContext ) );
+        setStatementProcessorProvider( new StatementProcessorProvider( authResult, transactionSpiProvider, clock, this, routingContext, memoryTracker ) );
     }
 
     /**
@@ -145,6 +150,11 @@ public class BoltStateMachineContextImpl implements StateMachineContext, Stateme
     @Override
     public void releaseStatementProcessor()
     {
+        if ( connectionState.getStatementProcessor() != EMPTY )
+        {
+            statementProcessorProvider.releaseStatementProcessor();
+        }
+
         connectionState().clearStatementProcessor();
     }
 

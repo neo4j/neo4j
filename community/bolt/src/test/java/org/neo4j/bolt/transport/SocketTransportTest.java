@@ -32,9 +32,13 @@ import org.neo4j.bolt.transport.pipeline.AuthenticationTimeoutTracker;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.MemoryPool;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -67,7 +71,7 @@ class SocketTransportTest
 
         EmbeddedChannel channel = new EmbeddedChannel( socketTransport.channelInitializer() );
 
-        verify( throttleGroup ).install( channel );
+        verify( throttleGroup ).install( eq(channel), any(MemoryTracker.class) );
         verify( throttleGroup, never() ).uninstall( channel );
 
         channel.close();
@@ -102,6 +106,6 @@ class SocketTransportTest
         return new SocketTransport( "bolt", new InetSocketAddress( "localhost", 7687 ), null, false,
                                     NullLogProvider.getInstance(), throttleGroup,
                                     mock( BoltProtocolFactory.class ), connectionTracker, Duration.ZERO,
-                                    -1, PooledByteBufAllocator.DEFAULT );
+                                    -1, PooledByteBufAllocator.DEFAULT, mock( MemoryPool.class ) );
     }
 }

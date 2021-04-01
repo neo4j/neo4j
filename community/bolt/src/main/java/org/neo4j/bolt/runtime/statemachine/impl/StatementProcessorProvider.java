@@ -29,6 +29,7 @@ import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
+import org.neo4j.memory.MemoryTracker;
 
 public class StatementProcessorProvider
 {
@@ -37,20 +38,31 @@ public class StatementProcessorProvider
     private final TransactionStateMachineSPIProvider spiProvider;
     private final StatementProcessorReleaseManager resourceReleaseManger;
     private final RoutingContext routingContext;
+    private final MemoryTracker memoryTracker;
 
     public StatementProcessorProvider( AuthenticationResult authResult, TransactionStateMachineSPIProvider transactionSpiProvider, Clock clock,
-                                       StatementProcessorReleaseManager releaseManager, RoutingContext routingContext )
+                                       StatementProcessorReleaseManager releaseManager, RoutingContext routingContext, MemoryTracker memoryTracker )
     {
         this.authResult = authResult;
         this.spiProvider = transactionSpiProvider;
         this.clock = clock;
         this.resourceReleaseManger = releaseManager;
         this.routingContext = routingContext;
+        this.memoryTracker = memoryTracker;
     }
 
     public StatementProcessor getStatementProcessor( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException
     {
+        memoryTracker.allocateHeap( TransactionStateMachine.SHALLOW_SIZE );
+
         TransactionStateMachineSPI transactionSPI = spiProvider.getTransactionStateMachineSPI( databaseName, resourceReleaseManger );
         return new TransactionStateMachine( databaseName, transactionSPI, authResult, clock, routingContext );
+    }
+
+    public void releaseStatementProcessor()
+    {
+        memoryTracker.releaseHeap( TransactionStateMachine.SHALLOW_SIZE );
+
+        spiProvider.releaseTransactionStateMachineSPI();
     }
 }

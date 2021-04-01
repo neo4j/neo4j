@@ -52,6 +52,7 @@ import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.server.security.systemgraph.CommunityDefaultDatabaseResolver;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -80,10 +81,10 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         this.builderFactory = builderFactory;
     }
 
-    public BoltStateMachine newMachine( BoltProtocolVersion version, BoltChannel boltChannel )
+    public BoltStateMachine newMachine( BoltProtocolVersion version, BoltChannel boltChannel, MemoryTracker memoryTracker )
     {
         assertTestStarted();
-        BoltStateMachine machine = boltFactory.newStateMachine( version, boltChannel );
+        BoltStateMachine machine = boltFactory.newStateMachine( version, boltChannel, memoryTracker );
         runningMachines.add( machine );
         return machine;
     }

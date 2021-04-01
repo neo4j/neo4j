@@ -33,9 +33,11 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.MutableConnectionState;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -141,6 +143,6 @@ class BoltStateMachineContextImplTest
     {
         BoltChannel boltChannel = newTestBoltChannel( mock( Channel.class ) );
         return new BoltStateMachineContextImpl( machine, boltChannel, boltSPI, new MutableConnectionState(), Clock.systemUTC(),
-                mock( DefaultDatabaseResolver.class ) );
+                mock( DefaultDatabaseResolver.class ), mock( MemoryTracker.class, RETURNS_MOCKS ) );
     }
 }

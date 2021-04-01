@@ -25,6 +25,7 @@ import java.time.Clock;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Serves as an entry point for throttling of transport related resources. Currently only
@@ -53,9 +54,9 @@ public class TransportThrottleGroup
         return writeThrottle;
     }
 
-    public void install( Channel channel )
+    public void install( Channel channel, MemoryTracker memoryTracker )
     {
-        writeThrottle.install( channel );
+        writeThrottle.install( channel, memoryTracker );
     }
 
     public void uninstall( Channel channel )
@@ -80,7 +81,7 @@ public class TransportThrottleGroup
         private static final TransportThrottle INSTANCE = new NoOpTransportThrottle();
 
         @Override
-        public void install( Channel channel )
+        public void install( Channel channel, MemoryTracker memoryTracker )
         {
 
         }

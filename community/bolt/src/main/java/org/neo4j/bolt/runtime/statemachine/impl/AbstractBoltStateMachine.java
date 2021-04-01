@@ -43,6 +43,7 @@ import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * This state machine oversees the exchange of messages for the Bolt protocol.
@@ -69,16 +70,19 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
     private BoltStateMachineState state;
     private final BoltStateMachineState failedState;
 
-    public AbstractBoltStateMachine( BoltStateMachineSPI spi, BoltChannel boltChannel, Clock clock, DefaultDatabaseResolver defaultDatabaseResolver )
+    public AbstractBoltStateMachine( BoltStateMachineSPI spi, BoltChannel boltChannel, Clock clock, DefaultDatabaseResolver defaultDatabaseResolver,
+                                     MemoryTracker memoryTracker )
     {
+        memoryTracker.allocateHeap( BoltStateMachineContextImpl.SHALLOW_SIZE );
+
         this.id = boltChannel.id();
         this.boltChannel = boltChannel;
         this.spi = spi;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
         this.connectionState = new MutableConnectionState();
-        this.context = new BoltStateMachineContextImpl( this, boltChannel, spi, connectionState, clock, defaultDatabaseResolver );
+        this.context = new BoltStateMachineContextImpl( this, boltChannel, spi, connectionState, clock, defaultDatabaseResolver, memoryTracker );
 
-        States states = buildStates();
+        States states = buildStates( memoryTracker );
         this.state = states.initial;
         this.failedState = states.failed;
     }
@@ -349,7 +353,7 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
         }
     }
 
-    protected abstract States buildStates();
+    protected abstract States buildStates( MemoryTracker memoryTracker );
 
     public static class States
     {

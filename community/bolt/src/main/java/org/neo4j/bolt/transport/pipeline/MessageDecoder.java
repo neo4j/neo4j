@@ -29,11 +29,14 @@ import org.neo4j.bolt.packstream.UnpackerProvider;
 import org.neo4j.bolt.packstream.ByteBufInput;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.HeapEstimator;
 
 import static io.netty.buffer.ByteBufUtil.hexDump;
 
 public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf>
 {
+    public static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( MessageDecoder.class );
+
     private final ByteBufInput input;
     private final Neo4jPack.Unpacker unpacker;
     private final BoltRequestMessageReader reader;

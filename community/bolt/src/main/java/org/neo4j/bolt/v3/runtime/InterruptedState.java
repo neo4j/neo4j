@@ -25,6 +25,7 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.v3.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v3.messaging.request.ResetMessage;
+import org.neo4j.memory.HeapEstimator;
 
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -36,6 +37,8 @@ import static org.neo4j.util.Preconditions.checkState;
  */
 public class InterruptedState implements BoltStateMachineState
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( InterruptedState.class );
+
     private BoltStateMachineState readyState;
 
     @Override

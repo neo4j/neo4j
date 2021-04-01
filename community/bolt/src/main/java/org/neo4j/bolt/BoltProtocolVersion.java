@@ -21,8 +21,12 @@ package org.neo4j.bolt;
 
 import java.util.Objects;
 
+import org.neo4j.memory.HeapEstimator;
+
 public class BoltProtocolVersion
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltProtocolVersion.class );
+
     private int majorVersion;
     private int minorVersion;
 

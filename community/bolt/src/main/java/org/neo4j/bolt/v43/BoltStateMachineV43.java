@@ -32,21 +32,30 @@ import org.neo4j.bolt.v4.runtime.ReadyState;
 import org.neo4j.bolt.v41.runtime.ConnectedState;
 import org.neo4j.bolt.v43.runtime.RouteMessageHandleStateDecorator;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * BoltStateMachineV43 holds all the state transitions for the Bolt 4.3
  */
 public class BoltStateMachineV43 extends AbstractBoltStateMachine
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltStateMachineV43.class );
+
     public BoltStateMachineV43( BoltStateMachineSPI boltSPI, BoltChannel boltChannel, Clock clock,
-                               DefaultDatabaseResolver defaultDatabaseResolver )
+                                DefaultDatabaseResolver defaultDatabaseResolver, MemoryTracker memoryTracker )
     {
-        super( boltSPI, boltChannel, clock, defaultDatabaseResolver );
+        super( boltSPI, boltChannel, clock, defaultDatabaseResolver, memoryTracker );
     }
 
     @Override
-    protected States buildStates()
+    protected States buildStates( MemoryTracker memoryTracker )
     {
+        memoryTracker.allocateHeap(
+                ConnectedState.SHALLOW_SIZE + RouteMessageHandleStateDecorator.SHALLOW_SIZE + ReadyState.SHALLOW_SIZE
+                + AutoCommitState.SHALLOW_SIZE + InTransactionState.SHALLOW_SIZE
+                + FailedState.SHALLOW_SIZE + InterruptedState.SHALLOW_SIZE );
+
         var connected = new ConnectedState(); //v4.1
         var autoCommitState = new AutoCommitState(); // v4
         var inTransaction = new InTransactionState(); // v4

@@ -33,6 +33,7 @@ import java.util.Arrays;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.StructType;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
@@ -55,6 +56,8 @@ import static org.neo4j.values.storable.Values.pointValue;
 
 public class Neo4jPackV2 extends Neo4jPackV1
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( Neo4jPackV2.class );
+
     public static final long VERSION = 2;
 
     public static final byte POINT_2D = 'X';

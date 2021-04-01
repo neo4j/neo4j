@@ -24,11 +24,14 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.memory.HeapEstimator;
 
 import static java.lang.String.format;
 
 public class BytesAccumulator extends ChannelInboundHandlerAdapter
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BytesAccumulator.class );
+
     private final long limit;
     private long count;
 

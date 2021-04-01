@@ -40,15 +40,19 @@ import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.impl.TransactionStateMachine.StatementOutcome;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v3.runtime.ConnectedState;
+import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
 import org.neo4j.bolt.v4.messaging.BoltV4Messages;
+import org.neo4j.bolt.v4.runtime.AutoCommitState;
 import org.neo4j.bolt.v4.runtime.FailedState;
+import org.neo4j.bolt.v4.runtime.InTransactionState;
 import org.neo4j.bolt.v4.runtime.ReadyState;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -460,7 +464,8 @@ class BoltStateMachineV4Test
     {
         BoltStateMachineSPIImpl spi = mock( BoltStateMachineSPIImpl.class );
         BoltChannel boltChannel = mock( BoltChannel.class );
-        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class) );
+        var memoryTracker = mock( MemoryTracker.class );
+        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class), memoryTracker );
 
         machine.close();
 
@@ -472,7 +477,9 @@ class BoltStateMachineV4Test
     {
         BoltStateMachineSPIImpl spi = mock( BoltStateMachineSPIImpl.class );
         BoltChannel boltChannel = mock( BoltChannel.class );
-        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class) );
+        var memoryTracker = mock( MemoryTracker.class );
+
+        BoltStateMachine machine = new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class), memoryTracker );
         Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
 
         machine.markFailed( error );
@@ -687,6 +694,22 @@ class BoltStateMachineV4Test
         // ...successfully
         assertThat( recorder.nextResponse() ).satisfies( wasIgnored() );
         assertThat( recorder.nextResponse() ).satisfies( succeeded() );
+    }
+
+    @Test
+    void shouldAllocateMemoryForStates()
+    {
+        var spi = mock( BoltStateMachineSPIImpl.class );
+        var boltChannel = mock( BoltChannel.class );
+        var memoryTracker = mock( MemoryTracker.class );
+
+        // state allocation is a side effect of construction
+        new BoltStateMachineV4( spi, boltChannel, Clock.systemUTC(), mock( DefaultDatabaseResolver.class ), memoryTracker );
+
+        verify( memoryTracker ).allocateHeap(
+                ConnectedState.SHALLOW_SIZE + ReadyState.SHALLOW_SIZE
+                + AutoCommitState.SHALLOW_SIZE + InTransactionState.SHALLOW_SIZE
+                + FailedState.SHALLOW_SIZE + InterruptedState.SHALLOW_SIZE );
     }
 
     private static void testMarkFailedOnNextMessage( ThrowingBiConsumer<BoltStateMachine,BoltResponseHandler,BoltConnectionFatality> action ) throws Exception

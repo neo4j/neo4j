@@ -25,6 +25,7 @@ import org.neo4j.bolt.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.packstream.ChunkedOutput;
 import org.neo4j.bolt.packstream.Neo4jPack;
+import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
@@ -38,6 +39,7 @@ import org.neo4j.bolt.transport.pipeline.MessageDecoder;
 import org.neo4j.bolt.v3.runtime.bookmarking.BookmarksParserV3;
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * The base of building Bolt protocols.
@@ -48,20 +50,22 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
     private final Config config;
     private final LogService logging;
     private final TransportThrottleGroup throttleGroup;
+    private final MemoryTracker memoryTracker;
 
     private final BoltStateMachineFactory stateMachineFactory;
     private final BoltConnectionFactory connectionFactory;
     private final BookmarksParser bookmarksParser;
 
     public AbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory,
-            BoltStateMachineFactory stateMachineFactory, Config config, LogService logging, TransportThrottleGroup throttleGroup )
+                                 BoltStateMachineFactory stateMachineFactory, Config config, LogService logging, TransportThrottleGroup throttleGroup,
+                                 MemoryTracker memoryTracker )
     {
-        this( channel, connectionFactory, stateMachineFactory, config, BookmarksParserV3.INSTANCE, logging, throttleGroup );
+        this( channel, connectionFactory, stateMachineFactory, config, BookmarksParserV3.INSTANCE, logging, throttleGroup, memoryTracker );
     }
 
     protected AbstractBoltProtocol( BoltChannel channel, BoltConnectionFactory connectionFactory,
-            BoltStateMachineFactory stateMachineFactory, Config config, BookmarksParser bookmarksParser, LogService logging,
-            TransportThrottleGroup throttleGroup )
+                                    BoltStateMachineFactory stateMachineFactory, Config config, BookmarksParser bookmarksParser, LogService logging,
+                                    TransportThrottleGroup throttleGroup, MemoryTracker memoryTracker )
     {
         this.channel = channel;
         this.config = config;
@@ -70,6 +74,7 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
         this.stateMachineFactory = stateMachineFactory;
         this.connectionFactory = connectionFactory;
         this.bookmarksParser = bookmarksParser;
+        this.memoryTracker = memoryTracker;
     }
 
     /**
@@ -78,12 +83,15 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
     @Override
     public void install()
     {
-        BoltStateMachine stateMachine = stateMachineFactory.newStateMachine( version(), channel );
-        var neo4jPack = createPack();
-        var messageWriter = createMessageWriter( neo4jPack, logging );
+        BoltStateMachine stateMachine = stateMachineFactory.newStateMachine( version(), channel, memoryTracker );
+        var neo4jPack = createPack( memoryTracker );
+        var messageWriter = createMessageWriter( neo4jPack, logging, memoryTracker );
 
         var connection = connectionFactory.newConnection( channel, stateMachine, messageWriter );
-        var messageReader = createMessageReader( connection, messageWriter, bookmarksParser, logging );
+        var messageReader = createMessageReader( connection, messageWriter, bookmarksParser, logging, memoryTracker );
+
+        memoryTracker.allocateHeap(
+                ChunkDecoder.SHALLOW_SIZE + MessageAccumulator.SHALLOW_SIZE + MessageDecoder.SHALLOW_SIZE + HouseKeeper.SHALLOW_SIZE );
 
         channel.installBoltProtocol(
                 new ChunkDecoder(),
@@ -92,16 +100,25 @@ public abstract class AbstractBoltProtocol implements BoltProtocol
                 new HouseKeeper( connection, logging.getInternalLog( HouseKeeper.class ) ) );
     }
 
-    protected PackOutput createPackOutput()
+    protected PackOutput createPackOutput( MemoryTracker memoryTracker )
     {
+        memoryTracker.allocateHeap( ChunkedOutput.SHALLOW_SIZE );
         return new ChunkedOutput( channel.rawChannel(), throttleGroup );
     }
 
-    protected abstract Neo4jPack createPack();
+    /**
+     * visible for testing
+     **/
+    public Neo4jPack createPack( MemoryTracker memoryTracker )
+    {
+        memoryTracker.allocateHeap( Neo4jPackV2.SHALLOW_SIZE );
+        return new Neo4jPackV2();
+    }
 
     protected abstract BoltRequestMessageReader createMessageReader( BoltConnection connection,
-            BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser, LogService logging );
+                                                                     BoltResponseMessageWriter messageWriter, BookmarksParser bookmarksParser,
+                                                                     LogService logging, MemoryTracker memoryTracker );
 
     protected abstract BoltResponseMessageWriter createMessageWriter( Neo4jPack neo4jPack,
-            LogService logging );
+                                                                      LogService logging, MemoryTracker memoryTracker );
 }

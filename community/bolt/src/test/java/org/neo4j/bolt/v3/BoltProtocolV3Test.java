@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
+import org.neo4j.bolt.packstream.ChunkedOutput;
 import org.neo4j.bolt.packstream.Neo4jPack;
 import org.neo4j.bolt.packstream.Neo4jPackV2;
 import org.neo4j.bolt.runtime.BoltConnection;
@@ -33,9 +34,12 @@ import org.neo4j.bolt.v3.messaging.BoltRequestMessageReaderV3;
 import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.memory.MemoryTracker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.bolt.testing.BoltTestUtil.newTestBoltChannel;
 
 class BoltProtocolV3Test
@@ -46,7 +50,20 @@ class BoltProtocolV3Test
         BoltProtocolV3 protocolV3 =
                 createProtocolV3();
 
-        assertThat( protocolV3.createPack() ).isInstanceOf( Neo4jPackV2.class );
+        assertThat( protocolV3.createPack( mock( MemoryTracker.class ) ) ).isInstanceOf( Neo4jPackV2.class );
+    }
+
+    @Test
+    void shouldAllocateMemoryForPackForBoltV3()
+    {
+        var protocol =
+                createProtocolV3();
+        var memoryTracker = mock( MemoryTracker.class );
+
+        protocol.createPack( memoryTracker );
+
+        verify( memoryTracker ).allocateHeap( Neo4jPackV2.SHALLOW_SIZE );
+        verifyNoMoreInteractions( memoryTracker );
     }
 
     @Test
@@ -66,8 +83,21 @@ class BoltProtocolV3Test
 
         assertThat(
                 protocolV3.createMessageReader( mock( BoltConnection.class ), mock( BoltResponseMessageWriter.class ),
-                        mock( BookmarksParser.class ), NullLogService.getInstance() ) )
+                                                mock( BookmarksParser.class ), NullLogService.getInstance(), mock( MemoryTracker.class ) ) )
                 .isInstanceOf( BoltRequestMessageReaderV3.class );
+    }
+
+    @Test
+    void shouldAllocateMemoryForMessageReaderForBoltV3()
+    {
+        var protocol = createProtocolV3();
+        var memoryTracker = mock( MemoryTracker.class );
+
+        protocol.createMessageReader( mock( BoltConnection.class ), mock( BoltResponseMessageWriter.class ),
+                                      mock( BookmarksParser.class ), NullLogService.getInstance(), memoryTracker );
+
+        verify( memoryTracker ).allocateHeap( BoltRequestMessageReaderV3.SHALLOW_SIZE );
+        verifyNoMoreInteractions( memoryTracker );
     }
 
     @Test
@@ -77,14 +107,27 @@ class BoltProtocolV3Test
                 createProtocolV3();
 
         assertThat(
-                protocolV3.createMessageWriter( mock( Neo4jPack.class ), NullLogService.getInstance() ) )
+                protocolV3.createMessageWriter( mock( Neo4jPack.class ), NullLogService.getInstance(), mock( MemoryTracker.class ) ) )
                 .isInstanceOf( BoltResponseMessageWriterV3.class );
+    }
+
+    @Test
+    void shouldAllocateMemoryForMessageWriterForBoltV3()
+    {
+        var protocol = createProtocolV3();
+        var memoryTracker = mock( MemoryTracker.class );
+
+        protocol.createMessageWriter( mock( Neo4jPack.class ), NullLogService.getInstance(), memoryTracker );
+
+        verify( memoryTracker ).allocateHeap( ChunkedOutput.SHALLOW_SIZE );
+        verify( memoryTracker ).allocateHeap( BoltResponseMessageWriterV3.SHALLOW_SIZE );
+        verifyNoMoreInteractions( memoryTracker );
     }
 
     private BoltProtocolV3 createProtocolV3()
     {
         return new BoltProtocolV3( newTestBoltChannel(), ( ch, st, mw ) -> mock( BoltConnection.class ),
-                mock( BoltStateMachineFactory.class ), Config.defaults(),
-                NullLogService.getInstance(), mock( TransportThrottleGroup.class ) );
+                                   mock( BoltStateMachineFactory.class ), Config.defaults(),
+                                   NullLogService.getInstance(), mock( TransportThrottleGroup.class ), mock( MemoryTracker.class ) );
     }
 }

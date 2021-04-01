@@ -30,6 +30,7 @@ import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.bolt.v3.runtime.ReadyState.FIELDS_KEY;
@@ -38,6 +39,8 @@ import static org.neo4j.values.storable.Values.stringArray;
 
 public class InTransactionState extends AbstractStreamingState
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( InTransactionState.class );
+
     public static final String QUERY_ID_KEY = "qid";
 
     @Override

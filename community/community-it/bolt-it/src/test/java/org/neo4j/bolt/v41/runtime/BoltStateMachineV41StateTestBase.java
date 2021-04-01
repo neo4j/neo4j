@@ -32,6 +32,8 @@ import org.neo4j.bolt.v4.messaging.BoltV4Messages;
 import org.neo4j.bolt.v41.BoltProtocolV41;
 import org.neo4j.bolt.v41.BoltStateMachineV41;
 import org.neo4j.bolt.v41.messaging.BoltV41Messages;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -42,18 +44,19 @@ public class BoltStateMachineV41StateTestBase
 {
     protected static final MapValue EMPTY_PARAMS = VirtualValues.EMPTY_MAP;
     protected static final BoltChannel BOLT_CHANNEL = BoltTestUtil.newTestBoltChannel( "conn-v41-test-boltchannel-id" );
+    protected static final MemoryTracker MEMORY_TRACKER = EmptyMemoryTracker.INSTANCE;
 
     @RegisterExtension
     static final SessionExtension env = new SessionExtension();
 
     protected BoltStateMachineV41 newStateMachine()
     {
-        return (BoltStateMachineV41) env.newMachine( BoltProtocolV41.VERSION, BOLT_CHANNEL );
+        return (BoltStateMachineV41) env.newMachine( BoltProtocolV41.VERSION, BOLT_CHANNEL, MEMORY_TRACKER );
     }
 
     protected BoltStateMachineV41 newStateMachineAfterAuth() throws BoltConnectionFatality
     {
-        var machine = (BoltStateMachineV41) env.newMachine( BoltProtocolV41.VERSION, BOLT_CHANNEL );
+        var machine = (BoltStateMachineV41) env.newMachine( BoltProtocolV41.VERSION, BOLT_CHANNEL, MEMORY_TRACKER );
         machine.process( BoltV4Messages.hello(), nullResponseHandler() );
         return machine;
     }

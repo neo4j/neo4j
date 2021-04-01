@@ -25,12 +25,16 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 
+import org.neo4j.memory.HeapEstimator;
+
 /**
  * Translates websocket frames to bytebufs, and bytebufs to frames. Intermediary layer between our binary protocol
  * and nettys built-in websocket handlers.
  */
 public class WebSocketFrameTranslator extends ChannelDuplexHandler
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( WebSocketFrameTranslator.class );
+
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg )
     {

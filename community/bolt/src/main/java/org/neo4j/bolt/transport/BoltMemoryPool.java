@@ -26,11 +26,11 @@ import org.neo4j.memory.MemoryPools;
 
 import static org.neo4j.memory.MemoryGroup.BOLT;
 
-public class BoltNettyMemoryPool extends GlobalMemoryGroupTracker
+public class BoltMemoryPool extends GlobalMemoryGroupTracker
 {
     private final ByteBufAllocatorMetric allocatorMetric;
 
-    public BoltNettyMemoryPool( MemoryPools memoryPools, ByteBufAllocatorMetric allocatorMetric )
+    public BoltMemoryPool( MemoryPools memoryPools, ByteBufAllocatorMetric allocatorMetric )
     {
         super( memoryPools, BOLT, 0, false, true, null );
         this.allocatorMetric = allocatorMetric;
@@ -38,50 +38,20 @@ public class BoltNettyMemoryPool extends GlobalMemoryGroupTracker
     }
 
     @Override
-    public void reserveHeap( long bytes )
-    {
-
-    }
-
-    @Override
-    public void reserveNative( long bytes )
-    {
-
-    }
-
-    @Override
-    public void releaseHeap( long bytes )
-    {
-
-    }
-
-    @Override
-    public void releaseNative( long bytes )
-    {
-
-    }
-
-    @Override
     public long usedHeap()
     {
-        return allocatorMetric.usedHeapMemory();
+        return allocatorMetric.usedHeapMemory() + super.usedHeap();
     }
 
     @Override
     public long usedNative()
     {
-        return allocatorMetric.usedDirectMemory();
+        return allocatorMetric.usedDirectMemory() + super.usedNative();
     }
 
     @Override
     public long totalUsed()
     {
         return usedHeap() + usedNative();
-    }
-
-    @Override
-    public void setSize( long size )
-    {
-
     }
 }

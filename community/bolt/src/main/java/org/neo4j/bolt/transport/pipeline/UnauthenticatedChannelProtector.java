@@ -23,24 +23,33 @@ import io.netty.channel.ChannelPipeline;
 
 import java.time.Duration;
 
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
+
 /**
  * Protect the channel from unauthenticated users by limiting the resources that they can access to.
  */
 public class UnauthenticatedChannelProtector implements ChannelProtector
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( UnauthenticatedChannelProtector.class );
+
     private final Duration channelTimeout;
     private final ChannelPipeline pipeline;
     private final long maxMessageSize;
+    private final MemoryTracker memoryTracker;
 
-    public UnauthenticatedChannelProtector( ChannelPipeline pipeline, Duration channelTimeout, long maxMessageSize )
+    public UnauthenticatedChannelProtector( ChannelPipeline pipeline, Duration channelTimeout, long maxMessageSize, MemoryTracker memoryTracker )
     {
         this.channelTimeout = channelTimeout;
         this.pipeline = pipeline;
         this.maxMessageSize = maxMessageSize;
+        this.memoryTracker = memoryTracker;
     }
 
     public void afterChannelCreated()
     {
+        memoryTracker.allocateHeap( AuthenticationTimeoutTracker.SHALLOW_SIZE + AuthenticationTimeoutHandler.SHALLOW_SIZE );
+
         // Adds auth timeout handlers.
         // The timer is counting down after installation.
         pipeline.addLast( new AuthenticationTimeoutTracker( channelTimeout ) );
@@ -49,6 +58,8 @@ public class UnauthenticatedChannelProtector implements ChannelProtector
 
     public void beforeBoltProtocolInstalled()
     {
+        memoryTracker.allocateHeap( BytesAccumulator.SHALLOW_SIZE );
+
         // Adds limits on how many bytes are allowed.
         pipeline.addLast( new BytesAccumulator( maxMessageSize ) );
     }
@@ -61,5 +72,9 @@ public class UnauthenticatedChannelProtector implements ChannelProtector
 
         // Remove byte limits
         pipeline.remove( BytesAccumulator.class );
+
+        memoryTracker.releaseHeap(
+                AuthenticationTimeoutTracker.SHALLOW_SIZE + AuthenticationTimeoutHandler.SHALLOW_SIZE +
+                BytesAccumulator.SHALLOW_SIZE );
     }
 }

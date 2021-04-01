@@ -34,6 +34,7 @@ import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.v4.runtime.ReadyState;
 import org.neo4j.bolt.v43.messaging.request.RouteMessage;
+import org.neo4j.memory.HeapEstimator;
 
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
@@ -55,6 +56,8 @@ import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
  */
 public class RouteMessageHandleStateDecorator<T extends BoltStateMachineState> implements BoltStateMachineState
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( RouteMessageHandleStateDecorator.class );
+
     private static final String ROUTING_TABLE_KEY = "rt";
     private final T state;
     private final BoltStateMachineState failedState;

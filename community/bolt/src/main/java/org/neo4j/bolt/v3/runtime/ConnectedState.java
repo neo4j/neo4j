@@ -28,6 +28,7 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v41.messaging.RoutingContext;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.bolt.v3.messaging.BoltAuthenticationHelper.processAuthentication;
@@ -42,6 +43,8 @@ import static org.neo4j.util.Preconditions.checkState;
  */
 public class ConnectedState implements BoltStateMachineState
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( ConnectedState.class );
+
     private static final String CONNECTION_ID_KEY = "connection_id";
 
     private BoltStateMachineState readyState;

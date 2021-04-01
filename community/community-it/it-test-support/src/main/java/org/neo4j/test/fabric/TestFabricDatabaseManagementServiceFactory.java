@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.TestDatabaseManagementServiceFactory;
 import org.neo4j.time.SystemNanoClock;
 
@@ -82,7 +83,7 @@ public class TestFabricDatabaseManagementServiceFactory extends TestDatabaseMana
                 {
                     try
                     {
-                        return fabricBoltDbms.getDatabase( name );
+                        return fabricBoltDbms.getDatabase( name, EmptyMemoryTracker.INSTANCE );
                     }
                     catch ( UnavailableException e )
                     {

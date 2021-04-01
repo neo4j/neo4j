@@ -27,7 +27,7 @@ import org.neo4j.memory.MemoryPools;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class BoltNettyMemoryPoolIT
+class BoltMemoryPoolIT
 {
     private final int requestedSize = (int) ByteUnit.kibiBytes( 10 );
 
@@ -39,7 +39,7 @@ class BoltNettyMemoryPoolIT
         assertEquals(0, allocatorMetric.usedDirectMemory() );
         assertEquals(0, allocatorMetric.usedDirectMemory() );
 
-        var memoryTracker = new BoltNettyMemoryPool( new MemoryPools(), allocatorMetric );
+        var memoryTracker = new BoltMemoryPool( new MemoryPools(), allocatorMetric );
         var buffer = bufAllocator.buffer( requestedSize );
         try
         {
@@ -64,7 +64,7 @@ class BoltNettyMemoryPoolIT
         assertEquals(0, allocatorMetric.usedDirectMemory() );
         assertEquals(0, allocatorMetric.usedDirectMemory() );
 
-        var memoryTracker = new BoltNettyMemoryPool( new MemoryPools(), allocatorMetric );
+        var memoryTracker = new BoltMemoryPool( new MemoryPools(), allocatorMetric );
         var buffer = bufAllocator.buffer( requestedSize );
         try
         {

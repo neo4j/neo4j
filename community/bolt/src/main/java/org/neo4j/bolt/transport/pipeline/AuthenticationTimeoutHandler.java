@@ -27,6 +27,7 @@ import java.time.Duration;
 
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.memory.HeapEstimator;
 
 import static java.lang.String.format;
 
@@ -36,6 +37,8 @@ import static java.lang.String.format;
  */
 public class AuthenticationTimeoutHandler extends ChannelInboundHandlerAdapter
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( AuthenticationTimeoutHandler.class );
+
     private final Duration timeout;
 
     public AuthenticationTimeoutHandler( Duration timeout )

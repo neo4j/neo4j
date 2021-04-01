@@ -29,6 +29,7 @@ import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.bolt.v3.messaging.request.TransactionInitiatingMessage;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
@@ -45,6 +46,8 @@ import static org.neo4j.values.storable.Values.stringArray;
  */
 public class ReadyState extends FailSafeBoltStateMachineState
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( ReadyState.class );
+
     private BoltStateMachineState streamingState;
     private BoltStateMachineState txReadyState;
 

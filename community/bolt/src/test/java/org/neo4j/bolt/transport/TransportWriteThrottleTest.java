@@ -42,6 +42,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.rule.OtherThreadRule;
@@ -103,9 +104,10 @@ public class TransportWriteThrottleTest
     {
         // given
         TransportThrottle throttle = newThrottle();
+        var memoryTracker = mock( MemoryTracker.class );
 
         // when
-        throttle.install( channel );
+        throttle.install( channel, memoryTracker );
 
         // expect
         ArgumentCaptor<WriteBufferWaterMark> argument = ArgumentCaptor.forClass( WriteBufferWaterMark.class );
@@ -238,6 +240,20 @@ public class TransportWriteThrottleTest
                 .withMessageContaining( "will be closed because the client did not consume outgoing buffers for" );
     }
 
+    @Test
+    void shouldAllocateMemoryUponInstall() throws InterruptedException
+    {
+        var lock = newThrottleLockMock();
+        FakeClock clock = Clocks.fakeClock( 1, TimeUnit.SECONDS );
+
+        var throttle = newThrottle( lock, clock, Duration.ofSeconds( 5 ) );
+        var memoryTracker = mock( MemoryTracker.class );
+
+        throttle.install( channel, memoryTracker );
+
+        verify( memoryTracker ).allocateHeap( anyLong() );
+    }
+
     private TransportThrottle newThrottle()
     {
         try
@@ -265,8 +281,9 @@ public class TransportWriteThrottleTest
     private TransportThrottle newThrottleAndInstall( Channel channel, ThrottleLock lock, Clock clock, Duration maxLockDuration )
     {
         TransportThrottle throttle = newThrottle( lock, clock, maxLockDuration );
+        var memoryTracker = mock( MemoryTracker.class );
 
-        throttle.install( channel );
+        throttle.install( channel, memoryTracker );
 
         return throttle;
     }

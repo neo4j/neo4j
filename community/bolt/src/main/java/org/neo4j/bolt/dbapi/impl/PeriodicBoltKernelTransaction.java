@@ -29,9 +29,12 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
+import org.neo4j.memory.HeapEstimator;
 
 public class PeriodicBoltKernelTransaction extends BoltQueryExecutorImpl implements BoltTransaction
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( PeriodicBoltKernelTransaction.class );
+
     private final InternalTransaction internalTransaction;
     private final Supplier<BookmarkMetadata> bookmarkSupplier;
 

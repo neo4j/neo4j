@@ -28,6 +28,7 @@ import org.neo4j.bolt.runtime.statemachine.StatementProcessor;
 import org.neo4j.bolt.v3.messaging.request.TransactionInitiatingMessage;
 import org.neo4j.bolt.v4.messaging.BeginMessage;
 import org.neo4j.bolt.v4.messaging.RunMessage;
+import org.neo4j.memory.HeapEstimator;
 
 /**
  * The READY state indicates that the connection is ready to accept a
@@ -39,6 +40,8 @@ import org.neo4j.bolt.v4.messaging.RunMessage;
  */
 public class ReadyState extends org.neo4j.bolt.v3.runtime.ReadyState
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( ReadyState.class );
+
     @Override
     public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Exception
     {

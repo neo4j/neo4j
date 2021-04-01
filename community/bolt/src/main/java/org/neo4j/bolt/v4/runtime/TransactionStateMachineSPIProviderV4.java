@@ -27,17 +27,20 @@ import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.impl.AbstractTransactionStatementSPIProvider;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
 public class TransactionStateMachineSPIProviderV4 extends AbstractTransactionStatementSPIProvider
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TransactionStateMachineSPIProviderV4.class );
+
     public TransactionStateMachineSPIProviderV4( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
-                                                 BoltChannel boltChannel,
-                                                 SystemNanoClock clock )
+                                                 BoltChannel boltChannel, SystemNanoClock clock, MemoryTracker memoryTracker )
     {
-        super( boltGraphDatabaseManagementServiceSPI, boltChannel, clock );
+        super( boltGraphDatabaseManagementServiceSPI, boltChannel, clock, memoryTracker );
     }
 
     @Override
@@ -50,6 +53,7 @@ public class TransactionStateMachineSPIProviderV4 extends AbstractTransactionSta
     protected TransactionStateMachineSPI newTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
             StatementProcessorReleaseManager resourceReleaseManger )
     {
+        memoryTracker.allocateHeap( TransactionStateMachineV4SPI.SHALLOW_SIZE );
         return new TransactionStateMachineV4SPI( activeBoltGraphDatabaseServiceSPI, boltChannel, clock, resourceReleaseManger );
     }
 }

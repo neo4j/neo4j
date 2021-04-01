@@ -29,6 +29,7 @@ import org.neo4j.bolt.packstream.PackOutput;
 import org.neo4j.bolt.packstream.PackProvider;
 import org.neo4j.bolt.v3.messaging.BoltResponseMessageWriterV3;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.AnyValue;
 
@@ -39,6 +40,8 @@ import org.neo4j.values.AnyValue;
  */
 public class BoltResponseMessageWriterV41 implements BoltResponseMessageWriter
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltResponseMessageWriterV41.class );
+
     private final BoltResponseMessageWriterV3 delegator;
     private final MessageWriterTimer timer;
     private boolean inRecord;

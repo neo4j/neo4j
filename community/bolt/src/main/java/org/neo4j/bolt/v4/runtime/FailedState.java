@@ -23,12 +23,13 @@ import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
-import org.neo4j.bolt.v3.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
+import org.neo4j.bolt.v3.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.bolt.v4.messaging.DiscardMessage;
 import org.neo4j.bolt.v4.messaging.PullMessage;
+import org.neo4j.memory.HeapEstimator;
 
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -40,6 +41,8 @@ import static org.neo4j.util.Preconditions.checkState;
  */
 public class FailedState implements BoltStateMachineState
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( FailedState.class );
+
     private BoltStateMachineState interruptedState;
 
     @Override

@@ -63,6 +63,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.SystemNanoClock;
@@ -179,14 +180,15 @@ public abstract class FabricServicesBootstrap
         {
 
             @Override
-            public BoltGraphDatabaseServiceSPI database( String databaseName ) throws UnavailableException, DatabaseNotFoundException
+            public BoltGraphDatabaseServiceSPI database( String databaseName, MemoryTracker memoryTracker )
+                    throws UnavailableException, DatabaseNotFoundException
             {
                 if ( fabricDatabaseManager.hasMultiGraphCapabilities( databaseName ) )
                 {
-                    return fabricDatabaseManagementService.database( databaseName );
+                    return fabricDatabaseManagementService.database( databaseName, memoryTracker );
                 }
 
-                return kernelDatabaseManagementService.database( databaseName );
+                return kernelDatabaseManagementService.database( databaseName, memoryTracker );
             }
 
             @Override

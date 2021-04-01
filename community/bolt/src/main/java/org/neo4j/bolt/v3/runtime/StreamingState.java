@@ -24,12 +24,15 @@ import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 import org.neo4j.bolt.messaging.ResultConsumer;
+import org.neo4j.memory.HeapEstimator;
 
 /**
  * When STREAMING, additionally attach bookmark to PULL_ALL, DISCARD_ALL result
  */
 public class StreamingState extends AbstractStreamingState
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( StreamingState.class );
+
     @Override
     public String name()
     {

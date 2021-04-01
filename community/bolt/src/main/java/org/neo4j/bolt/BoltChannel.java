@@ -29,12 +29,15 @@ import org.neo4j.bolt.transport.pipeline.ChannelProtector;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
+import org.neo4j.memory.HeapEstimator;
 
 /**
  * A channel through which Bolt messaging can occur.
  */
 public class BoltChannel implements TrackedNetworkConnection
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltChannel.class );
+
     private final String id;
     private final long connectTime;
     private final String connector;

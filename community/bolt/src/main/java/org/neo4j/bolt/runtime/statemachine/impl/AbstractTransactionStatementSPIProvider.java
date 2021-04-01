@@ -32,6 +32,7 @@ import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.UnavailableException;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
@@ -42,13 +43,15 @@ public abstract class AbstractTransactionStatementSPIProvider implements Transac
     protected final SystemNanoClock clock;
     protected final BoltChannel boltChannel;
     protected final BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI;
+    protected final MemoryTracker memoryTracker;
 
     public AbstractTransactionStatementSPIProvider( BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
-                                                    BoltChannel boltChannel, SystemNanoClock clock )
+                                                    BoltChannel boltChannel, SystemNanoClock clock, MemoryTracker memoryTracker )
     {
         this.boltGraphDatabaseManagementServiceSPI = boltGraphDatabaseManagementServiceSPI;
         this.clock = clock;
         this.boltChannel = boltChannel;
+        this.memoryTracker = memoryTracker.getScopedMemoryTracker();
     }
 
     protected abstract TransactionStateMachineSPI newTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
@@ -62,7 +65,7 @@ public abstract class AbstractTransactionStatementSPIProvider implements Transac
 
         try
         {
-            var boltGraphDatabaseServiceSPI = boltGraphDatabaseManagementServiceSPI.database( selectedDatabaseName );
+            var boltGraphDatabaseServiceSPI = boltGraphDatabaseManagementServiceSPI.database( selectedDatabaseName, memoryTracker );
             return newTransactionStateMachineSPI( boltGraphDatabaseServiceSPI, resourceReleaseManger );
         }
         catch ( DatabaseNotFoundException e )
@@ -85,5 +88,11 @@ public abstract class AbstractTransactionStatementSPIProvider implements Transac
                     "Please contact your Bolt client author to report this bug in the client code. Requested database name: '%s'.", databaseName ) );
         }
         return boltChannel.defaultDatabase();
+    }
+
+    @Override
+    public void releaseTransactionStateMachineSPI()
+    {
+        memoryTracker.reset();
     }
 }

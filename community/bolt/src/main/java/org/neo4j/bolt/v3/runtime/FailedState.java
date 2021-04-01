@@ -29,6 +29,7 @@ import org.neo4j.bolt.v3.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
+import org.neo4j.memory.HeapEstimator;
 
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -40,6 +41,8 @@ import static org.neo4j.util.Preconditions.checkState;
  */
 public class FailedState implements BoltStateMachineState
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( FailedState.class );
+
     private BoltStateMachineState interruptedState;
 
     @Override

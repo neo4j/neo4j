@@ -28,6 +28,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 
@@ -48,14 +49,16 @@ public class BoltKernelDatabaseManagementServiceProvider implements BoltGraphDat
     }
 
     @Override
-    public BoltGraphDatabaseServiceSPI database( String databaseName ) throws DatabaseNotFoundException, UnavailableException
+    public BoltGraphDatabaseServiceSPI database( String databaseName, MemoryTracker memoryTracker ) throws DatabaseNotFoundException, UnavailableException
     {
+        memoryTracker.allocateHeap( BoltKernelGraphDatabaseServiceProvider.SHALLOW_SIZE );
+
         var databaseAPI = (GraphDatabaseAPI) managementService.database( databaseName );
 
         if ( !databaseAPI.isAvailable( 0 ) )
         {
             throw new UnavailableException( format( "Database '%s' is unavailable.", databaseName ) );
         }
-        return new BoltKernelGraphDatabaseServiceProvider( databaseAPI, transactionIdTracker, bookmarkAwaitDuration );
+        return new BoltKernelGraphDatabaseServiceProvider( databaseAPI, transactionIdTracker, bookmarkAwaitDuration, memoryTracker );
     }
 }

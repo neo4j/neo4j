@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
+import org.neo4j.memory.HeapEstimator;
 
 /**
  * Close the channel directly if we failed to finish authentication within certain timeout specified by
@@ -33,6 +34,8 @@ import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
  */
 public class AuthenticationTimeoutTracker extends ReadTimeoutHandler
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( AuthenticationTimeoutTracker.class );
+
     public AuthenticationTimeoutTracker( Duration timeout )
     {
         super( timeout.toMillis(), TimeUnit.MILLISECONDS );

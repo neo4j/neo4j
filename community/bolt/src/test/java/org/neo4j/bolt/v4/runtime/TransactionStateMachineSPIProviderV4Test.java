@@ -25,7 +25,9 @@ import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
+import org.neo4j.bolt.dbapi.impl.BoltKernelGraphDatabaseServiceProvider;
 import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
@@ -36,13 +38,18 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class TransactionStateMachineSPIProviderV4Test
@@ -68,7 +75,7 @@ class TransactionStateMachineSPIProviderV4Test
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( managementService );
         when( mockBoltChannel.defaultDatabase() ).thenReturn( "neo4j" );
 
-        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( "", mock( StatementProcessorReleaseManager.class ) );
+        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( "", mock( StatementProcessorReleaseManager.class, RETURNS_MOCKS ) );
         assertThat( spi ).isInstanceOf( TransactionStateMachineV4SPI.class );
     }
 
@@ -84,6 +91,32 @@ class TransactionStateMachineSPIProviderV4Test
                 spiProvider.getTransactionStateMachineSPI( databaseName, mock( StatementProcessorReleaseManager.class ) ) );
         assertThat( error.status() ).isEqualTo( Status.Database.DatabaseNotFound );
         assertThat( error.getMessage() ).contains( "Database does not exist. Database name: 'database'." );
+    }
+
+    @Test
+    void shouldAllocateMemoryForTransactionStateMachineSPI() throws BoltProtocolBreachFatality, BoltIOException
+    {
+        String databaseName = "neo4j";
+        var clock = mock( SystemNanoClock.class );
+
+        DatabaseManagementService managementService = managementService( databaseName );
+        var memoryTracker = mock( MemoryTracker.class );
+        var scopedMemoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
+
+        when( mockBoltChannel.defaultDatabase() ).thenReturn( "neo4j" );
+        when( memoryTracker.getScopedMemoryTracker() ).thenReturn( scopedMemoryTracker );
+
+        var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, new Monitors(), clock, Duration.ZERO );
+        var spiProvider = new TransactionStateMachineSPIProviderV4( dbProvider, mockBoltChannel, clock, memoryTracker );
+
+        spiProvider.getTransactionStateMachineSPI( "", mock( StatementProcessorReleaseManager.class ) );
+
+        verify( memoryTracker ).getScopedMemoryTracker();
+        verify( scopedMemoryTracker ).allocateHeap( TransactionStateMachineV4SPI.SHALLOW_SIZE );
+        verify( scopedMemoryTracker ).allocateHeap( BoltKernelGraphDatabaseServiceProvider.SHALLOW_SIZE );
+        verify( scopedMemoryTracker ).getScopedMemoryTracker();
+        verifyNoMoreInteractions( memoryTracker );
+        verifyNoMoreInteractions( scopedMemoryTracker );
     }
 
     private DatabaseManagementService managementService( String databaseName )
@@ -107,6 +140,6 @@ class TransactionStateMachineSPIProviderV4Test
     {
         var clock = mock( SystemNanoClock.class );
         var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, new Monitors(), clock, Duration.ZERO );
-        return new TransactionStateMachineSPIProviderV4( dbProvider, mockBoltChannel, clock );
+        return new TransactionStateMachineSPIProviderV4( dbProvider, mockBoltChannel, clock, mock( MemoryTracker.class, RETURNS_MOCKS ) );
     }
 }

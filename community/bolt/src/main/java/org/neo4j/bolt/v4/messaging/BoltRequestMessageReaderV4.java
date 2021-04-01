@@ -37,9 +37,12 @@ import org.neo4j.bolt.v3.messaging.decoder.HelloMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.RollbackMessageDecoder;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.HeapEstimator;
 
 public class BoltRequestMessageReaderV4 extends BoltRequestMessageReader
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltRequestMessageReaderV4.class );
+
     public BoltRequestMessageReaderV4( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter, BookmarksParser bookmarksParser,
             LogService logService )
     {

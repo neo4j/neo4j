@@ -36,6 +36,7 @@ import org.neo4j.bolt.v43.BoltProtocolV43;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.SystemNanoClock;
 
 public class DefaultBoltProtocolFactory implements BoltProtocolFactory
@@ -65,31 +66,31 @@ public class DefaultBoltProtocolFactory implements BoltProtocolFactory
     }
 
     @Override
-    public BoltProtocol create( BoltProtocolVersion protocolVersion, BoltChannel channel )
+    public BoltProtocol create( BoltProtocolVersion protocolVersion, BoltChannel channel, MemoryTracker memoryTracker )
     {
         if ( protocolVersion.equals( BoltProtocolV3.VERSION ) )
         {
-            return new BoltProtocolV3( channel, connectionFactory, stateMachineFactory, config, logService, throttleGroup );
+            return new BoltProtocolV3( channel, connectionFactory, stateMachineFactory, config, logService, throttleGroup, memoryTracker );
         }
         else if ( protocolVersion.equals( BoltProtocolV4.VERSION ) )
         {
             return new BoltProtocolV4( channel, connectionFactory, stateMachineFactory, config, bookmarksParserV4, logService,
-                    throttleGroup );
+                                       throttleGroup, memoryTracker );
         }
         else if ( protocolVersion.equals( BoltProtocolV41.VERSION ) )
         {
             return new BoltProtocolV41( channel, connectionFactory, stateMachineFactory, config, bookmarksParserV4, logService,
-                                        throttleGroup, clock, keepAliveInterval );
+                                        throttleGroup, clock, keepAliveInterval, memoryTracker );
         }
         else if ( protocolVersion.equals( BoltProtocolV42.VERSION ) )
         {
             return new BoltProtocolV42( channel, connectionFactory, stateMachineFactory, config, bookmarksParserV4, logService,
-                                        throttleGroup, clock, keepAliveInterval );
+                                        throttleGroup, clock, keepAliveInterval, memoryTracker );
         }
         else if ( protocolVersion.equals( BoltProtocolV43.VERSION ) )
         {
             return new BoltProtocolV43( channel, connectionFactory, stateMachineFactory, config, bookmarksParserV4, logService,
-                                        throttleGroup, clock, keepAliveInterval );
+                                        throttleGroup, clock, keepAliveInterval, memoryTracker );
         }
         else
         {

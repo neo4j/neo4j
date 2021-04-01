@@ -43,6 +43,7 @@ import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.common.HexPrinter;
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.memory.MemoryTracker;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.mockito.ArgumentMatchers.any;
@@ -124,8 +125,11 @@ public class FragmentedMessageDeliveryTest
         SynchronousBoltConnection boltConnection = new SynchronousBoltConnection( machine );
         NullLogService logging = NullLogService.getInstance();
         var bookmarksParser = mock( BookmarksParser.class );
-        BoltProtocol boltProtocol = new BoltProtocolV4( boltChannel, ( ch, s, messageWriter ) -> boltConnection, ( v,
-                ch ) -> machine, Config.defaults(), bookmarksParser, logging, mock( TransportThrottleGroup.class ) );
+        var memoryTracker = mock( MemoryTracker.class );
+
+        BoltProtocol boltProtocol = new BoltProtocolV4(
+                boltChannel, ( ch, s, messageWriter ) -> boltConnection,
+                ( v, ch, mem ) -> machine, Config.defaults(), bookmarksParser, logging, mock( TransportThrottleGroup.class ), memoryTracker );
         boltProtocol.install();
 
         // When data arrives split up according to the current permutation

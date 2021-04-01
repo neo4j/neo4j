@@ -42,6 +42,7 @@ import org.neo4j.bolt.v3.messaging.response.SuccessMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.AnyValue;
 
 import static java.lang.String.format;
@@ -51,6 +52,8 @@ import static java.lang.String.format;
  */
 public class BoltResponseMessageWriterV3 implements BoltResponseMessageWriter
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltResponseMessageWriterV3.class );
+
     private final PackOutput output;
     private final Neo4jPack.Packer packer;
     private final Log log;

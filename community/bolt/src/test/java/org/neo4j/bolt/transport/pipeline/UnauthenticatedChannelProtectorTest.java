@@ -25,11 +25,11 @@ import org.mockito.InOrder;
 
 import java.time.Duration;
 
+import org.neo4j.memory.MemoryTracker;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class UnauthenticatedChannelProtectorTest
 {
@@ -37,35 +37,48 @@ class UnauthenticatedChannelProtectorTest
     void shouldInstallAuthenticationHandlersAfterChannelCreated()
     {
         var pipeline = mock( ChannelPipeline.class );
-        var protector = new UnauthenticatedChannelProtector( pipeline, Duration.ZERO, -1 );
+        var memoryTracker = mock( MemoryTracker.class );
 
-        InOrder inOrder = inOrder( pipeline );
+        var protector = new UnauthenticatedChannelProtector( pipeline, Duration.ZERO, -1, memoryTracker );
+
+        InOrder inOrder = inOrder( pipeline, memoryTracker );
         protector.afterChannelCreated();
+        inOrder.verify( memoryTracker ).allocateHeap( AuthenticationTimeoutTracker.SHALLOW_SIZE + AuthenticationTimeoutHandler.SHALLOW_SIZE );
         inOrder.verify( pipeline ).addLast( any( AuthenticationTimeoutTracker.class ) );
         inOrder.verify( pipeline ).addLast( any( AuthenticationTimeoutHandler.class ) );
+        inOrder.verifyNoMoreInteractions();
     }
 
     @Test
     void shouldInstallByteAccumulatorBeforeBoltProtocolInstalled()
     {
         var pipeline = mock( ChannelPipeline.class );
-        var protector = new UnauthenticatedChannelProtector( pipeline, Duration.ZERO, 0 );
+        var memoryTracker = mock( MemoryTracker.class );
 
+        var protector = new UnauthenticatedChannelProtector( pipeline, Duration.ZERO, 0, memoryTracker );
+
+        var inOrder = inOrder( pipeline, memoryTracker );
         protector.beforeBoltProtocolInstalled();
-        verify( pipeline ).addLast( any( BytesAccumulator.class ) );
-        verifyNoMoreInteractions( pipeline );
+        inOrder.verify( memoryTracker ).allocateHeap( BytesAccumulator.SHALLOW_SIZE );
+        inOrder.verify( pipeline ).addLast( any( BytesAccumulator.class ) );
+        inOrder.verifyNoMoreInteractions();
     }
 
     @Test
     void shouldRemoveHandlersWhenIsDisabled()
     {
         var pipeline = mock( ChannelPipeline.class );
-        var protector = new UnauthenticatedChannelProtector( pipeline, Duration.ZERO, 0 );
+        var memoryTracker = mock( MemoryTracker.class );
 
-        InOrder inOrder = inOrder( pipeline );
+        var protector = new UnauthenticatedChannelProtector( pipeline, Duration.ZERO, 0, memoryTracker );
+
+        InOrder inOrder = inOrder( pipeline, memoryTracker );
         protector.disable();
         inOrder.verify( pipeline ).remove( AuthenticationTimeoutTracker.class );
         inOrder.verify( pipeline ).remove( AuthenticationTimeoutHandler.class );
         inOrder.verify( pipeline ).remove( BytesAccumulator.class );
+        inOrder.verify( memoryTracker ).releaseHeap(
+                AuthenticationTimeoutTracker.SHALLOW_SIZE + AuthenticationTimeoutHandler.SHALLOW_SIZE + BytesAccumulator.SHALLOW_SIZE );
+        inOrder.verifyNoMoreInteractions();
     }
 }

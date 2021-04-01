@@ -41,11 +41,14 @@ import org.neo4j.bolt.v4.messaging.RunMessageDecoder;
 import org.neo4j.bolt.v41.messaging.decoder.HelloMessageDecoder;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.HeapEstimator;
 
 public class BoltRequestMessageReaderV41 extends BoltRequestMessageReader
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltRequestMessageReaderV41.class );
+
     public BoltRequestMessageReaderV41( BoltConnection connection, BoltResponseMessageWriter responseMessageWriter, BookmarksParser bookmarksParser,
-                                       LogService logService )
+                                        LogService logService )
     {
         super( connection, newSimpleResponseHandler( responseMessageWriter, connection, logService ),
                buildDecoders( connection, responseMessageWriter, bookmarksParser, logService ) );

@@ -28,9 +28,12 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.memory.HeapEstimator;
 
 public class MessageAccumulator extends ByteToMessageDecoder
 {
+    public static long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( MessageAccumulator.class );
+
     private boolean readMessageBoundary;
 
     public MessageAccumulator( Config config )

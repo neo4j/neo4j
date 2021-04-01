@@ -40,6 +40,7 @@ import org.neo4j.bolt.v43.BoltStateMachineV43;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.time.SystemNanoClock;
 
 public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
@@ -61,27 +62,27 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     }
 
     @Override
-    public BoltStateMachine newStateMachine( BoltProtocolVersion protocolVersion, BoltChannel boltChannel )
+    public BoltStateMachine newStateMachine( BoltProtocolVersion protocolVersion, BoltChannel boltChannel, MemoryTracker memoryTracker )
     {
         if ( protocolVersion.equals( BoltProtocolV3.VERSION ) )
         {
-            return newStateMachineV3( boltChannel );
+            return newStateMachineV3( boltChannel, memoryTracker );
         }
         else if ( protocolVersion.equals( BoltProtocolV4.VERSION ) )
         {
-            return newStateMachineV4( boltChannel );
+            return newStateMachineV4( boltChannel, memoryTracker );
         }
         else if ( protocolVersion.equals( BoltProtocolV41.VERSION ) )
         {
-            return newStateMachineV41( boltChannel );
+            return newStateMachineV41( boltChannel, memoryTracker );
         }
         else if ( protocolVersion.equals( BoltProtocolV42.VERSION ) )
         {
-            return newStateMachineV42( boltChannel );
+            return newStateMachineV42( boltChannel, memoryTracker );
         }
         else if ( protocolVersion.equals( BoltProtocolV43.VERSION ) )
         {
-            return newStateMachineV43( boltChannel );
+            return newStateMachineV43( boltChannel, memoryTracker );
         }
         else
         {
@@ -89,43 +90,58 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         }
     }
 
-    private BoltStateMachine newStateMachineV3( BoltChannel boltChannel )
+    private BoltStateMachine newStateMachineV3( BoltChannel boltChannel, MemoryTracker memoryTracker )
     {
+        memoryTracker
+                .allocateHeap( TransactionStateMachineSPIProviderV3.SHALLOW_SIZE + BoltStateMachineSPIImpl.SHALLOW_SIZE + BoltStateMachineV3.SHALLOW_SIZE );
+
         var transactionSpiProvider = new TransactionStateMachineSPIProviderV3( boltGraphDatabaseManagementServiceSPI,
-                                                                               boltChannel, clock );
+                                                                               boltChannel, clock, memoryTracker );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
-        return new BoltStateMachineV3( boltSPI, boltChannel, clock, defaultDatabaseResolver );
+        return new BoltStateMachineV3( boltSPI, boltChannel, clock, defaultDatabaseResolver, memoryTracker );
     }
 
-    private BoltStateMachine newStateMachineV4( BoltChannel boltChannel )
+    private BoltStateMachine newStateMachineV4( BoltChannel boltChannel, MemoryTracker memoryTracker )
     {
+        memoryTracker.allocateHeap(
+                TransactionStateMachineSPIProviderV4.SHALLOW_SIZE + BoltStateMachineSPIImpl.SHALLOW_SIZE + BoltStateMachineV4.SHALLOW_SIZE );
+
         var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI,
-                                                                               boltChannel, clock );
+                                                                               boltChannel, clock, memoryTracker );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
-        return new BoltStateMachineV4( boltSPI, boltChannel, clock, defaultDatabaseResolver );
+        return new BoltStateMachineV4( boltSPI, boltChannel, clock, defaultDatabaseResolver, memoryTracker );
     }
 
-    private BoltStateMachine newStateMachineV41( BoltChannel boltChannel )
+    private BoltStateMachine newStateMachineV41( BoltChannel boltChannel, MemoryTracker memoryTracker )
     {
+        memoryTracker.allocateHeap(
+                TransactionStateMachineSPIProviderV4.SHALLOW_SIZE + BoltStateMachineSPIImpl.SHALLOW_SIZE + BoltStateMachineV41.SHALLOW_SIZE );
+
         var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI,
-                                                                               boltChannel, clock );
+                                                                               boltChannel, clock, memoryTracker );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
-        return new BoltStateMachineV41( boltSPI, boltChannel, clock, defaultDatabaseResolver );
+        return new BoltStateMachineV41( boltSPI, boltChannel, clock, defaultDatabaseResolver, memoryTracker );
     }
 
-    private BoltStateMachine newStateMachineV42( BoltChannel boltChannel )
+    private BoltStateMachine newStateMachineV42( BoltChannel boltChannel, MemoryTracker memoryTracker )
     {
+        memoryTracker.allocateHeap(
+                TransactionStateMachineSPIProviderV4.SHALLOW_SIZE + BoltStateMachineSPIImpl.SHALLOW_SIZE + BoltStateMachineV42.SHALLOW_SIZE );
+
         var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI,
-                                                                               boltChannel, clock );
+                                                                               boltChannel, clock, memoryTracker );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
-        return new BoltStateMachineV42( boltSPI, boltChannel, clock, defaultDatabaseResolver );
+        return new BoltStateMachineV42( boltSPI, boltChannel, clock, defaultDatabaseResolver, memoryTracker );
     }
 
-    private BoltStateMachine newStateMachineV43( BoltChannel boltChannel )
+    private BoltStateMachine newStateMachineV43( BoltChannel boltChannel, MemoryTracker memoryTracker )
     {
+        memoryTracker.allocateHeap(
+                TransactionStateMachineSPIProviderV4.SHALLOW_SIZE + BoltStateMachineSPIImpl.SHALLOW_SIZE + BoltStateMachineV43.SHALLOW_SIZE );
+
         var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI,
-                                                                               boltChannel, clock );
+                                                                               boltChannel, clock, memoryTracker );
         var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
-        return new BoltStateMachineV43( boltSPI, boltChannel, clock, defaultDatabaseResolver );
+        return new BoltStateMachineV43( boltSPI, boltChannel, clock, defaultDatabaseResolver, memoryTracker );
     }
 }

@@ -44,6 +44,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
@@ -51,7 +52,12 @@ import org.neo4j.time.SystemNanoClock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class BoltStateMachineFactoryImplTest
@@ -64,55 +70,80 @@ class BoltStateMachineFactoryImplTest
     void shouldCreateBoltStateMachinesV3()
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
+        var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 3, 0 ), CHANNEL );
+        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 3, 0 ), CHANNEL, memoryTracker );
 
         assertNotNull( boltStateMachine );
         assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV3.class );
+
+        verify( memoryTracker ).getScopedMemoryTracker();
+        verify( memoryTracker, times( 3 ) ).allocateHeap( anyLong() );
+        verifyNoMoreInteractions( memoryTracker );
     }
 
     @Test
     void shouldCreateBoltStateMachinesV4()
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
+        var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 0 ), CHANNEL );
+        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 0 ), CHANNEL, memoryTracker );
 
         assertNotNull( boltStateMachine );
         assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV4.class );
+
+        verify( memoryTracker ).getScopedMemoryTracker();
+        verify( memoryTracker, times( 3 ) ).allocateHeap( anyLong() );
+        verifyNoMoreInteractions( memoryTracker );
     }
 
     @Test
     void shouldCreateBoltStateMachinesV41()
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
+        var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 1 ), CHANNEL );
+        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 1 ), CHANNEL, memoryTracker );
 
         assertNotNull( boltStateMachine );
         assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV41.class );
+
+        verify( memoryTracker ).getScopedMemoryTracker();
+        verify( memoryTracker, times( 3 ) ).allocateHeap( anyLong() );
+        verifyNoMoreInteractions( memoryTracker );
     }
 
     @Test
     void shouldCreateBoltStateMachinesV42()
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
+        var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 2 ), CHANNEL );
+        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 2 ), CHANNEL, memoryTracker );
 
         assertNotNull( boltStateMachine );
         assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV42.class );
+
+        verify( memoryTracker ).getScopedMemoryTracker();
+        verify( memoryTracker, times( 3 ) ).allocateHeap( anyLong() );
+        verifyNoMoreInteractions( memoryTracker );
     }
 
     @Test
     void shouldCreateBoltStateMachinesV43()
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
+        var memoryTracker = mock( MemoryTracker.class, RETURNS_MOCKS );
 
-        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4,  3 ), CHANNEL );
+        BoltStateMachine boltStateMachine = factory.newStateMachine( new BoltProtocolVersion( 4, 3 ), CHANNEL, memoryTracker );
 
         assertNotNull( boltStateMachine );
         assertThat( boltStateMachine ).isInstanceOf( BoltStateMachineV43.class );
+
+        verify( memoryTracker ).getScopedMemoryTracker();
+        verify( memoryTracker, times( 3 ) ).allocateHeap( anyLong() );
+        verifyNoMoreInteractions( memoryTracker );
     }
 
     @ParameterizedTest( name = "V{0}" )
@@ -121,9 +152,13 @@ class BoltStateMachineFactoryImplTest
     {
         BoltStateMachineFactoryImpl factory = newBoltFactory();
         BoltProtocolVersion boltProtocolVersion = new BoltProtocolVersion( protocolVersion, 0 );
+        var memoryTracker = mock( MemoryTracker.class );
 
-        IllegalArgumentException error = assertThrows( IllegalArgumentException.class, () -> factory.newStateMachine( boltProtocolVersion, CHANNEL ) );
+        IllegalArgumentException error =
+                assertThrows( IllegalArgumentException.class, () -> factory.newStateMachine( boltProtocolVersion, CHANNEL, memoryTracker ) );
         assertThat( error.getMessage() ).startsWith( "Failed to create a state machine for protocol version" );
+
+        verifyNoMoreInteractions( memoryTracker );
     }
 
     private static BoltStateMachineFactoryImpl newBoltFactory()

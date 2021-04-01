@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Clocks;
@@ -59,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -168,7 +170,7 @@ class DatabaseServiceBookmarkTest
         when( managementService.database( DATABASE_ID.name() ) ).thenReturn( facade );
 
         var transactionIdTracker = new TransactionIdTracker( managementService, new Monitors(), clock );
-        return new BoltKernelGraphDatabaseServiceProvider( facade, transactionIdTracker, txAwaitDuration );
+        return new BoltKernelGraphDatabaseServiceProvider( facade, transactionIdTracker, txAwaitDuration, mock( MemoryTracker.class, RETURNS_MOCKS ) );
     }
 
     private void begin( BoltGraphDatabaseServiceSPI dbSpi, List<Bookmark> bookmarks )

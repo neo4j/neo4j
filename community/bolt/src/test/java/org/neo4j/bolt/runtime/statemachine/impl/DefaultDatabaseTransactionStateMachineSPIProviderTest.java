@@ -35,12 +35,14 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
@@ -91,13 +93,18 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
     {
         var clock = mock( SystemNanoClock.class );
         var dbProvider = new BoltKernelDatabaseManagementServiceProvider( managementService, new Monitors(), clock, Duration.ZERO );
-        return new AbstractTransactionStatementSPIProvider( dbProvider, mockBoltChannel, clock )
+        return new AbstractTransactionStatementSPIProvider( dbProvider, mockBoltChannel, clock, mock( MemoryTracker.class, RETURNS_MOCKS ) )
         {
             @Override
             protected TransactionStateMachineSPI newTransactionStateMachineSPI( BoltGraphDatabaseServiceSPI activeBoltGraphDatabaseServiceSPI,
                     StatementProcessorReleaseManager resourceReleaseManger )
             {
                 return mock( TransactionStateMachineSPI.class );
+            }
+
+            @Override
+            public void releaseTransactionStateMachineSPI()
+            {
             }
         };
     }

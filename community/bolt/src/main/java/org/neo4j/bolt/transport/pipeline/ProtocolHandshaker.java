@@ -25,8 +25,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
 
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltProtocol;
@@ -34,9 +34,13 @@ import org.neo4j.bolt.BoltProtocolVersion;
 import org.neo4j.bolt.transport.BoltProtocolFactory;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
 
 public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( ProtocolHandshaker.class );
+
     public static final int BOLT_MAGIC_PREAMBLE = 0x6060B017;
     private static final int HANDSHAKE_BUFFER_SIZE = 5 * Integer.BYTES;
 
@@ -45,18 +49,20 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
     private final Log log;
     private final boolean encryptionRequired;
     private final boolean encrypted;
+    private final MemoryTracker memoryTracker;
 
     private ByteBuf handshakeBuffer;
     private BoltProtocol protocol;
 
     public ProtocolHandshaker( BoltProtocolFactory boltProtocolFactory, BoltChannel boltChannel, LogProvider logging,
-            boolean encryptionRequired, boolean encrypted )
+                               boolean encryptionRequired, boolean encrypted, MemoryTracker memoryTracker )
     {
         this.boltProtocolFactory = boltProtocolFactory;
         this.boltChannel = boltChannel;
         this.log = logging.getLog( getClass() );
         this.encryptionRequired = encryptionRequired;
         this.encrypted = encrypted;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -70,6 +76,8 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
     {
         handshakeBuffer.release();
         handshakeBuffer = null;
+
+        memoryTracker.releaseHeap( SHALLOW_SIZE );
     }
 
     @Override
@@ -165,38 +173,42 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
 
     private boolean performHandshake()
     {
-        ArrayList<BoltProtocolVersion> suggestions = new ArrayList<BoltProtocolVersion>();
-
-        for ( int i = 0; i < 4; i++ )
+        try ( var handshakeMemoryTracker = memoryTracker.getScopedMemoryTracker() )
         {
-            int rawBytes = handshakeBuffer.getInt( (i + 1) * Integer.BYTES );
-            int major = BoltProtocolVersion.getMajorFromRawBytes( rawBytes );
-            int minor = BoltProtocolVersion.getMinorFromRawBytes( rawBytes );
-            int range = BoltProtocolVersion.getRangeFromRawBytes( rawBytes );
+            ArrayList<BoltProtocolVersion> suggestions = new ArrayList<BoltProtocolVersion>();
 
-            for ( int j = 0; j <= range; j++ )   //Range is inclusive thus the use of <=
+            for ( int i = 0; i < 4; i++ )
             {
-                int newMinor = Math.max( minor - j, 0 );
-                BoltProtocolVersion suggestion = new BoltProtocolVersion( major, newMinor );
+                int rawBytes = handshakeBuffer.getInt( (i + 1) * Integer.BYTES );
+                int major = BoltProtocolVersion.getMajorFromRawBytes( rawBytes );
+                int minor = BoltProtocolVersion.getMinorFromRawBytes( rawBytes );
+                int range = BoltProtocolVersion.getRangeFromRawBytes( rawBytes );
 
-                protocol = boltProtocolFactory.create( suggestion, boltChannel );
+                handshakeMemoryTracker.allocateHeap( BoltProtocolVersion.SHALLOW_SIZE * (range + 1) );
+                for ( int j = 0; j <= range; j++ )   //Range is inclusive thus the use of <=
+                {
+                    int newMinor = Math.max( minor - j, 0 );
+                    BoltProtocolVersion suggestion = new BoltProtocolVersion( major, newMinor );
+
+                    protocol = boltProtocolFactory.create( suggestion, boltChannel, memoryTracker );
+                    if ( protocol != null )
+                    {
+                        break;
+                    }
+                    suggestions.add( suggestion );
+                }
+
                 if ( protocol != null )
                 {
                     break;
                 }
-                suggestions.add( suggestion );
             }
 
-            if ( protocol != null )
+            if ( protocol == null )
             {
-                break;
+                log.debug( "Failed Bolt handshake: Bolt versions suggested by client '%s' are not supported by this server.",
+                           Arrays.toString( suggestions.toArray() ) );
             }
-        }
-
-        if ( protocol == null )
-        {
-            log.debug( "Failed Bolt handshake: Bolt versions suggested by client '%s' are not supported by this server.",
-                       Arrays.toString( suggestions.toArray() ) );
         }
 
         return protocol != null;

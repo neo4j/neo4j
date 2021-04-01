@@ -46,12 +46,16 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
+import org.neo4j.memory.HeapEstimator;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
 
 public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltFabricDatabaseService.class );
+    private static final long BOLT_TRANSACTION_SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltTransactionImpl.class );
 
     private final FabricExecutor fabricExecutor;
     private final NamedDatabaseId namedDatabaseId;
@@ -59,13 +63,15 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
     private final TransactionManager transactionManager;
     private final LocalGraphTransactionIdTracker transactionIdTracker;
     private final TransactionBookmarkManagerFactory transactionBookmarkManagerFactory;
+    private final MemoryTracker memoryTracker;
 
     public BoltFabricDatabaseService( NamedDatabaseId namedDatabaseId,
                                       FabricExecutor fabricExecutor,
                                       FabricConfig config,
                                       TransactionManager transactionManager,
                                       LocalGraphTransactionIdTracker transactionIdTracker,
-                                      TransactionBookmarkManagerFactory transactionBookmarkManagerFactory )
+                                      TransactionBookmarkManagerFactory transactionBookmarkManagerFactory,
+                                      MemoryTracker memoryTracker )
     {
         this.namedDatabaseId = namedDatabaseId;
         this.config = config;
@@ -73,12 +79,15 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
         this.fabricExecutor = fabricExecutor;
         this.transactionIdTracker = transactionIdTracker;
         this.transactionBookmarkManagerFactory = transactionBookmarkManagerFactory;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
     public BoltTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, List<Bookmark> bookmarks,
                                              Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata, RoutingContext routingContext )
     {
+        memoryTracker.allocateHeap( BOLT_TRANSACTION_SHALLOW_SIZE );
+
         if ( txTimeout == null )
         {
             txTimeout = config.getTransactionTimeout();
@@ -114,8 +123,15 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
         return namedDatabaseId;
     }
 
+    @Override
+    public void freeTransaction()
+    {
+        memoryTracker.releaseHeap( BOLT_TRANSACTION_SHALLOW_SIZE );
+    }
+
     public class BoltTransactionImpl implements BoltTransaction
     {
+
         private final FabricTransaction fabricTransaction;
 
         BoltTransactionImpl( FabricTransactionInfo transactionInfo, FabricTransaction fabricTransaction )

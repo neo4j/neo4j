@@ -19,16 +19,19 @@
  */
 package org.neo4j.bolt.v4.runtime;
 
-import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
-import org.neo4j.bolt.runtime.Bookmark;
-import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.messaging.ResultConsumer;
+import org.neo4j.bolt.runtime.Bookmark;
+import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
+import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
+import org.neo4j.memory.HeapEstimator;
 
 /**
  * When AUTOCOMMIT, additionally attach bookmark to PULL, DISCARD result
  */
 public class AutoCommitState extends AbstractStreamingState
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( AutoCommitState.class );
+
     @Override
     public String name()
     {

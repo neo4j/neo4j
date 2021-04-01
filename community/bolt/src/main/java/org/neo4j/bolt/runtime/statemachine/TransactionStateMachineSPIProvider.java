@@ -26,4 +26,6 @@ public interface TransactionStateMachineSPIProvider
 {
     TransactionStateMachineSPI getTransactionStateMachineSPI( String databaseName, StatementProcessorReleaseManager resourceReleaseManger )
             throws BoltProtocolBreachFatality, BoltIOException;
+
+    void releaseTransactionStateMachineSPI();
 }

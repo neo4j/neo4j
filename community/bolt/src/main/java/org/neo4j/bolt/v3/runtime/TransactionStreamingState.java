@@ -23,9 +23,12 @@ import org.neo4j.bolt.runtime.statemachine.BoltStateMachineState;
 import org.neo4j.bolt.runtime.statemachine.StateMachineContext;
 import org.neo4j.bolt.runtime.statemachine.StatementMetadata;
 import org.neo4j.bolt.messaging.ResultConsumer;
+import org.neo4j.memory.HeapEstimator;
 
 public class TransactionStreamingState extends AbstractStreamingState
 {
+    public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( TransactionStreamingState.class );
+
     @Override
     public String name()
     {
