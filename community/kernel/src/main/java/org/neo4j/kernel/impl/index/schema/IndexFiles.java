@@ -119,12 +119,12 @@ public abstract class IndexFiles
         }
     }
 
-    static class SingleFile extends IndexFiles
+    public static class SingleFile extends IndexFiles
     {
         private final FileSystemAbstraction fs;
         private final Path singleFile;
 
-        SingleFile( FileSystemAbstraction fs, Path singleFile )
+        public SingleFile( FileSystemAbstraction fs, Path singleFile )
         {
             this.fs = fs;
             this.singleFile = singleFile;

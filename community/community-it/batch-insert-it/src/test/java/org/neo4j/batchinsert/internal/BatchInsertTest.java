@@ -87,6 +87,7 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TokenScanReader;
 import org.neo4j.kernel.impl.index.schema.TokenScanStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -110,7 +111,7 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static java.util.Collections.singletonList;
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -1535,7 +1536,7 @@ class BatchInsertTest
     {
         Config configuration = configuration( denseNodeThreshold );
         configuration.set( GraphDatabaseSettings.default_schema_provider, providerDescriptor.name() );
-        return BatchInserters.inserter( databaseLayout, fs, configuration, singletonList( provider ) );
+        return BatchInserters.inserter( databaseLayout, fs, configuration, asList( provider, new TokenIndexProviderFactory() ) );
     }
 
     private GraphDatabaseAPI switchToEmbeddedGraphDatabaseService( BatchInserter inserter, int denseNodeThreshold )
