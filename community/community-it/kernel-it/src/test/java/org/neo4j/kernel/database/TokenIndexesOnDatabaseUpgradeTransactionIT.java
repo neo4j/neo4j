@@ -20,6 +20,7 @@
 package org.neo4j.kernel.database;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -65,6 +66,7 @@ import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.kernel.KernelVersion.V4_2;
 
+@Disabled
 @TestDirectoryExtension
 class TokenIndexesOnDatabaseUpgradeTransactionIT
 {
