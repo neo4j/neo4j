@@ -159,6 +159,20 @@ trait GraphIcing {
       getIndex()
     }
 
+    def createLookupIndex(isNodeIndex: Boolean, maybeName: Option[String] = None): IndexDefinition = {
+      val nameString = maybeName.map(n => s" `$n`").getOrElse("")
+      val (pattern, function) = if (isNodeIndex) ("(n)", "labels(n)") else ("()-[r]-()", "type(r)")
+      withTx( tx => {
+        tx.execute(s"CREATE LOOKUP INDEX$nameString FOR $pattern ON EACH $function")
+      })
+
+      withTx( tx =>  {
+        tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      } )
+
+      getLookupIndex(isNodeIndex)
+    }
+
     def awaitIndexesOnline(): Unit = {
       withTx( tx =>  {
         tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)

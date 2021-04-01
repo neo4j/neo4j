@@ -84,6 +84,7 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
         val indexStatus = indexInfo.indexStatus
         val uniqueness = if (indexDescriptor.isUnique) Unique.toString else Nonunique.toString
         val indexType = indexDescriptor.getIndexType
+        val isLookupIndex = indexType.equals(IndexType.LOOKUP)
 
         /*
          * For btree and lookup the create command is the Cypher CREATE INDEX which needs the name to be escaped,
@@ -95,9 +96,13 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
         val createName = if (indexType.equals(IndexType.FULLTEXT)) name else s"`$escapedName`"
 
         val entityType = indexDescriptor.schema.entityType
-        val labels = indexInfo.labelsOrTypes
+        val labelsOrTypes = indexInfo.labelsOrTypes
         val properties = indexInfo.properties
         val providerName = indexDescriptor.getIndexProvider.name
+        val labelsOrTypesValue = if (isLookupIndex) Values.NO_VALUE
+                                 else VirtualValues.fromList(labelsOrTypes.map(elem => Values.of(elem).asInstanceOf[AnyValue]).asJava)
+        val propertiesValue = if (isLookupIndex) Values.NO_VALUE
+                              else VirtualValues.fromList(properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava)
 
         val briefResult = Map(
           // The id of the index
@@ -114,23 +119,21 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
           "type" -> Values.stringValue(indexType.name),
           // Type of entities this index represents, either "NODE" or "RELATIONSHIP"
           "entityType" -> Values.stringValue(entityType.name),
-          // The labels or relationship types of this constraint, for example ["Label1", "Label2"] or ["RelType1", "RelType2"]
-          "labelsOrTypes" -> VirtualValues.fromList(labels.map(elem => Values.of(elem).asInstanceOf[AnyValue]).asJava),
-          // The properties of this constraint, for example ["propKey", "propKey2"]
-          "properties" -> VirtualValues.fromList(properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava),
-          // The index provider for this index, one of "native-btree-1.0", "lucene+native-3.0", "fulltext-1.0"
+          // The labels or relationship types of this constraint, for example ["Label1", "Label2"] or ["RelType1", "RelType2"], null for lookup indexes
+          "labelsOrTypes" -> labelsOrTypesValue,
+          // The properties of this constraint, for example ["propKey", "propKey2"], null for lookup indexes
+          "properties" -> propertiesValue,
+          // The index provider for this index, one of "native-btree-1.0", "lucene+native-3.0", "fulltext-1.0", "token-1.0"
           "indexProvider" -> Values.stringValue(providerName)
         )
         if (verbose) {
           val indexConfig = indexDescriptor.getIndexConfig
+          val optionsValue = if (isLookupIndex) Values.NO_VALUE else extractOptionsMap(providerName, indexConfig)
           briefResult ++ Map(
-            "options" -> {
-              if (indexType.equals(IndexType.LOOKUP)) null
-              else extractOptionsMap(providerName, indexConfig)
-            },
-            "failureMessage" -> Values.stringValue(indexInfo.indexStatus.failureMessage),
+            "options" -> optionsValue,
+            "failureMessage" -> Values.stringValue(indexStatus.failureMessage),
             "createStatement" -> Values.stringValue(
-              createIndexStatement(createName, indexType, entityType, labels, properties, providerName, indexConfig, indexStatus.maybeConstraint))
+              createIndexStatement(createName, indexType, entityType, labelsOrTypes, properties, providerName, indexConfig, indexStatus.maybeConstraint))
           )
         } else {
           briefResult
@@ -201,9 +204,9 @@ object ShowIndexesCommand {
       case IndexType.LOOKUP =>
         entityType match {
           case EntityType.NODE =>
-            s"CREATE LOOKUP INDEX $escapedName FOR (n) ON EACH labels(n) OPTIONS {}"
+            s"CREATE LOOKUP INDEX $escapedName FOR (n) ON EACH labels(n)"
           case EntityType.RELATIONSHIP =>
-            s"CREATE LOOKUP INDEX $escapedName FOR ()-[r]-() ON EACH type(r) OPTIONS {}"
+            s"CREATE LOOKUP INDEX $escapedName FOR ()-[r]-() ON EACH type(r)"
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case _ => throw new IllegalArgumentException(s"Did not recognize index type $indexType")
