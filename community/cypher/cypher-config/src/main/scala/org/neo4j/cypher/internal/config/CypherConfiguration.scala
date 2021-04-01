@@ -85,7 +85,7 @@ class CypherConfiguration private (config: Config) {
 
   //dynamic configurations
   private var _obfuscateLiterals: Boolean = config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)
-  config.addListener[java.lang.Boolean](GraphDatabaseSettings.log_queries_obfuscate_literals, (_: java.lang.Boolean, u: java.lang.Boolean) => _obfuscateLiterals = u)
+  config.addListener[java.lang.Boolean](GraphDatabaseSettings.log_queries_obfuscate_literals, (_: java.lang.Boolean, newValue: java.lang.Boolean) => _obfuscateLiterals = newValue)
 
   def obfuscateLiterals: Boolean = _obfuscateLiterals
 
