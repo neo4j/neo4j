@@ -110,37 +110,28 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
 
 object CypherPlannerConfiguration {
   def fromCypherConfiguration(config: CypherConfiguration, cfg: Config, planSystemCommands: Boolean): CypherPlannerConfiguration =
-    CypherPlannerConfiguration(
-      queryCacheSize = config.queryCacheSize,
-      statsDivergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(config.statsDivergenceCalculator),
-      useErrorsOverWarnings = config.useErrorsOverWarnings,
-      idpMaxTableSize = config.idpMaxTableSize,
-      idpIterationDuration = config.idpIterationDuration,
-      errorIfShortestPathFallbackUsedAtRuntime = config.errorIfShortestPathFallbackUsedAtRuntime,
-      errorIfShortestPathHasCommonNodesAtRuntime = config.errorIfShortestPathHasCommonNodesAtRuntime,
-      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping,
-      csvBufferSize = config.csvBufferSize,
-      nonIndexedLabelWarningThreshold = cfg.get(GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold).longValue(),
-      planSystemCommands = planSystemCommands,
-      useJavaCCParser = config.useJavaCCParser,
-      obfuscateLiterals = config.obfuscateLiterals,
-      pipelinedBatchSizeSmall = config.pipelinedBatchSizeSmall,
-      pipelinedBatchSizeBig = config.pipelinedBatchSizeBig,
-    )
+    new CypherPlannerConfiguration(config, cfg, planSystemCommands)
+
+  def defaults(): CypherPlannerConfiguration = {
+    val cfg = Config.defaults()
+    fromCypherConfiguration(CypherConfiguration.fromConfig(cfg), cfg, planSystemCommands = false)
+  }
+
 }
 
-case class CypherPlannerConfiguration(queryCacheSize: Int,
-                                      statsDivergenceCalculator: StatsDivergenceCalculator,
-                                      useErrorsOverWarnings: Boolean,
-                                      idpMaxTableSize: Int,
-                                      idpIterationDuration: Long,
-                                      errorIfShortestPathFallbackUsedAtRuntime: Boolean,
-                                      errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
-                                      legacyCsvQuoteEscaping: Boolean,
-                                      csvBufferSize: Int,
-                                      nonIndexedLabelWarningThreshold: Long,
-                                      planSystemCommands: Boolean,
-                                      useJavaCCParser: Boolean,
-                                      obfuscateLiterals: Boolean,
-                                      pipelinedBatchSizeSmall: Int,
-                                      pipelinedBatchSizeBig: Int)
+class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val planSystemCommands: Boolean) {
+  def queryCacheSize: Int = config.queryCacheSize
+  def statsDivergenceCalculator: StatsDivergenceCalculator = StatsDivergenceCalculator.divergenceCalculatorFor(config.statsDivergenceCalculator)
+  def useErrorsOverWarnings: Boolean = config.useErrorsOverWarnings
+  def idpMaxTableSize: Int = config.idpMaxTableSize
+  def idpIterationDuration: Long = config.idpIterationDuration
+  def errorIfShortestPathFallbackUsedAtRuntime: Boolean =  config.errorIfShortestPathFallbackUsedAtRuntime
+  def errorIfShortestPathHasCommonNodesAtRuntime: Boolean = config.errorIfShortestPathHasCommonNodesAtRuntime
+  def legacyCsvQuoteEscaping: Boolean = config.legacyCsvQuoteEscaping
+  def csvBufferSize: Int = config.csvBufferSize
+  def nonIndexedLabelWarningThreshold: Long = cfg.get(GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold).longValue()
+  def useJavaCCParser: Boolean = config.useJavaCCParser
+  def obfuscateLiterals: Boolean = config.obfuscateLiterals
+  def pipelinedBatchSizeSmall: Int = config.pipelinedBatchSizeSmall
+  def pipelinedBatchSizeBig: Int = config.pipelinedBatchSizeBig
+}

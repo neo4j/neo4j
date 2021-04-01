@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
-import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
 import org.neo4j.cypher.internal.compiler.phases.CreatePlannerQuery
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
@@ -48,7 +47,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
@@ -289,23 +287,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(0), availablePropertiesFromIndexes = availablePropertiesFromIndexes)
   }
 
-  val config = CypherPlannerConfiguration(
-    queryCacheSize = 100,
-    statsDivergenceCalculator = StatsDivergenceCalculator.divergenceNoDecayCalculator(0.5, 1000),
-    useErrorsOverWarnings = false,
-    idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,
-    idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
-    errorIfShortestPathFallbackUsedAtRuntime = false,
-    errorIfShortestPathHasCommonNodesAtRuntime = true,
-    legacyCsvQuoteEscaping = false,
-    csvBufferSize = 4 * 1024 * 1024,
-    nonIndexedLabelWarningThreshold = 10000,
-    planSystemCommands = false,
-    useJavaCCParser = true,
-    obfuscateLiterals = false,
-    pipelinedBatchSizeSmall = 128,
-    pipelinedBatchSizeBig = 1024,
-  )
+  val config: CypherPlannerConfiguration = CypherPlannerConfiguration.defaults()
 
   def buildSinglePlannerQuery(query: String, lookup: Option[QualifiedName => ProcedureSignature] = None): SinglePlannerQuery = {
     buildPlannerQuery(query, lookup).query match {

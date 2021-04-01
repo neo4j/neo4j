@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
@@ -1898,7 +1899,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |MATCH (b)-[r2:R]->(c)
         |RETURN a, b, c ORDER BY a.prop""".stripMargin
 
-    val plan = wideningExpandConfig
+    val plan: LogicalPlan = wideningExpandConfig
       .plan(query)
       .stripProduceResults
 

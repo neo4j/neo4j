@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.phases.Compatibility4_3
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
@@ -52,7 +51,6 @@ import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.options.CypherVersion
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL
-import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.helpers.collection.Pair
@@ -71,23 +69,12 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   private def plannerConfig(queryCacheSize: Int = 128,
                             statsDivergenceThreshold: Double = 0.5,
                             queryPlanTTL: Long = 1000): CypherPlannerConfiguration = {
-    CypherPlannerConfiguration(
-      queryCacheSize,
-      StatsDivergenceCalculator.divergenceNoDecayCalculator(statsDivergenceThreshold, queryPlanTTL),
-      useErrorsOverWarnings = false,
-      idpMaxTableSize = 128,
-      idpIterationDuration = 1000,
-      errorIfShortestPathFallbackUsedAtRuntime = false,
-      errorIfShortestPathHasCommonNodesAtRuntime = true,
-      legacyCsvQuoteEscaping = false,
-      csvBufferSize = CSVResources.DEFAULT_BUFFER_SIZE,
-      nonIndexedLabelWarningThreshold = 10000L,
-      planSystemCommands = false,
-      useJavaCCParser = true,
-      obfuscateLiterals = false,
-      pipelinedBatchSizeSmall = 128,
-      pipelinedBatchSizeBig = 1024,
-    )
+    val builder = Config.newBuilder()
+    builder.set(GraphDatabaseSettings.query_cache_size, Int.box(queryCacheSize))
+    builder.set(GraphDatabaseSettings.query_statistics_divergence_threshold, Double.box(statsDivergenceThreshold))
+    builder.set(GraphDatabaseSettings.cypher_min_replan_interval, Duration.ofMillis(queryPlanTTL))
+    val config = builder.build()
+    CypherPlannerConfiguration.fromCypherConfiguration(CypherConfiguration.fromConfig(config), config, planSystemCommands = false)
 
   }
 

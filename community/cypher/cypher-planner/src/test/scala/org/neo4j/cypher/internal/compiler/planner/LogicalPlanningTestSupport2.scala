@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
-import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.parsing
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsO
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
+import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.frontend.phases.ASTRewriter
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -92,7 +93,6 @@ import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
-import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.Attribute
@@ -114,23 +114,14 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
   val deduplicateNames: Boolean = true
   val innerVariableNamer: InnerVariableNamer = new GeneratingNamer
 
-  val cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration(
-    queryCacheSize = 100,
-    statsDivergenceCalculator = StatsDivergenceCalculator.divergenceNoDecayCalculator(0.5, 1000),
-    useErrorsOverWarnings = false,
-    idpMaxTableSize = DefaultIDPSolverConfig.maxTableSize,
-    idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
-    errorIfShortestPathFallbackUsedAtRuntime = false,
-    errorIfShortestPathHasCommonNodesAtRuntime = true,
-    legacyCsvQuoteEscaping = false,
-    csvBufferSize = GraphDatabaseSettings.csv_buffer_size.defaultValue().toInt,
-    nonIndexedLabelWarningThreshold = 10000,
-    planSystemCommands = false,
-    useJavaCCParser = true,
-    obfuscateLiterals = false,
-    pipelinedBatchSizeSmall = 128,
-    pipelinedBatchSizeBig = 1024,
-  )
+  val cypherCompilerConfig: CypherPlannerConfiguration = CypherPlannerConfiguration.defaults()
+
+  val configurationThatForcesCompacting: CypherPlannerConfiguration = {
+    val builder = Config.newBuilder()
+    builder.set(GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold, Long.box(10L))
+    val dbConfig = builder.build()
+    CypherPlannerConfiguration.fromCypherConfiguration(CypherConfiguration.fromConfig(dbConfig), dbConfig, planSystemCommands = false)
+  }
 
   sealed trait QueryGraphSolverSetup {
     def queryGraphSolver(): QueryGraphSolver

@@ -1012,7 +1012,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       variableName,
       format,
       fieldTerminator,
-      legacyCsvQuoteEscaping = false,
+      legacyCsvQuoteEscaping = GraphDatabaseSettings.csv_legacy_quote_escaping.defaultValue(),
       csvBufferSize = GraphDatabaseSettings.csv_buffer_size.defaultValue().toInt
     )(_)))
   }
