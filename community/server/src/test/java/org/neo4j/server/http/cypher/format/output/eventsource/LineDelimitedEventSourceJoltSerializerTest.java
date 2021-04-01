@@ -103,7 +103,7 @@ import static org.neo4j.test.mockito.mock.SpatialMocks.mockCartesian_3D;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84;
 import static org.neo4j.test.mockito.mock.SpatialMocks.mockWGS84_3D;
 
-public class EventSourceSerializerTest
+public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSourceJoltSerializerTest
 {
 
     private static final Map<String,Object> NO_ARGS = Collections.emptyMap();
@@ -112,7 +112,7 @@ public class EventSourceSerializerTest
     private static final JsonFactory JSON_FACTORY = new JsonFactory().disable( JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM );
 
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
-    private EventSourceSerializer serializer;
+    private LineDelimitedEventSourceJoltSerializer serializer;
     private final TransactionHandle transactionHandle = mock( TransactionHandle.class );
     private InternalTransaction internalTransaction;
 
@@ -389,7 +389,7 @@ public class EventSourceSerializerTest
 
             // when
             final ByteArrayOutputStream output = new ByteArrayOutputStream();
-            EventSourceSerializer serializer = getSerializerWith( localTransactionHandle, output );
+            LineDelimitedEventSourceJoltSerializer serializer = getSerializerWith( localTransactionHandle, output );
 
             writeStatementStart( serializer, "node" );
             writeRecord( serializer, Collections.singletonMap( "node", node ), "node" );
@@ -808,103 +808,13 @@ public class EventSourceSerializerTest
                 result );
     }
 
-    private static EventSourceSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output, String uri )
+    protected LineDelimitedEventSourceJoltSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output, String uri )
     {
-        return new EventSourceSerializer( transactionHandle, Collections.emptyMap(), JoltCodec.class, true, JSON_FACTORY, output );
+        return new LineDelimitedEventSourceJoltSerializer( transactionHandle, Collections.emptyMap(), JoltCodec.class, true, JSON_FACTORY, output );
     }
 
-    private static EventSourceSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output )
+    protected LineDelimitedEventSourceJoltSerializer getSerializerWith( TransactionHandle transactionHandle, OutputStream output )
     {
         return getSerializerWith( transactionHandle, output, null );
-    }
-
-    private static void writeStatementStart( EventSourceSerializer serializer, String... columns )
-    {
-        writeStatementStart( serializer, null, columns );
-    }
-
-    private static void writeStatementStart( EventSourceSerializer serializer, List<ResultDataContent> resultDataContents, String... columns )
-    {
-        serializer.writeStatementStart( new StatementStartEvent( null, Arrays.asList( columns ) ),
-                                        new InputStatement( null, null, false, resultDataContents ) );
-    }
-
-    private static void writeRecord( EventSourceSerializer serializer, Map<String,?> row, String... columns )
-    {
-        serializer.writeRecord( new RecordEvent( Arrays.asList( columns ), row::get ) );
-    }
-
-    private static void writeStatementEnd( EventSourceSerializer serializer )
-    {
-        writeStatementEnd( serializer, null, Collections.emptyList() );
-    }
-
-    private static void writeStatementEnd( EventSourceSerializer serializer, ExecutionPlanDescription planDescription,
-                                           Iterable<Notification> notifications )
-    {
-        QueryExecutionType queryExecutionType = null != planDescription ? QueryExecutionType.profiled( QueryExecutionType.QueryType.READ_WRITE )
-                                                                        : QueryExecutionType.query( QueryExecutionType.QueryType.READ_WRITE );
-
-        serializer.writeStatementEnd( new StatementEndEvent( queryExecutionType, null, planDescription, notifications ) );
-    }
-
-    private static void writeTransactionInfo( EventSourceSerializer serializer )
-    {
-        serializer.writeTransactionInfo( new TransactionInfoEvent( TransactionNotificationState.NO_TRANSACTION, null, -1 ) );
-    }
-
-    private static void writeTransactionInfo( EventSourceSerializer serializer, String commitUri )
-    {
-        serializer.writeTransactionInfo( new TransactionInfoEvent( TransactionNotificationState.NO_TRANSACTION, URI.create( commitUri ), -1 ) );
-    }
-
-    private static void writeError( EventSourceSerializer serializer, Status status, String message )
-    {
-        serializer.writeFailure( new FailureEvent( status, message ) );
-    }
-
-    private static Path mockPath( Map<String,Object> startNodeProperties, Map<String,Object> relationshipProperties, Map<String,Object> endNodeProperties )
-    {
-        Node startNode = node( 1, properties( startNodeProperties ) );
-        Node endNode = node( 2, properties( endNodeProperties ) );
-        Relationship relationship = relationship( 1, properties( relationshipProperties ), startNode, "RELATED", endNode );
-        return path( startNode, Link.link( relationship, endNode ) );
-    }
-
-    private static Set<JsonNode> identifiersOf( JsonNode root )
-    {
-        Set<JsonNode> parentIds = new HashSet<>();
-        for ( JsonNode id : root.get( "identifiers" ) )
-        {
-            parentIds.add( id );
-        }
-        return parentIds;
-    }
-
-    private static ExecutionPlanDescription mockedPlanDescription( String operatorType, Set<String> identifiers, Map<String,Object> args,
-                                                                   List<ExecutionPlanDescription> children )
-    {
-        ExecutionPlanDescription planDescription = mock( ExecutionPlanDescription.class );
-        when( planDescription.getChildren() ).thenReturn( children );
-        when( planDescription.getName() ).thenReturn( operatorType );
-        when( planDescription.getArguments() ).thenReturn( args );
-        when( planDescription.getIdentifiers() ).thenReturn( identifiers );
-        return planDescription;
-    }
-
-    private static JsonNode wrapWithType( String sigil, Object value ) throws JsonParseException
-    {
-        return jsonNode( "{\"" + sigil + "\":\"" + value + "\"}" );
-    }
-
-    private static JsonNode assertIsPlanRoot( JsonNode result ) throws JsonParseException
-    {
-        JsonNode plan = result.get( "plan" );
-        assertTrue( plan != null && plan.isObject(), "Expected plan to be an object" );
-
-        JsonNode root = plan.get( "root" );
-        assertTrue( root != null && root.isObject(), "Expected plan to be an object" );
-
-        return root;
     }
 }

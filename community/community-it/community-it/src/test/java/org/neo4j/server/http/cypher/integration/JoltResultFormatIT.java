@@ -27,7 +27,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.ws.rs.core.HttpHeaders;
 
-import org.neo4j.server.http.cypher.format.output.eventsource.EventSourceMessageBodyWriter;
+import org.neo4j.server.http.cypher.format.output.eventsource.LineDelimitedEventSourceJoltMessageBodyWriter;
+import org.neo4j.server.http.cypher.format.output.eventsource.SequentialEventSourceJoltMessageBodyWriter;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
@@ -40,7 +41,7 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 class JoltResultFormatIT extends AbstractRestFunctionalTestBase
 {
     private final HTTP.Builder http = HTTP.withBaseUri( container().getBaseUri() )
-                                          .withHeaders( HttpHeaders.ACCEPT, EventSourceMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE );
+                                          .withHeaders( HttpHeaders.ACCEPT, LineDelimitedEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE );
 
     private String commitResource;
 
@@ -71,7 +72,8 @@ class JoltResultFormatIT extends AbstractRestFunctionalTestBase
         var cacheBuster = ";cacheBuster=" + ThreadLocalRandom.current().nextLong();
         // execute and commit
         var response =
-                http.withHeaders( HttpHeaders.ACCEPT, EventSourceMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE + ";strict=" + booleanString + cacheBuster )
+                http.withHeaders( HttpHeaders.ACCEPT, LineDelimitedEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE + ";strict=" +
+                                                      booleanString + cacheBuster )
                     .POST( commitResource, queryAsJsonRow( "RETURN 1, 5.5, true" ) );
 
         assertThat( response.status() ).isEqualTo( 200 );
@@ -82,18 +84,52 @@ class JoltResultFormatIT extends AbstractRestFunctionalTestBase
                                                      "{\"info\":{\"commit\":\"" + commitResource + "\"}}\n" );
     }
 
+    @ParameterizedTest
+    @CsvSource( {"true", "TRUE"} )
+    void shouldReturnJoltInStrictRecordSeparatedFormat( String booleanString )
+    {
+        // See https://github.com/eclipse/jetty.project/issues/5446
+        var cacheBuster = ";cacheBuster=" + ThreadLocalRandom.current().nextLong();
+        // execute and commit
+        var response =
+                http.withHeaders( HttpHeaders.ACCEPT, SequentialEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE + ";strict=" +
+                                                      booleanString + cacheBuster )
+                    .POST( commitResource, queryAsJsonRow( "RETURN 1, 5.5, true" ) );
+
+        assertThat( response.status() ).isEqualTo( 200 );
+        assertThat( response.header( HttpHeaders.LOCATION ) );
+        assertThat( response.rawContent() ).isEqualTo( "\u001E{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n" +
+                                                     "\u001E{\"data\":[{\"Z\":\"1\"},{\"R\":\"5.5\"},{\"?\":\"true\"}]}\n" +
+                                                     "\u001E{\"summary\":{}}\n" +
+                                                     "\u001E{\"info\":{\"commit\":\"" + commitResource + "\"}}\n" );
+    }
+
     @Test
     void shouldReturnJoltInSparseFormat()
     {
         // execute and commit
-        var response = http.withHeaders( HttpHeaders.ACCEPT, EventSourceMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE )
-                              .POST( commitResource, queryAsJsonRow( "RETURN 1, 5.5, true" ) );
+        var response = http.withHeaders( HttpHeaders.ACCEPT, LineDelimitedEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE )
+                           .POST( commitResource, queryAsJsonRow( "RETURN 1, 5.5, true" ) );
 
         assertThat( response.status() ).isEqualTo( 200 );
         assertThat( response.rawContent() ).isEqualTo( "{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n" +
-                                                     "{\"data\":[1,{\"R\":\"5.5\"},true]}\n" +
-                                                     "{\"summary\":{}}\n" +
-                                                     "{\"info\":{\"commit\":\"" + commitResource + "\"}}\n" );
+                                                       "{\"data\":[1,{\"R\":\"5.5\"},true]}\n" +
+                                                       "{\"summary\":{}}\n" +
+                                                       "{\"info\":{\"commit\":\"" + commitResource + "\"}}\n" );
+    }
+
+    @Test
+    void shouldReturnJoltInRecordSeparatedFormat()
+    {
+        // execute and commit
+        var response = http.withHeaders( HttpHeaders.ACCEPT, SequentialEventSourceJoltMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE )
+                           .POST( commitResource, queryAsJsonRow( "RETURN 1, 5.5, true" ) );
+
+        assertThat( response.status() ).isEqualTo( 200 );
+        assertThat( response.rawContent() ).isEqualTo( "\u001E{\"header\":{\"fields\":[\"1\",\"5.5\",\"true\"]}}\n" +
+                                                       "\u001E{\"data\":[1,{\"R\":\"5.5\"},true]}\n" +
+                                                       "\u001E{\"summary\":{}}\n" +
+                                                       "\u001E{\"info\":{\"commit\":\"" + commitResource + "\"}}\n" );
     }
 
     private HTTP.RawPayload queryAsJsonRow( String query )
