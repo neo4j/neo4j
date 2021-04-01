@@ -19,9 +19,8 @@
  */
 package org.neo4j.io.pagecache.tracing;
 
-import java.nio.file.Path;
-
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
@@ -45,9 +44,9 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public void mappedFile( Path path )
+    public void mappedFile( PagedFile pagedFile )
     {
-        delegate.mappedFile( path );
+        delegate.mappedFile( pagedFile );
     }
 
     @Override
@@ -66,6 +65,12 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     public EvictionRunEvent beginPageEvictions( int pageCountToEvict )
     {
         return delegate.beginPageEvictions( pageCountToEvict );
+    }
+
+    @Override
+    public EvictionRunEvent beginEviction()
+    {
+        return delegate.beginEviction();
     }
 
     @Override
@@ -105,9 +110,9 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public void unmappedFile( Path path )
+    public void unmappedFile( PagedFile pagedFile )
     {
-        delegate.unmappedFile( path );
+        delegate.unmappedFile( pagedFile );
     }
 
     @Override
@@ -207,9 +212,9 @@ public class DelegatingPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public void maxPages( long maxPages )
+    public void maxPages( long maxPages, long pageSize )
     {
-        delegate.maxPages( maxPages );
+        delegate.maxPages( maxPages, pageSize );
     }
 
     @Override

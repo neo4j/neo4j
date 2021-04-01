@@ -21,27 +21,32 @@ package org.neo4j.io.pagecache.tracing;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.PagedFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
 public class DefaultPageCacheTracerTest
 {
     private PageCacheTracer tracer;
     private PageSwapper swapper;
+    private PageReferenceTranslator pageReferenceTranslator;
 
     @BeforeEach
     public void setUp()
     {
         tracer = new DefaultPageCacheTracer();
         swapper = new DummyPageSwapper( "filename", (int) ByteUnit.kibiBytes( 8 ) );
+        pageReferenceTranslator = Mockito.mock( PageReferenceTranslator.class );
     }
 
     @Test
@@ -63,7 +68,7 @@ public class DefaultPageCacheTracerTest
         assertEquals( 0, third.pins() );
 
         PinEvent secondPin = second.beginPin( true, 2, swapper );
-        secondPin.beginPageFault().done();
+        secondPin.beginPageFault( 2, 3 ).done();
 
         assertEquals( 2, first.pins() );
         assertEquals( 1, second.pins() );
@@ -79,33 +84,33 @@ public class DefaultPageCacheTracerTest
     {
         try ( EvictionRunEvent evictionRunEvent = tracer.beginPageEvictions( 2 ) )
         {
-            try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction() )
+            try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction( 0 ) )
             {
-                FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 );
+                FlushEvent flushEvent = evictionEvent.beginFlush( 0, swapper, pageReferenceTranslator );
                 flushEvent.addBytesWritten( 12 );
                 flushEvent.addPagesFlushed( 10 );
                 flushEvent.done();
             }
 
-            try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction() )
+            try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction( 0 ) )
             {
-                FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 );
+                FlushEvent flushEvent = evictionEvent.beginFlush( 0, swapper, pageReferenceTranslator );
                 flushEvent.addBytesWritten( 12 );
                 flushEvent.addPagesFlushed( 1 );
                 flushEvent.done();
                 evictionEvent.threwException( new IOException() );
             }
 
-            try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction() )
+            try ( EvictionEvent evictionEvent = evictionRunEvent.beginEviction( 0 ) )
             {
-                FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 );
+                FlushEvent flushEvent = evictionEvent.beginFlush( 0, swapper, pageReferenceTranslator );
                 flushEvent.addBytesWritten( 12 );
                 flushEvent.addPagesFlushed( 2 );
                 flushEvent.done();
                 evictionEvent.threwException( new IOException() );
             }
 
-            evictionRunEvent.beginEviction().close();
+            evictionRunEvent.beginEviction( 0 ).close();
         }
 
         assertCounts( 0, 0, 0, 0, 4, 2, 13, 0, 0, 36, 0, 0,  0d);
@@ -114,12 +119,12 @@ public class DefaultPageCacheTracerTest
     @Test
     void mustCountFileMappingAndUnmapping()
     {
-        tracer.mappedFile( Path.of( "a" ) );
+        var pagedFile = Mockito.mock( PagedFile.class );
+        when(pagedFile.path()).thenReturn( Path.of( "a" ) );
 
+        tracer.mappedFile( pagedFile );
         assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,  0d );
-
-        tracer.unmappedFile( Path.of( "a" ) );
-
+        tracer.unmappedFile( pagedFile );
         assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,  0d );
     }
 
@@ -128,24 +133,24 @@ public class DefaultPageCacheTracerTest
     {
         try ( MajorFlushEvent cacheFlush = tracer.beginCacheFlush() )
         {
-            cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 ).done();
-            cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 ).done();
-            cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 ).done();
+            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).done();
+            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).done();
+            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).done();
         }
 
         assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d );
 
         try ( MajorFlushEvent fileFlush = tracer.beginFileFlush( swapper ) )
         {
-            var flushEvent1 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 );
+            var flushEvent1 = fileFlush.beginFlush( 0, swapper, pageReferenceTranslator );
             flushEvent1.addPagesFlushed( 1 );
             flushEvent1.done();
 
-            var flushEvent2 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 );
+            var flushEvent2 = fileFlush.beginFlush( 0, swapper, pageReferenceTranslator );
             flushEvent2.addPagesFlushed( 2 );
             flushEvent2.done();
 
-            var flushEvent3 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 );
+            var flushEvent3 = fileFlush.beginFlush( 0, swapper, pageReferenceTranslator );
             flushEvent3.addPagesFlushed( 3 );
             flushEvent3.done();
         }
@@ -158,23 +163,23 @@ public class DefaultPageCacheTracerTest
     {
         try ( MajorFlushEvent cacheFlush = tracer.beginCacheFlush() )
         {
-            cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 ).done();
-            cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 ).done();
-            cacheFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 0 ).done();
+            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).done();
+            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).done();
+            cacheFlush.beginFlush( 0, swapper, pageReferenceTranslator ).done();
         }
         assertCounts( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d );
 
         try ( MajorFlushEvent fileFlush = tracer.beginFileFlush( swapper ) )
         {
-            var flushEvent1 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 1 );
+            var flushEvent1 = fileFlush.beginFlush( new long[]{0}, swapper, pageReferenceTranslator, 0, 1 );
             flushEvent1.addPagesMerged( 1 );
             flushEvent1.done();
 
-            var flushEvent2 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 2 );
+            var flushEvent2 = fileFlush.beginFlush( new long[]{0}, swapper, pageReferenceTranslator, 0, 2 );
             flushEvent2.addPagesMerged( 2 );
             flushEvent2.done();
 
-            var flushEvent3 = fileFlush.flushEventOpportunity().beginFlush( 0, 0, swapper, 0, 3 );
+            var flushEvent3 = fileFlush.beginFlush( new long[]{0}, swapper, pageReferenceTranslator, 0, 3 );
             flushEvent3.addPagesMerged( 3 );
             flushEvent3.done();
         }
@@ -194,7 +199,7 @@ public class DefaultPageCacheTracerTest
     void usageRatio()
     {
         assertThat( tracer.usageRatio() ).isEqualTo( 0 );
-        tracer.maxPages( 10 );
+        tracer.maxPages( 10, 8 );
         assertThat( tracer.usageRatio() ).isCloseTo( 0d, within( 0.0001 ) );
         tracer.faults( 5 );
         assertThat( tracer.usageRatio() ).isCloseTo( 0.5, within( 0.0001 ) );

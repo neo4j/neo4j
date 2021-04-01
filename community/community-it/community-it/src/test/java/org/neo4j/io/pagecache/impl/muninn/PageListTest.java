@@ -47,8 +47,8 @@ import org.neo4j.io.pagecache.tracing.DummyPageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
-import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 import org.neo4j.util.concurrent.Futures;
@@ -1876,7 +1876,6 @@ public class PageListTest
         StubPageFaultEvent event = new StubPageFaultEvent();
         pageList.fault( pageRef, swapper, swapperId, filePageId, event );
         assertThat( event.bytesRead ).isEqualTo( 333L );
-        assertThat( event.cachePageId ).isEqualTo( pageId );
     }
 
     @ParameterizedTest( name = "pageRef = {0}" )
@@ -2270,7 +2269,7 @@ public class PageListTest
         assertFalse( evictionNotified.get() );
     }
 
-    private static class EvictionAndFlushRecorder implements EvictionEvent, FlushEventOpportunity, FlushEvent
+    private static class EvictionAndFlushRecorderEvent implements EvictionEvent, FlushEvent
     {
         private long filePageId;
         private PageSwapper swapper;
@@ -2282,6 +2281,11 @@ public class PageListTest
         private IOException flushException;
         private int pagesFlushed;
         private int pagesMerged;
+
+        EvictionAndFlushRecorderEvent( long cachePageId )
+        {
+            this.cachePageId = cachePageId;
+        }
 
         // --- EvictionEvent:
 
@@ -2304,50 +2308,15 @@ public class PageListTest
         }
 
         @Override
-        public FlushEventOpportunity flushEventOpportunity()
-        {
-            return this;
-        }
-
-        @Override
         public void threwException( IOException exception )
         {
             this.evictionException = exception;
         }
 
         @Override
-        public void setCachePageId( long cachePageId )
-        {
-            this.cachePageId = cachePageId;
-        }
-
-        // --- FlushEventOpportunity:
-
-        @Override
-        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int mergedPages )
+        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageTranslator )
         {
             return this;
-        }
-
-        @Override
-        public void startFlush( int[][] translationTable )
-        {
-        }
-
-        @Override
-        public ChunkEvent startChunk( int[] chunk )
-        {
-            return ChunkEvent.NULL;
-        }
-
-        @Override
-        public void throttle( long millis )
-        {
-        }
-
-        @Override
-        public void reportIO( int completedIOs )
-        {
         }
 
         // --- FlushEvent:
@@ -2395,8 +2364,8 @@ public class PageListTest
         int swapperId = swappers.allocate( swapper );
         doFault( swapperId, 42 );
         pageList.unlockExclusive( pageRef );
-        EvictionAndFlushRecorder recorder = new EvictionAndFlushRecorder();
-        assertTrue( pageList.tryEvict( pageRef, () -> recorder ) );
+        EvictionAndFlushRecorderEvent recorder = new EvictionAndFlushRecorderEvent( pageRef );
+        assertTrue( pageList.tryEvict( pageRef, any -> recorder ) );
         assertThat( recorder.evictionClosed ).isEqualTo( true );
         assertThat( recorder.filePageId ).isEqualTo( 42L );
         assertThat( recorder.swapper ).isSameAs( swapper );
@@ -2422,8 +2391,8 @@ public class PageListTest
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         pageList.unlockWrite( pageRef ); // page is now modified
         assertTrue( pageList.isModified( pageRef ) );
-        EvictionAndFlushRecorder recorder = new EvictionAndFlushRecorder();
-        assertTrue( pageList.tryEvict( pageRef, () -> recorder ) );
+        EvictionAndFlushRecorderEvent recorder = new EvictionAndFlushRecorderEvent( pageRef );
+        assertTrue( pageList.tryEvict( pageRef, any -> recorder ) );
         assertThat( recorder.evictionClosed ).isEqualTo( true );
         assertThat( recorder.filePageId ).isEqualTo( 42L );
         assertThat( recorder.swapper ).isSameAs( swapper );
@@ -2456,16 +2425,9 @@ public class PageListTest
         pageList.unlockExclusiveAndTakeWriteLock( pageRef );
         pageList.unlockWrite( pageRef ); // page is now modified
         assertTrue( pageList.isModified( pageRef ) );
-        EvictionAndFlushRecorder recorder = new EvictionAndFlushRecorder();
-        try
-        {
-            pageList.tryEvict( pageRef, () -> recorder );
-            fail( "tryEvict should have thrown" );
-        }
-        catch ( IOException e )
-        {
-            // Ok
-        }
+        EvictionAndFlushRecorderEvent recorder = new EvictionAndFlushRecorderEvent( pageRef );
+        assertThrows( IOException.class, () -> pageList.tryEvict( pageRef, any -> recorder ) );
+
         assertThat( recorder.evictionClosed ).isEqualTo( true );
         assertThat( recorder.filePageId ).isEqualTo( 42L );
         assertThat( recorder.swapper ).isSameAs( swapper );

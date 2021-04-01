@@ -64,10 +64,11 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.io.pagecache.randomharness.Record;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
+import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
@@ -388,11 +389,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             var ioController = new EmptyIOController()
             {
                 @Override
-                public void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
+                public void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushEvent )
                 {
                     limiterStartLatch.release();
                     limiterBlockLatch.await();
-                    super.maybeLimitIO( recentlyCompletedIOs, flushable, flushes );
+                    super.maybeLimitIO( recentlyCompletedIOs, flushable, flushEvent );
                 }
             };
             try ( PagedFile pfA = pageCache.map( a, pageCache.versionContextSupplier(), filePageSize, DEFAULT_DATABASE_NAME, immutable.empty(), ioController ) )
@@ -439,11 +440,11 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         var ioController = new EmptyIOController()
         {
             @Override
-            public void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
+            public void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushEvent )
             {
                 limiterStartLatch.release();
                 limiterBlockLatch.await();
-                super.maybeLimitIO( recentlyCompletedIOs, flushable, flushes );
+                super.maybeLimitIO( recentlyCompletedIOs, flushable, flushEvent );
             }
         };
         Future<?> flusher;
@@ -4642,10 +4643,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         return new SingleFilePageSwapperFactory( fs )
         {
             @Override
-            public PageSwapper createPageSwapper( Path path, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist,
-                    boolean useDirectIO, IOController ioController ) throws IOException
+            public PageSwapper createPageSwapper( Path path, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean useDirectIO,
+                    IOController ioController, SwapperSet swappers ) throws IOException
             {
-                PageSwapper swapper = super.createPageSwapper( path, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController );
+                PageSwapper swapper = super.createPageSwapper( path, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController, swappers );
                 return new DelegatingPageSwapper( swapper )
                 {
                     @Override
@@ -6385,7 +6386,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
 
         @Override
-        public void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
+        public void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushEvent )
         {
             ioCounter.addAndGet( recentlyCompletedIOs * pagesPerFlush );
             callbackCounter.getAndIncrement();

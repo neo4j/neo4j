@@ -44,18 +44,13 @@ public interface EvictionEvent extends AutoCloseablePageCacheTracerEvent
         }
 
         @Override
-        public FlushEventOpportunity flushEventOpportunity()
+        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
         {
-            return FlushEventOpportunity.NULL;
+            return FlushEvent.NULL;
         }
 
         @Override
         public void threwException( IOException exception )
-        {
-        }
-
-        @Override
-        public void setCachePageId( long cachePageId )
         {
         }
 
@@ -76,18 +71,13 @@ public interface EvictionEvent extends AutoCloseablePageCacheTracerEvent
     void setSwapper( PageSwapper swapper );
 
     /**
-     * Eviction implies an opportunity to flush.
+     * Begin flushing the given page.
      */
-    FlushEventOpportunity flushEventOpportunity();
+    FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator );
 
     /**
      * Indicates that the eviction caused an exception to be thrown.
      * This can happen if some kind of IO error occurs.
      */
     void threwException( IOException exception );
-
-    /**
-     * The cache page id of the evicted page.
-     */
-    void setCachePageId( long cachePageId );
 }

@@ -19,9 +19,8 @@
  */
 package org.neo4j.io.pagecache.tracing.linear;
 
-import java.nio.file.Path;
-
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -56,21 +55,27 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public void mappedFile( Path path )
+    public void mappedFile( PagedFile pagedFile )
     {
-        tracer.add( new MappedFileHEvent( path ) );
+        tracer.add( new MappedFileHEvent( pagedFile.path() ) );
     }
 
     @Override
-    public void unmappedFile( Path path )
+    public void unmappedFile( PagedFile pagedFile )
     {
-        tracer.add( new UnmappedFileHEvent( path ) );
+        tracer.add( new UnmappedFileHEvent( pagedFile.path() ) );
     }
 
     @Override
     public EvictionRunEvent beginPageEvictions( int pageCountToEvict )
     {
         return tracer.add( new EvictionRunHEvent( tracer, pageCountToEvict ) );
+    }
+
+    @Override
+    public EvictionRunEvent beginEviction()
+    {
+        return tracer.add( new EvictionRunHEvent( tracer, 0 ) );
     }
 
     @Override
@@ -238,7 +243,7 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public void maxPages( long maxPages )
+    public void maxPages( long maxPages, long pageSize )
     {
     }
 

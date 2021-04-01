@@ -45,11 +45,6 @@ public class RecordingTracer
         return type.cast( record.take() );
     }
 
-    public <T extends Event> T tryObserve( Class<T> type )
-    {
-        return type.cast( record.poll() );
-    }
-
     protected void record( Event event )
     {
         if ( eventTypesToTrace.contains( event.getClass() ) )

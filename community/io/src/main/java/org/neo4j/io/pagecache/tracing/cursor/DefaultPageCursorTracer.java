@@ -25,9 +25,9 @@ import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
-import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 
 public class DefaultPageCursorTracer implements PageCursorTracer
@@ -206,20 +206,15 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         }
 
         @Override
-        public FlushEventOpportunity flushEventOpportunity()
+        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
         {
-            return flushEventOpportunity;
+            return flushEvent;
         }
 
         @Override
         public void threwException( IOException exception )
         {
             evictionExceptions++;
-        }
-
-        @Override
-        public void setCachePageId( long cachePageId )
-        {
         }
 
         @Override
@@ -244,13 +239,18 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         }
 
         @Override
-        public void done( Throwable throwable )
+        public void fail( Throwable throwable )
         {
             done();
         }
 
         @Override
-        public EvictionEvent beginEviction()
+        public void freeListSize( int freeListSize )
+        {
+        }
+
+        @Override
+        public EvictionEvent beginEviction( long cachePageId )
         {
             return evictionEvent;
         }
@@ -258,39 +258,6 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         @Override
         public void setCachePageId( long cachePageId )
         {
-        }
-    };
-
-    private final FlushEventOpportunity flushEventOpportunity = new FlushEventOpportunity()
-    {
-        @Override
-        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int mergedPages )
-        {
-            return flushEvent;
-        }
-
-        @Override
-        public void startFlush( int[][] translationTable )
-        {
-
-        }
-
-        @Override
-        public ChunkEvent startChunk( int[] chunk )
-        {
-            return ChunkEvent.NULL;
-        }
-
-        @Override
-        public void throttle( long millis )
-        {
-            // so far we do not throttle on a page cursor level
-        }
-
-        @Override
-        public void reportIO( int completedIOs )
-        {
-            // so far we do not track io's on a cursor level
         }
     };
 
@@ -328,7 +295,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
 
     private class DefaultPinEvent implements PinEvent
     {
-        int eventHits = 1;
+        private int eventHits = 1;
 
         @Override
         public void setCachePageId( long cachePageId )
@@ -336,7 +303,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         }
 
         @Override
-        public PageFaultEvent beginPageFault()
+        public PageFaultEvent beginPageFault( long filePageId, int swapperId )
         {
             eventHits = 0;
             return pageFaultEvent;

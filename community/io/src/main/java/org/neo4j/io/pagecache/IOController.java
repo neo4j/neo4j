@@ -22,11 +22,11 @@ package org.neo4j.io.pagecache;
 import java.io.Flushable;
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
+import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 
 /**
  * IOController instances used by page file to control speed of data flushing when {@link PageCache#flushAndForce()} invoked.
- * As part of flush controller's {@link #maybeLimitIO(int, Flushable, FlushEventOpportunity)} method is invoked on regular intervals.
+ * As part of flush controller's {@link #maybeLimitIO(int, Flushable, MajorFlushEvent)} method is invoked on regular intervals.
  * <p/>
  * This allows the controller to measure the rate of IO (including io performed by other system parts), and inject sleeps, pauses or flushes into the process.
  * The flushes are in this case referring to the underlying hardware.
@@ -55,9 +55,9 @@ public interface IOController
      * @param recentlyCompletedIOs The number of IOs completed by caller since the last call to this method.
      * @param flushable A {@link Flushable} instance that can flush any relevant dirty system buffers, to help smooth
      * out the IO load on the storage device.
-     * @param flushes A {@link FlushEventOpportunity} event that describes ongoing io represented by flushable instance.
+     * @param flushEvent A {@link MajorFlushEvent} event that describes ongoing io represented by flushable instance.
      */
-    void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes );
+    void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushEvent );
 
     /**
      * Temporarily disable the IOController, to allow IO to proceed at full speed.

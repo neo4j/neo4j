@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringReader;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
@@ -32,9 +33,9 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
-import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 
 /**
@@ -124,9 +125,9 @@ class HEvents
         }
 
         @Override
-        public EvictionEvent beginEviction()
+        public EvictionEvent beginEviction( long cachePageId )
         {
-            return tracer.add( new EvictionHEvent( tracer ) );
+            return tracer.add( new EvictionHEvent( tracer, cachePageId ) );
         }
 
         @Override
@@ -135,12 +136,17 @@ class HEvents
             out.print( ", pagesToEvict:" );
             out.print( pagesToEvict );
         }
+
+        @Override
+        public void freeListSize( int size )
+        {
+            // empty
+        }
     }
 
     public static class FlushHEvent extends IntervalHEvent implements FlushEvent
     {
-        private final long filePageId;
-        private final long cachePageId;
+        private final long[] pageRefs;
         private final int pagesToFlush;
         private int pageMerged;
         private int pageCount;
@@ -148,11 +154,10 @@ class HEvents
         private int bytesWritten;
         private IOException exception;
 
-        FlushHEvent( LinearHistoryTracer tracer, long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int pageMerged )
+        FlushHEvent( LinearHistoryTracer tracer, long[] pageRefs, PageSwapper swapper, int pagesToFlush, int pageMerged )
         {
             super( tracer );
-            this.filePageId = filePageId;
-            this.cachePageId = cachePageId;
+            this.pageRefs = pageRefs;
             this.pagesToFlush = pagesToFlush;
             this.pageMerged = pageMerged;
             this.pageCount = 1;
@@ -193,10 +198,8 @@ class HEvents
         @Override
         void printBody( PrintStream out, String exceptionLinePrefix )
         {
-            out.print( ", filePageId:" );
-            out.print( filePageId );
-            out.print( ", cachePageId:" );
-            out.print( cachePageId );
+            out.print( ", pageRefs:" );
+            out.print( Arrays.toString( pageRefs ) );
             out.print( ", pageCount:" );
             out.print( pageCount );
             print( out, path );
@@ -210,7 +213,7 @@ class HEvents
         }
     }
 
-    public static class MajorFlushHEvent extends IntervalHEvent implements MajorFlushEvent, FlushEventOpportunity
+    public static class MajorFlushHEvent extends IntervalHEvent implements MajorFlushEvent
     {
         private final Path path;
 
@@ -221,15 +224,16 @@ class HEvents
         }
 
         @Override
-        public FlushEventOpportunity flushEventOpportunity()
+        public FlushEvent beginFlush( long[] pageRefs, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator, int pagesToFlush,
+                int mergedPages )
         {
-            return this;
+            return tracer.add( new FlushHEvent( tracer, pageRefs, swapper, pagesToFlush, mergedPages ) );
         }
 
         @Override
-        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int mergedPages )
+        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
         {
-            return tracer.add( new FlushHEvent( tracer, filePageId, cachePageId, swapper, pagesToFlush, mergedPages ) );
+            return tracer.add( new FlushHEvent( tracer, new long[]{pageRef}, swapper, 1, 0 ) );
         }
 
         @Override
@@ -285,7 +289,7 @@ class HEvents
         }
 
         @Override
-        public PageFaultEvent beginPageFault()
+        public PageFaultEvent beginPageFault( long filePageId, int swapperId )
         {
             hit = false;
             return tracer.add( new PageFaultHEvent( tracer ) );
@@ -348,17 +352,22 @@ class HEvents
         }
 
         @Override
-        public void done( Throwable throwable )
+        public void fail( Throwable throwable )
         {
             this.exception = throwable;
             done();
         }
 
         @Override
-        public EvictionEvent beginEviction()
+        public void freeListSize( int freeListSize )
+        {
+        }
+
+        @Override
+        public EvictionEvent beginEviction( long cachePageId )
         {
             pageEvictedByFaulter = true;
-            return tracer.add( new EvictionHEvent( tracer ) );
+            return tracer.add( new EvictionHEvent( tracer, cachePageId ) );
         }
 
         @Override
@@ -374,16 +383,17 @@ class HEvents
         }
     }
 
-    public static class EvictionHEvent extends IntervalHEvent implements EvictionEvent, FlushEventOpportunity
+    public static class EvictionHEvent extends IntervalHEvent implements EvictionEvent
     {
         private long filePageId;
         private Path path;
         private IOException exception;
-        private long cachePageId;
+        private final long cachePageId;
 
-        EvictionHEvent( LinearHistoryTracer linearHistoryTracer )
+        EvictionHEvent( LinearHistoryTracer linearHistoryTracer, long cachePageId )
         {
             super( linearHistoryTracer );
+            this.cachePageId = cachePageId;
         }
 
         @Override
@@ -399,48 +409,15 @@ class HEvents
         }
 
         @Override
-        public FlushEventOpportunity flushEventOpportunity()
-        {
-            return this;
-        }
-
-        @Override
         public void threwException( IOException exception )
         {
             this.exception = exception;
         }
 
         @Override
-        public void setCachePageId( long cachePageId )
+        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
         {
-            this.cachePageId = cachePageId;
-        }
-
-        @Override
-        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int mergedPages )
-        {
-            return tracer.add( new FlushHEvent( tracer, filePageId, cachePageId, swapper, pagesToFlush, mergedPages ) );
-        }
-
-        @Override
-        public void startFlush( int[][] translationTable )
-        {
-        }
-
-        @Override
-        public ChunkEvent startChunk( int[] chunk )
-        {
-            return ChunkEvent.NULL;
-        }
-
-        @Override
-        public void throttle( long millis )
-        {
-        }
-
-        @Override
-        public void reportIO( int completedIOs )
-        {
+            return tracer.add( new FlushHEvent( tracer, new long[]{pageRef}, swapper, 1, 0 ) );
         }
 
         @Override

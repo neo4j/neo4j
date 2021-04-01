@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
+import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -75,6 +76,7 @@ public abstract class PageSwapperTest
     private static final int cachePageSize = 32;
     private final ConcurrentLinkedQueue<PageSwapper> openedSwappers = new ConcurrentLinkedQueue<>();
     private final MemoryAllocator mman = MemoryAllocator.createAllocator( KibiByte.toBytes( 32 ), new LocalMemoryTracker() );
+    private final SwapperSet swapperSet = new SwapperSet();
 
     protected abstract PageSwapperFactory swapperFactory( FileSystemAbstraction fileSystem );
 
@@ -1124,7 +1126,7 @@ public abstract class PageSwapperTest
             boolean useDirectIO,
             IOController controller ) throws IOException
     {
-        PageSwapper swapper = factory.createPageSwapper( path, filePageSize, callback, createIfNotExist, useDirectIO, controller );
+        PageSwapper swapper = factory.createPageSwapper( path, filePageSize, callback, createIfNotExist, useDirectIO, controller, swapperSet );
         openedSwappers.add( swapper );
         return swapper;
     }

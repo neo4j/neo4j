@@ -109,6 +109,12 @@ public class DelegatingPageSwapper implements PageSwapper
     }
 
     @Override
+    public int swapperId()
+    {
+        return delegate.swapperId();
+    }
+
+    @Override
     public void closeAndDelete() throws IOException
     {
         delegate.closeAndDelete();

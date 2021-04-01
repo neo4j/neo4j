@@ -20,15 +20,16 @@
 package org.neo4j.io.pagecache.tracing.recording;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
-import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
+import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public class RecordingPageCacheTracer extends RecordingTracer implements PageCacheTracer
@@ -49,13 +50,13 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
-    public void mappedFile( Path path )
+    public void mappedFile( PagedFile pagedFile )
     {
         // we currently do not record these
     }
 
     @Override
-    public void unmappedFile( Path path )
+    public void unmappedFile( PagedFile pagedFile )
     {
         // we currently do not record these
     }
@@ -63,10 +64,27 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     @Override
     public EvictionRunEvent beginPageEvictions( int pageCountToEvict )
     {
+        return getEvictionRunEvent();
+    }
+
+    @Override
+    public EvictionRunEvent beginEviction()
+    {
+        return getEvictionRunEvent();
+    }
+
+    private EvictionRunEvent getEvictionRunEvent()
+    {
         return new EvictionRunEvent()
         {
             @Override
-            public EvictionEvent beginEviction()
+            public void freeListSize( int size )
+            {
+                // empty
+            }
+
+            @Override
+            public EvictionEvent beginEviction( long cachePageId )
             {
                 return new RecordingEvictionEvent();
             }
@@ -246,7 +264,7 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
-    public void maxPages( long maxPages )
+    public void maxPages( long maxPages, long pageSize )
     {
     }
 
@@ -292,18 +310,13 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
         }
 
         @Override
-        public FlushEventOpportunity flushEventOpportunity()
+        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageTranslator )
         {
-            return FlushEventOpportunity.NULL;
+            return FlushEvent.NULL;
         }
 
         @Override
         public void threwException( IOException exception )
-        {
-        }
-
-        @Override
-        public void setCachePageId( long cachePageId )
         {
         }
 

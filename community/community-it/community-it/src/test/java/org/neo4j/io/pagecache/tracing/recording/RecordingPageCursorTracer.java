@@ -123,7 +123,7 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     }
 
     @Override
-    public PinEvent beginPin( boolean writeLock, final long filePageId, final PageSwapper swapper )
+    public PinEvent beginPin( boolean writeLock, final long filePageId, PageSwapper swapper )
     {
         return new PinEvent()
         {
@@ -135,7 +135,7 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
             }
 
             @Override
-            public PageFaultEvent beginPageFault()
+            public PageFaultEvent beginPageFault( long filePageId, int swapperId )
             {
                 hit = false;
                 return new PageFaultEvent()
@@ -152,12 +152,17 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
                     }
 
                     @Override
-                    public void done( Throwable throwable )
+                    public void fail( Throwable throwable )
                     {
                     }
 
                     @Override
-                    public EvictionEvent beginEviction()
+                    public void freeListSize( int freeListSize )
+                    {
+                    }
+
+                    @Override
+                    public EvictionEvent beginEviction( long cachePageId )
                     {
                         return EvictionEvent.NULL;
                     }
@@ -218,7 +223,7 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
 
     public static class Pin extends Event
     {
-        private boolean hit;
+        private final boolean hit;
 
         private Pin( PageSwapper io, long pageId, boolean hit )
         {

@@ -62,7 +62,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PageSwapperTest;
-import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
+import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 
 import static java.util.concurrent.ConcurrentHashMap.newKeySet;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -875,7 +875,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         private final AtomicLong externalIOCounter = new AtomicLong();
 
         @Override
-        public void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, FlushEventOpportunity flushes )
+        public void maybeLimitIO( int recentlyCompletedIOs, Flushable flushable, MajorFlushEvent flushes )
         {
             // empty
         }

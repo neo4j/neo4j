@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.neo4j.annotations.service.Service;
+import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 
 /**
  * Creates PageSwappers for the given files.
@@ -52,17 +53,13 @@ public interface PageSwapperFactory
      * @param useDirectIO When true, direct io open open will gonna be used for underlying channel.
      * Option supported only on Linux with certain limitations.
      * @param ioController controller to report swapper io's
+     * @param swappers set of already registered swappers
      * @return A working PageSwapper instance for the given file.
      * @throws IOException If the PageSwapper could not be created, for
      * instance if the underlying file could not be opened, or the given file does not exist and createIfNotExist is
      * false.
      */
-    PageSwapper createPageSwapper(
-            Path path,
-            int filePageSize,
-            PageEvictionCallback onEviction,
-            boolean createIfNotExist,
-            boolean useDirectIO,
-            IOController ioController ) throws IOException;
+    PageSwapper createPageSwapper( Path path, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean useDirectIO,
+            IOController ioController, SwapperSet swappers ) throws IOException;
 
 }

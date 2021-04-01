@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionEventOpportunity;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 
 import static java.lang.String.format;
 import static org.neo4j.util.FeatureToggles.flag;
@@ -49,7 +50,7 @@ import static org.neo4j.util.FeatureToggles.flag;
  * The last (lowest order) 3 bits are the page usage counter.</td></tr>
  * </table>
  */
-class PageList
+class PageList implements PageReferenceTranslator
 {
     private static final boolean forceSlowMemoryClear = flag( PageList.class, "forceSlowMemoryClear", false );
 
@@ -192,7 +193,8 @@ class PageList
         return baseAddress + (id * META_DATA_BYTES_PER_PAGE);
     }
 
-    int toId( long pageRef )
+    @Override
+    public int toId( long pageRef )
     {
         // >> 5 is equivalent to dividing by 32, META_DATA_BYTES_PER_PAGE.
         return (int) ((pageRef - baseAddress) >> 5);
@@ -346,7 +348,8 @@ class PageList
         return usage <= 1;
     }
 
-    long getFilePageId( long pageRef )
+    @Override
+    public long getFilePageId( long pageRef )
     {
         long filePageId = UnsafeUtil.getLong( offPageBinding( pageRef ) ) >>> SHIFT_FILE_PAGE_ID;
         return filePageId == MAX_FILE_PAGE_ID ? PageCursor.UNBOUND_PAGE_ID : filePageId;
@@ -434,7 +437,6 @@ class PageList
         setFilePageId( pageRef, filePageId ); // Page now considered isLoaded()
         long bytesRead = swapper.read( filePageId, getAddress( pageRef ) );
         event.addBytesRead( bytesRead );
-        event.setCachePageId( toId( pageRef ) );
         setSwapperId( pageRef, swapperId ); // Page now considered isBoundTo( swapper, filePageId )
     }
 
@@ -461,7 +463,7 @@ class PageList
         {
             if ( isLoaded( pageRef ) )
             {
-                try ( EvictionEvent evictionEvent = evictionOpportunity.beginEviction() )
+                try ( EvictionEvent evictionEvent = evictionOpportunity.beginEviction( toId( pageRef ) ) )
                 {
                     evict( pageRef, evictionEvent );
                     return true;
@@ -476,7 +478,6 @@ class PageList
     {
         long filePageId = getFilePageId( pageRef );
         evictionEvent.setFilePageId( filePageId );
-        evictionEvent.setCachePageId( pageRef );
         int swapperId = getSwapperId( pageRef );
         if ( swapperId != 0 )
         {
@@ -502,7 +503,7 @@ class PageList
     private void flushModifiedPage( long pageRef, EvictionEvent evictionEvent, long filePageId, PageSwapper swapper )
             throws IOException
     {
-        FlushEvent flushEvent = evictionEvent.flushEventOpportunity().beginFlush( filePageId, pageRef, swapper, 1, 0 );
+        FlushEvent flushEvent = evictionEvent.beginFlush( pageRef, swapper, this );
         try
         {
             long address = getAddress( pageRef );

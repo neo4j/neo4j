@@ -152,9 +152,9 @@ class MuninnPageCursorTest
         {
             @Override
             public PageSwapper createPageSwapper( Path path, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean useDirectIO,
-                    IOController ioController ) throws IOException
+                    IOController ioController, SwapperSet swappers ) throws IOException
             {
-                PageSwapper actualSwapper = actual.createPageSwapper( path, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController );
+                PageSwapper actualSwapper = actual.createPageSwapper( path, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController, swappers );
                 return new DelegatingPageSwapper( actualSwapper )
                 {
                     @Override

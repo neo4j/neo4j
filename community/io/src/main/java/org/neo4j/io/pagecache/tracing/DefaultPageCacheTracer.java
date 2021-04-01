@@ -20,12 +20,12 @@
 package org.neo4j.io.pagecache.tracing;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
@@ -83,10 +83,69 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         }
     };
 
-    private final FlushEventOpportunity flushEventOpportunity = new FlushEventOpportunity()
+    private final EvictionEvent evictionEvent = new EvictionEvent()
     {
         @Override
-        public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int mergedPages )
+        public void setFilePageId( long filePageId )
+        {
+        }
+
+        @Override
+        public void setSwapper( PageSwapper swapper )
+        {
+        }
+
+        @Override
+        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
+        {
+            return flushEvent;
+        }
+
+        @Override
+        public void threwException( IOException exception )
+        {
+            evictionExceptions.increment();
+        }
+
+        @Override
+        public void close()
+        {
+            evictions.increment();
+        }
+    };
+
+    private final EvictionRunEvent evictionRunEvent = new EvictionRunEvent()
+    {
+        @Override
+        public void freeListSize( int size )
+        {
+
+        }
+
+        @Override
+        public EvictionEvent beginEviction( long cachePageId )
+        {
+            return evictionEvent;
+        }
+
+        @Override
+        public void close()
+        {
+        }
+    };
+
+    private final MajorFlushEvent majorFlushEvent = new MajorFlushEvent()
+    {
+
+        @Override
+        public FlushEvent beginFlush( long[] pageRefs, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator, int pagesToFlush,
+                int mergedPages )
+        {
+            return flushEvent;
+        }
+
+        @Override
+        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
         {
             return flushEvent;
         }
@@ -115,65 +174,6 @@ public class DefaultPageCacheTracer implements PageCacheTracer
         {
             iopqPerformed.add( completedIOs );
         }
-    };
-
-    private final EvictionEvent evictionEvent = new EvictionEvent()
-    {
-        @Override
-        public void setFilePageId( long filePageId )
-        {
-        }
-
-        @Override
-        public void setSwapper( PageSwapper swapper )
-        {
-        }
-
-        @Override
-        public FlushEventOpportunity flushEventOpportunity()
-        {
-            return flushEventOpportunity;
-        }
-
-        @Override
-        public void threwException( IOException exception )
-        {
-            evictionExceptions.increment();
-        }
-
-        @Override
-        public void setCachePageId( long cachePageId )
-        {
-        }
-
-        @Override
-        public void close()
-        {
-            evictions.increment();
-        }
-    };
-
-    private final EvictionRunEvent evictionRunEvent = new EvictionRunEvent()
-    {
-        @Override
-        public EvictionEvent beginEviction()
-        {
-            return evictionEvent;
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
-
-    private final MajorFlushEvent majorFlushEvent = new MajorFlushEvent()
-    {
-        @Override
-        public FlushEventOpportunity flushEventOpportunity()
-        {
-            return flushEventOpportunity;
-        }
 
         @Override
         public void close()
@@ -188,19 +188,25 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public void mappedFile( Path path )
+    public void mappedFile( PagedFile mappedFile )
     {
         filesMapped.increment();
     }
 
     @Override
-    public void unmappedFile( Path path )
+    public void unmappedFile( PagedFile mappedFile )
     {
         filesUnmapped.increment();
     }
 
     @Override
     public EvictionRunEvent beginPageEvictions( int pageCountToEvict )
+    {
+        return evictionRunEvent;
+    }
+
+    @Override
+    public EvictionRunEvent beginEviction()
     {
         return evictionRunEvent;
     }
@@ -398,7 +404,7 @@ public class DefaultPageCacheTracer implements PageCacheTracer
     }
 
     @Override
-    public void maxPages( long maxPages )
+    public void maxPages( long maxPages, long pageSize )
     {
         this.maxPages.set( maxPages );
     }

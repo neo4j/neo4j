@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
+import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 
 /**
  * A factory for SingleFilePageSwapper instances.
@@ -44,18 +45,13 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     }
 
     @Override
-    public PageSwapper createPageSwapper(
-            Path file,
-            int filePageSize,
-            PageEvictionCallback onEviction,
-            boolean createIfNotExist,
-            boolean useDirectIO,
-            IOController ioController ) throws IOException
+    public PageSwapper createPageSwapper( Path file, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean useDirectIO,
+            IOController ioController, SwapperSet swappers ) throws IOException
     {
         if ( !createIfNotExist && !fs.fileExists( file ) )
         {
             throw new NoSuchFileException( file.toString(), null, "Cannot map non-existing file" );
         }
-        return new SingleFilePageSwapper( file, fs, filePageSize, onEviction, useDirectIO, ioController );
+        return new SingleFilePageSwapper( file, fs, filePageSize, onEviction, useDirectIO, ioController, swappers );
     }
 }

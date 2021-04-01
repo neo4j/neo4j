@@ -27,5 +27,5 @@ public interface EvictionEventOpportunity
     /**
      * Begin an eviction event.
      */
-    EvictionEvent beginEviction();
+    EvictionEvent beginEviction( long cachePageId );
 }

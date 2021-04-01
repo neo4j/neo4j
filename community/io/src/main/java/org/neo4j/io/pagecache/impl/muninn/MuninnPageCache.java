@@ -47,7 +47,6 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
-import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
@@ -374,9 +373,6 @@ public class MuninnPageCache implements PageCache
         requireNonNull( jobScheduler );
         int maxPages = calculatePageCount( configuration.memoryAllocator, configuration.pageSize );
 
-        // Expose the total number of pages
-        configuration.pageCacheTracer.maxPages( maxPages );
-
         this.pageCacheId = pageCacheIdCounter.incrementAndGet();
         this.swapperFactory = swapperFactory;
         this.cachePageSize = configuration.pageSize;
@@ -391,8 +387,10 @@ public class MuninnPageCache implements PageCache
         this.clock = configuration.clock;
         this.faultLockStriping = configuration.faultLockStriping;
         this.enableEvictionThread = configuration.enableEvictionThread;
-
         setFreelistHead( new AtomicInteger() );
+
+        // Expose the total number of pages
+        configuration.pageCacheTracer.maxPages( maxPages, cachePageSize);
     }
 
     private static void verifyHacks()
@@ -523,7 +521,7 @@ public class MuninnPageCache implements PageCache
         current = new FileMapping( path, pagedFile );
         current.next = mappedFiles;
         mappedFiles = current;
-        pageCacheTracer.mappedFile( path );
+        pageCacheTracer.mappedFile( pagedFile );
         return pagedFile;
     }
 
@@ -636,7 +634,7 @@ public class MuninnPageCache implements PageCache
                     {
                         prev.next = current.next;
                     }
-                    pageCacheTracer.unmappedFile( current.path );
+                    pageCacheTracer.unmappedFile( file );
                     flushAndCloseWithoutFail( file );
                     break;
                 }
@@ -732,11 +730,10 @@ public class MuninnPageCache implements PageCache
 
     private void flushFile( MuninnPagedFile muninnPagedFile, IOController limiter ) throws IOException
     {
-        try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( muninnPagedFile.swapper );
+        try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( muninnPagedFile.swapper );
               var buffer = bufferFactory.createBuffer() )
         {
-            FlushEventOpportunity flushOpportunity = fileFlush.flushEventOpportunity();
-            muninnPagedFile.flushAndForceInternal( flushOpportunity, false, limiter, buffer );
+            muninnPagedFile.flushAndForceInternal( flushEvent, false, limiter, buffer );
         }
     }
 
@@ -869,6 +866,7 @@ public class MuninnPageCache implements PageCache
                 int pageId = counter.get();
                 if ( pageId < pageCount && counter.compareAndSet( pageId, pageId + 1 ) )
                 {
+                    faultEvent.freeListSize( pageCount - counter.get() );
                     return pages.deref( pageId );
                 }
                 if ( pageId >= pageCount )
@@ -884,11 +882,29 @@ public class MuninnPageCache implements PageCache
                     throw new IllegalStateException( "The PageCache has been shut down." );
                 }
 
-                if ( compareAndSetFreelistHead( freePage, freePage.next ) )
+                Object nextPage = freePage.next;
+                if ( compareAndSetFreelistHead( freePage, nextPage ) )
                 {
+                    faultEvent.freeListSize( getFreeListSize( nextPage ) );
                     return freePage.pageRef;
                 }
             }
+        }
+    }
+
+    private static int getFreeListSize( Object next )
+    {
+        if ( next instanceof FreePage )
+        {
+            return ((FreePage) next).count;
+        }
+        else if ( next instanceof AtomicInteger )
+        {
+            return ((AtomicInteger) next).get();
+        }
+        else
+        {
+            return 0;
         }
     }
 
@@ -1074,7 +1090,7 @@ public class MuninnPageCache implements PageCache
                     if ( pages.tryEvict( pageRef, evictionRunEvent ) )
                     {
                         clearEvictorException();
-                        addFreePageToFreelist( pageRef );
+                        addFreePageToFreelist( pageRef, evictionRunEvent );
                     }
                 }
                 catch ( IOException e )
@@ -1098,7 +1114,7 @@ public class MuninnPageCache implements PageCache
         return clockArm;
     }
 
-    void addFreePageToFreelist( long pageRef )
+    void addFreePageToFreelist( long pageRef, EvictionRunEvent evictions )
     {
         Object current;
         FreePage freePage = new FreePage( pageRef );
@@ -1112,6 +1128,7 @@ public class MuninnPageCache implements PageCache
             freePage.setNext( current );
         }
         while ( !compareAndSetFreelistHead( current, freePage ) );
+        evictions.freeListSize( freePage.count );
     }
 
     void clearEvictorException()
@@ -1139,16 +1156,16 @@ public class MuninnPageCache implements PageCache
         swappers.vacuum( swapperIds ->
         {
             int pageCount = pages.getPageCount();
-            try ( EvictionRunEvent evictions = pageCacheTracer.beginPageEvictions( 0 ) )
+            try ( EvictionRunEvent evictionEvent = pageCacheTracer.beginEviction() )
             {
                 for ( int i = 0; i < pageCount; i++ )
                 {
                     long pageRef = pages.deref( i );
                     while ( swapperIds.contains( pages.getSwapperId( pageRef ) ) )
                     {
-                        if ( pages.tryEvict( pageRef, evictions ) )
+                        if ( pages.tryEvict( pageRef, evictionEvent ) )
                         {
-                            addFreePageToFreelist( pageRef );
+                            addFreePageToFreelist( pageRef, evictionEvent );
                             break;
                         }
                     }

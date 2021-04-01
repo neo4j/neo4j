@@ -113,7 +113,7 @@ class KernelStatementTest
 
             cursorTracer.beginPin( false, 1, null ).hit();
             cursorTracer.beginPin( false, 1, null ).hit();
-            cursorTracer.beginPin( false, 1, null ).beginPageFault().done();
+            cursorTracer.beginPin( false, 1, null ).beginPageFault( 1, 2 ).done();
             assertEquals( 2, statement.getHits() );
             assertEquals( 1, statement.getFaults() );
 

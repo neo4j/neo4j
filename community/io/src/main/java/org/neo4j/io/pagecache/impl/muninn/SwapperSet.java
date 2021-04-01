@@ -37,7 +37,7 @@ import org.neo4j.io.pagecache.PageSwapper;
  * the page cache. The vacuum process will then fully evict all pages that are bound to a page swapper id that
  * was freed before the start of the vacuum process.
  */
-final class SwapperSet
+public final class SwapperSet
 {
     // The sentinel is used to reserve swapper id 0 as a special value.
     private static final SwapperMapping SENTINEL = new SwapperMapping( 0, null );
@@ -90,7 +90,7 @@ final class SwapperSet
     /**
      * Allocate a new swapper id for the given {@link PageSwapper}.
      */
-    synchronized int allocate( PageSwapper swapper )
+    public synchronized int allocate( PageSwapper swapper )
     {
         SwapperMapping[] swapperMappings = this.swapperMappings;
 

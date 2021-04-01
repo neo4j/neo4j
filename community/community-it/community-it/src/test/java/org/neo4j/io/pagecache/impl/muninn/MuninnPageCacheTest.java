@@ -57,9 +57,9 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.DelegatingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
-import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer;
@@ -1359,7 +1359,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         for ( int pageId = 0; pageId < pages.getPageCount(); pageId++ )
         {
             long pageReference = pages.deref( pageId );
-            pageCache.addFreePageToFreelist( pageReference );
+            pageCache.addFreePageToFreelist( pageReference, EvictionRunEvent.NULL );
         }
     }
 
@@ -1477,23 +1477,20 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         {
 
             @Override
-            public FlushEventOpportunity flushEventOpportunity()
-            {
-                return new FlushInfoFlushOpportunity();
-            }
-
-            @Override
             public void close()
             {
                 // nothing
             }
-        }
-
-        private class FlushInfoFlushOpportunity implements FlushEventOpportunity
-        {
 
             @Override
-            public FlushEvent beginFlush( long filePageId, long cachePageId, PageSwapper swapper, int pagesToFlush, int mergedPages )
+            public FlushEvent beginFlush( long[] pageRefs, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator, int pagesToFlush,
+                    int mergedPages )
+            {
+                return FlushEvent.NULL;
+            }
+
+            @Override
+            public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
             {
                 return FlushEvent.NULL;
             }
@@ -1520,7 +1517,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             }
         }
 
-        private class FlushInfoChunk extends FlushEventOpportunity.ChunkEvent
+        private class FlushInfoChunk extends MajorFlushEvent.ChunkEvent
         {
             @Override
             public void chunkFlushed( long notModifiedPages, long flushPerChunk, long buffersPerChunk, long mergesPerChunk )
@@ -1576,9 +1573,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
         @Override
         public PageSwapper createPageSwapper( Path file, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean useDirectIO,
-                IOController ioController ) throws IOException
+                IOController ioController, SwapperSet swappers ) throws IOException
         {
-            return new DelegatingPageSwapper( super.createPageSwapper( file, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController ) )
+            return new DelegatingPageSwapper( super.createPageSwapper( file, filePageSize, onEviction, createIfNotExist, useDirectIO, ioController, swappers ) )
             {
                 @Override
                 public long write( long startFilePageId, long[] bufferAddresses, int[] bufferLengths, int length, int totalAffectedPages ) throws IOException

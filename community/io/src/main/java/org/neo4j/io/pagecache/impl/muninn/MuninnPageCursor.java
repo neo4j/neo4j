@@ -25,6 +25,7 @@ import java.lang.invoke.VarHandle;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.pagecache.CursorException;
@@ -398,15 +399,16 @@ public abstract class MuninnPageCursor extends PageCursor
         // If we manage to get a free page to fault into, then we will also be taking a write lock on that page, to
         // protect it against concurrent eviction as we assigning a binding to the page. If anything goes wrong, then
         // we must make sure to release that write lock as well.
-        try
+        try ( PageFaultEvent faultEvent = pinEvent.beginPageFault( filePageId, swapper.swapperId() ) )
         {
-            PageFaultEvent faultEvent = pinEvent.beginPageFault();
             long pageRef;
+            int pageId;
             try
             {
                 // The grabFreePage method might throw.
                 pageRef = pagedFile.grabFreeAndExclusivelyLockedPage( faultEvent );
-
+                pageId = pagedFile.toId( pageRef );
+                faultEvent.setCachePageId( pageId );
                 // We got a free page, and we know that we have race-free access to it. Well, it's not entirely race
                 // free, because other paged files might have it in their translation tables (or rather, their reads of
                 // their translation tables might race with eviction) and try to pin it.
@@ -443,11 +445,10 @@ public abstract class MuninnPageCursor extends PageCursor
             }
             // Put the page in the translation table before we undo the exclusive lock, as we could otherwise race with
             // eviction, and the onEvict callback expects to find a MuninnPage object in the table.
-            MuninnPagedFile.TRANSLATION_TABLE_ARRAY.setVolatile( chunk, chunkIndex, pagedFile.toId( pageRef ) );
+            MuninnPagedFile.TRANSLATION_TABLE_ARRAY.setVolatile( chunk, chunkIndex, pageId );
             // Once we page has been published to the translation table, we can convert our exclusive lock to whatever we
             // need for the page cursor.
             convertPageFaultLock( pageRef );
-            faultEvent.done();
             return pageRef;
         }
         finally
@@ -459,7 +460,7 @@ public abstract class MuninnPageCursor extends PageCursor
     private void abortPageFault( Throwable throwable, int[] chunk, int chunkIndex, PageFaultEvent faultEvent )
     {
         MuninnPagedFile.TRANSLATION_TABLE_ARRAY.setVolatile( chunk, chunkIndex, UNMAPPED_TTE );
-        faultEvent.done( throwable );
+        faultEvent.fail( throwable );
         pinEvent.done();
     }
 

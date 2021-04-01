@@ -103,6 +103,12 @@ public class DummyPageSwapper implements PageSwapper
     }
 
     @Override
+    public int swapperId()
+    {
+        return 42;
+    }
+
+    @Override
     public void closeAndDelete()
     {
     }

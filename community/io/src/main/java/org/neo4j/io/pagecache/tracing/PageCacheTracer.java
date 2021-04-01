@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.tracing;
 import java.nio.file.Path;
 
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
@@ -44,17 +45,23 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
-        public void mappedFile( Path path )
+        public void mappedFile( PagedFile pagedFile )
         {
         }
 
         @Override
-        public void unmappedFile( Path path )
+        public void unmappedFile( PagedFile pagedFile )
         {
         }
 
         @Override
         public EvictionRunEvent beginPageEvictions( int pageCountToEvict )
+        {
+            return EvictionRunEvent.NULL;
+        }
+
+        @Override
+        public EvictionRunEvent beginEviction()
         {
             return EvictionRunEvent.NULL;
         }
@@ -224,7 +231,7 @@ public interface PageCacheTracer extends PageCacheCounters
         }
 
         @Override
-        public void maxPages( long maxPages )
+        public void maxPages( long maxPages, long pageSize )
         {
         }
 
@@ -255,12 +262,12 @@ public interface PageCacheTracer extends PageCacheCounters
     /**
      * The given file has been mapped, where no existing mapping for that file existed.
      */
-    void mappedFile( Path path );
+    void mappedFile( PagedFile pagedFile );
 
     /**
      * The last reference to the given file has been unmapped.
      */
-    void unmappedFile( Path path );
+    void unmappedFile( PagedFile pagedFile );
 
     /**
      * A background eviction has begun. Called from the background eviction thread.
@@ -270,6 +277,12 @@ public interface PageCacheTracer extends PageCacheCounters
      * The method returns an EvictionRunEvent to represent the event of this eviction run.
      **/
     EvictionRunEvent beginPageEvictions( int pageCountToEvict );
+
+    /**
+     * Start of vacuum eviction event to cleanup unknown number of pages for obsolete swappers
+     * @return an EvictionRunEvent to represent the event of this eviction run.
+     */
+    EvictionRunEvent beginEviction();
 
     /**
      * A PagedFile wants to flush all its bound pages.
@@ -344,8 +357,9 @@ public interface PageCacheTracer extends PageCacheCounters
     /**
      * Sets the number of available pages.
      * @param maxPages the total number of available pages.
+     * @param pageSize size of page
      */
-    void maxPages( long maxPages );
+    void maxPages( long maxPages, long pageSize );
 
     /**
      * Report number of performed iopq.

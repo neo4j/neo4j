@@ -25,7 +25,6 @@ import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 class StubPageFaultEvent implements PageFaultEvent
 {
     long bytesRead;
-    long cachePageId;
 
     @Override
     public void addBytesRead( long bytes )
@@ -36,7 +35,6 @@ class StubPageFaultEvent implements PageFaultEvent
     @Override
     public void setCachePageId( long cachePageId )
     {
-        this.cachePageId = cachePageId;
     }
 
     @Override
@@ -45,12 +43,17 @@ class StubPageFaultEvent implements PageFaultEvent
     }
 
     @Override
-    public void done( Throwable throwable )
+    public void fail( Throwable throwable )
     {
     }
 
     @Override
-    public EvictionEvent beginEviction()
+    public void freeListSize( int freeListSize )
+    {
+    }
+
+    @Override
+    public EvictionEvent beginEviction( long cachePageId )
     {
         return EvictionEvent.NULL;
     }

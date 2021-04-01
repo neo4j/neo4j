@@ -20,34 +20,11 @@
 package org.neo4j.io.pagecache.tracing;
 
 /**
- * An eviction run is started when the page cache has determined that it
- * needs to evict a batch of pages. The dedicated eviction thread is
- * mostly sleeping when it is not performing an eviction run.
+ * Translator to translate internal page cache pageRef representation to id of page cache page, file page id, etc.
  */
-public interface EvictionRunEvent extends AutoCloseablePageCacheTracerEvent, EvictionEventOpportunity
+public interface PageReferenceTranslator
 {
-    /**
-     * An EvictionRunEvent that does nothing other than return the EvictionEvent.NULL.
-     */
-    EvictionRunEvent NULL = new EvictionRunEvent()
-    {
-        @Override
-        public void freeListSize( int size )
-        {
+    int toId( long pageRef );
 
-        }
-
-        @Override
-        public EvictionEvent beginEviction( long cachePageId )
-        {
-            return EvictionEvent.NULL;
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    };
-
-    void freeListSize( int size );
+    long getFilePageId( long pageRef );
 }

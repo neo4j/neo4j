@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache.tracing;
 
+import org.neo4j.io.pagecache.PageSwapper;
+
 /**
  * Begin a mass-flushing of pages.
  */
@@ -29,10 +31,42 @@ public interface MajorFlushEvent extends AutoCloseablePageCacheTracerEvent
      */
     MajorFlushEvent NULL = new MajorFlushEvent()
     {
+
         @Override
-        public FlushEventOpportunity flushEventOpportunity()
+        public FlushEvent beginFlush( long[] pageRefs, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator, int pagesToFlush,
+                int mergedPages )
         {
-            return FlushEventOpportunity.NULL;
+            return FlushEvent.NULL;
+        }
+
+        @Override
+        public FlushEvent beginFlush( long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator )
+        {
+            return FlushEvent.NULL;
+        }
+
+        @Override
+        public void startFlush( int[][] translationTable )
+        {
+
+        }
+
+        @Override
+        public ChunkEvent startChunk( int[] chunk )
+        {
+            return ChunkEvent.NULL;
+        }
+
+        @Override
+        public void throttle( long millis )
+        {
+
+        }
+
+        @Override
+        public void reportIO( int completedIOs )
+        {
+
         }
 
         @Override
@@ -42,7 +76,52 @@ public interface MajorFlushEvent extends AutoCloseablePageCacheTracerEvent
     };
 
     /**
-     * Mass-flushing obviously imply flushing opportunities.
+     * Begin flushing the given pages.
      */
-    FlushEventOpportunity flushEventOpportunity();
+    FlushEvent beginFlush( long[] pageRefs, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator, int pagesToFlush, int mergedPages );
+
+    /**
+     * Begin flushing the given single page.
+     */
+    FlushEvent beginFlush( long cachePageId, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator );
+
+    /**
+     * Start flushing of given translation table
+     * @param translationTable table we flush
+     */
+    void startFlush( int[][] translationTable );
+
+    /**
+     * Start flushing of given chunk
+     * @param chunk chunk we start flushing
+     */
+    ChunkEvent startChunk( int[] chunk );
+
+    /**
+     * Throttle this flush event
+     * @param millis millis to throttle this flush event
+     */
+    void throttle( long millis );
+
+    /**
+     * Report number of completed io operations by this flush event
+     * @param completedIOs number of completed io operations
+     */
+    void reportIO( int completedIOs );
+
+    /**
+     * Event generated during translation table chunk flushing from memory to backing file
+     */
+    class ChunkEvent
+    {
+        public static final ChunkEvent NULL = new ChunkEvent();
+
+        protected ChunkEvent()
+        {
+        }
+
+        public void chunkFlushed( long notModifiedPages, long flushPerChunk, long buffersPerChunk, long mergesPerChunk )
+        {
+        }
+    }
 }

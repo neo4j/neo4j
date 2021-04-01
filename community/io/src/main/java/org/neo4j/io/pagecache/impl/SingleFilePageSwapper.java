@@ -45,6 +45,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.impl.muninn.SwapperSet;
 import org.neo4j.util.FeatureToggles;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
@@ -98,6 +99,7 @@ public class SingleFilePageSwapper implements PageSwapper
     private StoreChannel channel;
     private FileLock fileLock;
     private final boolean hasPositionLock;
+    private final int swapperId;
 
     // Guarded by synchronized(this). See tryReopen() and close().
     private boolean closed;
@@ -120,7 +122,7 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     SingleFilePageSwapper( Path path, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean useDirectIO,
-            IOController ioController ) throws IOException
+            IOController ioController, SwapperSet swapperSet ) throws IOException
     {
         this.fs = fs;
         this.path = path;
@@ -156,6 +158,7 @@ public class SingleFilePageSwapper implements PageSwapper
             throw e;
         }
         hasPositionLock = channel.hasPositionLock();
+        swapperId = swapperSet.allocate( this );
     }
 
     private StoreChannel createStoreChannel() throws IOException
@@ -758,6 +761,12 @@ public class SingleFilePageSwapper implements PageSwapper
                 throw new IOException( result.getErrorMessage() );
             }
         }
+    }
+
+    @Override
+    public int swapperId()
+    {
+        return swapperId;
     }
 
     @Override

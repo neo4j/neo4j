@@ -175,4 +175,10 @@ public interface PageSwapper extends Closeable
      * @param newFileSize The new size of the file; following this call, the file system may anticipate to receive IOs in this range.
      */
     void allocate( long newFileSize ) throws IOException;
+
+    /**
+     * Each page swapper have a id that is unique for the lifetime of a swapper. Ids can be reused later on if particular swapper is closed.
+     * @return underlying page swapper id
+     */
+    int swapperId();
 }
