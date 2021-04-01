@@ -42,6 +42,7 @@ import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -100,6 +101,8 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     private static final Path neo4jHome = Path.of( "neo4j_home" ).toAbsolutePath();
     // Created in @BeforeAll, contain full dbms with schema index backed by native-bree-1.0
     private EphemeralFileSystemAbstraction sourceSnapshot;
+    // Created in @BeforeAll, contain full dbms with schema index backed by native-bree-1.0 and token index enabled
+    private EphemeralFileSystemAbstraction sourceSnapshotWithTokenIndex;
     // Database layout for database created in @BeforeAll
     private DatabaseLayout databaseLayout;
     // Re-instantiated in @BeforeEach using sourceSnapshot
@@ -108,21 +111,49 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     @BeforeAll
     void createIndex() throws Exception
     {
-        final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        fs.mkdirs( neo4jHome );
-
-        dbmsAction( neo4jHome, fs, NATIVE_BTREE10, db ->
         {
-            indexWithStringData( db, label );
-            databaseLayout = ((GraphDatabaseAPI) db).databaseLayout();
-        } );
-        sourceSnapshot = fs.snapshot();
+            final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+            fs.mkdirs( neo4jHome );
+
+            dbmsAction( neo4jHome, fs, NATIVE_BTREE10,
+                    // Data
+                    db ->
+                    {
+                        indexWithStringData( db, label );
+                        databaseLayout = ((GraphDatabaseAPI) db).databaseLayout();
+                    },
+                    // Config
+                    builder -> builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true ) );
+            sourceSnapshot = fs.snapshot();
+        }
+
+        // Separate snapshot for enable scan store as token index
+        {
+            final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+            fs.mkdirs( neo4jHome );
+
+            dbmsAction( neo4jHome, fs, NATIVE_BTREE10,
+                    // Data
+                    db ->
+                    {
+                        indexWithStringData( db, label );
+                    },
+                    // Config
+                    builder -> builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true )
+            );
+            sourceSnapshotWithTokenIndex = fs.snapshot();
+        }
     }
 
     @BeforeEach
     void restoreSnapshot()
     {
-        fs = sourceSnapshot.snapshot();
+        doRestoreSnapshot( sourceSnapshot );
+    }
+
+    private void doRestoreSnapshot( EphemeralFileSystemAbstraction snapshot )
+    {
+        fs = snapshot;
     }
 
     @Test
@@ -576,6 +607,25 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
+    void corruptionInNodeLabelIndex() throws Exception
+    {
+        doRestoreSnapshot( sourceSnapshotWithTokenIndex );
+        MutableObject<Long> rootNode = new MutableObject<>();
+        Path labelScanStoreFile = labelScanStoreFile();
+        corruptIndexes( true, ( tree, inspection ) -> {
+            rootNode.setValue( inspection.getRootNode() );
+            tree.unsafe( pageSpecificCorruption( rootNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ),
+                    PageCursorTracer.NULL );
+        }, labelScanStoreFile );
+
+        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(),
+                config -> config.set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true ) );
+        assertFalse( result.isSuccessful() );
+        assertResultContainsMessage( result, "Index inconsistency: Broken pointer found in tree node " + rootNode.getValue() + ", pointerType='left sibling'" );
+        assertResultContainsMessage( result, "Number of inconsistent LABEL_SCAN_DOCUMENT records: 1" );
+    }
+
+    @Test
     void corruptionInRelationshipTypeScanStore() throws Exception
     {
         MutableObject<Long> rootNode = new MutableObject<>();
@@ -664,7 +714,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             {
                 Label label = Label.label( "label2" );
                 indexWithNumberData( db, label );
-            } );
+            }, builder -> {} );
 
             DatabaseLayout layout = DatabaseLayout.of( Config.defaults( neo4j_home, neo4jHome ) );
 
@@ -723,6 +773,11 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         return runConsistencyCheck( logProvider, NONE );
     }
 
+    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, Consumer<Config> adaptConfig ) throws ConsistencyCheckIncompleteException
+    {
+        return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, NONE, DEFAULT, adaptConfig );
+    }
+
     private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
     {
@@ -745,9 +800,16 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     private ConsistencyCheckService.Result runConsistencyCheck( FileSystemAbstraction fs, Path neo4jHome, DatabaseLayout databaseLayout,
             LogProvider logProvider, ProgressMonitorFactory progressFactory, ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
+        return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, progressFactory, consistencyFlags,
+                config -> config.set( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true ) );
+    }
+
+    private ConsistencyCheckService.Result runConsistencyCheck( FileSystemAbstraction fs, Path neo4jHome, DatabaseLayout databaseLayout,
+            LogProvider logProvider, ProgressMonitorFactory progressFactory, ConsistencyFlags consistencyFlags, Consumer<Config> adaptConfig ) throws ConsistencyCheckIncompleteException
+    {
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
         Config config = Config.defaults( neo4j_home, neo4jHome );
-        config.set( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
+        adaptConfig.accept( config );
         return consistencyCheckService.runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fs, false, consistencyFlags );
     }
 
@@ -755,11 +817,12 @@ class ConsistencyCheckWithCorruptGBPTreeIT
      * Open dbms with schemaIndex as default index provider on provided file system abstraction and apply dbSetup to DEFAULT_DATABASE.
      */
     private void dbmsAction( Path neo4jHome, FileSystemAbstraction fs, GraphDatabaseSettings.SchemaIndex schemaIndex,
-            Consumer<GraphDatabaseService> dbSetup )
+            Consumer<GraphDatabaseService> dbSetup, Consumer<DatabaseManagementServiceBuilder> dbConfiguration )
     {
-        final DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( neo4jHome )
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                .setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true )
+        TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( neo4jHome )
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
+        dbConfiguration.accept( builder );
+        final DatabaseManagementService dbms = builder
                 .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() )
                 .build();
         try
