@@ -118,6 +118,7 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
 
   val configurationThatForcesCompacting: CypherPlannerConfiguration = {
     val builder = Config.newBuilder()
+    //NOTE: 10 is the minimum allowed value
     builder.set(GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold, Long.box(10L))
     val dbConfig = builder.build()
     CypherPlannerConfiguration.fromCypherConfiguration(CypherConfiguration.fromConfig(dbConfig), dbConfig, planSystemCommands = false)

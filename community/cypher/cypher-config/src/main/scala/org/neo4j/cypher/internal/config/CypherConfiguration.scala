@@ -36,41 +36,7 @@ import org.neo4j.cypher.internal.options.CypherVersion
  * Holds all configuration options for the Neo4j Cypher execution engine, compilers and runtimes.
  */
 object CypherConfiguration {
-  def fromConfig(config: Config): CypherConfiguration = {
-//    val conf = new CypherConfiguration(
-//      CypherVersion.fromConfig(config),
-//      CypherPlannerOption.fromConfig(config),
-//      CypherRuntimeOption.fromConfig(config),
-//      config.get(GraphDatabaseSettings.query_cache_size).toInt,
-//      statsDivergenceFromConfig(config),
-//      config.get(GraphDatabaseSettings.cypher_hints_error),
-//      config.get(GraphDatabaseInternalSettings.cypher_idp_solver_table_threshold).toInt,
-//      config.get(GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold).toLong,
-//      config.get(GraphDatabaseSettings.forbid_exhaustive_shortestpath),
-//      config.get(GraphDatabaseSettings.forbid_shortestpath_common_nodes),
-//      config.get(GraphDatabaseSettings.csv_legacy_quote_escaping),
-//      config.get(GraphDatabaseSettings.csv_buffer_size).intValue(),
-//      CypherExpressionEngineOption.fromConfig(config),
-//      config.get(GraphDatabaseSettings.cypher_lenient_create_relationship),
-//      config.get(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small),
-//      config.get(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big),
-//      config.get(GraphDatabaseInternalSettings.enable_pipelined_runtime_trace),
-//      config.get(GraphDatabaseInternalSettings.pipelined_scheduler_trace_filename).toFile,
-//      config.get(GraphDatabaseInternalSettings.cypher_expression_recompilation_limit),
-//      CypherOperatorEngineOption.fromConfig(config),
-//      CypherInterpretedPipesFallbackOption.fromConfig(config),
-//      config.get(GraphDatabaseInternalSettings.cypher_pipelined_operator_fusion_over_pipeline_limit).intValue(),
-//      new ConfigMemoryTrackingController(config),
-//      config.get(GraphDatabaseInternalSettings.cypher_enable_runtime_monitors),
-//      config.get(GraphDatabaseInternalSettings.cypher_parser) != GraphDatabaseInternalSettings.CypherParser.PARBOILED,
-//      config.get(GraphDatabaseInternalSettings.cypher_splitting_top_behavior) == GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW,
-//      config.get(GraphDatabaseSettings.log_queries_obfuscate_literals)
-//    )
-//    config.addListener[java.lang.Boolean](GraphDatabaseSettings.log_queries_obfuscate_literals, (_: java.lang.Boolean, u: java.lang.Boolean) => conf._obfuscateLiterals = u)
-//    conf
-
-    new CypherConfiguration(config)
-  }
+  def fromConfig(config: Config): CypherConfiguration = new CypherConfiguration(config)
 
   def statsDivergenceFromConfig(config: Config): StatsDivergenceCalculatorConfig = {
     val divergenceThreshold = config.get(GraphDatabaseSettings.query_statistics_divergence_threshold).doubleValue()
