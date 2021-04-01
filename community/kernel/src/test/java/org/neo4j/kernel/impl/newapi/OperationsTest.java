@@ -1217,6 +1217,27 @@ class OperationsTest
     }
 
     @Test
+    void indexedBackedConstraintCreateMustThrowOnAnyTokenSchemas() throws Exception
+    {
+        // given
+        SchemaDescriptor schema = SchemaDescriptor.forAllEntityTokens( NODE );
+        IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema )
+                .withName( "constraint name" )
+                .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR );
+        IndexDescriptor constraintIndex = prototype.materialise( 42 );
+        when( constraintIndexCreator.createUniquenessConstraintIndex( any(), any(), eq( prototype ) ) ).thenReturn( constraintIndex );
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexProxy.getDescriptor() ).thenReturn( constraintIndex );
+        when( indexingService.getIndexProxy( constraintIndex ) ).thenReturn( indexProxy );
+        when( storageReader.constraintsGetForSchema( schema ) ).thenReturn( Collections.emptyIterator() );
+        when( storageReader.indexGetForSchema( schema ) ).thenReturn( Collections.emptyIterator() );
+
+        // when
+        var e = assertThrows( KernelException.class, () -> operations.uniquePropertyConstraintCreate( prototype ) );
+        assertThat( e.getUserMessage( tokenHolders ) ).contains( "any token schema" );
+    }
+
+    @Test
     void indexedBackedConstraintCreateMustThrowOnNonUniqueIndexPrototypes() throws Exception
     {
         // given

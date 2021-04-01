@@ -1632,6 +1632,11 @@ public class Operations implements Write, SchemaWrite
                 throw new CreateConstraintFailureException( constraint, "Cannot create backing constraint index using a relationship type schema: " +
                         prototype.schema().userDescription( token ) );
             }
+            if ( prototype.schema().isAnyTokenSchemaDescriptor() )
+            {
+                throw new CreateConstraintFailureException( constraint, "Cannot create backing constraint index using an any token schema: " +
+                        prototype.schema().userDescription( token ) );
+            }
             if ( !prototype.isUnique() )
             {
                 throw new CreateConstraintFailureException( constraint,
