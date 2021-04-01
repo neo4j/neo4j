@@ -239,6 +239,9 @@ public final class SchemaStatementProcedure
                 default:
                     throw new IllegalArgumentException( "Did not recognize entity type " + indexDescriptor.schema().entityType() );
                 }
+            case LOOKUP:
+                // new index type, not adding it to the deprecated procedure
+                return "";
             default:
                 throw new IllegalArgumentException( "Did not recognize index type " + indexDescriptor.getIndexType() );
             }
