@@ -708,6 +708,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> log_queries_parameter_logging_enabled =
             newBuilder( "dbms.logs.query.parameter_logging_enabled", BOOL, true ).dynamic().build();
 
+    @Description( "Sets a maximum character length use for each parameter in the log. " +
+                  "This only takes effect if `dbms.logs.query.parameter_logging_enabled = true`." )
+    public static final Setting<Integer> query_log_max_parameter_length =
+            newBuilder( "dbms.logs.query.max_parameter_length", INT, Integer.MAX_VALUE ).dynamic().build();
+
     @Description( "Log complete parameter entities including id, labels or relationship type, and properties. If false, " +
                   "only the entity id will be logged. This only takes effect if `dbms.logs.query.parameter_logging_enabled = true`." )
     public static final Setting<Boolean> log_queries_parameter_full_entities =
