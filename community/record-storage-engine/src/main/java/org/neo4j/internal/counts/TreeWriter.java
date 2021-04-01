@@ -27,7 +27,7 @@ import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.REPLACED;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 /**
- * Writes counts directly into the tree.
+ * Writes absolute counts directly into the tree.
  */
 class TreeWriter implements CountUpdater.CountWriter
 {

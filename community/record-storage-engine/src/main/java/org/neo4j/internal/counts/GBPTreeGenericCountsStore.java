@@ -173,7 +173,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         if ( rebuilder != null )
         {
             checkState( !readOnlyChecker.isReadOnly(), "Counts store needs rebuilding, most likely this database needs to be recovered." );
-            try ( CountUpdater updater = directUpdater( cursorTracer ) )
+            try ( CountUpdater updater = directUpdater( false, 0, cursorTracer ) )
             {
                 rebuilder.rebuild( updater, cursorTracer, memoryTracker );
             }
@@ -225,15 +225,30 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     /**
      * Opens and returns a {@link CountUpdater} which makes direct insertions into the backing tree. This comes from the use case of having a way
      * to build the initial data set without the context of transactions, such as batch-insertion or initial import.
+     *
+     * A couple of scenarios that can make use of the various combinations of arguments:
+     * <ul>
+     *     <li>Writing all absolute counts in an already sorted order: applyDeltas:false, numCachedEntries:0</li>
+     *     <li>Writing all absolute counts unsorted: applyDeltas:false, numCachedEntries:[e.g. 10_000] </li>
+     *     <li>Writing counts as deltas, each count potentially added multiple times: applyDeltas:true, numCachedEntries:[e.g. 10_000] </li>
+     * </ul>
+     *
+     * @param applyDeltas if {@code true} the writer will apply the changes as deltas, which means reading from the tree.
+     * If {@code false} all changes will be written as-is, i.e. as if they are absolute counts.
+     * @param numCachedEntries number of entries that are cached before writing to the tree. A value larger than 0 is useful for
+     * an updater that may make multiple changes to the same entry.
      */
-    protected CountUpdater directUpdater( PageCursorTracer cursorTracer ) throws IOException
+    protected CountUpdater directUpdater( boolean applyDeltas, int numCachedEntries, PageCursorTracer cursorTracer ) throws IOException
     {
         boolean success = false;
         Lock lock = this.lock.writeLock();
         lock.lock();
         try
         {
-            CountUpdater updater = new CountUpdater( new TreeWriter( tree.writer( cursorTracer ) ), lock );
+            CountUpdater.CountWriter writer = applyDeltas
+                    ? new DeltaTreeWriter( () -> tree.writer( cursorTracer ), key -> readCountFromTree( key, cursorTracer ), layout, numCachedEntries )
+                    : new TreeWriter( tree.writer( cursorTracer ) );
+            CountUpdater updater = new CountUpdater( writer, lock );
             success = true;
             return updater;
         }

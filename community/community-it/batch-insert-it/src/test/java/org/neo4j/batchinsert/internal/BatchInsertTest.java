@@ -45,6 +45,7 @@ import org.neo4j.batchinsert.BatchInserters;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -1472,7 +1473,7 @@ class BatchInsertTest
     }
 
     @Test
-    public void shouldBuildCorrectCountsStoreOnIncrementalImport() throws Exception
+    void shouldBuildCorrectCountsStoreOnIncrementalImport() throws Exception
     {
         // given
         Label label = Label.label( "Person" );
@@ -1516,19 +1517,55 @@ class BatchInsertTest
         }
     }
 
-    private Config configuration( int denseNodeThreshold )
+    @Test
+    void shouldIncrementDegreesOnUpdatingDenseNode() throws Exception
     {
+        // given
+        int denseNodeThreshold = 10;
+        BatchInserter inserter = newBatchInserter( configurationBuilder()
+                .set( dense_node_threshold, 10 )
+                // Make it flush (and empty the record changes set) multiple times during this insertion
+                .set( GraphDatabaseInternalSettings.batch_inserter_batch_size, 2 )
+                .build() );
+        long denseNode = inserter.createNode( null );
 
+        // when
+        for ( int i = 0; i < denseNodeThreshold * 2; i++ )
+        {
+            inserter.createRelationship( denseNode, inserter.createNode( null ), relTypeArray[0], null );
+        }
+
+        // then
+        GraphDatabaseAPI db = switchToEmbeddedGraphDatabaseService( inserter, denseNodeThreshold );
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( tx.getNodeById( denseNode ).getDegree( relTypeArray[0], Direction.OUTGOING ) ).isEqualTo( denseNodeThreshold * 2 );
+        }
+        managementService.shutdown();
+    }
+
+    private Config.Builder configurationBuilder()
+    {
         return Config.newBuilder()
                 .set( neo4j_home, testDirectory.absolutePath() )
-                .set( preallocate_logical_logs, false )
+                .set( preallocate_logical_logs, false );
+    }
+
+    private Config configuration( int denseNodeThreshold )
+    {
+        return configurationBuilder()
                 .set( GraphDatabaseSettings.dense_node_threshold, denseNodeThreshold )
                 .build();
     }
 
     private BatchInserter newBatchInserter( int denseNodeThreshold ) throws Exception
     {
-        return BatchInserters.inserter( databaseLayout, fs, configuration( denseNodeThreshold ) );
+        return newBatchInserter( configuration( denseNodeThreshold ) );
+    }
+
+    private BatchInserter newBatchInserter( Config config ) throws Exception
+    {
+        return BatchInserters.inserter( databaseLayout, fs, config );
     }
 
     private BatchInserter newBatchInserterWithIndexProvider( ExtensionFactory<?> provider, IndexProviderDescriptor providerDescriptor, int denseNodeThreshold )

@@ -29,6 +29,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -592,6 +594,56 @@ class GBPTreeGenericCountsStoreTest
         // then rebuild store instead of throwing exception
         verify( countsBuilder ).rebuild( any(), any(), any() );
         assertEquals( 3, countsStore.read( nodeKey( LABEL_ID_1 ), NULL ) );
+    }
+
+    @Test
+    void shouldWriteAbsoluteCountsWithDirectUpdater() throws IOException
+    {
+        // given
+        Map<CountsKey,Long> expected = new HashMap<>();
+        for ( int i = 0; i < 100; i++ )
+        {
+            expected.put( randomKey(), random.nextLong( 1, Long.MAX_VALUE ) );
+        }
+
+        // when
+        try ( CountUpdater countUpdater = countsStore.directUpdater( false, 0, NULL ) )
+        {
+            expected.forEach( countUpdater::increment );
+        }
+
+        // then
+        expected.forEach( ( key, count ) -> assertThat( countsStore.read( key, NULL ) ).isEqualTo( count ) );
+    }
+
+    @Test
+    void shouldWriteDeltaCountsWithDirectUpdater() throws IOException
+    {
+        // given
+        Map<CountsKey,Long> expected = new HashMap<>();
+        for ( int i = 0; i < 1_000; i++ )
+        {
+            expected.put( randomKey(), random.nextLong( 1, Integer.MAX_VALUE ) );
+        }
+
+        // when
+        for ( int i = 0; i < 2; i++ )
+        {
+            try ( CountUpdater countUpdater = countsStore.directUpdater( true, expected.size() / 10, NULL ) )
+            {
+                expected.forEach( countUpdater::increment );
+            }
+        }
+
+        // then
+        expected.forEach( ( key, count ) -> assertThat( countsStore.read( key, NULL ) ).isEqualTo( count * 2 ) );
+    }
+
+    private CountsKey randomKey()
+    {
+        CountsKey key = new CountsKey();
+        key.initialize( (byte) random.nextInt( 1, 5 ), random.nextLong(), random.nextInt() );
+        return key;
     }
 
     private void incrementNodeCount( long txId, int labelId, int delta )

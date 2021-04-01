@@ -142,4 +142,9 @@ class CountsChanges
         }
         return ABSENT;
     }
+
+    int size()
+    {
+        return changes.size();
+    }
 }

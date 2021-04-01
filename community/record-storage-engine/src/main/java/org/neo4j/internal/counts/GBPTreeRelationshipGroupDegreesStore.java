@@ -65,7 +65,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
 
     public Updater directApply( PageCursorTracer cursorTracer ) throws IOException
     {
-        return new DegreeUpdater( directUpdater( cursorTracer ) );
+        return new DegreeUpdater( directUpdater( true, 10_000, cursorTracer ) );
     }
 
     @Override

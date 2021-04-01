@@ -1129,13 +1129,13 @@ public class BatchInserterImpl implements BatchInserter
         isShutdown = true;
 
         flushStrategy.forceFlush();
+        degreeUpdater.close();
 
         try ( cursorTracer;
               var ignore = new Lifespan( life );
               locker;
               neoStores;
-              groupDegreesStore;
-              degreeUpdater )
+              groupDegreesStore )
         {
             rebuildCounts( pageCacheTracer, memoryTracker );
             LabelScanStore labelIndex = buildLabelIndex();
@@ -1143,6 +1143,7 @@ public class BatchInserterImpl implements BatchInserter
             repopulateAllIndexes( labelIndex, relationshipTypeIndex );
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
             neoStores.flush( cursorTracer );
+            groupDegreesStore.checkpoint( cursorTracer );
             recordAccess.close();
             createEmptyTransactionLog();
         }
