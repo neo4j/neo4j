@@ -744,8 +744,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration
 
     @Description( "Obfuscates all literals of the query before writing to the log. " +
                   "Note that node labels, relationship types and map property keys are still shown. " +
-                  "Changing the setting will not affect queries that are cached so if you want the switch " +
-                  "to have immediate effect you must also call `CALL db.clearQueryCaches()`." )
+                  "Changing the setting will not affect queries that are cached. So, if you want the switch " +
+                  "to have immediate effect, you must also call `CALL db.clearQueryCaches()`." )
     public static final Setting<Boolean> log_queries_obfuscate_literals =
             newBuilder( "dbms.logs.query.obfuscate_literals", BOOL, false ).dynamic().build();
 
