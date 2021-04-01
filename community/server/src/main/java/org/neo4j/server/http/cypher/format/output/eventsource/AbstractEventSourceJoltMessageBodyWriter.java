@@ -19,29 +19,25 @@
  */
 package org.neo4j.server.http.cypher.format.output.eventsource;
 
+import com.fasterxml.jackson.core.JsonFactory;
+
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Map;
 import java.util.function.Predicate;
-import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
-import javax.ws.rs.ext.Provider;
 
+import org.neo4j.server.http.cypher.TransactionHandle;
 import org.neo4j.server.http.cypher.format.DefaultJsonFactory;
 import org.neo4j.server.http.cypher.format.api.OutputEventSource;
-import org.neo4j.server.http.cypher.format.jolt.JoltCodec;
 
-@Provider
-@Produces( {EventSourceMessageBodyWriter.JSON_JOLT_MIME_TYPE_VALUE_WITH_QUALITY, } )
-public class EventSourceMessageBodyWriter implements MessageBodyWriter<OutputEventSource>
+public abstract class AbstractEventSourceJoltMessageBodyWriter implements MessageBodyWriter<OutputEventSource>
 {
-    public static final String JSON_JOLT_MIME_TYPE_VALUE = "application/vnd.neo4j.jolt+json-seq";
-    public static final String JSON_JOLT_MIME_TYPE_VALUE_WITH_QUALITY = JSON_JOLT_MIME_TYPE_VALUE + ";qs=0.5";
-    public static final MediaType JSON_JOLT_MIME_TYPE = MediaType.valueOf( JSON_JOLT_MIME_TYPE_VALUE );
 
     @Override
     public boolean isWriteable( Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType )
@@ -58,7 +54,7 @@ public class EventSourceMessageBodyWriter implements MessageBodyWriter<OutputEve
         var joltStrictModeEnabled = isJoltStrictModeEnabled( httpHeaders );
 
         var jsonFactory = DefaultJsonFactory.INSTANCE.get();
-        var serializer = new EventSourceSerializer( transaction, parameters, JoltCodec.class, joltStrictModeEnabled, jsonFactory, output );
+        var serializer = this.createSerializer( output, jsonFactory, transaction, parameters, joltStrictModeEnabled );
 
         outputEventSource.produceEvents( serializer::handleEvent );
     }
@@ -66,8 +62,16 @@ public class EventSourceMessageBodyWriter implements MessageBodyWriter<OutputEve
     private boolean isJoltStrictModeEnabled( MultivaluedMap<String,Object> httpHeaders )
     {
         Predicate<MediaType> isStrictJolt =
-                s -> s.isCompatible( JSON_JOLT_MIME_TYPE ) && Boolean.parseBoolean( s.getParameters().getOrDefault( "strict", Boolean.FALSE.toString() ) );
+                s -> s.isCompatible( getMediaType() ) && Boolean.parseBoolean( s.getParameters().getOrDefault( "strict", Boolean.FALSE.toString() ) );
+
         return httpHeaders.containsKey( HttpHeaders.CONTENT_TYPE ) &&
-               httpHeaders.get( HttpHeaders.CONTENT_TYPE ).stream().map( MediaType.class::cast ).anyMatch( isStrictJolt );
+               httpHeaders.get( HttpHeaders.CONTENT_TYPE ).stream()
+                          .map( MediaType.class::cast )
+                          .anyMatch( isStrictJolt );
     }
+
+    protected abstract MediaType getMediaType();
+
+    protected abstract EventSourceSerializer createSerializer(
+            OutputStream outputStream, JsonFactory jsonFactory, TransactionHandle transaction, Map<String,Object> parameters, boolean strict );
 }
