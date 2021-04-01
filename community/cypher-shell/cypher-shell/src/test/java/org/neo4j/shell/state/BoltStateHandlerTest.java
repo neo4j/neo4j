@@ -20,9 +20,7 @@
 package org.neo4j.shell.state;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,18 +53,18 @@ import org.neo4j.shell.test.bolt.FakeDriver;
 import org.neo4j.shell.test.bolt.FakeSession;
 
 import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.anyObject;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -81,9 +79,6 @@ import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
 
 public class BoltStateHandlerTest
 {
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
     private final Logger logger = mock( Logger.class );
     private final Driver mockDriver = mock( Driver.class );
     private final OfflineBoltStateHandler boltStateHandler = new OfflineBoltStateHandler( mockDriver );
@@ -226,25 +221,21 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void beginNeedsToBeConnected() throws CommandException
+    public void beginNeedsToBeConnected()
     {
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( "Not connected to Neo4j" );
-
         assertFalse( boltStateHandler.isConnected() );
 
-        boltStateHandler.beginTransaction();
+        var exception = assertThrows( CommandException.class, boltStateHandler::beginTransaction );
+        assertThat( exception.getMessage(), containsString( "Not connected to Neo4j" ) );
     }
 
     @Test
-    public void commitNeedsToBeConnected() throws CommandException
+    public void commitNeedsToBeConnected()
     {
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( "Not connected to Neo4j" );
-
         assertFalse( boltStateHandler.isConnected() );
 
-        boltStateHandler.commitTransaction();
+        var exception = assertThrows( CommandException.class, boltStateHandler::commitTransaction );
+        assertThat( exception.getMessage(), containsString( "Not connected to Neo4j" ) );
     }
 
     @Test
@@ -266,7 +257,7 @@ public class BoltStateHandlerTest
 
         Result result = mock( Result.class );
 
-        when( transactionMock.run( (Query) anyObject() ) ).thenReturn( result );
+        when( transactionMock.run( any( Query.class ) ) ).thenReturn( result );
 
         OfflineBoltStateHandler boltStateHandler = new OfflineBoltStateHandler( driverMock );
         boltStateHandler.connect();
@@ -280,23 +271,19 @@ public class BoltStateHandlerTest
     }
 
     @Test
-    public void rollbackNeedsToBeConnected() throws CommandException
+    public void rollbackNeedsToBeConnected()
     {
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( "Not connected to Neo4j" );
-
         assertFalse( boltStateHandler.isConnected() );
 
-        boltStateHandler.rollbackTransaction();
+        var exception = assertThrows( CommandException.class, boltStateHandler::rollbackTransaction );
+        assertThat( exception.getMessage(), containsString( "Not connected to Neo4j" ) );
     }
 
     @Test
-    public void executeNeedsToBeConnected() throws CommandException
+    public void executeNeedsToBeConnected()
     {
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( "Not connected to Neo4j" );
-
-        boltStateHandler.runCypher( "", Collections.emptyMap() );
+        var exception = assertThrows( CommandException.class, () -> boltStateHandler.runCypher( "", Collections.emptyMap() ) );
+        assertThat( exception.getMessage(), containsString( "Not connected to Neo4j" ) );
     }
 
     @Test
@@ -376,19 +363,9 @@ public class BoltStateHandlerTest
     @Test
     public void canOnlyConnectOnce() throws CommandException
     {
-        thrown.expect( CommandException.class );
-        thrown.expectMessage( "Already connected" );
-
-        try
-        {
-            boltStateHandler.connect();
-        }
-        catch ( Throwable e )
-        {
-            fail( "Should not throw here: " + e );
-        }
-
         boltStateHandler.connect();
+        var exception = assertThrows( CommandException.class, boltStateHandler::connect );
+        assertThat( exception.getMessage(), containsString( "Already connected" ) );
     }
 
     @Test
@@ -479,9 +456,6 @@ public class BoltStateHandlerTest
     {
         //given
         Session sessionMock = mock( Session.class );
-        Result resultMock = mock( Result.class );
-        Record recordMock = mock( Record.class );
-        Value valueMock = mock( Value.class );
         Result failing = mock( Result.class );
         Result other = mock( Result.class, RETURNS_DEEP_STUBS );
         when( failing.consume() ).thenThrow( new ClientException( "Neo.ClientError.Procedure.ProcedureNotFound", "No procedure CALL db.ping(()" ) );
