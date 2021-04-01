@@ -41,7 +41,8 @@ import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOK
 public final class SchemaDescriptorImplementation implements SchemaDescriptor, LabelSchemaDescriptor, RelationTypeSchemaDescriptor, FulltextSchemaDescriptor,
         AnyTokenSchemaDescriptor
 {
-    private static final long[] TOKEN_INDEX_LOCKING_IDS = {Long.MAX_VALUE};
+    public static final long TOKEN_INDEX_LOCKING_ID = Long.MAX_VALUE;
+    private static final long[] TOKEN_INDEX_LOCKING_IDS = {TOKEN_INDEX_LOCKING_ID};
 
     private final EntityType entityType;
     private final PropertySchemaType propertySchemaType;

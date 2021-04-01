@@ -71,6 +71,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -225,6 +226,8 @@ public class Operations implements Write, SchemaWrite
         }
         Arrays.sort( lockingIds ); // Sort to ensure labels are locked and assigned in order.
         ktx.lockClient().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, lockingIds );
+        sharedTokenSchemaLock( ResourceTypes.LABEL );
+
         TransactionState txState = ktx.txState();
         long nodeId = commandCreationContext.reserveNode();
         txState.nodeDoCreate( nodeId );
@@ -287,6 +290,7 @@ public class Operations implements Write, SchemaWrite
         ktx.assertOpen();
 
         sharedSchemaLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipType );
+        sharedTokenSchemaLock( ResourceTypes.RELATIONSHIP_TYPE );
         commandCreationContext.acquireRelationshipCreationLock( ktx.txState(), ktx.lockClient(), ktx.lockTracer(), sourceNode, targetNode );
 
         assertNodeExists( sourceNode );
@@ -315,6 +319,8 @@ public class Operations implements Write, SchemaWrite
         {
             return false;
         }
+        sharedSchemaLock( ResourceTypes.RELATIONSHIP_TYPE, relationshipCursor.type() );
+        sharedTokenSchemaLock( ResourceTypes.RELATIONSHIP_TYPE );
         commandCreationContext.acquireRelationshipDeletionLock( txState, ktx.lockClient(), ktx.lockTracer(),
                 relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference(), relationship );
 
@@ -334,6 +340,7 @@ public class Operations implements Write, SchemaWrite
             throws EntityNotFoundException, ConstraintValidationException
     {
         sharedSchemaLock( ResourceTypes.LABEL, nodeLabel );
+        sharedTokenSchemaLock( ResourceTypes.LABEL );
         acquireExclusiveNodeLock( node );
         acquireExclusiveDegreesLock( node );
 
@@ -449,6 +456,7 @@ public class Operations implements Write, SchemaWrite
         if ( nodeCursor.next() )
         {
             acquireSharedNodeLabelLocks();
+            sharedTokenSchemaLock( ResourceTypes.LABEL );
 
             assertAllowsDeleteNode( nodeCursor::labels );
             ktx.txState().nodeDoDelete( node );
@@ -613,6 +621,7 @@ public class Operations implements Write, SchemaWrite
         }
 
         sharedSchemaLock( ResourceTypes.LABEL, labelId );
+        sharedTokenSchemaLock( ResourceTypes.LABEL );
         ktx.txState().nodeDoRemoveLabel( labelId, node );
         if ( storageReader.hasRelatedSchema( labelId, NODE ) )
         {
@@ -1516,9 +1525,15 @@ public class Operations implements Write, SchemaWrite
         }
     }
 
-    private void sharedSchemaLock( ResourceType type, int tokenId )
+    private void sharedSchemaLock( ResourceType type, long tokenId )
     {
         ktx.lockClient().acquireShared( ktx.lockTracer(), type, tokenId );
+    }
+
+    private void sharedTokenSchemaLock( ResourceTypes rt )
+    {
+        // this guards label or relationship type token indexes from being dropped during write operations
+        sharedSchemaLock( rt, SchemaDescriptorImplementation.TOKEN_INDEX_LOCKING_ID );
     }
 
     private void exclusiveSchemaLock( SchemaDescriptor schema )

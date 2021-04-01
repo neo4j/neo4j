@@ -155,7 +155,7 @@ public class GraphDatabaseServiceTest
         // Since we use ABORT_YOUNG strategy by default we need expected client to hold less locks.
         var emptyNodes = List.of( createNode( database ), createNode( database ),
                 createNode( database ), createNode( database ), createNode( database ),
-                createNode( database ) );
+                createNode( database ), createNode( database ), createNode( database ) );
 
         // WHEN creating a deadlock scenario where the final deadlock would have happened due to locks
         //      acquired during linkage of relationship records

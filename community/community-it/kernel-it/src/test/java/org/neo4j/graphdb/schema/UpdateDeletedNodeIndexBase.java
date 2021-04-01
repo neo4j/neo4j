@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb.schema;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.RepeatedTest;
 
 import java.util.concurrent.TimeUnit;
 
@@ -35,33 +35,39 @@ import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 @ImpermanentDbmsExtension
-class UpdateDeletedIndexIT
+abstract class UpdateDeletedNodeIndexBase
 {
     @Inject
-    private GraphDatabaseAPI db;
+    protected GraphDatabaseAPI db;
 
-    private static final String KEY = "key";
+    protected static final String KEY = "key";
     private static final int NODES = 100;
 
-    @Test
-    void shouldHandleUpdateRemovalOfLabelConcurrentlyWithIndexDrop() throws Throwable
+    @RepeatedTest( 5 )
+    void shouldHandleCreateNodeConcurrentlyWithIndexDrop() throws Throwable
+    {
+        shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) -> tx.createNode( LABEL_ONE ).setProperty( KEY, nodeId ) );
+    }
+
+    @RepeatedTest( 5 )
+    void shouldHandleRemovalOfLabelConcurrentlyWithIndexDrop() throws Throwable
     {
         shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) -> tx.getNodeById( nodeId ).removeLabel( LABEL_ONE ) );
     }
 
-    @Test
+    @RepeatedTest( 5 )
     void shouldHandleDeleteNodeConcurrentlyWithIndexDrop() throws Throwable
     {
         shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) -> tx.getNodeById( nodeId ).delete() );
     }
 
-    @Test
+    @RepeatedTest( 5 )
     void shouldHandleRemovePropertyConcurrentlyWithIndexDrop() throws Throwable
     {
         shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) -> tx.getNodeById( nodeId ).removeProperty( KEY ) );
     }
 
-    @Test
+    @RepeatedTest( 5 )
     void shouldHandleNodeDetachDeleteConcurrentlyWithIndexDrop() throws Throwable
     {
         shouldHandleIndexDropConcurrentlyWithOperation( ( tx, nodeId ) ->
@@ -130,11 +136,7 @@ class UpdateDeletedIndexIT
             tx.commit();
         }
         IndexDefinition indexDefinition;
-        try ( Transaction tx = db.beginTx() )
-        {
-            indexDefinition = tx.schema().indexFor( LABEL_ONE ).on( KEY ).create();
-            tx.commit();
-        }
+        indexDefinition = indexCreate();
         try ( Transaction tx = db.beginTx() )
         {
             tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
@@ -142,6 +144,8 @@ class UpdateDeletedIndexIT
         }
         return indexDefinition;
     }
+
+    protected abstract IndexDefinition indexCreate();
 
     private interface NodeOperation
     {

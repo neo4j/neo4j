@@ -130,6 +130,8 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 class OperationsTest
 {
+    private static final long TOKEN_INDEX_RESOURCE_ID = Long.MAX_VALUE;
+
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
     private Operations operations;
     private final Locks.Client locks = mock( Locks.Client.class );
@@ -908,6 +910,7 @@ class OperationsTest
         InOrder order = inOrder( locks, creationContext );
         order.verify( creationContext ).acquireNodeDeletionLock( txState, locks, LockTracer.NONE, nodeId );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId1, labelId2 );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, TOKEN_INDEX_RESOURCE_ID );
         order.verifyNoMoreInteractions();
     }
 
@@ -933,6 +936,7 @@ class OperationsTest
         InOrder order = inOrder( locks, creationContext );
         order.verify( creationContext ).acquireNodeDeletionLock( txState, locks, LockTracer.NONE, nodeId );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId1, labelId2 );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, TOKEN_INDEX_RESOURCE_ID );
         order.verifyNoMoreInteractions();
     }
 
@@ -952,6 +956,7 @@ class OperationsTest
         InOrder order = inOrder( locks );
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, TOKEN_INDEX_RESOURCE_ID );
         order.verifyNoMoreInteractions();
     }
 
