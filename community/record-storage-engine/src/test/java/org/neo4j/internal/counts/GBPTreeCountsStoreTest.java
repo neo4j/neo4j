@@ -224,7 +224,7 @@ class GBPTreeCountsStoreTest
     private void instantiateCountsStore( CountsBuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeCountsStore.Monitor monitor ) throws IOException
     {
         countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker, PageCacheTracer.NULL, monitor,
-                DEFAULT_DATABASE_NAME );
+                DEFAULT_DATABASE_NAME, 10 );
     }
 
     private static class TestableCountsBuilder implements CountsBuilder

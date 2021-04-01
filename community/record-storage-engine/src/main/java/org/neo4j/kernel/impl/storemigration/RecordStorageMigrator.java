@@ -124,6 +124,7 @@ import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.Configuration.defaultConfiguration;
+import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.DEFAULT_MAX_CACHE_SIZE;
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.KERNEL_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET;
@@ -284,7 +285,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         try ( NeoStores oldStores = oldStoreFactory.openAllNeoStores();
                 GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, migrationLayout.countStore(), fileSystem, immediate(),
                         new CountsComputer( oldStores, pageCache, cacheTracer, directoryLayout, memoryTracker, logService.getInternalLog( getClass() ) ),
-                        writable(), cacheTracer, GBPTreeCountsStore.NO_MONITOR, migrationLayout.getDatabaseName() ) )
+                        writable(), cacheTracer, GBPTreeCountsStore.NO_MONITOR, migrationLayout.getDatabaseName(), DEFAULT_MAX_CACHE_SIZE ) )
         {
             countsStore.start( cursorTracer, memoryTracker );
             countsStore.checkpoint( cursorTracer );

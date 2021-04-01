@@ -133,6 +133,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.DEFAULT_MAX_CACHE_SIZE;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
@@ -1509,7 +1510,7 @@ class BatchInsertTest
                         {
                             return 0;
                         }
-                    }, readOnly(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName() ) )
+                    }, readOnly(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), DEFAULT_MAX_CACHE_SIZE ) )
             {
                 countsStore.start( NULL, INSTANCE );
                 assertEquals( (r + 1) * 100, countsStore.nodeCount( 0, NULL ) );

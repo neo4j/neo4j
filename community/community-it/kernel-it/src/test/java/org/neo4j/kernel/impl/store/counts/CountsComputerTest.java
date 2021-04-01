@@ -66,6 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.DEFAULT_MAX_CACHE_SIZE;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
@@ -364,7 +365,7 @@ class CountsComputerTest
     private GBPTreeCountsStore createCountsStore( CountsBuilder builder ) throws IOException
     {
         return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(), builder, writable(), PageCacheTracer.NULL,
-                GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName() );
+                GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), DEFAULT_MAX_CACHE_SIZE );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId ) throws IOException

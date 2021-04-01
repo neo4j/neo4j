@@ -84,6 +84,7 @@ import static org.neo4j.util.Preconditions.checkState;
  */
 public class GBPTreeGenericCountsStore implements CountsStorage
 {
+    public static final int DEFAULT_MAX_CACHE_SIZE = 1_000_000;
     public static final Monitor NO_MONITOR = txId -> {};
     private static final long NEEDS_REBUILDING_HIGH_ID = 0;
     private static final String OPEN_COUNT_STORE_TAG = "openCountStore";
@@ -100,18 +101,20 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     private final String name;
     private final Monitor monitor;
     private final String databaseName;
+    private final int maxCacheSize;
     protected volatile CountsChanges changes = new CountsChanges();
     private final TxIdInformation txIdInformation;
     private volatile boolean started;
 
     public GBPTreeGenericCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-            Rebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker, String name, PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName )
+            Rebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker, String name, PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName, int maxCacheSize )
             throws IOException
     {
         this.readOnlyChecker = readOnlyChecker;
         this.name = name;
         this.monitor = monitor;
         this.databaseName = databaseName;
+        this.maxCacheSize = maxCacheSize;
 
         // First just read the header so that we can avoid creating it if this store is read-only
         CountsHeader header = new CountsHeader( NEEDS_REBUILDING_HIGH_ID );
@@ -173,7 +176,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         if ( rebuilder != null )
         {
             checkState( !readOnlyChecker.isReadOnly(), "Counts store needs rebuilding, most likely this database needs to be recovered." );
-            try ( CountUpdater updater = directUpdater( false, 0, cursorTracer ) )
+            try ( CountUpdater updater = directUpdater( false, cursorTracer ) )
             {
                 rebuilder.rebuild( updater, cursorTracer, memoryTracker );
             }
@@ -195,6 +198,9 @@ public class GBPTreeGenericCountsStore implements CountsStorage
 
     protected CountUpdater updater( long txId, PageCursorTracer cursorTracer )
     {
+        // In order to keep the cache limited then check if we need to flush to the tree
+        checkCacheSizeAndPotentiallyFlush( cursorTracer );
+
         Lock lock = lock( this.lock.readLock() );
 
         boolean alreadyApplied = txIdInformation.txIdIsAlreadyApplied( txId );
@@ -226,19 +232,10 @@ public class GBPTreeGenericCountsStore implements CountsStorage
      * Opens and returns a {@link CountUpdater} which makes direct insertions into the backing tree. This comes from the use case of having a way
      * to build the initial data set without the context of transactions, such as batch-insertion or initial import.
      *
-     * A couple of scenarios that can make use of the various combinations of arguments:
-     * <ul>
-     *     <li>Writing all absolute counts in an already sorted order: applyDeltas:false, numCachedEntries:0</li>
-     *     <li>Writing all absolute counts unsorted: applyDeltas:false, numCachedEntries:[e.g. 10_000] </li>
-     *     <li>Writing counts as deltas, each count potentially added multiple times: applyDeltas:true, numCachedEntries:[e.g. 10_000] </li>
-     * </ul>
-     *
      * @param applyDeltas if {@code true} the writer will apply the changes as deltas, which means reading from the tree.
      * If {@code false} all changes will be written as-is, i.e. as if they are absolute counts.
-     * @param numCachedEntries number of entries that are cached before writing to the tree. A value larger than 0 is useful for
-     * an updater that may make multiple changes to the same entry.
      */
-    protected CountUpdater directUpdater( boolean applyDeltas, int numCachedEntries, PageCursorTracer cursorTracer ) throws IOException
+    protected CountUpdater directUpdater( boolean applyDeltas, PageCursorTracer cursorTracer ) throws IOException
     {
         boolean success = false;
         Lock lock = this.lock.writeLock();
@@ -246,7 +243,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         try
         {
             CountUpdater.CountWriter writer = applyDeltas
-                    ? new DeltaTreeWriter( () -> tree.writer( cursorTracer ), key -> readCountFromTree( key, cursorTracer ), layout, numCachedEntries )
+                    ? new DeltaTreeWriter( () -> tree.writer( cursorTracer ), key -> readCountFromTree( key, cursorTracer ), layout, maxCacheSize )
                     : new TreeWriter( tree.writer( cursorTracer ) );
             CountUpdater updater = new CountUpdater( writer, lock );
             success = true;
@@ -264,35 +261,70 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     @Override
     public void checkpoint( PageCursorTracer cursorTracer ) throws IOException
     {
-        // First acquire the write lock. This is a fair lock and will wait for currently applying transactions to finish.
-        // This could potentially block appliers around this point since they will respect the fairness too.
-        // The good thing is that the lock is held very very briefly.
-        Lock writeLock = lock( this.lock.writeLock() );
+        try ( CriticalSection criticalSection = new CriticalSection( lock ) )
+        {
+            criticalSection.acquireExclusive();
+            // Take a snapshot of applied transactions while in the exclusive critical section (but write it later, no need to write it under the lock)
+            OutOfOrderSequence.Snapshot txIdSnapshot = idSequence.snapshot();
+            writeChangesToTreeAndSwitchToSharedCriticalSection( criticalSection, cursorTracer );
 
-        // When we have the lock we do two things (no updates will come in while we have it):
+            // Write transaction information to the tree and checkpoint while still in the shared critical section
+            updateTxIdInformationInTree( txIdSnapshot, cursorTracer );
+            tree.checkpoint( new CountsHeader( txIdSnapshot.highestGapFree()[0] ), cursorTracer );
+        }
+    }
+
+    private void checkCacheSizeAndPotentiallyFlush( PageCursorTracer cursorTracer )
+    {
+        int cacheSize = changes.size();
+        if ( cacheSize > maxCacheSize )
+        {
+            try ( CriticalSection criticalSection = new CriticalSection( lock ) )
+            {
+                // The cache is getting big, try to get a write lock to flush the changes. If we can't get it then give up and let someone else try later.
+                // Reasons for waiting for this lock could be:
+                // - Another thread is flushing changes (in which case this updater would need to wait anyway)
+                // - Other threads are making updates as we speak (more likely)
+                if ( !criticalSection.tryAcquireExclusive() && cacheSize > maxCacheSize * 2 )
+                {
+                    // Although if the write pressure is really high then flushing may be starved so if the cache is much bigger then acquire the lock blocking
+                    criticalSection.acquireExclusive();
+                }
+
+                if ( criticalSection.hasExclusive() && changes.size() > maxCacheSize )
+                {
+                    try
+                    {
+                        writeChangesToTreeAndSwitchToSharedCriticalSection( criticalSection, cursorTracer );
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new UncheckedIOException( e );
+                    }
+                }
+            }
+        }
+    }
+
+    private void writeChangesToTreeAndSwitchToSharedCriticalSection( CriticalSection criticalSection, PageCursorTracer cursorTracer ) throws IOException
+    {
+        criticalSection.acquireShared();
         CountsChanges changesToWrite;
-        OutOfOrderSequence.Snapshot txIdSnapshot;
         try
         {
-            // Take a snapshot of applied transactions (but write it later, no need to write it under the lock)
-            txIdSnapshot = idSequence.snapshot();
-
             // Take the changes and instantiate a new map for other updates to apply to after we release this lock
             changesToWrite = changes;
             changes = changes.freezeAndFork();
         }
         finally
         {
-            writeLock.unlock();
+            // The exclusive part of the critical section is completed, release that lock so that updaters can commence applying updates
+            criticalSection.releaseExclusive();
         }
 
-        // Now write all the things to the tree
+        // Now write all the things to the tree in the shared critical section
         writeCountsChanges( changesToWrite, cursorTracer );
         changes.clearPreviousChanges();
-        updateTxIdInformationInTree( txIdSnapshot, cursorTracer );
-
-        // Good, check-point all these changes
-        tree.checkpoint( new CountsHeader( txIdSnapshot.highestGapFree()[0] ), cursorTracer );
     }
 
     private void writeCountsChanges( CountsChanges changes, PageCursorTracer cursorTracer ) throws IOException
@@ -507,4 +539,86 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         {
         }
     };
+
+    /**
+     * Lock logic for the critical section which writes changes to the tree. The critical section has two parts to it: one that blocks all other threads,
+     * and another after that which blocks other critical sections, like so:
+     *
+     * <pre>
+     * A time flow over the critical section:
+     *
+     *   UUU---UU-UUUU|E|SSSSS|-UU-UU...
+     *   --UUU-UU--UU-| |UU-UUU--UUU-...
+     *   UU-UUUU---UUU| |--UUUU-UU-UU...
+     *   .....
+     *
+     * U: updater, i.e. {@link CountUpdater updaters} can be active here and make updates.
+     * E: exclusive critical section, where only a single thread can be, the one making the switch to a new {@link CountsChanges}.
+     * S: shared critical section, where only a single thread writing changes to the tree can be, but also other updaters.
+     * </pre>
+     *
+     * First the exclusive lock is acquired. This is a fair lock and will wait for currently applying transactions (and potentially other critical section)
+     * to finish. This could potentially block appliers around this point since they will respect the fairness too.
+     * The good thing is that the exclusive section is held very very briefly.
+     * Then the shared lock is acquired and held until the writing is done. For checkpointing this also includes doing checkpoint on the tree.
+     * This will prevent others from entering another critical section, but still allow writers to make updates (once the exclusive lock has been released)
+     */
+    private static class CriticalSection implements AutoCloseable
+    {
+        private final ReadWriteLock lock;
+        private boolean exclusive;
+        private boolean shared;
+
+        private CriticalSection( ReadWriteLock lock )
+        {
+            this.lock = lock;
+        }
+
+        boolean tryAcquireExclusive()
+        {
+            assert !exclusive && !shared;
+            return exclusive = lock.writeLock().tryLock();
+        }
+
+        void acquireExclusive()
+        {
+            assert !exclusive && !shared;
+            lock.writeLock().lock();
+            exclusive = true;
+        }
+
+        void acquireShared()
+        {
+            assert exclusive && !shared;
+            lock.readLock().lock();
+            shared = true;
+        }
+
+        void releaseExclusive()
+        {
+            assert exclusive;
+            lock.writeLock().unlock();
+            exclusive = false;
+        }
+
+        @Override
+        public void close()
+        {
+            if ( shared )
+            {
+                lock.readLock().unlock();
+                shared = false;
+            }
+            if ( exclusive )
+            {
+                lock.writeLock().unlock();
+                exclusive = false;
+            }
+        }
+
+        boolean hasExclusive()
+        {
+            return exclusive;
+        }
+    }
 }

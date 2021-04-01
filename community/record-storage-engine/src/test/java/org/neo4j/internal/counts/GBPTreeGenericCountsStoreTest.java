@@ -138,7 +138,7 @@ class GBPTreeGenericCountsStoreTest
         assertZeroGlobalTracer( pageCacheTracer );
 
         try ( var counts = new GBPTreeCountsStore( pageCache, file, directory.getFileSystem(), immediate(), CountsBuilder.EMPTY, writable(), pageCacheTracer,
-                NO_MONITOR, DEFAULT_DATABASE_NAME ) )
+                NO_MONITOR, DEFAULT_DATABASE_NAME, randomMaxCacheSize() ) )
         {
             assertThat( pageCacheTracer.pins() ).isEqualTo( 14 );
             assertThat( pageCacheTracer.unpins() ).isEqualTo( 14 );
@@ -490,7 +490,7 @@ class GBPTreeGenericCountsStoreTest
         final Path file = directory.file( "non-existing" );
         final IllegalStateException e = assertThrows( IllegalStateException.class,
                 () -> new GBPTreeCountsStore( pageCache, file, fs, immediate(), CountsBuilder.EMPTY, readOnly(), PageCacheTracer.NULL, NO_MONITOR,
-                        DEFAULT_DATABASE_NAME ) );
+                        DEFAULT_DATABASE_NAME, randomMaxCacheSize() ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof ReadOnlyDbException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );
@@ -607,7 +607,7 @@ class GBPTreeGenericCountsStoreTest
         }
 
         // when
-        try ( CountUpdater countUpdater = countsStore.directUpdater( false, 0, NULL ) )
+        try ( CountUpdater countUpdater = countsStore.directUpdater( false, NULL ) )
         {
             expected.forEach( countUpdater::increment );
         }
@@ -629,7 +629,7 @@ class GBPTreeGenericCountsStoreTest
         // when
         for ( int i = 0; i < 2; i++ )
         {
-            try ( CountUpdater countUpdater = countsStore.directUpdater( true, expected.size() / 10, NULL ) )
+            try ( CountUpdater countUpdater = countsStore.directUpdater( true, NULL ) )
             {
                 expected.forEach( countUpdater::increment );
             }
@@ -766,7 +766,7 @@ class GBPTreeGenericCountsStoreTest
     {
         countsStore =
                 new GBPTreeGenericCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker, "test", PageCacheTracer.NULL, monitor,
-                        DEFAULT_DATABASE_NAME );
+                        DEFAULT_DATABASE_NAME, randomMaxCacheSize() );
     }
 
     private void assertZeroGlobalTracer( PageCacheTracer pageCacheTracer )
@@ -808,5 +808,10 @@ class GBPTreeGenericCountsStoreTest
             lastCommittedTxIdCalled = true;
             return rebuiltAtTransactionId;
         }
+    }
+
+    private int randomMaxCacheSize()
+    {
+        return random.nextInt( 10, 100 );
     }
 }

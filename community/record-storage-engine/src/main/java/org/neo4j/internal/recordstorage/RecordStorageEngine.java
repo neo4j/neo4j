@@ -103,6 +103,7 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.neo4j.function.ThrowingAction.executeAll;
+import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.DEFAULT_MAX_CACHE_SIZE;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
@@ -270,7 +271,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 {
                     return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                 }
-            }, readOnlyChecker, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName() );
+            }, readOnlyChecker, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(), DEFAULT_MAX_CACHE_SIZE );
         }
         catch ( IOException e )
         {
@@ -285,7 +286,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, layout.relationshipGroupDegreesStore(), fs, recoveryCleanupWorkCollector,
                     new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer,
-                    GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName() );
+                    GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(), DEFAULT_MAX_CACHE_SIZE );
         }
         catch ( IOException e )
         {

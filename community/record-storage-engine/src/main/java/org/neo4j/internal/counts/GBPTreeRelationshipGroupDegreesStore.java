@@ -50,10 +50,11 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
 
     public GBPTreeRelationshipGroupDegreesStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem,
             RecoveryCleanupWorkCollector recoveryCollector, DegreesRebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker,
-            PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName ) throws IOException
+            PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName, int maxCacheSize ) throws IOException
     {
         super( pageCache, file, fileSystem, recoveryCollector, new RebuilderWrapper( rebuilder ), readOnlyChecker, NAME, pageCacheTracer, monitor,
-                databaseName );
+                databaseName,
+                maxCacheSize );
     }
 
     @Override
@@ -65,7 +66,7 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
 
     public Updater directApply( PageCursorTracer cursorTracer ) throws IOException
     {
-        return new DegreeUpdater( directUpdater( true, 10_000, cursorTracer ) );
+        return new DegreeUpdater( directUpdater( true, cursorTracer ) );
     }
 
     @Override

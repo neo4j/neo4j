@@ -194,6 +194,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_roo
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.DEFAULT_MAX_CACHE_SIZE;
 import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.NO_MONITOR;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
@@ -329,7 +330,7 @@ public class BatchInserterImpl implements BatchInserter
 
             groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
                     new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer, NO_MONITOR,
-                    databaseLayout.getDatabaseName() );
+                    databaseLayout.getDatabaseName(), DEFAULT_MAX_CACHE_SIZE );
             groupDegreesStore.start( cursorTracer, memoryTracker );
 
             degreeUpdater = groupDegreesStore.directApply( cursorTracer );
@@ -653,7 +654,7 @@ public class BatchInserterImpl implements BatchInserter
         CountsComputer initialCountsBuilder =
                 new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker, logService.getInternalLog( getClass() ) );
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
-                initialCountsBuilder, readOnlyChecker, cacheTracer, NO_MONITOR, databaseLayout.getDatabaseName() ) )
+                initialCountsBuilder, readOnlyChecker, cacheTracer, NO_MONITOR, databaseLayout.getDatabaseName(), DEFAULT_MAX_CACHE_SIZE ) )
         {
             countsStore.start( PageCursorTracer.NULL, memoryTracker );
             countsStore.checkpoint( PageCursorTracer.NULL );

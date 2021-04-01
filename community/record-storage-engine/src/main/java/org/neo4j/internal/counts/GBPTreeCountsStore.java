@@ -90,11 +90,11 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
     }
 
     public GBPTreeCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-            CountsBuilder initialCountsBuilder, DatabaseReadOnlyChecker readOnlyChecker, PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName )
+            CountsBuilder initialCountsBuilder, DatabaseReadOnlyChecker readOnlyChecker, PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName, int maxCacheSize )
             throws IOException
     {
         super( pageCache, file, fileSystem, recoveryCollector, new InitialCountsRebuilder( initialCountsBuilder ), readOnlyChecker, NAME, pageCacheTracer,
-                monitor, databaseName );
+                monitor, databaseName, maxCacheSize );
     }
 
     @Override

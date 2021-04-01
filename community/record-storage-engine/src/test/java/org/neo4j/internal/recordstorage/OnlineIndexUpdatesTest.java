@@ -72,6 +72,7 @@ import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.DEFAULT_MAX_CACHE_SIZE;
 import static org.neo4j.internal.schema.SchemaDescriptor.fulltext;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
@@ -116,7 +117,7 @@ class OnlineIndexUpdatesTest
         neoStores = storeFactory.openAllNeoStores( true );
         GBPTreeCountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
                 new CountsComputer( neoStores, pageCache, NULL, databaseLayout, INSTANCE, NullLog.getInstance() ), writable(), NULL,
-                GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName() );
+                GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), DEFAULT_MAX_CACHE_SIZE );
         life.add( wrapInLifecycle( counts ) );
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();
