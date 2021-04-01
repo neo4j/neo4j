@@ -61,6 +61,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -69,6 +70,8 @@ import static org.mockito.Mockito.anyObject;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -670,6 +673,38 @@ public class BoltStateHandlerTest
         handler.connect( config );
 
         assertTrue( provider.config.userAgent().startsWith( "neo4j-cypher-shell/v4.1" ) );
+    }
+
+    @Test
+    public void handleErrorsOnCommit() throws CommandException
+    {
+        reset( mockDriver );
+        var mockSession = spy( FakeSession.class );
+        var mockTx = mock( Transaction.class );
+        doThrow( new ClientException( "Failed to commit :(" ) ).when( mockTx ).commit();
+        when( mockSession.beginTransaction() ).thenReturn( mockTx );
+        when( mockDriver.session( any() ) ).thenReturn( mockSession );
+
+        boltStateHandler.connect();
+        boltStateHandler.beginTransaction();
+        assertThrows( ClientException.class, boltStateHandler::commitTransaction );
+        assertFalse( boltStateHandler.isTransactionOpen() );
+    }
+
+    @Test
+    public void handleErrorsOnRollback() throws CommandException
+    {
+        reset( mockDriver );
+        var mockSession = spy( FakeSession.class );
+        var mockTx = mock( Transaction.class );
+        doThrow( new ClientException( "Failed to rollback :(" ) ).when( mockTx ).rollback();
+        when( mockSession.beginTransaction() ).thenReturn( mockTx );
+        when( mockDriver.session( any() ) ).thenReturn( mockSession );
+
+        boltStateHandler.connect();
+        boltStateHandler.beginTransaction();
+        assertThrows( ClientException.class, boltStateHandler::rollbackTransaction );
+        assertFalse( boltStateHandler.isTransactionOpen() );
     }
 
     private Driver stubResultSummaryInAnOpenSession( Result resultMock, Session sessionMock, String version )
