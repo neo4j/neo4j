@@ -212,6 +212,7 @@ public class SingleInstanceGetRoutingTableProcedureTest
     {
         // given
         var advertisedBoldPort = 8776;
+        var defaultBoltPort = 7687;
         var advertisedBoltAddress = new SocketAddress( "neo4j.com", advertisedBoldPort );
         var clientProvidedHost = "my.neo4j-service.com";
 
@@ -226,7 +227,38 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var logProvider = new AssertableLogProvider();
 
         var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
-        var expectedAddress = new SocketAddress( clientProvidedHost, advertisedBoldPort );
+        var expectedAddress = new SocketAddress( clientProvidedHost, defaultBoltPort );
+
+        // when
+        var result = procedure.invoke( ID, ctx );
+
+        // then
+        assertEquals( singletonList( expectedAddress ), result.readEndpoints() );
+        assertEquals( expectedWriters( expectedAddress ), result.writeEndpoints() );
+        assertEquals( singletonList( expectedAddress ), result.routeEndpoints() );
+    }
+
+    @Test
+    void shouldUseUseConfiguredAdvertisedAddressIfClientProvidedPortIsBogus() throws Exception
+    {
+        // given
+        var advertisedBoldPort = 8776;
+        var clientProvidedPort = -1;
+        var advertisedBoltAddress = new SocketAddress( "neo4j.com", advertisedBoldPort );
+        var clientProvidedHostPortStr = String.format( "%s:%d", "my.neo4j-service.com", clientProvidedPort );
+
+        var ctxContents = new MapValueBuilder();
+        ctxContents.add( SingleInstanceGetRoutingTableProcedure.ADDRESS_CONTEXT_KEY, Values.stringValue( clientProvidedHostPortStr ) );
+        var ctx = ctxContents.build();
+
+        var portRegister = mock( ConnectorPortRegister.class );
+        when( portRegister.getLocalAddress( BoltConnector.NAME ) ).thenReturn( new HostnamePort( "neo4j.com", advertisedBoldPort ) );
+        var config = newConfig( Duration.ofSeconds( 100 ), advertisedBoltAddress );
+        var databaseManager = databaseManagerMock( config, true );
+        var logProvider = new AssertableLogProvider();
+
+        var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
+        var expectedAddress = advertisedBoltAddress;
 
         // when
         var result = procedure.invoke( ID, ctx );

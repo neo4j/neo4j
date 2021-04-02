@@ -102,8 +102,9 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
 
     private SocketAddress findAdvertisedBoltAddress( MapValue routingContext ) throws ProcedureException
     {
-        var clientProvidedAddress = findClientProvidedAddress( routingContext );
-        var advertisedAddress = clientProvidedAddress.orElse( config.get( BoltConnector.advertised_address ) );
+        var clientProvidedAddress = findClientProvidedAddress( routingContext, BoltConnector.DEFAULT_PORT );
+        var advertisedAddress = clientProvidedAddress.filter( c -> c.getPort() > 0 )
+                                                     .orElse( config.get( BoltConnector.advertised_address ) );
 
         if ( advertisedAddress.getPort() <= 0 )
         {
@@ -118,7 +119,7 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
         return advertisedAddress;
     }
 
-    private Optional<SocketAddress> findClientProvidedAddress( MapValue routingContext ) throws ProcedureException
+    private Optional<SocketAddress> findClientProvidedAddress( MapValue routingContext, int defaultBoltPort ) throws ProcedureException
     {
         var address = routingContext.get( ADDRESS_CONTEXT_KEY );
         if ( address == null  || address == NO_VALUE )
@@ -130,7 +131,20 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
         {
             try
             {
-                return Optional.of( SocketAddressParser.socketAddress( ((TextValue) address).stringValue(), SocketAddress::new ) );
+                String clientProvidedAddress = ((TextValue) address).stringValue();
+                if ( clientProvidedAddress == null || clientProvidedAddress.isEmpty() || clientProvidedAddress.isBlank() )
+                {
+                    // fall through to the procedure Exception
+                }
+                else
+                {
+                    // The driver may not include the port explicitly but ONLY if the default bolt port is used.
+                    if ( !clientProvidedAddress.contains( ":" ) )
+                    {
+                        clientProvidedAddress = String.format( "%s:%d", clientProvidedAddress, defaultBoltPort );
+                    }
+                    return Optional.of( SocketAddressParser.socketAddress( clientProvidedAddress, SocketAddress::new ) );
+                }
             }
             catch ( Exception e )
             { // Do nothing but warn
