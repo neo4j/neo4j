@@ -34,9 +34,12 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Random;
+import java.util.Set;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -61,7 +64,9 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.Math.toIntExact;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
@@ -84,13 +89,17 @@ public class LuceneIndexAccessorIT
     private final LifeSupport life = new LifeSupport();
     private LuceneIndexProvider indexProvider;
     private IndexSamplingConfig samplingConfig;
+    private DatabaseReadOnlyChecker.Default readOnlyChecker;
+    private Config config;
 
     @BeforeEach
     void setUp()
     {
         Path path = directory.directory( "db" );
-        Config config = Config.defaults();
-        indexProvider = new LuceneIndexProvider( directory.getFileSystem(), PERSISTENT, directoriesByProvider( path ), new Monitors(), config, writable() );
+        config = Config.defaults();
+        readOnlyChecker = new DatabaseReadOnlyChecker.Default( config, DEFAULT_DATABASE_NAME );
+        indexProvider = new LuceneIndexProvider( directory.getFileSystem(), PERSISTENT, directoriesByProvider( path ), new Monitors(), config,
+                readOnlyChecker );
         life.add( indexProvider );
         life.start();
         samplingConfig = new IndexSamplingConfig( config );
@@ -122,6 +131,20 @@ public class LuceneIndexAccessorIT
                 reader.forEach( readIds::add );
                 assertThat( readIds ).isEqualTo( expectedNodes );
             }
+        }
+    }
+
+    @Test
+    void failToAcquireIndexWriterWhileReadOnly() throws Exception
+    {
+        int nodes = 100;
+        MutableLongSet expectedNodes = LongSets.mutable.withInitialCapacity( nodes );
+        IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptor.forLabel( 1, 2 ) ).withName( "TestIndex" ).materialise( 99 );
+        populateWithInitialNodes( indexDescriptor, nodes, expectedNodes );
+        config.set( GraphDatabaseSettings.read_only_databases, Set.of( DEFAULT_DATABASE_NAME ) );
+        try ( IndexAccessor onlineAccessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
+        {
+            assertThrows( UnsupportedOperationException.class, () -> onlineAccessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) );
         }
     }
 

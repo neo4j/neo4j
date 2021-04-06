@@ -62,7 +62,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
     {
         if ( luceneIndex.isReadOnly() )
         {
-            throw new UnsupportedOperationException( "Can't create updater for read only index." );
+            throw new UnsupportedOperationException( "Can't create index updater while database is in read only mode." );
         }
         return getIndexUpdater( mode );
     }
@@ -72,6 +72,10 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
     @Override
     public void drop()
     {
+        if ( luceneIndex.isReadOnly() )
+        {
+            throw new UnsupportedOperationException( "Can't drop index while database is in read only mode." );
+        }
         luceneIndex.drop();
     }
 

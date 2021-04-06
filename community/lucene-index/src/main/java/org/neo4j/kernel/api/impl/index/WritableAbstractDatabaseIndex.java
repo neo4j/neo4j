@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -39,10 +40,12 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
 {
     // lock used to guard commits and close of lucene indexes from separate threads
     protected final ReentrantLock commitCloseLock = new ReentrantLock();
+    private final DatabaseReadOnlyChecker readOnlyChecker;
 
-    public WritableAbstractDatabaseIndex( INDEX luceneIndex )
+    public WritableAbstractDatabaseIndex( INDEX luceneIndex, DatabaseReadOnlyChecker readOnlyChecker )
     {
         super( luceneIndex );
+        this.readOnlyChecker = readOnlyChecker;
     }
 
     /**
@@ -60,7 +63,7 @@ public class WritableAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<REA
     @Override
     public boolean isReadOnly()
     {
-        return false;
+        return readOnlyChecker.isReadOnly();
     }
 
     /**

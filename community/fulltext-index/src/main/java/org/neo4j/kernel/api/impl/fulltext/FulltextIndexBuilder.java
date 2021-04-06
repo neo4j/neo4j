@@ -94,28 +94,18 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
      */
     public DatabaseIndex<FulltextIndexReader> build()
     {
-        if ( isReadOnly() )
+        Supplier<IndexWriterConfig> writerConfigFactory;
+        if ( populating )
         {
-            final ReadOnlyIndexPartitionFactory partitionFactory = new ReadOnlyIndexPartitionFactory();
-            LuceneFulltextIndex fulltextIndex =
-                    new LuceneFulltextIndex( storageBuilder.build(), partitionFactory, descriptor, propertyKeyTokenHolder, config, analyzer, propertyNames );
-            return new ReadOnlyFulltextIndex( fulltextIndex );
+            writerConfigFactory = () -> IndexWriterConfigs.population( config, analyzer );
         }
         else
         {
-            Supplier<IndexWriterConfig> writerConfigFactory;
-            if ( populating )
-            {
-                writerConfigFactory = () -> IndexWriterConfigs.population( config, analyzer );
-            }
-            else
-            {
-                writerConfigFactory = () -> IndexWriterConfigs.standard( config, analyzer );
-            }
-            WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory( writerConfigFactory );
-            LuceneFulltextIndex fulltextIndex =
-                    new LuceneFulltextIndex( storageBuilder.build(), partitionFactory, descriptor, propertyKeyTokenHolder, config, analyzer, propertyNames );
-            return new WritableFulltextIndex( indexUpdateSink, fulltextIndex );
+            writerConfigFactory = () -> IndexWriterConfigs.standard( config, analyzer );
         }
+        WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory( writerConfigFactory );
+        LuceneFulltextIndex fulltextIndex =
+                new LuceneFulltextIndex( storageBuilder.build(), partitionFactory, descriptor, propertyKeyTokenHolder, config, analyzer, propertyNames );
+        return new WritableFulltextIndex( indexUpdateSink, fulltextIndex, readOnlyChecker );
     }
 }

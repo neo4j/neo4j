@@ -1672,7 +1672,7 @@ class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).with( readOnly() ).build() )
         {
             UnsupportedOperationException e = assertThrows( UnsupportedOperationException.class, () -> tree.writer( NULL ) );
-            assertThat( e.getMessage() ).contains( "GBPTree was opened in read only mode and can not finish operation: " );
+            assertThat( e.getMessage() ).contains( "GBPTree currently is in read only mode and can not finish operation: " );
 
             tree.checkpoint( NULL );
         }

@@ -99,16 +99,8 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
      */
     public SchemaIndex build()
     {
-        if ( isReadOnly() )
-        {
-            return new ReadOnlyDatabaseSchemaIndex( storageBuilder.build(), descriptor, samplingConfig,
-                    new ReadOnlyIndexPartitionFactory() );
-        }
-        else
-        {
-            PartitionedIndexStorage storage = storageBuilder.build();
-            return new WritableDatabaseSchemaIndex( storage, descriptor, samplingConfig,
-                    new WritableIndexPartitionFactory( writerConfigFactory ) );
-        }
+        PartitionedIndexStorage storage = storageBuilder.build();
+        return new WritableDatabaseSchemaIndex( storage, descriptor, samplingConfig, new WritableIndexPartitionFactory( writerConfigFactory ),
+                readOnlyChecker );
     }
 }

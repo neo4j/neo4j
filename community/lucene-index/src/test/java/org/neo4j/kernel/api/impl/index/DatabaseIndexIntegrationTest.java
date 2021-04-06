@@ -67,6 +67,7 @@ import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 
 @TestDirectoryExtension
 class DatabaseIndexIntegrationTest
@@ -238,7 +239,7 @@ class DatabaseIndexIntegrationTest
         WritableTestDatabaseIndex( PartitionedIndexStorage indexStorage )
         {
             super( new TestLuceneIndex( indexStorage,
-                    new WritableIndexPartitionFactory( () -> IndexWriterConfigs.standard( Config.defaults() ) ) ) );
+                    new WritableIndexPartitionFactory( () -> IndexWriterConfigs.standard( Config.defaults() ) ) ), writable() );
         }
     }
 

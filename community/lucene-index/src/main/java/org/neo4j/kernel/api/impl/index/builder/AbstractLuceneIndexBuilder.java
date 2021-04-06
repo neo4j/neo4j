@@ -89,13 +89,4 @@ public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBu
         storageBuilder.withIndexFolder( indexRootFolder );
         return (T) this;
     }
-
-    /**
-     * Check if index should be read only
-     * @return true if index should be read only
-     */
-    protected boolean isReadOnly()
-    {
-        return readOnlyChecker.isReadOnly();
-    }
 }
