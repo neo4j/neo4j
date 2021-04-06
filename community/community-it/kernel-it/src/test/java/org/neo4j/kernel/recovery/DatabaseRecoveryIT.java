@@ -441,13 +441,13 @@ class DatabaseRecoveryIT
                     reversedFs.set( crashedFs.snapshot() );
                 }
             } );
+
+            DatabaseManagementService managementService =
+                    new TestDatabaseManagementServiceBuilder( directory.homePath() ).setFileSystem( crashedFs ).setExternalDependencies(
+                            dependencies ).setMonitors( monitors ).impermanent().build();
+
+            managementService.shutdown();
         }
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( directory.homePath() ).setFileSystem( crashedFs ).setExternalDependencies(
-                        dependencies ).setMonitors( monitors ).impermanent().build();
-
-        managementService.shutdown();
-
         // then
         fs.close();
 

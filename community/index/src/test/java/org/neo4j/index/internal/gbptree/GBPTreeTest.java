@@ -1808,7 +1808,6 @@ class GBPTreeTest
                         .isInstanceOf( UnsupportedOperationException.class )
                         .hasMessageContaining( "GBPTree currently is in read only mode and can not finish operation: " );
 
-
                 tree.checkpoint( NULL );
             }
             byte[] after = fileContent( indexFile );

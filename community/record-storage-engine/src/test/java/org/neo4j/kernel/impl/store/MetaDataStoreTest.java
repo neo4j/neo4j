@@ -235,17 +235,18 @@ class MetaDataStoreTest
     @Test
     void currentCommittingTransactionId()
     {
-        MetaDataStore metaDataStore = newMetaDataStore();
-        metaDataStore.nextCommittingTransactionId();
-        long lastCommittingTxId = metaDataStore.nextCommittingTransactionId();
-        assertEquals( lastCommittingTxId, metaDataStore.committingTransactionId() );
+        try ( MetaDataStore metaDataStore = newMetaDataStore() )
+        {
+            metaDataStore.nextCommittingTransactionId();
+            long lastCommittingTxId = metaDataStore.nextCommittingTransactionId();
+            assertEquals( lastCommittingTxId, metaDataStore.committingTransactionId() );
 
-        metaDataStore.nextCommittingTransactionId();
-        metaDataStore.nextCommittingTransactionId();
+            metaDataStore.nextCommittingTransactionId();
+            metaDataStore.nextCommittingTransactionId();
 
-        lastCommittingTxId = metaDataStore.nextCommittingTransactionId();
-        assertEquals( lastCommittingTxId, metaDataStore.committingTransactionId() );
-        metaDataStore.close();
+            lastCommittingTxId = metaDataStore.nextCommittingTransactionId();
+            assertEquals( lastCommittingTxId, metaDataStore.committingTransactionId() );
+        }
     }
 
     @Test
@@ -268,25 +269,29 @@ class MetaDataStoreTest
     @Test
     void setLastClosedTransactionOverridesLastClosedTransactionInformation()
     {
-        MetaDataStore metaDataStore = newMetaDataStore();
-        metaDataStore.resetLastClosedTransaction( 3, 4, 5, true, NULL );
+        try ( MetaDataStore metaDataStore = newMetaDataStore() )
+        {
+            metaDataStore.resetLastClosedTransaction( 3, 4, 5, true, NULL );
 
-        assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
-        assertArrayEquals( new long[]{3, 4, 5}, metaDataStore.getLastClosedTransaction() );
-        MetaDataRecord record = metaDataStore.getRecord( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE, NULL );
-        assertThat( record.getValue() ).isGreaterThan( 0L );
+            assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
+            assertArrayEquals( new long[]{3, 4, 5}, metaDataStore.getLastClosedTransaction() );
+            MetaDataRecord record = metaDataStore.getRecord( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE, NULL );
+            assertThat( record.getValue() ).isGreaterThan( 0L );
+        }
     }
 
     @Test
     void setLastClosedTransactionOverridesLastClosedTransactionInformationWithoutMissingLogsUpdate()
     {
-        MetaDataStore metaDataStore = newMetaDataStore();
-        metaDataStore.resetLastClosedTransaction( 3, 4, 5, false, NULL );
+        try ( MetaDataStore metaDataStore = newMetaDataStore() )
+        {
+            metaDataStore.resetLastClosedTransaction( 3, 4, 5, false, NULL );
 
-        assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
-        assertArrayEquals( new long[]{3, 4, 5}, metaDataStore.getLastClosedTransaction() );
-        MetaDataRecord record = metaDataStore.getRecord( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE, NULL );
-        assertEquals( -1, record.getValue() );
+            assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
+            assertArrayEquals( new long[]{3, 4, 5}, metaDataStore.getLastClosedTransaction() );
+            MetaDataRecord record = metaDataStore.getRecord( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE, NULL );
+            assertEquals( -1, record.getValue() );
+        }
     }
 
     @Test
@@ -301,31 +306,32 @@ class MetaDataStoreTest
     void testRecordTransactionClosed()
     {
         // GIVEN
-        MetaDataStore metaDataStore = newMetaDataStore();
-        long[] originalClosedTransaction = metaDataStore.getLastClosedTransaction();
-        long transactionId = originalClosedTransaction[0] + 1;
         long version = 1L;
         long byteOffset = 777L;
+        try ( MetaDataStore metaDataStore = newMetaDataStore() )
+        {
+            long[] originalClosedTransaction = metaDataStore.getLastClosedTransaction();
+            long transactionId = originalClosedTransaction[0] + 1;
 
-        // WHEN
-        metaDataStore.transactionClosed( transactionId, version, byteOffset, NULL );
-        // long[] with the highest offered gap-free number and its meta data.
-        long[] closedTransactionFlags = metaDataStore.getLastClosedTransaction();
+            // WHEN
+            metaDataStore.transactionClosed( transactionId, version, byteOffset, NULL );
+            // long[] with the highest offered gap-free number and its meta data.
+            long[] closedTransactionFlags = metaDataStore.getLastClosedTransaction();
 
-        //EXPECT
-        assertEquals( version, closedTransactionFlags[1] );
-        assertEquals( byteOffset, closedTransactionFlags[2] );
+            //EXPECT
+            assertEquals( version, closedTransactionFlags[1] );
+            assertEquals( byteOffset, closedTransactionFlags[2] );
 
-        // WHEN
-        metaDataStore.close();
-        metaDataStore = newMetaDataStore();
+            // WHEN
+        }
 
-        // EXPECT
-        long[] lastClosedTransactionFlags = metaDataStore.getLastClosedTransaction();
-        assertEquals( version, lastClosedTransactionFlags[1] );
-        assertEquals( byteOffset, lastClosedTransactionFlags[2] );
-
-        metaDataStore.close();
+        try ( MetaDataStore metaDataStore = newMetaDataStore() )
+        {
+            // EXPECT
+            long[] lastClosedTransactionFlags = metaDataStore.getLastClosedTransaction();
+            assertEquals( version, lastClosedTransactionFlags[1] );
+            assertEquals( byteOffset, lastClosedTransactionFlags[2] );
+        }
     }
 
     @Test
@@ -733,9 +739,7 @@ class MetaDataStoreTest
     void throwsWhenClosed()
     {
         MetaDataStore store = newMetaDataStore();
-
         store.close();
-
         assertThrows( StoreFileClosedException.class, store::getLastCommittedTransactionId );
     }
 
@@ -777,12 +781,13 @@ class MetaDataStoreTest
     void tracePageCacheAccessOnStoreInitialisation()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        newMetaDataStore( pageCacheTracer );
-
-        assertThat( pageCacheTracer.faults() ).isOne();
-        assertThat( pageCacheTracer.pins() ).isEqualTo( 27 );
-        assertThat( pageCacheTracer.unpins() ).isEqualTo( 27 );
-        assertThat( pageCacheTracer.hits() ).isEqualTo( 26 );
+        try ( MetaDataStore ignored = newMetaDataStore( pageCacheTracer ) )
+        {
+            assertThat( pageCacheTracer.faults() ).isOne();
+            assertThat( pageCacheTracer.pins() ).isEqualTo( 27 );
+            assertThat( pageCacheTracer.unpins() ).isEqualTo( 27 );
+            assertThat( pageCacheTracer.hits() ).isEqualTo( 26 );
+        }
     }
 
     @Test
@@ -881,28 +886,32 @@ class MetaDataStoreTest
     @Test
     void accessCheckpointLogVersion()
     {
-        var dataStore = newMetaDataStore();
-        assertEquals( 0, dataStore.getCheckpointLogVersion() );
-        assertEquals( 1, dataStore.incrementAndGetCheckpointLogVersion( NULL ) );
-        assertEquals( 2, dataStore.incrementAndGetCheckpointLogVersion( NULL ) );
-        assertEquals( 3, dataStore.incrementAndGetCheckpointLogVersion( NULL ) );
-        assertEquals( 4, dataStore.incrementAndGetCheckpointLogVersion( NULL ) );
-        assertEquals( 5, dataStore.incrementAndGetCheckpointLogVersion( NULL ) );
-        assertEquals( 5, dataStore.getCheckpointLogVersion() );
-        assertEquals( 0, dataStore.getCurrentLogVersion() );
+        try ( var dataStore = newMetaDataStore() )
+        {
+            assertEquals( 0, dataStore.getCheckpointLogVersion() );
+            assertEquals( 1, dataStore.incrementAndGetCheckpointLogVersion( NULL ) );
+            assertEquals( 2, dataStore.incrementAndGetCheckpointLogVersion( NULL ) );
+            assertEquals( 3, dataStore.incrementAndGetCheckpointLogVersion( NULL ) );
+            assertEquals( 4, dataStore.incrementAndGetCheckpointLogVersion( NULL ) );
+            assertEquals( 5, dataStore.incrementAndGetCheckpointLogVersion( NULL ) );
+            assertEquals( 5, dataStore.getCheckpointLogVersion() );
+            assertEquals( 0, dataStore.getCurrentLogVersion() );
+        }
     }
 
     @Test
     void checkSetCheckpointLogVersion()
     {
-        var dataStore = newMetaDataStore();
-        assertEquals( 0, dataStore.getCheckpointLogVersion() );
-        dataStore.setCheckpointLogVersion( 123, NULL );
-        assertEquals( 123, dataStore.getCheckpointLogVersion() );
+        try ( var dataStore = newMetaDataStore() )
+        {
+            assertEquals( 0, dataStore.getCheckpointLogVersion() );
+            dataStore.setCheckpointLogVersion( 123, NULL );
+            assertEquals( 123, dataStore.getCheckpointLogVersion() );
 
-        dataStore.setCheckpointLogVersion( 321, NULL );
-        assertEquals( 321, dataStore.getCheckpointLogVersion() );
-        assertEquals( 0, dataStore.getCurrentLogVersion() );
+            dataStore.setCheckpointLogVersion( 321, NULL );
+            assertEquals( 321, dataStore.getCheckpointLogVersion() );
+            assertEquals( 0, dataStore.getCurrentLogVersion() );
+        }
     }
 
     @Test

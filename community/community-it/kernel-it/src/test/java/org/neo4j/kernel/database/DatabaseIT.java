@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.neo4j.collection.Dependencies;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.DelegatingPageCache;
@@ -88,6 +89,8 @@ class DatabaseIT
     private Database database;
     @Inject
     private MemoryPools memoryPools;
+    @Inject
+    private DatabaseManagementService dbms;
 
     private PageCacheWrapper pageCacheWrapper;
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -104,6 +107,7 @@ class DatabaseIT
     @AfterEach
     void tearDown()
     {
+        dbms.shutdown();
         pageCacheWrapper.close();
     }
 
