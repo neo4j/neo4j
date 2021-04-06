@@ -129,4 +129,13 @@ public interface RecordFormats
      * @return name of record format
      */
     String name();
+
+    /**
+     * Other (older) record formats that are compatible with this one, for rolling upgrade into this version
+     * @return a list of compatible older record formats. Empty list if none
+     */
+    default RecordFormats[] compatibleVersionsForRollingUpgrade()
+    {
+        return new RecordFormats[0];
+    }
 }

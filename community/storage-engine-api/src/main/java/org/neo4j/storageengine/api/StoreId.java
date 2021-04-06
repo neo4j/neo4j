@@ -129,10 +129,8 @@ public final class StoreId
         {
             return true; //Same store, same version, compatible
         }
-        //Same store, different version, check compatibility
-        StoreVersion storeVersion = storageEngineFactory.versionInformation( getStoreVersion() );
-        StoreVersion otherStoreVersion = storageEngineFactory.versionInformation( otherStoreId.getStoreVersion() );
-        return storeVersion.isCompatibleWithIncludingMinorMigration( otherStoreVersion );
+
+        return storageEngineFactory.rollingUpgradeCompatibility().isVersionCompatibleForRollingUpgrade( getStoreVersion(), otherStoreId.getStoreVersion() );
     }
 
     @Override

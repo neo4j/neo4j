@@ -33,6 +33,13 @@ public interface StoreVersionCheck
     Optional<String> storeVersion( PageCursorTracer cursorTracer );
 
     /**
+     * Convert the a store version to String form.
+     * @param storeVersion the store version to convert
+     * @return store version of the existing store.
+     */
+    String storeVersionToString( long storeVersion );
+
+    /**
      * Store version as dictated by configuration if specified, otherwise latest of current store, or default version if no store is available.
      * @return store version that is specified in the order 'config->store->default'.
      */

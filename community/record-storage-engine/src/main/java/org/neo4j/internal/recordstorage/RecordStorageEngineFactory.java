@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.storemigration.IdGeneratorMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
+import org.neo4j.kernel.impl.storemigration.RecordStoreRollingUpgradeCompatibility;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersion;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.lock.LockService;
@@ -79,6 +80,7 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.migration.RollingUpgradeCompatibility;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.DelegatingTokenHolder;
@@ -89,7 +91,6 @@ import org.neo4j.token.api.TokenHolder;
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
@@ -111,9 +112,9 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public StoreVersion versionInformation( long storeVersion )
+    public RollingUpgradeCompatibility rollingUpgradeCompatibility()
     {
-        return versionInformation( versionLongToString( storeVersion ) );
+        return new RecordStoreRollingUpgradeCompatibility( RecordFormatSelector.allFormats() );
     }
 
     @Override

@@ -24,7 +24,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
@@ -45,7 +44,6 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.service.Services;
-import org.neo4j.storageengine.api.format.CapabilityType;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -255,27 +253,6 @@ public class RecordFormatSelector
     public static boolean isStoreAndConfigFormatsCompatible( RecordFormats format, RecordFormats otherFormat )
     {
         return (format == null) || (otherFormat == null) || formatSameFamilyAndGeneration( format, otherFormat );
-    }
-
-    /**
-     * Check if a format is compatible with another format. This will return {@code true} if all the following are true:
-     * <ul>
-     * <li>the formats are of the same family</li>
-     * <li>{@code format} has a {@link RecordFormats#generation() generation} equal to or lower than {@code otherFormat}</li>
-     * <li>the two formats has {@link RecordFormats#hasCompatibleCapabilities(RecordFormats, CapabilityType) compatible capabilities}</li>
-     * </ul>
-     * @param format a {@link RecordFormats}
-     * @param otherFormat another {@link RecordFormats} to compare with.
-     * @return {@code true} if the two formats are compatible (with lee-way for being trivially upgradable, {@code false} otherwise.
-     */
-    public static boolean isStoreFormatsCompatibleIncludingMinorUpgradable( RecordFormats format, RecordFormats otherFormat )
-    {
-        Objects.requireNonNull( format );
-        Objects.requireNonNull( otherFormat );
-        return format.getFormatFamily().equals( otherFormat.getFormatFamily() ) &&
-                format.generation() <= otherFormat.generation() &&
-                format.hasCompatibleCapabilities( otherFormat, CapabilityType.FORMAT ) &&
-                format.hasCompatibleCapabilities( otherFormat, CapabilityType.STORE );
     }
 
     /**
