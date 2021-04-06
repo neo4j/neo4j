@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -49,20 +48,22 @@ class RecoveryVisitor implements RecoveryApplier
     private final LockService lockService = new ReentrantLockService();
     private final TransactionApplicationMode mode;
     private final CursorContext cursorContext;
+    private final String tracerTag;
     private final ExecutorService appliers;
     private final AtomicReference<Throwable> failure = new AtomicReference<>();
     private final int stride;
 
-    RecoveryVisitor( StorageEngine storageEngine, TransactionApplicationMode mode, CursorContext cursorContext )
+    RecoveryVisitor( StorageEngine storageEngine, TransactionApplicationMode mode, CursorContext cursorContext, String tracerTag )
     {
-        this( storageEngine, mode, cursorContext, max( 1, Runtime.getRuntime().availableProcessors() - 1 ) );
+        this( storageEngine, mode, cursorContext, tracerTag, max( 1, Runtime.getRuntime().availableProcessors() - 1 ) );
     }
 
-    RecoveryVisitor( StorageEngine storageEngine, TransactionApplicationMode mode, CursorContext cursorContext, int numAppliers )
+    RecoveryVisitor( StorageEngine storageEngine, TransactionApplicationMode mode, CursorContext cursorContext, String tracerTag, int numAppliers )
     {
         this.storageEngine = storageEngine;
         this.mode = mode;
         this.cursorContext = cursorContext;
+        this.tracerTag = tracerTag;
         this.appliers = new ThreadPoolExecutor( numAppliers, numAppliers, 1, TimeUnit.HOURS, new ArrayBlockingQueue<>( numAppliers ),
                 new ThreadPoolExecutor.CallerRunsPolicy() );
         this.stride = mode == TransactionApplicationMode.REVERSE_RECOVERY ? -1 : 1;

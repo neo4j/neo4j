@@ -28,7 +28,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -101,7 +100,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                 long lowestRecoveredTxId = TransactionIdStore.BASE_TX_ID;
                 try ( var transactionsToRecover = recoveryService.getTransactionsInReverseOrder( recoveryStartPosition );
                       var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( REVERSE_RECOVERY_TAG ) );
-                      var recoveryVisitor = recoveryService.getRecoveryApplier( REVERSE_RECOVERY, cursorContext ) )
+                      var recoveryVisitor = recoveryService.getRecoveryApplier( REVERSE_RECOVERY, cursorContext, REVERSE_RECOVERY_TAG ) )
                 {
                     while ( transactionsToRecover.next() )
                     {
@@ -125,9 +124,9 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                 // of the schema life until after we've done the reverse recovery.
                 schemaLife.init();
 
-                try ( TransactionCursor transactionsToRecover = recoveryService.getTransactions( recoveryStartPosition );
+                try ( var transactionsToRecover = recoveryService.getTransactions( recoveryStartPosition );
                         var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( RECOVERY_TAG ) );
-                        RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY, cursorContext ) )
+                        var recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY, cursorContext, RECOVERY_TAG ) )
                 {
                     while ( transactionsToRecover.next() )
                     {

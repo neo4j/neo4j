@@ -100,7 +100,7 @@ class RecoveryVisitorTest
         };
 
         // when
-        try ( RecoveryVisitor visitor = new RecoveryVisitor( storageEngine, RECOVERY, NULL, 2 ) )
+        try ( RecoveryVisitor visitor = new RecoveryVisitor( storageEngine, RECOVERY, NULL, "test", 2 ) )
         {
             visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
             visitor.visit( tx( 3, commandsRelatedToNode( 999 ) ) );
@@ -131,7 +131,7 @@ class RecoveryVisitorTest
         };
 
         // when
-        try ( RecoveryVisitor visitor = new RecoveryVisitor( storageEngine, RECOVERY, NULL, 2 ) )
+        try ( RecoveryVisitor visitor = new RecoveryVisitor( storageEngine, RECOVERY, NULL, "test", 2 ) )
         {
             visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
             visitor.visit( tx( 3, commandsRelatedToNode( 99 ) ) );
@@ -176,7 +176,7 @@ class RecoveryVisitorTest
         };
 
         // when
-        try ( RecoveryVisitor visitor = new RecoveryVisitor( storageEngine, RECOVERY, NULL, 2 ) )
+        try ( RecoveryVisitor visitor = new RecoveryVisitor( storageEngine, RECOVERY, NULL, "test", 2 ) )
         {
             visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
             visitor.visit( tx( 3, commandsRelatedToNode( 999 ) ) );
@@ -207,7 +207,7 @@ class RecoveryVisitorTest
         };
 
         // when
-        try ( RecoveryVisitor visitor = new RecoveryVisitor( storageEngine, RECOVERY, NULL, 2 ) )
+        try ( RecoveryVisitor visitor = new RecoveryVisitor( storageEngine, RECOVERY, NULL, "test", 2 ) )
         {
             assertThatThrownBy( () ->
             {
@@ -240,7 +240,7 @@ class RecoveryVisitorTest
         };
 
         // when
-        RecoveryVisitor visitor = new RecoveryVisitor( storageEngine, RECOVERY, NULL, 2 );
+        RecoveryVisitor visitor = new RecoveryVisitor( storageEngine, RECOVERY, NULL, "test", 2 );
         visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
         assertThatThrownBy( visitor::close ).getCause().hasMessageContaining( failure );
     }

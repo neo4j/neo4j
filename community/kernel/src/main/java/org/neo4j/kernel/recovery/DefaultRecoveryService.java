@@ -64,9 +64,9 @@ public class DefaultRecoveryService implements RecoveryService
     }
 
     @Override
-    public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, CursorContext cursorContext )
+    public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, CursorContext cursorContext, String tracerTag )
     {
-        return new RecoveryVisitor( storageEngine, mode, cursorContext );
+        return new RecoveryVisitor( storageEngine, mode, cursorContext, tracerTag );
     }
 
     @Override

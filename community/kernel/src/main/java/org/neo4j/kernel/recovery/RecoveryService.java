@@ -35,7 +35,7 @@ public interface RecoveryService
 
     RecoveryStartInformation getRecoveryStartInformation() throws IOException;
 
-    RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, CursorContext cursorContext ) throws Exception;
+    RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, CursorContext cursorContext, String tracerTag ) throws Exception;
 
     void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction, LogPosition lastTransactionPosition,
             LogPosition positionAfterLastRecoveredTransaction, boolean missingLogs, CursorContext cursorContext );

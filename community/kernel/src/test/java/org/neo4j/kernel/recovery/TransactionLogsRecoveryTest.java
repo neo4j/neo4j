@@ -229,9 +229,9 @@ class TransactionLogsRecoveryTest
                 private int nr;
 
                 @Override
-                public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, CursorContext cursorContext )
+                public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, CursorContext cursorContext, String tracerTag )
                 {
-                    RecoveryApplier actual = super.getRecoveryApplier( mode, cursorContext );
+                    RecoveryApplier actual = super.getRecoveryApplier( mode, cursorContext, tracerTag );
                     if ( mode == TransactionApplicationMode.REVERSE_RECOVERY )
                     {
                         return actual;
