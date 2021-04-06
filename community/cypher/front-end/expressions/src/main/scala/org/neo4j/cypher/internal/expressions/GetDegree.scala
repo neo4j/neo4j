@@ -22,4 +22,12 @@ case class GetDegree(
                       node: Expression,
                       relType: Option[RelTypeName],
                       dir: SemanticDirection
-                    )(val position: InputPosition) extends Expression
+                    )(val position: InputPosition) extends Expression {
+
+  override def asCanonicalStringVal: String = {
+    val lArrow = if (dir == SemanticDirection.INCOMING) "<" else ""
+    val rArrow = if (dir == SemanticDirection.OUTGOING) ">" else ""
+
+    s"size((${node.asCanonicalStringVal})$lArrow-${relType.map(t => s"[:${t.name}]").getOrElse("")}-$rArrow())"
+  }
+}
