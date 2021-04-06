@@ -81,6 +81,12 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
         }
     }
 
+    @Override
+    public String storeVersionToString( long storeVersion )
+    {
+        return MetaDataStore.versionLongToString( storeVersion );
+    }
+
     private String readVersion( PageCursorTracer cursorTracer ) throws IOException
     {
         long record = MetaDataStore.getRecord( pageCache, metaDataFile, STORE_VERSION, databaseName, cursorTracer );
