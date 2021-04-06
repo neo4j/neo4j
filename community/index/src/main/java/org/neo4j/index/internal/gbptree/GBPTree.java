@@ -1286,7 +1286,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
     {
         if ( readOnlyChecker.isReadOnly() )
         {
-            throw new UnsupportedOperationException( "GBPTree was opened in read only mode and can not finish operation: " + operationDescription );
+            throw new UnsupportedOperationException( "GBPTree currently is in read only mode and can not finish operation: " + operationDescription );
         }
     }
 

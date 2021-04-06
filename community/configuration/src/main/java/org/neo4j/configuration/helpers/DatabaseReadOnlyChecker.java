@@ -64,6 +64,7 @@ public interface DatabaseReadOnlyChecker
             this.databaseName = requireNonNull( databaseName );
         }
 
+        @Override
         public boolean isReadOnly()
         {
             return dbmsChecker.isReadOnly( databaseName );
