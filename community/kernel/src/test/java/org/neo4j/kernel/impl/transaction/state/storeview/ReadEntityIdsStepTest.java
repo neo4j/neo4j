@@ -50,6 +50,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Configuration.withBatchSize;
@@ -80,7 +81,7 @@ class ReadEntityIdsStepTest
         // given
         DatabaseLayout layout = DatabaseLayout.ofFlat( directory.homePath() );
         TokenScanStore scanStore =
-                labelScanStore( pageCache, layout, directory.getFileSystem(), EMPTY, false, new Monitors(), immediate(), defaults(), NULL, INSTANCE );
+                labelScanStore( pageCache, layout, directory.getFileSystem(), EMPTY, writable(), new Monitors(), immediate(), defaults(), NULL, INSTANCE );
         try ( Lifespan life = new Lifespan( scanStore ) )
         {
             long initialHighNodeId = 1_000 + random.nextInt( 100 );
