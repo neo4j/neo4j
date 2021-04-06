@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import java.net.URL
+
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
@@ -50,6 +52,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenRead
+import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.kernel.api.Write
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
@@ -68,7 +71,6 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
-import java.net.URL
 import scala.collection.Iterator
 
 abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
@@ -126,8 +128,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator =
     manyDbHitsCliRi(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
-  override def getRelationshipsByType(id: Int): ClosingLongIterator =
-    manyDbHits(inner.getRelationshipsByType(id))
+  override def getRelationshipsByType(tokenReadSession: TokenReadSession, relType: Int): ClosingLongIterator =
+    manyDbHits(inner.getRelationshipsByType(tokenReadSession, relType))
 
   override def nodeCursor(): NodeCursor = manyDbHits(inner.nodeCursor())
 

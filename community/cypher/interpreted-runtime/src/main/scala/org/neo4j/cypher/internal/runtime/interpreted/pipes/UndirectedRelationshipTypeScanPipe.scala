@@ -51,7 +51,7 @@ private class UndirectedIterator(relName: String,
 
   private val baseContext = state.newRowWithArgument(rowFactory)
   private val query = state.query
-  private val relIterator = query.getRelationshipsByType(relToken)
+  private val relIterator = query.getRelationshipsByType(state.relTypeTokenReadSession.get, relToken)
 
   def next(): CypherRow = {
     if (emitSibling) {

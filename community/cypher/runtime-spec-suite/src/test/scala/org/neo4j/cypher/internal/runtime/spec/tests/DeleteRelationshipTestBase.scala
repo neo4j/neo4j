@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
@@ -34,7 +34,7 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
   runtime: CypherRuntime[CONTEXT],
   sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](
-  edition.copyWith(enable_relationship_type_scan_store -> java.lang.Boolean.TRUE),
+  edition.copyWith(enable_scan_stores_as_token_indexes -> java.lang.Boolean.TRUE),
   runtime
 ) {
 

@@ -50,6 +50,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
+import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
@@ -313,8 +314,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator =
     translateException(tokenNameLookup, inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
-  override def getRelationshipsByType(id: Int): ClosingLongIterator =
-    translateException(tokenNameLookup, inner.getRelationshipsByType(id))
+  override def getRelationshipsByType(tokenReadSession: TokenReadSession,  relType: Int): ClosingLongIterator =
+    translateException(tokenNameLookup, inner.getRelationshipsByType(tokenReadSession, relType))
 
   override def nodeCursor(): NodeCursor = translateException(tokenNameLookup, inner.nodeCursor())
 

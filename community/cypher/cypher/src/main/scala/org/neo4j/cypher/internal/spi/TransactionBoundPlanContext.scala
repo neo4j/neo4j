@@ -278,5 +278,5 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override def notificationLogger(): InternalNotificationLogger = logger
 
-  override def relationshipTypeScanStoreEnabled: Boolean = tc.schemaRead.relationshipTypeScanStoreEnabled()
+  override def relationshipTypeScanStoreEnabled: Boolean = tc.schemaRead.scanStoreAsTokenIndexEnabled()
 }

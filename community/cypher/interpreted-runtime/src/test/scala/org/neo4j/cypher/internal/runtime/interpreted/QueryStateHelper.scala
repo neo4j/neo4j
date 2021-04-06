@@ -41,6 +41,7 @@ import org.neo4j.graphdb.spatial.Point
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
@@ -65,13 +66,14 @@ object QueryStateHelper extends MockitoSugar {
                 params: Array[AnyValue] = Array.empty,
                 expressionCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory], PageCursorTracer.NULL, EmptyMemoryTracker.INSTANCE),
                 queryIndexes: Array[IndexReadSession] = Array(mock[IndexReadSession]),
+                relTokenIndex: Option[TokenReadSession] = Some(mock[TokenReadSession]),
                 expressionVariables: Array[AnyValue] = Array.empty,
                 subscriber: QuerySubscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER,
                 decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[CypherRow] = None,
                 input: InputDataStream = NoInput
                ):QueryState =
-    new QueryState(query, resources, params, expressionCursors, queryIndexes, expressionVariables, subscriber, NoOpQueryMemoryTracker,
+    new QueryState(query, resources, params, expressionCursors, queryIndexes, relTokenIndex, expressionVariables, subscriber, NoOpQueryMemoryTracker,
       decorator, initialContext = initialContext, input = input)
 
   def queryStateFrom(db: GraphDatabaseQueryService,

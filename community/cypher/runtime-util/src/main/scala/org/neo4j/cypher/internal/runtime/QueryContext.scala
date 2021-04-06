@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import java.net.URL
+import java.util.Optional
+
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.TokenContext
@@ -39,6 +42,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenRead
+import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.kernel.api.Write
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
@@ -57,8 +61,6 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
-import java.net.URL
-import java.util.Optional
 import scala.collection.Iterator
 
 /*
@@ -99,7 +101,7 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator
 
-  def getRelationshipsByType(id: Int): ClosingLongIterator
+  def getRelationshipsByType(tokenReadSession: TokenReadSession,  relType: Int): ClosingLongIterator
 
   def nodeCursor(): NodeCursor
 

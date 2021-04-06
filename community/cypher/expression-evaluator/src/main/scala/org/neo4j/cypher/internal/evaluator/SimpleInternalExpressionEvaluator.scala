@@ -81,6 +81,7 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
       params = slottedParams,
       cursors = null,
       queryIndexes = Array.empty[IndexReadSession],
+      relTypeTokenReadSession = None,
       expressionVariables = new Array(nExpressionSlots),
       subscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER,
       memoryTracker = null

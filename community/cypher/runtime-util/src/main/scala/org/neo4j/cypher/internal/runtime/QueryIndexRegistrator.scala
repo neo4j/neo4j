@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
@@ -27,6 +28,7 @@ import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.SchemaRead
+import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.SchemaDescriptor
 
@@ -40,21 +42,24 @@ import scala.collection.mutable.ArrayBuffer
  */
 class QueryIndexRegistrator(schemaRead: SchemaRead) {
 
-  private val buffer = new ArrayBuffer[InternalIndexReference]
+  private val indexReferences = new ArrayBuffer[InternalIndexReference]
   private var labelScan: Boolean = false
+  private var typeScan: Boolean = false
 
   def registerLabelScan(): Unit = labelScan = true
+  def registerTypeScan(): Unit = typeScan = true
 
   def registerQueryIndex(label: LabelToken, property: IndexedProperty): Int = registerQueryIndex(label, Seq(property))
 
   def registerQueryIndex(label: LabelToken,
                          properties: Seq[IndexedProperty]): Int = {
     val reference = InternalIndexReference(label.nameId, properties.map(_.propertyKeyToken.nameId.id))
-    val index = buffer.indexOf(reference)
-    if ( index > 0 ) index
-    else {
-      val queryIndexId = buffer.size
-      buffer += reference
+    val index = indexReferences.indexOf(reference)
+    if (index > 0) {
+      index
+    } else {
+      val queryIndexId = indexReferences.size
+      indexReferences += reference
       queryIndexId
     }
   }
@@ -64,18 +69,19 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
   def registerQueryIndex(typeToken: RelationshipTypeToken,
                          properties: Seq[IndexedProperty]): Int = {
     val reference = InternalIndexReference(typeToken.nameId, properties.map(_.propertyKeyToken.nameId.id))
-    val index = buffer.indexOf(reference)
-    if ( index > 0 ) index
-    else {
-      val queryIndexId = buffer.size
-      buffer += reference
+    val index = indexReferences.indexOf(reference)
+    if (index > 0) {
+      index
+    } else {
+      val queryIndexId = indexReferences.size
+      indexReferences += reference
       queryIndexId
     }
   }
 
   def result(): QueryIndexes = {
     val indexes =
-      buffer.flatMap {
+      indexReferences.flatMap {
         case InternalIndexReference(LabelId(token), properties) =>
           schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forLabel(token, properties: _*)).asScala
         case InternalIndexReference(RelTypeId(token), properties) =>
@@ -83,18 +89,29 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
         case _ => throw new IllegalStateException()
       }.toArray
 
-    QueryIndexes(labelScan, indexes)
+    val typeTokenIndex = if (typeScan) {
+      val descriptions = schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAllEntityTokens(EntityType.RELATIONSHIP))
+      if (!descriptions.hasNext) throw new IllegalStateException("There must be a type index at this point in time")
+
+      Some(descriptions.next())
+    } else {
+      None
+    }
+    QueryIndexes(labelScan, indexes, typeTokenIndex)
   }
 
   private case class InternalIndexReference(token: NameId, properties: Seq[Int])
+  private case class InternalTokenReference(token: NameId)
 }
 
 case class QueryIndexes(private val hasLabelScan: Boolean,
-                        private val indexes: Array[IndexDescriptor]) {
+                        private val indexes: Array[IndexDescriptor],
+                        private val typeTokenIndex: Option[IndexDescriptor],
+                       ) {
   def initiateLabelAndSchemaIndexes(queryContext: QueryContext): Array[IndexReadSession] = {
-    if (hasLabelScan)
+    if (hasLabelScan) {
       queryContext.transactionalContext.dataRead.prepareForLabelScans()
-
+    }
     val indexReadSessions = new Array[IndexReadSession](indexes.length)
     var i = 0
     while (i < indexReadSessions.length) {
@@ -102,5 +119,9 @@ case class QueryIndexes(private val hasLabelScan: Boolean,
       i += 1
     }
     indexReadSessions
+  }
+
+  def initiateRelationshipTokenIndex(queryContext: QueryContext): Option[TokenReadSession] = {
+      typeTokenIndex.map(queryContext.transactionalContext.dataRead.tokenReadSession)
   }
 }

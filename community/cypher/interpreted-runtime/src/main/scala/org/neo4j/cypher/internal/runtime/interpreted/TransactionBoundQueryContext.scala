@@ -66,27 +66,29 @@ import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api
-import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
-import org.neo4j.internal.kernel.api.helpers.Nodes
-import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor
-import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCursor
-import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor
-import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.IndexQueryConstraints
+import org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.InternalIndexState
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.SchemaReadCore
+import org.neo4j.internal.kernel.api.TokenPredicate
 import org.neo4j.internal.kernel.api.TokenRead
-import org.neo4j.internal.schema
+import org.neo4j.internal.kernel.api.TokenReadSession
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
+import org.neo4j.internal.kernel.api.helpers.Nodes
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCursor
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor
+import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexConfig
@@ -272,10 +274,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def getRelationshipsByType(id: Int): ClosingLongIterator = {
+  override def getRelationshipsByType(session: TokenReadSession, relType: Int): ClosingLongIterator = {
     val cursor = transactionalContext.cursors.allocateRelationshipTypeIndexCursor(transactionalContext.kernelTransaction.pageCursorTracer)
     resources.trace(cursor)
-    reads().relationshipTypeScan(id, cursor, schema.IndexOrder.NONE)
+    val read = reads()
+    read.relationshipTypeScan(session, cursor, unconstrained(), new TokenPredicate(relType))
     new PrimitiveCursorIterator {
       override protected def fetchNext(): Long = if (cursor.next()) cursor.relationshipReference() else -1L
       override def close(): Unit = cursor.close()

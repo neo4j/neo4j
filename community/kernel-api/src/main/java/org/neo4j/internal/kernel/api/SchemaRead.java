@@ -118,13 +118,6 @@ public interface SchemaRead extends SchemaReadCore
 
     /**
      * NOTE this is a temporary method to be able to check if
-     * we can use type scans. Will be removed/changed.
-     */
-    @Deprecated
-    boolean relationshipTypeScanStoreEnabled();
-
-    /**
-     * NOTE this is a temporary method to be able to check if
      * we should use scan store or token index.
      * Will be removed/changed.
      */

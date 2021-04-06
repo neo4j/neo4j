@@ -33,7 +33,7 @@ case class DirectedRelationshipTypeScanPipe(ident: String, fromNode: String, typ
     val typeId = typ.getId(query)
     if (typeId == LazyType.UNKNOWN) ClosingIterator.empty
     else {
-      PrimitiveLongHelper.map(query.getRelationshipsByType(typeId), relationshipId => {
+      PrimitiveLongHelper.map(query.getRelationshipsByType(state.relTypeTokenReadSession.get, typeId), relationshipId => {
         val relationship = state.query.relationshipById(relationshipId)
         rowFactory.copyWith(ctx, ident, relationship, fromNode, relationship.startNode(), toNode, relationship.endNode())
       })

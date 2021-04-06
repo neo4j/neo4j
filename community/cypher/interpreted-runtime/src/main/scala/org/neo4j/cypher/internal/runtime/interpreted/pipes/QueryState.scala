@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathVa
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InCheckContainer
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.SingleThreadedLRUCache
 import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 
@@ -40,6 +41,7 @@ class QueryState(val query: QueryContext,
                  val params: Array[AnyValue],
                  val cursors: ExpressionCursors,
                  val queryIndexes: Array[IndexReadSession],
+                 val relTypeTokenReadSession: Option[TokenReadSession],
                  val expressionVariables: Array[AnyValue],
                  val subscriber: QuerySubscriber,
                  val memoryTracker: QueryMemoryTracker,
@@ -80,15 +82,15 @@ class QueryState(val query: QueryContext,
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, subscriber, memoryTracker, decorator, initialContext,
+    new QueryState(query, resources, params, cursors, queryIndexes, relTypeTokenReadSession, expressionVariables, subscriber, memoryTracker, decorator, initialContext,
       cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def withInitialContext(initialContext: CypherRow) =
-    new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, subscriber, memoryTracker, decorator, Some(initialContext),
+    new QueryState(query, resources, params, cursors, queryIndexes, relTypeTokenReadSession, expressionVariables, subscriber, memoryTracker, decorator, Some(initialContext),
       cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, subscriber, memoryTracker, decorator, initialContext,
+    new QueryState(query, resources, params, cursors, queryIndexes, relTypeTokenReadSession, expressionVariables, subscriber, memoryTracker, decorator, initialContext,
       cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def setExecutionContextFactory(rowFactory: CypherRowFactory): Unit = {

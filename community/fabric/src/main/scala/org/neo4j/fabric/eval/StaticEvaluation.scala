@@ -54,6 +54,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
+import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.schema.ConstraintDescriptor
@@ -87,6 +88,7 @@ object StaticEvaluation {
       params = slottedParams,
       cursors = null,
       queryIndexes = Array.empty,
+      relTypeTokenReadSession = None,
       expressionVariables = new Array(nExpressionSlots),
       subscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER,
       memoryTracker = null
@@ -180,7 +182,7 @@ object StaticEvaluation {
 
     override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Array[Int]): ClosingLongIterator with RelationshipIterator = notAvailable()
 
-    override def getRelationshipsByType(id: Int): ClosingLongIterator = notAvailable()
+    override def getRelationshipsByType(tokenReadSession: TokenReadSession, relType: Int): ClosingLongIterator = notAvailable()
 
     override def relationshipById(id: Long, startNode: Long, endNode: Long, `type`: Int): RelationshipValue = notAvailable()
 
