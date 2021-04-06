@@ -582,7 +582,7 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public void maintenance( boolean awaitOngoing, PageCursorTracer cursorTracer )
     {
-        if ( !readOnlyChecker.isReadOnly() && cache.size() < cacheOptimisticRefillThreshold )
+        if ( cache.size() < cacheOptimisticRefillThreshold && !readOnlyChecker.isReadOnly() )
         {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
             scanner.tryLoadFreeIdsIntoCache( awaitOngoing, cursorTracer );
