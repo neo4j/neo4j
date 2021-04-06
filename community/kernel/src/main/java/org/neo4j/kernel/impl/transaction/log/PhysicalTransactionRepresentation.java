@@ -30,6 +30,8 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 
+import static java.lang.String.format;
+
 public class PhysicalTransactionRepresentation implements TransactionRepresentation
 {
     private final List<StorageCommand> commands;
@@ -159,13 +161,25 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + '[' +
-                "timeStarted:" + timeStarted + ',' +
-                "latestCommittedTxWhenStarted:" + latestCommittedTxWhenStarted + ',' +
-                "timeCommitted:" + timeCommitted + ',' +
-                "lease:" + leaseId + ',' +
-                "additionalHeader:" + Arrays.toString( additionalHeader ) +
-                "commands.length:" + commands.size();
+        return toString( false );
+    }
+
+    public String toString( boolean includeCommands )
+    {
+        String basic = format( "%s[timeStarted:%d, latestCommittedTxWhenStarted:%d, timeCommitted:%d, lease:%d, additionalHeader:%s, commands.length:%d",
+                getClass().getSimpleName(), timeStarted, latestCommittedTxWhenStarted, timeCommitted, leaseId, Arrays.toString( additionalHeader ),
+                commands.size() );
+        if ( !includeCommands )
+        {
+            return basic;
+        }
+
+        StringBuilder builder = new StringBuilder( basic );
+        for ( StorageCommand command : commands )
+        {
+            builder.append( format( "%n%s", command.toString() ) );
+        }
+        return builder.toString();
     }
 
     @Override

@@ -69,5 +69,11 @@ public interface LockService
         {
             return NO_LOCK;
         }
+
+        @Override
+        public String toString()
+        {
+            return "NO_LOCK_SERVICE";
+        }
     };
 }
