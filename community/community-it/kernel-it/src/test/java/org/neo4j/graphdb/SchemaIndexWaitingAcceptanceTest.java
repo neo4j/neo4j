@@ -22,13 +22,14 @@ package org.neo4j.graphdb;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.index.ControlledPopulationIndexProvider;
+import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -50,7 +51,7 @@ public class SchemaIndexWaitingAcceptanceTest
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        List<ExtensionFactory<?>> extensions = Collections.singletonList( singleInstanceIndexProviderFactory( "test", provider ) );
+        List<ExtensionFactory<?>> extensions = Arrays.asList( singleInstanceIndexProviderFactory( "test", provider ), new TokenIndexProviderFactory() );
         builder.setExtensions( extensions ).noOpSystemGraphInitializer();
         builder.setConfig( default_schema_provider, provider.getProviderDescriptor().name() );
     }
