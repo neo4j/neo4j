@@ -775,8 +775,15 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck
 
                     if ( printDebug )
                     {
-                        long lastEntityId = updates.get( updates.size() - 1 ).getEntityId();
-                        log.info( "Added scan updates for entities %d-%d", updates.get( 0 ).getEntityId(), lastEntityId );
+                        if ( !updates.isEmpty() )
+                        {
+                            long lastEntityId = updates.get( updates.size() - 1 ).getEntityId();
+                            log.info( "Added scan updates for entities %d-%d", updates.get( 0 ).getEntityId(), lastEntityId );
+                        }
+                        else
+                        {
+                            log.info( "Added zero scan updates" );
+                        }
                     }
                 }
             };
