@@ -162,6 +162,7 @@ class IndexingServiceTest
     private static final IndexProviderDescriptor nativeBtree10Descriptor =
             new IndexProviderDescriptor( NATIVE_BTREE10.providerKey(), NATIVE_BTREE10.providerVersion() );
     private static final IndexProviderDescriptor fulltextDescriptor = new IndexProviderDescriptor( "fulltext", "1.0" );
+    private static final IndexProviderDescriptor tokenDescriptor = new IndexProviderDescriptor( "token", "1.0" );
     private static final IndexProviderDescriptor[] indexProviderDescriptors =
             new IndexProviderDescriptor[]{native30Descriptor, nativeBtree10Descriptor, fulltextDescriptor};
     private final SchemaState schemaState = mock( SchemaState.class );
@@ -1624,6 +1625,7 @@ class IndexingServiceTest
     {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( (Object[]) providers );
+        dependencies.satisfyDependency( tokenProvider() );
         return dependencies;
     }
 
@@ -1646,6 +1648,11 @@ class IndexingServiceTest
     private static IndexProvider fulltextProvider()
     {
         return mockIndexProvider( fulltextDescriptor );
+    }
+
+    private static IndexProvider tokenProvider()
+    {
+        return mockIndexProvider( tokenDescriptor );
     }
 
     private void onBothLogProviders( Consumer<AssertableLogProvider> logProviderAction )
