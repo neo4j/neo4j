@@ -52,6 +52,9 @@ class KernelSchemaStateFlushingTest
     @Inject
     private Kernel kernel;
 
+    private int labelId;
+    private int propId;
+
     @BeforeEach
     void setup() throws KernelException
     {
@@ -59,9 +62,9 @@ class KernelSchemaStateFlushingTest
         {
             // Make sure that a label token with id 1, and a property key token, also with id 1, both exists.
             transaction.tokenWrite().labelGetOrCreateForName( "Label0" );
-            transaction.tokenWrite().labelGetOrCreateForName( "Label1" );
+            labelId = transaction.tokenWrite().labelGetOrCreateForName( "Label1" );
             transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop0" );
-            transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
+            propId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
             transaction.commit();
         }
     }
@@ -152,7 +155,7 @@ class KernelSchemaStateFlushingTest
         try ( KernelTransaction transaction = beginTransaction() )
         {
             ConstraintDescriptor descriptor = transaction.schemaWrite().uniquePropertyConstraintCreate(
-                    IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( 1, 1 ) ) );
+                    IndexPrototype.uniqueForSchema( SchemaDescriptor.forLabel( labelId, propId ) ) );
             transaction.commit();
             return descriptor;
         }
@@ -171,7 +174,7 @@ class KernelSchemaStateFlushingTest
     {
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( 1, 1 );
+            LabelSchemaDescriptor schema = SchemaDescriptor.forLabel( labelId, propId );
             IndexDescriptor reference = transaction.schemaWrite().indexCreate( schema, null );
             transaction.commit();
             return reference;
