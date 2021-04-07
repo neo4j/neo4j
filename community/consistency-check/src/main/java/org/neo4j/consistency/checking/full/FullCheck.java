@@ -49,7 +49,6 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.MemoryTracker;
@@ -153,21 +152,10 @@ public class FullCheck
 
             if ( flags.isCheckIndexStructure() )
             {
-                ConsistencyCheckable labelScanStore;
-                if ( config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
-                {
-                    labelScanStore = indexes.nodeLabelIndex();
-                    if ( labelScanStore == null )
-                    {
-                        labelScanStore = ( reporterFactory, cursorTracer ) -> true;
-                    }
-                }
-                else
-                {
-                    labelScanStore = directStoreAccess.labelScanStore();
-                }
+                ConsistencyCheckable labelScanStore = getLabelScanStructure( directStoreAccess, indexes );
+                ConsistencyCheckable relationshipTypeIndex = getRelationshipTypeIndex( directStoreAccess, indexes );
 
-                consistencyCheckIndexStructure( labelScanStore, directStoreAccess.relationshipTypeScanStore(),
+                consistencyCheckIndexStructure( labelScanStore, relationshipTypeIndex,
                         directStoreAccess.indexStatisticsStore(), countsStore, groupDegreesStore, indexes, allIdGenerators( directStoreAccess ), report,
                         progressFactory, pageCacheTracer );
             }
@@ -186,6 +174,38 @@ public class FullCheck
         }
     }
 
+    private ConsistencyCheckable getRelationshipTypeIndex( DirectStoreAccess directStoreAccess, IndexAccessors indexes )
+    {
+        ConsistencyCheckable result = ( reporterFactory, cursorTracer ) -> true;
+        if ( config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
+        {
+            ConsistencyCheckable relationshipTypeIndex = indexes.relationshipTypeIndex();
+            if ( relationshipTypeIndex != null )
+            {
+                result = relationshipTypeIndex;
+            }
+        }
+        return result;
+    }
+
+    private ConsistencyCheckable getLabelScanStructure( DirectStoreAccess directStoreAccess, IndexAccessors indexes )
+    {
+        ConsistencyCheckable labelScanStore;
+        if ( config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
+        {
+            labelScanStore = indexes.nodeLabelIndex();
+            if ( labelScanStore == null )
+            {
+                labelScanStore = ( reporterFactory, cursorTracer ) -> true;
+            }
+        }
+        else
+        {
+            labelScanStore = directStoreAccess.labelScanStore();
+        }
+        return labelScanStore;
+    }
+
     private List<IdGenerator> allIdGenerators( DirectStoreAccess directStoreAccess )
     {
         List<IdGenerator> idGenerators = new ArrayList<>();
@@ -194,7 +214,7 @@ public class FullCheck
     }
 
     private static void consistencyCheckIndexStructure( ConsistencyCheckable labelScanStore,
-            RelationshipTypeScanStore relationshipTypeScanStore, IndexStatisticsStore indexStatisticsStore,
+            ConsistencyCheckable relationshipTypeScanStore, IndexStatisticsStore indexStatisticsStore,
             CountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore, IndexAccessors indexes,
             List<IdGenerator> idGenerators, InconsistencyReport report, ProgressMonitorFactory progressMonitorFactory, PageCacheTracer pageCacheTracer )
     {
@@ -219,7 +239,7 @@ public class FullCheck
     }
 
     private static void consistencyCheckNonSchemaIndexes( InconsistencyReport report, ProgressListener listener,
-            ConsistencyCheckable labelScanStore, RelationshipTypeScanStore relationshipTypeScanStore,
+            ConsistencyCheckable labelScanStore, ConsistencyCheckable relationshipTypeScanStore,
             IndexStatisticsStore indexStatisticsStore, CountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore, List<IdGenerator> idGenerators,
             PageCursorTracer cursorTracer )
     {

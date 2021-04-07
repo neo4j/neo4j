@@ -153,7 +153,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
 
     private void doRestoreSnapshot( EphemeralFileSystemAbstraction snapshot )
     {
-        fs = snapshot;
+        fs = snapshot.snapshot();
     }
 
     @Test
@@ -626,8 +626,9 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     @Test
-    void corruptionInRelationshipTypeScanStore() throws Exception
+    void corruptionInRelationshipTypeIndex() throws Exception
     {
+        doRestoreSnapshot( sourceSnapshotWithTokenIndex );
         MutableObject<Long> rootNode = new MutableObject<>();
         Path relationshipTypeScanStoreFile = relationshipTypeScanStoreFile();
         corruptIndexes( readOnly(), ( tree, inspection ) -> {
@@ -636,7 +637,8 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                     PageCursorTracer.NULL );
         }, relationshipTypeScanStoreFile );
 
-        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance() );
+        ConsistencyCheckService.Result result = runConsistencyCheck( NullLogProvider.getInstance(),
+                config -> config.set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true ) );
         assertFalse( result.isSuccessful() );
         assertResultContainsMessage( result, "Index inconsistency: Broken pointer found in tree node " + rootNode.getValue() + ", pointerType='left sibling'" );
         assertResultContainsMessage( result, "Number of inconsistent RELATIONSHIP_TYPE_SCAN_DOCUMENT records: 1" );
@@ -714,7 +716,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
             {
                 Label label = Label.label( "label2" );
                 indexWithNumberData( db, label );
-            }, builder -> {} );
+            }, builder -> builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true ) );
 
             DatabaseLayout layout = DatabaseLayout.of( Config.defaults( neo4j_home, neo4jHome ) );
 
