@@ -87,11 +87,16 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   test("CATALOG CATALOG SHOW ROLES") {
     val exceptionMessage =
       s"""Invalid input 'CATALOG': expected
+         |  "ALTER"
          |  "DROP"
-         |  "SHOW"
          |  "GRANT"
+         |  "RENAME"
          |  "REVOKE"
-         |  "ROLES" (line 1, column 9 (offset: 8))""".stripMargin
+         |  "SHOW"
+         |  "START"
+         |  "STOP" (line 1, column 9 (offset: 8))""".stripMargin
+
+    assertJavaCCException(testName, exceptionMessage)
   }
 
   test("CATALOG SHOW ROLE") {
