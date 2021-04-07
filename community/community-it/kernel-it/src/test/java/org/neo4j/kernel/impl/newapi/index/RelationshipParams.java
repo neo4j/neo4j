@@ -45,7 +45,6 @@ public class RelationshipParams implements EntityParams<RelationshipValueIndexCu
     @Override
     public void enrichSettings( ReadTestSupport testSupport )
     {
-        testSupport.addSetting( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
         testSupport.addSetting( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
     }
 
