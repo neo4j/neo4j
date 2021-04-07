@@ -48,7 +48,6 @@ public class RelationshipIndexOrderTest extends IndexOrderTestBase<RelationshipV
             @Override
             protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
             {
-                builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
                 builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
                 return super.configure( builder );
             }
