@@ -612,7 +612,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         doRestoreSnapshot( sourceSnapshotWithTokenIndex );
         MutableObject<Long> rootNode = new MutableObject<>();
         Path labelScanStoreFile = labelScanStoreFile();
-        corruptIndexes( true, ( tree, inspection ) -> {
+        corruptIndexes( readOnly(), ( tree, inspection ) -> {
             rootNode.setValue( inspection.getRootNode() );
             tree.unsafe( pageSpecificCorruption( rootNode.getValue(), GBPTreeCorruption.broken( GBPTreePointerType.leftSibling() ) ),
                     PageCursorTracer.NULL );
