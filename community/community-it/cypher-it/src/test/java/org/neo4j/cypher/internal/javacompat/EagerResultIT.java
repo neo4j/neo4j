@@ -38,8 +38,6 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
@@ -57,7 +55,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
@@ -188,9 +185,9 @@ class EagerResultIT
             Result result = transaction.execute( "MATCH (n) RETURN n.c, n.d" );
             assertEquals( 1, testCursorContext.getNumIsDirtyCalls() );
             String resultString = result.resultAsString();
-            assertTrue( resultString.contains( "n.c, n.d" ) );
-            assertTrue( resultString.contains( "d, a" ) );
-            assertTrue( resultString.contains( "y, k" ) );
+            assertTrue( resultString.contains( "n.c | n.d" ) );
+            assertTrue( resultString.contains( "\"d\" | \"a\"" ) );
+            assertTrue( resultString.contains( "\"y\" | \"k\"" ) );
             transaction.commit();
         }
     }
@@ -202,7 +199,14 @@ class EagerResultIT
         {
             Result result = transaction.execute( "MATCH (n) RETURN n.c" );
             assertEquals( 1, testCursorContext.getNumIsDirtyCalls() );
-            assertEquals( result.resultAsString(), printToStream( result ) );
+            String expected = "+-----+\n" +
+                    "| n.c |\n" +
+                    "+-----+\n" +
+                    "| \"d\" |\n" +
+                    "| \"y\" |\n" +
+                    "+-----+\n" +
+                    "2 rows\n";
+            assertEquals( expected, printToStream( result ) );
             transaction.commit();
         }
     }
@@ -217,42 +221,10 @@ class EagerResultIT
             result.accept( (Result.ResultVisitor<Exception>) row ->
             {
                 values.add( row.getString( "n.c" ) );
-                return false;
+                return true;
             } );
             assertThat( values, hasSize( 2 ) );
             assertThat( values, containsInAnyOrder( "d", "y" ) );
-            transaction.commit();
-        }
-    }
-
-    @Test
-    void dirtyContextDuringResultVisitResultInUnstableSnapshotException()
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            Result result = transaction.execute( "MATCH (n) RETURN n.c" );
-            List<String> values = new ArrayList<>();
-            assertThrows( QueryExecutionException.class, () -> result.accept( (Result.ResultVisitor<Exception>) row ->
-            {
-                testCursorContext.markAsDirty();
-                values.add( row.getString( "n.c" ) );
-                return false;
-            } ) );
-            transaction.commit();
-        }
-    }
-
-    @Test
-    void dirtyContextEntityNotFoundExceptionDuringResultVisitResultInUnstableSnapshotException()
-    {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            Result result = transaction.execute( "MATCH (n) RETURN n.c" );
-            assertThrows( QueryExecutionException.class, () -> result.accept( (Result.ResultVisitor<Exception>) row ->
-            {
-                testCursorContext.markAsDirty();
-                throw new NotFoundException( new RuntimeException() );
-            } ) );
             transaction.commit();
         }
     }
