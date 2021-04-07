@@ -171,6 +171,48 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withNoRows()
   }
 
+  test("should handle null in exact multiple seek 2") {
+    given {
+      index("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop IN ???)", paramExpr = Some(listOf(literalString("a"), nullLiteral, literalString("c"))))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("should handle null in exact multiple seek 3") {
+    val nodes = given {
+      index("Honey", "prop")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop IN ???)", paramExpr = Some(listOf(literalInt(10), nullLiteral, literalString("c"))))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withSingleRow(nodes(10))
+  }
+
   test("should exact (multiple, but empty) seek nodes of an index with a property") {
     given {
       index("Honey", "prop")
@@ -880,6 +922,72 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     // then
     val expected = nodes.filter(n => n.getProperty("prop").asInstanceOf[Int] > 10 && n.hasProperty("prop2"))
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
+
+  test("should support composite index seek with null") {
+    val nodes = given {
+      index("Honey", "prop", "prop2")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i, "prop2" -> i.toString)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop = 10, prop2 = ???)", paramExpr = Some(nullLiteral))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(10)
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("should support composite index seek with null 2") {
+    val nodes = given {
+      index("Honey", "prop", "prop2")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i, "prop2" -> i.toString)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop = 10, prop2 > ???)", paramExpr = Some(nullLiteral))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(10)
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("should support composite index (multiple values) and null") {
+    val nodes = given {
+      index("Honey", "prop", "prop2")
+      nodeGraph(5, "Milk")
+      nodePropertyGraph(sizeHint, {
+        case i if i % 10 == 0 => Map("prop" -> i, "prop2" -> i.toString)
+      }, "Honey")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeIndexOperator("x:Honey(prop = 10 OR ???, prop2)", paramExpr = Some(nullLiteral))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes(10)
+    runtimeResult should beColumns("x").withSingleRow(expected)
   }
 
   test("should cache properties") {
