@@ -773,7 +773,8 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         return runConsistencyCheck( logProvider, NONE );
     }
 
-    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, Consumer<Config> adaptConfig ) throws ConsistencyCheckIncompleteException
+    private ConsistencyCheckService.Result runConsistencyCheck( LogProvider logProvider, Consumer<Config> adaptConfig )
+            throws ConsistencyCheckIncompleteException
     {
         return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, NONE, DEFAULT, adaptConfig );
     }
@@ -805,7 +806,8 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     }
 
     private ConsistencyCheckService.Result runConsistencyCheck( FileSystemAbstraction fs, Path neo4jHome, DatabaseLayout databaseLayout,
-            LogProvider logProvider, ProgressMonitorFactory progressFactory, ConsistencyFlags consistencyFlags, Consumer<Config> adaptConfig ) throws ConsistencyCheckIncompleteException
+            LogProvider logProvider, ProgressMonitorFactory progressFactory, ConsistencyFlags consistencyFlags, Consumer<Config> adaptConfig )
+            throws ConsistencyCheckIncompleteException
     {
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
         Config config = Config.defaults( neo4j_home, neo4jHome );
