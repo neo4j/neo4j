@@ -90,7 +90,7 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
       }.toArray
 
     val typeTokenIndex = if (typeScan) {
-      val descriptions = schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAllEntityTokens(EntityType.RELATIONSHIP))
+      val descriptions = schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP))
       if (!descriptions.hasNext) throw new IllegalStateException("There must be a type index at this point in time")
 
       Some(descriptions.next())
