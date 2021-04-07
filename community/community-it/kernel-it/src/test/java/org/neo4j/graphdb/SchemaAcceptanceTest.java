@@ -144,6 +144,17 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
     }
 
+    @BeforeEach
+    void beforeEach()
+    {
+        // drop default indexes
+        try ( var tx = db.beginTx() )
+        {
+            tx.schema().getIndexes().forEach( IndexDefinition::drop );
+            tx.commit();
+        }
+    }
+
     @Test
     void addingAnIndexingRuleShouldSucceed()
     {
