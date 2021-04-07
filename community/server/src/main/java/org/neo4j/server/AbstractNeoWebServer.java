@@ -43,6 +43,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -408,6 +409,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         ComponentsBinder binder = new ComponentsBinder();
 
         var databaseStateService = getGlobalDependencies().resolveDependency( DatabaseStateService.class );
+        var databaseResolver = getGlobalDependencies().resolveDependency( DefaultDatabaseResolver.class );
         binder.addSingletonBinding( databaseManagementService, DatabaseManagementService.class );
         binder.addSingletonBinding( databaseStateService, DatabaseStateService.class );
         binder.addSingletonBinding( this, NeoWebServer.class );
@@ -417,6 +419,7 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
         binder.addLazyBinding( InputFormatProvider.class, InputFormat.class );
         binder.addLazyBinding( OutputFormatProvider.class, OutputFormat.class );
         binder.addSingletonBinding( httpTransactionManager, HttpTransactionManager.class );
+        binder.addSingletonBinding( databaseResolver, DefaultDatabaseResolver.class );
         binder.addLazyBinding( authManagerSupplier, AuthManager.class );
         binder.addSingletonBinding( userLogProvider, LogProvider.class );
         binder.addSingletonBinding( userLogProvider.getLog( NeoWebServer.class ), Log.class );

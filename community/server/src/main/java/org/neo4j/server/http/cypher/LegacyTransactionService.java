@@ -23,12 +23,11 @@ import java.net.URI;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.Log;
 
 @Path( LegacyTransactionService.DB_TRANSACTION_PATH )
@@ -38,12 +37,13 @@ public class LegacyTransactionService extends AbstractCypherResource
     static final String DB_TRANSACTION_PATH = "/" + TRANSACTION;
 
     public LegacyTransactionService(
-            @Context Config config,
+            @Context HttpServletRequest request,
+            @Context DefaultDatabaseResolver databaseResolver,
             @Context HttpTransactionManager httpTransactionManager,
             @Context UriInfo uriInfo,
             @Context Log log )
     {
-        super( httpTransactionManager, uriInfo, log, config.get( GraphDatabaseSettings.default_database ) );
+        super( httpTransactionManager, uriInfo, log, databaseResolver.defaultDatabase( request.getUserPrincipal().getName() ) );
     }
 
     @Override
