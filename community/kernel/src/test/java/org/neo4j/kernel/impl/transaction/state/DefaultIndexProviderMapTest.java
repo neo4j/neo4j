@@ -46,6 +46,7 @@ class DefaultIndexProviderMapTest
         dependencies.satisfyDependency( provider = provider( "provider", "1.2" ) );
         dependencies.satisfyDependency( provider( "provider", "1.2" ) );
         dependencies.satisfyDependency( fulltext() );
+        dependencies.satisfyDependency( tokenProvider() );
 
         // when
         assertThrows( IllegalArgumentException.class, () -> createDefaultProviderMap( dependencies, provider.getProviderDescriptor() ).init() );
@@ -59,6 +60,7 @@ class DefaultIndexProviderMapTest
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( provider = provider( "provider", "1.2" ) );
         dependencies.satisfyDependency( fulltext() );
+        dependencies.satisfyDependency( tokenProvider() );
 
         // when
         DefaultIndexProviderMap defaultIndexProviderMap = createDefaultProviderMap( dependencies, provider.getProviderDescriptor() );
@@ -70,7 +72,7 @@ class DefaultIndexProviderMapTest
     void shouldInitializeTokenIndexProvider()
     {
         // given
-        IndexProvider tokenIndexProvider = provider( "token", "1.0" );
+        IndexProvider tokenIndexProvider = tokenProvider();
         IndexProvider provider;
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( provider = provider( "provider", "1.2" ) );
@@ -97,6 +99,11 @@ class DefaultIndexProviderMapTest
     private static IndexProvider fulltext()
     {
         return provider( "fulltext", "1.0" );
+    }
+
+    private IndexProvider tokenProvider()
+    {
+        return provider( "token", "1.0" );
     }
 
     private static DefaultIndexProviderMap createDefaultProviderMap( Dependencies dependencies, IndexProviderDescriptor descriptor )
