@@ -17,13 +17,13 @@
 package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.TypeSignature
-import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTFloat
 
 case object ToFloatOrNull extends Function {
   override def name = "toFloatOrNull"
 
   override val signatures = Vector(
-    TypeSignature(this, CTAny, CTFloat, "Converts a value to a floating point value, or null if the value cannot be converted", Category.SCALAR)
+    TypeSignature(this, CTAny, CTFloat, "Converts a value to a floating point value, or null if the value cannot be converted.", Category.SCALAR)
   )
 }

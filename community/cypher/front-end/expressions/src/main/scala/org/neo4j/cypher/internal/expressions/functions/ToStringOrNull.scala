@@ -25,7 +25,7 @@ case object ToStringOrNull extends Function {
 
   override val signatures = Vector(
     TypeSignature(this, CTAny, CTString,
-      "Converts an integer, float, boolean or temporal type (i.e. Date, Time, LocalTime, DateTime, LocalDateTime or Duration) value to a string,  or null if the value cannot be converted.", Category.STRING)
+      "Converts an integer, float, boolean or temporal type (i.e. Date, Time, LocalTime, DateTime, LocalDateTime or Duration) value to a string, or null if the value cannot be converted.", Category.STRING)
     //TODO: Also Category.SCALAR, in case we entangle the categories. For now we keep the same as toString
   )
 }
