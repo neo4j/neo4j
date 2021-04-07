@@ -66,7 +66,6 @@ import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 import static org.neo4j.kernel.KernelVersion.LATEST;
 import static org.neo4j.kernel.KernelVersion.V4_2;
 
-@Disabled
 @TestDirectoryExtension
 class TokenIndexesOnDatabaseUpgradeTransactionIT
 {
@@ -78,7 +77,7 @@ class TokenIndexesOnDatabaseUpgradeTransactionIT
     private GraphDatabaseAPI db;
 
     private static final IndexPrototype prototypeNLI =
-            IndexPrototype.forSchema( SchemaDescriptor.forAllEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR )
+            IndexPrototype.forSchema( SchemaDescriptor.forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR )
                     .withName( IndexDescriptor.NLI_GENERATED_NAME ).withIndexType( IndexType.LOOKUP );
     private static final IndexDescriptor expectedInjectedNLI = prototypeNLI.materialise( IndexDescriptor.INJECTED_NLI_ID );
 
@@ -104,6 +103,7 @@ class TokenIndexesOnDatabaseUpgradeTransactionIT
         verifyInjectedNLIExist();
     }
 
+    @Disabled
     @Test
     void shouldHaveReplacedInjectedNLIAfterUpgrade() throws Exception
     {
@@ -127,6 +127,7 @@ class TokenIndexesOnDatabaseUpgradeTransactionIT
         }
     }
 
+    @Disabled
     @Test
     void proxyCorrectlySwitchedOnUpgradeToRealNLI() throws Exception
     {
@@ -150,6 +151,7 @@ class TokenIndexesOnDatabaseUpgradeTransactionIT
         assertThrows( IndexNotFoundKernelException.class, () -> indexingService.getIndexProxy( expectedInjectedNLI ) );
     }
 
+    @Disabled
     @Test
     void NLIShouldBePersistedToStoreAfterUpgrade() throws Exception
     {
@@ -223,6 +225,7 @@ class TokenIndexesOnDatabaseUpgradeTransactionIT
         assertThat( e ).hasMessageContaining( "is a reserved name" );
     }
 
+    @Disabled
     @Test
     void shouldBeBlockedFromCreatingIndexWithReservedNameIfIndexExist() throws Exception
     {

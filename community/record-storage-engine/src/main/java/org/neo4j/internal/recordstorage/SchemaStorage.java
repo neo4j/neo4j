@@ -261,8 +261,11 @@ public class SchemaStorage implements SchemaRuleAccess, org.neo4j.kernel.impl.st
         long startId = schemaStore.getNumberOfReservedLowIds();
         long endId = schemaStore.getHighId();
         Stream<IndexDescriptor> nli = Stream.empty();
-        if ( tokenIndexFeatureOn && versionSupplier.kernelVersion().isLessThan( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED )
-                && KernelVersion.LATEST.isAtLeast( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED ) )
+        // TODO the final condition will be:
+        // tokenIndexFeatureOn && versionSupplier.kernelVersion().isLessThan( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED )
+        // but until KernelVersion.LATEST >= KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED
+        // this condition would cause the index being injected even for newly created databases
+        if ( tokenIndexFeatureOn && !versionSupplier.kernelVersion().isLatest() )
         {
             nli = Stream.of( IndexDescriptor.INJECTED_NLI );
         }

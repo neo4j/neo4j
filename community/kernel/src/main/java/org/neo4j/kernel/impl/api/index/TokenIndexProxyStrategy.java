@@ -71,7 +71,7 @@ class TokenIndexProxyStrategy implements IndexProxyStrategy
     {
         if ( !allowToChangeDescriptor )
         {
-            throw new UnsupportedOperationException( "Changing descriptor on this index representation is not allowed" );
+            throw new UnsupportedOperationException( "Changing descriptor on this token index proxy strategy is not allowed" );
         }
 
         this.descriptor = descriptor;
