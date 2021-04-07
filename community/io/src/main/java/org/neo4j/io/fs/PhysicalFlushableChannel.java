@@ -123,15 +123,15 @@ public class PhysicalFlushableChannel implements FlushableChannel
     }
 
     @Override
-    public FlushableChannel put( byte[] value, int length ) throws IOException
+    public FlushableChannel put( byte[] value, int offset, int length ) throws IOException
     {
-        int offset = 0;
-        while ( offset < length )
+        int localOffset = 0;
+        while ( localOffset < length )
         {
-            int chunkSize = min( length - offset, buffer.capacity() >> 1 );
-            bufferWithGuaranteedSpace( chunkSize ).put( value, offset, chunkSize );
+            int chunkSize = min( length - localOffset, buffer.capacity() >> 1 );
+            bufferWithGuaranteedSpace( chunkSize ).put( value, offset + localOffset, chunkSize );
 
-            offset += chunkSize;
+            localOffset += chunkSize;
         }
         return this;
     }

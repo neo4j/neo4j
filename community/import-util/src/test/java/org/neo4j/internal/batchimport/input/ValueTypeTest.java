@@ -118,7 +118,7 @@ class ValueTypeTest
         }
 
         @Override
-        public FlushableChannel put( byte[] value, int length )
+        public FlushableChannel put( byte[] value, int offset, int length )
         {
             position += length;
             return this;

@@ -135,10 +135,17 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareChe
         return this;
     }
 
+    // Overridden so that it removes the declared checked exception
     @Override
     public InMemoryClosableChannel put( byte[] bytes, int length )
     {
-        writer.put( bytes, length );
+        return put( bytes, 0, length );
+    }
+
+    @Override
+    public InMemoryClosableChannel put( byte[] bytes, int offset, int length )
+    {
+        writer.put( bytes, offset, length );
         return this;
     }
 
@@ -503,10 +510,10 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareChe
         }
 
         @Override
-        public Writer put( byte[] bytes, int length )
+        public Writer put( byte[] bytes, int offset, int length )
         {
-            buffer.put( bytes, 0, length );
-            checksum.update( bytes, 0, length );
+            buffer.put( bytes, offset, length );
+            checksum.update( bytes, offset, length );
             return this;
         }
 

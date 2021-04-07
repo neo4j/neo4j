@@ -45,5 +45,11 @@ public interface WritableChecksumChannel extends WritableChannel, ChecksumWriter
     WritableChecksumChannel putDouble( double value ) throws IOException;
 
     @Override
-    WritableChecksumChannel put( byte[] value, int length ) throws IOException;
+    default WritableChecksumChannel put( byte[] value, int length ) throws IOException
+    {
+        return put( value, 0, length );
+    }
+
+    @Override
+    WritableChecksumChannel put( byte[] value, int offset, int length ) throws IOException;
 }

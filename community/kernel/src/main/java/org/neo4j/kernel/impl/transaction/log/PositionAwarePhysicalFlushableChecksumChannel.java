@@ -112,9 +112,9 @@ public class PositionAwarePhysicalFlushableChecksumChannel implements FlushableP
     }
 
     @Override
-    public FlushableChecksumChannel put( byte[] value, int length ) throws IOException
+    public FlushableChecksumChannel put( byte[] value, int offset, int length ) throws IOException
     {
-        return channel.put( value, length );
+        return channel.put( value, offset, length );
     }
 
     @Override

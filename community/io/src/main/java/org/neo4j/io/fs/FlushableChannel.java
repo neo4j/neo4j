@@ -56,5 +56,11 @@ public interface FlushableChannel extends WritableChannel
     FlushableChannel putDouble( double value ) throws IOException;
 
     @Override
-    FlushableChannel put( byte[] value, int length ) throws IOException;
+    default FlushableChannel put( byte[] value, int length ) throws IOException
+    {
+        return put( value, 0, length );
+    }
+
+    @Override
+    FlushableChannel put( byte[] value, int offset, int length ) throws IOException;
 }

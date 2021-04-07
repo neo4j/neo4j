@@ -135,8 +135,8 @@ public class PhysicalFlushableChecksumChannel extends PhysicalFlushableChannel i
     }
 
     @Override
-    public FlushableChecksumChannel put( byte[] value, int length ) throws IOException
+    public FlushableChecksumChannel put( byte[] value, int offset, int length ) throws IOException
     {
-        return (FlushableChecksumChannel) super.put( value, length );
+        return (FlushableChecksumChannel) super.put( value, offset, length );
     }
 }

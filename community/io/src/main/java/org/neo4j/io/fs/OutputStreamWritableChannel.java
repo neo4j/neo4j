@@ -89,6 +89,13 @@ public class OutputStreamWritableChannel implements FlushableChannel
     }
 
     @Override
+    public FlushableChannel put( byte[] value, int offset, int length ) throws IOException
+    {
+        dataOutputStream.write( value, offset, length );
+        return this;
+    }
+
+    @Override
     public void close() throws IOException
     {
         dataOutputStream.close();

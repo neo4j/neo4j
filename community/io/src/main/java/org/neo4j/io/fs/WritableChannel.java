@@ -89,5 +89,18 @@ public interface WritableChannel extends Closeable
      * @return this channel, for fluent usage.
      * @throws IOException if I/O error occurs.
      */
-    WritableChannel put( byte[] value, int length ) throws IOException;
+    default WritableChannel put( byte[] value, int length ) throws IOException
+    {
+        return put( value, 0, length );
+    }
+
+    /**
+     * Writes a {@code byte[]} to this channel.
+     *
+     * @param value byte array.
+     * @param length number of items of the array to write.
+     * @return this channel, for fluent usage.
+     * @throws IOException if I/O error occurs.
+     */
+    WritableChannel put( byte[] value, int offset, int length ) throws IOException;
 }

@@ -45,5 +45,11 @@ public interface FlushableChecksumChannel extends FlushableChannel, WritableChec
     FlushableChecksumChannel putDouble( double value ) throws IOException;
 
     @Override
-    FlushableChecksumChannel put( byte[] value, int length ) throws IOException;
+    default FlushableChecksumChannel put( byte[] value, int length ) throws IOException
+    {
+        return put( value, 0, length );
+    }
+
+    @Override
+    FlushableChecksumChannel put( byte[] value, int offset, int length ) throws IOException;
 }
