@@ -89,6 +89,7 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TokenScanReader;
 import org.neo4j.kernel.impl.index.schema.TokenScanStore;
@@ -1556,6 +1557,7 @@ class BatchInsertTest
     {
         return configurationBuilder()
                 .set( GraphDatabaseSettings.dense_node_threshold, denseNodeThreshold )
+                .set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false )
                 .build();
     }
 
@@ -1595,7 +1597,8 @@ class BatchInsertTest
 
     private LabelScanStore getLabelScanStore()
     {
-        return TokenScanStore.labelScanStore( pageCache, databaseLayout, fs, EMPTY, readOnly(), new Monitors(), immediate(), Config.defaults(),
+        return TokenScanStore.labelScanStore( pageCache, databaseLayout, fs, EMPTY, readOnly(), new Monitors(), immediate(),
+                Config.defaults( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false ),
                 PageCacheTracer.NULL, INSTANCE );
     }
 
