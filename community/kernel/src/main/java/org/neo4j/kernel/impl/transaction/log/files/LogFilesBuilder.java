@@ -565,7 +565,7 @@ public class LogFilesBuilder
 
     private TransactionIdStore readOnlyTransactionIdStore() throws IOException
     {
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         var pageCacheTracer = databaseTracers.getPageCacheTracer();
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( READ_ONLY_TRANSACTION_STORE_READER_TAG ) ) )
         {
@@ -575,7 +575,7 @@ public class LogFilesBuilder
 
     private LogVersionRepository readOnlyLogVersionRepository() throws IOException
     {
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         var pageCacheTracer = databaseTracers.getPageCacheTracer();
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( READ_ONLY_LOG_VERSION_READER_TAG ) ) )
         {

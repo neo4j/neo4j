@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -184,24 +185,25 @@ public interface StorageEngineFactory
     CommandReaderFactory commandReaderFactory();
 
     /**
-     * Selects a {@link StorageEngineFactory} among the candidates. How it's done or which it selects isn't important a.t.m.
-     * @return the selected {@link StorageEngineFactory}.
-     * @throws IllegalStateException if there were no candidates.
+     * @return the default {@link StorageEngineFactory}.
+     * @throws IllegalStateException if there were no storage engine factories to choose from.
      */
-    static StorageEngineFactory selectStorageEngine()
+    static StorageEngineFactory defaultStorageEngine()
     {
         return selectStorageEngine( "record" );
     }
 
+    /**
+     * @return all {@link StorageEngineFactory} instances that are available on the class path, loaded via {@link Service service loading}.
+     */
     static Collection<StorageEngineFactory> allAvailableStorageEngines()
     {
         return Services.loadAll( StorageEngineFactory.class );
     }
 
     /**
-     * @return the first {@link StorageEngineFactory} that says yes when asked about
+     * @return the first {@link StorageEngineFactory} that returns {@code true} when asked about
      * {@link StorageEngineFactory#storageExists(FileSystemAbstraction, DatabaseLayout, PageCache)} for the given {@code databaseLayout}.
-     * If there's no store there or none of the factories can see or load it then the {@code defaultFactory} will be returned.
      */
     static Optional<StorageEngineFactory> selectStorageEngine( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
     {
@@ -209,6 +211,11 @@ public interface StorageEngineFactory
         return storageEngineFactories.stream().filter( engine -> engine.storageExists( fs, databaseLayout, pageCache ) ).findFirst();
     }
 
+    /**
+     * @param name the name returned by {@link StorageEngineFactory#name()}.
+     * @return the {@link StorageEngineFactory} that has the given {@code name}.
+     * @throws IllegalArgumentException if the storage engine with the given {@code name} couldn't be found.
+     */
     static StorageEngineFactory selectStorageEngine( String name )
     {
         Collection<StorageEngineFactory> storageEnginesWithThisName =
@@ -221,16 +228,40 @@ public interface StorageEngineFactory
         return single( storageEnginesWithThisName );
     }
 
+    /**
+     * Selects storage engine which has the name found in the given {@link Configuration}, see {@link GraphDatabaseInternalSettings#storage_engine}.
+     *
+     * @param configuration the {@link Configuration} to read the name from.
+     * @return the {@link StorageEngineFactory} for this name.
+     * @throws IllegalArgumentException if no storage engine with the given name was found.
+     */
     static StorageEngineFactory selectStorageEngine( Configuration configuration )
     {
         return selectStorageEngine( configuration.get( storage_engine ) );
     }
 
+    /**
+     * Selects {@link StorageEngineFactory} first by looking at the store accessible in the provided file system at the given {@code databaseLayout},
+     * and if a store exists there and is recognized by any of the available factories will return it. Otherwise the factory specified by the
+     * {@code configuration} will be returned.
+     *
+     * @param configuration the {@link Configuration} to read the name from. This parameter can be {@code null}, which then means to select use the default.
+     * @return the found {@link StorageEngineFactory}.
+     */
     static StorageEngineFactory selectStorageEngine( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, Configuration configuration )
     {
         return selectStorageEngine( fs, databaseLayout, pageCache, configuration != null ? configuration.get( storage_engine ) : null );
     }
 
+    /**
+     * Selects {@link StorageEngineFactory} first by looking at the store accessible in the provided file system at the given {@code databaseLayout},
+     * and if a store exists there and is recognized by any of the available factories will return it. Otherwise the factory specified by the
+     * {@code configuration} will be returned.
+     *
+     * @param specificNameOrNull the {@link StorageEngineFactory} name to default to if no store exists and can be recognized by any available factory.
+     * This parameter can be {@code null}, which then means to select use the default.
+     * @return the found {@link StorageEngineFactory}.
+     */
     static StorageEngineFactory selectStorageEngine( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, String specificNameOrNull )
     {
         // - Does a store exist at this location? -> get the one able to open it
@@ -247,6 +278,6 @@ public interface StorageEngineFactory
             return StorageEngineFactory.selectStorageEngine( specificNameOrNull );
         }
 
-        return selectStorageEngine();
+        return defaultStorageEngine();
     }
 }

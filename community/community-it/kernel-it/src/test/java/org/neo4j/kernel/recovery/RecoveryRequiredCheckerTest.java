@@ -65,7 +65,7 @@ class RecoveryRequiredCheckerTest
     private DatabaseLayout databaseLayout;
 
     private Path storeDir;
-    private final StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
+    private final StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
 
     @BeforeEach
     void setup()

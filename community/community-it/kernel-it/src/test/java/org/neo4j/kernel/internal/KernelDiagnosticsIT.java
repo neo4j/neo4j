@@ -75,7 +75,7 @@ class KernelDiagnosticsIT
 
             // when
             DatabaseLayout databaseLayout = layout.databaseLayout( DEFAULT_DATABASE_NAME );
-            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
             StoreFilesDiagnostics files = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
             SizeCapture capture = new SizeCapture();
             files.dump( capture::log );

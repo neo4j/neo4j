@@ -281,7 +281,7 @@ public class GlobalModule
     {
         if ( !globalConfig.isExplicitlySet( default_database ) )
         {
-            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
             DatabaseLayout defaultDatabaseLayout = neo4jLayout.databaseLayout( globalConfig.get( default_database ) );
             if ( storageEngineFactory.storageExists( fileSystem, defaultDatabaseLayout, pageCache ) )
             {

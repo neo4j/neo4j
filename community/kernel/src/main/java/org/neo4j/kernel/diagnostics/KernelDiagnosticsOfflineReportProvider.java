@@ -144,7 +144,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      */
     private void listDataDirectory( List<DiagnosticsReportSource> sources )
     {
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
 
         List<String> files = new ArrayList<>();

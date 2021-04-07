@@ -75,6 +75,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -110,7 +111,7 @@ import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHel
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 import static org.neo4j.logging.NullLogProvider.nullLogProvider;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngine;
+import static org.neo4j.storageengine.api.StorageEngineFactory.defaultStorageEngine;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -819,7 +820,7 @@ class RecoveryIT
         };
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( monitor );
-        Recovery.performRecovery( fileSystem, pageCache, EMPTY, Config.defaults(), layout, selectStorageEngine(), true, nullLogProvider(), monitors,
+        Recovery.performRecovery( fileSystem, pageCache, EMPTY, Config.defaults(), layout, defaultStorageEngine(), true, nullLogProvider(), monitors,
                 Iterables.cast( Services.loadAll( ExtensionFactory.class ) ), Optional.empty(), null, INSTANCE, Clock.systemUTC() );
 
         // then
@@ -919,7 +920,7 @@ class RecoveryIT
     {
         return LogFilesBuilder
                 .logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
-                .withCommandReaderFactory( selectStorageEngine().commandReaderFactory() )
+                .withCommandReaderFactory( StorageEngineFactory.defaultStorageEngine().commandReaderFactory() )
                 .build();
     }
 

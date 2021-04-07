@@ -349,7 +349,7 @@ public class MemoryRecommendationsCommand extends AbstractCommand
 
     private long sumStoreFiles( DatabaseLayout databaseLayout )
     {
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         FileSystemAbstraction fileSystem = ctx.fs();
         try
         {

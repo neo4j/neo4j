@@ -567,7 +567,7 @@ public class StoreUpgraderTest
         BatchImporterFactory batchImporterFactory = BatchImporterFactory.withHighestPriority();
         RecordStorageMigrator defaultMigrator = new RecordStorageMigrator( fileSystem, pageCache, getTuningConfig(), instance, jobScheduler, pageCacheTracer,
                 batchImporterFactory, INSTANCE );
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine();
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         SchemaIndexMigrator indexMigrator =
                 new SchemaIndexMigrator( "Indexes", fileSystem, pageCache, IndexProvider.EMPTY.directoryStructure(), storageEngineFactory, true );
 

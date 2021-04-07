@@ -115,7 +115,7 @@ class LogVersionUpgradeCheckerIT
 
     private void appendCheckpoint( byte logEntryVersion, boolean removeCheckpointFile ) throws IOException
     {
-        VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( StorageEngineFactory.selectStorageEngine().commandReaderFactory() );
+        VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( StorageEngineFactory.defaultStorageEngine().commandReaderFactory() );
         LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache )
                 .withLogEntryReader( logEntryReader ).withStoreId( StoreId.UNKNOWN ).build();
 

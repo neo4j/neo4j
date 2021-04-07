@@ -78,7 +78,7 @@ public class StoreInfoCommand extends AbstractCommand
     @Override
     public void execute()
     {
-        var storageEngineFactory = StorageEngineFactory.selectStorageEngine();
+        var storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         var config = CommandHelpers.buildConfig( ctx, allowCommandExpansion );
         var neo4jLayout = Neo4jLayout.of( config );
         try ( var fs = ctx.fs();

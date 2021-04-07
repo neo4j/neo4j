@@ -79,7 +79,7 @@ public class TransactionLogInitializer
             try
             {
                 TransactionLogInitializer initializer = new TransactionLogInitializer(
-                        fileSystem, store, StorageEngineFactory.selectStorageEngine().commandReaderFactory(),
+                        fileSystem, store, StorageEngineFactory.defaultStorageEngine().commandReaderFactory(),
                         PageCacheTracer.NULL );
                 initializer.initializeEmptyLogFile( databaseLayout, databaseLayout.getTransactionLogsDirectory(), checkpointReason );
             }

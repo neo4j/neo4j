@@ -61,7 +61,7 @@ public final class RecoveryHelpers
      {
           return LogFilesBuilder
                   .logFilesBasedOnlyBuilder( dbLayout.getTransactionLogsDirectory(), fs )
-                  .withCommandReaderFactory( StorageEngineFactory.selectStorageEngine().commandReaderFactory() )
+                  .withCommandReaderFactory( StorageEngineFactory.defaultStorageEngine().commandReaderFactory() )
                   .build();
      }
 }

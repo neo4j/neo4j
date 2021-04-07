@@ -210,7 +210,7 @@ public final class Recovery
         try ( JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
                 PageCache pageCache = getPageCache( config, fs, jobScheduler ) )
         {
-            StorageEngineFactory storageEngineFactory = selectStorageEngine();
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
             return isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, Optional.empty(), memoryTracker );
         }
     }
@@ -258,7 +258,7 @@ public final class Recovery
         requireNonNull( storageEngineFactory );
         //remove any custom logical logs location
         Config recoveryConfig = Config.newBuilder().fromConfig( config ).set( GraphDatabaseSettings.transaction_logs_root_path, null ).build();
-        performRecovery( fs, pageCache, tracers, recoveryConfig, databaseLayout, selectStorageEngine(), forceRunRecovery, NullLogProvider.getInstance(),
+        performRecovery( fs, pageCache, tracers, recoveryConfig, databaseLayout, StorageEngineFactory.defaultStorageEngine(), forceRunRecovery, NullLogProvider.getInstance(),
                 new Monitors(), loadExtensions(), Optional.empty(), EMPTY_CHECKER, memoryTracker, systemClock() );
     }
 
