@@ -106,9 +106,10 @@ class CsvImporterTest
 
         csvImporter.doImport();
 
-        assertThat( cacheTracer.faults() ).isEqualTo( 24 );
-        assertThat( cacheTracer.pins() ).isEqualTo( 418 );
-        assertThat( cacheTracer.unpins() ).isEqualTo( 418 );
-        assertThat( cacheTracer.hits() ).isEqualTo( 394 );
+        long pins = cacheTracer.pins();
+        assertThat( pins ).isGreaterThan( 0 );
+        assertThat( cacheTracer.unpins() ).isEqualTo( pins );
+        assertThat( cacheTracer.hits() ).isGreaterThan( 0 ).isLessThanOrEqualTo( pins );
+        assertThat( cacheTracer.faults() ).isGreaterThan( 0 ).isLessThanOrEqualTo( pins );
     }
 }
