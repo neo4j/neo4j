@@ -44,6 +44,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
+import org.neo4j.storageengine.migration.RollingUpgradeCompatibility;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.token.TokenHolders;
@@ -65,7 +66,7 @@ public interface StorageEngineFactory
 
     StoreVersion versionInformation( String storeVersion );
 
-    StoreVersion versionInformation( long storeVersion );
+    RollingUpgradeCompatibility rollingUpgradeCompatibility();
 
     /**
      * Returns a {@link StoreMigrationParticipant} which will be able to participate in a store migration.

@@ -145,4 +145,10 @@ public class PageAlignedV4_3 extends BaseRecordFormats
     {
         return NAME;
     }
+
+    @Override
+    public RecordFormats[] compatibleVersionsForRollingUpgrade()
+    {
+        return new RecordFormats[] {PageAlignedV4_1.RECORD_FORMATS};
+    }
 }

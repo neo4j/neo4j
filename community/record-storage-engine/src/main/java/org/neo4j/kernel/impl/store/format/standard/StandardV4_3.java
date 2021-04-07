@@ -125,4 +125,10 @@ public class StandardV4_3 extends BaseRecordFormats
     {
         return NAME;
     }
+
+    @Override
+    public RecordFormats[] compatibleVersionsForRollingUpgrade()
+    {
+        return new RecordFormats[] {StandardV4_0.RECORD_FORMATS};
+    }
 }
