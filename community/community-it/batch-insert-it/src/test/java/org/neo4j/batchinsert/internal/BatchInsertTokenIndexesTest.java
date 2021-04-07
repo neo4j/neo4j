@@ -61,7 +61,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptor.forAllEntityTokens;
+import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -168,7 +168,7 @@ public class BatchInsertTokenIndexesTest
     {
         var context = DatabaseIndexContext.builder( pageCache, fs, databaseLayout.getDatabaseName() ).build();
 
-        var id = forSchema( forAllEntityTokens( entityType ), TokenIndexProvider.DESCRIPTOR ).withName( "index" ).materialise( 0 );
+        var id = forSchema( forAnyEntityTokens( entityType ), TokenIndexProvider.DESCRIPTOR ).withName( "index" ).materialise( 0 );
         Path path = entityType == EntityType.NODE ? databaseLayout.labelScanStore() : databaseLayout.relationshipTypeScanStore();
         return new TokenIndexAccessor( context, databaseLayout, new IndexFiles.SingleFile( fs, path ), configuration(), id,
                 RecoveryCleanupWorkCollector
