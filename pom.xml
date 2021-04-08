@@ -1280,6 +1280,10 @@
         <version>1.4.3-1</version>
       </dependency>
 
+      <!--
+       - Please note that when updating this dependency (i.e. due to a security vulnerability or bug) that the corresponding driver dependency also
+       - needs updating.
+       -->
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-all</artifactId>
