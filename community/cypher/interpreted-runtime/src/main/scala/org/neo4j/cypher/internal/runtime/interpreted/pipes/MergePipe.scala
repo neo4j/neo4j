@@ -25,20 +25,32 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Interp
 import org.neo4j.cypher.internal.util.attribution.Id
 
 class MergePipe(src: Pipe,
-                createOps: Seq[InterpretedSideEffect],
-                onMatchSetOps: Seq[SetOperation],
-                onCreateSetOps: Seq[SetOperation])(val id: Id = Id.INVALID_ID) extends PipeWithSource(src) {
+                createOps: Array[InterpretedSideEffect],
+                onMatchSetOps: Array[SetOperation],
+                onCreateSetOps: Array[SetOperation])(val id: Id = Id.INVALID_ID) extends PipeWithSource(src) {
   override protected def internalCreateResults(input: ClosingIterator[CypherRow],
                                                state: QueryState): ClosingIterator[CypherRow] = {
     if (input.hasNext) {
       input.map(r => {
-        onMatchSetOps.foreach(op => op.set(r, state))
+        var i = 0
+        while (i < onMatchSetOps.length) {
+          onMatchSetOps(i).set(r, state)
+          i += 1
+        }
         r
       })
     } else {
       val row = state.newRowWithArgument(rowFactory)
-      createOps.foreach(op => op.execute(row, state))
-      onCreateSetOps.foreach(op => op.set(row, state))
+      var i = 0
+      while (i < createOps.length) {
+        createOps(i).execute(row,state)
+        i += 1
+      }
+      i = 0
+      while (i < onCreateSetOps.length) {
+        onCreateSetOps(i).set(row,state)
+        i += 1
+      }
       ClosingIterator.single(row)
     }
   }

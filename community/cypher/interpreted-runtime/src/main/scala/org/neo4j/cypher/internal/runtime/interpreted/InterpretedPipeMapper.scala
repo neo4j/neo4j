@@ -667,7 +667,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
             CreateRelationship(CreateRelationshipCommand(r.idName, r.startNode, LazyType(r.relType)(semanticTable), r.endNode, r.properties.map(buildExpression)))
         }
 
-        new MergePipe(source, creates, onMatch.map(compileEffect), onCreate.map(compileEffect))(id = id)
+        new MergePipe(source, creates.toArray, onMatch.map(compileEffect).toArray, onCreate.map(compileEffect).toArray)(id = id)
 
       case SetLabels(_, name, labels) =>
         SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))(id = id)
