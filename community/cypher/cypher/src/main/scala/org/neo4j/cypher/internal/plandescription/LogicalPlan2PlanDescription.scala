@@ -612,14 +612,14 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
             pretty"(${asPrettyString(node)}${if (labels.nonEmpty) labels.map(x => asPrettyString(x.name)).mkPrettyString(":", ":", "") else pretty""})"
         }
         val createRelsPretty = createRelationships.map {
-          case CreateRelationship(relationship, startNode, typ, endNode, direction, properties) =>
+          case CreateRelationship(relationship, startNode, typ, endNode, direction, _) =>
             expandExpressionDescription(startNode, Some(relationship), Seq(typ.name), endNode, direction, 1, Some(1))
         }
-        val creates: Seq[PrettyString] = Seq(pretty"CREATE ${(createNodesPretty ++ createRelsPretty).mkPrettyString(", ")}") ++
+        val details: Seq[PrettyString] = Seq(pretty"CREATE ${(createNodesPretty ++ createRelsPretty).mkPrettyString(", ")}") ++
           (if (onMatch.nonEmpty) Seq(pretty"ON MATCH SET ${onMatch.map(setOpDetails).mkPrettyString(", ")}") else Seq.empty) ++
           (if (onCreate.nonEmpty) Seq(pretty"ON CREATE SET ${onCreate.map(setOpDetails).mkPrettyString(", ")}") else Seq.empty)
 
-        PlanDescriptionImpl(id, "Merge", children, Seq(Details(creates)), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, "Merge", children, Seq(Details(details)), variables, withRawCardinalities)
 
       case Optional(_, protectedSymbols) =>
         PlanDescriptionImpl(id, "Optional", children, Seq(Details(keyNamesInfo(protectedSymbols.toSeq))), variables, withRawCardinalities)

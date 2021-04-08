@@ -94,6 +94,7 @@ import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
@@ -188,6 +189,7 @@ import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManyQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
+import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -933,6 +935,32 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(Create(lhsLP, Seq(CreateNode("x", Seq(label("Label")), Some(properties))), Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, Some(properties)))), 32.2),
       planDescription(id, "Create", SingleChild(lhsPD), Seq(details(Seq("(x:Label)", "(x)<-[r:R]-(y)"))), Set("a", "x", "r")))
+  }
+
+  test("Merge") {
+    val properties = MapExpression(Seq(
+      (key("y"), number("1")),
+      (key("crs"), stringLiteral("cartesian"))))(pos)
+
+    assertGood(
+      attach(Merge(lhsLP, Seq(CreateNode("x", Seq.empty, None)), Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None)), Seq.empty, Seq.empty), 32.2),
+      planDescription(id, "Merge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x), (x)<-[r:R]-(y)"))), Set("a")))
+
+    assertGood(
+      attach(Merge(lhsLP, Seq(CreateNode("x", Seq(label("L")), None)), Seq.empty,
+        Seq(SetLabelPattern("x", Seq(label("NEW")))), Seq.empty), 32.2),
+      planDescription(id, "Merge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x:L)", "ON MATCH SET x:NEW"))), Set("a")))
+
+
+    assertGood(
+      attach(Merge(lhsLP, Seq(CreateNode("x", Seq(label("L")), None)), Seq.empty,
+        Seq.empty, Seq(SetLabelPattern("x", Seq(label("NEW"))))), 32.2),
+      planDescription(id, "Merge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x:L)", "ON CREATE SET x:NEW"))), Set("a")))
+
+    assertGood(
+      attach(Merge(lhsLP, Seq(CreateNode("x", Seq(label("L")), None)), Seq.empty,
+        Seq(SetLabelPattern("x", Seq(label("ON_MATCH")))), Seq(SetLabelPattern("x", Seq(label("ON_CREATE"))))), 32.2),
+      planDescription(id, "Merge", SingleChild(lhsPD), Seq(details(Seq("CREATE (x:L)", "ON MATCH SET x:ON_MATCH", "ON CREATE SET x:ON_CREATE"))), Set("a")))
   }
 
   test("Delete") {
