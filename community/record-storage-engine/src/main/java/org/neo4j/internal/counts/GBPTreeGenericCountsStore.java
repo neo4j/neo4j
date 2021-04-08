@@ -84,7 +84,6 @@ import static org.neo4j.util.Preconditions.checkState;
  */
 public class GBPTreeGenericCountsStore implements CountsStorage
 {
-    public static final int DEFAULT_MAX_CACHE_SIZE = 1_000_000;
     public static final Monitor NO_MONITOR = txId -> {};
     private static final long NEEDS_REBUILDING_HIGH_ID = 0;
     private static final String OPEN_COUNT_STORE_TAG = "openCountStore";
@@ -102,6 +101,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     private final Monitor monitor;
     private final String databaseName;
     private final int maxCacheSize;
+    private final int highMarkCacheSize;
     protected volatile CountsChanges changes = new CountsChanges();
     private final TxIdInformation txIdInformation;
     private volatile boolean started;
@@ -115,6 +115,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         this.monitor = monitor;
         this.databaseName = databaseName;
         this.maxCacheSize = maxCacheSize;
+        this.highMarkCacheSize = (int) (maxCacheSize * 0.8);
 
         // First just read the header so that we can avoid creating it if this store is read-only
         CountsHeader header = new CountsHeader( NEEDS_REBUILDING_HIGH_ID );
@@ -199,7 +200,11 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     protected CountUpdater updater( long txId, PageCursorTracer cursorTracer )
     {
         // In order to keep the cache limited then check if we need to flush to the tree
-        checkCacheSizeAndPotentiallyFlush( cursorTracer );
+        if ( txId % 10 == 0 )
+        {
+            // Although it's somewhat costly to check map size so only do it every N transaction.
+            checkCacheSizeAndPotentiallyFlush( cursorTracer );
+        }
 
         Lock lock = lock( this.lock.readLock() );
 
@@ -277,7 +282,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     private void checkCacheSizeAndPotentiallyFlush( PageCursorTracer cursorTracer )
     {
         int cacheSize = changes.size();
-        if ( cacheSize > maxCacheSize )
+        if ( cacheSize > highMarkCacheSize )
         {
             try ( CriticalSection criticalSection = new CriticalSection( lock ) )
             {
@@ -285,7 +290,7 @@ public class GBPTreeGenericCountsStore implements CountsStorage
                 // Reasons for waiting for this lock could be:
                 // - Another thread is flushing changes (in which case this updater would need to wait anyway)
                 // - Other threads are making updates as we speak (more likely)
-                if ( !criticalSection.tryAcquireExclusive() && cacheSize > maxCacheSize * 2 )
+                if ( !criticalSection.tryAcquireExclusive() && cacheSize > maxCacheSize )
                 {
                     // Although if the write pressure is really high then flushing may be starved so if the cache is much bigger then acquire the lock blocking
                     criticalSection.acquireExclusive();
@@ -518,6 +523,9 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     {
         long lastCommittedTxId();
 
+        /**
+         * @param updater the updater to write the counts into. Note: the updater will write all counts as absolute.
+         */
         void rebuild( CountUpdater updater, PageCursorTracer cursorTracer, MemoryTracker memoryTracker );
     }
 
