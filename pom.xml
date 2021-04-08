@@ -1010,6 +1010,11 @@
         <artifactId>jamm</artifactId>
         <version>${jamm.version}</version>
       </dependency>
+
+      <!--
+       - Please note that when updating this dependency (i.e. due to a security vulnerability or bug) that the corresponding driver dependency also
+       - needs updating.
+       -->
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
@@ -1291,6 +1296,10 @@
         <version>1.4.8-5</version>
       </dependency>
 
+      <!--
+       - Please note that when updating this dependency (i.e. due to a security vulnerability or bug) that the corresponding driver dependency also
+       - needs updating.
+       -->
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-all</artifactId>
