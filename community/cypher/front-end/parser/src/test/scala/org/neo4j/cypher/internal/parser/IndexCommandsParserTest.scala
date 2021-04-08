@@ -209,43 +209,8 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
         yields(createIndex(Some("my_index"), ast.IfExistsDoNothing, Map.empty))
       }
 
-      test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS {indexProvider : 'native-btree-1.0'}") {
-        yields(createIndex(None, ast.IfExistsThrowError, Map("indexProvider" -> literalString("native-btree-1.0"))))
-      }
-
-      test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
-        yields(createIndex(None, ast.IfExistsThrowError,
-          Map("indexProvider" -> literalString("lucene+native-3.0"),
-            "indexConfig"   -> mapOf(
-              "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
-              "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
-            )
-          )
-        ))
-      }
-
-      test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'lucene+native-3.0'}") {
-        yields(createIndex(None, ast.IfExistsThrowError,
-          Map("indexProvider" -> literalString("lucene+native-3.0"),
-            "indexConfig"   -> mapOf(
-              "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
-              "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
-            )
-          )
-        ))
-      }
-
-      test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS {indexConfig : {`spatial.wgs-84.max`: [60.0,60.0], `spatial.wgs-84.min`: [-40.0,-40.0] }}") {
-        yields(createIndex(None, ast.IfExistsThrowError,
-          Map("indexConfig" -> mapOf(
-            "spatial.wgs-84.max" -> listOf(literalFloat(60.0), literalFloat(60.0)),
-            "spatial.wgs-84.min" -> listOf(literalFloat(-40.0), literalFloat(-40.0))
-          ))
-        ))
-      }
-
-      test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS {nonValidOption : 42}") {
-        yields(createIndex(None, ast.IfExistsThrowError, Map("nonValidOption" -> literalInt(42))))
+      test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS {anyOption : 42}") {
+        yields(createIndex(None, ast.IfExistsThrowError, Map("anyOption" -> literalInt(42))))
       }
 
       test(s"CREATE LOOKUP INDEX my_index FOR $pattern ON EACH $function OPTIONS {}") {
@@ -263,6 +228,14 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
       test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS") {
         failsToParse
       }
+  }
+
+  test("CREATE LOOKUP INDEX FOR (x) ON EACH labels(x)") {
+    yields(ast.CreateLookupIndex(varFor("x"), isNodeIndex = true, function(Labels.name, varFor("x")), None, ast.IfExistsThrowError, Map.empty))
+  }
+
+  test("CREATE LOOKUP INDEX FOR ()-[x]-() ON EACH type(x)") {
+    yields(ast.CreateLookupIndex(varFor("x"), isNodeIndex = false, function(Type.name, varFor("x")), None, ast.IfExistsThrowError, Map.empty))
   }
 
   test("CREATE LOOKUP INDEX FOR (n) ON EACH count(n)") {
@@ -342,6 +315,14 @@ class IndexCommandsParserTest extends SchemaCommandsParserTestBase {
   }
 
   test("CREATE LOOKUP INDEX FOR (n) ON labels(n)") {
+    failsToParse
+  }
+
+  test("CREATE INDEX FOR (n) ON EACH labels(n)") {
+    failsToParse
+  }
+
+  test("CREATE INDEX FOR ()-[r]-() ON EACH type(r)") {
     failsToParse
   }
 

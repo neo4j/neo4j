@@ -98,6 +98,7 @@ import org.neo4j.internal.schema.IndexPrototype
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
@@ -900,13 +901,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       else
         ktx.schemaWrite().indexCreate(descriptor, provider.get, indexConfig, name.orNull)
     } catch {
-      case e: EquivalentSchemaRuleAlreadyExistsException =>
-        val indexReference = ktx.schemaRead().index(descriptor).next()
-        if (ktx.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED) {
-          val message = ktx.schemaRead().indexGetFailure(indexReference)
-          throw new FailedIndexException(indexReference.userDescription(ktx.tokenRead()), message)
-        }
-        throw e
+      case e: EquivalentSchemaRuleAlreadyExistsException => handleEquivalentSchema(ktx, descriptor, e)
     }
   }
 
@@ -918,14 +913,17 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     try {
       ktx.schemaWrite().indexCreate(namedPrototype)
     } catch {
-      case e: EquivalentSchemaRuleAlreadyExistsException =>
-        val indexReference = ktx.schemaRead().index(descriptor).next()
-        if (ktx.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED) {
-          val message = ktx.schemaRead().indexGetFailure(indexReference)
-          throw new FailedIndexException(indexReference.userDescription(ktx.tokenRead()), message)
-        }
-        throw e
+      case e: EquivalentSchemaRuleAlreadyExistsException => handleEquivalentSchema(ktx, descriptor, e)
     }
+  }
+
+  private def handleEquivalentSchema(ktx: KernelTransaction, descriptor: SchemaDescriptor, e: EquivalentSchemaRuleAlreadyExistsException): Nothing = {
+    val indexReference = ktx.schemaRead().index(descriptor).next()
+    if (ktx.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED) {
+      val message = ktx.schemaRead().indexGetFailure(indexReference)
+      throw new FailedIndexException(indexReference.userDescription(ktx.tokenRead()), message)
+    }
+    throw e
   }
 
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =

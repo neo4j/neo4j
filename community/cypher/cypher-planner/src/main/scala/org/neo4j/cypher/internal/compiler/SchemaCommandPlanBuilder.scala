@@ -146,6 +146,8 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       case CreateBtreeRelationshipIndex(_, relType, props, name, ifExistsDo, options, _) =>
         createBtreeIndex(Right(relType), props, name, ifExistsDo, options)
 
+      // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR (n) ON EACH labels(n)
+      // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR ()-[r]-() ON [EACH] type(r)
       case CreateLookupIndex(_, isNodeIndex, _, name, ifExistsDo, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForLookupIndex(isNodeIndex, name))

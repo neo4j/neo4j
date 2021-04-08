@@ -119,7 +119,7 @@ object Additions {
       case e: ExistsSubClause =>
         throw cypherExceptionFactory.syntaxException("Existential subquery is not supported in this Cypher version.", e.position)
 
-      // SHOW [ALL|BTREE] INDEX[ES] [BRIEF|VERBOSE|WHERE clause|YIELD clause]
+      // SHOW [ALL|BTREE|FULLTEXT|LOOKUP] INDEX[ES] [BRIEF|VERBOSE|WHERE clause|YIELD clause]
       case s: ShowIndexesClause =>
         throw cypherExceptionFactory.syntaxException("SHOW INDEXES is not supported in this Cypher version.", s.position)
 

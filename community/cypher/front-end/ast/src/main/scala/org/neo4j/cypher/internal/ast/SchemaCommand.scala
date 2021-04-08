@@ -100,7 +100,7 @@ case class CreateLookupIndex(variable: Variable, isNodeIndex: Boolean, function:
       if (isNodeIndex) SemanticError(s"Failed to create node lookup index: Function '$name' is not allowed, valid function is '${Labels.name}'.", position)
       else SemanticError(s"Failed to create relationship lookup index: Function '$name' is not allowed, valid function is '${Type.name}'.", position)
     case _ =>
-      if (options.nonEmpty) SemanticError(s"Failed to create lookup index: No option values available.", position)
+      if (options.nonEmpty) SemanticError("Failed to create index: Lookup indexes do not support option values.", position)
       else super.semanticCheck chain SemanticExpressionCheck.simple(function)
   }
 }
