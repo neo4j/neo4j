@@ -373,7 +373,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     relCursor
   }
 
-  override def indexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = {
+  override def btreeIndexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = {
     val descriptor = if (isNodeIndex) SchemaDescriptor.forLabel(entityId, properties: _*) else SchemaDescriptor.forRelType(entityId, properties: _*)
     Iterators.single(transactionalContext.kernelTransaction.schemaRead().index(descriptor))
   }
@@ -892,7 +892,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     ids
   }
 
-  override def addIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
+  override def addBtreeIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
     val ktx = transactionalContext.kernelTransaction
     val descriptor = if (isNodeIndex) SchemaDescriptor.forLabel(entityId, propertyKeyIds: _*) else SchemaDescriptor.forRelType(entityId, propertyKeyIds: _*)
     try {

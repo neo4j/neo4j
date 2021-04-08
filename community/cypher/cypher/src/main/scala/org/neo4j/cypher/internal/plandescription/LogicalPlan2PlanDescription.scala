@@ -87,7 +87,7 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
-import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropIndex
@@ -361,7 +361,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
         val info = relationshipCountFromCountStoreInfo(ident, startLabel, typeNames, endLabel)
         PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
-      case DoNothingIfExistsForIndex(entityName, propertyKeyNames, nameOption) =>
+      case DoNothingIfExistsForBtreeIndex(entityName, propertyKeyNames, nameOption) =>
         PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(indexInfo(nameOption, entityName, propertyKeyNames, Map.empty))), variables, withRawCardinalities)
 
       case DoNothingIfExistsForLookupIndex(isNodeIndex, nameOption) =>

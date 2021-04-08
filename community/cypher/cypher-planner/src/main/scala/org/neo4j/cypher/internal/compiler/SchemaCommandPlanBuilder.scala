@@ -71,7 +71,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
                     options: Map[String, Expression]): Option[LogicalPlan] = {
       val propKeys = props.map(_.propertyKey)
       val source = ifExistsDo match {
-        case IfExistsDoNothing => Some(plans.DoNothingIfExistsForIndex(entityName, propKeys, name))
+        case IfExistsDoNothing => Some(plans.DoNothingIfExistsForBtreeIndex(entityName, propKeys, name))
         case _ => None
       }
       Some(plans.CreateBtreeIndex(source, entityName, propKeys, name, options))

@@ -130,8 +130,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] =
     translateException(tokenNameLookup, inner.getOrCreatePropertyKeyIds(propertyKeys))
 
-  override def addIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
-    translateException(tokenNameLookup, inner.addIndexRule(entityId, isNodeIndex, propertyKeyIds, name, provider, indexConfig))
+  override def addBtreeIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
+    translateException(tokenNameLookup, inner.addBtreeIndexRule(entityId, isNodeIndex, propertyKeyIds, name, provider, indexConfig))
 
   override def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor =
     translateException(tokenNameLookup, inner.addLookupIndexRule(isNodeIndex, name))
@@ -154,8 +154,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean =
     translateException(tokenNameLookup, inner.constraintExists(matchFn, entityId, properties: _*))
 
-  override def indexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor =
-    translateException(tokenNameLookup, inner.indexReference(entityId, isNodeIndex, properties:_*))
+  override def btreeIndexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor =
+    translateException(tokenNameLookup, inner.btreeIndexReference(entityId, isNodeIndex, properties:_*))
 
   override def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor =
     translateException(tokenNameLookup, inner.lookupIndexReference(isNodeIndex))

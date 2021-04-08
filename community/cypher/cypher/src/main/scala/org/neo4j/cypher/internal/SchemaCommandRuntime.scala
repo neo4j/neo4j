@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstr
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
-import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropIndex
@@ -187,7 +187,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         val (indexProvider, indexConfig) = getValidProviderAndConfig(options, "index")
         val (entityId, isNodeIndex) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
-        ctx.addIndexRule(entityId, isNodeIndex, propertyKeyIds, name, indexProvider, indexConfig)
+        ctx.addBtreeIndexRule(entityId, isNodeIndex, propertyKeyIds, name, indexProvider, indexConfig)
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
 
@@ -217,11 +217,11 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
-    case DoNothingIfExistsForIndex(entityName, propertyKeyNames, name) => (_, _) =>
+    case DoNothingIfExistsForBtreeIndex(entityName, propertyKeyNames, name) => (_, _) =>
       SchemaExecutionPlan("DoNothingIfExist", ctx => {
         val (entityId, isNodeIndex) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
-        if (Try(ctx.indexReference(entityId, isNodeIndex, propertyKeyIds: _*).getName).isSuccess) {
+        if (Try(ctx.btreeIndexReference(entityId, isNodeIndex, propertyKeyIds: _*).getName).isSuccess) {
           IgnoredResult
         } else if (name.exists(ctx.indexExists)) {
           IgnoredResult

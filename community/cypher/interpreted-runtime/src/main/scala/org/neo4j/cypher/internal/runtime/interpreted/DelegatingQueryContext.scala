@@ -165,8 +165,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     inner.getOrCreatePropertyKeyIds(propertyKeys)
   }
 
-  override def addIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
-    singleDbHit(inner.addIndexRule(entityId, isNodeIndex, propertyKeyIds, name, provider, indexConfig))
+  override def addBtreeIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
+    singleDbHit(inner.addBtreeIndexRule(entityId, isNodeIndex, propertyKeyIds, name, provider, indexConfig))
 
   override def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor =
     singleDbHit(inner.addLookupIndexRule(isNodeIndex, name))
@@ -184,7 +184,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean =
     singleDbHit(inner.constraintExists(matchFn, entityId, properties: _*))
 
-  override def indexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = singleDbHit(inner.indexReference(entityId, isNodeIndex, properties:_*))
+  override def btreeIndexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = singleDbHit(inner.btreeIndexReference(entityId, isNodeIndex, properties:_*))
 
   override def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor = singleDbHit(inner.lookupIndexReference(isNodeIndex))
 

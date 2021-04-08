@@ -198,7 +198,7 @@ object StaticEvaluation {
 
     override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] = notAvailable()
 
-    override def addIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = notAvailable()
+    override def addBtreeIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = notAvailable()
 
     override def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor = notAvailable()
 
@@ -214,7 +214,7 @@ object StaticEvaluation {
 
     override def constraintExists(matchFn: ConstraintDescriptor => Boolean, entityId: Int, properties: Int*): Boolean = notAvailable()
 
-    override def indexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = notAvailable()
+    override def btreeIndexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor = notAvailable()
 
     override def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor = notAvailable()
 

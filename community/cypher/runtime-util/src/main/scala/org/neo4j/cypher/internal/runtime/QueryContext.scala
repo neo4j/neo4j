@@ -123,7 +123,7 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int]
 
-  def addIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor
+  def addBtreeIndexRule(entityId: Int, isNodeIndex: Boolean, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor
 
   def addLookupIndexRule(isNodeIndex: Boolean, name: Option[String]): IndexDescriptor
 
@@ -133,7 +133,7 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getAllIndexes(): Map[IndexDescriptor, IndexInfo]
 
-  def indexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor
+  def btreeIndexReference(entityId: Int, isNodeIndex: Boolean, properties: Int*): IndexDescriptor
 
   def lookupIndexReference(isNodeIndex: Boolean): IndexDescriptor
 
