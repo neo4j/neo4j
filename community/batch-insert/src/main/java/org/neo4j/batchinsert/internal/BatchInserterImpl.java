@@ -185,6 +185,7 @@ import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
@@ -194,7 +195,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_roo
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.DEFAULT_MAX_CACHE_SIZE;
 import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.NO_MONITOR;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
@@ -330,7 +330,7 @@ public class BatchInserterImpl implements BatchInserter
 
             groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
                     new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer, NO_MONITOR,
-                    databaseLayout.getDatabaseName(), DEFAULT_MAX_CACHE_SIZE );
+                    databaseLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ) );
             groupDegreesStore.start( cursorTracer, memoryTracker );
 
             degreeUpdater = groupDegreesStore.directApply( cursorTracer );
@@ -654,7 +654,8 @@ public class BatchInserterImpl implements BatchInserter
         CountsComputer initialCountsBuilder =
                 new CountsComputer( neoStores, pageCache, cacheTracer, databaseLayout, memoryTracker, logService.getInternalLog( getClass() ) );
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
-                initialCountsBuilder, readOnlyChecker, cacheTracer, NO_MONITOR, databaseLayout.getDatabaseName(), DEFAULT_MAX_CACHE_SIZE ) )
+                initialCountsBuilder, readOnlyChecker, cacheTracer, NO_MONITOR, databaseLayout.getDatabaseName(),
+                config.get( counts_store_max_cached_entries ) ) )
         {
             countsStore.start( PageCursorTracer.NULL, memoryTracker );
             countsStore.checkpoint( PageCursorTracer.NULL );

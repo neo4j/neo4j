@@ -107,8 +107,8 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     private volatile boolean started;
 
     public GBPTreeGenericCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-            Rebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker, String name, PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName, int maxCacheSize )
-            throws IOException
+            Rebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker, String name, PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName,
+            int maxCacheSize ) throws IOException
     {
         this.readOnlyChecker = readOnlyChecker;
         this.name = name;

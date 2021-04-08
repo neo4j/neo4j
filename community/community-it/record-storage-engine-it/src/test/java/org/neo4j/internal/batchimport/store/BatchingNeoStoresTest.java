@@ -111,7 +111,6 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStores;
-import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.DEFAULT_MAX_CACHE_SIZE;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store;
@@ -295,7 +294,7 @@ class BatchingNeoStoresTest
         // given
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
                 RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR,
-                DEFAULT_DATABASE_NAME, DEFAULT_MAX_CACHE_SIZE ) )
+                DEFAULT_DATABASE_NAME, 1_000 ) )
         {
             countsStore.start( NULL, INSTANCE );
             countsStore.checkpoint( NULL );
@@ -329,7 +328,7 @@ class BatchingNeoStoresTest
         // then
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
                 RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(), PageCacheTracer.NULL, GBPTreeCountsStore.NO_MONITOR,
-                DEFAULT_DATABASE_NAME, DEFAULT_MAX_CACHE_SIZE ) )
+                DEFAULT_DATABASE_NAME, 1_000 ) )
         {
             assertEquals( 10, countsStore.nodeCount( 1, NULL ) );
             assertEquals( 20, countsStore.nodeCount( 2, NULL ) );

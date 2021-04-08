@@ -684,4 +684,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     public static Setting<List<String>> neo_byte_buffer_pool_buckets_override =
             newBuilder( "unsupported.dbms.memory.neo_byte_buffer_pool.buckets_override", listOf( STRING ), List.of() ).build();
+
+    @Internal
+    public static Setting<Integer> counts_store_max_cached_entries =
+            newBuilder( "unsupported.dbms.memory.counts_store_max_cached_entries", INT, 1_000_000 ).build();
 }

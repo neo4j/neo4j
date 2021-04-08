@@ -102,8 +102,8 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.util.concurrent.WorkSync;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.function.ThrowingAction.executeAll;
-import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.DEFAULT_MAX_CACHE_SIZE;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
@@ -198,9 +198,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
 
-            countsStore = openCountsStore( pageCache, fs, databaseLayout, logProvider, recoveryCleanupWorkCollector, readOnlyChecker, cacheTracer );
+            countsStore = openCountsStore( pageCache, fs, databaseLayout, logProvider, recoveryCleanupWorkCollector, readOnlyChecker, config, cacheTracer );
 
-            groupDegreesStore = openDegreesStore( pageCache, fs, databaseLayout, recoveryCleanupWorkCollector, readOnlyChecker, cacheTracer );
+            groupDegreesStore = openDegreesStore( pageCache, fs, databaseLayout, recoveryCleanupWorkCollector, readOnlyChecker, config, cacheTracer );
 
             consistencyCheckApply = config.get( GraphDatabaseInternalSettings.consistency_check_on_apply );
         }
@@ -250,7 +250,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     private GBPTreeCountsStore openCountsStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout layout, LogProvider logProvider,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, PageCacheTracer pageCacheTracer )
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCacheTracer pageCacheTracer )
     {
         try
         {
@@ -271,7 +271,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 {
                     return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                 }
-            }, readOnlyChecker, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(), DEFAULT_MAX_CACHE_SIZE );
+            }, readOnlyChecker, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(),
+                    config.get( counts_store_max_cached_entries ) );
         }
         catch ( IOException e )
         {
@@ -280,13 +281,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     private RelationshipGroupDegreesStore openDegreesStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout layout,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, PageCacheTracer pageCacheTracer )
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCacheTracer pageCacheTracer )
     {
         try
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, layout.relationshipGroupDegreesStore(), fs, recoveryCleanupWorkCollector,
                     new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer,
-                    GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(), DEFAULT_MAX_CACHE_SIZE );
+                    GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(), config.get( counts_store_max_cached_entries ) );
         }
         catch ( IOException e )
         {

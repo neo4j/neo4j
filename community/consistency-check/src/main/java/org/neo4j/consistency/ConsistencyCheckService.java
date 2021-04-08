@@ -88,7 +88,6 @@ import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.DEFAULT_MAX_CACHE_SIZE;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
@@ -446,7 +445,7 @@ public class ConsistencyCheckService
         {
             return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, RecoveryCleanupWorkCollector.ignore(),
                     new RebuildPreventingCountsInitializer(), readOnly(), pageCacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(),
-                    DEFAULT_MAX_CACHE_SIZE );
+                    100 );
         }
     }
 
@@ -463,7 +462,7 @@ public class ConsistencyCheckService
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem,
                     RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingDegreesInitializer(), readOnly(), pageCacheTracer,
-                    GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), DEFAULT_MAX_CACHE_SIZE );
+                    GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100 );
         }
     }
 }

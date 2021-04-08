@@ -78,11 +78,11 @@ import org.neo4j.scheduler.JobScheduler;
 import static java.lang.String.valueOf;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_limit;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.counts.GBPTreeGenericCountsStore.DEFAULT_MAX_CACHE_SIZE;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.IOUtils.uncheckedConsumer;
 import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
@@ -399,7 +399,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             throw new UncheckedIOException( e );
         }
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
-                RecoveryCleanupWorkCollector.immediate(), builder, writable(), cacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseName, DEFAULT_MAX_CACHE_SIZE ) )
+                RecoveryCleanupWorkCollector.immediate(), builder, writable(), cacheTracer, GBPTreeCountsStore.NO_MONITOR, databaseName,
+                neo4jConfig.get( counts_store_max_cached_entries ) ) )
         {
             countsStore.start( cursorTracer, memoryTracker );
             countsStore.checkpoint( cursorTracer );
