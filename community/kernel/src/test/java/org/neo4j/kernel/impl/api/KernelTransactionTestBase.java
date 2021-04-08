@@ -193,7 +193,7 @@ class KernelTransactionTestBase
                                                     mock( RelationshipTypeScanStore.class ), mock( IndexStatisticsStore.class ), dependencies, databaseId,
                                                     leaseService, memoryPool,
                                                     new DatabaseReadOnlyChecker.Default( new DbmsReadOnlyChecker.Default( config ), databaseId.name() ),
-                                                    TransactionExecutionMonitor.NO_OP);
+                                                    TransactionExecutionMonitor.NO_OP );
     }
 
     KernelTransactionImplementation newNotInitializedTransaction( LeaseService leaseService )
