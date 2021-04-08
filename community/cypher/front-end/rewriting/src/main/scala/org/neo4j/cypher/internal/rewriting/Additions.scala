@@ -162,7 +162,7 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Changing a username is not supported in this Cypher version.", c.position)
 
       case c: ShowIndexesClause if c.where.isDefined || c.hasYield =>
-        throw cypherExceptionFactory.syntaxException("Using YIELD or WHERE to list indexes is not supported in this Cypher version.", c.position)
+        throw cypherExceptionFactory.syntaxException("Using YIELD or WHERE when listing indexes is not supported in this Cypher version.", c.position)
 
       case c: ShowDatabase if c.scope.isInstanceOf[HomeDatabaseScope] =>
         throw cypherExceptionFactory.syntaxException("`SHOW HOME DATABASE` is not supported in this Cypher version.", c.position)
@@ -208,7 +208,7 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("Using `REL`, `PROPERTY` or `EXISTENCE` when listing relationship property existence constraints is not supported in this Cypher version.", c.position)
 
       case c: ShowConstraintsClause if c.where.isDefined || c.hasYield =>
-        throw cypherExceptionFactory.syntaxException("Using YIELD or WHERE to list constraints is not supported in this Cypher version.", c.position)
+        throw cypherExceptionFactory.syntaxException("Using YIELD or WHERE when listing constraints is not supported in this Cypher version.", c.position)
 
       case c@ShowIndexesClause(_, FulltextIndexes, _, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("Using `FULLTEXT` when listing indexes is not supported in this Cypher version.", c.position)
