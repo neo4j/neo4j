@@ -181,9 +181,9 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    val properties = tx.getAllPropertyKeys.asScala.toList
+    val properties = tx.getAllPropertyKeys.asScala.toList.sorted
     runtimeResult should beColumns("p1", "p2", "p3").withSingleRow(null, 0, 1).withStatistics(propertiesSet = 3)
-    properties shouldBe Seq("prop", "propCopy", "newProp")
+    properties shouldBe Seq("newProp", "prop", "propCopy")
   }
 
 
