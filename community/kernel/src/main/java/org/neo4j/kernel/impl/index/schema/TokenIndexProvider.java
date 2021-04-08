@@ -95,7 +95,7 @@ public class TokenIndexProvider extends IndexProvider
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
 
-        return new TokenIndexPopulator( databaseIndexContext, databaseLayout, indexFiles( descriptor ), config, descriptor );
+        return new WorkSyncedIndexPopulator( new TokenIndexPopulator( databaseIndexContext, databaseLayout, indexFiles( descriptor ), config, descriptor ) );
     }
 
     @Override
