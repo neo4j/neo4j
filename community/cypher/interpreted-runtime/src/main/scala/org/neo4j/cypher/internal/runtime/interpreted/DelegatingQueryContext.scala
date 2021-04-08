@@ -240,6 +240,14 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): ClosingLongIterator =
     manyDbHits(inner.getNodesByLabelPrimitive(id, indexOrder))
 
+  override def getNodesByLabel(tokenReadSession: TokenReadSession,
+                               id: Int,
+                               indexOrder: IndexOrder): ClosingIterator[NodeValue] =
+    manyDbHits(inner.getNodesByLabel(tokenReadSession, id, indexOrder))
+
+  override def getNodesByLabelPrimitive(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator =
+    manyDbHits(inner.getNodesByLabelPrimitive(tokenReadSession, id, indexOrder))
+
   override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue = {
     val map = inner.nodeAsMap(id, nodeCursor, propertyCursor)
     //one hit finding the node, then finding the properies

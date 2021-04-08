@@ -148,6 +148,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.ValueHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.VarLengthExpandTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.WriteOperatorsDbHitsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.WriteProcedureCallTestBase
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings
 
 object InterpretedSpecSuite {
   val SIZE_HINT = 200
@@ -174,6 +175,8 @@ class InterpretedVarExpandAllTest extends VarLengthExpandTestBase(COMMUNITY.EDIT
 class InterpretedPruningVarExpandTest extends PruningVarLengthExpandTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedProjectEndpointsTest extends ProjectEndpointsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLabelScanTest extends LabelScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+//TODO remove once we switched over to new token index API
+class NewAPIInterpretedLabelScanTest extends LabelScanTestBase(COMMUNITY.EDITION.copyWith(RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes -> java.lang.Boolean.TRUE), InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexScanTest extends NodeIndexScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexContainsScanTest extends NodeIndexContainsScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexStartsWithSeekTest extends NodeIndexStartsWithSeekTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

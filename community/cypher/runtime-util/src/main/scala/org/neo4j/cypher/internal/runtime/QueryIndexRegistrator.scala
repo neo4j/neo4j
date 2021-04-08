@@ -26,13 +26,13 @@ import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.RelTypeId
+import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.SchemaDescriptor
 
-import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -81,35 +81,37 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
 
   def result(): QueryIndexes = {
     val indexes =
-      indexReferences.flatMap {
+      indexReferences.map {
         case InternalIndexReference(LabelId(token), properties) =>
-          schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forLabel(token, properties: _*)).asScala
+          Iterators.first(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forLabel(token, properties: _*)))
         case InternalIndexReference(RelTypeId(token), properties) =>
-          schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forRelType(token, properties: _*)).asScala
+          Iterators.first(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forRelType(token, properties: _*)))
         case _ => throw new IllegalStateException()
       }.toArray
 
-    val typeTokenIndex = if (typeScan) {
-      val descriptions = schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP))
-      if (!descriptions.hasNext) throw new IllegalStateException("There must be a type index at this point in time")
+    val labelTokenIndex = if (labelScan) {
+      //TODO once we switched over to new API this should do Iterators first just as the others
+      Option(Iterators.firstOrNull(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.NODE))))
+    } else None
 
-      Some(descriptions.next())
-    } else {
-      None
-    }
-    QueryIndexes(labelScan, indexes, typeTokenIndex)
+    val typeTokenIndex = if (typeScan) {
+      Some(Iterators.first(schemaRead.indexForSchemaNonTransactional(SchemaDescriptor.forAnyEntityTokens(EntityType.RELATIONSHIP))))
+    } else None
+
+    QueryIndexes(labelScan, indexes, labelTokenIndex, typeTokenIndex)
   }
 
   private case class InternalIndexReference(token: NameId, properties: Seq[Int])
   private case class InternalTokenReference(token: NameId)
 }
 
-case class QueryIndexes(private val hasLabelScan: Boolean,
+case class QueryIndexes(private val labelScan: Boolean,
                         private val indexes: Array[IndexDescriptor],
-                        private val typeTokenIndex: Option[IndexDescriptor],
-                       ) {
+                        private val labelTokenIndex: Option[IndexDescriptor],
+                        private val typeTokenIndex: Option[IndexDescriptor]) {
   def initiateLabelAndSchemaIndexes(queryContext: QueryContext): Array[IndexReadSession] = {
-    if (hasLabelScan) {
+    //TODO once completely moved over to new API this and prepareForLabelScans can go away
+    if (labelScan) {
       queryContext.transactionalContext.dataRead.prepareForLabelScans()
     }
     val indexReadSessions = new Array[IndexReadSession](indexes.length)
@@ -119,6 +121,10 @@ case class QueryIndexes(private val hasLabelScan: Boolean,
       i += 1
     }
     indexReadSessions
+  }
+
+  def initiateNodeTokenIndex(queryContext: QueryContext): Option[TokenReadSession] = {
+    labelTokenIndex.map(queryContext.transactionalContext.dataRead.tokenReadSession)
   }
 
   def initiateRelationshipTokenIndex(queryContext: QueryContext): Option[TokenReadSession] = {

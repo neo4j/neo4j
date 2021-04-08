@@ -41,6 +41,7 @@ class QueryState(val query: QueryContext,
                  val params: Array[AnyValue],
                  val cursors: ExpressionCursors,
                  val queryIndexes: Array[IndexReadSession],
+                 val nodeLabelTokenReadSession: Option[TokenReadSession],
                  val relTypeTokenReadSession: Option[TokenReadSession],
                  val expressionVariables: Array[AnyValue],
                  val subscriber: QuerySubscriber,
@@ -82,16 +83,16 @@ class QueryState(val query: QueryContext,
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, cursors, queryIndexes, relTypeTokenReadSession, expressionVariables, subscriber, memoryTracker, decorator, initialContext,
-      cachedIn, lenientCreateRelationship, prePopulateResults, input)
+    new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
+      expressionVariables, subscriber, memoryTracker, decorator, initialContext, cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def withInitialContext(initialContext: CypherRow) =
-    new QueryState(query, resources, params, cursors, queryIndexes, relTypeTokenReadSession, expressionVariables, subscriber, memoryTracker, decorator, Some(initialContext),
-      cachedIn, lenientCreateRelationship, prePopulateResults, input)
+    new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
+      expressionVariables, subscriber, memoryTracker, decorator, Some(initialContext), cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, cursors, queryIndexes, relTypeTokenReadSession, expressionVariables, subscriber, memoryTracker, decorator, initialContext,
-      cachedIn, lenientCreateRelationship, prePopulateResults, input)
+    new QueryState(query, resources, params, cursors, queryIndexes, nodeLabelTokenReadSession, relTypeTokenReadSession,
+      expressionVariables, subscriber, memoryTracker, decorator, initialContext, cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def setExecutionContextFactory(rowFactory: CypherRowFactory): Unit = {
     _rowFactory = rowFactory

@@ -53,7 +53,7 @@ object CypherConfiguration {
   }
 }
 
-class CypherConfiguration private (config: Config) {
+class CypherConfiguration private (val config: Config) {
 
   //static configurations
   val version: CypherVersion = CypherVersion.fromConfig(config)

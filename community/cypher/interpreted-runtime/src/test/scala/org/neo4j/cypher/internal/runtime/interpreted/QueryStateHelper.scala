@@ -66,6 +66,7 @@ object QueryStateHelper extends MockitoSugar {
                 params: Array[AnyValue] = Array.empty,
                 expressionCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory], PageCursorTracer.NULL, EmptyMemoryTracker.INSTANCE),
                 queryIndexes: Array[IndexReadSession] = Array(mock[IndexReadSession]),
+                nodeTokenIndex: Option[TokenReadSession] = Some(mock[TokenReadSession]),
                 relTokenIndex: Option[TokenReadSession] = Some(mock[TokenReadSession]),
                 expressionVariables: Array[AnyValue] = Array.empty,
                 subscriber: QuerySubscriber = QuerySubscriber.DO_NOTHING_SUBSCRIBER,
@@ -73,7 +74,7 @@ object QueryStateHelper extends MockitoSugar {
                 initialContext: Option[CypherRow] = None,
                 input: InputDataStream = NoInput
                ):QueryState =
-    new QueryState(query, resources, params, expressionCursors, queryIndexes, relTokenIndex, expressionVariables, subscriber, NoOpQueryMemoryTracker,
+    new QueryState(query, resources, params, expressionCursors, queryIndexes, nodeTokenIndex, relTokenIndex, expressionVariables, subscriber, NoOpQueryMemoryTracker,
       decorator, initialContext = initialContext, input = input)
 
   def queryStateFrom(db: GraphDatabaseQueryService,

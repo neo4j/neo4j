@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.RuntimeUnsupportedException
 import org.neo4j.internal.kernel.api.SchemaRead
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings
 import org.neo4j.logging.Log
 import org.neo4j.util.Preconditions
 
@@ -219,7 +220,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
 }
 
 object CypherRuntimeConfiguration {
-  def fromCypherConfiguration(config: CypherConfiguration): CypherRuntimeConfiguration =
+  def fromCypherConfiguration(config: CypherConfiguration): CypherRuntimeConfiguration = {
     CypherRuntimeConfiguration(
       pipelinedBatchSizeSmall = config.pipelinedBatchSizeSmall,
       pipelinedBatchSizeBig = config.pipelinedBatchSizeBig,
@@ -228,7 +229,9 @@ object CypherRuntimeConfiguration {
       lenientCreateRelationship = config.lenientCreateRelationship,
       memoryTrackingController = config.memoryTrackingController,
       enableMonitors = config.enableMonitors,
+      enableScanStoreAsTokenIndexes = config.config.get(RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes)
     )
+  }
 
   def defaultConfiguration: CypherRuntimeConfiguration =
     fromCypherConfiguration(CypherConfiguration.fromConfig(Config.defaults()))
@@ -240,7 +243,8 @@ case class CypherRuntimeConfiguration(pipelinedBatchSizeSmall: Int,
                                       schedulerTracing: SchedulerTracingConfiguration,
                                       lenientCreateRelationship: Boolean,
                                       memoryTrackingController: MemoryTrackingController,
-                                      enableMonitors: Boolean) {
+                                      enableMonitors: Boolean,
+                                      enableScanStoreAsTokenIndexes: Boolean) {
 
   Preconditions.checkArgument(pipelinedBatchSizeSmall <= pipelinedBatchSizeBig, s"pipelinedBatchSizeSmall (got $pipelinedBatchSizeSmall) must be <= pipelinedBatchSizeBig (got $pipelinedBatchSizeBig)")
 

@@ -57,7 +57,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
 
     val converters = new ExpressionConverters(CommunityExpressionConverter(context.tokenContext))
     val queryIndexRegistrator = new QueryIndexRegistrator(context.schemaRead)
-    val pipeMapper = InterpretedPipeMapper(query.readOnly, converters, context.tokenContext, queryIndexRegistrator)(query.semanticTable)
+    val pipeMapper = InterpretedPipeMapper(query.readOnly, converters, context.tokenContext, queryIndexRegistrator, context.config.enableScanStoreAsTokenIndexes)(query.semanticTable)
     val pipeTreeBuilder = PipeTreeBuilder(pipeMapper)
     val logicalPlanWithConvertedNestedPlans = NestedPipeExpressions.build(pipeTreeBuilder, withSlottedParameters, availableExpressionVars)
     val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans)

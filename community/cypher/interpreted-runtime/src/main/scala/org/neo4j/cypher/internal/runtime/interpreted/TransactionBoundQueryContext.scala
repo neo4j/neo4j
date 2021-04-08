@@ -68,6 +68,7 @@ import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.IndexQueryConstraints
+import org.neo4j.internal.kernel.api.IndexQueryConstraints.ordered
 import org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.InternalIndexState
@@ -493,6 +494,21 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
+  override def getNodesByLabel(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingIterator[NodeValue] = {
+    val cursor = allocateAndTraceNodeLabelIndexCursor()
+    reads().nodeLabelScan(tokenReadSession, cursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(id))
+    new CursorIterator[NodeValue] {
+      override protected def fetchNext(): NodeValue = {
+        if (cursor.next()) fromNodeEntity(entityAccessor.newNodeEntity(cursor.nodeReference()))
+        else null
+      }
+
+      override protected def closeMore(): Unit = {
+        cursor.close()
+      }
+    }
+  }
+
   override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue = {
     reads().singleNode(id, nodeCursor)
     if (!nodeCursor.next()) VirtualValues.EMPTY_MAP
@@ -525,6 +541,18 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): ClosingLongIterator = {
     val cursor = allocateAndTraceNodeLabelIndexCursor()
     reads().nodeLabelScan(id, cursor, asKernelIndexOrder(indexOrder))
+    new PrimitiveCursorIterator {
+      override protected def fetchNext(): Long = if (cursor.next()) cursor.nodeReference() else -1L
+
+      override def close(): Unit = {
+        cursor.close()
+      }
+    }
+  }
+
+  override def getNodesByLabelPrimitive(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator = {
+    val cursor = allocateAndTraceNodeLabelIndexCursor()
+    reads().nodeLabelScan(tokenReadSession, cursor, ordered(asKernelIndexOrder(indexOrder)), new TokenPredicate(id))
     new PrimitiveCursorIterator {
       override protected def fetchNext(): Long = if (cursor.next()) cursor.nodeReference() else -1L
 

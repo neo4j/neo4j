@@ -195,6 +195,13 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getNodesByLabelPrimitive(id: Int, indexOrder: IndexOrder): ClosingLongIterator =
     translateException(tokenNameLookup, inner.getNodesByLabelPrimitive(id, indexOrder))
 
+  override def getNodesByLabel(tokenReadSession: TokenReadSession,
+                               id: Int,
+                               indexOrder: IndexOrder): ClosingIterator[NodeValue] =
+    translateException(tokenNameLookup, inner.getNodesByLabel(tokenReadSession, id, indexOrder))
+
+  override def getNodesByLabelPrimitive(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator =
+    translateException(tokenNameLookup, inner.getNodesByLabelPrimitive(tokenReadSession, id, indexOrder))
 
   override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue =
     translateException(tokenNameLookup, inner.nodeAsMap(id, nodeCursor, propertyCursor))

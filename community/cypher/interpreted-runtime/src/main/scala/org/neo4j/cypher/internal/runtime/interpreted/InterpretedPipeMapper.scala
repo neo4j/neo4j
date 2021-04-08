@@ -193,6 +193,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.InputPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyLabel
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyPropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyType
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LegacyNodeByLabelScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LetSelectOrSemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LetSemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LimitPipe
@@ -280,7 +281,8 @@ import org.neo4j.values.virtual.RelationshipValue
 case class InterpretedPipeMapper(readOnly: Boolean,
                                  expressionConverters: ExpressionConverters,
                                  tokenContext: TokenContext,
-                                 indexRegistrator: QueryIndexRegistrator)
+                                 indexRegistrator: QueryIndexRegistrator,
+                                 enableScanStoreAsTokenIndexes: Boolean)
                                 (implicit semanticTable: SemanticTable) extends PipeMapper {
 
   private def getBuildExpression(id: Id): internal.expressions.Expression => Expression =
@@ -306,7 +308,11 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case NodeByLabelScan(ident, label, _, indexOrder) =>
         indexRegistrator.registerLabelScan()
-        NodeByLabelScanPipe(ident, LazyLabel(label), indexOrder)(id = id)
+        if (enableScanStoreAsTokenIndexes) {
+          NodeByLabelScanPipe(ident, LazyLabel(label), indexOrder)(id = id)
+        } else {
+          LegacyNodeByLabelScanPipe(ident, LazyLabel(label), indexOrder)(id = id)
+        }
 
       case NodeByIdSeek(ident, nodeIdExpr, _) =>
         NodeByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(id, nodeIdExpr))(id = id)
