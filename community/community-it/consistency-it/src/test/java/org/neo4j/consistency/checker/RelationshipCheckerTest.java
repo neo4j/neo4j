@@ -21,18 +21,17 @@ package org.neo4j.consistency.checker;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
-import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.configuration.Config;
 import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class RelationshipCheckerTest extends CheckerTestBase
 {
@@ -42,6 +41,20 @@ class RelationshipCheckerTest extends CheckerTestBase
     void initialData( KernelTransaction tx ) throws KernelException
     {
         type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "A" );
+    }
+
+    @Override
+    Config additionalConfigToCC( Config config )
+    {
+        config.set( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
+        return super.additionalConfigToCC( config );
+    }
+
+    @Override
+    void configure( TestDatabaseManagementServiceBuilder builder )
+    {
+        super.configure( builder );
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
     }
 
     @Test
@@ -247,46 +260,6 @@ class RelationshipCheckerTest extends CheckerTestBase
 
         // then
         expect( RelationshipConsistencyReport.class, report -> report.relationshipTypeNotInUse( any() ) );
-    }
-
-    @Test
-    void shouldNotFailConsistencyCheckIfRelationshipTypeScanStoreNotConfigured() throws Exception
-    {
-        // given
-        try ( AutoCloseable ignored = tx() )
-        {
-            long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
-            long node1 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
-            relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
-        }
-
-        // when
-        ConsistencyFlags consistencyFlags = new ConsistencyFlags( true, true, true, true, false, true );
-        check( context( consistencyFlags ) );
-
-        // then
-        verifyNoMoreInteractions( monitor );
-    }
-
-    @Test
-    void shouldFailConsistencyCheckIfConfiguredToCheckRelationshipTypeScanStoreButItIsDisabled() throws Exception
-    {
-        // given
-        try ( AutoCloseable ignored = tx() )
-        {
-            long relationship = relationshipStore.nextId( PageCursorTracer.NULL );
-            long node1 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
-            long node2 = nodePlusCached( nodeStore.nextId( PageCursorTracer.NULL ), NULL, relationship );
-            relationship( relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true );
-        }
-
-        // when
-        ConsistencyFlags consistencyFlags = new ConsistencyFlags( true, true, true, true, true, true );
-        check( context( consistencyFlags ) );
-
-        // then
-        expect( ConsistencyReport.RelationshipTypeScanConsistencyReport.class, report -> report.relationshipTypeNotInIndex( any(), anyLong() ) );
     }
 
     private void check() throws Exception
