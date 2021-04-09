@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking.index;
 
+import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
@@ -223,7 +224,10 @@ public class IndexAccessors implements Closeable
     {
         try
         {
-            IOUtils.closeAllUnchecked( propertyIndexAccessors.toList() );
+            MutableList<IndexAccessor> closeables = propertyIndexAccessors.toList();
+            closeables.add( nodeLabelIndex );
+            closeables.add( relationshipTypeIndex );
+            IOUtils.closeAllUnchecked( closeables );
         }
         finally
         {
