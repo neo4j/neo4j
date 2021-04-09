@@ -21,35 +21,42 @@ package org.neo4j.consistency.checking.full;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.util.Iterator;
 import java.util.Map;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 
-import static org.neo4j.internal.helpers.collection.Iterables.asIterable;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
 
-public class FullCheckIntegrationWithRelationshipTypeScanStoreTest extends FullCheckIntegrationTest
+public class FullCheckIntegrationSSTITest extends FullCheckIntegrationTest
 {
     @Override
     protected Map<Setting<?>,Object> getSettings()
     {
         Map<Setting<?>,Object> settings = super.getSettings();
-        settings.put( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
+        settings.put( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
         return settings;
     }
 
     @Test
-    void shouldReportRelationshipTypeScanStoreInconsistencies1() throws Exception
+    void shouldReportRelationshipTypeIndexInconsistencies1() throws Exception
     {
         // given
         // relationship present in type index but not in store
@@ -57,9 +64,12 @@ public class FullCheckIntegrationWithRelationshipTypeScanStoreTest extends FullC
         long relationshipId = idGenerator.relationship();
         long relationshipTypeId = idGenerator.relationshipType() - 1;
 
-        RelationshipTypeScanStore relationshipTypeScanStore = fixture.directStoreAccess().relationshipTypeScanStore();
-        Iterable<EntityTokenUpdate> relationshipTypeUpdates = asIterable( tokenChanges( relationshipId, new long[]{}, new long[]{relationshipTypeId} ) );
-        write( relationshipTypeScanStore, relationshipTypeUpdates );
+        IndexDescriptor rtiDescriptor = findTokenIndex( fixture, EntityType.RELATIONSHIP );
+        IndexAccessor accessor = fixture.indexAccessorLookup().apply( rtiDescriptor );
+        try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        {
+            indexUpdater.process( IndexEntryUpdate.change( relationshipId, rtiDescriptor, new long[]{}, new long[]{relationshipTypeId} ) );
+        }
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -70,7 +80,7 @@ public class FullCheckIntegrationWithRelationshipTypeScanStoreTest extends FullC
     }
 
     @Test
-    void shouldReportRelationshipTypeScanStoreInconsistencies2() throws Exception
+    void shouldReportRelationshipTypeIndexInconsistencies2() throws Exception
     {
         // given
         // type index and store has different type for same relationship
@@ -90,5 +100,35 @@ public class FullCheckIntegrationWithRelationshipTypeScanStoreTest extends FullC
         on( stats ).verify( RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, 2 )
                 .verify( RecordType.COUNTS, 2 )
                 .andThatsAllFolks();
+    }
+
+    private IndexDescriptor findTokenIndex( GraphStoreFixture fixture, EntityType entityType )
+    {
+        Iterator<IndexDescriptor> indexDescriptors = fixture.getIndexDescriptors();
+        while ( indexDescriptors.hasNext() )
+        {
+            IndexDescriptor next = indexDescriptors.next();
+            if ( next.getIndexType() == IndexType.LOOKUP && next.schema().entityType() == entityType &&
+                 next.schema().isAnyTokenSchemaDescriptor() )
+            {
+                return next;
+            }
+        }
+        throw new RuntimeException( entityType + " index missing" );
+    }
+
+    @Override
+    void writeToNodeLabelStructure( GraphStoreFixture fixture, Iterable<EntityTokenUpdate> entityTokenUpdates ) throws IOException, IndexEntryConflictException
+    {
+        IndexDescriptor tokenIndex = findTokenIndex( fixture, EntityType.NODE );
+        IndexAccessor accessor = fixture.indexAccessorLookup().apply( tokenIndex );
+        try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
+        {
+            for ( EntityTokenUpdate entityTokenUpdate : entityTokenUpdates )
+            {
+                indexUpdater.process( IndexEntryUpdate
+                        .change( entityTokenUpdate.getEntityId(), tokenIndex, entityTokenUpdate.getTokensBefore(), entityTokenUpdate.getTokensAfter() ) );
+            }
+        }
     }
 }

@@ -218,9 +218,12 @@ public abstract class GraphStoreFixture implements AutoCloseable
         return () -> groupDegreesStore;
     }
 
+    /**
+     * Accessors from this IndexAccessorLookup are taken from the running database and should not be closed.
+     */
     public IndexAccessors.IndexAccessorLookup indexAccessorLookup()
     {
-        return new LookupAccessorsFromRunningDb( indexingService, true/*prevent close*/ );
+        return new LookupAccessorsFromRunningDb( indexingService );
     }
 
     public DatabaseLayout databaseLayout()

@@ -68,12 +68,14 @@ import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -83,7 +85,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.kernel.impl.index.schema.TokenScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
@@ -312,9 +313,8 @@ public class FullCheckIntegrationTest
         long nodeId1 = idGenerator.node();
         long labelId = idGenerator.label() - 1;
 
-        LabelScanStore labelScanStore = fixture.directStoreAccess().labelScanStore();
         Iterable<EntityTokenUpdate> nodeLabelUpdates = asIterable( tokenChanges( nodeId1, new long[]{}, new long[]{labelId} ) );
-        write( labelScanStore, nodeLabelUpdates );
+        writeToNodeLabelStructure( fixture, nodeLabelUpdates );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -324,9 +324,10 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    void write( TokenScanStore tokenScanStore, Iterable<EntityTokenUpdate> entityTokenUpdates )
-            throws IOException
+    void writeToNodeLabelStructure( GraphStoreFixture fixture, Iterable<EntityTokenUpdate> entityTokenUpdates )
+            throws IOException, IndexEntryConflictException
     {
+        LabelScanStore tokenScanStore = fixture.directStoreAccess().labelScanStore();
         try ( TokenScanWriter writer = tokenScanStore.newWriter( NULL ) )
         {
             for ( EntityTokenUpdate update : entityTokenUpdates )
@@ -366,7 +367,7 @@ public class FullCheckIntegrationTest
         DirectStoreAccess storeAccess = fixture.directStoreAccess();
 
         // fail all indexes
-        Iterator<IndexDescriptor> rules = getIndexDescriptors();
+        Iterator<IndexDescriptor> rules = getValueIndexDescriptors();
         while ( rules.hasNext() )
         {
             IndexDescriptor rule = rules.next();
@@ -420,7 +421,7 @@ public class FullCheckIntegrationTest
         labels.remove( 1 );
         long[] after = asArray( labels );
 
-        write( fixture.directStoreAccess().labelScanStore(), singletonList( tokenChanges( 42, before, after ) ) );
+        writeToNodeLabelStructure( fixture, singletonList( tokenChanges( 42, before, after ) ) );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -458,7 +459,7 @@ public class FullCheckIntegrationTest
         } );
 
         EntityTokenUpdate update = tokenChanges( 42, new long[]{label1, label2}, new long[]{label1} );
-        write( fixture.directStoreAccess().labelScanStore(), singletonList( update ) );
+        writeToNodeLabelStructure( fixture, singletonList( update ) );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -472,7 +473,7 @@ public class FullCheckIntegrationTest
     void shouldReportNodesThatAreNotIndexed() throws Exception
     {
         // given
-        Iterator<IndexDescriptor> indexDescriptorIterator = getIndexDescriptors();
+        Iterator<IndexDescriptor> indexDescriptorIterator = getValueIndexDescriptors();
         while ( indexDescriptorIterator.hasNext() )
         {
             IndexDescriptor indexDescriptor = indexDescriptorIterator.next();
@@ -517,19 +518,19 @@ public class FullCheckIntegrationTest
             }
         } );
 
-        Iterator<IndexDescriptor> indexRuleIterator = getIndexDescriptors();
+        Iterator<IndexDescriptor> indexRuleIterator = getValueIndexDescriptors();
         while ( indexRuleIterator.hasNext() )
         {
             IndexDescriptor indexRule = indexRuleIterator.next();
-            try ( IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexRule ) )
+            // Don't close this accessor. It will be done when shutting down db.
+            IndexAccessor accessor = fixture.indexAccessorLookup().apply( indexRule );
+
+            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
             {
-                try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
-                {
-                    // There is already another node (created in generateInitialData()) that has this value
-                    updater.process( IndexEntryUpdate.add( 42, indexRule.schema(), values( indexRule ) ) );
-                }
-                accessor.force( NULL );
+                // There is already another node (created in generateInitialData()) that has this value
+                updater.process( IndexEntryUpdate.add( 42, indexRule.schema(), values( indexRule ) ) );
             }
+            accessor.force( NULL );
         }
 
         // when
@@ -881,6 +882,8 @@ public class FullCheckIntegrationTest
                 PropertyBlock block = new PropertyBlock();
                 block.setSingleBlock( (((long) PropertyType.STRING.intValue()) << 24) | (string.getId() << 28) );
                 block.addValueRecord( string );
+                // Set the property key explicitly to one created in the setup (property key 0 can be an internal token)
+                block.setKeyIndexId( key1 );
 
                 // A property record with this block in it
                 PropertyRecord property = new PropertyRecord( next.property() );
@@ -1070,6 +1073,8 @@ public class FullCheckIntegrationTest
                 PropertyBlock block = new PropertyBlock();
                 block.setSingleBlock( (((long) ARRAY.intValue()) << 24) | (array.getId() << 28) );
                 block.addValueRecord( array );
+                // Set the property key explicitly to one created in the setup (property key 0 can be an internal token)
+                block.setKeyIndexId( key1 );
 
                 // A property record with this block in it
                 PropertyRecord property = new PropertyRecord( next.property() );
@@ -2729,9 +2734,10 @@ public class FullCheckIntegrationTest
         schemaRuleAccess.writeSchemaRule( rule, NULL, INSTANCE );
     }
 
-    private Iterator<IndexDescriptor> getIndexDescriptors()
+    private Iterator<IndexDescriptor> getValueIndexDescriptors()
     {
-        return fixture.getIndexDescriptors();
+        return Iterators.filter( descriptor -> !(descriptor.getIndexType() == IndexType.LOOKUP && descriptor.schema().isAnyTokenSchemaDescriptor()),
+                fixture.getIndexDescriptors() );
     }
 
     private static class Reference<T>

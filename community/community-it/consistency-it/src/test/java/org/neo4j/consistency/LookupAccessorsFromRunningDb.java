@@ -34,12 +34,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class LookupAccessorsFromRunningDb implements IndexAccessors.IndexAccessorLookup
 {
     private final IndexingService indexingService;
-    private final boolean preventClose;
 
-    public LookupAccessorsFromRunningDb( IndexingService indexingService, boolean preventClose )
+    public LookupAccessorsFromRunningDb( IndexingService indexingService )
     {
         this.indexingService = indexingService;
-        this.preventClose = preventClose;
     }
 
     @Override
@@ -53,19 +51,7 @@ public class LookupAccessorsFromRunningDb implements IndexAccessors.IndexAccesso
                 proxy = ((AbstractDelegatingIndexProxy) proxy).getDelegate();
             }
             assertEquals( InternalIndexState.ONLINE, proxy.getState() );
-            IndexAccessor accessor = ((OnlineIndexProxy) proxy).accessor();
-            if ( preventClose )
-            {
-                accessor = new IndexAccessor.Delegating( accessor )
-                {
-                    @Override
-                    public void close()
-                    {
-                        // Don't
-                    }
-                };
-            }
-            return accessor;
+            return ((OnlineIndexProxy) proxy).accessor();
         }
         catch ( IndexNotFoundKernelException e )
         {
