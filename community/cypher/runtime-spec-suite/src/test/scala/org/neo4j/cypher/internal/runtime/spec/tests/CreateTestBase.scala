@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.Label.label
 import org.neo4j.internal.helpers.collection.Iterables
+import org.neo4j.internal.helpers.collection.Iterators
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
@@ -409,6 +410,24 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       "Failed to create relationship `r`, node `m` is missing. If you prefer to simply ignore rows where a relationship node is missing, " +
         "set 'cypher.lenient_create_relationship = true' in neo4j.conf"
   }
+
+  test("should create node with similarly named labels") {
+    // given an empty data base
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n", "m")
+      .create(createNode("n", "A", "B"), createNode("m", "AB"))
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val n = Iterators.single(tx.findNodes(label("A")))
+    val m = Iterators.single(tx.findNodes(label("AB")))
+    runtimeResult should beColumns("n", "m").withSingleRow(n, m).withStatistics(nodesCreated = 2, labelsAdded = 3)
+  }
 }
 
 abstract class LenientCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
@@ -464,5 +483,4 @@ abstract class LenientCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
     consume(results)
     results should beColumns("r").withSingleRow(null).withStatistics(nodesCreated = 1, labelsAdded = 1)
   }
-
 }
