@@ -49,6 +49,6 @@ case object ToString extends Function {
 
   override val signatures = Vector(
     TypeSignature(this, CTAny, CTString,
-      "Converts an integer, float, boolean or temporal type (i.e. Date, Time, LocalTime, DateTime, LocalDateTime or Duration) value to a string.", Category.STRING)
+      "Converts an integer, float, boolean, point or temporal type (i.e. Date, Time, LocalTime, DateTime, LocalDateTime or Duration) value to a string.", Category.STRING)
   )
 }
