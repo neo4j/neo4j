@@ -38,10 +38,8 @@ class ParserComparisonTCKTest extends ParserComparisonTestBase with FunSpecLike 
   var x = 0
 
   val DENYLIST = Set[String](
-    // JavaCC fails invalid hex string during parsing, while parboiled defers failing until semantic checking
-    """Feature "Literals3 - Hexadecimal integer": Scenario "Fail on an hexadecimal literal containing a upper case invalid alphanumeric character"""",
+    // defers to semantic checking
     """Feature "Literals3 - Hexadecimal integer": Scenario "Fail on an incomplete hexadecimal integer"""",
-    """Feature "Literals3 - Hexadecimal integer": Scenario "Fail on an hexadecimal literal containing a lower case invalid alphanumeric character"""",
 
     // Failing with M16 TCK - require investigation
     """Feature "Literals2 - Decimal integer": Scenario "Fail on an integer containing a alphabetic character"""",

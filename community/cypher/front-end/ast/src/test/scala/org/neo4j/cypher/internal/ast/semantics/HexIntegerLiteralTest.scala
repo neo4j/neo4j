@@ -33,6 +33,7 @@ class HexIntegerLiteralTest extends SemanticFunSuite {
     assertSemanticError("0x", "invalid literal number")
     assertSemanticError("0x33Y23", "invalid literal number")
     assertSemanticError("-0x12g3", "invalid literal number")
+    assertSemanticError("-0x", "invalid literal number")
   }
 
   test("throws error for too large hexadecimal numbers") {

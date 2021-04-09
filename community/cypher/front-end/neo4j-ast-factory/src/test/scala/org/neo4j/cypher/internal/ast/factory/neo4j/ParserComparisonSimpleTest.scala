@@ -296,6 +296,22 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
     assertSameAST(testName)
   }
 
+  test("RETURN - 1.4 as double") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN Ox as literal") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 01 AS literal") {
+    assertSameAST(testName)
+  }
+
+  test("RETURN 0o1 AS literal") {
+    assertSameAST(testName)
+  }
+
   test("MATCH (n) WITH CASE WHEN (e) THEN e ELSE null END as e RETURN e") {
     assertSameAST(testName)
   }

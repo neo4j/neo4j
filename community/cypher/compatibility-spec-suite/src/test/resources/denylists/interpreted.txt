@@ -37,11 +37,6 @@ Feature "TypeConversion2 - To Integer": Scenario "`toInteger()` failing on inval
 //TCK needs to be updated, toBoolean is valid for Integer
 Feature "TypeConversion1 - To Boolean": Scenario "`toBoolean()` on invalid types": Example "2"
 
-// JavaCC fails invalid hex string during parsing, while parboiled defers failing until semantic checking
-Feature "Literals3 - Hexadecimal integer": Scenario "Fail on an hexadecimal literal containing a upper case invalid alphanumeric character"
-Feature "Literals3 - Hexadecimal integer": Scenario "Fail on an incomplete hexadecimal integer"
-Feature "Literals3 - Hexadecimal integer": Scenario "Fail on an hexadecimal literal containing a lower case invalid alphanumeric character"
-
 // Failing with M16 TCK - require investigation
 Feature "Literals2 - Decimal integer": Scenario "Fail on an integer containing a alphabetic character"
 Feature "Literals7 - List": Scenario "Fail on a nested list with non-matching brackets"
