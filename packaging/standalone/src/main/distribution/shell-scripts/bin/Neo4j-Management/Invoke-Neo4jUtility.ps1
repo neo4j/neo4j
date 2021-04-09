@@ -146,8 +146,8 @@ function Get-Java
       $javaPath = $EnvJavaHome
     }
 
-    # Attempt to find Java in registry
-    $regKey = 'Registry::HKLM\SOFTWARE\JavaSoft\Java Runtime Environment'
+    # Attempt to find JDK in registry
+    $regKey = 'Registry::HKLM\SOFTWARE\JavaSoft\JDK'
     if (($javaPath -eq '') -and (Test-Path -Path $regKey))
     {
       $regJavaVersion = ''
@@ -166,8 +166,48 @@ function Get-Java
       }
     }
 
-    # Attempt to find Java in registry (32bit Java on 64bit OS)
-    $regKey = 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\Java Runtime Environment'
+    # Attempt to find JRE in registry
+    $regKey = 'Registry::HKLM\SOFTWARE\JavaSoft\JRE'
+    if (($javaPath -eq '') -and (Test-Path -Path $regKey))
+    {
+      $regJavaVersion = ''
+      try
+      {
+        $regJavaVersion = [string](Get-ItemProperty -Path $regKey -ErrorAction 'Stop').CurrentVersion
+        if ($regJavaVersion -ne '')
+        {
+          $javaPath = [string](Get-ItemProperty -Path "$regKey\$regJavaVersion" -ErrorAction 'Stop').JavaHome
+        }
+      }
+      catch
+      {
+        #Ignore any errors
+        $javaPath = ''
+      }
+    }
+
+    # Attempt to find JDK in registry (32bit JDK on 64bit OS)
+    $regKey = 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JDK'
+    if (($javaPath -eq '') -and (Test-Path -Path $regKey))
+    {
+      $regJavaVersion = ''
+      try
+      {
+        $regJavaVersion = [string](Get-ItemProperty -Path $regKey -ErrorAction 'Stop').CurrentVersion
+        if ($regJavaVersion -ne '')
+        {
+          $javaPath = [string](Get-ItemProperty -Path "$regKey\$regJavaVersion" -ErrorAction 'Stop').JavaHome
+        }
+      }
+      catch
+      {
+        #Ignore any errors
+        $javaPath = ''
+      }
+    }
+
+    # Attempt to find JRE in registry (32bit JRE on 64bit OS)
+    $regKey = 'Registry::HKLM\SOFTWARE\Wow6432Node\JavaSoft\JRE'
     if (($javaPath -eq '') -and (Test-Path -Path $regKey))
     {
       $regJavaVersion = ''
