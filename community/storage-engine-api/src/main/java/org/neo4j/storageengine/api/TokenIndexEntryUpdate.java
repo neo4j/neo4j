@@ -26,14 +26,18 @@ import org.neo4j.memory.HeapEstimator;
 
 public class TokenIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> extends IndexEntryUpdate<INDEX_KEY>
 {
+    static long NO_TX_ID = -1;
+
     private final long[] before;
     private final long[] values;
+    private final long txId;
 
-    TokenIndexEntryUpdate( long entityId, INDEX_KEY index_key, long[] before, long[] values )
+    TokenIndexEntryUpdate( long entityId, INDEX_KEY index_key, long[] before, long[] values, long txId )
     {
         super( entityId, index_key, UpdateMode.CHANGED );
         this.before = before;
         this.values = values;
+        this.txId = txId;
     }
 
     public long[] values()
@@ -48,6 +52,11 @@ public class TokenIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> e
             throw new UnsupportedOperationException( "beforeValues is only valid for `UpdateMode.CHANGED" );
         }
         return before;
+    }
+
+    public long txId()
+    {
+        return txId;
     }
 
     @Override
@@ -82,6 +91,6 @@ public class TokenIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> e
     @Override
     protected String valueToString()
     {
-        return String.format( "beforeValues=%s, values=%s", Arrays.toString( before ), Arrays.toString( values ) );
+        return String.format( "beforeValues=%s, values=%s, txId=%d", Arrays.toString( before ), Arrays.toString( values ), txId );
     }
 }

@@ -158,7 +158,7 @@ class OnlineIndexUpdatesTest
                 fulltext( NODE, ENTITY_TOKENS, new int[]{1, 4, 6} ) ).withName( "index" ).materialise( 0 );
         createIndexes( indexDescriptor );
 
-        onlineIndexUpdates.feed( nodeGroup( nodeCommand, propertyCommand ), relationshipGroup( null ) );
+        onlineIndexUpdates.feed( nodeGroup( nodeCommand, propertyCommand ), relationshipGroup( null ), -1 );
         assertTrue( onlineIndexUpdates.hasUpdates() );
         Iterator<IndexEntryUpdate<IndexDescriptor>> iterator = onlineIndexUpdates.iterator();
         assertEquals( iterator.next(), IndexEntryUpdate.remove( nodeId, indexDescriptor, propertyValue, null, null ) );
@@ -187,7 +187,7 @@ class OnlineIndexUpdatesTest
                 fulltext( RELATIONSHIP, ENTITY_TOKENS, new int[]{1, 4, 6} ) ).withName( "index" ).materialise( 0 );
         createIndexes( indexDescriptor );
 
-        onlineIndexUpdates.feed( nodeGroup( null ), relationshipGroup( relationshipCommand, propertyCommand ) );
+        onlineIndexUpdates.feed( nodeGroup( null ), relationshipGroup( relationshipCommand, propertyCommand ), -1 );
         assertTrue( onlineIndexUpdates.hasUpdates() );
         Iterator<IndexEntryUpdate<IndexDescriptor>> iterator = onlineIndexUpdates.iterator();
         assertEquals( iterator.next(), IndexEntryUpdate.remove( relId, indexDescriptor, propertyValue, null, null ) );
@@ -234,7 +234,7 @@ class OnlineIndexUpdatesTest
         IndexDescriptor relationshipIndexDescriptor = IndexPrototype.forSchema( schema ).withName( "index" ).materialise( 1 );
         createIndexes( relationshipIndexDescriptor );
 
-        onlineIndexUpdates.feed( nodeGroup( nodeCommand, nodePropertyCommand ), relationshipGroup( relationshipCommand, relationshipPropertyCommand ) );
+        onlineIndexUpdates.feed( nodeGroup( nodeCommand, nodePropertyCommand ), relationshipGroup( relationshipCommand, relationshipPropertyCommand ), -1 );
         assertTrue( onlineIndexUpdates.hasUpdates() );
         assertThat( onlineIndexUpdates ).contains( IndexEntryUpdate.remove( relId, relationshipIndexDescriptor, relationshipPropertyValue, null, null ),
                 IndexEntryUpdate.remove( nodeId, nodeIndexDescriptor, nodePropertyValue, null, null ) );
@@ -273,7 +273,7 @@ class OnlineIndexUpdatesTest
                 .withName( "index_2" ).materialise( 2 );
         createIndexes( indexDescriptor0, indexDescriptor1, indexDescriptor );
 
-        onlineIndexUpdates.feed( nodeGroup( null ), relationshipGroup( relationshipCommand, propertyCommand, propertyCommand2 ) );
+        onlineIndexUpdates.feed( nodeGroup( null ), relationshipGroup( relationshipCommand, propertyCommand, propertyCommand2 ), -1 );
         assertTrue( onlineIndexUpdates.hasUpdates() );
         assertThat( onlineIndexUpdates ).contains( IndexEntryUpdate.remove( relId, indexDescriptor0, propertyValue, propertyValue2, null ),
                 IndexEntryUpdate.remove( relId, indexDescriptor1, null, propertyValue2, null ),

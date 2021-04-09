@@ -268,15 +268,16 @@ public class EntityUpdates
      * for any token index that needs to be updated.
      *
      * @param indexKey The index key to generate entry updates for
+     * @param txId ID of the transaction the update comes from.
      */
-    public <INDEX_KEY extends SchemaDescriptorSupplier> Optional<IndexEntryUpdate<INDEX_KEY>> tokenUpdateForIndexKey( INDEX_KEY indexKey )
+    public <INDEX_KEY extends SchemaDescriptorSupplier> Optional<IndexEntryUpdate<INDEX_KEY>> tokenUpdateForIndexKey( INDEX_KEY indexKey, long txId )
     {
         if ( indexKey == null || Arrays.equals( entityTokensBefore, entityTokensAfter ) )
         {
             return Optional.empty();
         }
 
-        return Optional.of( IndexEntryUpdate.change( entityId, indexKey, entityTokensBefore, entityTokensAfter ) );
+        return Optional.of( IndexEntryUpdate.change( entityId, indexKey, entityTokensBefore, entityTokensAfter, txId ) );
     }
 
     private boolean relevantBefore( SchemaDescriptor schema )

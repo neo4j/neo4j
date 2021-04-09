@@ -196,8 +196,8 @@ class TokenIndexUpdater implements IndexUpdater
             {
                 TokenIndexEntryUpdate<?> update = pendingUpdates[i];
                 long entityId = update.getEntityId();
-                nextTokenId = extractChange( update.values(), currentTokenId, entityId, nextTokenId, true, -1 );
-                nextTokenId = extractChange( update.beforeValues(), currentTokenId, entityId, nextTokenId, false, -1 );
+                nextTokenId = extractChange( update.values(), currentTokenId, entityId, nextTokenId, true, update.txId() );
+                nextTokenId = extractChange( update.beforeValues(), currentTokenId, entityId, nextTokenId, false, update.txId() );
             }
             currentTokenId = nextTokenId;
         }

@@ -86,7 +86,7 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
             {
                 // Queue the index updates. When index updates from all transactions in this batch have been accumulated
                 // we'll feed them to the index updates work sync at the end of the batch
-                batchContext.indexUpdates().feed( indexUpdatesExtractor.getNodeCommands(), indexUpdatesExtractor.getRelationshipCommands() );
+                batchContext.indexUpdates().feed( indexUpdatesExtractor.getNodeCommands(), indexUpdatesExtractor.getRelationshipCommands(), txId );
                 indexUpdatesExtractor.close();
             }
 

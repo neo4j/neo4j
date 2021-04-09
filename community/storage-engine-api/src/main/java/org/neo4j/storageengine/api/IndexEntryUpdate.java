@@ -23,6 +23,8 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.storageengine.api.TokenIndexEntryUpdate.NO_TX_ID;
+
 /**
  * Subclasses of this represent events related to property changes due to property or label addition, deletion or
  * update.
@@ -156,6 +158,12 @@ public abstract class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplie
     public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> change(
             long entityId, INDEX_KEY indexKey, long[] before, long[] after )
     {
-        return new TokenIndexEntryUpdate<>( entityId, indexKey, before, after );
+        return change( entityId, indexKey, before, after, NO_TX_ID );
+    }
+
+    public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> change(
+            long entityId, INDEX_KEY indexKey, long[] before, long[] after, long txId )
+    {
+        return new TokenIndexEntryUpdate<>( entityId, indexKey, before, after, txId );
     }
 }

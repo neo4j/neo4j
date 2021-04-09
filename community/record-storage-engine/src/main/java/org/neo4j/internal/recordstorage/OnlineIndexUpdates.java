@@ -49,7 +49,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  * properties matching existing and online indexes; in that case the properties for that node needs to be read
  * from store since the commands in that transaction cannot itself provide enough information.
  *
- * One instance can be {@link IndexUpdates#feed(EntityCommandGrouper.Cursor,EntityCommandGrouper.Cursor) fed} data about
+ * One instance can be {@link IndexUpdates#feed(EntityCommandGrouper.Cursor,EntityCommandGrouper.Cursor, long) fed} data about
  * multiple transactions, to be {@link #iterator() accessed} later.
  */
 public class OnlineIndexUpdates implements IndexUpdates
@@ -82,15 +82,15 @@ public class OnlineIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public void feed( EntityCommandGrouper<NodeCommand>.Cursor nodeCommands, EntityCommandGrouper<RelationshipCommand>.Cursor relationshipCommands )
+    public void feed( EntityCommandGrouper<NodeCommand>.Cursor nodeCommands, EntityCommandGrouper<RelationshipCommand>.Cursor relationshipCommands, long txId )
     {
         while ( nodeCommands.nextEntity() )
         {
-            gatherUpdatesFor( nodeCommands.currentEntityId(), nodeCommands.currentEntityCommand(), nodeCommands );
+            gatherUpdatesFor( nodeCommands.currentEntityId(), nodeCommands.currentEntityCommand(), nodeCommands, txId );
         }
         while ( relationshipCommands.nextEntity() )
         {
-            gatherUpdatesFor( relationshipCommands.currentEntityId(), relationshipCommands.currentEntityCommand(), relationshipCommands );
+            gatherUpdatesFor( relationshipCommands.currentEntityId(), relationshipCommands.currentEntityCommand(), relationshipCommands, txId );
         }
     }
 
@@ -100,19 +100,19 @@ public class OnlineIndexUpdates implements IndexUpdates
         return !updates.isEmpty();
     }
 
-    private void gatherUpdatesFor( long nodeId, NodeCommand nodeCommand, EntityCommandGrouper<NodeCommand>.Cursor propertyCommands )
+    private void gatherUpdatesFor( long nodeId, NodeCommand nodeCommand, EntityCommandGrouper<NodeCommand>.Cursor propertyCommands, long txId )
     {
         EntityUpdates nodeUpdates = gatherUpdatesFromCommandsForNode( nodeId, nodeCommand, propertyCommands );
         eagerlyGatherValueIndexUpdates( nodeUpdates, EntityType.NODE );
-        eagerlyGatherTokenIndexUpdates( nodeUpdates, EntityType.NODE );
+        eagerlyGatherTokenIndexUpdates( nodeUpdates, EntityType.NODE, txId );
     }
 
     private void gatherUpdatesFor( long relationshipId, RelationshipCommand relationshipCommand,
-            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands )
+            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands, long txId )
     {
         EntityUpdates relationshipUpdates = gatherUpdatesFromCommandsForRelationship( relationshipId, relationshipCommand, propertyCommands );
         eagerlyGatherValueIndexUpdates( relationshipUpdates, EntityType.RELATIONSHIP );
-        eagerlyGatherTokenIndexUpdates( relationshipUpdates, EntityType.RELATIONSHIP );
+        eagerlyGatherTokenIndexUpdates( relationshipUpdates, EntityType.RELATIONSHIP, txId );
     }
 
     private void eagerlyGatherValueIndexUpdates( EntityUpdates entityUpdates, EntityType entityType )
@@ -171,10 +171,10 @@ public class OnlineIndexUpdates implements IndexUpdates
         return nodePropertyUpdates.build();
     }
 
-    private void eagerlyGatherTokenIndexUpdates( EntityUpdates entityUpdates, EntityType entityType )
+    private void eagerlyGatherTokenIndexUpdates( EntityUpdates entityUpdates, EntityType entityType, long txId  )
     {
         IndexDescriptor relatedToken = schemaCache.getTokenIndex( entityType );
-        entityUpdates.tokenUpdateForIndexKey( relatedToken ).ifPresent( updates::add );
+        entityUpdates.tokenUpdateForIndexKey( relatedToken, txId ).ifPresent( updates::add );
     }
 
     private static boolean providesCompleteListOfProperties( Command entityCommand )

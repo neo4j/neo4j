@@ -42,7 +42,7 @@ class EntityTokenUpdatesTest
     void shouldNotGenerateUpdatesForEmptyEntityUpdates( Entity entity )
     {
         EntityUpdates updates = EntityUpdates.forEntity( ENTITY_ID, false ).build();
-        assertThat( updates.tokenUpdateForIndexKey( entity.getTokenIndex() ) ).isEmpty();
+        assertThat( updates.tokenUpdateForIndexKey( entity.getTokenIndex(), -1 ) ).isEmpty();
     }
 
     @ParameterizedTest
@@ -52,7 +52,7 @@ class EntityTokenUpdatesTest
         EntityUpdates updates = EntityUpdates.forEntity( ENTITY_ID, false )
                                              .withTokens( TOKEN_1_ID )
                                              .build();
-        assertThat( updates.tokenUpdateForIndexKey( entity.getTokenIndex() ) ).isEmpty();
+        assertThat( updates.tokenUpdateForIndexKey( entity.getTokenIndex(), -1 ) ).isEmpty();
     }
 
     @ParameterizedTest
@@ -63,7 +63,7 @@ class EntityTokenUpdatesTest
                                              .withTokens( EMPTY )
                                              .withTokensAfter( TOKEN_1_ID, TOKEN_2_ID )
                                              .build();
-        assertThat( updates.tokenUpdateForIndexKey( entity.getTokenIndex() ) )
+        assertThat( updates.tokenUpdateForIndexKey( entity.getTokenIndex(), -1 ) )
                 .contains( IndexEntryUpdate.change( ENTITY_ID, entity.getTokenIndex(), EMPTY, new long[]{ TOKEN_1_ID, TOKEN_2_ID } ) );
     }
 
@@ -75,7 +75,7 @@ class EntityTokenUpdatesTest
                                              .withTokens( TOKEN_1_ID )
                                              .withTokensAfter( TOKEN_1_ID, TOKEN_2_ID )
                                              .build();
-        assertThat( updates.tokenUpdateForIndexKey( entity.getTokenIndex() ) )
+        assertThat( updates.tokenUpdateForIndexKey( entity.getTokenIndex(), -1 ) )
                 .contains( IndexEntryUpdate.change( ENTITY_ID, entity.getTokenIndex(), new long[]{ TOKEN_1_ID }, new long[]{ TOKEN_1_ID, TOKEN_2_ID } ) );
     }
 
@@ -87,7 +87,7 @@ class EntityTokenUpdatesTest
                                              .withTokens( TOKEN_1_ID, TOKEN_2_ID )
                                              .withTokensAfter( EMPTY )
                                              .build();
-        assertThat( updates.tokenUpdateForIndexKey( entity.getTokenIndex() ) )
+        assertThat( updates.tokenUpdateForIndexKey( entity.getTokenIndex(), -1 ) )
                 .contains( IndexEntryUpdate.change( ENTITY_ID, entity.getTokenIndex(), new long[]{ TOKEN_1_ID, TOKEN_2_ID }, EMPTY ) );
     }
 

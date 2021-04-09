@@ -31,8 +31,10 @@ public interface IndexUpdates extends Iterable<IndexEntryUpdate<IndexDescriptor>
      * Feeds updates raw material in the form of node/property commands, to create updates from.
      * @param nodeCommands node data
      * @param relationshipCommands relationship data
+     * @param txId ID of the transaction the updates come from.
      */
-    void feed( EntityCommandGrouper<Command.NodeCommand>.Cursor nodeCommands, EntityCommandGrouper<Command.RelationshipCommand>.Cursor relationshipCommands );
+    void feed( EntityCommandGrouper<Command.NodeCommand>.Cursor nodeCommands, EntityCommandGrouper<Command.RelationshipCommand>.Cursor relationshipCommands,
+            long txId );
 
     boolean hasUpdates();
 

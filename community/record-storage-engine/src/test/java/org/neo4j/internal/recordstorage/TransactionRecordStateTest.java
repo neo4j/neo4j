@@ -1625,7 +1625,7 @@ class TransactionRecordStateTest
         OnlineIndexUpdates onlineIndexUpdates =
                 new OnlineIndexUpdates( neoStores.getNodeStore(), schemaCache,
                         new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore(), NULL ), reader, NULL, INSTANCE );
-        onlineIndexUpdates.feed( extractor.getNodeCommands(), extractor.getRelationshipCommands() );
+        onlineIndexUpdates.feed( extractor.getNodeCommands(), extractor.getRelationshipCommands(), transaction.transactionId() );
         updates.add( onlineIndexUpdates );
         reader.close();
         return updates;
