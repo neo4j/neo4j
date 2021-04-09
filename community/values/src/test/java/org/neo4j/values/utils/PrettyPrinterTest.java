@@ -512,7 +512,7 @@ class PrettyPrinterTest
             var expected = entry.getValue();
             PrettyPrinter printer = new PrettyPrinter( "\"", FULL, expected.length() );
             given.writeTo( printer );
-            assertThat( printer.value() ).isEqualTo( expected );
+            assertThat( printer.value() ).isEqualTo( expected + "..." );
         }
     }
 

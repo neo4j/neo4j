@@ -442,9 +442,16 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
             {
                 return;
             }
-            int charsToWrite = Math.min( remaining, value.length() );
-            builder.append( value.subSequence( 0, charsToWrite ) );
-            counter.decrement( charsToWrite );
+            if ( remaining < value.length() )
+            {
+                builder.append( value, 0, remaining ).append( "..." );
+                counter.decrement( remaining );
+            }
+            else
+            {
+                builder.append( value );
+                counter.decrement( value.length() );
+            }
         }
     }
 
