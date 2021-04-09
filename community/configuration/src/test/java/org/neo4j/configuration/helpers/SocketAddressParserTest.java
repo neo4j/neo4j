@@ -64,10 +64,79 @@ class SocketAddressParserTest
     }
 
     @Test
+    void shouldFailToCreateSocketAddressWithNegativePort()
+    {
+        String addressString = "localhost:-10";
+        assertThrows( IllegalArgumentException.class, () -> SocketAddressParser.socketAddress( addressString, SocketAddress::new ) );
+    }
+
+    @Test
+    void shouldFailToCreateSocketAddressWithNonNumericPort()
+    {
+        String addressString = "localhost:bolt";
+        assertThrows( IllegalArgumentException.class, () -> SocketAddressParser.socketAddress( addressString, SocketAddress::new ) );
+    }
+
+    @Test
     void shouldGetInvalidPortWhenMissingPort()
+    {
+        String addressString = "localhost";
+        assertEquals( -1, SocketAddressParser.socketAddress( addressString, SocketAddress::new ).getPort() );
+    }
+
+    @Test
+    void shouldGetInvalidPortWhenMissingPortWithTrailingColon()
     {
         String addressString = "localhost:";
         assertEquals( -1, SocketAddressParser.socketAddress( addressString, SocketAddress::new ).getPort() );
+    }
+
+    @Test
+    void shouldGetInvalidPortWhenMissingPortIPv6Address()
+    {
+        SocketAddress socketAddress = SocketAddressParser.socketAddress( "fe80:1:2:3:4::5", SocketAddress::new );
+        assertEquals( -1, socketAddress.getPort() );
+    }
+
+    @Test
+    void shouldGetPortWhenOnlyPortProvided()
+    {
+        String addressString = ":1";
+
+        // behaviour should be the same regardless of whether or not a default port is included in the call to socketAddress
+        assertEquals( 1, SocketAddressParser.socketAddress( addressString, SocketAddress::new ).getPort() );
+        assertEquals( 1, SocketAddressParser.socketAddress( addressString, 123, SocketAddress::new ).getPort() );
+    }
+
+    @Test
+    void shouldGetDefaultPortWhenMissingPort()
+    {
+        String addressString = "localhost";
+        assertEquals( 123, SocketAddressParser.socketAddress( addressString, 123, SocketAddress::new ).getPort() );
+    }
+
+    @Test
+    void shouldGetDefaultPortWhenMissingPortIPv6Address()
+    {
+        String addressString = "fe80:1:2:3:4::5";
+        assertEquals( 123, SocketAddressParser.socketAddress( addressString, 123, SocketAddress::new ).getPort() );
+    }
+
+    @Test
+    void shouldGetDefaultPortWhenMissingPortWithTrailingColon()
+    {
+        String addressString = "localhost:";
+        assertEquals( 123, SocketAddressParser.socketAddress( addressString, 123, SocketAddress::new ).getPort() );
+    }
+
+    @Test
+    void shouldCreateSocketAddressWithPortZero()
+    {
+        SocketAddress socketAddress = SocketAddressParser.socketAddress( "my.domain:0", SocketAddress::new );
+
+        assertEquals( "my.domain", socketAddress.getHostname() );
+        assertEquals( 0, socketAddress.getPort() );
+        assertEquals( "my.domain:0", socketAddress.toString() );
     }
 
     @Test

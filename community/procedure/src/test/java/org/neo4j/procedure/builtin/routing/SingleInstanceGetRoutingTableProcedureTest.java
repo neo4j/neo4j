@@ -238,12 +238,17 @@ public class SingleInstanceGetRoutingTableProcedureTest
         assertEquals( singletonList( expectedAddress ), result.routeEndpoints() );
     }
 
+    /**
+     * This tests a very specific non-documented behaviour - if the client provided address has the port explicitly set to zero then the returned routing table
+     * uses the advertised address. We make use of this behaviour in some internal tests. In "real life" we should never encounter a client provided address
+     * specifically set to zero so there's no particular reason to change this.
+     */
     @Test
-    void shouldUseUseConfiguredAdvertisedAddressIfClientProvidedPortIsBogus() throws Exception
+    void shouldUseConfiguredAdvertisedAddressIfClientProvidedPortIsZero() throws Exception
     {
         // given
         var advertisedBoldPort = 8776;
-        var clientProvidedPort = -1;
+        var clientProvidedPort = 0;
         var advertisedBoltAddress = new SocketAddress( "neo4j.com", advertisedBoldPort );
         var clientProvidedHostPortStr = String.format( "%s:%d", "my.neo4j-service.com", clientProvidedPort );
 
@@ -267,6 +272,58 @@ public class SingleInstanceGetRoutingTableProcedureTest
         assertEquals( singletonList( expectedAddress ), result.readEndpoints() );
         assertEquals( expectedWriters( expectedAddress ), result.writeEndpoints() );
         assertEquals( singletonList( expectedAddress ), result.routeEndpoints() );
+    }
+
+    @Test
+    void shouldThrowIfClientProvidedPortIsNegative() throws Exception
+    {
+        // given
+        var advertisedBoldPort = 8776;
+        var clientProvidedPort = -5;
+        var advertisedBoltAddress = new SocketAddress( "neo4j.com", advertisedBoldPort );
+        var clientProvidedHostPortStr = String.format( "%s:%d", "my.neo4j-service.com", clientProvidedPort );
+
+        var ctxContents = new MapValueBuilder();
+        ctxContents.add( SingleInstanceGetRoutingTableProcedure.ADDRESS_CONTEXT_KEY, Values.stringValue( clientProvidedHostPortStr ) );
+        var ctx = ctxContents.build();
+
+        var portRegister = mock( ConnectorPortRegister.class );
+        when( portRegister.getLocalAddress( BoltConnector.NAME ) ).thenReturn( new HostnamePort( "neo4j.com", advertisedBoldPort ) );
+        var config = newConfig( Duration.ofSeconds( 100 ), advertisedBoltAddress );
+        var databaseManager = databaseManagerMock( config, true );
+        var logProvider = new AssertableLogProvider();
+
+        var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
+        var expectedMessage = "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
+
+        // when
+        assertThrows( ProcedureException.class, () -> procedure.invoke( ID, ctx ), expectedMessage );
+    }
+
+    @Test
+    void shouldThrowIfClientProvidedPortIsNotANumber() throws Exception
+    {
+        // given
+        var advertisedBoldPort = 8776;
+        var clientProvidedPort = "bolt";
+        var advertisedBoltAddress = new SocketAddress( "neo4j.com", advertisedBoldPort );
+        var clientProvidedHostPortStr = String.format( "%s:%s", "my.neo4j-service.com", clientProvidedPort );
+
+        var ctxContents = new MapValueBuilder();
+        ctxContents.add( SingleInstanceGetRoutingTableProcedure.ADDRESS_CONTEXT_KEY, Values.stringValue( clientProvidedHostPortStr ) );
+        var ctx = ctxContents.build();
+
+        var portRegister = mock( ConnectorPortRegister.class );
+        when( portRegister.getLocalAddress( BoltConnector.NAME ) ).thenReturn( new HostnamePort( "neo4j.com", advertisedBoldPort ) );
+        var config = newConfig( Duration.ofSeconds( 100 ), advertisedBoltAddress );
+        var databaseManager = databaseManagerMock( config, true );
+        var logProvider = new AssertableLogProvider();
+
+        var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
+        var expectedMessage = "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
+
+        // when
+        assertThrows( ProcedureException.class, () -> procedure.invoke( ID, ctx ), expectedMessage );
     }
 
     @Test

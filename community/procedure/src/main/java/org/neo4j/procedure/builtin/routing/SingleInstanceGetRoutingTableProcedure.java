@@ -138,12 +138,7 @@ public class SingleInstanceGetRoutingTableProcedure extends BaseGetRoutingTableP
                 }
                 else
                 {
-                    // The driver may not include the port explicitly but ONLY if the default bolt port is used.
-                    if ( !clientProvidedAddress.contains( ":" ) )
-                    {
-                        clientProvidedAddress = String.format( "%s:%d", clientProvidedAddress, defaultBoltPort );
-                    }
-                    return Optional.of( SocketAddressParser.socketAddress( clientProvidedAddress, SocketAddress::new ) );
+                    return Optional.of( SocketAddressParser.socketAddress( clientProvidedAddress, defaultBoltPort, SocketAddress::new ) );
                 }
             }
             catch ( Exception e )

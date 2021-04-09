@@ -30,7 +30,9 @@ public class SocketAddressParser
 {
     private static final Pattern hostnamePortPatternExt = Pattern.compile( "\\[(?<hostname>[^\\s]+)]:(?<port>\\d+)" );
     private static final Pattern hostnamePortPattern = Pattern.compile( "(?<hostname>[^\\s]*([^:\\s]|::)):(?<port>\\d+)" );
-    private static final Pattern hostnamePattern = Pattern.compile( "(?<hostname>[^\\s]+)" );
+    // hostnamePattern matches if there are no colons (most usage) or if there are 2 or more colons (raw IPv6 address)
+    // the lookahead needs to include the end of string anchor ($) to ensure it matches the whole string - although the main regex does not need the trailing $
+    private static final Pattern hostnamePattern = Pattern.compile( "(?=([^:]+:?|[^:^\\s]*:[^:^\\s]*:[^\\s]*)$)(?<hostname>[^\\s]+)" );
     private static final Pattern portPattern = Pattern.compile( ":(?<port>\\d+)" );
 
     public static <T extends SocketAddress> T deriveSocketAddress(
@@ -62,7 +64,13 @@ public class SocketAddressParser
     }
 
     public static <T extends SocketAddress> T socketAddress( String settingValue,
-            BiFunction<String,Integer,T> constructor )
+                                                             BiFunction<String,Integer,T> constructor )
+    {
+        return socketAddress( settingValue, -1, constructor );
+    }
+
+    public static <T extends SocketAddress> T socketAddress( String settingValue, int defaultPort,
+                                                             BiFunction<String,Integer,T> constructor )
     {
         if ( settingValue == null )
         {
@@ -82,7 +90,7 @@ public class SocketAddressParser
             return socketAddress;
         }
 
-        if ( (socketAddress = matchHostname( settingValue, constructor )) != null )
+        if ( (socketAddress = matchHostname( settingValue, defaultPort, constructor )) != null )
         {
             return socketAddress;
         }
@@ -92,19 +100,19 @@ public class SocketAddressParser
                 "\"hostname:port\". \"%s\" does not conform to this format", settingValue ) );
     }
 
-    private static <T extends SocketAddress> T matchHostname( String settingValue, BiFunction<String,Integer,T> constructor )
+    private static <T extends SocketAddress> T matchHostname( String settingValue, int defaultPort, BiFunction<String,Integer,T> constructor )
     {
         Matcher hostnameMatcher = hostnamePattern.matcher( settingValue );
         if ( hostnameMatcher.matches() )
         {
             String hostname = hostnameMatcher.group( "hostname" );
-            return constructor.apply( hostname, -1 );
+            return constructor.apply( hostname, defaultPort );
         }
         return null;
     }
 
     private static <T extends SocketAddress> T matchHostnamePort( String settingValue,
-            BiFunction<String,Integer,T> constructor )
+                                                                  BiFunction<String,Integer,T> constructor )
     {
         Matcher hostnamePortWithBracketsMatcher = hostnamePortPatternExt.matcher( settingValue );
         if ( hostnamePortWithBracketsMatcher.matches() )
@@ -126,7 +134,7 @@ public class SocketAddressParser
     }
 
     private static <T extends SocketAddress> T matchPort( String settingValue, String defaultHostname,
-            BiFunction<String,Integer,T> constructor )
+                                                          BiFunction<String,Integer,T> constructor )
     {
         Matcher portMatcher = portPattern.matcher( settingValue );
         if ( portMatcher.matches() )
