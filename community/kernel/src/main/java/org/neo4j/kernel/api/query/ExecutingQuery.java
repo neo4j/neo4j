@@ -356,6 +356,11 @@ public class ExecutingQuery
         return clock.nanos() - startTimeNanos;
     }
 
+    public long elapsedMillis()
+    {
+        return NANOSECONDS.toMillis( elapsedNanos() );
+    }
+
     public Map<String,Object> transactionAnnotationData()
     {
         return transactionAnnotationData;
