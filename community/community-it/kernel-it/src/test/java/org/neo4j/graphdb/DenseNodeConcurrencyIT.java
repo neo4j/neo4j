@@ -182,13 +182,20 @@ class DenseNodeConcurrencyIT
         race.addContestants( 1, throwing( () ->
         {
             latch.await();
-            try ( Transaction tx = database.beginTx() )
+            while ( true )
             {
-                InternalTransaction internalTx = (InternalTransaction) tx;
-                internalTx.kernelTransaction().dataWrite().nodeDetachDelete( denseNodeToDelete );
-                tx.commit();
-                numNodes.decrementAndGet();
+                try ( Transaction tx = database.beginTx() )
+                {
+                    InternalTransaction internalTx = (InternalTransaction) tx;
+                    internalTx.kernelTransaction().dataWrite().nodeDetachDelete( denseNodeToDelete );
+                    tx.commit();
+                    break;
+                }
+                catch ( DeadlockDetectedException ignore )
+                { // ignore deadlock, try again
+                }
             }
+            numNodes.decrementAndGet();
             done.set( true );
         } ) );
         race.addContestants( numCreators, throwing( () ->
