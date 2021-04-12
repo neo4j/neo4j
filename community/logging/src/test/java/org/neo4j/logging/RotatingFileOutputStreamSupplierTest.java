@@ -233,7 +233,7 @@ class RotatingFileOutputStreamSupplierTest
         {
             supplier.rotate();
             latch.await();
-            return Void.TYPE;
+            return null;
         } );
 
         shutDownExecutor( executor );
@@ -243,7 +243,7 @@ class RotatingFileOutputStreamSupplierTest
         assertNull( listenerException.get() );
     }
 
-    private void shutDownExecutor( ExecutorService executor ) throws InterruptedException
+    private static void shutDownExecutor( ExecutorService executor ) throws InterruptedException
     {
         executor.shutdown();
         boolean terminated = executor.awaitTermination( TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS );
@@ -318,7 +318,7 @@ class RotatingFileOutputStreamSupplierTest
             {
                 try
                 {
-                    allowRotationComplete.await( 1L, TimeUnit.SECONDS );
+                    allowRotationComplete.await( 60L, TimeUnit.SECONDS );
                     out.write( outputFileCreatedMessage.getBytes() );
                 }
                 catch ( InterruptedException | IOException e )
@@ -352,7 +352,7 @@ class RotatingFileOutputStreamSupplierTest
             write( supplier, "A string longer than 10 bytes" );
 
             allowRotationComplete.countDown();
-            rotationComplete.await( 1L, TimeUnit.SECONDS );
+            rotationComplete.await( 60L, TimeUnit.SECONDS );
 
             verify( rotationListener ).outputFileCreated( any( OutputStream.class ) );
             verify( rotationListener ).rotationCompleted( any( OutputStream.class ) );
@@ -557,14 +557,14 @@ class RotatingFileOutputStreamSupplierTest
         assertThat( fileSystem.fileExists( archiveLogFile9 ) ).isEqualTo( true );
     }
 
-    private void write( RotatingFileOutputStreamSupplier supplier, String line )
+    private static void write( RotatingFileOutputStreamSupplier supplier, String line )
     {
         PrintWriter writer = new PrintWriter( supplier.get() );
         writer.println( line );
         writer.flush();
     }
 
-    private void writeLines( Supplier<OutputStream> outputStreamSupplier, int count )
+    private static void writeLines( Supplier<OutputStream> outputStreamSupplier, int count )
     {
         Supplier<PrintWriter> printWriterSupplier = Suppliers.adapted( outputStreamSupplier, OUTPUT_STREAM_CONVERTER );
         for ( ; count >= 0; --count )
@@ -575,7 +575,7 @@ class RotatingFileOutputStreamSupplierTest
         }
     }
 
-    private void assertStreamClosed( OutputStream stream )
+    private static void assertStreamClosed( OutputStream stream )
     {
         assertThrows( ClosedChannelException.class, () -> stream.write( 0 ) );
     }
@@ -589,7 +589,7 @@ class RotatingFileOutputStreamSupplierTest
 
         }
 
-        void withLock( Callable callable ) throws Exception
+        void withLock( Callable<Void> callable ) throws Exception
         {
             synchronized ( lock )
             {
