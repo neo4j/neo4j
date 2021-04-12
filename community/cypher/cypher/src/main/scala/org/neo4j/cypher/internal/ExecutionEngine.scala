@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import java.lang
-import java.time.Clock
-
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
@@ -46,6 +43,8 @@ import org.neo4j.logging.LogProvider
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
+import java.lang
+import java.time.Clock
 import scala.collection.JavaConverters.seqAsJavaListConverter
 
 /**

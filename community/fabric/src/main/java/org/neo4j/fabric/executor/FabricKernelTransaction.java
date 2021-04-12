@@ -68,6 +68,7 @@ public class FabricKernelTransaction
                                 StatementLifecycle parentLifecycle, ExecutionOptions executionOptions )
     {
         var childExecutionContext = makeChildTransactionalContext( parentLifecycle );
+        parentLifecycle.startExecution(  );
         var childQueryMonitor = parentLifecycle.getChildQueryMonitor();
         openExecutionContexts.add( childExecutionContext );
 

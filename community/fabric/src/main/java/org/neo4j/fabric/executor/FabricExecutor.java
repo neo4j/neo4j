@@ -248,7 +248,6 @@ public class FabricExecutor
         {
             notifications.addAll( seqAsJavaList( plan.notifications() ) );
 
-            lifecycle.startExecution();
             var query = plan.query();
             Flux<String> columns = Flux.fromIterable( asJavaIterable( query.outputColumns() ) );
 
