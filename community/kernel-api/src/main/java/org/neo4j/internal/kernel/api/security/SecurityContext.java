@@ -29,14 +29,13 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
  *
  * Must extend LoginContext to handle procedures creating internal transactions, periodic commit and the parallel cypher prototype.
  */
-public class SecurityContext implements LoginContext
+public class SecurityContext extends LoginContext
 {
-    protected final AuthSubject subject;
     protected final AccessMode mode;
 
     public SecurityContext( AuthSubject subject, AccessMode mode )
     {
-        this.subject = subject;
+        super( subject );
         this.mode = mode;
     }
 
@@ -68,12 +67,6 @@ public class SecurityContext implements LoginContext
     public Set<String> roles()
     {
         return Collections.emptySet();
-    }
-
-    @Override
-    public AuthSubject subject()
-    {
-        return subject;
     }
 
     @Override

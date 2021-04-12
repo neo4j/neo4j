@@ -31,17 +31,15 @@ import org.neo4j.kernel.impl.security.User;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILURE;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
-import static org.neo4j.internal.kernel.api.security.AuthenticationResult.SUCCESS;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.TOO_MANY_ATTEMPTS;
 
-public class BasicLoginContext implements LoginContext
+public class BasicLoginContext extends LoginContext
 {
-    private final BasicAuthSubject authSubject;
     private AccessMode accessMode;
 
     public BasicLoginContext( User user, AuthenticationResult authenticationResult )
     {
-        this.authSubject = new BasicAuthSubject( user, authenticationResult );
+        super( new BasicAuthSubject( user, authenticationResult ) );
 
         switch ( authenticationResult )
         {
@@ -56,7 +54,7 @@ public class BasicLoginContext implements LoginContext
         }
     }
 
-    private class BasicAuthSubject implements AuthSubject
+    private static class BasicAuthSubject implements AuthSubject
     {
         private User user;
         private AuthenticationResult authenticationResult;
@@ -74,16 +72,6 @@ public class BasicLoginContext implements LoginContext
         }
 
         @Override
-        public void setPasswordChangeNoLongerRequired()
-        {
-            if ( authenticationResult == PASSWORD_CHANGE_REQUIRED )
-            {
-                authenticationResult = SUCCESS;
-                accessMode = AccessMode.Static.FULL;
-            }
-        }
-
-        @Override
         public String username()
         {
             return user.name();
@@ -97,22 +85,16 @@ public class BasicLoginContext implements LoginContext
     }
 
     @Override
-    public AuthSubject subject()
-    {
-        return authSubject;
-    }
-
-    @Override
     public SecurityContext authorize( IdLookup idLookup, String dbName )
     {
-        if ( authSubject.authenticationResult.equals( FAILURE ) || authSubject.authenticationResult.equals( TOO_MANY_ATTEMPTS ) )
+        if ( subject().getAuthenticationResult().equals( FAILURE ) || subject().getAuthenticationResult().equals( TOO_MANY_ATTEMPTS ) )
         {
             throw new AuthorizationViolationException( AuthorizationViolationException.PERMISSION_DENIED, Status.Security.Unauthorized );
         }
-        else if ( !dbName.equals( SYSTEM_DATABASE_NAME ) && authSubject.authenticationResult.equals( PASSWORD_CHANGE_REQUIRED ) )
+        else if ( !dbName.equals( SYSTEM_DATABASE_NAME ) && subject().getAuthenticationResult().equals( PASSWORD_CHANGE_REQUIRED ) )
         {
             throw AccessMode.Static.CREDENTIALS_EXPIRED.onViolation( AuthorizationViolationException.PERMISSION_DENIED );
         }
-        return new SecurityContext( authSubject, accessMode );
+        return new SecurityContext( subject(), accessMode );
     }
 }

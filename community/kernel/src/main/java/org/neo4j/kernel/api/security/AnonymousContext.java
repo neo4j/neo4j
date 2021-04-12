@@ -25,12 +25,13 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 /** Controls the capabilities of a KernelTransaction. */
-public class AnonymousContext implements LoginContext
+public class AnonymousContext extends LoginContext
 {
     private final AccessMode accessMode;
 
     private AnonymousContext( AccessMode accessMode )
     {
+        super( AuthSubject.ANONYMOUS );
         this.accessMode = accessMode;
     }
 
@@ -62,12 +63,6 @@ public class AnonymousContext implements LoginContext
     public static AnonymousContext full()
     {
         return new AnonymousContext( AccessMode.Static.FULL );
-    }
-
-    @Override
-    public AuthSubject subject()
-    {
-        return AuthSubject.ANONYMOUS;
     }
 
     @Override

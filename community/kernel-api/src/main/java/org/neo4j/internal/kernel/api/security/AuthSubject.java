@@ -25,13 +25,6 @@ public interface AuthSubject
     AuthenticationResult getAuthenticationResult();
 
     /**
-     * Changes the {@link AuthenticationResult} status to {@link AuthenticationResult#SUCCESS SUCCESS}
-     * if it was {@link AuthenticationResult#PASSWORD_CHANGE_REQUIRED PASSWORD_CHANGE_REQUIRED}.
-     * This allows users that changed their password to become authorized for continued processing.
-     */
-    void setPasswordChangeNoLongerRequired();
-
-    /**
      * @param username a username
      * @return true if the provided username is the underlying user name of this subject
      */
@@ -53,11 +46,6 @@ public interface AuthSubject
         public AuthenticationResult getAuthenticationResult()
         {
             return AuthenticationResult.FAILURE;
-        }
-
-        @Override
-        public void setPasswordChangeNoLongerRequired()
-        {
         }
 
         @Override
@@ -89,11 +77,6 @@ public interface AuthSubject
         public AuthenticationResult getAuthenticationResult()
         {
             return AuthenticationResult.SUCCESS;
-        }
-
-        @Override
-        public void setPasswordChangeNoLongerRequired()
-        {
         }
 
         @Override

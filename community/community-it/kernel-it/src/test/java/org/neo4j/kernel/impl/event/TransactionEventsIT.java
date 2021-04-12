@@ -210,14 +210,8 @@ class TransactionEventsIT
         } ) );
         AuthSubject subject = mock( AuthSubject.class );
         when( subject.username() ).thenReturn( "Christof" );
-        LoginContext loginContext = new LoginContext()
+        LoginContext loginContext = new LoginContext( subject )
         {
-            @Override
-            public AuthSubject subject()
-            {
-                return subject;
-            }
-
             @Override
             public SecurityContext authorize( IdLookup idLookup, String dbName )
             {

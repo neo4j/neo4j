@@ -24,12 +24,22 @@ package org.neo4j.internal.kernel.api.security;
  * By calling {@link #authorize(IdLookup, String)} the user is also authorized, and a full SecurityContext is returned,
  * which can be used to assert user permissions during query execution.
  */
-public interface LoginContext
+public abstract class LoginContext
 {
+    protected final AuthSubject subject;
+
+    public LoginContext( AuthSubject subject )
+    {
+        this.subject = subject;
+    }
+
     /**
      * Get the authenticated user.
      */
-    AuthSubject subject();
+    public AuthSubject subject()
+    {
+        return subject;
+    }
 
     /**
      * Authorize the user and return a SecurityContext.
@@ -38,16 +48,10 @@ public interface LoginContext
      * @param dbName the name of the database the user should be authorized against
      * @return the security context
      */
-    SecurityContext authorize( IdLookup idLookup, String dbName );
+    public abstract SecurityContext authorize( IdLookup idLookup, String dbName );
 
-    LoginContext AUTH_DISABLED = new LoginContext()
+    public static LoginContext AUTH_DISABLED = new LoginContext( AuthSubject.AUTH_DISABLED )
     {
-        @Override
-        public AuthSubject subject()
-        {
-            return AuthSubject.AUTH_DISABLED;
-        }
-
         @Override
         public SecurityContext authorize( IdLookup idLookup, String dbName )
         {
@@ -55,7 +59,7 @@ public interface LoginContext
         }
     };
 
-    interface IdLookup
+    public interface IdLookup
     {
         int[] NO_SUCH_PROCEDURE = new int[0];
 
