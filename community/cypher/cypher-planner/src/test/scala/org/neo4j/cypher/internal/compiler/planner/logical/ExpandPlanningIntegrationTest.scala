@@ -64,7 +64,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             Expand(
               AllNodesScan("a", _), _, _, _, _, _, _),
             Expand(
-              AllNodesScan("c", _), _, _, _, _, _, _)
+              AllNodesScan("c", _), _, _, _, _, _, _), _
           )
         ) => ()
     }

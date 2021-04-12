@@ -773,7 +773,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
     val id = plan.id
     val buildExpression = getBuildExpression(id)
     plan match {
-      case CartesianProduct(_, _) =>
+      case CartesianProduct(_, _, _) =>
         CartesianProductPipe(lhs, rhs)(id = id)
 
       case NodeHashJoin(nodes, _, _) =>
@@ -787,7 +787,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         val nullableVariables = l.availableSymbols -- r.availableSymbols
         NodeRightOuterHashJoinPipe(nodes, lhs, rhs, nullableVariables)(id = id)
 
-      case Apply(_, _) => ApplyPipe(lhs, rhs)(id = id)
+      case Apply(_, _, _) => ApplyPipe(lhs, rhs)(id = id)
 
       case AssertSameNode(node, _, _) =>
         AssertSameNodePipe(lhs, rhs, node)(id = id)

@@ -75,7 +75,7 @@ case class recordEffectiveOutputCardinality(executionModel: ExecutionModel, card
           }
 
           p match {
-            case CartesianProduct(left, right) =>
+            case CartesianProduct(left, right, _) =>
               findRHSMultipliers(left, right, effectiveBatchSize)
             case a:ApplyPlan =>
               findRHSMultipliers(a.left, a.right, VolcanoBatchSize)

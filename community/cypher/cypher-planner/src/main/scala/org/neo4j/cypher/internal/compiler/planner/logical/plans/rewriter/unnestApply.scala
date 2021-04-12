@@ -72,25 +72,25 @@ case class unnestApply(override val solveds: Solveds,
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     // Arg Ax R => R
-    case Apply(arg: Argument, rhs) =>
+    case Apply(arg: Argument, rhs, _) =>
       assertArgumentHasCardinality1(arg)
       rhs
 
     // L Ax Arg => L
-    case Apply(lhs, _: Argument) =>
+    case Apply(lhs, _: Argument, _) =>
       lhs
 
     // L Ax (Arg FE R) => L FE R
-    case apply@Apply(lhs, foreach@ForeachApply(arg: Argument, _, _, _)) =>
+    case apply@Apply(lhs, foreach@ForeachApply(arg: Argument, _, _, _), _) =>
       assertArgumentHasCardinality1(arg)
       unnestRightBinaryLeft(apply, lhs, foreach)
 
     // L Ax (σ R) => σ(L Ax R)
-    case apply@Apply(lhs, sel:Selection) =>
+    case apply@Apply(lhs, sel:Selection, _) =>
       unnestRightUnary(apply, lhs, sel)
 
     // L Ax ((σ L2) Ax R) => (σ L) Ax (L2 Ax R) iff σ does not have dependencies on L
-    case original@Apply(lhs, Apply(sel@Selection(predicate, lhs2), rhs))
+    case original@Apply(lhs, Apply(sel@Selection(predicate, lhs2), rhs, isSubquery1), isSubquery2)
       if predicate.exprs.forall(lhs.satisfiesExpressionDependencies) =>
       val maybeSelectivity = cardinalities(sel.id) / cardinalities(lhs2.id)
       val selectionLHS = Selection(predicate, lhs)(attributes.copy(sel.id))
@@ -98,45 +98,45 @@ case class unnestApply(override val solveds: Solveds,
       cardinalities.set(selectionLHS.id, maybeSelectivity.fold(cardinalities(sel.id))(cardinalities(lhs.id) * _))
       providedOrders.copy(lhs.id, selectionLHS.id)
 
-      val apply2 = Apply(lhs2, rhs)(attributes.copy(lhs.id))
+      val apply2 = Apply(lhs2, rhs, isSubquery1)(attributes.copy(lhs.id))
       solveds.copy(original.id, apply2.id)
       cardinalities.set(apply2.id, cardinalities(lhs2.id) * cardinalities(rhs.id))
       providedOrders.copy(lhs2.id, apply2.id)
 
-      Apply(selectionLHS, apply2)(SameId(original.id))
+      Apply(selectionLHS, apply2, isSubquery2)(SameId(original.id))
 
     // L Ax (π R) => π(L Ax R)
-    case apply@Apply(lhs, p:Projection) =>
+    case apply@Apply(lhs, p:Projection, _) =>
       unnestRightUnary(apply, lhs, p)
 
     // L Ax (EXP R) => EXP( L Ax R ) (for single step pattern relationships)
-    case apply@Apply(lhs, expand: Expand) =>
+    case apply@Apply(lhs, expand: Expand, _) =>
       unnestRightUnary(apply, lhs, expand)
 
     // L Ax (EXP R) => EXP( L Ax R ) (for varlength pattern relationships)
-    case apply@Apply(lhs, expand: VarExpand) =>
+    case apply@Apply(lhs, expand: VarExpand, _) =>
       unnestRightUnary(apply, lhs, expand)
 
     // L Ax (Arg LOJ R) => L LOJ R
-    case apply@Apply(lhs, join@LeftOuterHashJoin(_, arg:Argument, _)) =>
+    case apply@Apply(lhs, join@LeftOuterHashJoin(_, arg:Argument, _), _) =>
       assertArgumentHasCardinality1(arg)
       unnestRightBinaryLeft(apply, lhs, join)
 
     // L Ax (L2 ROJ Arg) => L2 ROJ L
-    case apply@Apply(lhs, join@RightOuterHashJoin(_, _, arg:Argument)) =>
+    case apply@Apply(lhs, join@RightOuterHashJoin(_, _, arg:Argument), _) =>
       assertArgumentHasCardinality1(arg)
       unnestRightBinaryRight(apply, lhs, join)
 
     // L Ax (OEX Arg) => OEX L
-    case apply@Apply(lhs, oex@OptionalExpand(_:Argument, _, _, _, _, _, _, _)) =>
+    case apply@Apply(lhs, oex@OptionalExpand(_:Argument, _, _, _, _, _, _, _), _) =>
       unnestRightUnary(apply, lhs, oex)
 
     // L Ax (Cr R) => Cr (L Ax R)
-    case apply@Apply(lhs, create:Create) =>
+    case apply@Apply(lhs, create:Create, _) =>
       unnestRightUnary(apply, lhs, create)
 
     // π (Arg) Ax R => π (R) // if R is leaf and R is not using columns from π
-    case apply@Apply(projection@Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan)
+    case apply@Apply(projection@Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan, _)
       if !projections.keys.exists(rhsLeaf.usedVariables.contains) =>
       val rhsCopy = rhsLeaf.withoutArgumentIds(projections.keySet)
       val res = projection.copy(rhsCopy, projections)(attributes.copy(projection.id))

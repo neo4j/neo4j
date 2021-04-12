@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestingRewriter
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestingRewriter
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.Apply
@@ -292,11 +292,11 @@ object Eagerness {
     private val instance: Rewriter = fixedPoint(bottomUp(Rewriter.lift {
 
       // L Ax (E R) => E Ax (L R)
-      case apply@Apply(lhs, eager: Eager) =>
+      case apply@Apply(lhs, eager: Eager, _) =>
         unnestRightUnary(apply, lhs, eager)
 
      // L Ax (Up R) => Up Ax (L R)
-      case apply@Apply(lhs, updatingPlan: UpdatingPlan) =>
+      case apply@Apply(lhs, updatingPlan: UpdatingPlan, _) =>
         unnestRightUnary(apply, lhs, updatingPlan)
     }))
 

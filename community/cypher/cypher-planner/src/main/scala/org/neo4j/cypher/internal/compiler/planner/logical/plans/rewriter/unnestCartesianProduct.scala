@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.util.topDown
 case object unnestCartesianProduct extends Rewriter {
 
   private val instance: Rewriter = topDown(Rewriter.lift {
-    case CartesianProduct(_: Argument, rhs) =>
+    case CartesianProduct(_: Argument, rhs, _) =>
       rhs
 
-    case CartesianProduct(lhs, _: Argument) =>
+    case CartesianProduct(lhs, _: Argument, _) =>
       lhs
 
   })

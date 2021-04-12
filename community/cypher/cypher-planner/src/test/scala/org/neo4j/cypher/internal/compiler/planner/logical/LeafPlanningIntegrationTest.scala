@@ -434,7 +434,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                     _, _, _, _, _, _)
                   , _, _, _, _, _, _)
                 ),
-              _)
+              _), _
             ) => ()
       }
   }

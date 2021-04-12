@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.CommandClause
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.compiler.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper.coercePredicatesWithAnds
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
@@ -330,9 +330,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solved = solvedLeft.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(CallSubqueryHorizon(solvedRight, correlated)))
 
     val plan = if (!correlated && solvedRight.readOnly) {
-      CartesianProduct(left, right)
+      CartesianProduct(left, right, fromSubquery = true)
     } else {
-      Apply(left, right)
+      Apply(left, right, fromSubquery = true)
     }
 
     val providedOrder = providedOrderOfApply(left, right)

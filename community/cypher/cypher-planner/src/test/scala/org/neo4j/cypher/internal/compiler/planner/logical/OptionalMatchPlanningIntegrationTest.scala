@@ -209,7 +209,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         ProjectEndpoints(
         Argument(args), "r", "b2", false, "a1", true, None, true, SimplePatternLength
         ), _
-        )
+        ), _
         ) =>
         args should equal(Set("r", "a1"))
     }
@@ -227,7 +227,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       "r", "b2", false, "a2", false, None, true, SimplePatternLength
       )
       ), _
-      )
+      ), _
       ) =>
         args should equal(Set("r", "a1"))
         val predicate = equals(varFor("a1"), varFor("a2"))
@@ -244,7 +244,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       Argument(args),
       "r", "a2", false, "b2", false, None, true, SimplePatternLength
       ), _
-      )
+      ), _
       ) =>
         args should equal(Set("r"))
     }
@@ -408,7 +408,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
 
     val (_, plan, table,_) = cfg.getLogicalPlanFor(query)
     inside(plan) {
-      case Aggregation(Apply(_, rhs), _, _) =>
+      case Aggregation(Apply(_, rhs, _), _, _) =>
         rhs.leaves.foreach( leaf => leaf shouldBe an [Argument])
     }
   }

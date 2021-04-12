@@ -237,7 +237,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     // ...
     // (C x B) x A = 300 + 20 * 300 = 6200
     batchedPlan.stripProduceResults should beLike {
-      case CartesianProduct(_: NodeByLabelScan, CartesianProduct(_: NodeByLabelScan, _: NodeByLabelScan)) => ()
+      case CartesianProduct(_: NodeByLabelScan, CartesianProduct(_: NodeByLabelScan, _: NodeByLabelScan, _), _) => ()
     }
   }
 
@@ -275,7 +275,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     // A x B = 30 + 1 * 20 => 50
     // B x A = 20 + 1 * 20 => 50
     batchedPlan.stripProduceResults should beLike {
-      case CartesianProduct(_: NodeByLabelScan, _: NodeByLabelScan) => ()
+      case CartesianProduct(_: NodeByLabelScan, _: NodeByLabelScan, _) => ()
     }
   }
 
@@ -348,7 +348,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         |""".stripMargin)
 
     plan.stripProduceResults shouldNot beLike {
-      case Selection(_, Apply(_, NodeIndexSeek(_, _, _, _, args, _))) if args.isEmpty => ()
+      case Selection(_, Apply(_, NodeIndexSeek(_, _, _, _, args, _), _)) if args.isEmpty => ()
     }
   }
 
@@ -371,7 +371,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     val beSolvedByApply = beLike {
       case Selection(_, Apply(
       NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _),
-      NodeIndexSeek(_, _, _, SingleQueryExpression(_), _, _))) => ()
+      NodeIndexSeek(_, _, _, SingleQueryExpression(_), _, _), _)) => ()
     }
     val beSolvedByJoin = beLike {
       case ValueHashJoin(
@@ -826,7 +826,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
           case BeforeOptionalMatch => TraverseChildren(SortBeforeOptionalMatch)
           case _ => SkipChildren(SortAfterOptionalMatch)
         }
-        case Apply(_, _: Optional) | _: LeftOuterHashJoin | _: RightOuterHashJoin => {
+        case Apply(_, _: Optional, _) | _: LeftOuterHashJoin | _: RightOuterHashJoin => {
           case Init => TraverseChildren(BeforeOptionalMatch)
           case x => TraverseChildren(x)
         }
@@ -952,7 +952,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     // Planning this query will lead to compaction in IDP and the exact shape of the plan will be different sometimes.
 
     volcanoPlan.stripProduceResults should beLike {
-      case Aggregation(Apply(_, _: Optional), _, _) => ()
+      case Aggregation(Apply(_, _: Optional, _), _, _) => ()
     }
     batchedPlan.stripProduceResults should beLike {
       case Aggregation(_: CartesianProduct, _, _) => ()

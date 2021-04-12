@@ -111,7 +111,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
           (NodeByLabelScan("n", _, _, _),
           Optional
             (Expand
-              (NodeByLabelScan("m", _, args, _), _, _, _, _, _, _), _))
+              (NodeByLabelScan("m", _, args, _), _, _, _, _, _, _), _), _)
         if args == Set("n") => ()
     }
   }

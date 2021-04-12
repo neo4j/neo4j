@@ -785,7 +785,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, effectiveCardinalities
       case AssertSameNode(node, _, _) =>
         PlanDescriptionImpl(id, "AssertSameNode", children, Seq(Details(asPrettyString(node))), variables, withRawCardinalities)
 
-      case CartesianProduct(_, _) =>
+      case CartesianProduct(_, _, _) =>
         PlanDescriptionImpl(id, "CartesianProduct", children, Seq.empty, variables, withRawCardinalities)
 
       case NodeHashJoin(nodes, _, _) =>
