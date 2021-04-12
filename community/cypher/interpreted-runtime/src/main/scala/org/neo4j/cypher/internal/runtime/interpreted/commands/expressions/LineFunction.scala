@@ -22,17 +22,15 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import java.net.URLDecoder
 
 import org.neo4j.cypher.internal.runtime.ReadableRow
+import org.neo4j.cypher.internal.runtime.ResourceLinenumber
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.ResourceLinenumber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 case class Linenumber() extends Expression {
-  override def apply(row: ReadableRow, state: QueryState): AnyValue = row.getLinenumber match {
-    case Some(ResourceLinenumber(_, line, _)) => Values.longValue(line)
-    case _ => Values.NO_VALUE
-  }
+  override def apply(row: ReadableRow, state: QueryState): AnyValue =
+    Linenumber.compute(row)
 
   override def rewrite(f: Expression => Expression): Expression = f(Linenumber())
 
@@ -41,16 +39,27 @@ case class Linenumber() extends Expression {
   override def children: Seq[AstNode[_]] = Seq.empty
 }
 
-
-case class File() extends Expression {
-  override def apply(row: ReadableRow, state: QueryState): AnyValue = row.getLinenumber match {
-    case Some(ResourceLinenumber(name, _, _)) =>Values.utf8Value(URLDecoder.decode(name, "UTF-8")) // decode to make %20 from urls into spaces etc
+object Linenumber {
+  def compute(row: ReadableRow): AnyValue = row.getLinenumber match {
+    case Some(ResourceLinenumber(_, line, _)) => Values.longValue(line)
     case _ => Values.NO_VALUE
   }
+}
+
+case class File() extends Expression {
+  override def apply(row: ReadableRow, state: QueryState): AnyValue =
+    File.compute(row)
 
   override def rewrite(f: Expression => Expression): Expression = f(File())
 
   override def arguments: Seq[Expression] = Seq.empty
 
   override def children: Seq[AstNode[_]] = Seq.empty
+}
+
+object File {
+  def compute(row: ReadableRow): AnyValue = row.getLinenumber match {
+    case Some(ResourceLinenumber(name, _, _)) => Values.utf8Value(URLDecoder.decode(name, "UTF-8")) // decode to make %20 from urls into spaces etc
+    case _ => Values.NO_VALUE
+  }
 }
