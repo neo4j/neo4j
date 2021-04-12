@@ -103,28 +103,6 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
     }
   }
 
-  private[steps] def producePlansForExpressions(exprs: Seq[Expression],
-                                                qg: QueryGraph,
-                                                context: LogicalPlanningContext,
-                                                interestingOrderConfig: InterestingOrderConfig): Array[Array[LeafPlansForVariable]] = {
-
-    def filterPlans(plans: Seq[LeafPlansForVariable], findFunc: LogicalPlan => Boolean, filterFunc: LogicalPlan => Boolean): Seq[LeafPlansForVariable] =
-      if (plans.exists(leafPlans => leafPlans.plans.exists(findFunc))) plans.filter(x => !x.plans.exists(filterFunc)) else plans
-
-    // This is a Seq of possible solutions per expression
-    // We really only want the best option IndexSeek > IndexScan > LabelScan as combine() explodes to p^n
-    // (number of plans ^ number of predicates) so we really want p to be 1
-    exprs.map {
-      e: Expression =>
-        val plansForVariables: Seq[LeafPlansForVariable] = inner.flatMap(_.producePlanFor(Set(e), qg, interestingOrderConfig, context))
-        val qgForExpression = qg.copy(selections = Selections.from(e))
-        val withoutLabelScans = filterPlans(plansForVariables, p => nodeIndexSeek(p) || nodeIndexScan(p), nodeByLabelScan)
-        val withoutIndexScans = filterPlans(withoutLabelScans, nodeIndexSeek, nodeIndexScan)
-        withoutIndexScans.map(p =>
-          p.copy(plans = p.plans.map(context.config.applySelections(_, qgForExpression, interestingOrderConfig, context)))).toArray
-    }.toArray
-  }
-
   private def hasPlanSolvingOtherVariable(plansPerExpression: Array[Array[LeafPlansForVariable]]) = {
     val id: String = plansPerExpression.head.head.id
 
@@ -138,18 +116,40 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
     }
   }
 
-  private def nodeIndexSeek(logicalPlan: LogicalPlan): Boolean =
-    logicalPlan match {
-      case _: NodeIndexSeek |
-           _: NodeUniqueIndexSeek |
-           _: NodeIndexEndsWithScan |
-           _: NodeIndexContainsScan => true
-      case _ => false
+  private[steps] def producePlansForExpressions(exprs: Seq[Expression],
+                                                qg: QueryGraph,
+                                                context: LogicalPlanningContext,
+                                                interestingOrderConfig: InterestingOrderConfig): Array[Array[LeafPlansForVariable]] = {
+
+    // This is a Seq of possible solutions per expression
+    // We really only want the best option IndexSeek > IndexScan > LabelScan as combine() explodes to p^n
+    // (number of plans ^ number of predicates) so we really want p to be 1
+    exprs.map {
+      e: Expression =>
+        val plansForVariables: Seq[LeafPlansForVariable] = inner.flatMap(_.producePlanFor(Set(e), qg, interestingOrderConfig, context))
+        val qgForExpression = qg.copy(selections = Selections.from(e))
+        val filteredPlansForVariables = bestPlansByHeuristic(plansForVariables)
+        filteredPlansForVariables.map(p =>
+          p.copy(plans = p.plans.map(context.config.applySelections(_, qgForExpression, interestingOrderConfig, context)))).toArray
+    }.toArray
+  }
+
+  private def bestPlansByHeuristic(plans: Seq[LeafPlansForVariable]): Seq[LeafPlansForVariable] = {
+    plans.groupBy(_.id).toSeq.flatMap { case (id, plansForVar) =>
+      val allPlans = plansForVar.flatMap(_.plans)
+      val bestPlans = allPlans.groupBy(planOrderingHeuristic).minBy(_._1)._2
+      bestPlans.map(p => LeafPlansForVariable(id, Set(p)))
     }
+  }
 
-  private def nodeIndexScan(logicalPlan: LogicalPlan): Boolean =
-    logicalPlan.isInstanceOf[NodeIndexScan]
+  private def planOrderingHeuristic(logicalPlan: LogicalPlan): Int = logicalPlan match {
+    case _: NodeIndexSeek |
+         _: NodeUniqueIndexSeek |
+         _: NodeIndexEndsWithScan |
+         _: NodeIndexContainsScan => 0
+    case _: NodeIndexScan         => 1
+    case _: NodeByLabelScan       => 2
+    case _                        => 3
+  }
 
-  private def nodeByLabelScan(logicalPlan: LogicalPlan): Boolean =
-    logicalPlan.isInstanceOf[NodeByLabelScan]
 }

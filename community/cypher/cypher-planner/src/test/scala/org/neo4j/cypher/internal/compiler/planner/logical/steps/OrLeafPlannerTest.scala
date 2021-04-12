@@ -22,18 +22,27 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.compiler.planner.FakePlan
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFromExpressions
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
+import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.Distinct
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
@@ -42,6 +51,8 @@ import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.cypher.internal.util.PropertyKeyId
+import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -124,6 +135,57 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val expected4 = Distinct(source = Union(p3, p4), groupingExpressions = Map("x" -> varFor("x")))
 
     orPlanner.apply(queryGraph, InterestingOrderConfig.empty, context) should equal(Seq(expected1, expected2, expected3, expected4))
+  }
+
+  test("selects seeks over scans over label scans over other plans") {
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext())
+    implicit val idGen: IdGen = context.idGen
+
+    val labelA = LabelToken("A", LabelId(0))
+    val propA = propEquality("x", "a", 10)
+    val propB = propEquality("x", "b", 20)
+    val propC = propEquality("x", "c", 30)
+    val propD = propEquality("x", "d", 40)
+    val propE = propEquality("x", "e", 50)
+    val iPropA = IndexedProperty(PropertyKeyToken("a", PropertyKeyId(0)), DoNotGetValue)
+    val iPropB = IndexedProperty(PropertyKeyToken("b", PropertyKeyId(1)), DoNotGetValue)
+    val iPropC = IndexedProperty(PropertyKeyToken("c", PropertyKeyId(2)), DoNotGetValue)
+
+    val seek_A_a = addPlan(context, NodeIndexSeek("x", labelA, Seq(iPropA), ExistenceQueryExpression(), Set.empty, IndexOrderNone), solved("x", propA))
+    val seek_A_b = addPlan(context, NodeIndexSeek("x", labelA, Seq(iPropB), ExistenceQueryExpression(), Set.empty, IndexOrderNone), solved("x", propB))
+    val scan_A_a = addPlan(context, NodeIndexScan("x", labelA, Seq(iPropA), Set.empty, IndexOrderNone), solved("x", propA))
+    val scan_A_b = addPlan(context, NodeIndexScan("x", labelA, Seq(iPropB), Set.empty, IndexOrderNone), solved("x", propB))
+    val scan_A_c = addPlan(context, NodeIndexScan("x", labelA, Seq(iPropC), Set.empty, IndexOrderNone), solved("x", propC))
+    val labelScan1 = addPlan(context, NodeByLabelScan("x", labelName("Fake1"), Set.empty, IndexOrderNone), solved("x", propC))
+    val labelScan2 = addPlan(context, NodeByLabelScan("x", labelName("Fake2"), Set.empty, IndexOrderNone), solved("x", propD))
+    val fake_a = addPlan(context, FakePlan(Set("x")), solved("x", propA))
+    val fake_b = addPlan(context, FakePlan(Set("x")), solved("x", propB))
+    val fake_c = addPlan(context, FakePlan(Set("x")), solved("x", propC))
+    val fake_d = addPlan(context, FakePlan(Set("x")), solved("x", propD))
+    val fake_e = addPlan(context, FakePlan(Set("x")), solved("x", propE))
+
+    val inner1 = mock[LeafPlanFromExpressions]
+    val inner2 = mock[LeafPlanFromExpressions]
+
+    when(inner1.producePlanFor(ArgumentMatchers.eq(Set(propA)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(seek_A_a, scan_A_a))))
+    when(inner1.producePlanFor(ArgumentMatchers.eq(Set(propB)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(seek_A_b, scan_A_b))))
+    when(inner1.producePlanFor(ArgumentMatchers.eq(Set(propC)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(scan_A_c))))
+    when(inner1.producePlanFor(ArgumentMatchers.eq(Set(propD)), any(), any(), any())).thenReturn(Set.empty[LeafPlansForVariable])
+    when(inner1.producePlanFor(ArgumentMatchers.eq(Set(propE)), any(), any(), any())).thenReturn(Set.empty[LeafPlansForVariable])
+
+    when(inner2.producePlanFor(ArgumentMatchers.eq(Set(propA)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(fake_a))))
+    when(inner2.producePlanFor(ArgumentMatchers.eq(Set(propB)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(fake_b))))
+    when(inner2.producePlanFor(ArgumentMatchers.eq(Set(propC)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(labelScan1, fake_c))))
+    when(inner2.producePlanFor(ArgumentMatchers.eq(Set(propD)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(labelScan2, fake_d))))
+    when(inner2.producePlanFor(ArgumentMatchers.eq(Set(propE)), any(), any(), any())).thenReturn(Set(LeafPlansForVariable("x", Set(fake_e))))
+
+    val orPlanner = OrLeafPlanner(Seq(inner1, inner2))
+
+    val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors(propA, propB, propC, propD, propE)))
+
+    val expected = Distinct(Union(Union(Union(Union(seek_A_a, seek_A_b), scan_A_c), labelScan2), fake_e), groupingExpressions = Map("x" -> varFor("x")))
+
+    orPlanner.apply(queryGraph, InterestingOrderConfig.empty, context) should equal(Seq(expected))
   }
 
   test("two predicates that produce two plans each mk 2") {
@@ -212,6 +274,22 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
       result(3)(0).plans.head shouldBe a[NodeIndexScan]
     }
 
+  }
+
+  def solved(idName: String, predicates: Expression*): RegularSinglePlannerQuery =
+    RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idName).addPredicates(predicates:_*))
+
+  def addPlan(
+    context: LogicalPlanningContext,
+    plan: LogicalPlan,
+    solved: SinglePlannerQuery,
+    cardinality: Cardinality = Cardinality(1),
+    providedOrder: ProvidedOrder = ProvidedOrder.empty,
+  ): LogicalPlan = {
+    context.planningAttributes.solveds.set(plan.id, solved)
+    context.planningAttributes.cardinalities.set(plan.id, cardinality)
+    context.planningAttributes.providedOrders.set(plan.id, providedOrder)
+    plan
   }
 
 }

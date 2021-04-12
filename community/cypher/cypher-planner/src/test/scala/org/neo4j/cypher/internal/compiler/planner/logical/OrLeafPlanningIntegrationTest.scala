@@ -19,14 +19,120 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
+import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class OrLeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class OrLeafPlanningIntegrationTest
+  extends CypherFunSuite
+    with LogicalPlanningIntegrationTestSupport
+    with AstConstructionTestSupport {
+
+  private def plannerConfig(): StatisticsBackedLogicalPlanningConfigurationBuilder =
+    plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("L", 50)
+      .setLabelCardinality("P", 50)
+
+  test("should work with index seeks of property disjunctions") {
+    val cfg = plannerConfig()
+      .addNodeIndex("L", Seq("p1"), 0.5, 0.5)
+      .addNodeIndex("L", Seq("p2"), 0.5, 0.5)
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n)
+        |WHERE n:L AND (n.p1 = 1 OR n.p2 = 2)
+        |RETURN n""".stripMargin
+    )
+
+    // Possible improvement: We could have planned this as OrderedDistinct
+    plan.shouldEqual(cfg.planBuilder()
+                        .produceResults("n")
+                        .distinct("n AS n")
+                        .union()
+                        .|.nodeIndexOperator("n:L(p2 = 2)")
+                        .nodeIndexOperator("n:L(p1 = 1)")
+                        .build()
+    )
+  }
+
+  test("should work with index seeks of label disjunctions") {
+    val cfg = plannerConfig()
+      .addNodeIndex("L", Seq("p1"), 0.5, 0.5)
+      .addNodeIndex("P", Seq("p1"), 0.5, 0.5)
+      .enablePrintCostComparisons()
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n)
+        |WHERE (n:L OR n:P) AND (n.p1 = 1)
+        |RETURN n""".stripMargin
+    )
+
+    // Possible improvement: We could have planned this as OrderedDistinct
+    plan.shouldEqual(cfg.planBuilder()
+                        .produceResults("n")
+                        .distinct("n AS n")
+                        .union()
+                        .|.nodeIndexOperator("n:P(p1 = 1)")
+                        .nodeIndexOperator("n:L(p1 = 1)")
+                        .build()
+    )
+  }
+
+  test("should work with index seeks of label disjunctions only") {
+    val cfg = plannerConfig()
+      .addNodeIndex("L", Seq("p1"), 0.5, 0.5)
+      .addNodeIndex("P", Seq("p1"), 0.5, 0.5)
+      .enablePrintCostComparisons()
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n)
+        |WHERE (n:L OR n:P)
+        |RETURN n""".stripMargin
+    )
+
+    plan.shouldEqual(cfg.planBuilder()
+                        .produceResults("n")
+                        .orderedDistinct(Seq("n"), "n AS n")
+                        .orderedUnion(Seq(Ascending("n")))
+                        .|.nodeByLabelScan("n", "P", indexOrder = IndexOrderAscending)
+                        .nodeByLabelScan("n", "L", indexOrder = IndexOrderAscending)
+                        .build()
+    )
+  }
+
+  test("should work with index a disjunction of conjunctions") {
+    val cfg = plannerConfig()
+      .addNodeIndex("L", Seq("p1"), 0.5, 0.5)
+      .addNodeIndex("P", Seq("p1"), 0.5, 0.5)
+      .build()
+
+    val plan = cfg.plan(
+      """MATCH (n)
+        |WHERE (n:L) OR (n:P AND n.p1 = 1)
+        |RETURN n""".stripMargin)
+
+    // Possible improvement: This could be planned with a nodeByLabelScan and a nodeIndexSeek
+    plan.shouldEqual(cfg.planBuilder()
+                        .produceResults("n")
+                        .filterExpression(ors(hasLabels("n", "L"), propEquality("n", "p1", 1)))
+                        .orderedDistinct(Seq("n"), "n AS n")
+                        .orderedUnion(Seq(Ascending("n")))
+                        .|.nodeByLabelScan("n", "P", indexOrder = IndexOrderAscending)
+                        .nodeByLabelScan("n", "L", indexOrder = IndexOrderAscending)
+                        .build()
+    )
+  }
 
   test("should not explode for many STARTS WITH") {
     val query =
@@ -131,9 +237,14 @@ class OrLeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         |)
         |RETURN tn""".stripMargin
 
-    val plan = runWithTimeout(1000)((new given {
-      indexOn("X", "prop")
-    } getLogicalPlanFor query)._2)
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("X", 50)
+      .setLabelCardinality("Y", 50)
+      .addNodeIndex("X", Seq("prop"), 0.5, 0.5)
+      .build()
+
+    val plan = runWithTimeout(1000)(cfg.plan(query))
 
     plan.treeCount {
       case _: NodeIndexSeek => true

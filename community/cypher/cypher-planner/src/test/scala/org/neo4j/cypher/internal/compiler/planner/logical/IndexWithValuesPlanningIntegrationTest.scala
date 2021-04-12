@@ -136,34 +136,28 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       indexOn("Awesome2", "prop2").providesValues()
     } getLogicalPlanFor "MATCH (n:Awesome:Awesome2) WHERE n.prop1 = 42 OR n.prop2 = 3 RETURN n.prop1, n.prop2"
 
+    // We don't want to assert on the produce results or the projection in this test
+    val Projection(unionPlan, _) = plan._2
 
-    Seq(
-      nodeIndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1))),
-      nodeIndexSeek("n:Awesome2(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1)), labelId = 1),
-      nodeIndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0))),
-      nodeIndexSeek("n:Awesome2(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)), labelId = 1)
-    ).permutations.map {
-      case Seq(seek1, seek2, seek3, seek4) =>
-        Projection(
-          Selection(
-            Seq(hasLabels("n", "Awesome"), hasLabels("n", "Awesome2")),
-            Distinct(
-              Union(
-                Union(
-                  Union(
-                    seek1,
-                    seek2
-                  ),
-                  seek3
-                ),
-                seek4
-              ),
-              Map("n" -> varFor("n"))
-            )
-          ),
-          Map("n.prop1" -> cachedNodeProp("n", "prop1"), "n.prop2" -> cachedNodeProp("n", "prop2"))
-        )
-    }.toSeq should contain(plan._2)
+    val hasLabel1 = hasLabels("n", "Awesome")
+    val hasLabel2 = hasLabels("n", "Awesome2")
+    val  seekLabel1Prop1 = nodeIndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)))
+    val  seekLabel1Prop2 = nodeIndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1)))
+    val  seekLabel2Prop1 = nodeIndexSeek("n:Awesome2(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)), labelId = 1)
+    val  seekLabel2Prop2 = nodeIndexSeek("n:Awesome2(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1)), labelId = 1)
+
+    val coveringCombinations = Seq(
+      (Seq(seekLabel1Prop1, seekLabel1Prop2), hasLabel2),
+      (Seq(seekLabel2Prop1, seekLabel2Prop2), hasLabel1),
+    )
+
+    val planAlternatives = for {
+      (seeks, filter) <- coveringCombinations
+      Seq(seek1, seek2) <- seeks.permutations
+    } yield Selection(Seq(filter), Distinct(Union(seek1, seek2), Map("n" -> varFor("n"))))
+
+    planAlternatives should contain(unionPlan)
+
   }
 
   // Index exact seeks

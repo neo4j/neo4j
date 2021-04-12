@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfiguration
@@ -76,6 +77,8 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.options.CypherDebugOption
+import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -742,7 +745,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan should (equal(alt1) or equal(alt2))
   }
 
-  test("should be able to OR together four index seeks") {
+  test("should be able to solve OR with union when there are indexes on all combinations") {
     val plan = (new given {
       indexOn("Label1", "prop1")
       indexOn("Label1", "prop2")
@@ -750,20 +753,25 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Label2", "prop2")
     } getLogicalPlanFor "MATCH (n:Label1:Label2) WHERE n.prop1 = 'val' OR n.prop2 = 'val' RETURN n")._2
 
-    val labelPredicate1 = hasLabels("n", "Label1")
-    val labelPredicate2 = hasLabels("n", "Label2")
+    val hasLabel1 = hasLabels("n", "Label1")
+    val hasLabel2 = hasLabels("n", "Label2")
 
-    val seek1 = nodeIndexSeek("n:Label1(prop1 = 'val')", DoNotGetValue)
-    val seek2 = nodeIndexSeek("n:Label1(prop2 = 'val')", DoNotGetValue, propIds = Some(Map("prop2" -> 1)))
-    val seek3 = nodeIndexSeek("n:Label2(prop1 = 'val')", DoNotGetValue, labelId = 1)
-    val seek4 = nodeIndexSeek("n:Label2(prop2 = 'val')", DoNotGetValue, labelId = 1, propIds = Some(Map("prop2" -> 1)))
+    val seekLabel1Prop1 = nodeIndexSeek("n:Label1(prop1 = 'val')", DoNotGetValue)
+    val seekLabel1Prop2 = nodeIndexSeek("n:Label1(prop2 = 'val')", DoNotGetValue, propIds = Some(Map("prop2" -> 1)))
+    val seekLabel2Prop1 = nodeIndexSeek("n:Label2(prop1 = 'val')", DoNotGetValue, labelId = 1)
+    val seekLabel2Prop2 = nodeIndexSeek("n:Label2(prop2 = 'val')", DoNotGetValue, labelId = 1, propIds = Some(Map("prop2" -> 1)))
 
-    Seq(seek1, seek2, seek3, seek4).permutations.map {
-      case Seq(sk1, sk2, sk3, sk4) =>
-        val union: Union = Union( Union( Union(sk2, sk4), sk1), sk3)
-        val distinct = Distinct(union, Map("n" -> varFor("n")))
-        Selection(Seq(labelPredicate1, labelPredicate2), distinct)
-    }.toSeq should contain(plan)
+    val coveringCombinations = Seq(
+      (Seq(seekLabel1Prop1, seekLabel1Prop2), hasLabel2),
+      (Seq(seekLabel2Prop1, seekLabel2Prop2), hasLabel1),
+    )
+
+    val planAlternatives = for {
+      (seeks, filter) <- coveringCombinations
+      Seq(seek1, seek2) <- seeks.permutations
+    } yield Selection(Seq(filter), Distinct(Union(seek1, seek2), Map("n" -> varFor("n"))))
+
+    planAlternatives should contain(plan)
   }
 
   test("should use transitive closure to figure out we can use index") {
