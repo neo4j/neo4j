@@ -82,75 +82,61 @@ public class IndexAccessors implements Closeable
             TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, cursorTracer );
             Iterator<IndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders )
                     .indexesGetAll( cursorTracer );
-            while ( true )
+            // Default to instantiate new accessors
+            accessorLookup = accessorLookup != null ? accessorLookup
+                                                    : index -> provider( providers, index ).getOnlineAccessor( index, samplingConfig, tokenNameLookup );
+            while ( indexes.hasNext() )
             {
                 try
                 {
-                    if ( indexes.hasNext() )
+                    // we intentionally only check indexes that are online since
+                    // - populating indexes will be rebuilt on next startup
+                    // - failed indexes have to be dropped by the user anyways
+                    IndexDescriptor indexDescriptor = indexes.next();
+                    if ( indexDescriptor.isUnique() && indexDescriptor.getOwningConstraintId().isEmpty() )
                     {
-                        // we intentionally only check indexes that are online since
-                        // - populating indexes will be rebuilt on next startup
-                        // - failed indexes have to be dropped by the user anyways
-                        IndexDescriptor indexDescriptor = indexes.next();
-                        if ( indexDescriptor.isUnique() && indexDescriptor.getOwningConstraintId().isEmpty() )
-                        {
-                            notOnlineIndexRules.add( indexDescriptor );
-                        }
-                        else
-                        {
-                            if ( InternalIndexState.ONLINE == provider( providers, indexDescriptor ).getInitialState( indexDescriptor, cursorTracer ) )
-                            {
-                                onlineIndexRules.add( indexDescriptor );
-                            }
-                            else
-                            {
-                                notOnlineIndexRules.add( indexDescriptor );
-                            }
-                        }
+                        notOnlineIndexRules.add( indexDescriptor );
                     }
                     else
                     {
-                        break;
+                        if ( InternalIndexState.ONLINE == provider( providers, indexDescriptor ).getInitialState( indexDescriptor, cursorTracer ) )
+                        {
+                            long indexId = indexDescriptor.getId();
+                            try
+                            {
+                                final IndexAccessor accessor = accessorLookup.apply( indexDescriptor );
+                                if ( isTokenIndex( indexDescriptor ) )
+                                {
+                                    if ( indexDescriptor.schema().entityType() == EntityType.NODE )
+                                    {
+                                        nodeLabelIndex = (TokenIndexAccessor) accessor;
+                                    }
+                                    else
+                                    {
+                                        relationshipTypeIndex = (TokenIndexAccessor) accessor;
+                                    }
+                                }
+                                else
+                                {
+                                    propertyIndexAccessors.put( indexId, accessor );
+                                    onlineIndexRules.add( indexDescriptor );
+                                }
+                            }
+                            catch ( RuntimeException e )
+                            {
+                                inconsistentRules.add( indexDescriptor );
+                            }
+                        }
+                        else
+                        {
+                            notOnlineIndexRules.add( indexDescriptor );
+                        }
                     }
                 }
                 catch ( Exception e )
                 {
                     // ignore; inconsistencies of the schema store are specifically handled elsewhere.
                 }
-            }
-        }
-
-        // Default to instantiate new accessors
-        accessorLookup = accessorLookup != null ? accessorLookup
-                                                : index -> provider( providers, index ).getOnlineAccessor( index, samplingConfig, tokenNameLookup );
-        for ( int i = 0; i < onlineIndexRules.size(); i++ )
-        {
-            IndexDescriptor indexRule = onlineIndexRules.get( i );
-            long indexId = indexRule.getId();
-            try
-            {
-                final IndexAccessor accessor = accessorLookup.apply( indexRule );
-                if ( isTokenIndex( indexRule ) )
-                {
-                    if ( indexRule.schema().entityType() == EntityType.NODE )
-                    {
-                        nodeLabelIndex = (TokenIndexAccessor) accessor;
-                    }
-                    else
-                    {
-                        relationshipTypeIndex = (TokenIndexAccessor) accessor;
-                    }
-                    onlineIndexRules.remove( i-- );
-                }
-                else
-                {
-                    propertyIndexAccessors.put( indexId, accessor );
-                }
-            }
-            catch ( RuntimeException e )
-            {
-               onlineIndexRules.remove( i-- );
-               inconsistentRules.add( indexRule );
             }
         }
     }
