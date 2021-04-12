@@ -119,8 +119,20 @@ class InCheckContainer(var checker: Checker) {
   }
 }
 
-class SingleThreadedLRUCache[K, V](maxSize: Int) {
-  val cache: ArrayBuffer[(K, V)] = new ArrayBuffer[(K, V)](maxSize)
+class ConcurrentLRUCache[K, V](maxSizePerThread: Int) extends InLRUCache[K, V] {
+  private val threadLocalCache = ThreadLocal.withInitial[ArrayBuffer[(K, V)]](() => new ArrayBuffer[(K, V)](maxSizePerThread))
+  override val maxSize: Int = maxSizePerThread
+
+  override def cache: ArrayBuffer[(K, V)] = threadLocalCache.get()
+}
+
+class SingleThreadedLRUCache[K, V](override val maxSize: Int) extends InLRUCache[K, V] {
+  override val cache: ArrayBuffer[(K, V)] = new ArrayBuffer[(K, V)](maxSize)
+}
+
+abstract class InLRUCache[K, V] {
+  def maxSize: Int
+  def cache: ArrayBuffer[(K, V)]
 
   def getOrElseUpdate(key: K, f: => V): V = {
     val idx = cache.indexWhere(_._1 == key)

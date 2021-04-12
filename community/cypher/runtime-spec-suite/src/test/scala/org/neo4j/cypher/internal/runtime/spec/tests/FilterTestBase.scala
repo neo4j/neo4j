@@ -31,6 +31,29 @@ abstract class FilterTestBase[CONTEXT <: RuntimeContext](
                                                           sizeHint: Int
                                                         ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
+  test("should filter with (cached) IN expression") {
+    // given
+    given {
+      nodePropertyGraph(sizeHint, {
+        case i => Map("list" -> Array(1,i), "key" -> 1)
+      })
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .optionalExpandAll("(n)--(y)") // break pipeline (to force parallelism)
+      .nonFuseable() // break pipeline, even with fusing across pipelines (to force parallelism)
+      .filter("n.key IN [1]")
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expectedRowCount = sizeHint
+    runtimeResult should beColumns("n").withRows(rowCount(expectedRowCount))
+  }
+
   test("should filter by one predicate") {
     // given
     val input = inputValues((0 until sizeHint).map(Array[Any](_)):_*)

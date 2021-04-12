@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InCheckContainer
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InLRUCache
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.SingleThreadedLRUCache
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.TokenReadSession
@@ -48,7 +49,7 @@ class QueryState(val query: QueryContext,
                  val memoryTracker: QueryMemoryTracker,
                  val decorator: PipeDecorator = NullPipeDecorator,
                  val initialContext: Option[CypherRow] = None,
-                 val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = 16),
+                 val cachedIn: InLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = 16),
                  val lenientCreateRelationship: Boolean = false,
                  val prePopulateResults: Boolean = false,
                  val input: InputDataStream = NoInput) extends AutoCloseable {
