@@ -395,7 +395,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       case Seq(rightSymbol) =>
         val contextForRhs = context.withUpdatedLabelInfo(lhsPlan)
           .withConfig(context.config.withLeafPlanners(
-            QueryPlannerConfiguration.leafPlannersForNestedIndexJoins(LeafPlanRestrictions.OnlyIndexPlansFor(rightSymbol, leftSymbols))
+            QueryPlannerConfiguration.leafPlannersForNestedIndexJoins(LeafPlanRestrictions.OnlyIndexSeekPlansFor(rightSymbol, leftSymbols))
           ))
 
         val rhsPlans = try {

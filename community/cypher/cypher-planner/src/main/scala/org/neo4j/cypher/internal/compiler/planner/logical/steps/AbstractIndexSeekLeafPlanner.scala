@@ -179,7 +179,7 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
   private val isValidPredicate: (LogicalVariable, Set[LogicalVariable]) => Boolean = restrictions match {
     case LeafPlanRestrictions.NoRestrictions => (_, _) => true
 
-    case LeafPlanRestrictions.OnlyIndexPlansFor(variable, dependencyRestrictions) => (ident, dependencies) =>
+    case LeafPlanRestrictions.OnlyIndexSeekPlansFor(variable, dependencyRestrictions) => (ident, dependencies) =>
       val isRestrictedVariable = ident.name == variable
       if (isRestrictedVariable) dependencies.map(_.name) == dependencyRestrictions
       else true

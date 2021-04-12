@@ -474,7 +474,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val restriction = LeafPlanRestrictions.OnlyIndexPlansFor("n", Set("x"))
+      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("n", Set("x"))
       val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx).toSet
 
       // then
@@ -526,7 +526,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "prop", "foo")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val restriction = LeafPlanRestrictions.OnlyIndexPlansFor("n", Set("x"))
+      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("n", Set("x"))
       val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx).toSet
 
       // then
@@ -588,7 +588,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val restriction = LeafPlanRestrictions.OnlyIndexPlansFor("m", Set("x"))
+      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("m", Set("x"))
       val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx).toSet
 
       // then

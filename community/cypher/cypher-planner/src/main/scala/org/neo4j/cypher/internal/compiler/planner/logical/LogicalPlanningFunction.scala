@@ -82,16 +82,16 @@ trait LeafPlanFinder {
 }
 
 sealed trait LeafPlanRestrictions {
-  def symbolsThatShouldOnlyUseIndexLeafPlanners: Set[String]
+  def symbolsThatShouldOnlyUseIndexSeekLeafPlanners: Set[String]
 }
 
 object LeafPlanRestrictions {
   case object NoRestrictions extends LeafPlanRestrictions {
-    override def symbolsThatShouldOnlyUseIndexLeafPlanners: Set[String] = Set.empty
+    override def symbolsThatShouldOnlyUseIndexSeekLeafPlanners: Set[String] = Set.empty
   }
 
-  case class OnlyIndexPlansFor(variable: String, dependencies: Set[String]) extends LeafPlanRestrictions {
-    override def symbolsThatShouldOnlyUseIndexLeafPlanners: Set[String] = Set(variable)
+  case class OnlyIndexSeekPlansFor(variable: String, dependencies: Set[String]) extends LeafPlanRestrictions {
+    override def symbolsThatShouldOnlyUseIndexSeekLeafPlanners: Set[String] = Set(variable)
   }
 
 }

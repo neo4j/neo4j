@@ -46,29 +46,29 @@ object QueryPlannerConfiguration {
 
   private def leafPlanFromExpressions(restrictions: LeafPlanRestrictions): IndexedSeq[LeafPlanner with LeafPlanFromExpressions] = IndexedSeq(
     // MATCH (n) WHERE id(n) IN ... RETURN n
-    idSeekLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners),
+    idSeekLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
     // MATCH (n) WHERE n.prop IN ... RETURN n
     indexSeekLeafPlanner(restrictions),
 
     // MATCH (n) WHERE has(n.prop) RETURN n
     // MATCH (n:Person) WHERE n.prop CONTAINS ...
-    indexScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners),
+    indexScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
     // MATCH (n:Person) RETURN n
-    labelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners),
+    labelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
   )
 
   private def allLeafPlanners(restrictions: LeafPlanRestrictions): IndexedSeq[LeafPlanner] = {
     val expressionLeafPlanners = leafPlanFromExpressions(restrictions)
     expressionLeafPlanners ++ IndexedSeq(
-      argumentLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners),
+      argumentLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
       // MATCH (n) RETURN n
-      allNodesLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners),
+      allNodesLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
       //MATCH ()-[r:R]->()
-     relationshipTypeScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexLeafPlanners),
+     relationshipTypeScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
       // Handles OR between other leaf planners
       OrLeafPlanner(expressionLeafPlanners))
