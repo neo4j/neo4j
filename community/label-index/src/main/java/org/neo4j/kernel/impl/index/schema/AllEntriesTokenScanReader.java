@@ -29,19 +29,8 @@ import org.neo4j.internal.helpers.collection.BoundedIterable;
  */
 public interface AllEntriesTokenScanReader extends BoundedIterable<EntityTokenRange>
 {
-    /**
-     * @return size of a range. All {@link EntityTokenRange} instances handed out by this iterator
-     * has the same range size.
-     */
-    int rangeSize();
-
     AllEntriesTokenScanReader EMPTY = new AllEntriesTokenScanReader()
     {
-        @Override
-        public int rangeSize()
-        {
-            return 0;
-        }
 
         @Override
         public long maxCount()

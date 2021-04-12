@@ -199,12 +199,6 @@ public class EmptyingTokenScanStore implements TokenScanStore
         static final AllEntriesTokenScanReader INSTANCE = new EmptyAllEntriesTokenScanReader();
 
         @Override
-        public int rangeSize()
-        {
-            return 0;
-        }
-
-        @Override
         public long maxCount()
         {
             return 0;

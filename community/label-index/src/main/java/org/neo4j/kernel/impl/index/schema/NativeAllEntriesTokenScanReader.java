@@ -67,12 +67,6 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
     }
 
     @Override
-    public int rangeSize()
-    {
-        return RANGE_SIZE;
-    }
-
-    @Override
     public Iterator<EntityTokenRange> iterator()
     {
         try
