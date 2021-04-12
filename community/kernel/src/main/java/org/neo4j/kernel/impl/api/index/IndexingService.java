@@ -657,6 +657,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      * {@link #createIndexes} is called with a descriptor for an already existing index
      * and such operation needs to cause the index being linked to the new descriptor instead of
      * a new index being created.
+     * Of course it would be much simpler to close the injected index and create a new one with the new identity.
+     * The reason why the elaborate migration was introduced is not to interrupt any ongoing operations
+     * against the index by keeping the file/accessor of the injected label index open.
      */
     private IndexDescriptor[] filterOutAndHandleInjectedTokenIndex( IndexDescriptor[] rules )
     {
