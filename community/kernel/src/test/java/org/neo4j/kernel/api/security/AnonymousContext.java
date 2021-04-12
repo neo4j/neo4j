@@ -24,6 +24,8 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
+
 /** Controls the capabilities of a KernelTransaction. */
 public class AnonymousContext extends LoginContext
 {
@@ -31,7 +33,7 @@ public class AnonymousContext extends LoginContext
 
     private AnonymousContext( AccessMode accessMode )
     {
-        super( AuthSubject.ANONYMOUS );
+        super( AuthSubject.ANONYMOUS, EMBEDDED_CONNECTION );
         this.accessMode = accessMode;
     }
 
@@ -68,6 +70,6 @@ public class AnonymousContext extends LoginContext
     @Override
     public SecurityContext authorize( IdLookup idLookup, String dbName )
     {
-        return new SecurityContext( subject(), accessMode );
+        return new SecurityContext( subject(), accessMode, connectionInfo() );
     }
 }

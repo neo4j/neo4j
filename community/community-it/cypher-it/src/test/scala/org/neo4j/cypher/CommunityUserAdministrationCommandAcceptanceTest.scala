@@ -35,6 +35,7 @@ import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.internal.kernel.api.security.AuthenticationResult
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.AuthManager
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION
 import org.neo4j.server.security.auth.SecurityTestUtils
 import org.scalatest.enablers.Messaging.messagingNatureOfThrowable
 
@@ -1603,7 +1604,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
     Map("user" -> username, "roles" -> null, "passwordChangeRequired" -> passwordChangeRequired, "suspended" -> null, "home" -> null)
 
   private def testUserLogin(username: String, password: String, expected: AuthenticationResult): Unit = {
-    val login = authManager.login(SecurityTestUtils.authToken(username, password))
+    val login = authManager.login(SecurityTestUtils.authToken(username, password), EMBEDDED_CONNECTION)
     val result = login.subject().getAuthenticationResult
     result should be(expected)
   }
@@ -1638,7 +1639,7 @@ class CommunityUserAdministrationCommandAcceptanceTest extends CommunityAdminist
                         params: util.Map[String, Object] = Collections.emptyMap(),
                         resultHandler: (Result.ResultRow, Int) => Unit = (_, _) => {}): Int = {
     selectDatabase(database)
-    val login = authManager.login(SecurityTestUtils.authToken(username, password))
+    val login = authManager.login(SecurityTestUtils.authToken(username, password), EMBEDDED_CONNECTION)
     val tx = graph.beginTransaction(Type.EXPLICIT, login)
     try {
       var count = 0

@@ -60,6 +60,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.deprecatedName;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILURE;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.SUCCESS;
@@ -336,7 +337,7 @@ public class AuthProceduresIT
 
     private LoginContext login( String username, String password ) throws InvalidAuthTokenException
     {
-        return authManager.login( newBasicAuthToken( username, password ) );
+        return authManager.login( newBasicAuthToken( username, password ), EMBEDDED_CONNECTION );
     }
 
     private void assertSuccess( LoginContext subject, String query )

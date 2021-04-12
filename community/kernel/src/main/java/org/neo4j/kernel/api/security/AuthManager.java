@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.security;
 
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -40,10 +41,11 @@ public abstract class AuthManager extends LifecycleAdapter
      * NOTE: The authToken will be cleared of any credentials
      *
      * @param authToken The authentication token to login with. Typically contains principals and credentials.
+     * @param connectionInfo
      * @return An AuthSubject representing the newly logged-in user
      * @throws InvalidAuthTokenException if the authentication token is malformed
      */
-    public abstract LoginContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException;
+    public abstract LoginContext login( Map<String,Object> authToken, ClientConnectionInfo connectionInfo ) throws InvalidAuthTokenException;
 
     public abstract void log( String message, SecurityContext securityContext );
 
@@ -53,10 +55,10 @@ public abstract class AuthManager extends LifecycleAdapter
     public static final AuthManager NO_AUTH = new AuthManager()
     {
         @Override
-        public LoginContext login( Map<String,Object> authToken )
+        public LoginContext login( Map<String,Object> authToken, ClientConnectionInfo connectionInfo )
         {
             AuthToken.clearCredentials( authToken );
-            return LoginContext.AUTH_DISABLED;
+            return LoginContext.fullAccess( connectionInfo );
         }
 
         @Override

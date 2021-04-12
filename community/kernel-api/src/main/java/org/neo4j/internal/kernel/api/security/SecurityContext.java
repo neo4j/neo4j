@@ -22,7 +22,10 @@ package org.neo4j.internal.kernel.api.security;
 import java.util.Collections;
 import java.util.Set;
 
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 
 /**
  * Controls the capabilities of a KernelTransaction, including the authenticated user and authorization data.
@@ -33,9 +36,9 @@ public class SecurityContext extends LoginContext
 {
     protected final AccessMode mode;
 
-    public SecurityContext( AuthSubject subject, AccessMode mode )
+    public SecurityContext( AuthSubject subject, AccessMode mode, ClientConnectionInfo connectionInfo )
     {
-        super( subject );
+        super( subject, connectionInfo );
         this.mode = mode;
     }
 
@@ -80,7 +83,7 @@ public class SecurityContext extends LoginContext
      */
     public SecurityContext withMode( AccessMode mode )
     {
-        return new SecurityContext( subject, mode );
+        return new SecurityContext( subject, mode, connectionInfo() );
     }
 
     /**
@@ -88,7 +91,7 @@ public class SecurityContext extends LoginContext
      */
     public SecurityContext withMode( AdminAccessMode adminAccessMode )
     {
-        return new SecurityContext( subject, mode );
+        return new SecurityContext( subject, mode, connectionInfo() );
     }
 
     public void assertCredentialsNotExpired()
@@ -110,32 +113,29 @@ public class SecurityContext extends LoginContext
     }
 
     /** Allows all operations. */
-    @SuppressWarnings( "StaticInitializerReferencesSubClass" )
-    public static final SecurityContext AUTH_DISABLED = new AuthDisabled( AccessMode.Static.FULL );
+    public static final SecurityContext AUTH_DISABLED = authDisabled( AccessMode.Static.FULL, EMBEDDED_CONNECTION );
 
-    private static final class AuthDisabled extends SecurityContext
+    public static SecurityContext authDisabled( AccessMode mode, ClientConnectionInfo connectionInfo )
     {
-        private AuthDisabled( AccessMode mode )
+        return new SecurityContext( AuthSubject.AUTH_DISABLED, mode, connectionInfo )
         {
-            super( AuthSubject.AUTH_DISABLED, mode );
-        }
+            @Override
+            public SecurityContext withMode( AccessMode mode )
+            {
+                return authDisabled( mode, connectionInfo() );
+            }
 
-        @Override
-        public SecurityContext withMode( AccessMode mode )
-        {
-            return new AuthDisabled( mode );
-        }
+            @Override
+            public String description()
+            {
+                return "AUTH_DISABLED with " + mode().name();
+            }
 
-        @Override
-        public String description()
-        {
-            return "AUTH_DISABLED with " + mode().name();
-        }
-
-        @Override
-        public String toString()
-        {
-            return defaultString( "auth-disabled" );
-        }
+            @Override
+            public String toString()
+            {
+                return defaultString( "auth-disabled" );
+            }
+        };
     }
 }

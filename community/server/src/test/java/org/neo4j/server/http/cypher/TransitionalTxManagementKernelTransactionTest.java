@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 import static org.mockito.Mockito.mock;
@@ -36,7 +35,7 @@ import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.
 class TransitionalTxManagementKernelTransactionTest
 {
     private final GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
-    private final LoginContext loginContext = AnonymousContext.read();
+    private final LoginContext loginContext = LoginContext.AUTH_DISABLED;
     private final KernelTransaction.Type type = KernelTransaction.Type.IMPLICIT;
 
     @Test

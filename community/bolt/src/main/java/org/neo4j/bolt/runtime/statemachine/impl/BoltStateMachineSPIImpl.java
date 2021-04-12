@@ -21,6 +21,7 @@ package org.neo4j.bolt.runtime.statemachine.impl;
 
 import java.util.Map;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.statemachine.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.statemachine.TransactionStateMachineSPIProvider;
@@ -40,13 +41,15 @@ public class BoltStateMachineSPIImpl implements BoltStateMachineSPI
     private final Authentication authentication;
     private final String version;
     private final TransactionStateMachineSPIProvider transactionSpiProvider;
+    private final BoltChannel boltChannel;
 
     public BoltStateMachineSPIImpl( LogService logging, Authentication authentication,
-            TransactionStateMachineSPIProvider transactionSpiProvider )
+                                    TransactionStateMachineSPIProvider transactionSpiProvider, BoltChannel boltChannel )
     {
         this.errorReporter = new ErrorReporter( logging );
         this.authentication = authentication;
         this.transactionSpiProvider = transactionSpiProvider;
+        this.boltChannel = boltChannel;
         this.version = BOLT_SERVER_VERSION_PREFIX + Version.getNeo4jVersion();
     }
 
@@ -65,7 +68,7 @@ public class BoltStateMachineSPIImpl implements BoltStateMachineSPI
     @Override
     public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
     {
-        return authentication.authenticate( authToken );
+        return authentication.authenticate( authToken, boltChannel.info() );
     }
 
     @Override

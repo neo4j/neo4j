@@ -209,8 +209,7 @@ public abstract class AbstractCypherResource
     {
         LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
         long customTransactionTimeout = getTransactionTimeout( headers, log );
-        ClientConnectionInfo connectionInfo = HttpConnectionInfoFactory.create( request );
-        return transactionFacade.newTransactionHandle( uriScheme, implicitTransaction, loginContext, connectionInfo, memoryTracker, customTransactionTimeout );
+        return transactionFacade.newTransactionHandle( uriScheme, implicitTransaction, loginContext, loginContext.connectionInfo(), memoryTracker, customTransactionTimeout );
     }
 
     private Response executeInExistingTransaction( long transactionId, InputEventStream inputEventStream, MemoryTracker memoryTracker,

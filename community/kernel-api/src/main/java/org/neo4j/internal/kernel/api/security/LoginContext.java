@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
+
 /**
  * The LoginContext hold the executing authenticated user (subject).
  * By calling {@link #authorize(IdLookup, String)} the user is also authorized, and a full SecurityContext is returned,
@@ -27,10 +31,12 @@ package org.neo4j.internal.kernel.api.security;
 public abstract class LoginContext
 {
     protected final AuthSubject subject;
+    private ClientConnectionInfo connectionInfo;
 
-    public LoginContext( AuthSubject subject )
+    public LoginContext( AuthSubject subject, ClientConnectionInfo connectionInfo )
     {
         this.subject = subject;
+        this.connectionInfo = connectionInfo;
     }
 
     /**
@@ -39,6 +45,10 @@ public abstract class LoginContext
     public AuthSubject subject()
     {
         return subject;
+    }
+
+    public ClientConnectionInfo connectionInfo() {
+        return connectionInfo;
     }
 
     /**
@@ -50,14 +60,27 @@ public abstract class LoginContext
      */
     public abstract SecurityContext authorize( IdLookup idLookup, String dbName );
 
-    public static LoginContext AUTH_DISABLED = new LoginContext( AuthSubject.AUTH_DISABLED )
+    /**
+     * Get a login context with full privileges.
+     *
+     * @param connectionInfo information about the clients connection.
+     */
+    public static LoginContext fullAccess( ClientConnectionInfo connectionInfo )
     {
-        @Override
-        public SecurityContext authorize( IdLookup idLookup, String dbName )
+        return new LoginContext( AuthSubject.AUTH_DISABLED, connectionInfo )
         {
-            return SecurityContext.AUTH_DISABLED;
-        }
-    };
+            @Override
+            public SecurityContext authorize( IdLookup idLookup, String dbName )
+            {
+                return SecurityContext.authDisabled( AccessMode.Static.FULL, connectionInfo() );
+            }
+        };
+    }
+
+    /**
+     * A login context with full privileges, should only be used for transactions without external connection.
+     */
+    public static LoginContext AUTH_DISABLED = fullAccess( EMBEDDED_CONNECTION );
 
     public interface IdLookup
     {

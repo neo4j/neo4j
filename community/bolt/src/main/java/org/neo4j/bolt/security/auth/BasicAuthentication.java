@@ -21,6 +21,7 @@ package org.neo4j.bolt.security.auth;
 
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -39,11 +40,11 @@ public class BasicAuthentication implements Authentication
     }
 
     @Override
-    public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
+    public AuthenticationResult authenticate( Map<String,Object> authToken, ClientConnectionInfo connectionInfo ) throws AuthenticationException
     {
         try
         {
-            LoginContext loginContext = authManager.login( authToken );
+            LoginContext loginContext = authManager.login( authToken, connectionInfo );
 
             switch ( loginContext.subject().getAuthenticationResult() )
             {

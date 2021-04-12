@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 
@@ -53,7 +54,7 @@ class SecurityContextDescriptionTest
                 new BasicSystemGraphRealm( realmHelper, new RateLimitedAuthenticationStrategy( Clocks.systemClock(), Config.defaults() ) );
         User user =  new User.Builder( "johan", credentialFor( "bar" ) ).build();
         doReturn( user ).when( realmHelper ).getUser( "johan" );
-        context = realm.login( authToken( "johan", "bar" ) ).authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME );
+        context = realm.login( authToken( "johan", "bar" ), EMBEDDED_CONNECTION ).authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME );
     }
 
     @Test

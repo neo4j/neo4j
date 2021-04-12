@@ -68,6 +68,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 
 /**
  * Test for randomly creating data and verifying transaction data seen in transaction event handlers.
@@ -210,12 +211,12 @@ class TransactionEventsIT
         } ) );
         AuthSubject subject = mock( AuthSubject.class );
         when( subject.username() ).thenReturn( "Christof" );
-        LoginContext loginContext = new LoginContext( subject )
+        LoginContext loginContext = new LoginContext( subject, EMBEDDED_CONNECTION )
         {
             @Override
             public SecurityContext authorize( IdLookup idLookup, String dbName )
             {
-                return new SecurityContext( subject, AccessMode.Static.WRITE );
+                return new SecurityContext( subject, AccessMode.Static.WRITE, EMBEDDED_CONNECTION );
             }
         };
         Map<String,Object> metadata = genericMap( "username", "joe" );

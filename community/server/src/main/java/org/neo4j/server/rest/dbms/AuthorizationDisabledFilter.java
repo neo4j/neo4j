@@ -29,7 +29,12 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 import org.neo4j.server.web.JettyHttpConnection;
 
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
@@ -48,7 +53,8 @@ public class AuthorizationDisabledFilter extends AuthorizationFilter
 
         try
         {
-            LoginContext loginContext = getAuthDisabledLoginContext();
+            ClientConnectionInfo connectionInfo = HttpConnectionInfoFactory.create( request );
+            LoginContext loginContext = getAuthDisabledLoginContext( connectionInfo );
             String userAgent = request.getHeader( HttpHeaders.USER_AGENT );
 
             JettyHttpConnection.updateUserForCurrentConnection( loginContext.subject().username(), userAgent );
@@ -63,8 +69,8 @@ public class AuthorizationDisabledFilter extends AuthorizationFilter
         }
     }
 
-    protected LoginContext getAuthDisabledLoginContext()
+    protected LoginContext getAuthDisabledLoginContext( ClientConnectionInfo connectionInfo )
     {
-        return LoginContext.AUTH_DISABLED;
+        return LoginContext.fullAccess( connectionInfo );
     }
 }

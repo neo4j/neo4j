@@ -46,6 +46,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILURE;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.SUCCESS;
@@ -133,7 +134,7 @@ public class BasicSystemGraphRealmTest
         Map<String,Object> authToken = AuthToken.newBasicAuthToken( "jake", password );
 
         // When
-        realm.login( authToken );
+        realm.login( authToken, EMBEDDED_CONNECTION );
 
         // Then
         assertThat( password ).isEqualTo( clearedPasswordWithSameLengthAs( "abc123" ) );
@@ -151,7 +152,7 @@ public class BasicSystemGraphRealmTest
         // When
         try
         {
-            realm.login( authToken );
+            realm.login( authToken, EMBEDDED_CONNECTION );
             fail( "exception expected" );
         }
         catch ( InvalidAuthTokenException e )
@@ -165,33 +166,33 @@ public class BasicSystemGraphRealmTest
     @Test
     void shouldFailWhenAuthTokenIsInvalid()
     {
-        assertThatThrownBy( () -> realm.login( map( AuthToken.SCHEME_KEY, "supercool", AuthToken.PRINCIPAL, "neo4j" ) ) )
+        assertThatThrownBy( () -> realm.login( map( AuthToken.SCHEME_KEY, "supercool", AuthToken.PRINCIPAL, "neo4j" ), EMBEDDED_CONNECTION ) )
                 .isInstanceOf( InvalidAuthTokenException.class )
                 .hasMessage( "Unsupported authentication token, scheme 'supercool' is not supported." );
 
-        assertThatThrownBy( () -> realm.login( map( AuthToken.SCHEME_KEY, "none" ) ) )
+        assertThatThrownBy( () -> realm.login( map( AuthToken.SCHEME_KEY, "none" ), EMBEDDED_CONNECTION ) )
                 .isInstanceOf( InvalidAuthTokenException.class )
                 .hasMessage( "Unsupported authentication token, scheme 'none' is only allowed when auth is disabled." );
 
         assertThatThrownBy(
-                () -> realm.login( map( "key", "value" ) ) )
+                () -> realm.login( map( "key", "value" ), EMBEDDED_CONNECTION ) )
                 .isInstanceOf( InvalidAuthTokenException.class )
                 .hasMessage( "Unsupported authentication token, missing key `scheme`" );
 
         assertThatThrownBy(
-                () -> realm.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.PRINCIPAL, "neo4j" ) ) )
+                () -> realm.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.PRINCIPAL, "neo4j" ), EMBEDDED_CONNECTION ) )
                 .isInstanceOf( InvalidAuthTokenException.class )
                 .hasMessage( "Unsupported authentication token, missing key `credentials`" );
 
         assertThatThrownBy(
-                () -> realm.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.CREDENTIALS, "very-secret" ) ) )
+                () -> realm.login( map( AuthToken.SCHEME_KEY, "basic", AuthToken.CREDENTIALS, "very-secret" ), EMBEDDED_CONNECTION ) )
                 .isInstanceOf( InvalidAuthTokenException.class )
                 .hasMessage( "Unsupported authentication token, missing key `principal`" );
     }
 
     private void assertLoginGivesResult( String username, String password, AuthenticationResult expectedResult ) throws InvalidAuthTokenException
     {
-        LoginContext securityContext = realm.login( authToken( username, password ) );
+        LoginContext securityContext = realm.login( authToken( username, password ), EMBEDDED_CONNECTION );
         assertThat( securityContext.subject().getAuthenticationResult() ).isEqualTo( expectedResult );
     }
 

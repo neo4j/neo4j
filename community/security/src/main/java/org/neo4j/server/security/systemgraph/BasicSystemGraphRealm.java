@@ -22,6 +22,7 @@ package org.neo4j.server.security.systemgraph;
 import java.util.Map;
 
 import org.neo4j.cypher.internal.security.FormatException;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -52,7 +53,7 @@ public class BasicSystemGraphRealm extends AuthManager
     }
 
     @Override
-    public LoginContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException
+    public LoginContext login( Map<String,Object> authToken, ClientConnectionInfo connectionInfo ) throws InvalidAuthTokenException
     {
         try
         {
@@ -69,11 +70,11 @@ public class BasicSystemGraphRealm extends AuthManager
                 {
                     result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
                 }
-                return new BasicLoginContext( user, result );
+                return new BasicLoginContext( user, result, connectionInfo );
             }
             catch ( InvalidArgumentsException | FormatException e )
             {
-                return new BasicLoginContext( null, AuthenticationResult.FAILURE );
+                return new BasicLoginContext( null, AuthenticationResult.FAILURE, connectionInfo );
             }
         }
         finally

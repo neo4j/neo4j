@@ -27,6 +27,7 @@ public interface AuthenticationResult
 
     boolean credentialsExpired();
 
+    // TODO Only used in one test...
     AuthenticationResult AUTH_DISABLED = new AuthenticationResult()
     {
         @Override

@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 
@@ -54,7 +55,8 @@ class BasicAuthenticationTest
     void shouldNotDoAnythingOnSuccess() throws Exception
     {
         // When
-        AuthenticationResult result = authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", password( "secret2" ) ) );
+        AuthenticationResult result = authentication.authenticate(
+                map( "scheme", "basic", "principal", "mike", "credentials", password( "secret2" ) ), EMBEDDED_CONNECTION );
 
         // Then
         assertThat( result.getLoginContext().subject().username() ).isEqualTo( "mike" );
@@ -64,7 +66,7 @@ class BasicAuthenticationTest
     void shouldThrowAndLogOnFailure()
     {
         var e = assertThrows( AuthenticationException.class,
-                () -> authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "banana" ) ) ) );
+                () -> authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "banana" ) ), EMBEDDED_CONNECTION) );
         assertEquals( Status.Security.Unauthorized, e.status() );
         assertEquals( "The client is unauthorized due to authentication failure.", e.getMessage() );
     }
@@ -73,7 +75,8 @@ class BasicAuthenticationTest
     void shouldIndicateThatCredentialsExpired() throws Exception
     {
         // When
-        AuthenticationResult result = authentication.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "secret" ) ) );
+        AuthenticationResult result = authentication.authenticate(
+                map( "scheme", "basic", "principal", "bob", "credentials", password( "secret" ) ), EMBEDDED_CONNECTION);
 
         // Then
         assertTrue( result.credentialsExpired() );
@@ -90,7 +93,7 @@ class BasicAuthenticationTest
         {
             try
             {
-                auth.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "gelato" ) ) );
+                auth.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "gelato" ) ), EMBEDDED_CONNECTION);
             }
             catch ( AuthenticationException e )
             {
@@ -99,7 +102,7 @@ class BasicAuthenticationTest
         }
 
         var e = assertThrows( AuthenticationException.class,
-                () -> auth.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "gelato" ) ) ) );
+                () -> auth.authenticate( map( "scheme", "basic", "principal", "bob", "credentials", password( "gelato" ) ), EMBEDDED_CONNECTION) );
         assertEquals( Status.Security.AuthenticationRateLimit, e.status() );
         assertEquals( "The client has provided incorrect authentication details too many times in a row.", e.getMessage() );
     }
@@ -110,7 +113,7 @@ class BasicAuthenticationTest
         // When
         byte[] password = password( "secret2" );
 
-        authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", password ) );
+        authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", password ), EMBEDDED_CONNECTION);
 
         // Then
         assertThat( password ).containsOnly( 0 );
@@ -120,14 +123,15 @@ class BasicAuthenticationTest
     void shouldThrowWithNoScheme()
     {
         var e = assertThrows( AuthenticationException.class,
-                () -> authentication.authenticate( map( "principal", "bob", "credentials", password( "secret" ) ) ) );
+                () -> authentication.authenticate( map( "principal", "bob", "credentials", password( "secret" ) ), EMBEDDED_CONNECTION) );
         assertEquals( Status.Security.Unauthorized, e.status() );
     }
 
     @Test
     void shouldFailOnInvalidAuthToken()
     {
-        var e = assertThrows( AuthenticationException.class, () -> authentication.authenticate( map( "this", "does", "not", "matter", "for", "test" ) ) );
+        var e = assertThrows( AuthenticationException.class, () -> authentication.authenticate(
+                map( "this", "does", "not", "matter", "for", "test" ), EMBEDDED_CONNECTION) );
         assertEquals( Status.Security.Unauthorized, e.status() );
     }
 
@@ -135,7 +139,7 @@ class BasicAuthenticationTest
     void shouldFailOnMalformedToken()
     {
         var e = assertThrows( AuthenticationException.class, () -> authentication
-                .authenticate( map( "scheme", "basic", "principal", singletonList( "bob" ), "credentials", password( "secret" ) ) ) );
+                .authenticate( map( "scheme", "basic", "principal", singletonList( "bob" ), "credentials", password( "secret" ) ), EMBEDDED_CONNECTION) );
         assertEquals( Status.Security.Unauthorized, e.status() );
         assertEquals( "Unsupported authentication token, the value associated with the key `principal` " +
                 "must be a String but was: SingletonList", e.getMessage() );

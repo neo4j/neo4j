@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
 import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 
@@ -160,7 +161,7 @@ public class BasicSystemGraphRealmTestHelper
     {
         for ( int i = 0; i < attempts; i++ )
         {
-            LoginContext login = realm.login( testAuthenticationToken( username, badPassword ) );
+            LoginContext login = realm.login( testAuthenticationToken( username, badPassword ), EMBEDDED_CONNECTION );
             if ( AuthenticationResult.SUCCESS.equals( login.subject().getAuthenticationResult() ) )
             {
                 fail( "Unexpectedly succeeded in logging in" );

@@ -22,28 +22,24 @@ package org.neo4j.server.rest.dbms;
 import java.security.Principal;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.SecurityContext;
 
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
 public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
 {
     public static LoginContext getLoginContextFromHttpServletRequest( HttpServletRequest request )
     {
         Principal principal = request.getUserPrincipal();
-        return getLoginContextFromUserPrincipal( principal );
+        ClientConnectionInfo connectionInfo = HttpConnectionInfoFactory.create( request );
+        return getLoginContextFromUserPrincipal( principal, connectionInfo );
     }
 
-    public static LoginContext getLoginContextFromContainerRequestContext( ContainerRequestContext requestContext )
-    {
-        SecurityContext securityContext = requestContext.getSecurityContext();
-        Principal principal = securityContext.getUserPrincipal();
-        return getLoginContextFromUserPrincipal( principal );
-    }
-
-    public static LoginContext getLoginContextFromUserPrincipal( Principal principal )
+    public static LoginContext getLoginContextFromUserPrincipal( Principal principal, ClientConnectionInfo connectionInfo )
     {
         if ( principal instanceof DelegatingPrincipal )
         {
@@ -51,7 +47,14 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
         }
         // If whitelisted uris can start transactions we cannot throw exception here
         //throw new IllegalArgumentException( "Tried to get access mode on illegal user principal" );
-        return AnonymousContext.access();
+        return new LoginContext( AuthSubject.ANONYMOUS, connectionInfo )
+        {
+            @Override
+            public SecurityContext authorize( IdLookup idLookup, String dbName )
+            {
+                return new SecurityContext( subject(), AccessMode.Static.ACCESS, connectionInfo() );
+            }
+        };
     }
 
     private final String authType;

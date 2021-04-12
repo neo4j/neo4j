@@ -20,6 +20,7 @@
 package org.neo4j.server.security.auth;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
@@ -37,9 +38,9 @@ public class BasicLoginContext extends LoginContext
 {
     private AccessMode accessMode;
 
-    public BasicLoginContext( User user, AuthenticationResult authenticationResult )
+    public BasicLoginContext( User user, AuthenticationResult authenticationResult, ClientConnectionInfo connectionInfo )
     {
-        super( new BasicAuthSubject( user, authenticationResult ) );
+        super( new BasicAuthSubject( user, authenticationResult ), connectionInfo );
 
         switch ( authenticationResult )
         {
@@ -95,6 +96,6 @@ public class BasicLoginContext extends LoginContext
         {
             throw AccessMode.Static.CREDENTIALS_EXPIRED.onViolation( AuthorizationViolationException.PERMISSION_DENIED );
         }
-        return new SecurityContext( subject(), accessMode );
+        return new SecurityContext( subject(), accessMode, connectionInfo() );
     }
 }

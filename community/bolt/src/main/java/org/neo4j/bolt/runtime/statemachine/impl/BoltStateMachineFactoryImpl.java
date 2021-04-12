@@ -101,7 +101,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 
         var transactionSpiProvider = new TransactionStateMachineSPIProviderV3( boltGraphDatabaseManagementServiceSPI,
                                                                                boltChannel, clock, memoryTracker );
-        var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
+        var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider, boltChannel );
 
         return new BoltStateMachineV3( boltSPI, boltChannel, clock, defaultDatabaseResolver, memoryTracker, transactionManager );
     }
@@ -113,7 +113,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 
         var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI,
                                                                                boltChannel, clock, memoryTracker );
-        var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
+        var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider, boltChannel );
 
         return new BoltStateMachineV4( boltSPI, boltChannel, clock, defaultDatabaseResolver, memoryTracker, transactionManager );
     }
@@ -125,7 +125,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 
         var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI,
                                                                                boltChannel, clock, memoryTracker );
-        var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
+        var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider, boltChannel );
 
         return new BoltStateMachineV41( boltSPI, boltChannel, clock, defaultDatabaseResolver, memoryTracker, transactionManager );
     }
@@ -137,7 +137,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 
         var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI,
                                                                                boltChannel, clock, memoryTracker );
-        var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
+        var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider, boltChannel );
 
         return new BoltStateMachineV42( boltSPI, boltChannel, clock, defaultDatabaseResolver, memoryTracker, transactionManager );
     }
@@ -149,7 +149,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 
         var transactionSpiProvider = new TransactionStateMachineSPIProviderV4( boltGraphDatabaseManagementServiceSPI,
                                                                                boltChannel, clock, memoryTracker );
-        var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider );
+        var boltSPI = new BoltStateMachineSPIImpl( logging, authentication, transactionSpiProvider, boltChannel );
 
         return new BoltStateMachineV43( boltSPI, boltChannel, clock, defaultDatabaseResolver, memoryTracker, transactionManager );
     }

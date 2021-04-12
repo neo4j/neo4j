@@ -46,6 +46,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
@@ -175,7 +176,7 @@ class AuthorizationFilterTest
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
         when( servletRequest.getRemoteAddr() ).thenReturn( "remote_ip_address" );
-        when( authManager.login( argThat( new AuthTokenMatcher( authToken( "foo", "bar" ) ) ) ) ).thenReturn( loginContext );
+        when( authManager.login( argThat( new AuthTokenMatcher( authToken( "foo", "bar" ) ) ), any() ) ).thenReturn( loginContext );
         when( loginContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.FAILURE );
 
@@ -207,7 +208,7 @@ class AuthorizationFilterTest
         when( servletRequest.getRequestURL() ).thenReturn( new StringBuffer( "http://bar.baz:7474/db/data/" ) );
         when( servletRequest.getRequestURI() ).thenReturn( "/db/data/" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
-        when( authManager.login( argThat( new AuthTokenMatcher( authToken( "foo", "bar" ) ) ) ) ).thenReturn( loginContext );
+        when( authManager.login( argThat( new AuthTokenMatcher( authToken( "foo", "bar" ) ) ), any() ) ).thenReturn( loginContext );
         when( loginContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.PASSWORD_CHANGE_REQUIRED );
 
@@ -230,7 +231,7 @@ class AuthorizationFilterTest
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
-        when( authManager.login( argThat( new AuthTokenMatcher( authToken( "foo", "bar" ) ) ) ) ).thenReturn( loginContext );
+        when( authManager.login( argThat( new AuthTokenMatcher( authToken( "foo", "bar" ) ) ), any() ) ).thenReturn( loginContext );
         when( loginContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.TOO_MANY_ATTEMPTS );
 
@@ -257,7 +258,7 @@ class AuthorizationFilterTest
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
-        when( authManager.login( argThat( new AuthTokenMatcher( authToken( "foo", "bar" ) ) ) ) ).thenReturn( loginContext );
+        when( authManager.login( argThat( new AuthTokenMatcher( authToken( "foo", "bar" ) ) ), any() ) ).thenReturn( loginContext );
         when( loginContext.subject() ).thenReturn( authSubject );
         when( authSubject.getAuthenticationResult() ).thenReturn( AuthenticationResult.SUCCESS );
 
