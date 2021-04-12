@@ -25,10 +25,12 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -89,11 +91,14 @@ class IndexIteratorIT
     {
         var descriptors = indexAccessors.onlineRules();
         assertThat( descriptors ).hasSize( 1 );
-        for ( IndexDescriptor descriptor : descriptors )
+        try ( PageCursorTracer tracer = pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnIteration" ) )
         {
-            try ( IndexIterator indexIterator = new IndexIterator( indexAccessors.accessorFor( descriptor ), pageCacheTracer ) )
+            for ( IndexDescriptor descriptor : descriptors )
             {
-                assertEquals( 1, count( indexIterator.iterator() ) );
+                try ( BoundedIterable<Long> indexIterator = indexAccessors.accessorFor( descriptor ).newAllEntriesReader( tracer ) )
+                {
+                    assertEquals( 1, count( indexIterator.iterator() ) );
+                }
             }
         }
 

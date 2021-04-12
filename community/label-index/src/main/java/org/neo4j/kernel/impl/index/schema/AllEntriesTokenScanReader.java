@@ -31,7 +31,6 @@ public interface AllEntriesTokenScanReader extends BoundedIterable<EntityTokenRa
 {
     AllEntriesTokenScanReader EMPTY = new AllEntriesTokenScanReader()
     {
-
         @Override
         public long maxCount()
         {
