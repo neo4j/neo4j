@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
-import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
@@ -131,9 +130,6 @@ case class unnestApply(override val solveds: Solveds,
     case apply@Apply(lhs, oex@OptionalExpand(_:Argument, _, _, _, _, _, _, _), _) =>
       unnestRightUnary(apply, lhs, oex)
 
-    // L Ax (Cr R) => Cr (L Ax R)
-    case apply@Apply(lhs, create:Create, _) =>
-      unnestRightUnary(apply, lhs, create)
 
     // π (Arg) Ax R => π (R) // if R is leaf and R is not using columns from π
     case apply@Apply(projection@Projection(Argument(_), projections), rhsLeaf: LogicalLeafPlan, _)

@@ -291,12 +291,12 @@ object Eagerness {
 
     private val instance: Rewriter = fixedPoint(bottomUp(Rewriter.lift {
 
-      // L Ax (E R) => E Ax (L R)
-      case apply@Apply(lhs, eager: Eager, _) =>
+      // L Ax (E R) => E Ax (L R), don't unnest when coming from a subquery
+      case apply@Apply(lhs, eager: Eager, fromSubquery) if !fromSubquery =>
         unnestRightUnary(apply, lhs, eager)
 
-     // L Ax (Up R) => Up Ax (L R)
-      case apply@Apply(lhs, updatingPlan: UpdatingPlan, _) =>
+     // L Ax (Up R) => Up Ax (L R), don't unnest when coming from a subquery
+      case apply@Apply(lhs, updatingPlan: UpdatingPlan, fromSubquery) if !fromSubquery =>
         unnestRightUnary(apply, lhs, updatingPlan)
     }))
 
