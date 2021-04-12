@@ -37,7 +37,6 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -105,7 +104,7 @@ public class IndexAccessors implements Closeable
                             try
                             {
                                 final IndexAccessor accessor = accessorLookup.apply( indexDescriptor );
-                                if ( isTokenIndex( indexDescriptor ) )
+                                if ( indexDescriptor.isTokenIndex() )
                                 {
                                     if ( indexDescriptor.schema().entityType() == EntityType.NODE )
                                     {
@@ -221,11 +220,6 @@ public class IndexAccessors implements Closeable
             onlineIndexRules.clear();
             notOnlineIndexRules.clear();
         }
-    }
-
-    private boolean isTokenIndex( IndexDescriptor indexRule )
-    {
-        return indexRule.schema().isAnyTokenSchemaDescriptor() && indexRule.getIndexType() == IndexType.LOOKUP;
     }
 
     public class IndexReaders implements AutoCloseable

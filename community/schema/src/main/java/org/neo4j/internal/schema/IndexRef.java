@@ -63,4 +63,12 @@ public interface IndexRef<T extends IndexRef<T>> extends SchemaDescriptorSupplie
      * @return A new index reference with the given index config.
      */
     T withIndexConfig( IndexConfig indexConfig );
+
+    /**
+     * @return true if this {@link IndexRef index reference} is a token index, otherwise false.
+     */
+    default boolean isTokenIndex()
+    {
+        return schema().isAnyTokenSchemaDescriptor() && getIndexType() == IndexType.LOOKUP;
+    }
 }

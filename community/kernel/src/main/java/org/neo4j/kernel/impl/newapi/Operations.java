@@ -899,7 +899,7 @@ public class Operations implements Write, SchemaWrite
     @Override
     public IndexDescriptor indexCreate( IndexPrototype prototype ) throws KernelException
     {
-        if ( prototype.schema().isAnyTokenSchemaDescriptor() && !allStoreHolder.scanStoreAsTokenIndexEnabled() )
+        if ( prototype.isTokenIndex() && !allStoreHolder.scanStoreAsTokenIndexEnabled() )
         {
             throw new UnsupportedOperationException( "Token indexes feature is not supported on this version" );
         }
@@ -1026,7 +1026,7 @@ public class Operations implements Write, SchemaWrite
         {
             throw new DropIndexFailureException( "No index was specified." );
         }
-        if ( index.schema().isAnyTokenSchemaDescriptor() && !allStoreHolder.scanStoreAsTokenIndexEnabled() )
+        if ( index.isTokenIndex() && !allStoreHolder.scanStoreAsTokenIndexEnabled() )
         {
             throw new UnsupportedOperationException( "Token indexes can not be dropped in this version" );
         }
@@ -1087,7 +1087,7 @@ public class Operations implements Write, SchemaWrite
         {
             throw new DropIndexFailureException( "Unable to drop index called `" + indexName + "`. There is no such index." );
         }
-        if ( index.schema().isAnyTokenSchemaDescriptor() && !allStoreHolder.scanStoreAsTokenIndexEnabled() )
+        if ( index.isTokenIndex() && !allStoreHolder.scanStoreAsTokenIndexEnabled() )
         {
             throw new UnsupportedOperationException( "Token indexes can not be dropped in this version" );
         }

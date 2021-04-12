@@ -31,7 +31,6 @@ import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -108,8 +107,7 @@ public class FullCheckIntegrationSSTITest extends FullCheckIntegrationTest
         while ( indexDescriptors.hasNext() )
         {
             IndexDescriptor next = indexDescriptors.next();
-            if ( next.getIndexType() == IndexType.LOOKUP && next.schema().entityType() == entityType &&
-                 next.schema().isAnyTokenSchemaDescriptor() )
+            if ( next.isTokenIndex() && next.schema().entityType() == entityType )
             {
                 return next;
             }

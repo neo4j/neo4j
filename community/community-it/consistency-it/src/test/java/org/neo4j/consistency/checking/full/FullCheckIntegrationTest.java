@@ -68,7 +68,6 @@ import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.pagecache.PageCache;
@@ -2736,8 +2735,7 @@ public class FullCheckIntegrationTest
 
     private Iterator<IndexDescriptor> getValueIndexDescriptors()
     {
-        return Iterators.filter( descriptor -> !(descriptor.getIndexType() == IndexType.LOOKUP && descriptor.schema().isAnyTokenSchemaDescriptor()),
-                fixture.getIndexDescriptors() );
+        return Iterators.filter( descriptor -> !descriptor.isTokenIndex(), fixture.getIndexDescriptors() );
     }
 
     private static class Reference<T>
