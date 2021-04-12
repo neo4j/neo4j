@@ -284,12 +284,12 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport
     void testStressMultipleThreads() throws Exception
     {
         long r1 = 1L;
-        int numThreads = 25;
+        int numThreads = 15;
         StressThread[] stressThreads = new StressThread[numThreads];
         CountDownLatch startSignal = new CountDownLatch( 1 );
         for ( int i = 0; i < numThreads; i++ )
         {
-            stressThreads[i] = new StressThread( "Thread" + i, 75, 9, 0.50f, r1, startSignal );
+            stressThreads[i] = new StressThread( "Thread" + i, 50, 9, 0.50f, r1, startSignal );
         }
         for ( int i = 0; i < numThreads; i++ )
         {
@@ -297,7 +297,7 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport
         }
         startSignal.countDown();
 
-        long end = currentTimeMillis() + MINUTES.toMillis( 5 );
+        long end = currentTimeMillis() + MINUTES.toMillis( 10 );
         boolean anyAlive;
         while ( (anyAlive = anyAliveAndAllWell( stressThreads )) && currentTimeMillis() < end )
         {
