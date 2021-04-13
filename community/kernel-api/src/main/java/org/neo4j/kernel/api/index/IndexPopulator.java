@@ -55,8 +55,8 @@ public interface IndexPopulator extends MinimalIndexAccessor
     void create() throws IOException;
 
     /**
-     * Called when initially populating an index over existing data. Guaranteed to be
-     * called by the same thread every time. All data coming in here is guaranteed to not
+     * Called when initially populating an index over existing data. Can be called concurrently by multiple threads.
+     * All data coming in here is guaranteed to not
      * have been added to this index previously, so no checks needs to be performed before applying it.
      * Implementations may verify constraints at this time, or defer them until the first verification
      * of {@link #verifyDeferredConstraints(NodePropertyAccessor)}.

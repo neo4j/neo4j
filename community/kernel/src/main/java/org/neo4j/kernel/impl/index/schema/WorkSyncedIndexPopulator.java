@@ -33,6 +33,12 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.util.concurrent.Work;
 import org.neo4j.util.concurrent.WorkSync;
 
+/**
+ * Delegating populator that turns multi-threaded calls to {@link IndexPopulator#add(Collection, PageCursorTracer)} into single-threaded stack work
+ * by passing them through {@link WorkSync}.
+ *
+ * Used to wrap {@link IndexPopulator}s that are not thread-safe in terms of {@link IndexPopulator#add(Collection, PageCursorTracer)} operation.
+ */
 public class WorkSyncedIndexPopulator extends IndexPopulator.Delegating
 {
     private final WorkSync<IndexUpdateApply,IndexUpdateWork> workSync = new WorkSync<>( new IndexUpdateApply() );
@@ -45,6 +51,11 @@ public class WorkSyncedIndexPopulator extends IndexPopulator.Delegating
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates, PageCursorTracer cursorTracer ) throws IndexEntryConflictException
     {
+        if ( updates.isEmpty() )
+        {
+            return;
+        }
+
         try
         {
             workSync.apply( new IndexUpdateWork( updates, cursorTracer ) );
