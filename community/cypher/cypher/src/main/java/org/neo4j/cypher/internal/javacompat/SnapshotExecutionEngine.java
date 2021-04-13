@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.graphdb.Result;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -60,7 +59,11 @@ public class SnapshotExecutionEngine extends ExecutionEngine
             throws QueryExecutionKernelException
     {
         QueryExecutor queryExecutor = querySubscriber -> super.executeQuery( query, parameters, context, prePopulate, querySubscriber );
-        return executeWithRetries( query, context, queryExecutor ).other();
+        ResultSubscriber resultSubscriber = new ResultSubscriber( context );
+        MaterialisedResult materialisedResult = executeWithRetries( query, context, queryExecutor );
+        QueryExecution queryExecution = materialisedResult.stream( resultSubscriber );
+        resultSubscriber.init( queryExecution );
+        return resultSubscriber;
     }
 
     @Override
@@ -68,8 +71,8 @@ public class SnapshotExecutionEngine extends ExecutionEngine
             throws QueryExecutionKernelException
     {
         QueryExecutor queryExecutor = querySubscriber -> super.executeQuery( query, parameters, context, prePopulate, querySubscriber );
-        var pair = executeWithRetries( query, context, queryExecutor );
-        return pair.other().streamToSubscriber( subscriber, pair.first() );
+        MaterialisedResult materialisedResult = executeWithRetries( query, context, queryExecutor );
+        return materialisedResult.stream( subscriber );
     }
 
     @Override
@@ -78,17 +81,16 @@ public class SnapshotExecutionEngine extends ExecutionEngine
             throws QueryExecutionKernelException
     {
         QueryExecutor queryExecutor = querySubscriber -> super.executeQuery( query, parameters, context, prePopulate, input, queryMonitor, querySubscriber );
-        var pair = executeWithRetries( query.description(), context, queryExecutor );
-        return pair.other().streamToSubscriber( subscriber, pair.first() );
+        MaterialisedResult materialisedResult = executeWithRetries( query.description(), context, queryExecutor );
+        return materialisedResult.stream( subscriber );
     }
 
-    protected Pair<QueryExecution, EagerResult> executeWithRetries( String query,
-                                                                   TransactionalContext context,
-                                                                   QueryExecutor executor ) throws QueryExecutionKernelException
+    protected MaterialisedResult executeWithRetries( String query,
+            TransactionalContext context,
+            QueryExecutor executor ) throws QueryExecutionKernelException
     {
         VersionContext versionContext = getCursorContext( context );
-        QueryExecution queryExecution;
-        EagerResult eagerResult;
+        MaterialisedResult materialisedResult;
         int attempt = 0;
         boolean dirtySnapshot;
         do
@@ -107,15 +109,13 @@ public class SnapshotExecutionEngine extends ExecutionEngine
             attempt++;
             versionContext.initRead();
 
-            ResultSubscriber resultSubscriber = getResultSubscriber( context );
+            materialisedResult = new MaterialisedResult();
 
-            queryExecution = executor.execute( resultSubscriber );
-            resultSubscriber.init( queryExecution );
+            QueryExecution queryExecution = executor.execute( materialisedResult );
+            materialisedResult.consumeAll( queryExecution );
 
-            eagerResult = getEagerResult( versionContext, resultSubscriber );
-            eagerResult.consume();
             dirtySnapshot = versionContext.isDirty();
-            if ( dirtySnapshot && resultSubscriber.getQueryStatistics().containsUpdates() )
+            if ( dirtySnapshot && materialisedResult.getQueryStatistics().containsUpdates() )
             {
                 throw new QueryExecutionKernelException( new UnstableSnapshotException(
                         "Unable to get clean data snapshot for query '%s' that performs updates.", query, attempt ) );
@@ -123,17 +123,7 @@ public class SnapshotExecutionEngine extends ExecutionEngine
         }
         while ( dirtySnapshot );
 
-        return Pair.of(queryExecution, eagerResult);
-    }
-
-    protected EagerResult getEagerResult( VersionContext versionContext, ResultSubscriber resultSubscriber )
-    {
-        return new EagerResult( resultSubscriber, versionContext );
-    }
-
-    protected ResultSubscriber getResultSubscriber( TransactionalContext context )
-    {
-        return new ResultSubscriber( context );
+        return materialisedResult;
     }
 
     private static VersionContext getCursorContext( TransactionalContext context )
@@ -144,6 +134,6 @@ public class SnapshotExecutionEngine extends ExecutionEngine
     @FunctionalInterface
     protected interface QueryExecutor
     {
-        QueryExecution execute( ResultSubscriber resultSubscriber ) throws QueryExecutionKernelException;
+        QueryExecution execute( MaterialisedResult materialisedResult ) throws QueryExecutionKernelException;
     }
 }
