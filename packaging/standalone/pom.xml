@@ -36,8 +36,6 @@
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <!-- other filter properties -->
         <neo4j.version>${project.version}</neo4j.version>
-
-        <skip.shell.tests>false</skip.shell.tests>
     </properties>
 
     <licenses>
@@ -100,29 +98,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>shell-script-tests</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <inherited>false</inherited>
-                        <configuration>
-                            <skip>${skip.shell.tests}</skip>
-                            <executable>./run-tests.sh</executable>
-                            <workingDirectory>src/tests/shell-scripts</workingDirectory>
-                            <arguments>
-                                <argument>--verbose</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 
@@ -141,29 +116,4 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
-
-    <profiles>
-        <profile>
-            <id>disable-shell-script-tests</id>
-            <activation>
-                <os>
-                    <family>windows</family>
-                </os>
-            </activation>
-            <properties>
-                <skip.shell.tests>true</skip.shell.tests>
-            </properties>
-        </profile>
-        <profile>
-            <id>skip-shell-script-tests</id>
-            <activation>
-                <property>
-                    <name>skipTests</name>
-                </property>
-            </activation>
-            <properties>
-                <skip.shell.tests>true</skip.shell.tests>
-            </properties>
-        </profile>
-    </profiles>
 </project>
