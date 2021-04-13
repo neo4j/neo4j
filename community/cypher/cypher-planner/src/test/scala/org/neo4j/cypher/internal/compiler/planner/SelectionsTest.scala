@@ -102,9 +102,19 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
     selections.predicatesGiven(aId) should equal(Seq.empty)
   }
 
-  test("should prune away sub predicates if covering is added") {
-    val covered = aIsProgrammer
-    val covering = and(aIsPerson, aIsProgrammer)
+  test("should prune covered sub predicates") {
+    val covered = aIsPerson
+    val covering = aIsProgrammer
+    val selections = Selections(Set(Predicate(aId, PartialPredicate(covered, covering)), Predicate(aId, covering)))
+
+    val expected = Selections(Set(Predicate(aId, covering)))
+
+    selections should equal(expected)
+  }
+
+  test("should prune covered sub predicates when adding") {
+    val covered = aIsPerson
+    val covering = aIsProgrammer
     val selections = Selections(Set(Predicate(aId, PartialPredicate(covered, covering))))
     val newSelections = Selections(Set(Predicate(aId, covering)))
 
@@ -115,16 +125,6 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     fromLeft should equal(expected)
     fromRight should equal(expected)
-  }
-
-  test("should prune selections at initialization") {
-    val covered = aIsProgrammer
-    val covering = and(aIsPerson, aIsProgrammer)
-    val selections = Selections(Set(Predicate(aId, PartialPredicate(covered, covering)), Predicate(aId, covering)))
-
-    val expected = Selections(Set(Predicate(aId, covering)))
-
-    selections should equal(expected)
   }
 
   private def idNames(names: String*) = names.toSet
