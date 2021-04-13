@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
-import org.junit.platform.commons.util.ExceptionUtils;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -418,30 +417,14 @@ class Neo4jCommandTest
         }
 
         @Test
-        @DisabledOnOs( OS.WINDOWS )
         void shouldWaitForNeo4jToDieBeforeExitInConsole() throws Exception
         {
             if ( fork.run( () -> assertThat( execute( "console" ) ).isEqualTo( 0 ), Map.of( TestEntryPoint.ENV_TIMEOUT, "1000" ), p -> {
-                try
-                {
-                    StringBuilder sb = new StringBuilder();
-                    assertEventually( () -> sb.append( new String( p.getInputStream().readNBytes( 1 ) ) ).toString(),
-                            s -> s.contains( TestEntryPoint.STARTUP_MSG ), 5, MINUTES );
-                    try
-                    {
-                        Runtime.getRuntime().exec( "kill -SIGINT " + p.pid() );
-                    }
-                    catch ( IOException e )
-                    {
-                        ProcessHandle.of( p.pid() ).get().destroy(); //sends SIGTERM. Not possible to send SIGINT using java and kill is not always available
-                        return 143;
-                    }
-                }
-                catch ( Exception e )
-                {
-                    ExceptionUtils.throwAsUncheckedException( e );
-                }
-                return 130;
+                StringBuilder sb = new StringBuilder();
+                assertEventually( () -> sb.append( new String( p.getInputStream().readNBytes( 1 ) ) ).toString(),
+                        s -> s.contains( TestEntryPoint.STARTUP_MSG ), 5, MINUTES );
+                p.toHandle().destroy();
+                return IS_OS_WINDOWS ? 1 : 143;
             } ) )
             {
                 assertThat( out.toString() ).contains( TestEntryPoint.END_MSG );
