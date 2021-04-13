@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
@@ -396,7 +397,18 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   override def toString: String = {
     var added = false
     val builder = new StringBuilder("QueryGraph {")
-    val stringifier = ExpressionStringifier(_.asCanonicalStringVal)
+    val stringifier = ExpressionStringifier(
+      extension = new ExpressionStringifier.Extension {
+        override def apply(ctx: ExpressionStringifier)(expression: Expression): String = expression match {
+          case pp: PartialPredicate[_] => s"partial(${ctx(pp.coveredPredicate)}, ${ctx(pp.coveringPredicate)})"
+          case e                       => e.asCanonicalStringVal
+        }
+      },
+      alwaysParens = false,
+      alwaysBacktick = false,
+      preferSingleQuotes = false,
+      sensitiveParamsAsParams = false,
+    )
 
     def addSetIfNonEmptyS(s: Iterable[String], name: String): Unit  = addSetIfNonEmpty(s, name, (x:String) => x)
     def addSetIfNonEmpty[T](s: Iterable[T], name: String, f: T => String): Unit = {
