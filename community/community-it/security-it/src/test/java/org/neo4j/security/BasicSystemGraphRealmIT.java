@@ -35,9 +35,9 @@ import org.neo4j.dbms.database.DefaultSystemGraphComponent;
 import org.neo4j.dbms.database.DefaultSystemGraphInitializer;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.SystemGraphInitializer;
+import org.neo4j.internal.kernel.api.security.SecurityLog;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
 import org.neo4j.server.security.auth.UserRepository;
@@ -230,7 +230,7 @@ class BasicSystemGraphRealmIT
 
         var systemGraphComponents = new SystemGraphComponents();
         systemGraphComponents.register( new DefaultSystemGraphComponent( config ) );
-        systemGraphComponents.register( new UserSecurityGraphComponent( Mockito.mock( Log.class ), oldUsers, initialPassword, config ) );
+        systemGraphComponents.register( new UserSecurityGraphComponent( Mockito.mock( SecurityLog.class ), oldUsers, initialPassword, config ) );
 
         var systemGraphSupplier = SystemGraphRealmHelper.makeSystemSupplier( dbManager );
         systemGraphInitializer = new DefaultSystemGraphInitializer( systemGraphSupplier, systemGraphComponents );

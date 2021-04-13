@@ -47,7 +47,8 @@ public abstract class LoginContext
         return subject;
     }
 
-    public ClientConnectionInfo connectionInfo() {
+    public ClientConnectionInfo connectionInfo()
+    {
         return connectionInfo;
     }
 

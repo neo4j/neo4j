@@ -26,7 +26,7 @@ import org.neo4j.dbms.database.KnownSystemComponentVersions;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.logging.Log;
+import org.neo4j.internal.kernel.api.security.SecurityLog;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_0_35;
 import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_1_40;
@@ -47,9 +47,9 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
 {
     private final KnownSystemComponentVersions<KnownCommunitySecurityComponentVersion> knownUserSecurityComponentVersions =
             new KnownSystemComponentVersions<>( new NoCommunitySecurityComponentVersion() );
-    private final Log log;
+    private final SecurityLog log;
 
-    public UserSecurityGraphComponent( Log log, UserRepository userRepository, UserRepository initialPasswordRepo, Config config )
+    public UserSecurityGraphComponent( SecurityLog log, UserRepository userRepository, UserRepository initialPasswordRepo, Config config )
     {
         super( config );
         this.log = log;

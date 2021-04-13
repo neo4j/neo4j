@@ -172,6 +172,10 @@ class AuthorizationFilterTest
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( UTF_8 ) );
         BasicLoginContext loginContext = mock( BasicLoginContext.class );
         AuthSubject authSubject = mock( AuthSubject.class );
+        when( servletRequest.getRemoteAddr() ).thenReturn( "client" );
+        when( servletRequest.getRemotePort() ).thenReturn( 1337 );
+        when( servletRequest.getServerName() ).thenReturn( "server" );
+        when( servletRequest.getServerPort() ).thenReturn( 42 );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
@@ -203,6 +207,10 @@ class AuthorizationFilterTest
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( UTF_8 ) );
         BasicLoginContext loginContext = mock( BasicLoginContext.class );
         AuthSubject authSubject = mock( AuthSubject.class );
+        when( servletRequest.getRemoteAddr() ).thenReturn( "client" );
+        when( servletRequest.getRemotePort() ).thenReturn( 1337 );
+        when( servletRequest.getServerName() ).thenReturn( "server" );
+        when( servletRequest.getServerPort() ).thenReturn( 42 );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getRequestURL() ).thenReturn( new StringBuffer( "http://bar.baz:7474/db/data/" ) );
@@ -228,6 +236,10 @@ class AuthorizationFilterTest
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( UTF_8 ) );
         BasicLoginContext loginContext = mock( BasicLoginContext.class );
         AuthSubject authSubject = mock( AuthSubject.class );
+        when( servletRequest.getRemoteAddr() ).thenReturn( "client" );
+        when( servletRequest.getRemotePort() ).thenReturn( 1337 );
+        when( servletRequest.getServerName() ).thenReturn( "server" );
+        when( servletRequest.getServerPort() ).thenReturn( 42 );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );
@@ -255,6 +267,10 @@ class AuthorizationFilterTest
         String credentials = Base64.encodeBase64String( "foo:bar".getBytes( UTF_8 ) );
         BasicLoginContext loginContext = mock( BasicLoginContext.class );
         AuthSubject authSubject = mock( AuthSubject.class );
+        when( servletRequest.getRemoteAddr() ).thenReturn( "client" );
+        when( servletRequest.getRemotePort() ).thenReturn( 1337 );
+        when( servletRequest.getServerName() ).thenReturn( "server" );
+        when( servletRequest.getServerPort() ).thenReturn( 42 );
         when( servletRequest.getMethod() ).thenReturn( "GET" );
         when( servletRequest.getContextPath() ).thenReturn( "/db/data" );
         when( servletRequest.getHeader( HttpHeaders.AUTHORIZATION ) ).thenReturn( "BASIC " + credentials );

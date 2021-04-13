@@ -20,8 +20,8 @@
 package org.neo4j.server.security.systemgraph.versions;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.security.SecurityLog;
 import org.neo4j.kernel.impl.security.User;
-import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.ListSnapshot;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.util.Preconditions;
@@ -38,7 +38,7 @@ public class CommunitySecurityComponentVersion_0_35 extends KnownCommunitySecuri
 {
     private final UserRepository userRepository;
 
-    public CommunitySecurityComponentVersion_0_35( Log log, UserRepository userRepository )
+    public CommunitySecurityComponentVersion_0_35( SecurityLog log, UserRepository userRepository )
     {
         super( COMMUNITY_SECURITY_35, log );
         this.userRepository = userRepository;

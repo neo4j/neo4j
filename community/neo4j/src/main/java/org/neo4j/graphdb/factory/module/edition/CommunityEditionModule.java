@@ -48,6 +48,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
+import org.neo4j.internal.kernel.api.security.SecurityLogWrapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -68,9 +69,10 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.logging.log4j.LogExtended;
+import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller;
 import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
@@ -261,9 +263,9 @@ public class CommunityEditionModule extends StandaloneEditionModule
         Config config = globalModule.getGlobalConfig();
         FileSystemAbstraction fileSystem = globalModule.getFileSystem();
         LogProvider logProvider = globalModule.getLogService().getUserLogProvider();
-        Log securityLog = logProvider.getLog( UserSecurityGraphComponent.class );
+        LogExtended securityLog = (LogExtended) logProvider.getLog( UserSecurityGraphComponent.class );
 
-        var communityComponent = CommunitySecurityModule.createSecurityComponent( securityLog, config, fileSystem, logProvider );
+        var communityComponent = CommunitySecurityModule.createSecurityComponent( new SecurityLogWrapper( securityLog ), config, fileSystem, logProvider );
 
         Dependencies dependencies = globalModule.getGlobalDependencies();
         SystemGraphComponents systemGraphComponents = dependencies.resolveDependency( SystemGraphComponents.class );

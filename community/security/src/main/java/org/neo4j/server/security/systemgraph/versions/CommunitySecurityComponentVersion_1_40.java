@@ -20,7 +20,7 @@
 package org.neo4j.server.security.systemgraph.versions;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.logging.Log;
+import org.neo4j.internal.kernel.api.security.SecurityLog;
 import org.neo4j.server.security.auth.UserRepository;
 
 import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_40;
@@ -30,7 +30,7 @@ import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVe
  */
 public class CommunitySecurityComponentVersion_1_40 extends SupportedCommunitySecurityComponentVersion
 {
-    public CommunitySecurityComponentVersion_1_40( Log log, UserRepository userRepository )
+    public CommunitySecurityComponentVersion_1_40( SecurityLog log, UserRepository userRepository )
     {
         super( COMMUNITY_SECURITY_40, log, userRepository );
     }
