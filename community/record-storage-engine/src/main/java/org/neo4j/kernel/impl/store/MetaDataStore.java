@@ -59,6 +59,7 @@ import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 import static java.lang.String.format;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
+import static org.neo4j.internal.id.EmptyIdGeneratorFactory.EMPTY_ID_GENERATOR_FACTORY;
 import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -181,15 +182,14 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private volatile boolean closed;
 
-    MetaDataStore( Path file, Path idFile, Config conf,
-            IdGeneratorFactory idGeneratorFactory,
+    MetaDataStore( Path file, Config conf,
             PageCache pageCache, LogProvider logProvider, RecordFormat<MetaDataRecord> recordFormat,
             String storeVersion, PageCacheTracer pageCacheTracer,
             DatabaseReadOnlyChecker readOnlyChecker,
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( file, idFile, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, logProvider,
+        super( file, null, conf, IdType.NEOSTORE_BLOCK, EMPTY_ID_GENERATOR_FACTORY, pageCache, logProvider,
                 TYPE_DESCRIPTOR, recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, storeVersion, readOnlyChecker, databaseName, openOptions );
         this.pageCacheTracer = pageCacheTracer;
     }
@@ -218,8 +218,14 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setKernelVersion( KernelVersion.LATEST, cursorTracer );
         setDatabaseIdUuid( NOT_INITIALIZED_UUID, cursorTracer );
 
-        initHighId();
         flush( cursorTracer );
+    }
+
+    @Override
+    public long getHighId()
+    {
+        Position[] values = Position.values();
+        return values[values.length - 1].id + 1;
     }
 
     public void setKernelVersion( KernelVersion kernelVersion, PageCursorTracer cursorTracer )
@@ -339,13 +345,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             }
         }
         return previousValue;
-    }
-
-    private void initHighId()
-    {
-        Position[] values = Position.values();
-        long highestPossibleId = values[values.length - 1].id;
-        setHighestPossibleIdInUse( highestPossibleId );
     }
 
     private static int offset( Position position )

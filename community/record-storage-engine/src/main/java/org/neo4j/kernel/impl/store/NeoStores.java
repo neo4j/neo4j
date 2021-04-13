@@ -536,7 +536,7 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createMetadataStore( PageCursorTracer cursorTracer )
     {
-        return initialize( new MetaDataStore( layout.metadataStore(), layout.idMetadataStore(), config, idGeneratorFactory, pageCache, logProvider,
+        return initialize( new MetaDataStore( layout.metadataStore(), config, pageCache, logProvider,
                         recordFormats.metaData(), recordFormats.storeVersion(), pageCacheTracer, readOnlyChecker, layout.getDatabaseName(), openOptions ),
                 cursorTracer );
     }

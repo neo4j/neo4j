@@ -268,11 +268,6 @@ public class DatabaseLayout
         }
     }
 
-    public Path idMetadataStore()
-    {
-        return idFile( DatabaseFile.METADATA_STORE.getName() );
-    }
-
     public Path idNodeStore()
     {
         return idFile( DatabaseFile.NODE_STORE.getName() );

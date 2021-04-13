@@ -140,7 +140,6 @@ class DatabaseLayoutTest
     void idFilesHaveExpectedNames()
     {
         DatabaseLayout layout = databaseLayout;
-        assertEquals( "neostore.id", layout.idMetadataStore().getFileName().toString() );
         assertEquals( "neostore.labeltokenstore.db.id", layout.idLabelTokenStore().getFileName().toString() );
         assertEquals( "neostore.labeltokenstore.db.names.id", layout.idLabelTokenNamesStore().getFileName().toString() );
         assertEquals( "neostore.nodestore.db.id", layout.idNodeStore().getFileName().toString() );

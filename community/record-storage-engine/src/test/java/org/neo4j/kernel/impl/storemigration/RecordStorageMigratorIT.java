@@ -441,8 +441,6 @@ class RecordStorageMigratorIT
         // when
         migrator.migrate( databaseLayout, migrationLayout, SILENT.startSection( "section" ), versionToMigrateFrom, versionToMigrateTo );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo );
-        // since this migrates from a legacy ID generator to the new ones then remove the neostore.id file (which we're opening below)
-        fs.deleteFile( databaseLayout.idMetadataStore() );
 
         // then
         try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(),
@@ -479,8 +477,6 @@ class RecordStorageMigratorIT
         // when
         migrator.migrate( databaseLayout, migrationLayout, SILENT.startSection( "section" ), versionToMigrateFrom, versionToMigrateTo );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, versionToMigrateTo );
-        // since this migrates from a legacy ID generator to the new ones then remove the neostore.id file (which we're opening below)
-        fs.deleteFile( databaseLayout.idMetadataStore() );
 
         // then
         try ( NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(),

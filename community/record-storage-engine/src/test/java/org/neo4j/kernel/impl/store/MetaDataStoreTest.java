@@ -784,9 +784,9 @@ class MetaDataStoreTest
         try ( MetaDataStore ignored = newMetaDataStore( pageCacheTracer ) )
         {
             assertThat( pageCacheTracer.faults() ).isOne();
-            assertThat( pageCacheTracer.pins() ).isEqualTo( 27 );
-            assertThat( pageCacheTracer.unpins() ).isEqualTo( 27 );
-            assertThat( pageCacheTracer.hits() ).isEqualTo( 26 );
+            assertThat( pageCacheTracer.pins() ).isEqualTo( 19 );
+            assertThat( pageCacheTracer.unpins() ).isEqualTo( 19 );
+            assertThat( pageCacheTracer.hits() ).isEqualTo( 18 );
         }
     }
 
@@ -877,9 +877,9 @@ class MetaDataStoreTest
         {
             metaDataStore.incrementAndGetVersion( cursorTracer );
 
-            assertThat( cursorTracer.pins() ).isEqualTo( 5 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 5 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 5 );
+            assertThat( cursorTracer.pins() ).isEqualTo( 1 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 1 );
         }
     }
 
