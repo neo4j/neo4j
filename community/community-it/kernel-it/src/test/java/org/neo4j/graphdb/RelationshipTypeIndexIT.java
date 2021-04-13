@@ -29,25 +29,32 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.IndexReadSession;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
+import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.index.TokenIndexReader;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
-import org.neo4j.kernel.impl.index.schema.TokenScanReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.schema.SimpleEntityTokenClient;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.DbmsController;
@@ -58,17 +65,16 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 import static org.neo4j.io.IOUtils.uncheckedConsumer;
-import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @DbmsExtension( configurationCallback = "configuration" )
 @ExtendWith( RandomExtension.class )
-class RelationshipTypeScanStoreIT
+class RelationshipTypeIndexIT
 {
     private static final RelationshipType REL_TYPE = RelationshipType.withName( "REL_TYPE" );
     private static final RelationshipType OTHER_REL_TYPE = RelationshipType.withName( "OTHER_REL_TYPE" );
@@ -88,17 +94,11 @@ class RelationshipTypeScanStoreIT
     @ExtensionCallback
     void configuration( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
     }
 
     @Test
-    void shouldBePossibleToResolveDependency()
-    {
-        assertDoesNotThrow( this::getRelationshipTypeScanStore );
-    }
-
-    @Test
-    void shouldSeeAddedRelationship()
+    void shouldSeeAddedRelationship() throws IndexNotFoundKernelException
     {
         List<Long> expectedIds = new ArrayList<>();
         createRelationshipInTx( expectedIds );
@@ -107,7 +107,7 @@ class RelationshipTypeScanStoreIT
     }
 
     @Test
-    void shouldNotSeeRemovedRelationship()
+    void shouldNotSeeRemovedRelationship() throws IndexNotFoundKernelException
     {
         List<Long> expectedIds = new ArrayList<>();
         long nodeId;
@@ -137,17 +137,18 @@ class RelationshipTypeScanStoreIT
     }
 
     @Test
-    void shouldRebuildIfMissingDuringStartup()
+    void shouldRebuildIfMissingDuringStartup() throws IndexNotFoundKernelException, IOException
     {
         List<Long> expectedIds = new ArrayList<>();
         createRelationshipInTx( expectedIds );
 
-        ResourceIterator<Path> files = getRelationshipTypeScanStoreFiles();
+        ResourceIterator<Path> files = getRelationshipTypeIndexFiles();
         dbmsController.restartDbms( builder ->
         {
             files.forEachRemaining( uncheckedConsumer( file -> fs.deleteFile( file ) ) );
             return builder;
         });
+        awaitIndexesOnline();
 
         assertContainIds( expectedIds );
     }
@@ -171,7 +172,7 @@ class RelationshipTypeScanStoreIT
     }
 
     @Test
-    void shouldBeRecovered()
+    void shouldBeRecovered() throws IndexNotFoundKernelException
     {
         List<Long> expectedIds = new ArrayList<>();
         createRelationshipInTx( expectedIds );
@@ -181,6 +182,7 @@ class RelationshipTypeScanStoreIT
             removeLastCheckpointRecordFromLastLogFile();
             return builder;
         } );
+        awaitIndexesOnline();
 
         assertContainIds( expectedIds );
     }
@@ -244,35 +246,9 @@ class RelationshipTypeScanStoreIT
         } );
     }
 
-    @Test
-    void mustBeConsistentAfterBeingTurnedOffAndOnAgain()
+    private ResourceIterator<Path> getRelationshipTypeIndexFiles() throws IndexNotFoundKernelException, IOException
     {
-        List<Long> expectedIds = new ArrayList<>();
-        createRelationshipInTx( expectedIds );
-
-        // When adding new relationship while relationship type scan store is disabled
-        dbmsController.restartDbms( builder ->
-        {
-            builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, false );
-            return builder;
-        });
-        createRelationshipInTx( expectedIds );
-
-        dbmsController.restartDbms( builder ->
-        {
-            builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
-            return builder;
-        });
-        createRelationshipInTx( expectedIds );
-
-        // Then we should still see all relationships after it has been enabled again
-        assertContainIds( expectedIds );
-    }
-
-    private ResourceIterator<Path> getRelationshipTypeScanStoreFiles()
-    {
-        RelationshipTypeScanStore relationshipTypeScanStore = getRelationshipTypeScanStore();
-        return relationshipTypeScanStore.snapshotStoreFiles();
+        return getIndexProxy().snapshotFiles();
     }
 
     private Relationship createRelationship( Transaction tx )
@@ -297,17 +273,46 @@ class RelationshipTypeScanStoreIT
         }
     }
 
-    private void assertContainIds( List<Long> expectedIds )
+    IndexDescriptor findTokenIndex()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( IndexDefinition indexDef : tx.schema().getIndexes() )
+            {
+                IndexDescriptor index = ((IndexDefinitionImpl) indexDef).getIndexReference();
+                if ( index.schema().isAnyTokenSchemaDescriptor() && index.schema().entityType() == EntityType.RELATIONSHIP &&
+                     index.getIndexType() == org.neo4j.internal.schema.IndexType.LOOKUP )
+                {
+                    return index;
+                }
+            }
+        }
+        fail( "Didn't find expected token index" );
+        return null;
+    }
+
+    private IndexProxy getIndexProxy() throws IndexNotFoundKernelException
+    {
+        IndexingService indexingService = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( IndexingService.class );
+        return indexingService.getIndexProxy( findTokenIndex() );
+    }
+
+    private void assertContainIds( List<Long> expectedIds ) throws IndexNotFoundKernelException
     {
         int relationshipTypeId = getRelationshipTypeId();
-        RelationshipTypeScanStore relationshipTypeScanStore = getRelationshipTypeScanStore();
-        TokenScanReader tokenScanReader = relationshipTypeScanStore.newReader();
-        PrimitiveLongResourceIterator relationships = tokenScanReader.entitiesWithToken( relationshipTypeId, NULL );
+
+        IndexProxy indexProxy = getIndexProxy();
         List<Long> actualIds = new ArrayList<>();
-        while ( relationships.hasNext() )
+        try ( TokenIndexReader reader = indexProxy.newTokenReader() )
         {
-            actualIds.add( relationships.next() );
+            SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
+            reader.query( QueryContext.NULL_CONTEXT, tokenClient, unconstrained(), new TokenPredicate( relationshipTypeId ) );
+            while ( tokenClient.next() )
+            {
+                actualIds.add( tokenClient.reference );
+            }
         }
+
         expectedIds.sort( Long::compareTo );
         actualIds.sort( Long::compareTo );
         assertThat( actualIds ).as( "contains expected relationships" ).isEqualTo( expectedIds );
@@ -392,10 +397,5 @@ class RelationshipTypeScanStoreIT
                 .logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fs )
                 .withCommandReaderFactory( RecordStorageCommandReaderFactory.INSTANCE )
                 .build();
-    }
-
-    private RelationshipTypeScanStore getRelationshipTypeScanStore()
-    {
-        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( RelationshipTypeScanStore.class );
     }
 }

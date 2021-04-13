@@ -19,10 +19,13 @@
  */
 package org.neo4j.graphdb.schema;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -33,14 +36,12 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DbmsExtension( configurationCallback = "configuration" )
 public class FindRelationshipsIT
@@ -50,18 +51,27 @@ public class FindRelationshipsIT
 
     @Inject
     GraphDatabaseService db;
-    @Inject
-    DbmsController dbmsController;
 
     @ExtensionCallback
     void configuration( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
     }
 
-    @Test
-    void findRelationshipsWhenTypeNotExistShouldGiveEmptyIterator()
+    private static Stream<Arguments> indexConfiguration()
     {
+        return Stream.of(
+                Arguments.of( "with token index", false ),
+                Arguments.of( "without token index", true )
+        );
+    }
+
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "indexConfiguration" )
+    void findRelationshipsWhenTypeNotExistShouldGiveEmptyIterator( String name, boolean removeTokenIndex )
+    {
+        prepareIndexSetup( removeTokenIndex );
+
         try ( Transaction tx = db.beginTx() )
         {
             tx.createNode().createRelationshipTo( tx.createNode(), OTHER_REL_TYPE );
@@ -76,9 +86,12 @@ public class FindRelationshipsIT
         }
     }
 
-    @Test
-    void findRelationshipsShouldGiveAllRelationshipsOfType()
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "indexConfiguration" )
+    void findRelationshipsShouldGiveAllRelationshipsOfType( String name, boolean removeTokenIndex )
     {
+        prepareIndexSetup( removeTokenIndex );
+
         Relationship rel1;
         Relationship rel2;
         try ( Transaction tx = db.beginTx() )
@@ -98,9 +111,12 @@ public class FindRelationshipsIT
         assertThat( result ).containsExactlyInAnyOrder( rel1, rel2 );
     }
 
-    @Test
-    void findRelationshipsShouldIncludeChangesInTx()
+    @ParameterizedTest( name = "{0}" )
+    @MethodSource( "indexConfiguration" )
+    void findRelationshipsShouldIncludeChangesInTx( String name, boolean removeTokenIndex )
     {
+        prepareIndexSetup( removeTokenIndex );
+
         Relationship rel1;
         Relationship rel2;
         Relationship rel3;
@@ -137,27 +153,19 @@ public class FindRelationshipsIT
         assertThat( result ).containsExactlyInAnyOrder( rel1, rel2, rel3 );
     }
 
-    @Test
-    void findRelationshipsThrowsIfNoRTSS()
+    private void prepareIndexSetup( boolean removeTokenIndex )
     {
-        // Create a relationship so the relationship type exist
-        try ( Transaction tx = db.beginTx() )
+        if ( removeTokenIndex )
         {
-            tx.createNode().createRelationshipTo( tx.createNode(), REL_TYPE );
-            tx.commit();
-        }
-
-        dbmsController.restartDbms( builder ->
-        {
-            builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, false );
-            builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, false );
-            return builder;
-        });
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            IllegalStateException illegalStateException = assertThrows( IllegalStateException.class, () -> tx.findRelationships( REL_TYPE ) );
-            assertThat( illegalStateException.getMessage() ).isEqualTo( "Cannot search relationship type scan store when feature is not enabled." );
+            try ( Transaction tx = db.beginTx() )
+            {
+                // Drop the default indexes to be able to test fallback to store scan
+                Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
+                for ( IndexDefinition index : indexes )
+                {
+                    index.drop();
+                }
+            }
         }
     }
 }

@@ -112,8 +112,8 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
         try ( Transaction transaction = db.beginTx() )
         {
             // THEN
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN1, "key", bigValue ) ).containsOnly( entity );
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN1, "key", smallValue ) ).isEmpty();
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "key", bigValue ) ).containsOnly( entity );
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "key", smallValue ) ).isEmpty();
         }
     }
 
@@ -126,7 +126,7 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
         // When
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN1, "name", "Hawking" ) ).containsOnly( entity );
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Hawking" ) ).containsOnly( entity );
         }
     }
 
@@ -140,7 +140,7 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
         // When
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN1, "name", "Hawking" ) ).containsOnly( entity );
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Hawking" ) ).containsOnly( entity );
         }
     }
 
@@ -150,7 +150,7 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
         // When/Then
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN1, "name", "Hawking" ) ).isEmpty();
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Hawking" ) ).isEmpty();
         }
     }
 
@@ -164,12 +164,12 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
         // WHEN THEN
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN1, "name", "Mattias" ) ).containsOnly( firstEntity );
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Mattias" ) ).containsOnly( firstEntity );
         }
         var secondEntity = createEntity( db, map( "name", "Taylor" ), TOKEN1 );
         try ( Transaction transaction = db.beginTx() )
         {
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN1, "name", "Taylor" ) ).containsOnly( secondEntity );
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Taylor" ) ).containsOnly( secondEntity );
         }
     }
 
@@ -368,7 +368,7 @@ abstract class IndexingAcceptanceTestBase<TOKEN, ENTITY extends Entity>
 
     protected abstract TOKEN createToken( String name );
 
-    protected abstract List<ENTITY> findEntitiessByTokenAndProperty( Transaction tx, TOKEN label, String propertyName, Object value );
+    protected abstract List<ENTITY> findEntitiesByTokenAndProperty( Transaction tx, TOKEN label, String propertyName, Object value );
 
     protected abstract ENTITY createEntity( GraphDatabaseService db, Map<String,Object> properties, TOKEN label );
 

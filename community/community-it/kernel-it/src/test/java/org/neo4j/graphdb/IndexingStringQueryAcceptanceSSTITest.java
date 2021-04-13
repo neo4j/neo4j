@@ -36,4 +36,8 @@ public class IndexingStringQueryAcceptanceSSTITest extends IndexingStringQueryAc
         builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
     }
 
+    @Override
+    public void skipRelTokenIndexIfNotSupported( IndexingMode mode, EntityControl entityControl )
+    {
+    }
 }

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -113,7 +114,7 @@ abstract class TokenIndexOrderTestBase<TOKEN_INDEX_CURSOR extends Cursor> extend
 
     protected abstract int tokenByName( KernelTransaction tx, String name );
 
-    protected abstract void tokenScan( IndexOrder indexOrder, KernelTransaction tx, int label, TOKEN_INDEX_CURSOR cursor );
+    protected abstract void tokenScan( IndexOrder indexOrder, KernelTransaction tx, int label, TOKEN_INDEX_CURSOR cursor ) throws KernelException;
 
     protected abstract long entityReference( TOKEN_INDEX_CURSOR cursor );
 

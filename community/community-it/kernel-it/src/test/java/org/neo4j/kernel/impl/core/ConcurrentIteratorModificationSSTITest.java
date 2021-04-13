@@ -25,46 +25,57 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.internal.helpers.collection.Iterators.asSet;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@ImpermanentDbmsExtension
-class TestConcurrentIteratorModification
+@ImpermanentDbmsExtension( configurationCallback = "configuration" )
+class ConcurrentIteratorModificationSSTITest extends TestConcurrentIteratorModification
 {
     @Inject
     private GraphDatabaseService db;
 
+    @ExtensionCallback
+    void configuration( TestDatabaseManagementServiceBuilder builder )
+    {
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
+    }
+
     @Test
-    void shouldNotThrowConcurrentModificationExceptionWhenUpdatingWhileIterating()
+    void shouldNotThrowConcurrentModificationExceptionWhenUpdatingWhileIteratingRelationships()
     {
         // given
-        Label label = Label.label( "Bird" );
+        RelationshipType type = RelationshipType.withName( "type" );
 
-        Node node1;
-        Node node2;
-        Node node3;
+        Relationship rel1;
+        Relationship rel2;
+        Relationship rel3;
         try ( Transaction tx = db.beginTx() )
         {
-            node1 = tx.createNode( label );
-            node2 = tx.createNode( label );
+            Node node1 = tx.createNode();
+            Node node2 = tx.createNode();
+            rel1 = node1.createRelationshipTo( node2, type );
+            rel2 = node2.createRelationshipTo( node1, type );
             tx.commit();
         }
 
         // when
-        Set<Node> result = new HashSet<>();
+        Set<Relationship> result = new HashSet<>();
         try ( Transaction tx = db.beginTx() )
         {
-            node3 = tx.createNode( label );
-            ResourceIterator<Node> iterator = tx.findNodes( label );
-            node3.removeLabel( label );
-            tx.createNode( label );
+            rel3 = tx.createNode().createRelationshipTo( tx.createNode(), type );
+            ResourceIterator<Relationship> iterator = tx.findRelationships( type );
+            rel3.delete();
+            tx.createNode().createRelationshipTo( tx.createNode(), type );
             while ( iterator.hasNext() )
             {
                 result.add( iterator.next() );
@@ -73,6 +84,6 @@ class TestConcurrentIteratorModification
         }
 
         // then does not throw and retains view from iterator creation time
-        assertEquals( asSet( node1, node2, node3 ), result );
+        assertThat( result ).containsExactlyInAnyOrder( rel1, rel2, rel3 );
     }
 }

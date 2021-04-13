@@ -19,6 +19,7 @@
  */
 package org.neo4j.tracers;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -32,11 +33,8 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
-@DbmsExtension( configurationCallback = "configuration" )
+@DbmsExtension
 class TransactionTracingIT
 {
     private static final int ENTITY_COUNT = 1_000;
@@ -53,12 +51,6 @@ class TransactionTracingIT
     private GraphDatabaseAPI database;
     @Inject
     private DatabaseManagementService managementService;
-
-    @ExtensionCallback
-    void configuration( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
-    }
 
     @Test
     void tracePageCacheAccessOnAllNodesAccess()
@@ -161,6 +153,7 @@ class TransactionTracingIT
     }
 
     @Test
+    @Disabled( "Disable until token index feature is enabled" )
     void tracePageCacheAccessOnFindRelationships()
     {
         var marker = Label.label( "marker" );

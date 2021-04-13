@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
-import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store;
+import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
@@ -285,7 +285,7 @@ class RecoveryRequiredCheckerTest
         for ( Path file : databaseLayout.storeFiles() )
         {
             if ( file.getFileName().toString().equals( DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName() ) &&
-                 !Config.defaults().get( enable_relationship_type_scan_store ) )
+                 !Config.defaults().get( enable_scan_stores_as_token_indexes ) )
             {
                 // Skip
                 continue;

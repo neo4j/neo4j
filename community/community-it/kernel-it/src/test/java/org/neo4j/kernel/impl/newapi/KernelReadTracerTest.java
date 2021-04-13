@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -410,6 +411,7 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         }
     }
 
+    @Disabled( "disabled until we have token indexes on by default" )
     @Test
     void shouldTraceRelationshipTypeScan() throws KernelException
     {
@@ -474,7 +476,6 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
     public ReadTestSupport newTestSupport()
     {
         ReadTestSupport testSupport = new ReadTestSupport();
-        testSupport.addSetting( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
         testSupport.addSetting( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
         return testSupport;
     }

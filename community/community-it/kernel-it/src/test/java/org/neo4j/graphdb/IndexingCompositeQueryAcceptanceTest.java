@@ -43,6 +43,7 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
 
@@ -55,8 +56,16 @@ public class IndexingCompositeQueryAcceptanceTest
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
         builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
+    }
+
+    /**
+     * Temporary solution to skip relationship token index tests here.
+     * Will be removed when token indexes are enabled by default.
+     */
+    public void skipRelTokenIndexIfNotSupported( IndexingMode mode, EntityControl entityControl )
+    {
+        assumeFalse( mode == IndexingMode.TOKEN && entityControl.equals( EntityTypes.RELATIONSHIP ) );
     }
 
     public static Stream<Arguments> data()
@@ -111,6 +120,8 @@ public class IndexingCompositeQueryAcceptanceTest
     @MethodSource( "data" )
     public void shouldSupportIndexSeek( DataSet dataSet, IndexingMode withIndex, EntityControl entityControl )
     {
+        skipRelTokenIndexIfNotSupported( withIndex, entityControl );
+
         createIndex( withIndex, dataSet.keys, entityControl );
 
         // GIVEN
@@ -133,6 +144,8 @@ public class IndexingCompositeQueryAcceptanceTest
     public void shouldSupportIndexSeekBackwardsOrder( DataSet dataSet, IndexingMode withIndex,
                                                       EntityControl entityControl )
     {
+        skipRelTokenIndexIfNotSupported( withIndex, entityControl );
+
         createIndex( withIndex, dataSet.keys, entityControl );
 
         // GIVEN
@@ -162,6 +175,8 @@ public class IndexingCompositeQueryAcceptanceTest
     public void shouldIncludeEntitiesCreatedInSameTxInIndexSeek( DataSet dataSet, IndexingMode withIndex,
                                                                  EntityControl entityControl )
     {
+        skipRelTokenIndexIfNotSupported( withIndex, entityControl );
+
         createIndex( withIndex, dataSet.keys, entityControl );
 
         // GIVEN
@@ -185,6 +200,8 @@ public class IndexingCompositeQueryAcceptanceTest
     public void shouldNotIncludeEntitiesDeletedInSameTxInIndexSeek( DataSet dataSet,
                                                                     IndexingMode withIndex, EntityControl entityControl )
     {
+        skipRelTokenIndexIfNotSupported( withIndex, entityControl );
+
         createIndex( withIndex, dataSet.keys, entityControl );
 
         // GIVEN
@@ -214,6 +231,8 @@ public class IndexingCompositeQueryAcceptanceTest
     public void shouldConsiderEntitiesChangedInSameTxInIndexSeek( DataSet dataSet, IndexingMode withIndex,
                                                                   EntityControl entityControl )
     {
+        skipRelTokenIndexIfNotSupported( withIndex, entityControl );
+
         createIndex( withIndex, dataSet.keys, entityControl );
 
         // GIVEN
@@ -305,7 +324,7 @@ public class IndexingCompositeQueryAcceptanceTest
     private static final IndexSeek mapIndexSeek =
             ( tx, keys, values, entityControl ) -> entityControl.findEntities( tx, TOKEN_NAME, propertyMap( keys, values ) );
 
-    private enum IndexingMode
+    enum IndexingMode
     {
         NONE, // to be used when NLSS and RTSS become optional
         TOKEN, // NLSS or RTSS only
@@ -332,7 +351,7 @@ public class IndexingCompositeQueryAcceptanceTest
         }
     }
 
-    private interface EntityControl
+    interface EntityControl
     {
 
         String createIndex( Transaction tx, String tokenName, String[] keys );

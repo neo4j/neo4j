@@ -81,7 +81,7 @@ public class NodeIndexingAcceptanceTest extends IndexingAcceptanceTestBase<Label
     }
 
     @Override
-    protected List<Node> findEntitiessByTokenAndProperty( Transaction tx, Label label, String propertyName, Object value )
+    protected List<Node> findEntitiesByTokenAndProperty( Transaction tx, Label label, String propertyName, Object value )
     {
         return Iterators.asList( tx.findNodes( label, propertyName, value ) );
     }
@@ -122,7 +122,7 @@ public class NodeIndexingAcceptanceTest extends IndexingAcceptanceTestBase<Label
             // Then
             assertEquals( LONG_STRING, myNode.getProperty( "key2" ) );
             assertEquals( LONG_STRING, myNode.getProperty( "key3" ) );
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN1, "key2", LONG_STRING ) ).containsOnly( myNode );
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "key2", LONG_STRING ) ).containsOnly( myNode );
         }
     }
 
@@ -152,14 +152,14 @@ public class NodeIndexingAcceptanceTest extends IndexingAcceptanceTestBase<Label
             assertEquals( "Einstein", myNode.getProperty( "name" ) );
             assertThat( myNode.getLabels() ).containsOnly( TOKEN2, TOKEN3 );
 
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN1, "name", "Hawking" ) ).isEmpty();
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN1, "name", "Einstein" ) ).isEmpty();
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Hawking" ) ).isEmpty();
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Einstein" ) ).isEmpty();
 
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN2, "name", "Hawking" ) ).isEmpty();
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN2, "name", "Einstein" ) ).containsOnly( myNode );
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN2, "name", "Hawking" ) ).isEmpty();
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN2, "name", "Einstein" ) ).containsOnly( myNode );
 
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN3, "name", "Hawking" ) ).isEmpty();
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN3, "name", "Einstein" ) ).containsOnly( myNode );
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN3, "name", "Hawking" ) ).isEmpty();
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN3, "name", "Einstein" ) ).containsOnly( myNode );
             transaction.commit();
         }
     }
@@ -191,17 +191,17 @@ public class NodeIndexingAcceptanceTest extends IndexingAcceptanceTestBase<Label
             assertEquals( "Feynman", myNode.getProperty( "name" ) );
             assertThat( myNode.getLabels() ).containsOnly( TOKEN2, TOKEN3 );
 
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN1, "name", "Hawking" ) ).isEmpty();
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN1, "name", "Einstein" ) ).isEmpty();
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN1, "name", "Feynman" ) ).isEmpty();
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Hawking" ) ).isEmpty();
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Einstein" ) ).isEmpty();
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN1, "name", "Feynman" ) ).isEmpty();
 
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN2, "name", "Hawking" ) ).isEmpty();
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN2, "name", "Einstein" ) ).isEmpty();
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN2, "name", "Feynman" ) ).containsOnly( myNode );
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN2, "name", "Hawking" ) ).isEmpty();
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN2, "name", "Einstein" ) ).isEmpty();
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN2, "name", "Feynman" ) ).containsOnly( myNode );
 
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN3, "name", "Hawking" ) ).isEmpty();
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN3, "name", "Einstein" ) ).isEmpty();
-            assertThat( findEntitiessByTokenAndProperty( transaction, TOKEN3, "name", "Feynman" ) ).containsOnly( myNode );
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN3, "name", "Hawking" ) ).isEmpty();
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN3, "name", "Einstein" ) ).isEmpty();
+            assertThat( findEntitiesByTokenAndProperty( transaction, TOKEN3, "name", "Feynman" ) ).containsOnly( myNode );
             transaction.commit();
         }
     }

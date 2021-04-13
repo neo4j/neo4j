@@ -35,4 +35,10 @@ public class IndexingCompositeQueryAcceptanceSSTITest extends IndexingCompositeQ
         builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
         builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
     }
+
+    @Override
+    public void skipRelTokenIndexIfNotSupported( IndexingCompositeQueryAcceptanceTest.IndexingMode mode,
+            IndexingCompositeQueryAcceptanceTest.EntityControl entityControl )
+    {
+    }
 }

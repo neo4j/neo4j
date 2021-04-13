@@ -89,7 +89,6 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
-import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_NAME;
@@ -697,7 +696,7 @@ class RecoveryIT
             }
         };
         monitors.addMonitorListener( recoveryMonitor );
-        var service = builderWithRelationshipTypeScanStoreSet( layout.getNeo4jLayout() )
+        var service = new TestDatabaseManagementServiceBuilder( layout.getNeo4jLayout() )
                 .addExtension( guardExtensionFactory )
                 .setMonitors( monitors ).build();
         try
@@ -748,7 +747,7 @@ class RecoveryIT
 
     private void recoverDatabase( DatabaseTracers databaseTracers ) throws Exception
     {
-        Config config = Config.newBuilder().set( enable_relationship_type_scan_store, enableRelationshipTypeScanStore() ).build();
+        Config config = Config.newBuilder().build();
         assertTrue( isRecoveryRequired( databaseLayout, config ) );
         performRecovery( fileSystem, pageCache, databaseTracers, config, databaseLayout, INSTANCE );
         assertFalse( isRecoveryRequired( databaseLayout, config ) );
@@ -756,7 +755,7 @@ class RecoveryIT
 
     private boolean isRecoveryRequired( DatabaseLayout layout ) throws Exception
     {
-        Config config = Config.newBuilder().set( enable_relationship_type_scan_store, enableRelationshipTypeScanStore() ).build();
+        Config config = Config.newBuilder().build();
         return isRecoveryRequired( layout, config );
     }
 
@@ -832,7 +831,7 @@ class RecoveryIT
     {
         if ( builder == null )
         {
-            builder = builderWithRelationshipTypeScanStoreSet()
+            builder = new TestDatabaseManagementServiceBuilder( neo4jLayout )
                     .setConfig( preallocate_logical_logs, false )
                     .setConfig( logical_log_rotation_threshold, logThreshold );
         }
@@ -846,20 +845,9 @@ class RecoveryIT
 
     private DatabaseManagementService forcedRecoveryManagement()
     {
-        return builderWithRelationshipTypeScanStoreSet()
+        return new TestDatabaseManagementServiceBuilder( neo4jLayout )
                 .setConfig( fail_on_missing_files, false )
                 .build();
-    }
-
-    private TestDatabaseManagementServiceBuilder builderWithRelationshipTypeScanStoreSet()
-    {
-        return builderWithRelationshipTypeScanStoreSet( neo4jLayout );
-    }
-
-    private TestDatabaseManagementServiceBuilder builderWithRelationshipTypeScanStoreSet( Neo4jLayout neo4jLayout )
-    {
-        return new TestDatabaseManagementServiceBuilder( neo4jLayout )
-                .setConfig( enable_relationship_type_scan_store, enableRelationshipTypeScanStore() );
     }
 
     private PageCache getDatabasePageCache( GraphDatabaseAPI databaseAPI )

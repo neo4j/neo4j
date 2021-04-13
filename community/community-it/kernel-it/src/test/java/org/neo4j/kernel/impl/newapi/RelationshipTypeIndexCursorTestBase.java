@@ -26,9 +26,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
+import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.newapi.TestKernelReadTracer.TraceEvent;
@@ -76,26 +79,24 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            org.neo4j.internal.kernel.api.Read read = tx.dataRead();
-
             try ( RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor( NULL ) )
             {
                 MutableLongSet uniqueIds = new LongHashSet();
 
                 // WHEN
-                read.relationshipTypeScan( typeOne, cursor, order );
+                relationshipTypeScan( tx, typeOne, cursor, order );
 
                 // THEN
                 assertRelationshipCount( cursor, 1, uniqueIds );
 
                 // WHEN
-                read.relationshipTypeScan( typeTwo, cursor, order );
+                relationshipTypeScan( tx, typeTwo, cursor, order );
 
                 // THEN
                 assertRelationships( cursor, uniqueIds, order, relTwo, relTwo2 );
 
                 // WHEN
-                read.relationshipTypeScan( typeThree, cursor, order );
+                relationshipTypeScan( tx, typeThree, cursor, order );
 
                 // THEN
                 assertRelationships( cursor, uniqueIds, order, relThree, relThree2, relThree3 );
@@ -131,14 +132,12 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
 
             createdInTx2 = createRelationship( tx.dataWrite(), typeOne );
 
-            Read read = tx.dataRead();
-
             try ( RelationshipTypeIndexCursor cursor = tx.cursors().allocateRelationshipTypeIndexCursor( NULL ) )
             {
                 MutableLongSet uniqueIds = new LongHashSet();
 
                 // when
-                read.relationshipTypeScan( typeOne, cursor, order );
+                relationshipTypeScan( tx, typeOne, cursor, order );
 
                 // then
                 assertRelationships( cursor, uniqueIds, order, inStore, inStore2, createdInTx, createdInTx2 );
@@ -170,7 +169,7 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
                 cursor.setTracer( tracer );
 
                 // when
-                read.relationshipTypeScan( typeOne, cursor, IndexOrder.NONE );
+                relationshipTypeScan( tx, typeOne, cursor, IndexOrder.NONE );
                 exhaustCursor( cursor );
 
                 // then
@@ -179,7 +178,7 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
                         new TraceEvent( Relationship, first ) );
 
                 // when
-                read.relationshipTypeScan( typeTwo, cursor, IndexOrder.NONE );
+                relationshipTypeScan( tx, typeTwo, cursor, IndexOrder.NONE );
                 exhaustCursor( cursor );
 
                 // then
@@ -203,5 +202,12 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
         long sourceNode = write.nodeCreate();
         long targetNode = write.nodeCreate();
         return write.relationshipCreate( sourceNode, type, targetNode );
+    }
+
+    private void relationshipTypeScan( KernelTransaction tx, int label, RelationshipTypeIndexCursor cursor, IndexOrder indexOrder ) throws KernelException
+    {
+        IndexDescriptor index = tx.schemaRead().indexGetForName( "rti" );
+        TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession( index );
+        tx.dataRead().relationshipTypeScan( tokenReadSession, cursor, IndexQueryConstraints.ordered( indexOrder ), new TokenPredicate( label ) );
     }
 }

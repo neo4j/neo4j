@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.junit.jupiter.api.BeforeEach;
+
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
@@ -32,9 +38,24 @@ public class RelationshipTypeIndexCursorTest extends RelationshipTypeIndexCursor
             @Override
             protected TestDatabaseManagementServiceBuilder configure( TestDatabaseManagementServiceBuilder builder )
             {
-                builder = builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
+                builder = builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
                 return super.configure( builder );
             }
         };
+    }
+
+    @BeforeEach
+    public void setupRelTypeIndex()
+    {
+        // KernelAPIWriteTestBase removes all indexes after creating the database so need to recreate the relation type index.
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            tx.schema().indexFor( AnyTokens.ANY_RELATIONSHIP_TYPES ).withName( "rti" ).create();
+            tx.commit();
+        }
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
+        }
     }
 }

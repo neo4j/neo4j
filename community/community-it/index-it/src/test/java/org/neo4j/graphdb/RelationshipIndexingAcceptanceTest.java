@@ -35,7 +35,7 @@ public class RelationshipIndexingAcceptanceTest extends IndexingAcceptanceTestBa
     @ExtensionCallback
     void configureRelSearch( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
         builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_property_indexes, true );
     }
 
@@ -46,7 +46,7 @@ public class RelationshipIndexingAcceptanceTest extends IndexingAcceptanceTestBa
     }
 
     @Override
-    protected List<Relationship> findEntitiessByTokenAndProperty( Transaction tx, RelationshipType type, String propertyName, Object value )
+    protected List<Relationship> findEntitiesByTokenAndProperty( Transaction tx, RelationshipType type, String propertyName, Object value )
     {
         return Iterators.asList( tx.findRelationships( type, propertyName, value ) );
     }

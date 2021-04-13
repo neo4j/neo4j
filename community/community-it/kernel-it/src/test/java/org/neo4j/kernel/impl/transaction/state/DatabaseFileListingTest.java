@@ -221,7 +221,7 @@ class DatabaseFileListingTest
     {
         DatabaseLayout layout = database.getDatabaseLayout();
         Set<Path> expectedFiles = layout.storeFiles();
-        if ( !Config.defaults().get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) )
+        if ( !database.getDependencyResolver().resolveDependency( Config.class ).get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes ) )
         {
             expectedFiles.removeIf( f -> DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE.getName().equals( f.getFileName().toString() ) );
         }

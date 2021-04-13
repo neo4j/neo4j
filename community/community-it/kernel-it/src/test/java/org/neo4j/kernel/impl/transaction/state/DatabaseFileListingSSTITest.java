@@ -17,13 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.recovery;
+package org.neo4j.kernel.impl.transaction.state;
 
-class RecoveryWithRelationshipTypeScanStoreIT extends RecoveryIT
+import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
+
+@DbmsExtension( configurationCallback = "configure" )
+class DatabaseFileListingSSTITest extends DatabaseFileListingTest
 {
-    @Override
-    boolean enableRelationshipTypeScanStore()
+    @ExtensionCallback
+    void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        return true;
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
     }
 }
