@@ -55,10 +55,8 @@ import org.neo4j.cypher.internal.procs.IgnoredResult
 import org.neo4j.cypher.internal.procs.SchemaExecutionPlan
 import org.neo4j.cypher.internal.procs.SuccessResult
 import org.neo4j.cypher.internal.runtime.InternalQueryType
-import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.SCHEMA_WRITE
-import org.neo4j.cypher.internal.runtime.slottedParameters
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.exceptions.CantCompileQueryException
@@ -85,10 +83,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   override def correspondingRuntimeOption: Option[CypherRuntimeOption] = None
 
   override def compileToExecutable(state: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
-
-    val (withSlottedParameters, parameterMapping) = slottedParameters(state.logicalPlan)
-
-    logicalToExecutable.applyOrElse(withSlottedParameters, throwCantCompile).apply(context, parameterMapping)
+    logicalToExecutable.applyOrElse(state.logicalPlan, throwCantCompile).apply(context)
   }
 
   def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
@@ -101,19 +96,19 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       Some(SCHEMA_WRITE)
     } else None
 
-  val logicalToExecutable: PartialFunction[LogicalPlan, (RuntimeContext, ParameterMapping) => ExecutionPlan] = {
+  val logicalToExecutable: PartialFunction[LogicalPlan, RuntimeContext => ExecutionPlan] = {
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY [OPTIONS {...}]
-    case CreateNodeKeyConstraint(source, _, label, props, name, options) => (context, parameterMapping) =>
+    case CreateNodeKeyConstraint(source, _, label, props, name, options) => context =>
       SchemaExecutionPlan("CreateNodeKeyConstraint", ctx => {
         val (indexProvider, indexConfig) = getValidProviderAndConfig(options, "node key constraint")
         val labelId = ctx.getOrCreateLabelId(label.name)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
         ctx.createNodeKeyConstraint(labelId, propertyKeyIds, name, indexProvider, indexConfig)
         SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
+      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
 
     // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
-    case DropNodeKeyConstraint(label, props) => (_, _) =>
+    case DropNodeKeyConstraint(label, props) => _ =>
       SchemaExecutionPlan("DropNodeKeyConstraint", ctx => {
         val labelId = ctx.getOrCreateLabelId(label.name)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
@@ -123,18 +118,18 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT node.prop IS UNIQUE [OPTIONS {...}]
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
-    case CreateUniquePropertyConstraint(source, _, label, props, name, options) => (context, parameterMapping) =>
+    case CreateUniquePropertyConstraint(source, _, label, props, name, options) => context =>
       SchemaExecutionPlan("CreateUniqueConstraint", ctx => {
         val (indexProvider, indexConfig) = getValidProviderAndConfig(options, "uniqueness constraint")
         val labelId = ctx.getOrCreateLabelId(label.name)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
         ctx.createUniqueConstraint(labelId, propertyKeyIds, name, indexProvider, indexConfig)
         SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
+      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
 
     // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
     // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
-    case DropUniquePropertyConstraint(label, props) => (_, _) =>
+    case DropUniquePropertyConstraint(label, props) => _ =>
       SchemaExecutionPlan("DropUniqueConstraint", ctx => {
         val labelId = ctx.getOrCreateLabelId(label.name)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
@@ -143,35 +138,35 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       })
 
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON (node:Label) ASSERT node.prop IS NOT NULL
-    case CreateNodePropertyExistenceConstraint(source, label, prop, name) => (context, parameterMapping) =>
+    case CreateNodePropertyExistenceConstraint(source, label, prop, name) => context =>
       SchemaExecutionPlan("CreateNodePropertyExistenceConstraint", ctx => {
         (ctx.createNodePropertyExistenceConstraint _).tupled(labelPropWithName(ctx)(label, prop.propertyKey, name))
         SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
+      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
 
     // DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)
-    case DropNodePropertyExistenceConstraint(label, prop) => (_, _) =>
+    case DropNodePropertyExistenceConstraint(label, prop) => _ =>
       SchemaExecutionPlan("DropNodePropertyExistenceConstraint", ctx => {
         (ctx.dropNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
         SuccessResult
       })
 
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] ON ()-[r:R]-() ASSERT r.prop IS NOT NULL
-    case CreateRelationshipPropertyExistenceConstraint(source, relType, prop, name) => (context, parameterMapping) =>
+    case CreateRelationshipPropertyExistenceConstraint(source, relType, prop, name) => context =>
       SchemaExecutionPlan("CreateRelationshipPropertyExistenceConstraint", ctx => {
         (ctx.createRelationshipPropertyExistenceConstraint _).tupled(typePropWithName(ctx)(relType, prop.propertyKey, name))
         SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
+      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
 
     // DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)
-    case DropRelationshipPropertyExistenceConstraint(relType, prop) => (_, _) =>
+    case DropRelationshipPropertyExistenceConstraint(relType, prop) => _ =>
       SchemaExecutionPlan("DropRelationshipPropertyExistenceConstraint", ctx => {
         (ctx.dropRelationshipPropertyExistenceConstraint _).tupled(typeProp(ctx)(relType, prop.propertyKey))
         SuccessResult
       })
 
     // DROP CONSTRAINT name [IF EXISTS]
-    case DropConstraintOnName(name, ifExists) => (_, _) =>
+    case DropConstraintOnName(name, ifExists) => _ =>
       SchemaExecutionPlan("DropConstraint", ctx => {
         if (!ifExists || ctx.constraintExists(name)) {
           ctx.dropNamedConstraint(name)
@@ -182,25 +177,25 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
     // CREATE INDEX ON :LABEL(prop)
     // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
     // CREATE INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
-    case CreateBtreeIndex(source, entityName, props, name, options) => (context, parameterMapping) =>
+    case CreateBtreeIndex(source, entityName, props, name, options) => context =>
       SchemaExecutionPlan("CreateIndex", ctx => {
         val (indexProvider, indexConfig) = getValidProviderAndConfig(options, "index")
         val (entityId, isNodeIndex) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
         ctx.addBtreeIndexRule(entityId, isNodeIndex, propertyKeyIds, name, indexProvider, indexConfig)
         SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
+      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
 
     // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR (n) ON EACH labels(n)
     // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR ()-[r]-() ON [EACH] type(r)
-    case CreateLookupIndex(source, isNodeIndex, name) => (context, parameterMapping) =>
+    case CreateLookupIndex(source, isNodeIndex, name) => context =>
       SchemaExecutionPlan("CreateIndex", ctx => {
         ctx.addLookupIndexRule(isNodeIndex, name)
         SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context, parameterMapping)))
+      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
 
     // DROP INDEX ON :LABEL(prop)
-    case DropIndex(label, props) => (_, _) =>
+    case DropIndex(label, props) => _ =>
       SchemaExecutionPlan("DropIndex", ctx => {
         val labelId = labelToId(ctx)(label)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
@@ -209,7 +204,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       })
 
     // DROP INDEX name [IF EXISTS]
-    case DropIndexOnName(name, ifExists) => (_, _) =>
+    case DropIndexOnName(name, ifExists) => _ =>
       SchemaExecutionPlan("DropIndex", ctx => {
         if (!ifExists || ctx.indexExists(name)) {
           ctx.dropIndexRule(name)
@@ -217,7 +212,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
-    case DoNothingIfExistsForBtreeIndex(entityName, propertyKeyNames, name) => (_, _) =>
+    case DoNothingIfExistsForBtreeIndex(entityName, propertyKeyNames, name) => _ =>
       SchemaExecutionPlan("DoNothingIfExist", ctx => {
         val (entityId, isNodeIndex) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
@@ -230,7 +225,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         }
       }, None)
 
-    case DoNothingIfExistsForLookupIndex(isNodeIndex, name) => (_, _) =>
+    case DoNothingIfExistsForLookupIndex(isNodeIndex, name) => _ =>
       SchemaExecutionPlan("DoNothingIfExist", ctx => {
         if (Try(ctx.lookupIndexReference(isNodeIndex).getName).isSuccess) {
           IgnoredResult
@@ -241,7 +236,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         }
       }, None)
 
-    case DoNothingIfExistsForConstraint(_, entityName, props, assertion, name) => (_, _) =>
+    case DoNothingIfExistsForConstraint(_, entityName, props, assertion, name) => _ =>
       SchemaExecutionPlan("DoNothingIfExist", ctx => {
         val (entityId, _) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)

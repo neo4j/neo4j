@@ -19,7 +19,5 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.runtime.ParameterMapping
-
-case class AdministrationCommandRuntimeContext(runtimeContext: RuntimeContext, parameterMapping: ParameterMapping)
+case class AdministrationCommandRuntimeContext(runtimeContext: RuntimeContext)
 

@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
 import org.neo4j.cypher.internal.logical.plans.AlterUser
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActions
@@ -56,8 +57,8 @@ import org.neo4j.cypher.internal.procs.PredicateExecutionPlan
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
-import org.neo4j.cypher.internal.runtime.slottedParameters
 import org.neo4j.cypher.internal.security.SystemGraphCredential
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
@@ -77,6 +78,7 @@ import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.ByteArray
 import org.neo4j.values.storable.StringArray
 import org.neo4j.values.storable.TextValue
@@ -102,11 +104,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
   }
 
   override def compileToExecutable(state: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
-
-    val (planWithSlottedParameters, parameterMapping) = slottedParameters(state.logicalPlan)
-
     // Either the logical plan is a command that the partial function logicalToExecutable provides/understands OR we throw an error
-    logicalToExecutable.applyOrElse(planWithSlottedParameters, throwCantCompile).apply(AdministrationCommandRuntimeContext(context, parameterMapping))
+    logicalToExecutable.applyOrElse(state.logicalPlan, throwCantCompile).apply(AdministrationCommandRuntimeContext(context))
   }
 
   // When the community commands are run within enterprise, this allows the enterprise commands to be chained
@@ -425,10 +424,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       }
 
       def addParameterDefaults(transaction: Transaction, params: MapValue): MapValue = {
-        val builder = new MapValueBuilder()
-        context.parameterMapping.foreach((name, value) =>
-          value.default.foreach(builder.add(name, _))
-        )
+        val builder = call.treeFold(new MapValueBuilder()) {
+          case ImplicitProcedureArgument(name, _, defaultValue) => acc =>
+            acc.add(name, ValueUtils.of(defaultValue))
+            TraverseChildren(acc)
+        }
         val defaults = builder.build()
         defaults.updatedWith(params)
       }

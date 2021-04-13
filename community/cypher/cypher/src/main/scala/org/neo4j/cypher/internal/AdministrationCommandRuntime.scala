@@ -91,7 +91,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   protected def getPasswordExpression(userNameParameter: Option[expressions.Expression], password: expressions.Expression, isEncryptedPassword: Boolean): PasswordExpression =
     password match {
-      case parameterPassword: ParameterFromSlot =>
+      case parameterPassword: Parameter =>
         validateStringParameterType(parameterPassword)
 
         // Normally we overwrite the password parameter with the hashed version so we don't keep the
@@ -113,7 +113,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   protected def getPasswordFieldsCurrent(password: expressions.Expression): (String, Value, MapValue => MapValue) = {
     password match {
-      case parameterPassword: ParameterFromSlot =>
+      case parameterPassword: Parameter =>
         validateStringParameterType(parameterPassword)
         val passwordParameter = parameterPassword.name
         val renamedParameter = s"__current_${passwordParameter}_bytes"
@@ -139,7 +139,7 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
     }
   }
 
-  private def validateStringParameterType(param: ParameterFromSlot): Unit = {
+  private def validateStringParameterType(param: Parameter): Unit = {
     param.parameterType match {
       case _: StringType =>
       case _ => throw new ParameterWrongTypeException(s"Only $CTString values are accepted as password, got: " + param.parameterType)
@@ -163,13 +163,11 @@ trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
   }
 
   protected def getNameFields(key: String,
-                              name: Either[String, AnyRef],
+                              name: Either[String, Parameter],
                               valueMapper: String => String = s => s): NameFields = name match {
     case Left(u) =>
       NameFields(s"$internalPrefix$key", Values.utf8Value(valueMapper(u)), IdentityConverter)
-    case Right(p) if p.isInstanceOf[ParameterFromSlot] =>
-      // JVM type erasure means at runtime we get a type that is not actually expected by the Scala compiler, so we cannot use case Right(parameterPassword)
-      val parameter = p.asInstanceOf[ParameterFromSlot]
+    case Right(parameter) =>
       validateStringParameterType(parameter)
       def rename: String => String = paramName => internalKey(paramName)
       NameFields(rename(parameter.name), Values.NO_VALUE, RenamingParameterConverter(parameter.name, rename, valueMapper))
