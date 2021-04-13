@@ -150,13 +150,13 @@ class RecoveryVisitorTest
         RecoveryControllableStorageEngine storageEngine = new RecoveryControllableStorageEngine()
         {
             @Override
-            public void lockRecoveryCommands( CommandStream commands, LockService lockService, LockGroup lockGroup )
+            public void lockRecoveryCommands( CommandStream commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode )
             {
                 if ( idOf( commands ) == 5 )
                 {
                     barrier.release();
                 }
-                super.lockRecoveryCommands( commands, lockService, lockGroup );
+                super.lockRecoveryCommands( commands, lockService, lockGroup, RECOVERY );
             }
 
             @Override
@@ -315,7 +315,7 @@ class RecoveryVisitorTest
         private final AtomicInteger applyOrderCursor = new AtomicInteger();
 
         @Override
-        public void lockRecoveryCommands( CommandStream commands, LockService lockService, LockGroup lockGroup )
+        public void lockRecoveryCommands( CommandStream commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode )
         {
             commands.forEach( cmd -> ((RecoveryTestBaseCommand) cmd).lock( lockService, lockGroup ) );
             lockOrder[lockOrderCursor.getAndIncrement()] = idOf( commands );

@@ -19,6 +19,8 @@
  */
 package org.neo4j.lock;
 
+import java.util.Objects;
+
 /**
  * Abstract implementation to keep all the boiler-plate code separate from actual locking logic.
  *
@@ -58,6 +60,12 @@ abstract class AbstractLockService<HANDLE> implements LockService
         return lock( new LockedRelationship( relationshipId ) );
     }
 
+    @Override
+    public Lock acquireCustomLock( int resourceType, long id, LockType type )
+    {
+        return lock( new CustomLockedEntity( resourceType, id ) );
+    }
+
     private Lock lock( LockedEntity key )
     {
         return new LockReference( key, acquire( key ) );
@@ -69,7 +77,7 @@ abstract class AbstractLockService<HANDLE> implements LockService
 
     protected abstract static class LockedEntity
     {
-        private final long id;
+        final long id;
 
         private LockedEntity( long id )
         {
@@ -165,6 +173,34 @@ abstract class AbstractLockService<HANDLE> implements LockService
         LockedRelationship( long relationshipId )
         {
             super( relationshipId );
+        }
+    }
+
+    private static class CustomLockedEntity extends LockedEntity
+    {
+        private final int type;
+
+        private CustomLockedEntity( int type, long id )
+        {
+            super( id );
+            this.type = type;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( type, id );
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            if ( !super.equals( obj ) )
+            {
+                return false;
+            }
+            CustomLockedEntity that = (CustomLockedEntity) obj;
+            return this.type == that.type;
         }
     }
 }

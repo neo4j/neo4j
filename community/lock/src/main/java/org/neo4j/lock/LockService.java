@@ -47,6 +47,8 @@ public interface LockService
 
     Lock acquireRelationshipLock( long relationshipId, LockType type );
 
+    Lock acquireCustomLock( int resourceType, long id, LockType type );
+
     Lock NO_LOCK = new Lock()
     {
         @Override
@@ -66,6 +68,12 @@ public interface LockService
 
         @Override
         public Lock acquireRelationshipLock( long relationshipId, LockType type )
+        {
+            return NO_LOCK;
+        }
+
+        @Override
+        public Lock acquireCustomLock( int resourceType, long id, LockType type )
         {
             return NO_LOCK;
         }

@@ -88,7 +88,7 @@ class RecoveryVisitor implements RecoveryApplier
             }
             try ( LockGroup locks = new LockGroup() )
             {
-                storageEngine.lockRecoveryCommands( transaction.getTransactionRepresentation(), lockService, locks );
+                storageEngine.lockRecoveryCommands( transaction.getTransactionRepresentation(), lockService, locks, mode );
                 boolean myTurn = prevLockedTxId.compareAndSet( txId - stride, txId );
                 checkState( myTurn, "Something wrong with the algorithm, I thought it was my turn, but apparently it wasn't %d", txId );
                 apply( transaction );

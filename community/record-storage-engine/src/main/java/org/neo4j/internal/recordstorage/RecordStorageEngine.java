@@ -459,13 +459,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void lockRecoveryCommands( CommandStream commands, LockService lockService, LockGroup lockGroup )
+    public void lockRecoveryCommands( CommandStream commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode )
     {
         try
         {
             commands.accept( element ->
             {
-                ((Command) element).lock( lockService, lockGroup );
+                ((Command) element).lockForRecovery( lockService, lockGroup, mode );
                 return false;
             } );
         }

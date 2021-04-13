@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
+import org.neo4j.lock.LockType;
 import org.neo4j.storageengine.api.CommandVersion;
 
 /**
@@ -71,7 +72,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     public boolean visitNodeCommand( Command.NodeCommand command )
     {
         // acquire lock
-        command.lock( lockService, lockGroup );
+        lockGroup.add( lockService.acquireNodeLock( command.getKey(), LockType.EXCLUSIVE ) );
 
         // update store
         updateStore( neoStores.getNodeStore(), command );
@@ -81,7 +82,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     @Override
     public boolean visitRelationshipCommand( Command.RelationshipCommand command )
     {
-        command.lock( lockService, lockGroup );
+        lockGroup.add( lockService.acquireRelationshipLock( command.getKey(), LockType.EXCLUSIVE ) );
 
         updateStore( neoStores.getRelationshipStore(), command );
         return false;
@@ -91,7 +92,14 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     public boolean visitPropertyCommand( Command.PropertyCommand command )
     {
         // acquire lock
-        command.lock( lockService, lockGroup );
+        if ( command.after.isNodeSet() )
+        {
+            lockGroup.add( lockService.acquireNodeLock( command.getNodeId(), LockType.EXCLUSIVE ) );
+        }
+        else
+        {
+            lockGroup.add( lockService.acquireRelationshipLock( command.getRelId(), LockType.EXCLUSIVE ) );
+        }
 
         updateStore( neoStores.getPropertyStore(), command );
         return false;

@@ -25,10 +25,12 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -41,6 +43,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockType;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
@@ -55,6 +58,11 @@ import static org.neo4j.token.api.TokenIdPrettyPrinter.relationshipType;
  */
 public abstract class Command implements StorageCommand
 {
+    private static final int RECOVERY_LOCK_TYPE_PROPERTY = 0;
+    private static final int RECOVERY_LOCK_TYPE_PROPERTY_DYNAMIC = 1;
+    private static final int RECOVERY_LOCK_TYPE_NODE_LABEL_DYNAMIC = 2;
+    private static final int RECOVERY_LOCK_TYPE_RELATIONSHIP_GROUP = 3;
+
     protected final LogCommandSerialization serialization;
     private int keyHash;
     private long key;
@@ -143,7 +151,7 @@ public abstract class Command implements StorageCommand
 
     public abstract boolean handle( CommandVisitor handler ) throws IOException;
 
-    void lock( LockService lockService, LockGroup lockGroup )
+    void lockForRecovery( LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode )
     {
         // most commands does not need this locking
     }
@@ -186,6 +194,11 @@ public abstract class Command implements StorageCommand
         {
             return after;
         }
+
+        RECORD record( TransactionApplicationMode mode )
+        {
+            return mode == TransactionApplicationMode.REVERSE_RECOVERY ? before : after;
+        }
     }
 
     public static class NodeCommand extends BaseCommand<NodeRecord>
@@ -216,9 +229,13 @@ public abstract class Command implements StorageCommand
         }
 
         @Override
-        void lock( LockService lockService, LockGroup locks )
+        void lockForRecovery( LockService lockService, LockGroup locks, TransactionApplicationMode mode )
         {
             locks.add( lockService.acquireNodeLock( getKey(), LockType.EXCLUSIVE ) );
+            for ( DynamicRecord dynamicLabelRecord : record( mode ).getDynamicLabelRecords() )
+            {
+                locks.add( lockService.acquireCustomLock( RECOVERY_LOCK_TYPE_NODE_LABEL_DYNAMIC, dynamicLabelRecord.getId(), LockType.EXCLUSIVE ) );
+            }
         }
     }
 
@@ -250,7 +267,7 @@ public abstract class Command implements StorageCommand
         }
 
         @Override
-        void lock( LockService lockService, LockGroup locks )
+        void lockForRecovery( LockService lockService, LockGroup locks, TransactionApplicationMode mode )
         {
             locks.add( lockService.acquireRelationshipLock( getKey(), LockType.EXCLUSIVE ) );
         }
@@ -284,9 +301,14 @@ public abstract class Command implements StorageCommand
         }
 
         @Override
-        void lock( LockService lockService, LockGroup locks )
+        void lockForRecovery( LockService lockService, LockGroup locks, TransactionApplicationMode mode )
         {
             locks.add( lockService.acquireNodeLock( after.getOwningNode(), LockType.EXCLUSIVE ) );
+            if ( getMode() == Mode.CREATE || getMode() == Mode.DELETE )
+            {
+                // This lock on the property guards for reuse of this property
+                locks.add( lockService.acquireCustomLock( RECOVERY_LOCK_TYPE_RELATIONSHIP_GROUP, after.getId(), LockType.EXCLUSIVE ) );
+            }
         }
     }
 
@@ -391,7 +413,7 @@ public abstract class Command implements StorageCommand
         }
 
         @Override
-        void lock( LockService lockService, LockGroup locks )
+        void lockForRecovery( LockService lockService, LockGroup locks, TransactionApplicationMode mode )
         {
             if ( after.isNodeSet() )
             {
@@ -400,6 +422,24 @@ public abstract class Command implements StorageCommand
             else
             {
                 locks.add( lockService.acquireRelationshipLock( getRelId(), LockType.EXCLUSIVE ) );
+            }
+
+            // Guard for reuse of these records
+            PropertyRecord record = record( mode );
+            for ( DynamicRecord deletedRecord : record.getDeletedRecords() )
+            {
+                locks.add( lockService.acquireCustomLock( RECOVERY_LOCK_TYPE_PROPERTY_DYNAMIC, deletedRecord.getId(), LockType.EXCLUSIVE ) );
+            }
+            for ( PropertyBlock block : record )
+            {
+                for ( DynamicRecord valueRecord : block.getValueRecords() )
+                {
+                    locks.add( lockService.acquireCustomLock( RECOVERY_LOCK_TYPE_PROPERTY_DYNAMIC, valueRecord.getId(), LockType.EXCLUSIVE ) );
+                }
+            }
+            if ( getMode() == Mode.CREATE || getMode() == Mode.DELETE )
+            {
+                locks.add( lockService.acquireCustomLock( RECOVERY_LOCK_TYPE_PROPERTY, after.getId(), LockType.EXCLUSIVE ) );
             }
         }
     }

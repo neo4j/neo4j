@@ -111,7 +111,7 @@ public interface StorageEngine extends Lifecycle
      */
     List<StorageCommand> createUpgradeCommands( KernelVersion versionToUpgradeTo );
 
-    void lockRecoveryCommands( CommandStream commands, LockService lockService, LockGroup lockGroup );
+    void lockRecoveryCommands( CommandStream commands, LockService lockService, LockGroup lockGroup, TransactionApplicationMode mode );
 
     /**
      * Apply a batch of groups of commands to this storage.
