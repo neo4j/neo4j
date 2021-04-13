@@ -828,8 +828,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       order)(_)))
   }
 
-  def apply(): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Apply(lhs, rhs)(_)))
+  def apply(fromSubquery: Boolean = false): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Apply(lhs, rhs, fromSubquery)(_)))
 
   def antiSemiApply(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AntiSemiApply(lhs, rhs)(_)))
@@ -868,8 +868,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def foreachApply(variable: String, expression: String): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => ForeachApply(lhs, rhs, variable, Parser.parseExpression(expression))(_)))
 
-  def cartesianProduct(): IMPL =
-    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => CartesianProduct(lhs, rhs)(_)))
+  def cartesianProduct(fromSubquery: Boolean = false): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => CartesianProduct(lhs, rhs, fromSubquery)(_)))
 
   def union(): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Union(lhs, rhs)(_)))

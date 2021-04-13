@@ -1858,7 +1858,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
     val expectedPlan = wideningExpandConfig.subPlanBuilder()
       .expandAll("(b)-[r2:R]->(c)")
-      .cartesianProduct()
+      .cartesianProduct(fromSubquery = true)
       .|.allNodeScan("d")
       .sort(Seq(Ascending("a.prop")))
       .projection("a.prop AS `a.prop`")

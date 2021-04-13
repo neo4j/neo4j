@@ -115,7 +115,8 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // Then
       producedPlan should equal(CartesianProduct(
         inputPlan,
-        AllNodesScan("a", Set.empty)
+        AllNodesScan("a", Set.empty),
+        fromSubquery = true
       ))
     }
   }
@@ -135,7 +136,8 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // Then
       producedPlan should equal(Apply(
         inputPlan,
-        AllNodesScan("a", Set.empty)
+        AllNodesScan("a", Set.empty),
+        fromSubquery = true
       ))
     }
   }

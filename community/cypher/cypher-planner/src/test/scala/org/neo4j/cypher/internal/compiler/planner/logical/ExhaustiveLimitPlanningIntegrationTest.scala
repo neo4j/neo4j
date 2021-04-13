@@ -165,7 +165,9 @@ class ExhaustiveLimitPlanningIntegrationTest
     plan shouldEqual config.planBuilder()
       .produceResults("m")
       .exhaustiveLimit(3)
-      .create(createNode("m", "M"))
+      .apply(fromSubquery = true)
+      .|.create(createNode("m", "M"))
+      .|.argument()
       .nodeByLabelScan("n", "N")
       .build()
   }
@@ -286,7 +288,9 @@ class ExhaustiveLimitPlanningIntegrationTest
       .produceResults("m")
       .skip(10)
       .exhaustiveLimit(add(literalInt(3), literalInt(10)))
-      .create(createNode("m", "M"))
+      .apply(fromSubquery = true)
+      .|.create(createNode("m", "M"))
+      .|.argument()
       .nodeByLabelScan("n", "N")
       .build()
   }
