@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
-import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
+import org.neo4j.cypher.internal.logical.plans.WriteOnlyPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
@@ -296,7 +296,7 @@ object Eagerness {
         unnestRightUnary(apply, lhs, eager)
 
      // L Ax (Up R) => Up Ax (L R), don't unnest when coming from a subquery
-      case apply@Apply(lhs, updatingPlan: UpdatingPlan, fromSubquery) if !fromSubquery =>
+      case apply@Apply(lhs, updatingPlan: WriteOnlyPlan, fromSubquery) if !fromSubquery =>
         unnestRightUnary(apply, lhs, updatingPlan)
     }))
 

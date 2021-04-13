@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import java.lang.reflect.Method
+
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
@@ -34,7 +36,6 @@ import org.neo4j.cypher.internal.util.attribution.Identifiable
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.exceptions.InternalException
 
-import java.lang.reflect.Method
 import scala.collection.mutable
 import scala.collection.mutable.ArrayStack
 import scala.util.hashing.MurmurHash3
@@ -210,6 +211,10 @@ trait AggregatingPlan extends LogicalPlan {
 trait UpdatingPlan extends LogicalUnaryPlan {
   override def withLhs(source: LogicalPlan)(idGen: IdGen): UpdatingPlan
 }
+//Pure updating plans, e.g. CREATE, SET
+trait WriteOnlyPlan extends UpdatingPlan
+//Plan that both read and writes, e.g. MERGE
+trait ReadWritePlan extends UpdatingPlan
 
 abstract class LogicalBinaryPlan(idGen: IdGen) extends LogicalPlan(idGen) {
   final def lhs: Option[LogicalPlan] = Some(left)

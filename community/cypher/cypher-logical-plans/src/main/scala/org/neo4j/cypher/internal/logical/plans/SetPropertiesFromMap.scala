@@ -34,8 +34,8 @@ case class SetPropertiesFromMap(override val source: LogicalPlan,
                                 entity: Expression,
                                 expression: Expression,
                                 removeOtherProps: Boolean
-                               )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
-  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(source = newLHS)(idGen)
+                               )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with WriteOnlyPlan {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with WriteOnlyPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols
 }

@@ -35,9 +35,9 @@ case class SetRelationshipProperty(
                                    idName: String,
                                    propertyKey: PropertyKeyName,
                                    expression: Expression
-                                 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
+                                 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with WriteOnlyPlan {
 
-  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(source = newLHS)(idGen)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with WriteOnlyPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols + idName
 }

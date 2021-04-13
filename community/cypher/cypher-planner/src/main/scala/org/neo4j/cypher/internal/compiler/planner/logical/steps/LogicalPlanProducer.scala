@@ -1456,7 +1456,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
    */
   private def invalidatesProvidedOrder(plan: LogicalPlan): Boolean = plan match {
     case _: UpdatingPlan => true
-    case _: Merge        => true
     case _               => false
   }
 

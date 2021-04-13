@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * For each input row, delete the entity specified by 'expression'. Entity can be a node, relationship or path.
  */
-case class DeleteExpression(override val source: LogicalPlan, expression: Expression)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
+case class DeleteExpression(override val source: LogicalPlan, expression: Expression)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with WriteOnlyPlan {
 
-  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan = copy(source = newLHS)(idGen)
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with WriteOnlyPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = source.availableSymbols
 }
