@@ -26,7 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Objects;
 
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
@@ -34,8 +33,8 @@ import org.neo4j.cli.Converters.DatabaseNameConverter;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.NormalizedDatabaseName;
-import org.neo4j.dbms.archive.CompressionFormat;
 import org.neo4j.dbms.archive.Dumper;
+import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.impl.util.Validators;
@@ -63,10 +62,9 @@ public class DumpCommand extends AbstractCommand
 {
     @Option( names = "--database", description = "Name of the database to dump.", defaultValue = DEFAULT_DATABASE_NAME,
             converter = DatabaseNameConverter.class )
-    private NormalizedDatabaseName database;
+    protected NormalizedDatabaseName database;
     @Option( names = "--to", paramLabel = "<path>", required = true, description = "Destination (file or folder) of database dump." )
     private Path to;
-
     private final Dumper dumper;
 
     public DumpCommand( ExecutionContext ctx, Dumper dumper )
@@ -123,10 +121,10 @@ public class DumpCommand extends AbstractCommand
         Path databasePath = databaseLayout.databaseDirectory();
         try
         {
-            CompressionFormat format = selectCompressionFormat( ctx.err() );
-            Path lockFile = databaseLayout.databaseLockFile();
-            dumper.dump( databasePath, databaseLayout.getTransactionLogsDirectory(), archive,
-                    format, path -> Objects.equals( path.getFileName().toString(), lockFile.getFileName().toString() ) );
+            var format = selectCompressionFormat( ctx.err() );
+            var lockFile = databaseLayout.databaseLockFile().getFileName().toString();
+            var quarantineMarkerFile = databaseLayout.quarantineMarkerFile().getFileName().toString();
+            dumper.dump( databasePath, databaseLayout.getTransactionLogsDirectory(), archive, format, path -> oneOf( path, lockFile, quarantineMarkerFile ) );
         }
         catch ( FileAlreadyExistsException e )
         {
@@ -146,7 +144,12 @@ public class DumpCommand extends AbstractCommand
         }
     }
 
-    private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration, MemoryTracker memoryTracker )
+    private static boolean oneOf( Path path, String... names )
+    {
+        return ArrayUtil.contains( names, path.getFileName().toString() );
+    }
+
+    protected void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration, MemoryTracker memoryTracker )
     {
         if ( checkRecoveryState( databaseLayout, additionalConfiguration, memoryTracker ) )
         {

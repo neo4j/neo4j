@@ -285,7 +285,10 @@ public interface ProcedureITBase
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "dbms.cluster.protocols", "() :: (orientation :: STRING?, remoteAddress :: STRING?, applicationProtocol :: STRING?, " +
                                                 "applicationProtocolVersion :: INTEGER?, modifierProtocols :: STRING?)","Overview of installed protocols",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" )
+                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
+                proc( "dbms.quarantineDatabase", "(databaseName :: STRING?, setStatus :: BOOLEAN?, reason = No reason given :: STRING?) :: " +
+                                                 "(databaseName :: STRING?, quarantined :: BOOLEAN?, result :: STRING?)",
+                        "Place a database into quarantine or remove from it.", stringArray( "admin" ), "DBMS" )
         ) );
         return result;
     }

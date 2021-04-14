@@ -49,6 +49,7 @@ public class DatabaseLayout
 {
     private static final String DATABASE_LOCK_FILENAME = "database_lock";
     private static final String BACKUP_TOOLS_FOLDER = "tools";
+    private static final String QUARANTINE_MARKER_FILENAME = "quarantine_marker";
 
     private final Path databaseDirectory;
     private final Neo4jLayout neo4jLayout;
@@ -93,6 +94,11 @@ public class DatabaseLayout
     public Path databaseLockFile()
     {
         return databaseDirectory().resolve( DATABASE_LOCK_FILENAME );
+    }
+
+    public Path quarantineMarkerFile()
+    {
+        return databaseDirectory().resolve( QUARANTINE_MARKER_FILENAME );
     }
 
     public String getDatabaseName()
