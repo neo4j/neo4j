@@ -637,7 +637,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
         processAll( updates );
 
         // when
-        Set<Long> ids = asUniqueSet( accessor.newAllEntriesReader( NULL ) );
+        Set<Long> ids = asUniqueSet( accessor.newAllEntriesValueReader( NULL ) );
 
         // then
         Set<Long> expectedIds = Stream.of( updates )
@@ -650,7 +650,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE e
     void shouldSeeNoEntriesInAllEntriesReaderOnEmptyIndex()
     {
         // when
-        Set<Long> ids = asUniqueSet( accessor.newAllEntriesReader( NULL ) );
+        Set<Long> ids = asUniqueSet( accessor.newAllEntriesValueReader( NULL ) );
 
         // then
         Set<Long> expectedIds = Collections.emptySet();

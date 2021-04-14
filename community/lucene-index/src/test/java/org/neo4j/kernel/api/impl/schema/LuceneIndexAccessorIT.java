@@ -67,7 +67,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.PERSISTENT;
@@ -125,7 +124,7 @@ public class LuceneIndexAccessorIT
             removeSomeNodes( indexDescriptor, nodes / 2, accessor, expectedNodes );
 
             // then
-            try ( BoundedIterable<Long> reader = accessor.newAllEntriesReader( NULL ) )
+            try ( BoundedIterable<Long> reader = accessor.newAllEntriesValueReader( NULL ) )
             {
                 MutableLongSet readIds = LongSets.mutable.empty();
                 reader.forEach( readIds::add );
@@ -162,7 +161,7 @@ public class LuceneIndexAccessorIT
             removeSomeNodes( indexDescriptor, 2, accessor, expectedNodes );
 
             // then
-            try ( BoundedIterable<Long> reader = accessor.newAllEntriesReader( NULL ) )
+            try ( BoundedIterable<Long> reader = accessor.newAllEntriesValueReader( NULL ) )
             {
                 MutableLongSet readIds = LongSets.mutable.empty();
                 reader.forEach( readIds::add );
@@ -186,7 +185,7 @@ public class LuceneIndexAccessorIT
 
             // then
             int count = 0;
-            try ( BoundedIterable<Long> reader = accessor.newAllEntriesReader( NULL ) )
+            try ( BoundedIterable<Long> reader = accessor.newAllEntriesValueReader( NULL ) )
             {
                 for ( Long entityId : reader )
                 {

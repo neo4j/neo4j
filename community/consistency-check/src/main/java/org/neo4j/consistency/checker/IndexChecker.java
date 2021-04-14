@@ -127,7 +127,7 @@ public class IndexChecker implements Checker
     private void cacheIndex( IndexContext index, LongRange nodeIdRange, boolean firstRange, PageCursorTracer cursorTracer ) throws Exception
     {
         IndexAccessor accessor = indexAccessors.accessorFor( index.descriptor );
-        IndexEntriesReader[] partitions = accessor.newAllIndexEntriesReader( context.execution.getNumberOfThreads(), cursorTracer );
+        IndexEntriesReader[] partitions = accessor.newAllEntriesValueReader( context.execution.getNumberOfThreads(), cursorTracer );
         try
         {
             Value[][] firstValues = new Value[partitions.length][];

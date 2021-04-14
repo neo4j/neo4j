@@ -95,7 +95,7 @@ class IndexIteratorIT
         {
             for ( IndexDescriptor descriptor : descriptors )
             {
-                try ( BoundedIterable<Long> indexIterator = indexAccessors.accessorFor( descriptor ).newAllEntriesReader( tracer ) )
+                try ( BoundedIterable<Long> indexIterator = indexAccessors.accessorFor( descriptor ).newAllEntriesValueReader( tracer ) )
                 {
                     assertEquals( 1, count( indexIterator.iterator() ) );
                 }

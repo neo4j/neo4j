@@ -52,7 +52,7 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexR
     }
 
     @Override
-    public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
+    public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
     {
         return super.newAllEntriesReader( LuceneDocumentStructure::getNodeId, fromIdInclusive, toIdExclusive );
     }

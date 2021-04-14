@@ -107,16 +107,16 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      * @param cursorTracer underlying page cursor tracer
      * @return a {@link BoundedIterable} to access all entity ids indexed in this index.
      */
-    default BoundedIterable<Long> newAllEntriesReader( PageCursorTracer cursorTracer )
+    default BoundedIterable<Long> newAllEntriesValueReader( PageCursorTracer cursorTracer )
     {
-        return newAllEntriesReader( 0, Long.MAX_VALUE, cursorTracer );
+        return newAllEntriesValueReader( 0, Long.MAX_VALUE, cursorTracer );
     }
 
     /**
      * @param cursorTracer underlying page cursor tracer
      * @return a {@link BoundedIterable} to access all entity ids indexed in the range {@code fromIdInclusive}-{@code toIdExclusive} in this index.
      */
-    BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer );
+    BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer );
 
     /**
      * Returns one or more {@link IndexEntriesReader readers} reading all entries in this index. The supplied {@code partitions} is a hint
@@ -128,9 +128,9 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      * @return the partitions that can read the index entries in this index. The implementation should strive to adhere to this number,
      * but the only real contract is that the returned number of readers is between 1 <= numberOfReturnedReaders <= partitions.
      */
-    default IndexEntriesReader[] newAllIndexEntriesReader( int partitions, PageCursorTracer cursorTracer )
+    default IndexEntriesReader[] newAllEntriesValueReader( int partitions, PageCursorTracer cursorTracer )
     {
-        BoundedIterable<Long> entriesReader = newAllEntriesReader( cursorTracer );
+        BoundedIterable<Long> entriesReader = newAllEntriesValueReader( cursorTracer );
         Iterator<Long> ids = entriesReader.iterator();
         IndexEntriesReader reader = new IndexEntriesReader()
         {
@@ -229,7 +229,7 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
+        public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
         {
             return new BoundedIterable<>()
             {
@@ -322,15 +322,15 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         }
 
         @Override
-        public BoundedIterable<Long> newAllEntriesReader( PageCursorTracer cursorTracer )
+        public BoundedIterable<Long> newAllEntriesValueReader( PageCursorTracer cursorTracer )
         {
-            return delegate.newAllEntriesReader( cursorTracer );
+            return delegate.newAllEntriesValueReader( cursorTracer );
         }
 
         @Override
-        public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
+        public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
         {
-            return delegate.newAllEntriesReader( fromIdInclusive, toIdExclusive, cursorTracer );
+            return delegate.newAllEntriesValueReader( fromIdInclusive, toIdExclusive, cursorTracer );
         }
 
         @Override

@@ -450,7 +450,7 @@ class NodeChecker implements Checker
         long[] indexEntityTokenIds = toLongArray( schema.getEntityTokenIds() );
         indexEntityTokenIds = sortAndDeduplicate( indexEntityTokenIds );
         try ( var cursorTracer = context.pageCacheTracer.createPageCursorTracer( NODE_INDEXES_CHECKER_TAG );
-              var allEntriesReader = accessor.newAllEntriesReader( range.from(), lastRange ? Long.MAX_VALUE : range.to(), cursorTracer ) )
+              var allEntriesReader = accessor.newAllEntriesValueReader( range.from(), lastRange ? Long.MAX_VALUE : range.to(), cursorTracer ) )
         {
             for ( long entityId : allEntriesReader )
             {

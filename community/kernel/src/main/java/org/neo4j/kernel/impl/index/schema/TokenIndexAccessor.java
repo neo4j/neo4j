@@ -138,7 +138,7 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
     }
 
     @Override
-    public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
+    public BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
     {
         //This is just used for consistency checker and token indexes are not consistency checked the same way (not yet anyway).
         throw new UnsupportedOperationException( "Not applicable for token indexes" );

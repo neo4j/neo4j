@@ -31,7 +31,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -761,7 +760,7 @@ public class DetectRandomSabotageIT
                         IndexAccessor accessor = ((OnlineIndexProxy) indexProxy).accessor();
                         long selectedEntityId = -1;
                         Value[] selectedValues = null;
-                        try ( IndexEntriesReader reader = accessor.newAllIndexEntriesReader( 1, NULL )[0] )
+                        try ( IndexEntriesReader reader = accessor.newAllEntriesValueReader( 1, NULL )[0] )
                         {
                             long entityId = -1;
                             Value[] values = null;

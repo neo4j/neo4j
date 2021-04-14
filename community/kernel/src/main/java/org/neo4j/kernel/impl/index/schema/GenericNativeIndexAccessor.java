@@ -92,7 +92,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
     }
 
     @Override
-    public IndexEntriesReader[] newAllIndexEntriesReader( int partitions, PageCursorTracer cursorTracer )
+    public IndexEntriesReader[] newAllEntriesValueReader( int partitions, PageCursorTracer cursorTracer )
     {
         GenericKey lowest = layout.newKey();
         lowest.initialize( Long.MIN_VALUE );
