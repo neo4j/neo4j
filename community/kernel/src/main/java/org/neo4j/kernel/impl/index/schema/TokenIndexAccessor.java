@@ -104,7 +104,8 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
         return new DefaultTokenIndexReader( index );
     }
 
-    public AllEntriesTokenScanReader allEntityTokenRanges( long fromEntityId, long toEntityId, PageCursorTracer cursorTracer )
+    @Override
+    public BoundedIterable<EntityTokenRange> newAllEntriesTokenReader( long fromEntityId, long toEntityId, PageCursorTracer cursorTracer )
     {
         IntFunction<Seeker<TokenScanKey,TokenScanValue>> seekProvider = tokenId ->
         {

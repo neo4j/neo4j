@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
+import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
@@ -117,6 +118,16 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
      * @return a {@link BoundedIterable} to access all entity ids indexed in the range {@code fromIdInclusive}-{@code toIdExclusive} in this index.
      */
     BoundedIterable<Long> newAllEntriesValueReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer );
+
+    /**
+     * @param cursorTracer underlying page cursor tracer
+     * @return a {@link BoundedIterable} to access all token ids associated with every entity indexed in the range
+     * {@code fromIdInclusive}-{@code toIdExclusive} in this index.
+     */
+    default BoundedIterable<EntityTokenRange> newAllEntriesTokenReader( long fromIdInclusive, long toIdExclusive, PageCursorTracer cursorTracer )
+    {
+        throw new UnsupportedOperationException( "Not supported for " + getClass().getSimpleName() );
+    }
 
     /**
      * Returns one or more {@link IndexEntriesReader readers} reading all entries in this index. The supplied {@code partitions} is a hint

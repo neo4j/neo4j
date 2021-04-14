@@ -35,6 +35,7 @@ import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.TokenScanDocument;
+import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
@@ -119,13 +120,13 @@ class NodeChecker implements Checker
         return flags.isCheckGraph() || flags.isCheckIndexes() && !smallIndexes.isEmpty();
     }
 
-    private AllEntriesTokenScanReader getLabelIndexReader( long fromNodeId, long toNodeId, boolean last, PageCursorTracer cursorTracer )
+    private BoundedIterable<EntityTokenRange> getLabelIndexReader( long fromNodeId, long toNodeId, boolean last, PageCursorTracer cursorTracer )
     {
         if ( context.useScanStoresAsTokenIndexes )
         {
             if ( context.nodeLabelIndex != null )
             {
-                return context.nodeLabelIndex.allEntityTokenRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
+                return context.nodeLabelIndex.newAllEntriesTokenReader( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
                         cursorTracer );
             }
             return AllEntriesTokenScanReader.EMPTY;
@@ -141,7 +142,7 @@ class NodeChecker implements Checker
               var cursorTracer = context.pageCacheTracer.createPageCursorTracer( NODE_RANGE_CHECKER_TAG );
               RecordNodeCursor nodeCursor = reader.allocateNodeCursor( cursorTracer );
               RecordReader<DynamicRecord> labelReader = new RecordReader<>( context.neoStores.getNodeStore().getDynamicLabelStore(), cursorTracer );
-              AllEntriesTokenScanReader labelIndexReader = getLabelIndexReader( fromNodeId, toNodeId, last, cursorTracer );
+              BoundedIterable<EntityTokenRange> labelIndexReader = getLabelIndexReader( fromNodeId, toNodeId, last, cursorTracer );
               SafePropertyChainReader property = new SafePropertyChainReader( context, cursorTracer );
               SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, smallIndexes, cursorTracer,
                       context.memoryTracker ) )

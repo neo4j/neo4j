@@ -33,6 +33,7 @@ import org.neo4j.consistency.checking.cache.CacheSlots;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.synthetic.TokenScanDocument;
+import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.collection.LongRange;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.recordstorage.RecordRelationshipScanCursor;
@@ -119,7 +120,8 @@ class RelationshipChecker implements Checker
         try ( RecordStorageReader reader = new RecordStorageReader( neoStores );
               var cursorTracer = context.pageCacheTracer.createPageCursorTracer( RELATIONSHIP_RANGE_CHECKER_TAG );
               RecordRelationshipScanCursor relationshipCursor = reader.allocateRelationshipScanCursor( cursorTracer );
-              AllEntriesTokenScanReader relationshipTypeReader = getRelationshipTypeIndexReader( fromRelationshipId, toRelationshipId, last, cursorTracer );
+              BoundedIterable<EntityTokenRange> relationshipTypeReader = getRelationshipTypeIndexReader( fromRelationshipId, toRelationshipId, last,
+                      cursorTracer );
               SafePropertyChainReader property = new SafePropertyChainReader( context, cursorTracer );
               SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, indexes, cursorTracer,
                       context.memoryTracker ) )
@@ -218,14 +220,14 @@ class RelationshipChecker implements Checker
         }
     }
 
-    private AllEntriesTokenScanReader getRelationshipTypeIndexReader( long fromRelationshipId, long toRelationshipId, boolean last,
+    private BoundedIterable<EntityTokenRange> getRelationshipTypeIndexReader( long fromRelationshipId, long toRelationshipId, boolean last,
             PageCursorTracer cursorTracer )
     {
         if ( context.useScanStoresAsTokenIndexes )
         {
             if ( context.relationshipTypeIndex != null )
             {
-                return context.relationshipTypeIndex.allEntityTokenRanges( fromRelationshipId, last ? Long.MAX_VALUE : toRelationshipId,
+                return context.relationshipTypeIndex.newAllEntriesTokenReader( fromRelationshipId, last ? Long.MAX_VALUE : toRelationshipId,
                         cursorTracer );
             }
         }
