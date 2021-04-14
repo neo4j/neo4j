@@ -644,15 +644,15 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      * Once upon a time there was something called label scan store.
      * In essence, it was a btree used for indexing nodes, but it was not managed like other indexes.
      * Most importantly, it did not have a record in the schema store.
-     * In 4.3, the label scan store was turned into a proper index referred to as label token index
+     * In 4.3, the label scan store was turned into a proper index referred to as node label index
      * and got a corresponding record in a schema store.
      * However, during a rolling upgrade until the cluster is fully upgraded to a version >= 4.3,
-     * a former label scan store behaves like a label token index, but does not have a record in schema store.
-     * We call such label token index as "injected".
-     * During an upgrade, a record in a schema store is created for the injected label token index.
-     * The purpose of this code is to catch the event when a new index descriptor for the injected label token index
+     * a former label scan store behaves like a node label index, but does not have a record in schema store.
+     * We call such node label index as "injected".
+     * During an upgrade, a record in a schema store is created for the injected node label index.
+     * The purpose of this code is to catch the event when a new index descriptor for the injected node label index
      * is submitted, filter it from the list of to-be-created indexes and swap the old descriptor on
-     * the injected label token index with the newly submitted descriptor.
+     * the injected node label index with the newly submitted descriptor.
      * In other words, adding identity to an injected index is the only and very special case when
      * {@link #createIndexes} is called with a descriptor for an already existing index
      * and such operation needs to cause the index being linked to the new descriptor instead of
