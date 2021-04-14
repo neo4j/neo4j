@@ -35,6 +35,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -59,21 +60,23 @@ public class CliArgHelper
     @Nullable
     public static CliArgs parse( @Nonnull String... args )
     {
-        final CliArgs cliArgs = new CliArgs();
-
-        final ArgumentParser parser = setupParser( cliArgs.getParameters() );
-        final Namespace ns;
-
         try
         {
-            ns = parser.parseArgs( args );
+            return parseAndThrow( args );
         }
         catch ( ArgumentParserException e )
         {
-            parser.handleError( e );
+            e.getParser().handleError( e );
             return null;
         }
-        return getCliArgs( cliArgs, parser, ns );
+    }
+
+    private static void preValidateArguments( ArgumentParser parser, @Nonnull String... args ) throws ArgumentParserException
+    {
+        if ( Arrays.asList( args ).contains( "-file" ) )
+        {
+            throw new ArgumentParserException( "Unrecognized argument '-file', did you mean --file?", parser );
+        }
     }
 
     /**
@@ -85,6 +88,7 @@ public class CliArgHelper
     {
         final CliArgs cliArgs = new CliArgs();
         final ArgumentParser parser = setupParser( cliArgs.getParameters() );
+        preValidateArguments( parser, args );
         final Namespace ns = parser.parseArgs( args );
         return getCliArgs( cliArgs, parser, ns );
     }

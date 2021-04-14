@@ -33,10 +33,12 @@ import java.util.Optional;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.shell.test.Util.asArray;
@@ -342,5 +344,12 @@ public class CliArgHelperTest
         CliArgs arguments = CliArgHelper.parse( "--file", "foo" );
         assertNotNull( arguments );
         assertEquals( "foo", arguments.getInputFilename() );
+    }
+
+    @Test
+    public void helpfulIfUsingWrongFile()
+    {
+        var exception = assertThrows( ArgumentParserException.class, () -> CliArgHelper.parseAndThrow( "-file", "foo" ) );
+        assertThat( exception.getMessage(), containsString( "Unrecognized argument '-file', did you mean --file?" ) );
     }
 }
