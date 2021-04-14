@@ -16,16 +16,12 @@
  */
 package org.neo4j.cypher.internal.expressions
 
-import org.neo4j.cypher.internal.expressions.CanonicalStringHelper.nodeRelationCanonicalString
-import org.neo4j.cypher.internal.util.InputPosition
+object CanonicalStringHelper {
 
-case class GetDegree(
-                      node: Expression,
-                      relType: Option[RelTypeName],
-                      dir: SemanticDirection
-                    )(val position: InputPosition) extends Expression {
+  private def relTypeCanonicalString(relType: Option[RelTypeName]): String =
+    relType.map(rT => s"[:${rT.name}]").getOrElse("")
 
-  override def asCanonicalStringVal: String =
-    s"size(${nodeRelationCanonicalString(node, relType, dir)})"
+  def nodeRelationCanonicalString(node: Expression, relType: Option[RelTypeName], dir: SemanticDirection): String =
+    s"(${node.asCanonicalStringVal})${dir.leftArrowCanonicalString}${relTypeCanonicalString(relType)}${dir.rightArrowCanonicalString}()"
 
 }
