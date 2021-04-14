@@ -416,7 +416,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
     private DateTimeValue( ZonedDateTime value )
     {
-        ZoneId zone = value.getZone();
+        ZoneId zone = value.getZone().normalized();
         if ( zone instanceof ZoneOffset )
         {
             this.value = value;
