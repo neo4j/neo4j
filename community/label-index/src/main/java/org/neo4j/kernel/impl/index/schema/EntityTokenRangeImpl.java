@@ -34,7 +34,7 @@ import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
  * {@link #entities() entities array}, but not all entity ids will have corresponding {@link #tokens(long) tokens},
  * where an empty long[] will be returned instead.
  */
-public class EntityTokenRange
+public class EntityTokenRangeImpl implements EntityTokenRange
 {
     public static final long[][] NO_TOKENS = new long[RANGE_SIZE][];
     private final long idRange;
@@ -50,7 +50,7 @@ public class EntityTokenRange
      * and second the token ids for that entity, potentially empty if there are none for that entity.
      * The first dimension must be the size of the range.
      */
-    public EntityTokenRange( long idRange, long[][] tokens, EntityType entityType )
+    public EntityTokenRangeImpl( long idRange, long[][] tokens, EntityType entityType )
     {
         this.idRange = idRange;
         this.tokens = tokens;
@@ -66,43 +66,31 @@ public class EntityTokenRange
         }
     }
 
-    /**
-     * @return the range id of this range. This is the base entity id divided by range size.
-     * Example: A store with entities 1,3,20,22 and a range size of 16 would return ranges:
-     * - rangeId=0, entities=1,3
-     * - rangeId=1, entities=20,22
-     */
+    @Override
     public long id()
     {
         return idRange;
     }
 
+    @Override
     public boolean covers( long entityId )
     {
         return entityId >= lowRangeId && entityId <= highRangeId;
     }
 
+    @Override
     public boolean isBelow( long entityId )
     {
         return highRangeId < entityId;
     }
 
-    /**
-     * @return entity ids in this range, the entities in this array may or may not have {@link #tokens(long) tokens}
-     * attached to it.
-     */
+    @Override
     public long[] entities()
     {
         return entities;
     }
 
-    /**
-     * Returns the token ids (as longs) for the given entity id. The {@code entityId} must be one of the ids
-     * from {@link #entities()}.
-     *
-     * @param entityId the entity id to return tokens for.
-     * @return token ids for the given {@code entityId}.
-     */
+    @Override
     public long[] tokens( long entityId )
     {
         int index = toIntExact( entityId - lowRangeId );

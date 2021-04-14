@@ -47,6 +47,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.index.schema.AllEntriesTokenScanReader;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
+import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -338,7 +339,7 @@ class NodeChecker implements Checker
         {
             for ( long label : labels )
             {
-                reporter.forNodeLabelScan( new TokenScanDocument( new EntityTokenRange( nodeId / Long.SIZE, EntityTokenRange.NO_TOKENS, NODE ) ) )
+                reporter.forNodeLabelScan( new TokenScanDocument( new EntityTokenRangeImpl( nodeId / Long.SIZE, EntityTokenRangeImpl.NO_TOKENS, NODE ) ) )
                         .nodeLabelNotInIndex( recordLoader.node( nodeId, cursorTracer ), label );
             }
         }

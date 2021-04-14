@@ -41,7 +41,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
+import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -181,7 +181,7 @@ class ConsistencyReporterTest
             }
             if ( type == TokenScanDocument.class )
             {
-                return new TokenScanDocument( new EntityTokenRange( 0, new long[][] {}, NODE ) );
+                return new TokenScanDocument( new EntityTokenRangeImpl( 0, new long[][] {}, NODE ) );
             }
             if ( type == IndexEntry.class )
             {

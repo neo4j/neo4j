@@ -150,7 +150,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                     {
                         long bits = cursor.value().bits;
                         long tokenId = cursor.key().tokenId;
-                        EntityTokenRange.readBitmap( bits, tokenId, tokensForEachEntity );
+                        EntityTokenRangeImpl.readBitmap( bits, tokenId, tokensForEachEntity );
 
                         // Advance cursor and look ahead to the next range
                         if ( cursor.next() )
@@ -165,7 +165,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader
                     }
                 }
 
-                EntityTokenRange range = new EntityTokenRange( currentRange, EntityTokenRange.convertState( tokensForEachEntity ), entityType );
+                EntityTokenRange range = new EntityTokenRangeImpl( currentRange, EntityTokenRangeImpl.convertState( tokensForEachEntity ), entityType );
                 currentRange = nextLowestRange;
 
                 return range;

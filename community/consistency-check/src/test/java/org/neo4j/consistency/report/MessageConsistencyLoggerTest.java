@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.store.synthetic.TokenScanDocument;
 import org.neo4j.internal.helpers.Strings;
-import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
+import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -94,7 +94,7 @@ class MessageConsistencyLoggerTest
     void shouldAdaptLogMessageToEntityTokenRangeTypeNode()
     {
         // when
-        logger.error( RecordType.LABEL_SCAN_DOCUMENT, new TokenScanDocument( new EntityTokenRange( 0, new long[0][], NODE ) ),
+        logger.error( RecordType.LABEL_SCAN_DOCUMENT, new TokenScanDocument( new EntityTokenRangeImpl( 0, new long[0][], NODE ) ),
                 "Some label index error", new NodeRecord( 1 ) );
 
         // then
@@ -105,7 +105,7 @@ class MessageConsistencyLoggerTest
     void shouldAdaptLogMessageToEntityTokenRangeTypeRelationship()
     {
         // when
-        logger.error( RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, new TokenScanDocument( new EntityTokenRange( 0, new long[0][], RELATIONSHIP ) ),
+        logger.error( RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT, new TokenScanDocument( new EntityTokenRangeImpl( 0, new long[0][], RELATIONSHIP ) ),
                 "Some relationship type error", new RelationshipRecord( 1 ) );
 
         // then

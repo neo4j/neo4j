@@ -21,7 +21,7 @@ package org.neo4j.consistency.store.synthetic;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
+import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.common.EntityType.NODE;
@@ -32,14 +32,14 @@ class TokenScanDocumentTest
     @Test
     void shouldAdaptToStringToTypeOfRangeNode()
     {
-        TokenScanDocument labelScanDocument = new TokenScanDocument( new EntityTokenRange( 0, new long[0][], NODE ) );
+        TokenScanDocument labelScanDocument = new TokenScanDocument( new EntityTokenRangeImpl( 0, new long[0][], NODE ) );
         assertThat( labelScanDocument.toString() ).contains( "NodeLabelRange" );
     }
 
     @Test
     void shouldAdaptToStringToTypeOfRangeRelationship()
     {
-        TokenScanDocument relationshipTypeScanDocument = new TokenScanDocument( new EntityTokenRange( 0, new long[0][], RELATIONSHIP ) );
+        TokenScanDocument relationshipTypeScanDocument = new TokenScanDocument( new EntityTokenRangeImpl( 0, new long[0][], RELATIONSHIP ) );
         assertThat( relationshipTypeScanDocument.toString() ).contains( "RelationshipTypeRange" );
     }
 }

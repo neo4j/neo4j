@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.labelscan;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
+import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -46,7 +47,7 @@ class EntityTokenRangeTest
             };
 
         // when
-        EntityTokenRange range = new EntityTokenRange( 0, labelsPerNode, NODE );
+        EntityTokenRange range = new EntityTokenRangeImpl( 0, labelsPerNode, NODE );
 
         // then
         assertArrayEquals( new long[] {0, 1, 2, 3, 4, 5, 6, 7}, range.entities() );
@@ -72,7 +73,7 @@ class EntityTokenRangeTest
         };
 
         // when
-        EntityTokenRange range = new EntityTokenRange( 10, labelsPerNode, NODE );
+        EntityTokenRange range = new EntityTokenRangeImpl( 10, labelsPerNode, NODE );
 
         // then
         long baseNodeId = range.id() * labelsPerNode.length;
@@ -87,14 +88,14 @@ class EntityTokenRangeTest
     @Test
     void shouldAdaptToStringToEntityTypeNode()
     {
-        EntityTokenRange nodeLabelRange = new EntityTokenRange( 0, new long[0][], NODE );
+        EntityTokenRange nodeLabelRange = new EntityTokenRangeImpl( 0, new long[0][], NODE );
         assertThat( nodeLabelRange.toString() ).contains( "NodeLabelRange" );
     }
 
     @Test
     void shouldAdaptToStringToEntityTypeRelationship()
     {
-        EntityTokenRange relationshipTypeRange = new EntityTokenRange( 0, new long[0][], RELATIONSHIP );
+        EntityTokenRange relationshipTypeRange = new EntityTokenRangeImpl( 0, new long[0][], RELATIONSHIP );
         assertThat( relationshipTypeRange.toString() ).contains( "RelationshipTypeRange" );
     }
 }
