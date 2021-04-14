@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
@@ -34,16 +35,34 @@ import org.neo4j.cypher.internal.util.topDown
 
 case object HasLabelsOrTypesReplacedIfPossible extends StepSequencer.Condition
 
-case class normalizeHasLabelsAndHasType(semanticState: SemanticState) extends Rewriter {
+
+trait HasLabelsAndHasTypeNormalizer extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = instance(that)
 
-  private val instance: Rewriter = topDown(Rewriter.lift {
-    case p@HasLabelsOrTypes(e, labels) if semanticState.expressionType(e).actual == CTNode.invariant =>
+  def rewrite(expression: Expression): Expression = expression match {
+    case p@HasLabelsOrTypes(e, labels) if isNode(e)         =>
       HasLabels(e, labels.map(l => LabelName(l.name)(l.position)))(p.position)
-    case p@HasLabelsOrTypes(e, labels) if semanticState.expressionType(e).actual == CTRelationship.invariant =>
+    case p@HasLabelsOrTypes(e, labels) if isRelationship(e) =>
       HasTypes(e, labels.map(l => RelTypeName(l.name)(l.position)))(p.position)
+    case e =>
+      e
+  }
+
+  protected val instance: Rewriter = topDown(Rewriter.lift{
+    case e:Expression => rewrite(e)
   })
+
+  def isNode(expr: Expression): Boolean
+  def isRelationship(expr: Expression): Boolean
+}
+
+case class normalizeHasLabelsAndHasType(semanticState: SemanticState) extends HasLabelsAndHasTypeNormalizer  {
+  def isNode(expr: Expression): Boolean =
+    semanticState.expressionType(expr).actual == CTNode.invariant
+
+  def isRelationship(expr: Expression): Boolean =
+    semanticState.expressionType(expr).actual == CTRelationship.invariant
 }
 
 object normalizeHasLabelsAndHasType extends StepSequencer.Step with ASTRewriterFactory {

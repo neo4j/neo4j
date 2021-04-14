@@ -62,9 +62,9 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
   test("expand should only be counted once") {
     val builder = new LogicalPlanBuilder(wholePlan = false)
     val plan = builder
-      .filterExpression(hasLabels("a", "Awesome")).withCardinality(10)
+      .filter("a:Awesome").withCardinality(10)
       .expand("(a)-[r1]->(b)").withCardinality(100)
-      .filterExpression(hasLabels("a", "Awesome")).withCardinality(10)
+      .filter("a:Awesome").withCardinality(10)
       .expand("(a)-[r1]->(b)").withCardinality(100)
       .argument("a").withCardinality(10)
       .build()

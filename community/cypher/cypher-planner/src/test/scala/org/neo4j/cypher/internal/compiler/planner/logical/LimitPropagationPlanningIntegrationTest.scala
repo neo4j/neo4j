@@ -77,7 +77,7 @@ class LimitPropagationPlanningIntegrationTest
       .nodeHashJoin("b")
       .|.expandAll("(c)-[cb:REL_CB]->(b)")
       .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
-      .filterExpression(hasLabels("b", "B"))
+      .filter("b:B")
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")
       .build()
@@ -183,7 +183,7 @@ class LimitPropagationPlanningIntegrationTest
       .nodeHashJoin("b")
       .|.expandAll("(c)-[cb:REL_CB]->(b)")
       .|.nodeIndexOperator("c:C(id)", indexOrder = IndexOrderAscending)
-      .filterExpression(hasLabels("b", "B"))
+      .filter("b:B")
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")
       .build()
@@ -205,7 +205,7 @@ class LimitPropagationPlanningIntegrationTest
       .nodeHashJoin("b")
       .|.expandAll("(c)-[cb:REL_CB]->(b)")
       .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
-      .filterExpression(hasLabels("b", "B"))
+      .filter("b:B")
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")
       .build()
@@ -228,7 +228,7 @@ class LimitPropagationPlanningIntegrationTest
       .nodeHashJoin("b")
       .|.expandAll("(c)-[cb:REL_CB]->(b)")
       .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
-      .filterExpression(hasLabels("b", "B"))
+      .filter("b:B")
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")
       .build()
@@ -258,7 +258,7 @@ class LimitPropagationPlanningIntegrationTest
       .nodeHashJoin("b")
       .|.expandAll("(c)-[cb:REL_CB]->(b)")
       .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
-      .filterExpression(hasLabels("b", "B"))
+      .filter("b:B")
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")
       .build()
@@ -281,7 +281,7 @@ class LimitPropagationPlanningIntegrationTest
       .nodeHashJoin("b")
       .|.expandAll("(c)-[cb:REL_CB]->(b)")
       .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
-      .filterExpression(hasLabels("b", "B"))
+      .filter("b:B")
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")
       .build()
@@ -304,7 +304,7 @@ class LimitPropagationPlanningIntegrationTest
       .nodeHashJoin("b")
       .|.expandAll("(c)-[cb:REL_CB]->(b)")
       .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
-      .filterExpression(hasLabels("b", "B"))
+      .filter("b:B")
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")
       .build()
@@ -325,13 +325,9 @@ class LimitPropagationPlanningIntegrationTest
       .skip(100000)
       .top(Seq(Ascending("c.id")), add(literalInt(10), literalInt(100000)))
       .projection("cache[c.id] AS `c.id`")
-      .filterExpression(
-        hasLabels("c", "C"),
-        startsWith(
-          cachedNodePropFromStore("c", "id"),
-          literalString("")))
+      .filter("c:C", "cacheNFromStore[c.id] STARTS WITH ''")
       .expandAll("(b)<-[cb:REL_CB]-(c)")
-      .filterExpression(hasLabels("b", "B"))
+      .filter("b:B")
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")
       .build()
@@ -378,13 +374,9 @@ class LimitPropagationPlanningIntegrationTest
       .top(Seq(Ascending("c.id")), 10)
       .projection("cache[c.id] AS `c.id`")
       .setNodeProperty("b", "prop", "5")
-      .filterExpression(
-        hasLabels("c", "C"),
-        startsWith(
-          cachedNodePropFromStore("c", "id"),
-          literalString("")))
+      .filter("c:C", "cacheNFromStore[c.id] STARTS WITH ''")
       .expandAll("(b)<-[cb:REL_CB]-(c)")
-      .filterExpression(hasLabels("b", "B"))
+      .filter("b:B")
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")
       .build()
@@ -409,7 +401,7 @@ class LimitPropagationPlanningIntegrationTest
       .nodeHashJoin("b")
       .|.expandAll("(c)-[cb:REL_CB]->(b)")
       .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
-      .filterExpression(hasLabels("b", "B"))
+      .filter("b:B")
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")
       .build()
@@ -432,13 +424,9 @@ class LimitPropagationPlanningIntegrationTest
       .top(Seq(Ascending("c.id")), add(literalInt(10), literalInt(100000)))
       .projection("cache[c.id] AS `c.id`")
       .distinct("a AS a", "c AS c")
-      .filterExpression(
-        hasLabels("c", "C"),
-        startsWith(
-          cachedNodePropFromStore("c", "id"),
-          literalString("")))
+      .filter("c:C", "cacheNFromStore[c.id] STARTS WITH ''")
       .expandAll("(b)<-[cb:REL_CB]-(c)")
-      .filterExpression(hasLabels("b", "B"))
+      .filter("b:B")
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")
       .build()
@@ -464,7 +452,7 @@ class LimitPropagationPlanningIntegrationTest
       .nodeHashJoin("b")
       .|.expandAll("(c)-[cb:REL_CB]->(b)")
       .|.nodeIndexOperator("c:C(id STARTS WITH '')", indexOrder = IndexOrderAscending)
-      .filterExpression(hasLabels("b", "B"))
+      .filter("b:B")
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")
       .build()
@@ -488,13 +476,9 @@ class LimitPropagationPlanningIntegrationTest
       .projection("cache[c.id] AS `c.id`")
       .skip(100000)
       .distinct("a AS a", "c AS c")
-      .filterExpression(
-        startsWith(
-          cachedNodePropFromStore("c", "id"),
-          literalString("")),
-        hasLabels("c", "C"))
+      .filter("c:C", "cacheNFromStore[c.id] STARTS WITH ''")
       .expandAll("(b)<-[cb:REL_CB]-(c)")
-      .filterExpression(hasLabels("b", "B"))
+      .filter("b:B")
       .expandAll("(a)-[ab:REL_AB]->(b)")
       .nodeIndexOperator("a:A(id = 123)")
       .build()

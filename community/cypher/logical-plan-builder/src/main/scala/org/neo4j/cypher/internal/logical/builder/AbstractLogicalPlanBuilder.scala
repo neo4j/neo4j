@@ -230,7 +230,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   protected case class LeafOperator(planToIdConstructor: IdGen => LogicalPlan) extends OperatorBuilder{
     private val id = idGen.id()
     _idOfLastPlan = id
-    val plan: LogicalPlan = planToIdConstructor(SameId(id))
+    val planConstructor: Unit => LogicalPlan = _ => planToIdConstructor(SameId(id))
   }
   protected case class UnaryOperator(planToIdConstructor: LogicalPlan => IdGen => LogicalPlan) extends OperatorBuilder {
     private val id = idGen.id()
@@ -271,7 +271,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
     def build(): LogicalPlan = {
       operator match {
-        case o:LeafOperator => o.plan
+        case o:LeafOperator =>
+          o.planConstructor()
         case o:UnaryOperator =>
           o.planConstructor(left.get.build())
         case o:BinaryOperator =>
@@ -589,7 +590,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def projection(projectExpressions: Map[String, Expression]): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => Projection(lp, projectExpressions)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => {
+      val rewrittenProjections = projectExpressions.map { case (name, expr) => name -> rewriteExpression(expr) }
+      projectExpressions.foreach { case (name, expr) => newAlias(varFor(name), expr) }
+      Projection(lp, rewrittenProjections)(_)
+    }))
     self
   }
 
@@ -997,15 +1002,15 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     if (nodes.toSet.size < nodes.size || relationships.toSet.size < relationships.size || variables.toSet.size < variables.size) {
       throw new IllegalArgumentException("Input must create unique variables")
     }
-    nodes.foreach(node => newNode(varFor(node)))
-    relationships.foreach(rel => newRelationship(varFor(rel)))
-    variables.foreach(v => newVariable(varFor(v)))
-    appendAtCurrentIndent(LeafOperator(Input(nodes, relationships, variables, nullable)(_)))
+    appendAtCurrentIndent(LeafOperator(Input(newNodes(nodes), newRelationships(relationships), newVariables(variables), nullable)(_)))
   }
 
   def filter(predicateStrings: String*): IMPL = {
     val predicates = predicateStrings.map(Parser.parseExpression)
-    appendAtCurrentIndent(UnaryOperator(lp => Selection(predicates, lp)(_)))
+    appendAtCurrentIndent(UnaryOperator(lp => {
+      val rewrittenPredicates = predicates.map(rewriteExpression)
+      Selection(rewrittenPredicates, lp)(_)
+    }))
   }
 
   def filterExpression(predicateExpressions: Expression*): IMPL = {
@@ -1080,6 +1085,29 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
    * Called everytime a new variable is introduced by some logical operator.
    */
   protected def newVariable(variable: Variable): Unit
+
+  protected def newAlias(variable: Variable, expression: Expression): Unit = ()
+
+  protected def newNodes(nodes: Seq[String]): Seq[String] = {
+    nodes.map(varFor).foreach(newNode)
+    nodes
+  }
+
+  protected def newRelationships(relationships: Seq[String]): Seq[String] = {
+    relationships.map(varFor).foreach(newRelationship)
+    relationships
+  }
+
+  protected def newVariables(variables: Seq[String]): Seq[String] = {
+    variables.map(varFor).foreach(newVariable)
+    variables
+  }
+
+
+  /**
+   * Allows implementations to rewrite expressions using contextual information
+   */
+  protected def rewriteExpression(expr: Expression): Expression = expr
 
   /**
    * Returns the finalized output of the builder.

@@ -128,13 +128,16 @@ class SemanticTable(
   def isRelationshipNoFail(expr: Expression): Boolean = types.get(expr).map(_.specified).contains(CTRelationship.invariant)
 
   def addNode(expr: Variable): SemanticTable =
-    copy(types = types.updated(expr, ExpressionTypeInfo(CTNode.invariant, None)))
+    addTypeInfo(expr, CTNode.invariant)
 
   def addRelationship(expr: Variable): SemanticTable =
-    copy(types = types.updated(expr, ExpressionTypeInfo(CTRelationship.invariant, None)))
+    addTypeInfo(expr, CTRelationship.invariant)
 
   def addTypeInfoCTAny(expr: Expression): SemanticTable =
-    copy(types = types.updated(expr, ExpressionTypeInfo(CTAny.invariant, None)))
+    addTypeInfo(expr, CTAny.invariant)
+
+  def addTypeInfo(expr: Expression, typeSpec: TypeSpec): SemanticTable =
+    copy(types = types.updated(expr, ExpressionTypeInfo(typeSpec, None)))
 
   def replaceExpressions(rewriter: Rewriter): SemanticTable = {
     val replacements = types.keys.toIndexedSeq.map { keyExpression =>

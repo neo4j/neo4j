@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.helpers
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder.FakeLeafPlan
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
@@ -32,12 +33,14 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.rewriting.rewriters.HasLabelsAndHasTypeNormalizer
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
+import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new LogicalPlanResolver) extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](resolver, wholePlan) {
@@ -69,6 +72,17 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
   override def newVariable(variable: Variable): Unit = {
     semanticTable = semanticTable.addTypeInfoCTAny(variable)
   }
+
+  override protected def newAlias(variable: Variable, expression: Expression): Unit =
+    semanticTable = semanticTable.addTypeInfo(variable, semanticTable.types.get(expression).map(_.actual).getOrElse(CTAny.invariant))
+
+  private val hasLabelsAndHasTypeNormalizer = new HasLabelsAndHasTypeNormalizer {
+    override def isNode(expr: Expression): Boolean = semanticTable.isNodeNoFail(expr)
+    override def isRelationship(expr: Expression): Boolean = semanticTable.isRelationshipNoFail(expr)
+  }
+
+  override protected def rewriteExpression(expr: Expression): Expression =
+    hasLabelsAndHasTypeNormalizer.rewrite(expr)
 
   def getSemanticTable: SemanticTable = semanticTable
 
