@@ -43,7 +43,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.impl.index.schema.AllEntriesTokenScanReader;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
@@ -203,7 +202,7 @@ class RelationshipChecker implements Checker
                     observedCounts.incrementRelationshipTypeCounts( counter, relationshipCursor );
 
                     // Relationship type index
-                    if ( relationshipTypeReader != AllEntriesTokenScanReader.EMPTY )
+                    if ( relationshipTypeReader.maxCount() != 0 )
                     {
                         checkRelationshipVsRelationshipTypeIndex( relationshipCursor, relationshipTypeRangeIterator, typeIndexState, relationshipId,
                                 relationshipCursor.type(), fromRelationshipId, cursorTracer );
@@ -211,7 +210,7 @@ class RelationshipChecker implements Checker
                 }
                 observedCounts.incrementRelationshipNodeCounts( counter, relationshipCursor, startNodeIsWithinRange, endNodeIsWithinRange );
             }
-            if ( !context.isCancelled() && relationshipTypeReader != AllEntriesTokenScanReader.EMPTY )
+            if ( !context.isCancelled() && relationshipTypeReader.maxCount() != 0 )
             {
                 reportRemainingRelationshipTypeIndexEntries( relationshipTypeRangeIterator, typeIndexState, last ? Long.MAX_VALUE : toRelationshipId,
                         cursorTracer );
@@ -231,7 +230,7 @@ class RelationshipChecker implements Checker
                         cursorTracer );
             }
         }
-        return AllEntriesTokenScanReader.EMPTY;
+        return BoundedIterable.empty();
     }
 
     private void checkRelationshipVsRelationshipTypeIndex( RecordRelationshipScanCursor relationshipCursor,

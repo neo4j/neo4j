@@ -46,7 +46,6 @@ import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.impl.index.schema.AllEntriesTokenScanReader;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -129,7 +128,7 @@ class NodeChecker implements Checker
                 return context.nodeLabelIndex.newAllEntriesTokenReader( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
                         cursorTracer );
             }
-            return AllEntriesTokenScanReader.EMPTY;
+            return BoundedIterable.empty();
         }
         return context.labelScanStore.allEntityTokenRanges( fromNodeId, last ? Long.MAX_VALUE : toNodeId,
                 cursorTracer );
@@ -203,7 +202,7 @@ class NodeChecker implements Checker
                 boolean propertyChainIsOk = property.read( propertyValues, nodeCursor, reporter::forNode, cursorTracer );
 
                 // Label index
-                if ( labelIndexReader != AllEntriesTokenScanReader.EMPTY )
+                if ( labelIndexReader.maxCount() != 0 )
                 {
                     checkNodeVsLabelIndex( nodeCursor, nodeLabelRangeIterator, labelIndexState, nodeId, labels, fromNodeId, cursorTracer );
                 }
@@ -222,7 +221,7 @@ class NodeChecker implements Checker
                 }
                 // Large indexes are checked elsewhere, more efficiently than per-entity
             }
-            if ( !context.isCancelled() && labelIndexReader != AllEntriesTokenScanReader.EMPTY )
+            if ( !context.isCancelled() && labelIndexReader.maxCount() != 0 )
             {
                 reportRemainingLabelIndexEntries( nodeLabelRangeIterator, labelIndexState, last ? Long.MAX_VALUE : toNodeId, cursorTracer );
             }

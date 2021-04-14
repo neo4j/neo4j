@@ -19,9 +19,35 @@
  */
 package org.neo4j.internal.helpers.collection;
 
+import java.util.Collections;
+import java.util.Iterator;
+
 public interface BoundedIterable<RECORD> extends Iterable<RECORD>, AutoCloseable
 {
     long UNKNOWN_MAX_COUNT = -1;
 
     long maxCount();
+
+    static <T> BoundedIterable<T> empty()
+    {
+        return new BoundedIterable<T>()
+        {
+            @Override
+            public long maxCount()
+            {
+                return 0;
+            }
+
+            @Override
+            public void close()
+            {
+            }
+
+            @Override
+            public Iterator<T> iterator()
+            {
+                return Collections.emptyIterator();
+            }
+        };
+    }
 }
