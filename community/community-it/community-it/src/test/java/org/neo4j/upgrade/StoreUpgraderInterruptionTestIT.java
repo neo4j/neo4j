@@ -214,15 +214,15 @@ public class StoreUpgraderInterruptionTestIT
         startStopDatabase( neo4jLayout.homeDirectory() );
         assertConsistentStore( workingDatabaseLayout );
 
-        assertEquals( 44, idMigratorTracer.faults() );
-        assertEquals( 100, idMigratorTracer.hits() );
-        assertEquals( 144, idMigratorTracer.pins() );
-        assertEquals( 144, idMigratorTracer.unpins() );
+        assertEquals( 43, idMigratorTracer.faults() );
+        assertEquals( 82, idMigratorTracer.hits() );
+        assertEquals( 125, idMigratorTracer.pins() );
+        assertEquals( 125, idMigratorTracer.unpins() );
 
         assertEquals( 54, recordMigratorTracer.faults() );
-        assertEquals( 208, recordMigratorTracer.hits() );
-        assertEquals( 262, recordMigratorTracer.pins() );
-        assertEquals( 262, recordMigratorTracer.unpins() );
+        assertEquals( 207, recordMigratorTracer.hits() );
+        assertEquals( 261, recordMigratorTracer.pins() );
+        assertEquals( 261, recordMigratorTracer.unpins() );
     }
 
     @Test
