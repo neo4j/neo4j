@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.util.symbols
 
+import scala.language.implicitConversions
+
 object AnyType {
   val instance = new AnyType() {
     val parentType = this

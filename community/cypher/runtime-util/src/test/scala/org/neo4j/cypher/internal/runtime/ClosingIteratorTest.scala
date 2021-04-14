@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.ClosingIteratorTest.values
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.GenTraversableOnce
+import scala.language.reflectiveCalls
 
 class ClosingIteratorTest extends CypherFunSuite {
 

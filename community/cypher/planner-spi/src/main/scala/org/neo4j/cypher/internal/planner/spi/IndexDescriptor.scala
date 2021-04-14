@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
+import scala.language.implicitConversions
+
 sealed trait IndexBehaviour
 case object SlowContains extends IndexBehaviour
 case object SkipAndLimit extends IndexBehaviour

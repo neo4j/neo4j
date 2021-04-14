@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.options
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.language.higherKinds
+
 class OptionCacheKeyTest extends CypherFunSuite {
 
   test("Can create cache key for any case class") {

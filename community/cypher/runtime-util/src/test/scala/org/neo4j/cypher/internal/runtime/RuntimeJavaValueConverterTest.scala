@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.convert.Wrappers.SeqWrapper
+import scala.language.existentials
 
 class RuntimeJavaValueConverterTest extends CypherFunSuite {
 

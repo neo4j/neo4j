@@ -35,8 +35,8 @@ import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
-import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForBtreeIndex
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropIndex
@@ -72,6 +72,7 @@ import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProvider
 
 import java.util.Collections
 import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.language.implicitConversions
 import scala.util.Try
 
 /**

@@ -37,6 +37,8 @@ import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.language.implicitConversions
+
 class PathExpressionConversionTest extends CypherFunSuite {
 
   val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))

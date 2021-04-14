@@ -97,6 +97,7 @@ import org.neo4j.kernel.api.StatementConstants
 import org.scalacheck.Gen
 
 import scala.collection.mutable
+import scala.language.implicitConversions
 
 object LogicalPlanGenerator extends AstConstructionTestSupport {
   case class WithState[+T](x: T, state: State)

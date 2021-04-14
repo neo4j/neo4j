@@ -39,6 +39,8 @@ import org.parboiled.scala.Rule7
 import org.parboiled.scala.group
 import org.parboiled.support.IndexRange
 
+import scala.language.postfixOps
+
 trait Base extends Parser {
 
   def OpChar = rule("an operator char") { anyOf("|^&<>=?!:+-*/%~") }

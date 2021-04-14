@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.options
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.language.higherKinds
+
 class OptionDefaultTest extends CypherFunSuite {
 
   test("Can create default value for any case class") {

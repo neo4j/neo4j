@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.options
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.language.higherKinds
+
 class OptionRendererTest extends CypherFunSuite {
 
   test("Can render any case class") {

@@ -18,6 +18,8 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
+import scala.language.implicitConversions
+
 package object semantics {
 
   type SemanticCheck = SemanticState => SemanticCheckResult

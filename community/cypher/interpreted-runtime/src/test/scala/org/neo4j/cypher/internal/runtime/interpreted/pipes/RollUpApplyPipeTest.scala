@@ -34,7 +34,7 @@ class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     // given
     val lhs = createLhs(1)
     val rhs = mock[Pipe]
-    when(rhs.createResults(any())).then(new Answer[Iterator[CypherRow]] {
+    when(rhs.createResults(any())).thenAnswer(new Answer[Iterator[CypherRow]] {
       override def answer(invocation: InvocationOnMock) = {
         val state:QueryState = invocation.getArgument(0)
         state.initialContext should not be empty

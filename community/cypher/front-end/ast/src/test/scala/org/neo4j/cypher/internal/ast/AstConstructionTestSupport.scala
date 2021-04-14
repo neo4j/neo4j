@@ -107,6 +107,8 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
+import scala.language.implicitConversions
+
 trait AstConstructionTestSupport extends CypherTestSupport {
   protected val pos: InputPosition = DummyPosition(0)
 

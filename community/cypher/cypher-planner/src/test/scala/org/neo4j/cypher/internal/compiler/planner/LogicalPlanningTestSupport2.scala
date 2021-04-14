@@ -106,6 +106,7 @@ import org.scalatest.matchers.BeMatcher
 import org.scalatest.matchers.MatchResult
 import org.scalatest.mockito.MockitoSugar
 
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 object LogicalPlanningTestSupport2 extends MockitoSugar {

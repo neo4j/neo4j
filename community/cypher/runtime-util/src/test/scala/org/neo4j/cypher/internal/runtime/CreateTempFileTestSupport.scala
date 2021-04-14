@@ -19,6 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
+import org.neo4j.io.fs.FileUtils
+
 import java.io.FileOutputStream
 import java.io.OutputStreamWriter
 import java.io.PrintWriter
@@ -27,12 +31,8 @@ import java.nio.file.Path
 import java.util.zip.GZIPOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
-
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
-import org.neo4j.io.fs.FileUtils
-
 import scala.io.Codec
+import scala.language.implicitConversions
 import scala.reflect.io.File
 
 trait CreateTempFileTestSupport extends CypherTestSupport {

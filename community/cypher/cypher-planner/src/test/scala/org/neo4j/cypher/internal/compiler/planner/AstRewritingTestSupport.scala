@@ -40,6 +40,8 @@ import org.neo4j.cypher.internal.util.attribution.Identifiable
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
+import scala.language.implicitConversions
+
 trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
   self: AstConstructionTestSupport =>
 

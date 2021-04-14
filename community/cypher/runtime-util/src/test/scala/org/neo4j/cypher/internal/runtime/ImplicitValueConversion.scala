@@ -58,6 +58,7 @@ import org.neo4j.values.virtual.VirtualValues.list
 
 import scala.collection.JavaConverters.asJavaIterableConverter
 import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.language.implicitConversions
 
 object ImplicitValueConversion {
 

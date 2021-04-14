@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.util
 
+import scala.language.implicitConversions
+
 case class Cardinality(amount: Double) extends Ordered[Cardinality] {
 
   self =>

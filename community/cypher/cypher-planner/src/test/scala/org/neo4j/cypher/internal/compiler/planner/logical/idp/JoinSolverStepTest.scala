@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.BitSet
+import scala.language.implicitConversions
 
 class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

@@ -35,6 +35,7 @@ import org.parboiled.scala.Rule3
 import org.parboiled.scala.group
 
 import scala.collection.mutable.ListBuffer
+import scala.language.postfixOps
 
 trait Expressions extends Parser
   with Literals

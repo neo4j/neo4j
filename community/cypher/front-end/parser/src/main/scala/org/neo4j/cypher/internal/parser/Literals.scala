@@ -25,6 +25,8 @@ import org.parboiled.scala.Rule0
 import org.parboiled.scala.Rule1
 import org.parboiled.scala.group
 
+import scala.language.postfixOps
+
 trait Literals extends Parser
   with Base with Strings {
 

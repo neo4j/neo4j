@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.BitSet
+import scala.language.implicitConversions
 
 class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

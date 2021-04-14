@@ -26,9 +26,11 @@ import org.parboiled.scala.Rule1
 import org.parboiled.scala.Rule4
 import org.parboiled.scala.group
 
+import scala.language.postfixOps
+
 /*
  *|                                            NamedPatternPart                                            |
- *|Variable |                                      AnonymousPatternPart                                     |
+ *|Variable |                                      AnonymousPatternPart                                    |
  *                           |                                 PatternElement                              |
  *                           |               PatternElement               |        RelationshipChain       |
  *                           |NodePattern |        RelationshipChain      ||RelationshipPattern|NodePattern|
