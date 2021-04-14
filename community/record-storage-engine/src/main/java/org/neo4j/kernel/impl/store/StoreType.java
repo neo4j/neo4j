@@ -140,7 +140,7 @@ public enum StoreType
                     return neoStores.createRelationshipGroupStore( cursorTracer );
                 }
             },
-    META_DATA( DatabaseFile.METADATA_STORE, IdType.NEOSTORE_BLOCK ) // Make sure this META store is last
+    META_DATA( DatabaseFile.METADATA_STORE, IdType.NODE ) // Make sure this META store is last
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores, PageCursorTracer cursorTracer )

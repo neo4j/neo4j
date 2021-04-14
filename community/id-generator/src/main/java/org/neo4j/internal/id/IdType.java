@@ -32,7 +32,6 @@ public enum IdType
     RELATIONSHIP_TYPE_TOKEN_NAME( false ),
     LABEL_TOKEN( false ),
     LABEL_TOKEN_NAME( false ),
-    NEOSTORE_BLOCK( false ),
     SCHEMA( false ),
     NODE_LABELS( false ),
     RELATIONSHIP_GROUP( true );

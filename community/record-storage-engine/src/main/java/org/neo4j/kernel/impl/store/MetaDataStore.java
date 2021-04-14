@@ -189,7 +189,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
-        super( file, null, conf, IdType.NEOSTORE_BLOCK, EMPTY_ID_GENERATOR_FACTORY, pageCache, logProvider,
+        super( file, null, conf, null, EMPTY_ID_GENERATOR_FACTORY, pageCache, logProvider,
                 TYPE_DESCRIPTOR, recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, storeVersion, readOnlyChecker, databaseName, openOptions );
         this.pageCacheTracer = pageCacheTracer;
     }

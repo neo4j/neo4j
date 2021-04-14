@@ -67,7 +67,7 @@ public enum DatabaseFile
 
     RELATIONSHIP_GROUP_DEGREES_STORE( DatabaseFileNames.RELATIONSHIP_GROUP_DEGREES_STORE, false ),
 
-    METADATA_STORE( DatabaseFileNames.METADATA_STORE ),
+    METADATA_STORE( DatabaseFileNames.METADATA_STORE, false ),
 
     INDEX_STATISTICS_STORE( DatabaseFileNames.INDEX_STATISTICS_STORE, false ),
 

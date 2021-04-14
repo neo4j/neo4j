@@ -90,9 +90,9 @@ class TransactionLogFileIT
         var logFile = logFiles.getLogFile();
         logFile.rotate();
 
-        assertThat( cacheTracer.pins() ).isEqualTo( 5 );
-        assertThat( cacheTracer.unpins() ).isEqualTo( 5 );
-        assertThat( cacheTracer.hits() ).isEqualTo( 5 );
+        assertThat( cacheTracer.pins() ).isEqualTo( 1 );
+        assertThat( cacheTracer.unpins() ).isEqualTo( 1 );
+        assertThat( cacheTracer.hits() ).isEqualTo( 1 );
     }
 
     @Test

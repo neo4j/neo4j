@@ -105,7 +105,7 @@ class NeoStoreTransactionApplierTest
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
     private final LockService lockService = mock( LockService.class );
 
-    private final MetaDataStore metaDataStore = mockedStore( MetaDataStore.class, IdType.NEOSTORE_BLOCK );
+    private final MetaDataStore metaDataStore = mockedStore( MetaDataStore.class, null );
     private final NodeStore nodeStore = mockedStore( NodeStore.class, IdType.NODE );
     private final RelationshipStore relationshipStore = mockedStore( RelationshipStore.class, IdType.RELATIONSHIP );
     private final PropertyStore propertyStore = mockedStore( PropertyStore.class, IdType.PROPERTY );

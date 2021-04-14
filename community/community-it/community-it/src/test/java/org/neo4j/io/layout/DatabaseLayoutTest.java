@@ -224,8 +224,5 @@ class DatabaseLayoutTest
             Optional<Path> idFile = layout.idFile( databaseFile );
             assertEquals(databaseFile.hasIdFile(),  idFile.isPresent() );
         }
-
-        Path metadataId = layout.idFile( DatabaseFile.METADATA_STORE ).orElseThrow( () -> new RuntimeException( "Mapping was expected to be found" ) );
-        assertEquals( "neostore.id", metadataId.getFileName().toString() );
     }
 }

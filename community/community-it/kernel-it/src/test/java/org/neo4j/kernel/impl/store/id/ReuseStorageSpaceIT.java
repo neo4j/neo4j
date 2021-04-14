@@ -340,7 +340,7 @@ class ReuseStorageSpaceIT
         {
             List<Map.Entry<String,Long>> nonEmptyEntries = sizes.entrySet().stream()
                     .filter( e -> e.getValue() != 0 )
-                    .sorted( comparing( Map.Entry::getKey ) )
+                    .sorted( Map.Entry.comparingByKey() )
                     .collect( Collectors.toList() );
             long sum = sum();
             return format( "SUM %s(%d):%n%s", ByteUnit.bytesToString( sum ), sum, StringUtils.join( nonEmptyEntries, format( "%n" ) ) );
