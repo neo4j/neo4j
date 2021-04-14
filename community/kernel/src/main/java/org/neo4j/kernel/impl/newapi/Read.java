@@ -80,7 +80,6 @@ abstract class Read implements TxStateHolder,
     protected final DefaultPooledCursors cursors;
     protected final PageCursorTracer cursorTracer;
     final KernelTransactionImplementation ktx;
-    private final boolean relationshipTypeScanStoreEnabled;
     private final boolean scanStoreAsTokenIndexEnabled;
 
     Read( StorageReader storageReader, DefaultPooledCursors cursors, PageCursorTracer cursorTracer,
@@ -90,7 +89,6 @@ abstract class Read implements TxStateHolder,
         this.cursors = cursors;
         this.cursorTracer = cursorTracer;
         this.ktx = ktx;
-        this.relationshipTypeScanStoreEnabled = config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store );
         this.scanStoreAsTokenIndexEnabled = config.get( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes );
     }
 
@@ -303,28 +301,6 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor, IndexOrder order )
-    {
-        ktx.assertOpen();
-
-        if ( relationshipTypeScanStoreEnabled )
-        {
-            DefaultRelationshipTypeIndexCursor cursor = (DefaultRelationshipTypeIndexCursor) relationshipTypeIndexCursor;
-            cursor.setRead( this );
-
-            TokenScanReader relationshipTypeScanReader = relationshipTypeScanReader();
-            TokenScan relationshipTypeScan = relationshipTypeScanReader.entityTokenScan( type, cursorTracer );
-            IndexProgressor progressor = relationshipTypeScan.initialize( cursor, order, cursorTracer );
-
-            cursor.initialize( progressor, type, order );
-        }
-        else
-        {
-            throw new IllegalStateException( "Cannot search relationship type scan store when feature is not enabled." );
-        }
-    }
-
-    @Override
     public final void relationshipTypeScan( TokenReadSession session, RelationshipTypeIndexCursor cursor, IndexQueryConstraints constraints,
                                             TokenPredicate query )
             throws KernelException
@@ -370,8 +346,6 @@ abstract class Read implements TxStateHolder,
     public abstract ValueIndexReader newValueIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     abstract TokenScanReader labelScanReader();
-
-    abstract TokenScanReader relationshipTypeScanReader();
 
     @Override
     public TransactionState txState()

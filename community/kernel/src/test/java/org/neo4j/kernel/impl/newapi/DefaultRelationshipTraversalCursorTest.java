@@ -426,12 +426,6 @@ class DefaultRelationshipTraversalCursorTest
         }
 
         @Override
-        TokenScanReader relationshipTypeScanReader()
-        {
-            return null;
-        }
-
-        @Override
         public UserFunctionHandle functionGet( QualifiedName name )
         {
             return null;

@@ -86,7 +86,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.locking.FrozenLockClient;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
@@ -227,8 +226,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             StorageEngine storageEngine, AccessCapabilityFactory accessCapabilityFactory,
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
-            LabelScanStore labelScanStore, RelationshipTypeScanStore relationshipTypeScanStore,
-            IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
+            LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
             NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool,
             DatabaseReadOnlyChecker readOnlyDatabaseChecker, TransactionExecutionMonitor transactionExecutionMonitor )
     {
@@ -259,7 +257,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.constraintSemantics = constraintSemantics;
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader, config );
         this.allStoreHolder =
-                new AllStoreHolder( storageReader, this, cursors, globalProcedures, schemaState, indexingService, labelScanStore, relationshipTypeScanStore,
+                new AllStoreHolder( storageReader, this, cursors, globalProcedures, schemaState, indexingService, labelScanStore,
                         indexStatisticsStore, pageCursorTracer, dependencies, config, memoryTracker );
         this.operations =
                 new Operations(

@@ -194,12 +194,6 @@ public class StubRead implements Read
     }
 
     @Override
-    public void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor, IndexOrder order )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void relationshipTypeScan( TokenReadSession session, RelationshipTypeIndexCursor cursor, IndexQueryConstraints constraints, TokenPredicate query )
     {
         throw new UnsupportedOperationException();

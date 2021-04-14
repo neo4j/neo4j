@@ -61,7 +61,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenPredicate;
@@ -927,21 +926,9 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                     // ignore, fallback to all node scan
                 }
             }
-            return getRelationshipsByTypeAndPropertyViaAllRelsScan( ktx, typeId, queries );
         }
 
-        RelationshipTypeIndexCursor relationshipTypeIndexCursor = ktx.cursors().allocateRelationshipTypeIndexCursor( ktx.pageCursorTracer() );
-        RelationshipScanCursor relationshipScanCursor = ktx.cursors().allocateRelationshipScanCursor( ktx.pageCursorTracer() );
-        PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor( ktx.pageCursorTracer(), ktx.memoryTracker() );
-
-        ktx.dataRead().relationshipTypeScan( typeId, relationshipTypeIndexCursor, IndexOrder.NONE );
-
-        return new RelationshipTypePropertyIterator( ktx.dataRead(),
-                                                     relationshipTypeIndexCursor,
-                                                     relationshipScanCursor,
-                                                     propertyCursor,
-                                                     this::newRelationshipEntity,
-                                                     queries );
+        return getRelationshipsByTypeAndPropertyViaAllRelsScan( ktx, typeId, queries );
     }
 
     private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyViaAllRelsScan( KernelTransaction ktx, int typeId,
@@ -1079,13 +1066,9 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                     // ignore, fallback to all node scan
                 }
             }
-
-            return allRelationshipsByTypeWithoutIndex( ktx, typeId );
         }
 
-        RelationshipTypeIndexCursor cursor = ktx.cursors().allocateRelationshipTypeIndexCursor( ktx.pageCursorTracer() );
-        ktx.dataRead().relationshipTypeScan( typeId, cursor, IndexOrder.NONE );
-        return new CursorIterator<>( cursor, RelationshipIndexCursor::relationshipReference, this::newRelationshipEntity );
+        return allRelationshipsByTypeWithoutIndex( ktx, typeId );
     }
 
     private ResourceIterator<Relationship> allRelationshipsByTypeWithoutIndex( KernelTransaction ktx, int typeId )

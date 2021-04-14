@@ -58,7 +58,6 @@ import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrac
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.query.clientconnection.HttpConnectionInfo;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
@@ -284,7 +283,7 @@ class TransactionStatusResultTest
                     mock( StorageEngine.class, RETURNS_MOCKS ), any -> CanWrite.INSTANCE,
                     EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
                     mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ),
-                    mock( RelationshipTypeScanStore.class ), mock( IndexStatisticsStore.class ), dependencies,
+                    mock( IndexStatisticsStore.class ), dependencies,
                     new TestDatabaseIdRepository().defaultDatabase(), LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
                     TransactionExecutionMonitor.NO_OP
                                                                                                )

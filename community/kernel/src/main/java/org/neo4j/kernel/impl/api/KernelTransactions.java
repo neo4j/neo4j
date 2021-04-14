@@ -56,7 +56,6 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -107,7 +106,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final NamedDatabaseId namedDatabaseId;
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
-    private final RelationshipTypeScanStore relationshipTypeScanStore;
     private final IndexStatisticsStore indexStatisticsStore;
     private final Dependencies databaseDependendies;
     private final Config config;
@@ -151,7 +149,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                                AtomicReference<CpuClock> cpuClockRef, AccessCapabilityFactory accessCapabilityFactory,
                                VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                                ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, NamedDatabaseId namedDatabaseId,
-                               IndexingService indexingService, LabelScanStore labelScanStore, RelationshipTypeScanStore relationshipTypeScanStore,
+                               IndexingService indexingService, LabelScanStore labelScanStore,
                                IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, DatabaseTracers tracers, LeaseService leaseService,
                                GlobalMemoryGroupTracker transactionsMemoryPool, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
                                TransactionExecutionMonitor transactionExecutionMonitor )
@@ -175,7 +173,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.namedDatabaseId = namedDatabaseId;
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
-        this.relationshipTypeScanStore = relationshipTypeScanStore;
         this.indexStatisticsStore = indexStatisticsStore;
         this.databaseDependendies = databaseDependencies;
         this.versionContextSupplier = versionContextSupplier;
@@ -403,7 +400,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                             transactionCommitProcess, transactionMonitor, localTxPool, clock, cpuClockRef,
                             tracers, storageEngine, accessCapabilityFactory,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                            schemaState, tokenHolders, indexingService, labelScanStore, relationshipTypeScanStore, indexStatisticsStore,
+                            schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore,
                             databaseDependendies, namedDatabaseId, leaseService, transactionMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor );
             this.transactions.add( tx );
             return tx;

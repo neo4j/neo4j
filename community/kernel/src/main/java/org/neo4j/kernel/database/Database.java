@@ -871,7 +871,7 @@ public class Database extends LifecycleAdapter
                                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                                         accessCapabilityFactory, versionContextSupplier, collectionsFactorySupplier,
                                         constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService, labelScanStore,
-                                        relationshipTypeScanStore, indexStatisticsStore, databaseDependencies,
+                                        indexStatisticsStore, databaseDependencies,
                                         tracers, leaseService, transactionsMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor ) );
 
         buildTransactionMonitor( kernelTransactions, databaseConfig );

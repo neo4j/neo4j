@@ -426,7 +426,8 @@ public class KernelReadTracerTest extends KernelAPIReadTestBase<ReadTestSupport>
         {
             // when
             cursor.setTracer( tracer );
-            read.relationshipTypeScan( hasId, cursor, IndexOrder.NONE );
+            // Change to token variant when enabling test
+            // read.relationshipTypeScan( hasId, cursor, IndexOrder.NONE );
             while ( cursor.next() )
             {
                 expectedEvents.add( OnRelationship( cursor.relationshipReference() ) );

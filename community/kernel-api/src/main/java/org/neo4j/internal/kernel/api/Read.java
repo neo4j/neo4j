@@ -321,15 +321,6 @@ public interface Read
     Scan<RelationshipScanCursor> allRelationshipsScan();
 
     /**
-     * Scan all relationships of a type.
-     *
-     * @param type the relationship type
-     * @param relationshipTypeIndexCursor the cursor to use for consuming the results.
-     * @param order the requested order on the query result.
-     */
-    void relationshipTypeScan( int type, RelationshipTypeIndexCursor relationshipTypeIndexCursor, IndexOrder order );
-
-    /**
      * Scan all relationships in a token index of the specified type.
      * @param session {@link TokenReadSession} token read session to query.
      * @param cursor the cursor to use for consuming the results.

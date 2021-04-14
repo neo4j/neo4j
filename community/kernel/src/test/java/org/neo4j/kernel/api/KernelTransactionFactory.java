@@ -41,7 +41,6 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -93,7 +92,7 @@ public final class KernelTransactionFactory
                                                      mock( DatabaseTracers.class, RETURNS_MOCKS ), storageEngine,
                                                      any -> CanWrite.INSTANCE, EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                                                      new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
-                                                     mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ),
+                                                     mock( IndexingService.class ), mock( LabelScanStore.class ),
                                                      mock( IndexStatisticsStore.class ), dependencies, new TestDatabaseIdRepository().defaultDatabase(),
                                                      LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
                                                      TransactionExecutionMonitor.NO_OP );

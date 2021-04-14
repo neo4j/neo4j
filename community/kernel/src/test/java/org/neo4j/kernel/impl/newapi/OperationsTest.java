@@ -82,7 +82,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.LockTracer;
@@ -183,8 +182,7 @@ class OperationsTest
         var facade = mock( GraphDatabaseFacade.class );
         dependencies.satisfyDependency( facade );
         allStoreHolder = new AllStoreHolder( storageReader, transaction, cursors, mock( GlobalProcedures.class ), mock( SchemaState.class ), indexingService,
-                mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ), mock( IndexStatisticsStore.class ), NULL, dependencies,
-                Config.defaults(), INSTANCE );
+                mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), NULL, dependencies, Config.defaults(), INSTANCE );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
         tokenHolders = mockedTokenHolders();
         creationContext = mock( CommandCreationContext.class );

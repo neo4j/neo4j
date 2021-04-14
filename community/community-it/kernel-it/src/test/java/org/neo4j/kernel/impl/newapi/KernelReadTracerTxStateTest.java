@@ -322,7 +322,8 @@ class KernelReadTracerTxStateTest extends KernelAPIWriteTestBase<WriteTestSuppor
 
             // when
             cursor.setTracer( tracer );
-            tx.dataRead().relationshipTypeScan( rType, cursor, IndexOrder.NONE );
+            // Change to token variant when enabling test
+            // tx.dataRead().relationshipTypeScan( rType, cursor, IndexOrder.NONE );
             tracer.assertEvents( OnRelationshipTypeScan( rType ) );
 
             assertTrue( cursor.next() );

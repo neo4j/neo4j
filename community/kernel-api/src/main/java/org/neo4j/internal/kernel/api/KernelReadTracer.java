@@ -54,7 +54,7 @@ public interface KernelReadTracer extends ReadTracer
     void onLabelScan( int label );
 
     /**
-     * Called on {@link Read#relationshipTypeScan(int, RelationshipTypeIndexCursor, IndexOrder)}.
+     * Called on {@link Read#relationshipTypeScan(TokenReadSession, RelationshipTypeIndexCursor, IndexQueryConstraints, TokenPredicate)}.
      */
     void onRelationshipTypeScan( int type );
 
