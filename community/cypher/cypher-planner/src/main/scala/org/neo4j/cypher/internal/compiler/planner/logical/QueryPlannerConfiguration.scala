@@ -29,8 +29,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.allNodesLeafPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.applyOptional
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.argumentLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.idSeekLeafPlanner
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.indexScanLeafPlanner
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.indexSeekLeafPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexContainsScanPlanProvider
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexEndsWithScanPlanProvider
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexScanPlanProvider
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexSeekPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.labelScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.outerHashJoin
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.pickBestPlanUsingHintsAndCost
@@ -48,12 +51,16 @@ object QueryPlannerConfiguration {
     // MATCH (n) WHERE id(n) IN ... RETURN n
     idSeekLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
-    // MATCH (n) WHERE n.prop IN ... RETURN n
-    indexSeekLeafPlanner(restrictions),
-
-    // MATCH (n) WHERE has(n.prop) RETURN n
-    // MATCH (n:Person) WHERE n.prop CONTAINS ...
-    indexScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
+    NodeIndexPlanner(Seq(
+      // MATCH (n) WHERE n.prop IN ... RETURN n
+      nodeIndexSeekPlanProvider,
+      // MATCH (n:Person) WHERE n.prop CONTAINS ...
+      nodeIndexContainsScanPlanProvider,
+      // MATCH (n:Person) WHERE n.prop ENDS WITH ...
+      nodeIndexEndsWithScanPlanProvider,
+      // MATCH (n) WHERE has(n.prop) RETURN n
+      nodeIndexScanPlanProvider,
+    ), restrictions),
 
     // MATCH (n:Person) RETURN n
     labelScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),

@@ -95,15 +95,25 @@ object AsPropertySeekable {
   }
 }
 
-object AsPropertyScannable {
-  def unapply(v: Any): Option[Scannable[Expression]] = v match {
-
+object AsExplicitlyPropertyScannable {
+  def unapply(v: Any): Option[ExplicitlyPropertyScannable] = v match {
     case func@FunctionInvocation(_, _, _, IndexedSeq(property@Property(ident: LogicalVariable, _)))
       if func.function == functions.Exists =>
       Some(ExplicitlyPropertyScannable(func, ident, property))
 
-    case expr@IsNotNull(Property(_, _)) =>
-      partialPropertyPredicate(expr, expr.lhs, solves = true)
+    case expr@IsNotNull(property@Property(ident: LogicalVariable, _)) =>
+      Some(ExplicitlyPropertyScannable(expr, ident, property))
+
+    case _ =>
+      None
+  }
+}
+
+object AsPropertyScannable {
+  def unapply(v: Any): Option[Scannable[Expression]] = v match {
+
+    case AsExplicitlyPropertyScannable(scannable) =>
+      Some(scannable)
 
     case expr: Equals =>
       partialPropertyPredicate(expr, expr.lhs, solves = false)
@@ -141,10 +151,10 @@ object AsPropertyScannable {
 
 object AsStringRangeSeekable {
   def unapply(v: Any): Option[PrefixRangeSeekable] = v match {
-    case startsWith@StartsWith(Property(ident: LogicalVariable, propertyKey), lit@StringLiteral(prefix)) if prefix.nonEmpty =>
-      Some(PrefixRangeSeekable(PrefixRange(lit), startsWith, ident, propertyKey))
-    case startsWith@StartsWith(Property(ident: LogicalVariable, propertyKey), rhs) =>
-      Some(PrefixRangeSeekable(PrefixRange(rhs), startsWith, ident, propertyKey))
+    case startsWith@StartsWith(prop@Property(ident: LogicalVariable, propertyKey), lit@StringLiteral(prefix)) if prefix.nonEmpty =>
+      Some(PrefixRangeSeekable(PrefixRange(lit), startsWith, ident, prop))
+    case startsWith@StartsWith(prop@Property(ident: LogicalVariable, propertyKey), rhs) =>
+      Some(PrefixRangeSeekable(PrefixRange(rhs), startsWith, ident, prop))
     case _ =>
       None
   }
@@ -153,15 +163,15 @@ object AsStringRangeSeekable {
 object AsValueRangeSeekable {
   def unapply(v: Any): Option[InequalityRangeSeekable] = v match {
     case inequalities@AndedPropertyInequalities(ident, prop, _) =>
-      Some(InequalityRangeSeekable(ident, prop.propertyKey, inequalities))
-    case inequality@LessThan(property@Property(variable: Variable, propertyKey), _) =>
-      Some(InequalityRangeSeekable(variable, propertyKey, AndedPropertyInequalities(variable, property, Last(inequality))))
-    case inequality@LessThanOrEqual(property@Property(variable: Variable, propertyKey), _) =>
-      Some(InequalityRangeSeekable(variable, propertyKey, AndedPropertyInequalities(variable, property, Last(inequality))))
-    case inequality@GreaterThan(property@Property(variable: Variable, propertyKey), _) =>
-      Some(InequalityRangeSeekable(variable, propertyKey, AndedPropertyInequalities(variable, property, Last(inequality))))
-    case inequality@GreaterThanOrEqual(property@Property(variable: Variable, propertyKey), _) =>
-      Some(InequalityRangeSeekable(variable, propertyKey, AndedPropertyInequalities(variable, property, Last(inequality))))
+      Some(InequalityRangeSeekable(ident, prop, inequalities))
+    case inequality@LessThan(property@Property(variable: Variable, _), _) =>
+      Some(InequalityRangeSeekable(variable, property, AndedPropertyInequalities(variable, property, Last(inequality))))
+    case inequality@LessThanOrEqual(property@Property(variable: Variable, _), _) =>
+      Some(InequalityRangeSeekable(variable, property, AndedPropertyInequalities(variable, property, Last(inequality))))
+    case inequality@GreaterThan(property@Property(variable: Variable, _), _) =>
+      Some(InequalityRangeSeekable(variable, property, AndedPropertyInequalities(variable, property, Last(inequality))))
+    case inequality@GreaterThanOrEqual(property@Property(variable: Variable, _), _) =>
+      Some(InequalityRangeSeekable(variable, property, AndedPropertyInequalities(variable, property, Last(inequality))))
     case _ =>
       None
   }
@@ -171,24 +181,24 @@ object AsValueRangeSeekable {
 // and the like
 object AsDistanceSeekable {
   def unapply(v: Any): Option[PointDistanceSeekable] = v match {
-    case LessThan(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(Property(variable: Variable, propertyKey), otherPoint)), distanceExpr) =>
-      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
-    case LessThan(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, Property(variable: Variable, propertyKey))), distanceExpr) =>
-      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
-    case LessThanOrEqual(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(Property(variable: Variable, propertyKey), otherPoint)), distanceExpr) =>
-      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
-    case LessThanOrEqual(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, Property(variable: Variable, propertyKey), _)), distanceExpr) =>
-      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
+    case LessThan(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(prop@Property(variable: Variable, propertyKey), otherPoint)), distanceExpr) =>
+      Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
+    case LessThan(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, prop@Property(variable: Variable, propertyKey))), distanceExpr) =>
+      Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
+    case LessThanOrEqual(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(prop@Property(variable: Variable, propertyKey), otherPoint)), distanceExpr) =>
+      Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
+    case LessThanOrEqual(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, prop@Property(variable: Variable, propertyKey), _)), distanceExpr) =>
+      Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
 
 
-    case GreaterThan(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(Property(variable: Variable, propertyKey), otherPoint))) =>
-      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
-    case GreaterThan(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, Property(variable: Variable, propertyKey)))) =>
-      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
-    case GreaterThanOrEqual(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(Property(variable: Variable, propertyKey), otherPoint))) =>
-      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
-    case GreaterThanOrEqual(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, Property(variable: Variable, propertyKey)))) =>
-      Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
+    case GreaterThan(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(prop@Property(variable: Variable, propertyKey), otherPoint))) =>
+      Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
+    case GreaterThan(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, prop@Property(variable: Variable, propertyKey)))) =>
+      Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
+    case GreaterThanOrEqual(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(prop@Property(variable: Variable, propertyKey), otherPoint))) =>
+      Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
+    case GreaterThanOrEqual(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, prop@Property(variable: Variable, propertyKey)))) =>
+      Some(PointDistanceSeekable(variable, prop, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
 
     case AndedPropertyInequalities(_, _, inequalities) if inequalities.size == 1 =>
       inequalities.head match {
@@ -292,7 +302,7 @@ sealed trait RangeSeekable[T <: Expression, V] extends Seekable[T] {
   def range: SeekRange[V]
 }
 
-case class PrefixRangeSeekable(override val range: PrefixRange[Expression], expr: StartsWith, ident: LogicalVariable, propertyKey: PropertyKeyName)
+case class PrefixRangeSeekable(override val range: PrefixRange[Expression], expr: StartsWith, ident: LogicalVariable, property: Property)
   extends RangeSeekable[StartsWith, Expression] {
 
   def dependencies: Set[LogicalVariable] = expr.rhs.dependencies
@@ -301,10 +311,12 @@ case class PrefixRangeSeekable(override val range: PrefixRange[Expression], expr
     RangeQueryExpression(PrefixSeekRangeWrapper(range)(expr.rhs.position))
 
   override def propertyValueType(semanticTable: SemanticTable): CypherType = CTString
+
+  def propertyKeyName: PropertyKeyName = property.propertyKey
 }
 
 case class PointDistanceSeekable(ident: LogicalVariable,
-                                 propertyKeyName: PropertyKeyName,
+                                 property: LogicalProperty,
                                  range: PointDistanceRange[Expression])
   extends RangeSeekable[Expression, Expression] {
 
@@ -316,9 +328,11 @@ case class PointDistanceSeekable(ident: LogicalVariable,
     RangeQueryExpression(PointDistanceSeekRangeWrapper(range)(range.point.position))
 
   override def propertyValueType(semanticTable: SemanticTable): CypherType = CTPoint
+
+  def propertyKeyName: PropertyKeyName = property.propertyKey
 }
 
-case class InequalityRangeSeekable(ident: LogicalVariable, propertyKeyName: PropertyKeyName, expr: AndedPropertyInequalities)
+case class InequalityRangeSeekable(ident: LogicalVariable, property: LogicalProperty, expr: AndedPropertyInequalities)
   extends RangeSeekable[AndedPropertyInequalities, Expression] {
 
   def dependencies: Set[LogicalVariable] = expr.inequalities.map(_.rhs.dependencies).toSet.flatten
@@ -339,6 +353,8 @@ case class InequalityRangeSeekable(ident: LogicalVariable, propertyKeyName: Prop
   override def propertyValueType(semanticTable: SemanticTable): CypherType = {
     Seekable.combineMultipleTypeSpecs(expr.inequalities.map(ineq => semanticTable.getActualTypeFor(ineq.rhs)).toIndexedSeq)
   }
+
+  def propertyKeyName: PropertyKeyName = property.propertyKey
 }
 
 sealed trait Scannable[+T <: Expression] extends Sargable[T] {
@@ -349,8 +365,27 @@ sealed trait Scannable[+T <: Expression] extends Sargable[T] {
   def propertyKey: PropertyKeyName = property.propertyKey
 }
 
-case class ExplicitlyPropertyScannable(expr: FunctionInvocation, ident: LogicalVariable, property: LogicalProperty)
-  extends Scannable[FunctionInvocation] {
+object Scannable {
+  def isEquivalentScannable(predicate1: Expression, predicate2: Expression): Boolean = {
+    def explicitlyScannableProperty(predicate: Expression) = predicate match {
+      case AsExplicitlyPropertyScannable(scannable) => Some(scannable.property)
+      case _                                        => None
+    }
+
+    explicitlyScannableProperty(predicate1) == explicitlyScannableProperty(predicate2)
+  }
+}
+
+object ExplicitlyPropertyScannable {
+  def apply(expr: FunctionInvocation, ident: LogicalVariable, property: LogicalProperty) =
+    new ExplicitlyPropertyScannable(expr, ident, property)
+
+  def apply(expr: IsNotNull, ident: LogicalVariable, property: LogicalProperty) =
+    new ExplicitlyPropertyScannable(expr, ident, property)
+}
+
+case class ExplicitlyPropertyScannable private (expr: Expression, ident: LogicalVariable, property: LogicalProperty)
+  extends Scannable[Expression] {
   val solvesPredicate = true
 }
 

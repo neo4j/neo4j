@@ -52,11 +52,11 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val leftExpr = prop("a", "prop")
     val startsWith = super.startsWith(leftExpr, literalString("prefix"))
     assertMatches(startsWith) {
-      case AsStringRangeSeekable(PrefixRangeSeekable(range, expr, ident, propertyKey)) =>
+      case AsStringRangeSeekable(PrefixRangeSeekable(range, expr, ident, property)) =>
         range should equal(PrefixRange(literalString("prefix")))
         expr should equal(startsWith)
         ident should equal(nodeA)
-        propertyKey should equal(leftExpr.propertyKey)
+        property should equal(leftExpr)
     }
   }
 

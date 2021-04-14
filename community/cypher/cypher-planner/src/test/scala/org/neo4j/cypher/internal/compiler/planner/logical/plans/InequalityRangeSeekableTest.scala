@@ -108,7 +108,7 @@ class InequalityRangeSeekableTest extends CypherFunSuite with AstConstructionTes
     val inequalities = NonEmptyList(first, others: _*)
     InequalityRangeSeekable(
       varFor("n"),
-      PropertyKeyName("prop")_,
+      prop("n", "prop"),
       AndedPropertyInequalities(varFor("n"), prop("n", "prop"), inequalities)
     )
   }

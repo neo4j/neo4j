@@ -89,11 +89,11 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // WHERE x.prop STARTS WITH 'prefix'
     case AsStringRangeSeekable(seekable@PrefixRangeSeekable(PrefixRange(StringLiteral(prefix)), _, _, _)) =>
-      calculateSelectivityForSubstringSargable(seekable.name, labelInfo, relTypeInfo, seekable.propertyKey, Some(prefix))
+      calculateSelectivityForSubstringSargable(seekable.name, labelInfo, relTypeInfo, seekable.propertyKeyName, Some(prefix))
 
     // WHERE x.prop STARTS WITH expression
     case AsStringRangeSeekable(seekable@PrefixRangeSeekable(_:PrefixRange[_], _, _, _)) =>
-      calculateSelectivityForSubstringSargable(seekable.name, labelInfo, relTypeInfo, seekable.propertyKey, None)
+      calculateSelectivityForSubstringSargable(seekable.name, labelInfo, relTypeInfo, seekable.propertyKeyName, None)
 
     // WHERE x.prop CONTAINS 'substring'
     case Contains(Property(Variable(name), propertyKey), StringLiteral(substring)) =>

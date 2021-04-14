@@ -19,20 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlansForVariable
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeUniqueIndexSeekPlanProvider
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
-import org.neo4j.cypher.internal.logical.plans.IndexOrder
-import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.QueryExpression
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 
 /*
  * Plan the following type of plan
@@ -46,7 +40,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
  *    /  \
  * (ui1) (ui2)
  */
-object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner(LeafPlanRestrictions.NoRestrictions) {
+object mergeUniqueIndexSeekLeafPlanner extends NodeIndexPlanner(Seq(nodeUniqueIndexSeekPlanProvider), LeafPlanRestrictions.NoRestrictions) {
 
   override def apply(qg: QueryGraph, interestingOrderConfig: InterestingOrderConfig, context: LogicalPlanningContext): Seq[LogicalPlan] = {
     val resultPlans: Set[LeafPlansForVariable] = producePlanFor(qg.selections.flatPredicates.toSet, qg, interestingOrderConfig, context)
@@ -60,25 +54,4 @@ object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner(Leaf
     }.toSeq
 
   }
-
-  override def constructPlan(idName: String,
-                             label: LabelToken,
-                             properties: Seq[IndexedProperty],
-                             isUnique: Boolean,
-                             valueExpr: QueryExpression[Expression],
-                             hint: Option[UsingIndexHint],
-                             argumentIds: Set[String],
-                             providedOrder: ProvidedOrder,
-                             indexOrder: IndexOrder,
-                             context: LogicalPlanningContext,
-                             onlyExists: Boolean)
-                            (solvedPredicates: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]): LogicalPlan =
-    if(onlyExists)
-      context.logicalPlanProducer.planNodeIndexScan(idName, label, properties, solvedPredicates, hint, argumentIds, providedOrder, indexOrder, context)
-    else
-      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, properties, valueExpr, solvedPredicates, predicatesForCardinalityEstimation,
-        hint, argumentIds, providedOrder, indexOrder, context)
-
-  override def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor] =
-    context.planContext.uniqueIndexesGetForLabel(labelId)
 }

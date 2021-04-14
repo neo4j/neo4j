@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.indexSeekLeafPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.nodeIndexSeekPlanProvider
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.mergeUniqueIndexSeekLeafPlanner
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Equals
@@ -77,6 +78,9 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   private val lessThanPredicate = AndedPropertyInequalities(varFor("n"), property, NonEmptyList(lessThan(property, lit42)))
 
   private def hasLabel(l: String) = hasLabels("n", l)
+
+  private def indexSeekLeafPlanner(restrictions: LeafPlanRestrictions) =
+    NodeIndexPlanner(Seq(nodeIndexSeekPlanProvider), restrictions)
 
   test("does not plan index seek when no index exist") {
     new given {
@@ -601,7 +605,6 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
         NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, CanGetValue)), SingleQueryExpression(lit42), Set("x"), IndexOrderNone),
         NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, DoNotGetValue)), RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(literalFoo))(pos)), Set("x"), IndexOrderNone),
         NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, DoNotGetValue)), RangeQueryExpression(PointDistanceSeekRangeWrapper(PointDistanceRange(point, lit42, inclusive = false))(pos)), Set("x"), IndexOrderNone),
-        NodeIndexScan(idName, labelToken, Seq(IndexedProperty(nPropToken, DoNotGetValue)), Set("x"), IndexOrderNone),
         NodeIndexSeek(idName, labelToken, Seq(IndexedProperty(nPropToken, CanGetValue)), xPropExpr, Set("x"), IndexOrderNone),
       )
 
