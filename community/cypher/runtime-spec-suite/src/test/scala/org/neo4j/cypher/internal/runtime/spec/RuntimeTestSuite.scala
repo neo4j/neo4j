@@ -19,10 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import java.io.File
-import java.io.PrintWriter
-import java.util
-
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.internal.CypherRuntime
@@ -31,6 +27,7 @@ import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.logical.builder.Resolver
+import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
@@ -73,6 +70,10 @@ import org.scalatest.Tag
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
+import java.io.File
+import java.io.PrintWriter
+import java.util
+import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -505,6 +506,14 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   case class DiffItem(missingRow: ListValue, fromA: Boolean)
 
+  def failProbe(failAfterRowCount: Int): Prober.Probe = new Prober.Probe {
+    val c = new AtomicInteger(0)
+    override def onRow(row: AnyRef): Unit = {
+      if ( c.incrementAndGet() == failAfterRowCount ) {
+        throw new RuntimeException(s"Probe failed as expected (row count=$c)")
+      }
+    }
+  }
 }
 
 case class RecordingRuntimeResult(runtimeResult: RuntimeResult, recordingQuerySubscriber: RecordingQuerySubscriber) {

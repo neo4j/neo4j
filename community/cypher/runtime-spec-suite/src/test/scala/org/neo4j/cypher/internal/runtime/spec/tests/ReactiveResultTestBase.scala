@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import java.io.IOException
-
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.never
 import org.mockito.Mockito.times
@@ -39,6 +37,8 @@ import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues
+
+import java.io.IOException
 
 abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                                  runtime: CypherRuntime[CONTEXT])
