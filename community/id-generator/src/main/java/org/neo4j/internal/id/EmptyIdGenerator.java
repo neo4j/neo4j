@@ -128,6 +128,6 @@ public class EmptyIdGenerator implements IdGenerator
     @Override
     public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
     {
-        return false;
+        return true;
     }
 }
