@@ -84,52 +84,59 @@ public class IndexAccessors implements Closeable
             // Default to instantiate new accessors
             accessorLookup = accessorLookup != null ? accessorLookup
                                                     : index -> provider( providers, index ).getOnlineAccessor( index, samplingConfig, tokenNameLookup );
-            while ( indexes.hasNext() )
+            while ( true )
             {
                 try
                 {
-                    // we intentionally only check indexes that are online since
-                    // - populating indexes will be rebuilt on next startup
-                    // - failed indexes have to be dropped by the user anyways
-                    IndexDescriptor indexDescriptor = indexes.next();
-                    if ( indexDescriptor.isUnique() && indexDescriptor.getOwningConstraintId().isEmpty() )
+                    if ( indexes.hasNext() )
                     {
-                        notOnlineIndexRules.add( indexDescriptor );
-                    }
-                    else
-                    {
-                        if ( InternalIndexState.ONLINE == provider( providers, indexDescriptor ).getInitialState( indexDescriptor, cursorTracer ) )
-                        {
-                            long indexId = indexDescriptor.getId();
-                            try
-                            {
-                                final IndexAccessor accessor = accessorLookup.apply( indexDescriptor );
-                                if ( indexDescriptor.isTokenIndex() )
-                                {
-                                    if ( indexDescriptor.schema().entityType() == EntityType.NODE )
-                                    {
-                                        nodeLabelIndex = (TokenIndexAccessor) accessor;
-                                    }
-                                    else
-                                    {
-                                        relationshipTypeIndex = (TokenIndexAccessor) accessor;
-                                    }
-                                }
-                                else
-                                {
-                                    propertyIndexAccessors.put( indexId, accessor );
-                                    onlineIndexRules.add( indexDescriptor );
-                                }
-                            }
-                            catch ( RuntimeException e )
-                            {
-                                inconsistentRules.add( indexDescriptor );
-                            }
-                        }
-                        else
+                        // we intentionally only check indexes that are online since
+                        // - populating indexes will be rebuilt on next startup
+                        // - failed indexes have to be dropped by the user anyways
+                        IndexDescriptor indexDescriptor = indexes.next();
+                        if ( indexDescriptor.isUnique() && indexDescriptor.getOwningConstraintId().isEmpty() )
                         {
                             notOnlineIndexRules.add( indexDescriptor );
                         }
+                        else
+                        {
+                            if ( InternalIndexState.ONLINE == provider( providers, indexDescriptor ).getInitialState( indexDescriptor, cursorTracer ) )
+                            {
+                                long indexId = indexDescriptor.getId();
+                                try
+                                {
+                                    final IndexAccessor accessor = accessorLookup.apply( indexDescriptor );
+                                    if ( indexDescriptor.isTokenIndex() )
+                                    {
+                                        if ( indexDescriptor.schema().entityType() == EntityType.NODE )
+                                        {
+                                            nodeLabelIndex = (TokenIndexAccessor) accessor;
+                                        }
+                                        else
+                                        {
+                                            relationshipTypeIndex = (TokenIndexAccessor) accessor;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        propertyIndexAccessors.put( indexId, accessor );
+                                        onlineIndexRules.add( indexDescriptor );
+                                    }
+                                }
+                                catch ( RuntimeException e )
+                                {
+                                    inconsistentRules.add( indexDescriptor );
+                                }
+                            }
+                            else
+                            {
+                                notOnlineIndexRules.add( indexDescriptor );
+                            }
+                        }
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
                 catch ( Exception e )
