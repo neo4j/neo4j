@@ -205,8 +205,10 @@ public class CliArgHelper
 
     private static ArgumentParser setupParser( ParameterMap parameterMap )
     {
-        ArgumentParser parser = ArgumentParsers.newArgumentParser( "cypher-shell" ).defaultHelp( true ).description(
-                format( "A command line shell where you can execute Cypher against an instance of Neo4j. " +
+        ArgumentParser parser = ArgumentParsers.newFor( "cypher-shell" ).build()
+                .defaultHelp( true )
+                .description( format(
+                        "A command line shell where you can execute Cypher against an instance of Neo4j. " +
                         "By default the shell is interactive but you can use it for scripting by passing cypher " +
                         "directly on the command line or by piping a file with cypher statements (requires Powershell on Windows)." +
                         "%n%n" +

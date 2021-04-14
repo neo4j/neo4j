@@ -20,18 +20,15 @@
 package org.neo4j.shell.cli;
 
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Optional;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -40,41 +37,37 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.fail;
 import static org.neo4j.shell.test.Util.asArray;
 
 public class CliArgHelperTest
 {
-
-    @Rule
-    public final ExpectedException thrown = ExpectedException.none();
-
-    private PrintStream mockedStdErr;
-
-    @Before
-    public void setup()
+    private static CliArgs parse( String... args )
     {
-        mockedStdErr = mock( PrintStream.class );
+        var parsed = CliArgHelper.parse( args );
+        if ( parsed == null )
+        {
+            fail( "Failed to parse arguments: " + Arrays.toString( args ) );
+        }
+        return parsed;
     }
 
     @Test
     public void testForceNonInteractiveIsNotDefault()
     {
-        assertFalse( "Force non-interactive should not be the default mode",
-                     CliArgHelper.parse( asArray() ).getNonInteractive() );
+        assertFalse( "Force non-interactive should not be the default mode", parse( asArray() ).getNonInteractive() );
     }
 
     @Test
     public void testForceNonInteractiveIsParsed()
     {
-        assertTrue( "Force non-interactive should have been parsed to true",
-                    CliArgHelper.parse( asArray( "--non-interactive" ) ).getNonInteractive() );
+        assertTrue( "Force non-interactive should have been parsed to true", parse( asArray( "--non-interactive" ) ).getNonInteractive() );
     }
 
     @Test
     public void testNumSampleRows()
     {
-        assertEquals( "sample-rows 200", 200, CliArgHelper.parse( "--sample-rows 200".split( " " ) ).getNumSampleRows() );
+        assertEquals( "sample-rows 200", 200, parse( "--sample-rows 200".split( " " ) ).getNumSampleRows() );
         assertNull( "invalid sample-rows", CliArgHelper.parse( "--sample-rows 0".split( " " ) ) );
         assertNull( "invalid sample-rows", CliArgHelper.parse( "--sample-rows -1".split( " " ) ) );
         assertNull( "invalid sample-rows", CliArgHelper.parse( "--sample-rows foo".split( " " ) ) );
@@ -83,9 +76,9 @@ public class CliArgHelperTest
     @Test
     public void testWrap()
     {
-        assertTrue( "wrap true", CliArgHelper.parse( "--wrap true".split( " " ) ).getWrap() );
-        assertFalse( "wrap false", CliArgHelper.parse( "--wrap false".split( " " ) ).getWrap() );
-        assertTrue( "default wrap", CliArgHelper.parse().getWrap() );
+        assertTrue( "wrap true", parse( "--wrap true".split( " " ) ).getWrap() );
+        assertFalse( "wrap false", parse( "--wrap false".split( " " ) ).getWrap() );
+        assertTrue( "default wrap", parse().getWrap() );
         assertNull( "invalid wrap", CliArgHelper.parse( "--wrap foo".split( " " ) ) );
     }
 
@@ -100,88 +93,78 @@ public class CliArgHelperTest
     @Test
     public void testDebugIsNotDefault()
     {
-        assertFalse( "Debug should not be the default mode",
-                     CliArgHelper.parse( asArray() ).getDebugMode() );
+        assertFalse( "Debug should not be the default mode", parse( asArray() ).getDebugMode() );
     }
 
     @Test
     public void testDebugIsParsed()
     {
-        assertTrue( "Debug should have been parsed to true",
-                    CliArgHelper.parse( asArray( "--debug" ) ).getDebugMode() );
+        assertTrue( "Debug should have been parsed to true", parse( asArray( "--debug" ) ).getDebugMode() );
     }
 
     @Test
     public void testVersionIsParsed()
     {
-        assertTrue( "Version should have been parsed to true",
-                    CliArgHelper.parse( asArray( "--version" ) ).getVersion() );
+        assertTrue( "Version should have been parsed to true", parse( asArray( "--version" ) ).getVersion() );
     }
 
     @Test
     public void testDriverVersionIsParsed()
     {
-        assertTrue( "Driver version should have been parsed to true",
-                    CliArgHelper.parse( asArray( "--driver-version" ) ).getDriverVersion() );
+        assertTrue( "Driver version should have been parsed to true", parse( asArray( "--driver-version" ) ).getDriverVersion() );
     }
 
     @Test
     public void testFailFastIsDefault()
     {
-        assertEquals( "Unexpected fail-behavior", FailBehavior.FAIL_FAST,
-                      CliArgHelper.parse( asArray() ).getFailBehavior() );
+        assertEquals( "Unexpected fail-behavior", FailBehavior.FAIL_FAST, parse( asArray() ).getFailBehavior() );
     }
 
     @Test
     public void testFailFastIsParsed()
     {
-        assertEquals( "Unexpected fail-behavior", FailBehavior.FAIL_FAST,
-                      CliArgHelper.parse( asArray( "--fail-fast" ) ).getFailBehavior() );
+        assertEquals( "Unexpected fail-behavior", FailBehavior.FAIL_FAST, parse( asArray( "--fail-fast" ) ).getFailBehavior() );
     }
 
     @Test
     public void testFailAtEndIsParsed()
     {
-        assertEquals( "Unexpected fail-behavior", FailBehavior.FAIL_AT_END,
-                      CliArgHelper.parse( asArray( "--fail-at-end" ) ).getFailBehavior() );
+        assertEquals( "Unexpected fail-behavior", FailBehavior.FAIL_AT_END, parse( asArray( "--fail-at-end" ) ).getFailBehavior() );
     }
 
     @Test
     public void singlePositionalArgumentIsFine()
     {
         String text = "Single string";
-        assertEquals( "Did not parse cypher string", text,
-                      CliArgHelper.parse( asArray( text ) ).getCypher().get() );
+        assertEquals( "Did not parse cypher string", Optional.of( text ), parse( asArray( text ) ).getCypher() );
     }
 
     @Test
     public void parseArgumentsAndQuery()
     {
         String query = "\"match (n) return n\"";
-        ArrayList<String> strings = new ArrayList<>();
-        strings.addAll( asList( "-a 192.168.1.1 -p 123 --format plain".split( " " ) ) );
+        ArrayList<String> strings = new ArrayList<>( asList( "-a 192.168.1.1 -p 123 --format plain".split( " " ) ) );
         strings.add( query );
-        assertEquals( Optional.of( query ),
-                      CliArgHelper.parse( strings.toArray( new String[strings.size()] ) ).getCypher() );
+        assertEquals( Optional.of( query ), parse( strings.toArray( new String[0] ) ).getCypher() );
     }
 
     @Test
     public void parseFormat()
     {
-        assertEquals( Format.PLAIN, CliArgHelper.parse( "--format", "plain" ).getFormat() );
-        assertEquals( Format.VERBOSE, CliArgHelper.parse( "--format", "verbose" ).getFormat() );
+        assertEquals( Format.PLAIN, parse( "--format", "plain" ).getFormat() );
+        assertEquals( Format.VERBOSE, parse( "--format", "verbose" ).getFormat() );
     }
 
     @Test
     public void parsePassword()
     {
-        assertEquals( "foo", CliArgHelper.parse( "--password", "foo" ).getPassword() );
+        assertEquals( "foo", parse( "--password", "foo" ).getPassword() );
     }
 
     @Test
     public void parseUserName()
     {
-        assertEquals( "foo", CliArgHelper.parse( "--username", "foo" ).getUsername() );
+        assertEquals( "foo", parse( "--username", "foo" ).getUsername() );
     }
 
     @Test
@@ -206,12 +189,13 @@ public class CliArgHelperTest
         assertEquals( CliArgs.DEFAULT_PORT, cliArgs.getPort() );
     }
 
+    @Test
     public void parseWithoutProtocol()
     {
         CliArgs cliArgs = CliArgHelper.parse( "--address", "localhost:10000" );
         assertNotNull( cliArgs );
         assertNotNull( cliArgs );
-        assertEquals( "bolt", cliArgs.getScheme() );
+        assertEquals( "neo4j", cliArgs.getScheme() );
         assertEquals( "localhost", cliArgs.getHost() );
         assertEquals( 10000, cliArgs.getPort() );
     }
@@ -261,22 +245,21 @@ public class CliArgHelperTest
     @Test
     public void defaultsEncryptionToDefault()
     {
-        assertEquals( Encryption.DEFAULT, CliArgHelper.parse().getEncryption() );
+        assertEquals( Encryption.DEFAULT, parse().getEncryption() );
     }
 
     @Test
     public void allowsEncryptionToBeTurnedOnOrOff()
     {
-        assertEquals( Encryption.TRUE, CliArgHelper.parse( "--encryption", "true" ).getEncryption() );
-        assertEquals( Encryption.FALSE, CliArgHelper.parse( "--encryption", "false" ).getEncryption() );
+        assertEquals( Encryption.TRUE, parse( "--encryption", "true" ).getEncryption() );
+        assertEquals( Encryption.FALSE, parse( "--encryption", "false" ).getEncryption() );
     }
 
     @Test
-    public void shouldNotAcceptInvalidEncryption() throws Exception
+    public void shouldNotAcceptInvalidEncryption()
     {
-        thrown.expect( ArgumentParserException.class );
-        thrown.expectMessage( containsString( "argument --encryption: invalid choice: 'bugaluga' (choose from {true,false,default})" ) );
-        CliArgHelper.parseAndThrow( "--encryption", "bugaluga" );
+        var exception = assertThrows( ArgumentParserException.class, () ->  CliArgHelper.parseAndThrow( "--encryption", "bugaluga" ) );
+        assertThat( exception.getMessage(), containsString( "argument --encryption: invalid choice: 'bugaluga' (choose from {true,false,default})" ) );
     }
 
     @Test
@@ -321,13 +304,11 @@ public class CliArgHelperTest
     }
 
     @Test
-    public void shouldFailForInvalidSyntaxForArg() throws Exception
+    public void shouldFailForInvalidSyntaxForArg()
     {
-        thrown.expect( ArgumentParserException.class );
-        thrown.expectMessage( allOf(
-                containsString( "Incorrect usage" ),
-                containsString( "usage: --param  \"name => value\"" ) ) );
-        CliArgHelper.parseAndThrow( "-P", "foo: => 'nanana'" );
+        var exception = assertThrows( ArgumentParserException.class, () -> CliArgHelper.parseAndThrow( "-P", "foo: => 'nanana'" ) );
+        assertThat( exception.getMessage(), containsString( "Incorrect usage" ) );
+        assertThat( exception.getMessage(), containsString( "usage: --param  \"name => value\"" ) );
     }
 
     @Test
