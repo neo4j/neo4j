@@ -26,10 +26,10 @@ import java.io.UncheckedIOException;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
-import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 
@@ -46,13 +46,20 @@ public class DefaultTokenIndexReader implements TokenIndexReader
     }
 
     @Override
-    public void query( QueryContext context, IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query )
+    public void query( IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query, PageCursorTracer tracer )
+    {
+        query( client, constraints, query, EntityRange.FULL, tracer );
+    }
+
+    @Override
+    public void query(
+            IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query, EntityRange range, PageCursorTracer tracer )
     {
         try
         {
             final int tokenId = query.tokenId();
             final IndexOrder order = constraints.order();
-            Seeker<TokenScanKey,TokenScanValue> seeker = seekerForToken( tokenId, order, context.cursorTracer() );
+            Seeker<TokenScanKey,TokenScanValue> seeker = seekerForToken( range, tokenId, order, tracer );
             IndexProgressor progressor = new TokenScanValueIndexProgressor( seeker, client, order );
             client.initialize( progressor, tokenId, order );
         }
@@ -62,11 +69,11 @@ public class DefaultTokenIndexReader implements TokenIndexReader
         }
     }
 
-    private Seeker<TokenScanKey,TokenScanValue> seekerForToken( int tokenId, IndexOrder indexOrder, PageCursorTracer cursorTracer )
-            throws IOException
+    private Seeker<TokenScanKey,TokenScanValue> seekerForToken(
+            EntityRange range, int tokenId, IndexOrder indexOrder, PageCursorTracer cursorTracer ) throws IOException
     {
-        long rangeFrom = Long.MIN_VALUE;
-        long rangeTo = Long.MAX_VALUE;
+        long rangeFrom = range.fromInclusive;
+        long rangeTo = range.toExclusive;
 
         if ( indexOrder == IndexOrder.DESCENDING )
         {

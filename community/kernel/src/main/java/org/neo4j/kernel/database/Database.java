@@ -143,8 +143,8 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.state.DatabaseFileListing;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
-import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
+import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
@@ -455,21 +455,21 @@ public class Database extends LifecycleAdapter
             life.add( logFiles );
 
             // Token indexes
-            NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader, databaseConfig, scheduler );
+            FullScanStoreView fullScanStoreView = new FullScanStoreView( lockService, storageEngine::newReader, databaseConfig, scheduler );
             LabelScanStore labelScanStore =
-                    buildLabelIndex( databasePageCache, recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, databaseMonitors,
+                    buildLabelIndex( databasePageCache, recoveryCleanupWorkCollector, storageEngine, fullScanStoreView, databaseMonitors,
                             pageCacheTracer, otherDatabaseMemoryTracker );
             RelationshipTypeScanStore relationshipTypeScanStore =
-                    buildRelationshipTypeIndex( databasePageCache, recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, databaseMonitors,
+                    buildRelationshipTypeIndex( databasePageCache, recoveryCleanupWorkCollector, storageEngine, fullScanStoreView, databaseMonitors,
                             databaseConfig, otherDatabaseMemoryTracker );
 
+            IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
+                    databaseConfig, storageEngine::newReader, fullScanStoreView, labelScanStore, relationshipTypeScanStore, lockService, internalLogProvider );
+
             // Schema indexes
-            DynamicIndexStoreView indexStoreView =
-                    new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, lockService, storageEngine::newReader,
-                            internalLogProvider, databaseConfig );
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector,
                     readOnlyDatabaseChecker, pageCacheTracer );
-            IndexingService indexingService = buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore,
+            IndexingService indexingService = buildIndexingService( storageEngine, databaseSchemaState, indexStoreViewFactory, indexStatisticsStore,
                     pageCacheTracer, otherDatabaseMemoryTracker );
 
             databaseDependencies.satisfyDependency( storageEngine.countsAccessor() );
@@ -507,7 +507,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( labelScanStore );
             databaseDependencies.satisfyDependency( relationshipTypeScanStore );
             databaseDependencies.satisfyDependency( indexingService );
-            databaseDependencies.satisfyDependency( indexStoreView );
+            databaseDependencies.satisfyDependency( indexStoreViewFactory );
             databaseDependencies.satisfyDependency( indexStatisticsStore );
             databaseDependencies.satisfyDependency( indexProviderMap );
             databaseDependencies.satisfyDependency( forceOperation );
@@ -688,12 +688,12 @@ public class Database extends LifecycleAdapter
     private IndexingService buildIndexingService(
             StorageEngine storageEngine,
             DatabaseSchemaState databaseSchemaState,
-            DynamicIndexStoreView indexStoreView,
+            IndexStoreViewFactory indexStoreViewFactory,
             IndexStatisticsStore indexStatisticsStore,
             PageCacheTracer pageCacheTracer,
             MemoryTracker memoryTracker )
     {
-        return life.add( buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore, databaseConfig, scheduler,
+        return life.add( buildIndexingService( storageEngine, databaseSchemaState, indexStoreViewFactory, indexStatisticsStore, databaseConfig, scheduler,
                 indexProviderMap, tokenHolders, internalLogProvider, userLogProvider, databaseMonitors.newMonitor( IndexingService.Monitor.class ),
                 pageCacheTracer, memoryTracker, namedDatabaseId.name(), readOnlyDatabaseChecker ) );
     }
@@ -704,7 +704,7 @@ public class Database extends LifecycleAdapter
     public static IndexingService buildIndexingService(
             StorageEngine storageEngine,
             DatabaseSchemaState databaseSchemaState,
-            DynamicIndexStoreView indexStoreView,
+            IndexStoreViewFactory indexStoreViewFactory,
             IndexStatisticsStore indexStatisticsStore,
             Config config,
             JobScheduler jobScheduler,
@@ -718,7 +718,7 @@ public class Database extends LifecycleAdapter
             String databaseName,
             DatabaseReadOnlyChecker readOnlyChecker )
     {
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView,
+        IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, jobScheduler, indexProviderMap, indexStoreViewFactory,
                 tokenNameLookup, initialSchemaRulesLoader( storageEngine ), internalLogProvider, userLogProvider, indexingServiceMonitor,
                 databaseSchemaState, indexStatisticsStore, pageCacheTracer, memoryTracker, databaseName, readOnlyChecker );
         storageEngine.addIndexUpdateListener( indexingService );
@@ -733,10 +733,11 @@ public class Database extends LifecycleAdapter
     /**
      * Builds a {@link LabelScanStore} and adds it to this database's {@link LifeSupport}.
      */
-    private LabelScanStore buildLabelIndex( PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, StorageEngine storageEngine,
-            NeoStoreIndexStoreView neoStoreIndexStoreView, Monitors monitors, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+    private LabelScanStore buildLabelIndex( PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                                            StorageEngine storageEngine, FullScanStoreView fullScanStoreView, Monitors monitors,
+                                            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
-        return life.add( buildLabelIndex( recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, monitors, internalLogProvider,
+        return life.add( buildLabelIndex( recoveryCleanupWorkCollector, storageEngine, fullScanStoreView, monitors, internalLogProvider,
                 pageCache, databaseLayout, fs, readOnlyDatabaseChecker, databaseConfig, pageCacheTracer, memoryTracker ) );
     }
 
@@ -747,12 +748,12 @@ public class Database extends LifecycleAdapter
             PageCache pageCache,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             StorageEngine storageEngine,
-            NeoStoreIndexStoreView neoStoreIndexStoreView,
+            FullScanStoreView fullScanStoreView,
             Monitors monitors,
             Config config,
             MemoryTracker memoryTracker )
     {
-        return life.add( buildRelationshipTypeIndex( recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, monitors, internalLogProvider,
+        return life.add( buildRelationshipTypeIndex( recoveryCleanupWorkCollector, storageEngine, fullScanStoreView, monitors, internalLogProvider,
                 pageCache, databaseLayout, fs, readOnlyDatabaseChecker, config, tracers.getPageCacheTracer(), memoryTracker ) );
     }
 

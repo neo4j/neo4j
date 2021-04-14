@@ -416,7 +416,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
         {
             IndexQueryConstraints constraint = IndexQueryConstraints.constrained( indexOrder, false );
             TokenPredicate query = new TokenPredicate( (int) tokenId );
-            reader.query( NULL_CONTEXT, collectingEntityTokenClient, constraint, query );
+            reader.query( collectingEntityTokenClient, constraint, query, NULL );
 
             // Then
             int count = 0;

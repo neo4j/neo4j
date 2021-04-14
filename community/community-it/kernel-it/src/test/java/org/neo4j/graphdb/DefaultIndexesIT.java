@@ -23,14 +23,8 @@ package org.neo4j.graphdb;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsController;
@@ -59,16 +53,7 @@ public class DefaultIndexesIT
     @Test
     void defaultIndexesCreatedOnFirstStart()
     {
-        try ( var tx = db.beginTx() )
-        {
-
-            var schemas = StreamSupport.stream( tx.schema().getIndexes().spliterator(), false ).map( IndexDefinitionImpl.class::cast )
-                                       .map( IndexDefinitionImpl::getIndexReference ).map( IndexDescriptor::schema )
-                                       .collect( Collectors.toList() );
-
-            assertThat( schemas ).allMatch( SchemaDescriptor::isAnyTokenSchemaDescriptor );
-            assertThat( schemas.stream().map( SchemaDescriptor::entityType ) ).containsExactlyInAnyOrder( EntityType.NODE, EntityType.RELATIONSHIP );
-        }
+        IndexingTestUtil.assertOnlyDefaultTokenIndexesExists( db );
     }
 
     @Test

@@ -47,6 +47,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.token.TokenHolders;
 
+import static java.util.Collections.emptyIterator;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
@@ -87,6 +88,11 @@ public class RecordStorageReader implements StorageReader
     public RecordStorageReader( NeoStores stores )
     {
         this( null, stores, null, null, null );
+    }
+
+    public RecordStorageReader( NeoStores stores, SchemaCache schemaCache )
+    {
+        this( null, stores, null, null, schemaCache );
     }
 
     @Override

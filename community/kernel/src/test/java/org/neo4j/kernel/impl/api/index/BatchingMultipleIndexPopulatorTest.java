@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -113,8 +113,8 @@ public class BatchingMultipleIndexPopulatorTest
     @Test
     void populateFromQueuePopulatesWhenThresholdReached() throws Exception
     {
-        NeoStoreIndexStoreView storeView =
-                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, () -> mock( StorageReader.class ), Config.defaults(), jobScheduler );
+        FullScanStoreView storeView =
+                new FullScanStoreView( LockService.NO_LOCK_SERVICE, () -> mock( StorageReader.class ), Config.defaults(), jobScheduler );
         MultipleIndexPopulator batchingPopulator = new MultipleIndexPopulator(
                 storeView, NullLogProvider.getInstance(), EntityType.NODE, mock( SchemaState.class ), mock( IndexStatisticsStore.class ),
                 new CallingThreadJobScheduler(), tokens, NULL, INSTANCE, "", AUTH_DISABLED,

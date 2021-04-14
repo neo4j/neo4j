@@ -257,7 +257,7 @@ abstract class Read implements TxStateHolder,
 
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
-        tokenSession.reader.query( this, indexCursor, constraints, query );
+        tokenSession.reader.query( indexCursor, constraints, query, cursorTracer );
     }
 
     @Override
@@ -346,7 +346,7 @@ abstract class Read implements TxStateHolder,
 
         var indexCursor = (DefaultRelationshipTypeIndexCursor) cursor;
         indexCursor.setRead( this );
-        tokenSession.reader.query( this, indexCursor, constraints, query );
+        tokenSession.reader.query( indexCursor, constraints, query, cursorTracer );
     }
 
     @Override

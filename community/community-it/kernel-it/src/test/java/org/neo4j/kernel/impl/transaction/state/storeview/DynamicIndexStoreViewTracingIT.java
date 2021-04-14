@@ -79,8 +79,8 @@ class DynamicIndexStoreViewTracingIT
         }
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var neoStoreStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader, Config.defaults(), jobScheduler );
-        var indexStoreView = new DynamicIndexStoreView( neoStoreStoreView, labelScanStore, relationshipTypeScanStore,
+        var neoStoreStoreView = new FullScanStoreView( lockService, storageEngine::newReader, Config.defaults(), jobScheduler );
+        var indexStoreView = new LegacyDynamicIndexStoreView( neoStoreStoreView, labelScanStore, relationshipTypeScanStore,
                 lockService, storageEngine::newReader, NullLogProvider.nullLogProvider(), Config.defaults() );
         var storeScan = indexStoreView.visitNodes( new int[]{0, 1, 2}, ALWAYS_TRUE_INT, null,
                 new TestTokenScanConsumer(), false, true, pageCacheTracer, INSTANCE );

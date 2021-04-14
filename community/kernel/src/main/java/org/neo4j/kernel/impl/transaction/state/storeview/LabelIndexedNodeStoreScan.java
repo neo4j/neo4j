@@ -25,33 +25,33 @@ import javax.annotation.Nullable;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageReader;
 
-public class RelationshipTypeViewRelationshipStoreScan extends RelationshipStoreScan
+public class LabelIndexedNodeStoreScan extends NodeStoreScan
 {
-    private final RelationshipTypeScanStore relationshipTypeScanStore;
+    private final TokenIndexReader tokenIndexReader;
 
-    public RelationshipTypeViewRelationshipStoreScan( Config config, StorageReader storageReader, LockService locks,
-            RelationshipTypeScanStore relationshipTypeScanStore,
-            @Nullable TokenScanConsumer relationshipTypeScanConsumer,
-            @Nullable PropertyScanConsumer propertyScanConsumer,
-            int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
-            JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
+    public LabelIndexedNodeStoreScan( Config config, StorageReader storageReader, LockService locks,
+                                      TokenIndexReader tokenIndexReader,
+                                      @Nullable TokenScanConsumer labelScanConsumer,
+                                      @Nullable PropertyScanConsumer propertyScanConsumer,
+                                      int[] labelIds, IntPredicate propertyKeyIdFilter, boolean parallelWrite,
+                                      JobScheduler scheduler, PageCacheTracer cacheTracer, MemoryTracker memoryTracker )
     {
-        super( config, storageReader, locks, relationshipTypeScanConsumer, propertyScanConsumer, relationshipTypeIds, propertyKeyIdFilter, parallelWrite,
-                scheduler, cacheTracer, memoryTracker );
-        this.relationshipTypeScanStore = relationshipTypeScanStore;
+        super( config, storageReader, locks, labelScanConsumer, propertyScanConsumer, labelIds,
+               propertyKeyIdFilter, parallelWrite, scheduler, cacheTracer, memoryTracker );
+        this.tokenIndexReader = tokenIndexReader;
     }
 
     @Override
-    protected EntityIdIterator getEntityIdIterator( PageCursorTracer cursorTracer )
+    public EntityIdIterator getEntityIdIterator( PageCursorTracer cursorTracer )
     {
-        return new LegacyTokenScanViewIdIterator( relationshipTypeScanStore.newReader(), entityTokenIdFilter, cursorTracer );
+        return new TokenIndexScanIdIterator( tokenIndexReader, entityTokenIdFilter, cursorTracer );
     }
 }

@@ -71,7 +71,7 @@ class LabelScanNodeViewTracingIT
 
         var jobScheduler = database.getDependencyResolver().resolveDependency( JobScheduler.class );
         var cacheTracer = new DefaultPageCacheTracer();
-        var scan = new LabelViewNodeStoreScan( Config.defaults(), storageEngine.newReader(), lockService, labelScanStore,
+        var scan = new LegacyLabelViewNodeStoreScan( Config.defaults(), storageEngine.newReader(), lockService, labelScanStore,
                 new TestTokenScanConsumer(), null, new int[]{labelId}, any -> false, false, jobScheduler, cacheTracer,
                 INSTANCE );
         scan.run( StoreScan.NO_EXTERNAL_UPDATES );

@@ -35,7 +35,7 @@ import org.neo4j.graphdb.ResourceUtils;
  * <p>
  * Source iterators must be sorted in ascending order.
  */
-class CompositeTokenScanValueIterator extends AbstractPrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
+public class CompositeTokenScanValueIterator extends AbstractPrimitiveLongBaseIterator implements PrimitiveLongResourceIterator
 {
     private final PriorityQueue<IdAndSource> sortedIterators = new PriorityQueue<>();
     private final int atLeastNumberOfTokens;
@@ -48,7 +48,7 @@ class CompositeTokenScanValueIterator extends AbstractPrimitiveLongBaseIterator 
      * @param iterators {@link LongIterator iterators} to merge.
      * @param trueForAll if {@code true} using {@code AND} merging, otherwise {@code OR} merging.
      */
-    CompositeTokenScanValueIterator( List<PrimitiveLongResourceIterator> iterators, boolean trueForAll )
+    public CompositeTokenScanValueIterator( List<PrimitiveLongResourceIterator> iterators, boolean trueForAll )
     {
         this.toClose = iterators;
         this.atLeastNumberOfTokens = trueForAll ? iterators.size() : 1;

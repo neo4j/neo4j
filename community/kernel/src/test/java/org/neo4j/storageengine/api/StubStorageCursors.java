@@ -22,6 +22,7 @@ package org.neo4j.storageengine.api;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -32,7 +33,10 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.memory.MemoryTracker;
@@ -46,6 +50,8 @@ import static java.util.Collections.emptyIterator;
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.internal.schema.IndexType.LOOKUP;
+import static org.neo4j.internal.schema.SchemaDescriptor.forAnyEntityTokens;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
 
 /**
@@ -63,6 +69,30 @@ public class StubStorageCursors implements StorageReader
     private final Map<Long,NodeData> nodeData = new HashMap<>();
     private final Map<Long,PropertyData> propertyData = new HashMap<>();
     private final Map<Long,RelationshipData> relationshipData = new HashMap<>();
+    private final Map<SchemaDescriptor, IndexDescriptor> indexDescriptorMap = new HashMap<>();
+
+    private IndexDescriptor indexDescriptor( EntityType entityType, long id )
+    {
+        IndexPrototype indexPrototype = IndexPrototype
+                .forSchema( forAnyEntityTokens( entityType ) )
+                .withIndexType( LOOKUP )
+                .withIndexProvider( new IndexProviderDescriptor( "token", "1.0" ) );
+        indexPrototype = indexPrototype.withName( SchemaRule.generateName( indexPrototype, new String[]{}, new String[]{} ) );
+        return indexPrototype.materialise( id );
+    }
+
+    public StubStorageCursors withTokenIndexes()
+    {
+        indexDescriptorMap.put( forAnyEntityTokens( EntityType.NODE ), indexDescriptor( EntityType.NODE, 1 ) );
+        indexDescriptorMap.put( forAnyEntityTokens( EntityType.RELATIONSHIP ), indexDescriptor( EntityType.RELATIONSHIP, 2 ) );
+        return this;
+    }
+
+    public StubStorageCursors withoutTokenIndexes()
+    {
+        indexDescriptorMap.clear();
+        return this;
+    }
 
     public NodeData withNode( long id )
     {
@@ -226,7 +256,11 @@ public class StubStorageCursors implements StorageReader
     @Override
     public Iterator<IndexDescriptor> indexGetForSchema( SchemaDescriptor descriptor )
     {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+        if ( indexDescriptorMap.containsKey( descriptor ) )
+        {
+            return List.of( indexDescriptorMap.get( descriptor ) ).iterator();
+        }
+        return emptyIterator();
     }
 
     @Override

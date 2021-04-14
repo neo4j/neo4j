@@ -73,6 +73,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -115,7 +116,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private static final String INDEX_SERVICE_INDEX_CLOSING_TAG = "indexServiceIndexClosing";
     private final IndexSamplingController samplingController;
     private final IndexProxyCreator indexProxyCreator;
-    private final IndexStoreView storeView;
     private final IndexProviderMap providerMap;
     private final IndexMapReference indexMapRef;
     private final Iterable<IndexDescriptor> indexDescriptors;
@@ -134,6 +134,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final SchemaState schemaState;
     private final IndexPopulationJobController populationJobController;
     private static final String INIT_TAG = "Initialize IndexingService";
+    private final IndexStoreView storeView;
 
     enum State
     {
@@ -212,7 +213,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     IndexingService( IndexProxyCreator indexProxyCreator,
             IndexProviderMap providerMap,
             IndexMapReference indexMapRef,
-            IndexStoreView storeView,
+            IndexStoreViewFactory indexStoreViewFactory,
             Iterable<IndexDescriptor> indexDescriptors,
             IndexSamplingController samplingController,
             TokenNameLookup tokenNameLookup,
@@ -231,7 +232,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.indexProxyCreator = indexProxyCreator;
         this.providerMap = providerMap;
         this.indexMapRef = indexMapRef;
-        this.storeView = storeView;
         this.indexDescriptors = indexDescriptors;
         this.samplingController = samplingController;
         this.tokenNameLookup = tokenNameLookup;
@@ -248,6 +248,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.databaseName = databaseName;
         this.readOnlyChecker = readOnlyChecker;
         this.config = config;
+        this.storeView = indexStoreViewFactory.createTokenIndexStoreView( descriptor -> indexMapRef.getIndexProxy( descriptor.getId() ) );
     }
 
     /**
@@ -318,7 +319,6 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     public void start() throws Exception
     {
         state = State.STARTING;
-
         // Recovery will not do refresh (update read views) while applying recovered transactions and instead
         // do it at one point after recovery... i.e. here
         indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "refresh", IndexProxy::refresh ) );
@@ -981,5 +981,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         {
             return descriptor;
         }
+    }
+
+    @FunctionalInterface
+    public interface IndexProxyProvider
+    {
+        IndexProxy getIndexProxy( IndexDescriptor indexDescriptor ) throws IndexNotFoundKernelException;
     }
 }

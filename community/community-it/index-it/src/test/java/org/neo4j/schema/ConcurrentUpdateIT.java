@@ -55,7 +55,7 @@ import static org.neo4j.test.DoubleLatch.awaitLatch;
 @Neo4jLayoutExtension
 @ExtendWith( SuppressOutputExtension.class )
 @ResourceLock( Resources.SYSTEM_OUT )
-class DynamicIndexStoreViewIT
+class ConcurrentUpdateIT
 {
     @Inject
     private SuppressOutput suppressOutput;

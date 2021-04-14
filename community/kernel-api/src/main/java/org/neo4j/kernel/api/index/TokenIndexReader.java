@@ -21,18 +21,46 @@
 package org.neo4j.kernel.api.index;
 
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
-import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public interface TokenIndexReader extends IndexReader
 {
-    void query( QueryContext context, IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query );
+
+    /**
+     * Queries all the entities and coordinates with the supplied {@link IndexProgressor.EntityTokenClient} to return the results
+     *
+     * @param client       a handle for the token reader to propagate the queried results.
+     * @param constraints  represents all constraints for this query like ordering, limit etc.
+     * @param query        the predicate to identify the tokens being queried
+     * @param cursorTracer underlying page cursor tracer
+     */
+    void query( IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query, PageCursorTracer cursorTracer );
+
+    /**
+     * Queries a specific range of entities and coordinates with the supplied {@link IndexProgressor.EntityTokenClient} to return the results.
+     *
+     * @param client       a handle for the token reader to propagate the queried results.
+     * @param constraints  represents all constraints for this query like ordering, limit etc.
+     * @param query        the predicate to identify the tokens being queried
+     * @param range        the range of entities that should be queried.
+     * @param cursorTracer underlying page cursor tracer
+     */
+    void query( IndexProgressor.EntityTokenClient client,
+                IndexQueryConstraints constraints, TokenPredicate query, EntityRange range, PageCursorTracer cursorTracer );
 
     TokenIndexReader EMPTY = new TokenIndexReader()
     {
         @Override
-        public void query( QueryContext context, IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query )
+        public void query( IndexProgressor.EntityTokenClient client, IndexQueryConstraints constraints, TokenPredicate query, PageCursorTracer cursorTracer )
         {
+        }
+
+        @Override
+        public void query( IndexProgressor.EntityTokenClient client,
+                           IndexQueryConstraints constraints, TokenPredicate query, EntityRange range, PageCursorTracer cursorTracer )
+        {
+
         }
 
         @Override

@@ -38,14 +38,14 @@ import org.neo4j.storageengine.api.StorageReader;
 /**
  * Node store view that will always visit all nodes during store scan.
  */
-public class NeoStoreIndexStoreView implements IndexStoreView
+public class FullScanStoreView implements IndexStoreView
 {
     protected final LockService locks;
     protected final Supplier<StorageReader> storageEngine;
     protected final Config config;
     protected final JobScheduler scheduler;
 
-    public NeoStoreIndexStoreView( LockService locks, Supplier<StorageReader> storageEngine, Config config, JobScheduler scheduler )
+    public FullScanStoreView( LockService locks, Supplier<StorageReader> storageEngine, Config config, JobScheduler scheduler )
     {
         this.locks = locks;
         this.storageEngine = storageEngine;

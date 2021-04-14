@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.index.schema.TokenScanReader;
 /**
  * Entity id iterator used during index population when we go over entity ids indexed in a token scan store.
  */
-class TokenScanViewIdIterator implements EntityIdIterator
+class LegacyTokenScanViewIdIterator implements EntityIdIterator
 {
     private final int[] tokenIds;
     private final TokenScanReader tokenScanReader;
@@ -35,7 +35,7 @@ class TokenScanViewIdIterator implements EntityIdIterator
     private PrimitiveLongResourceIterator idIterator;
     private long lastReturnedId = -1;
 
-    TokenScanViewIdIterator( TokenScanReader tokenScanReader, int[] tokenIds, PageCursorTracer cursorTracer )
+    LegacyTokenScanViewIdIterator( TokenScanReader tokenScanReader, int[] tokenIds, PageCursorTracer cursorTracer )
     {
         this.tokenScanReader = tokenScanReader;
         this.cursorTracer = cursorTracer;

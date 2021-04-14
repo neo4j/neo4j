@@ -42,7 +42,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 
 @Execution( CONCURRENT )
@@ -94,7 +93,7 @@ class DefaultTokenIndexReaderTest
         // WHEN
         var reader = new DefaultTokenIndexReader( index );
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
-        reader.query( NULL_CONTEXT, tokenClient, unconstrained(), new TokenPredicate( LABEL_ID ) );
+        reader.query( tokenClient, unconstrained(), new TokenPredicate( LABEL_ID ), NULL );
 
         // THEN
         assertArrayEquals( expected, asArray( tokenClient ) );
@@ -106,7 +105,7 @@ class DefaultTokenIndexReaderTest
         // WHEN
         var reader = new DefaultTokenIndexReader( index );
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
-        reader.query( NULL_CONTEXT, tokenClient, IndexQueryConstraints.constrained( IndexOrder.ASCENDING, false ), new TokenPredicate( LABEL_ID ) );
+        reader.query( tokenClient, IndexQueryConstraints.constrained( IndexOrder.ASCENDING, false ), new TokenPredicate( LABEL_ID ), NULL );
 
         // THEN
         assertArrayEquals( expected, asArray( tokenClient ) );
@@ -118,7 +117,7 @@ class DefaultTokenIndexReaderTest
         // WHEN
         var reader = new DefaultTokenIndexReader( index );
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
-        reader.query( NULL_CONTEXT, tokenClient, IndexQueryConstraints.constrained( IndexOrder.DESCENDING, false ), new TokenPredicate( LABEL_ID ) );
+        reader.query( tokenClient, IndexQueryConstraints.constrained( IndexOrder.DESCENDING, false ), new TokenPredicate( LABEL_ID ), NULL );
 
         // THEN
         ArrayUtils.reverse( expected );

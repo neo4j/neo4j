@@ -41,7 +41,7 @@ import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
-class NeoStoreIndexStoreViewTracingIT
+class FullScanStoreViewTracingIT
 {
     @Inject
     private GraphDatabaseAPI database;
@@ -73,7 +73,7 @@ class NeoStoreIndexStoreViewTracingIT
         }
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        var indexStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader, Config.defaults(), jobScheduler );
+        var indexStoreView = new FullScanStoreView( lockService, storageEngine::newReader, Config.defaults(), jobScheduler );
         var storeScan = indexStoreView.visitNodes( EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null,
                 new TestTokenScanConsumer(), true, true, pageCacheTracer, INSTANCE );
         storeScan.run( StoreScan.NO_EXTERNAL_UPDATES );

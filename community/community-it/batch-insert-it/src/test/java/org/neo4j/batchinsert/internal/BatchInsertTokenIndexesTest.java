@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
@@ -136,7 +137,7 @@ public class BatchInsertTokenIndexesTest
     private void assertTokenIndexContains( TokenIndexReader reader, int tokenId, Long... intityIds )
     {
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
-        reader.query( NULL_CONTEXT, tokenClient, unconstrained(), new TokenPredicate( tokenId ) );
+        reader.query( tokenClient, unconstrained(), new TokenPredicate( tokenId ), PageCursorTracer.NULL );
 
         var found = new ArrayList<Long>();
         while ( tokenClient.next() )

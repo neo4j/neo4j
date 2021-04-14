@@ -81,7 +81,7 @@ class LabelViewNodeStoreScanTest
         int[] labelIds = new int[]{1, 2};
         when( labelScanReader.entitiesWithAnyOfTokens( eq( labelIds ), any() ) ).thenReturn( labeledNodes );
 
-        LabelViewNodeStoreScan storeScan = getLabelScanViewStoreScan( labelIds );
+        LegacyLabelViewNodeStoreScan storeScan = getLabelScanViewStoreScan( labelIds );
         PrimitiveLongResourceIterator idIterator = storeScan.getEntityIdIterator( PageCursorTracer.NULL );
 
         assertThat( idIterator.next() ).isEqualTo( 1L );
@@ -91,9 +91,9 @@ class LabelViewNodeStoreScanTest
         assertThat( idIterator.hasNext() ).isEqualTo( false );
     }
 
-    private LabelViewNodeStoreScan getLabelScanViewStoreScan( int[] labelIds )
+    private LegacyLabelViewNodeStoreScan getLabelScanViewStoreScan( int[] labelIds )
     {
-        return new LabelViewNodeStoreScan( Config.defaults(), cursors, LockService.NO_LOCK_SERVICE,
+        return new LegacyLabelViewNodeStoreScan( Config.defaults(), cursors, LockService.NO_LOCK_SERVICE,
                 labelScanStore, labelScanConsumer, propertyScanConsumer, labelIds, propertyKeyIdFilter, false, jobScheduler, PageCacheTracer.NULL, INSTANCE );
     }
 }

@@ -50,6 +50,7 @@ import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -69,6 +70,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
@@ -148,7 +150,9 @@ class IndexPopulationJobTest
         tokens = db.getDependencyResolver().resolveDependency( TokenNameLookup.class );
         tokenHolders = db.getDependencyResolver().resolveDependency( TokenHolders.class );
         stateHolder = new DatabaseSchemaState( NullLogProvider.getInstance() );
-        indexStoreView = indexStoreView();
+        IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
+        indexStoreView = db.getDependencyResolver().resolveDependency( IndexStoreViewFactory.class )
+                           .createTokenIndexStoreView( indexingService::getIndexProxy );
         indexStatisticsStore = db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class );
         jobScheduler = db.getDependencyResolver().resolveDependency( JobScheduler.class );
 
@@ -924,11 +928,6 @@ class IndexPopulationJobTest
             tx.commit();
             return result;
         }
-    }
-
-    private IndexStoreView indexStoreView()
-    {
-        return db.getDependencyResolver().resolveDependency( IndexStoreView.class );
     }
 
     private static class TrackingMultipleIndexPopulator extends MultipleIndexPopulator

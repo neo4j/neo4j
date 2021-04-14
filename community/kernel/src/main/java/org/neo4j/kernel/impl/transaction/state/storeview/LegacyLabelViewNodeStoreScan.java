@@ -37,11 +37,11 @@ import org.neo4j.storageengine.api.StorageReader;
  * Store scan view that will try to minimize the amount of scanned nodes by using label scan store {@link LabelScanStore}
  * as a source of known labeled node ids.
  */
-public class LabelViewNodeStoreScan extends NodeStoreScan
+public class LegacyLabelViewNodeStoreScan extends NodeStoreScan
 {
     private final LabelScanStore labelScanStore;
 
-    public LabelViewNodeStoreScan( Config config, StorageReader storageReader, LockService locks,
+    public LegacyLabelViewNodeStoreScan( Config config, StorageReader storageReader, LockService locks,
             LabelScanStore labelScanStore,
             @Nullable TokenScanConsumer labelScanConsumer,
             @Nullable PropertyScanConsumer propertyScanConsumer,
@@ -56,6 +56,6 @@ public class LabelViewNodeStoreScan extends NodeStoreScan
     @Override
     public EntityIdIterator getEntityIdIterator( PageCursorTracer cursorTracer )
     {
-        return new TokenScanViewIdIterator( labelScanStore.newReader(), entityTokenIdFilter, cursorTracer );
+        return new LegacyTokenScanViewIdIterator( labelScanStore.newReader(), entityTokenIdFilter, cursorTracer );
     }
 }

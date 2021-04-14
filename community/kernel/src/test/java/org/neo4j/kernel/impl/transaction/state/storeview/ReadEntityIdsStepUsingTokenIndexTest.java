@@ -22,80 +22,92 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.common.EntityType;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.StageControl;
+import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.StoreScan.ExternalUpdatesCheck;
-import org.neo4j.kernel.impl.index.schema.TokenScanStore;
-import org.neo4j.kernel.impl.index.schema.TokenScanWriter;
-import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.EntityTokenUpdate;
+import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
+import org.neo4j.kernel.impl.index.schema.IndexFiles;
+import org.neo4j.kernel.impl.index.schema.TokenIndexAccessor;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.configuration.Config.defaults;
-import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Configuration.withBatchSize;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.impl.index.schema.FullStoreChangeStream.EMPTY;
-import static org.neo4j.kernel.impl.index.schema.TokenScanStore.labelScanStore;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-import static org.neo4j.storageengine.api.EntityTokenUpdate.tokenChanges;
+import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
+import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes;
 
 @ExtendWith( RandomExtension.class )
 @PageCacheExtension
-class ReadEntityIdsStepTest
+@Neo4jLayoutExtension
+class ReadEntityIdsStepUsingTokenIndexTest
 {
     private static final int TOKEN_ID = 0;
+    private static final AnyTokenSchemaDescriptor SCHEMA_DESCRIPTOR = SchemaDescriptor.forAnyEntityTokens( EntityType.NODE );
+    private static final IndexDescriptor INDEX_DESCRIPTOR = IndexPrototype.forSchema( SCHEMA_DESCRIPTOR ).withName( "index" ).materialise( 1 );
+
+    @Inject
+    TestDirectory testDir;
+
+    @Inject
+    PageCache pageCache;
+
+    @Inject
+    private DatabaseLayout databaseLayout;
 
     @Inject
     private RandomRule random;
-
-    @Inject
-    private PageCache pageCache;
-
-    @Inject
-    private TestDirectory directory;
 
     @Test
     void shouldSeeRecentUpdatesRightInFrontOfExternalUpdatesPoint() throws Exception
     {
         // given
-        DatabaseLayout layout = DatabaseLayout.ofFlat( directory.homePath() );
-        TokenScanStore scanStore =
-                labelScanStore( pageCache, layout, directory.getFileSystem(), EMPTY, writable(), new Monitors(), immediate(), defaults(), NULL, INSTANCE );
-        try ( Lifespan life = new Lifespan( scanStore ) )
+        long entityCount = 1_000 + random.nextInt( 100 );
+        BitSet expectedEntityIds = new BitSet();
+        BitSet seenEntityIds = new BitSet();
+
+        try ( var indexAccessor = indexAccessor() )
         {
-            long initialHighNodeId = 1_000 + random.nextInt( 100 );
-            BitSet expectedEntityIds = new BitSet();
-            BitSet seenEntityIds = new BitSet();
-            populateScanStore( scanStore, expectedEntityIds, initialHighNodeId );
-            ControlledUpdatesCheck externalUpdatesCheck = new ControlledUpdatesCheck( scanStore, expectedEntityIds );
+            populateTokenIndex( indexAccessor, expectedEntityIds, entityCount );
             Configuration configuration = withBatchSize( DEFAULT, 100 );
             Stage stage = new Stage( "Test", null, configuration, 0 )
             {
                 {
-                    add( new ReadEntityIdsStep( control(), configuration,
-                            cursorTracer -> new LegacyTokenScanViewIdIterator( scanStore.newReader(), new int[]{TOKEN_ID}, PageCursorTracer.NULL ), NULL,
-                            externalUpdatesCheck, new AtomicBoolean( true ) ) );
+                    add( new ReadEntityIdsStep( control(),
+                                                configuration,
+                                                cursorTracer -> new TokenIndexScanIdIterator(
+                                                        indexAccessor.newTokenReader(), new int[]{TOKEN_ID}, PageCursorTracer.NULL ),
+                                                NULL,
+                                                new ControlledUpdatesCheck( indexAccessor, expectedEntityIds ),
+                                                new AtomicBoolean( true ) ) );
                     add( new CollectEntityIdsStep( control(), configuration, seenEntityIds ) );
                 }
             };
@@ -103,38 +115,33 @@ class ReadEntityIdsStepTest
             // when
             stage.execute().awaitCompletion();
 
-            // then what?
+            // then
             assertThat( seenEntityIds ).isEqualTo( expectedEntityIds );
         }
     }
 
-    private void populateScanStore( TokenScanStore scanStore, BitSet entityIds, long count ) throws IOException
+    private void populateTokenIndex( TokenIndexAccessor indexAccessor, BitSet entityIds, long count ) throws Exception
     {
-        try ( TokenScanWriter writer = scanStore.newWriter( PageCursorTracer.NULL ) )
+        try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, PageCursorTracer.NULL ) )
         {
             long id = 0;
             for ( int i = 0; i < count; i++ )
             {
-                writer.write( added( id ) );
+                updater.process( IndexEntryUpdate.change( id, INDEX_DESCRIPTOR, EMPTY_LONG_ARRAY, new long[]{TOKEN_ID} ) );
                 entityIds.set( (int) id );
                 id += random.nextInt( 1, 5 );
             }
         }
     }
 
-    private EntityTokenUpdate added( long id )
-    {
-        return tokenChanges( id, EMPTY_LONG_ARRAY, new long[]{TOKEN_ID} );
-    }
-
     private class ControlledUpdatesCheck implements ExternalUpdatesCheck
     {
-        private final TokenScanStore scanStore;
+        private final TokenIndexAccessor indexAccessor;
         private final BitSet expectedEntityIds;
 
-        ControlledUpdatesCheck( TokenScanStore scanStore, BitSet expectedEntityIds )
+        ControlledUpdatesCheck( TokenIndexAccessor indexAccessor, BitSet expectedEntityIds )
         {
-            this.scanStore = scanStore;
+            this.indexAccessor = indexAccessor;
             this.expectedEntityIds = expectedEntityIds;
         }
 
@@ -149,21 +156,21 @@ class ReadEntityIdsStepTest
         {
             // Apply some changes right in front of this point
             int numIds = random.nextInt( 5, 50 );
-            try ( TokenScanWriter writer = scanStore.newWriter( PageCursorTracer.NULL ) )
+            try ( IndexUpdater updater = indexAccessor.newUpdater( ONLINE, PageCursorTracer.NULL ) )
             {
                 for ( int i = 0; i < numIds; i++ )
                 {
                     long candidateId = currentlyIndexedNodeId + i + 1;
                     if ( !expectedEntityIds.get( (int) candidateId ) )
                     {
-                        writer.write( added( candidateId ) );
+                        updater.process( IndexEntryUpdate.change( candidateId, INDEX_DESCRIPTOR, EMPTY_LONG_ARRAY, new long[]{TOKEN_ID} ) );
                         expectedEntityIds.set( (int) candidateId );
                     }
                 }
             }
-            catch ( IOException e )
+            catch ( IndexEntryConflictException e )
             {
-                throw new UncheckedIOException( e );
+                throw new RuntimeException( e );
             }
         }
     }
@@ -186,5 +193,22 @@ class ReadEntityIdsStepTest
                 seenEntityIds.set( (int) entityId );
             }
         }
+    }
+
+    private TokenIndexAccessor indexAccessor()
+    {
+        return new TokenIndexAccessor( DatabaseIndexContext.builder( pageCache, testDir.getFileSystem(), DEFAULT_DATABASE_NAME ).build(),
+                                       databaseLayout,
+                                       new IndexFiles.SingleFile( testDir.getFileSystem(), databaseLayout.labelScanStore() ),
+                                       config(), INDEX_DESCRIPTOR, immediate() );
+    }
+
+    private Config config()
+    {
+        return Config.newBuilder()
+                     .set( neo4j_home, testDir.absolutePath() )
+                     .set( preallocate_logical_logs, false )
+                     .set( enable_scan_stores_as_token_indexes, true )
+                     .build();
     }
 }

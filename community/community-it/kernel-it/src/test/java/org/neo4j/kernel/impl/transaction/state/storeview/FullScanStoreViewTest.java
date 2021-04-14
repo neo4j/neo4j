@@ -43,7 +43,6 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -73,7 +72,7 @@ import static org.neo4j.lock.LockType.SHARED;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
-class NeoStoreIndexStoreViewTest
+class FullScanStoreViewTest
 {
     @Inject
     private GraphDatabaseAPI graphDb;
@@ -88,7 +87,7 @@ class NeoStoreIndexStoreViewTest
     private final Label label = Label.label( "Person" );
     private final RelationshipType relationshipType = RelationshipType.withName( "Knows" );
 
-    private NeoStoreIndexStoreView storeView;
+    private FullScanStoreView storeView;
 
     private int labelId;
     private int relTypeId;
@@ -123,7 +122,7 @@ class NeoStoreIndexStoreViewTest
             Long nodeId = invocation.getArgument( 0 );
             return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
         } );
-        storeView = new NeoStoreIndexStoreView( locks, storageEngine::newReader, Config.defaults(), jobScheduler );
+        storeView = new FullScanStoreView( locks, storageEngine::newReader, Config.defaults(), jobScheduler );
         propertyAccessor = storeView.newPropertyAccessor( PageCursorTracer.NULL, INSTANCE );
         reader = storageEngine.newReader();
     }

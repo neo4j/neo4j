@@ -75,8 +75,8 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
-import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
+import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -316,20 +316,21 @@ public final class Recovery
                 true, readOnlyChecker, memoryTracker );
 
         // Label index
-        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, storageEngine::newReader, config, scheduler );
-        LabelScanStore labelScanStore = Database.buildLabelIndex( recoveryCleanupCollector, storageEngine, neoStoreIndexStoreView, monitors,
+        FullScanStoreView fullScanStoreView = new FullScanStoreView( NO_LOCK_SERVICE, storageEngine::newReader, config, scheduler );
+        LabelScanStore labelScanStore = Database.buildLabelIndex( recoveryCleanupCollector, storageEngine, fullScanStoreView, monitors,
                 logProvider, databasePageCache, databaseLayout, fs, readOnlyChecker, config, tracers.getPageCacheTracer(), memoryTracker );
         RelationshipTypeScanStore relationshipTypeScanStore =
-                Database.buildRelationshipTypeIndex( recoveryCleanupCollector, storageEngine, neoStoreIndexStoreView, monitors, logProvider, databasePageCache,
+                Database.buildRelationshipTypeIndex( recoveryCleanupCollector, storageEngine, fullScanStoreView, monitors, logProvider, databasePageCache,
                         databaseLayout, fs, readOnlyChecker, config, tracers.getPageCacheTracer(), memoryTracker );
 
         // Schema indexes
-        DynamicIndexStoreView indexStoreView =
-                new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, relationshipTypeScanStore, NO_LOCK_SERVICE, storageEngine::newReader,
-                        logProvider, config );
+        IndexStoreViewFactory indexStoreViewFactory =
+                new IndexStoreViewFactory( config, storageEngine::newReader, fullScanStoreView,
+                                           labelScanStore, relationshipTypeScanStore, NO_LOCK_SERVICE, logProvider );
+
         IndexStatisticsStore indexStatisticsStore =
                 new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, readOnlyChecker, tracers.getPageCacheTracer() );
-        IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreView, indexStatisticsStore,
+        IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreViewFactory, indexStatisticsStore,
                 config, scheduler, indexProviderMap, tokenHolders, logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ),
                 tracers.getPageCacheTracer(), memoryTracker, databaseLayout.getDatabaseName(), readOnlyChecker );
 

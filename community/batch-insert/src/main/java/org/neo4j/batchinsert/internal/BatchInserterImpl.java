@@ -107,7 +107,6 @@ import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
-import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -154,8 +153,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
-import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
+import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.Locker;
@@ -255,7 +254,7 @@ public class BatchInserterImpl implements BatchInserter
     private final PropertyStore propertyStore;
     private final SchemaStore schemaStore;
     private final GBPTreeRelationshipGroupDegreesStore groupDegreesStore;
-    private final NeoStoreIndexStoreView storeIndexStoreView;
+    private final FullScanStoreView fullScanStoreView;
 
     private final LabelTokenStore labelTokenStore;
     private final long maxNodeId;
@@ -354,9 +353,9 @@ public class BatchInserterImpl implements BatchInserter
 
             monitors = new Monitors();
 
-            storeIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ), config, jobScheduler );
+            fullScanStoreView = new FullScanStoreView( NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ), config, jobScheduler );
             Dependencies deps = new Dependencies();
-            deps.satisfyDependencies( fileSystem, jobScheduler, config, logService, storeIndexStoreView, tokenHolders, pageCache, monitors, immediate(),
+            deps.satisfyDependencies( fileSystem, jobScheduler, config, logService, fullScanStoreView, tokenHolders, pageCache, monitors, immediate(),
                                       pageCacheTracer, databaseLayout, readOnlyChecker );
 
             DatabaseExtensions databaseExtensions = life.add( new DatabaseExtensions(
@@ -598,12 +597,15 @@ public class BatchInserterImpl implements BatchInserter
         LogProvider logProvider = logService.getInternalLogProvider();
         LogProvider userLogProvider = logService.getUserLogProvider();
         var cacheTracer = PageCacheTracer.NULL;
-        IndexStoreView indexStoreView = new DynamicIndexStoreView( storeIndexStoreView, labelIndex, relationshipTypeIndex,
-                NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ), logProvider, config );
+
+        IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
+                config, () -> new RecordStorageReader( neoStores, schemaCache ), fullScanStoreView, labelIndex,
+                relationshipTypeIndex, NO_LOCK_SERVICE, logProvider );
+
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
                 immediate(), readOnlyChecker, databaseLayout.getDatabaseName(), cacheTracer );
         IndexingService indexingService = IndexingServiceFactory
-                .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView, tokenHolders, emptyList(), logProvider, userLogProvider,
+                .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreViewFactory, tokenHolders, emptyList(), logProvider, userLogProvider,
                         IndexingService.NO_MONITOR, new DatabaseSchemaState( logProvider ), indexStatisticsStore, cacheTracer, memoryTracker,
                         databaseLayout.getDatabaseName(), readOnlyChecker );
         life.add( indexingService );
@@ -1158,7 +1160,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private LabelScanStore buildLabelIndex() throws IOException
     {
-        FullLabelStream labelStream = new FullLabelStream( storeIndexStoreView );
+        FullLabelStream labelStream = new FullLabelStream( fullScanStoreView );
         LabelScanStore labelIndex = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, labelStream, readOnlyChecker, monitors, immediate(),
                 config, pageCacheTracer, memoryTracker );
         if ( labelsTouched )
@@ -1172,7 +1174,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private RelationshipTypeScanStore buildRelationshipTypeIndex() throws IOException
     {
-        FullRelationshipTypeStream fullRelationshipTypeStream = new FullRelationshipTypeStream( storeIndexStoreView );
+        FullRelationshipTypeStream fullRelationshipTypeStream = new FullRelationshipTypeStream( fullScanStoreView );
         RelationshipTypeScanStore relationshipTypeIndex =
                 TokenScanStore.toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, fullRelationshipTypeStream, readOnlyChecker, monitors,
                         immediate(), config, pageCacheTracer, memoryTracker );
