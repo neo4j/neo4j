@@ -56,7 +56,7 @@ class SingleInstanceRoutingProcedureInstallerTest
 
         installer.install( procedures );
 
-        verify( procedures, times( 2 ) ).register( any( SingleInstanceGetRoutingTableProcedure.class ) );
+        verify( procedures, times( 2 ) ).register( any( GetRoutingTableProcedure.class ) );
 
         Set<QualifiedName> expectedNames = newSetWith(
                 new QualifiedName( new String[]{"dbms", "routing"}, "getRoutingTable" ),

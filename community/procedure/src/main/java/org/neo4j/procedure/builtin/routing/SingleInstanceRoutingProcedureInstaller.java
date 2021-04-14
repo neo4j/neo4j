@@ -24,15 +24,18 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.logging.LogProvider;
 
-public class SingleInstanceRoutingProcedureInstaller extends BaseRoutingProcedureInstaller
+import static org.neo4j.procedure.builtin.routing.RoutingTableTTLProvider.ttlFromConfig;
+
+public final class SingleInstanceRoutingProcedureInstaller extends AbstractRoutingProcedureInstaller
 {
-    protected final DatabaseManager<?> databaseManager;
-    protected final ConnectorPortRegister portRegister;
-    protected final Config config;
-    protected final LogProvider logProvider;
+    private static final String DESCRIPTION = "Returns endpoints of this instance.";
+
+    private final DatabaseManager<?> databaseManager;
+    private final ConnectorPortRegister portRegister;
+    private final Config config;
+    private final LogProvider logProvider;
 
     public SingleInstanceRoutingProcedureInstaller( DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister,
             Config config, LogProvider logProvider )
@@ -44,8 +47,12 @@ public class SingleInstanceRoutingProcedureInstaller extends BaseRoutingProcedur
     }
 
     @Override
-    protected CallableProcedure createProcedure( List<String> namespace )
+    public GetRoutingTableProcedure createProcedure( List<String> namespace )
     {
-        return new SingleInstanceGetRoutingTableProcedure( namespace, databaseManager, portRegister, config, logProvider );
+        LocalRoutingTableProcedureValidator validator = new LocalRoutingTableProcedureValidator( databaseManager );
+        SingleAddressRoutingTableProvider routingTableProvider = new SingleAddressRoutingTableProvider(
+                portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlFromConfig( config ) );
+
+        return new GetRoutingTableProcedure( namespace, DESCRIPTION, databaseManager, validator, routingTableProvider, config, logProvider );
     }
 }

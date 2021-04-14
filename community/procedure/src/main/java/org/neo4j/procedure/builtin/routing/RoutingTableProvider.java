@@ -19,23 +19,11 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import java.util.List;
-
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.procedure.CallableProcedure;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.values.virtual.MapValue;
 
-public abstract class BaseRoutingProcedureInstaller
+public interface RoutingTableProvider
 {
-    public static final List<String> DEFAULT_NAMESPACE = List.of( "dbms", "routing" );
-    private static final List<String> LEGACY_NAMESPACE = List.of( "dbms", "cluster", "routing" );
-
-    public final void install( GlobalProcedures globalProcedures ) throws ProcedureException
-    {
-        // make procedure available as with both `dbms.routing` and old `dbms.cluster.routing` namespaces
-        globalProcedures.register( createProcedure( DEFAULT_NAMESPACE ) );
-        globalProcedures.register( createProcedure( LEGACY_NAMESPACE ) );
-    }
-
-    protected abstract CallableProcedure createProcedure( List<String> namespace );
+    RoutingResult getRoutingResultForClientSideRouting( NamedDatabaseId databaseId, MapValue routingContext ) throws ProcedureException;
 }
