@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import java.io.PrintStream
-import java.util.concurrent.ConcurrentLinkedQueue
-
 import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.ExecutionPlan
@@ -53,6 +50,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
@@ -75,6 +73,8 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
+import java.io.PrintStream
+import java.util.concurrent.ConcurrentLinkedQueue
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -339,7 +339,8 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                  compileExpressions = queryOptions.useCompiledExpressions,
                                  materializedEntitiesMode = queryOptions.materializedEntitiesMode,
                                  operatorEngine = queryOptions.queryOptions.operatorEngine,
-                                 interpretedPipesFallback = queryOptions.queryOptions.interpretedPipesFallback)
+                                 interpretedPipesFallback = queryOptions.queryOptions.interpretedPipesFallback,
+                                 allNameGenerators = new AllNameGenerators())
   }
 
   private def newQueryContext(txContext: TransactionalContext, readOnly: Boolean, maybeExecutionResources: Option[(CursorFactory, ResourceManagerFactory)] = None): QueryContext = {

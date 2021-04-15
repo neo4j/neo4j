@@ -38,7 +38,7 @@ case class AstRewriting(innerVariableNamer: InnerVariableNamer,
   private val astRewriter = new ASTRewriter(innerVariableNamer)
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
-    val rewrittenStatement = astRewriter.rewrite(in.statement(), in.semantics(), parameterTypeMapping, context.cypherExceptionFactory)
+    val rewrittenStatement = astRewriter.rewrite(in.statement(), in.semantics(), parameterTypeMapping, context.cypherExceptionFactory, context.allNameGenerators)
     in.withStatement(rewrittenStatement)
   }
 

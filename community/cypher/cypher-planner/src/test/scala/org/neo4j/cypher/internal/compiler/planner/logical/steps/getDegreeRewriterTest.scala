@@ -439,7 +439,9 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     PatternExpression(
       pattern = relPattern(from, rel, to, relationships)
     )(
-      outerScope = (from.toSet ++ to.toSet).map(varFor)
+      outerScope = (from.toSet ++ to.toSet).map(varFor),
+      variableToCollectName = "",
+      collectionName = "",
     )
   }
 
@@ -455,7 +457,9 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
       projection = literalInt(1)
     )(
       position = pos,
-      outerScope = (from.toSet ++ to.toSet).map(varFor)
+      outerScope = (from.toSet ++ to.toSet).map(varFor),
+      variableToCollectName = "",
+      collectionName = "",
     )
   }
 }

@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.aggregationsAreIsolated
 import org.neo4j.cypher.internal.rewriting.conditions.hasAggregateButIsNotAggregate
-import org.neo4j.cypher.internal.util.AggregationNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
@@ -61,9 +60,9 @@ import org.neo4j.cypher.internal.util.topDown
  */
 case object isolateAggregation extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
 
-  override def instance(context: BaseContext): Rewriter = bottomUp(rewriter, _.isInstanceOf[Expression])
+  override def instance(context: BaseContext): Rewriter = bottomUp(rewriter(context), _.isInstanceOf[Expression])
 
-  private val rewriter = Rewriter.lift {
+  private def rewriter(context: BaseContext) = Rewriter.lift {
     case q@SingleQuery(clauses) =>
 
       val newClauses = clauses.flatMap {
@@ -74,7 +73,8 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
           val expressionsToIncludeInWith: Set[Expression] = others ++ extractExpressionsToInclude(withAggregations)
 
           val withReturnItems: Set[ReturnItem] = expressionsToIncludeInWith.map {
-            e => AliasedReturnItem(e, Variable(AggregationNameGenerator.name(e.position))(e.position))(e.position)
+            e =>
+              AliasedReturnItem(e, Variable(context.allNameGenerators.aggregationNameGenerator.nextName)(e.position))(e.position)
           }
           val pos = clause.position
           val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems.toIndexedSeq)(pos), None, None, None, None)(pos)

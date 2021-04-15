@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsIn
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -159,9 +160,11 @@ object AddUniquenessPredicates extends Step with ASTRewriterFactory {
   override def getRewriter(innerVariableNamer: InnerVariableNamer,
                            semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory): Rewriter = AddUniquenessPredicates(innerVariableNamer)
+                           cypherExceptionFactory: CypherExceptionFactory,
+                           allNameGenerators: AllNameGenerators): Rewriter = AddUniquenessPredicates(innerVariableNamer)
 }
 
+// TODO move into AllNameGenerators?
 trait InnerVariableNamer {
   def create(outer: LogicalVariable): LogicalVariable
 }

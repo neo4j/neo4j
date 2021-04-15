@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.asQueryGraph
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -52,7 +53,7 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
     val patternExpression = createPatternExpression(aNode, rRel, bNode)
 
     // When
-    val qg = asQueryGraph(patternExpression, dependencies, new GeneratingNamer)
+    val qg = asQueryGraph(patternExpression, dependencies, new GeneratingNamer, new AllNameGenerators)
 
     // Then
     qg.selections should equal(Selections())
@@ -66,7 +67,7 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
     val patternExpression = createPatternExpression(aNode, rRelWithType, bNode)
 
     // When
-    val qg = asQueryGraph(patternExpression, dependencies, new GeneratingNamer)
+    val qg = asQueryGraph(patternExpression, dependencies, new GeneratingNamer, new AllNameGenerators)
 
     // Then
     qg.selections should equal(Selections())
@@ -80,7 +81,7 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
     val patternExpression = createPatternExpression(aNode, rRel, bNode.copy(labels = Seq(labelName("Label")))(pos))
 
     // When
-    val qg = asQueryGraph(patternExpression, dependencies, new GeneratingNamer)
+    val qg = asQueryGraph(patternExpression, dependencies, new GeneratingNamer, new AllNameGenerators)
 
     // Then
     val predicate = hasLabels("b", "Label")
@@ -91,5 +92,5 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
   }
 
   def createPatternExpression(n1: NodePattern, r: RelationshipPattern, n2: NodePattern): PatternExpression =
-    PatternExpression(RelationshipsPattern(RelationshipChain(n1, r, n2) _) _)(dependencies.map(varFor))
+    PatternExpression(RelationshipsPattern(RelationshipChain(n1, r, n2) _) _)(dependencies.map(varFor), "", "")
 }

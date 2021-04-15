@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.parboiled.scala.EOI
 
@@ -77,6 +78,6 @@ class CaseExpressionTest extends ParserTest[internal.expressions.Expression, com
       commands.expressions.GenericCase(IndexedSeq(alt1, alt2), Some(literal("OTHER")))
   }
 
-  private val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
+  private val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY, new AllNameGenerators()))
   def convert(astNode: internal.expressions.Expression): commands.expressions.Expression = converters.toCommandExpression(Id.INVALID_ID, astNode)
 }

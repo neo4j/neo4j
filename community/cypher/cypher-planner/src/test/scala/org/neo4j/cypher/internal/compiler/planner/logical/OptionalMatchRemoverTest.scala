@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover.smallestGraphIncluding
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
@@ -34,6 +36,7 @@ import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
@@ -45,7 +48,11 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 
 class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 with TestName {
 
-  val rewriter: Rewriter = OptionalMatchRemover.instance(null)
+  private def rewriter: Rewriter = {
+    val context = mock[PlannerContext]
+    when(context.allNameGenerators).thenReturn(new AllNameGenerators())
+    OptionalMatchRemover.instance(context)
+  }
 
   assert_that(
     """MATCH (a)
@@ -161,7 +168,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
           RETURN DISTINCT b as b""").
     is_rewritten_to(
       """MATCH (a)
-          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[`  UNNAMED0`:T2]->(`  UNNAMED0(1)`)
+          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[`  UNNAMED0`:T2]->(`  UNNAMED1`)
           RETURN DISTINCT b as b""")
 
   assert_that(
@@ -170,7 +177,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
           RETURN DISTINCT b as b""").
     is_rewritten_to(
       """MATCH (a)
-          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE b:B and (b)-[`  UNNAMED0`:T2]->(`  UNNAMED0(1)`)
+          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE b:B and (b)-[`  UNNAMED0`:T2]->(`  UNNAMED1`)
           RETURN DISTINCT b as b""")
 
   assert_that(
@@ -185,7 +192,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
           RETURN DISTINCT b as b""").
     is_rewritten_to(
       """MATCH (a)
-          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[`  UNNAMED0`:T2]->(`  UNNAMED0(1)`:A:B {id: 42, foo: 'apa'})
+          OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[`  UNNAMED0`:T2]->(`  UNNAMED1`:A:B {id: 42, foo: 'apa'})
           RETURN DISTINCT b as b""")
 
   assert_that(
@@ -194,7 +201,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |RETURN a AS a, count(distinct z.key) as zCount""".stripMargin).
     is_rewritten_to(
       """MATCH (a:A)
-        |OPTIONAL MATCH (z) WHERE (z)-[`  UNNAMED0`]->(`  UNNAMED0(1)`) AND z:Z
+        |OPTIONAL MATCH (z) WHERE (z)-[`  UNNAMED0`]->(`  UNNAMED1`) AND z:Z
         |RETURN a AS a, count(distinct z.key) as zCount""".stripMargin)
 
   assert_that(
@@ -375,7 +382,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     val result = SemanticChecker.check(ast)
     onError(result.errors)
     val table = SemanticTable(types = result.state.typeTable, recordedScopes = result.state.recordedScopes.mapValues(_.scope))
-    StatementConverters.toPlannerQuery(ast.asInstanceOf[Query], table)
+    StatementConverters.toPlannerQuery(ast.asInstanceOf[Query], table, new AllNameGenerators())
   }
 
   private def parseForRewriting(queryText: String) = parser.parse(queryText.replace("\r\n", "\n"), Neo4jCypherExceptionFactory(queryText, None))

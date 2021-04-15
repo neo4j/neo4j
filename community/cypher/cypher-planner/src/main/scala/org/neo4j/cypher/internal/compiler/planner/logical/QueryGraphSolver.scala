@@ -38,12 +38,12 @@ trait PatternExpressionSolving {
   self: QueryGraphSolver =>
 
   def planPatternExpression(planArguments: Set[String], expr: PatternExpression, context: LogicalPlanningContext): LogicalPlan = {
-    val qg = asQueryGraph(expr, planArguments, context.innerVariableNamer)
+    val qg = asQueryGraph(expr, planArguments, context.innerVariableNamer, context.allNameGenerators)
     self.plan(qg, InterestingOrderConfig.empty, context).result
   }
 
   def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, context: LogicalPlanningContext): LogicalPlan = {
-    val qg = asQueryGraph(expr, planArguments, context.innerVariableNamer)
+    val qg = asQueryGraph(expr, planArguments, context.innerVariableNamer, context.allNameGenerators)
     self.plan(qg, InterestingOrderConfig.empty, context).result
   }
 }

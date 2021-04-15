@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
-import org.neo4j.cypher.internal.util.FreshIdNameGenerator
 import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
 import org.neo4j.exceptions.InternalException
 
@@ -160,7 +159,7 @@ case object planShortestPaths {
     val pos = shortestPath.expr.position
     val pathVariable = Variable(pathName)(pos)
     val lengthOfPath = FunctionInvocation(FunctionName(Length.name)(pos), pathVariable)(pos)
-    val columnName = FreshIdNameGenerator.name(pos)
+    val columnName = context.allNameGenerators.freshIdNameGenerator.nextName
 
     val rhsProjMap = Map(columnName -> lengthOfPath)
     val rhsProjected = lpp.planRegularProjection(rhsFiltered, rhsProjMap, Some(rhsProjMap), context)

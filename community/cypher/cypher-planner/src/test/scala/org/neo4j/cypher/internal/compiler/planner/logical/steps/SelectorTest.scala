@@ -188,7 +188,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       NodePattern(Some(varFor("  UNNAMED2")), Seq(), None)_
     )_
 
-    val patternExp = Exists(PatternExpression(RelationshipsPattern(relChain)_)(Set(varFor("a"))))_
+    val patternExp = Exists(PatternExpression(RelationshipsPattern(relChain)_)(Set(varFor("a")), "", ""))_
 
     val predicate = Predicate(Set("a"), patternExp)
     val selections = Selections(Set(predicate))

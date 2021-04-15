@@ -373,7 +373,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       NodePattern(Some(nodeVar1), Seq.empty, None)(pos),
       RelationshipPattern(None, Seq.empty, None, None, BOTH)(pos),
       NodePattern(Some(nodeVar2), Seq.empty, None)(pos)
-    )(pos))(pos))(Set.empty)
+    )(pos))(pos))(Set.empty, "", "")
 
   def query(part: QueryPart): Query =
     Query(None, part)(pos)

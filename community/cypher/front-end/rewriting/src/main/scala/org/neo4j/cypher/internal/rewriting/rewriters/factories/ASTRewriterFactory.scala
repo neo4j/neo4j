@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.rewriting.rewriters.factories
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.symbols.CypherType
@@ -26,5 +27,6 @@ trait ASTRewriterFactory {
   def getRewriter(innerVariableNamer: InnerVariableNamer,
                   semanticState: SemanticState,
                   parameterTypeMapping: Map[String, CypherType],
-                  cypherExceptionFactory: CypherExceptionFactory): Rewriter
+                  cypherExceptionFactory: CypherExceptionFactory,
+                  allNameGenerators: AllNameGenerators): Rewriter
 }

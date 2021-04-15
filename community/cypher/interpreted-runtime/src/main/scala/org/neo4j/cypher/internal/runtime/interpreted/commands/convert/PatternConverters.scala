@@ -19,22 +19,22 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
+import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.SingleNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
-import org.neo4j.cypher.internal.util.UnNamedNameGenerator
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal
 import org.neo4j.exceptions.SyntaxException
 
 object PatternConverters {
 
   implicit class ShortestPathsConverter(val part: internal.expressions.ShortestPaths) extends AnyVal {
-    def asLegacyPatterns(id: Id, maybePathName: Option[String], converter: ExpressionConverters): Seq[commands.ShortestPath] = {
-      val pathName = maybePathName.getOrElse(UnNamedNameGenerator.name(part.position))
+    def asLegacyPatterns(id: Id, maybePathName: Option[String], converter: ExpressionConverters, allNameGenerators: AllNameGenerators): Seq[commands.ShortestPath] = {
+      val pathName = maybePathName.getOrElse(allNameGenerators.unNamedNameGenerator.nextName)
       val (leftName, rel, rightName) = part.element match {
         case internal.expressions.RelationshipChain(leftNode: internal.expressions.NodePattern, relationshipPattern, rightNode) =>
-          (leftNode.asLegacyNode(id, converter), relationshipPattern, rightNode.asLegacyNode(id, converter))
+          (leftNode.asLegacyNode(id, converter, allNameGenerators), relationshipPattern, rightNode.asLegacyNode(id, converter, allNameGenerators))
         case _                                                                        =>
           throw new IllegalStateException("This should be caught during semantic checking")
       }
@@ -51,14 +51,13 @@ object PatternConverters {
 
   implicit class NodePatternConverter(val node: internal.expressions.NodePattern) extends AnyVal {
 
-
-    def asLegacyNode(id: Id, converter: ExpressionConverters): SingleNode = {
+    def asLegacyNode(id: Id, converter: ExpressionConverters, allNameGenerators: AllNameGenerators): SingleNode = {
       val labelTokens: Seq[KeyToken] = labels.map(x => commands.values.UnresolvedLabel(x.name))
       val properties: Map[String, commands.expressions.Expression] = node.legacyProperties(id, converter)
-      commands.SingleNode(node.legacyName, labelTokens, properties = properties)
+      commands.SingleNode(node.legacyName(allNameGenerators), labelTokens, properties = properties)
     }
 
-    def legacyName: String = node.variable.fold(UnNamedNameGenerator.name(node.position))(_.name)
+    def legacyName(allNameGenerators: AllNameGenerators): String = node.variable.fold(allNameGenerators.unNamedNameGenerator.nextName)(_.name)
 
     private def labels = node.labels.map(t => commands.values.KeyToken.Unresolved(t.name, commands.values.TokenType.Label))
 

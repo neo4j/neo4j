@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import java.util.Collections
-
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.MasterCompiler
 import org.neo4j.cypher.internal.RuntimeContext
@@ -32,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.storable.Values
@@ -39,6 +38,8 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualValues
+
+import java.util.Collections
 
 abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                                             runtime: CypherRuntime[CONTEXT]) extends RuntimeTestSuite(edition, runtime) {
@@ -243,7 +244,8 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
           compileExpressions = false,
           materializedEntitiesMode = true,
           operatorEngine = CypherOperatorEngineOption.default,
-          interpretedPipesFallback = CypherInterpretedPipesFallbackOption.default
+          interpretedPipesFallback = CypherInterpretedPipesFallbackOption.default,
+          allNameGenerators = new AllNameGenerators()
         )
       }
     }

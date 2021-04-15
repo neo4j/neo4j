@@ -27,10 +27,9 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.util.FreshIdNameGenerator
-import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.AllNameGenerators
 
-object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
+case class PropertyPredicateNormalizer(allNameGenerators: AllNameGenerators) extends MatchPredicateNormalizer {
   override val extract: PartialFunction[AnyRef, IndexedSeq[Expression]] = {
     case NodePattern(Some(id), _, Some(props)) if !isParameter(props) =>
       propertyPredicates(id, props)
@@ -39,7 +38,7 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
       propertyPredicates(id, props)
 
     case rp@RelationshipPattern(Some(id), _, Some(_), Some(props), _, _) if !isParameter(props) =>
-      Vector(varLengthPropertyPredicates(id, props, rp.position))
+      Vector(varLengthPropertyPredicates(id, props))
   }
 
   override val replace: PartialFunction[AnyRef, AnyRef] = {
@@ -64,8 +63,8 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
       Vector.empty
   }
 
-  private def varLengthPropertyPredicates(id: LogicalVariable, props: Expression, patternPosition: InputPosition): Expression = {
-    val idName = FreshIdNameGenerator.name(patternPosition)
+  private def varLengthPropertyPredicates(id: LogicalVariable, props: Expression): Expression = {
+    val idName = allNameGenerators.freshIdNameGenerator.nextName
     val newId = Variable(idName)(id.position)
     val expressions = propertyPredicates(newId, props)
     val conjunction = conjunct(expressions)

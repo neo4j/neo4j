@@ -413,7 +413,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
       NodePattern(Some(varFor("a")), Seq.empty, Some(MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)))(pos),
       RelationshipPattern(None, Seq.empty, None, None, BOTH)(pos),
       NodePattern(None, Seq.empty, None)(pos)
-    )(pos))(pos))(Set.empty)
+    )(pos))(pos))(Set.empty, "", "")
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
@@ -443,7 +443,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
       NodePattern(Some(varFor("a")), Seq.empty, Some(MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)))(pos),
       RelationshipPattern(None, Seq.empty, None, None, BOTH)(pos),
       NodePattern(None, Seq.empty, None)(pos)
-    )(pos))(pos), None, literalInt(5))(pos, Set.empty)
+    )(pos))(pos), None, literalInt(5))(pos, Set.empty, "", "")
 
     val qg = QueryGraph(
       patternNodes = Set("a"),

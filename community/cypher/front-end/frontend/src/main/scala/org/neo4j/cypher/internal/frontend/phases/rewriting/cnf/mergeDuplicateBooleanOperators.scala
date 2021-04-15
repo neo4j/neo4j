@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
-import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Or
@@ -26,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.simplifyPredicate
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -43,7 +43,8 @@ case object mergeDuplicateBooleanOperators extends ASTRewriterFactory with CnfPh
   override def getRewriter(innerVariableNamer: InnerVariableNamer,
                            semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory): Rewriter = mergeDuplicateBooleanOperators(semanticState)
+                           cypherExceptionFactory: CypherExceptionFactory,
+                           allNameGenerators: AllNameGenerators): Rewriter = mergeDuplicateBooleanOperators(semanticState)
 
   override def getRewriter(from: BaseState,
                            context: BaseContext): Rewriter = this (from.semantics())

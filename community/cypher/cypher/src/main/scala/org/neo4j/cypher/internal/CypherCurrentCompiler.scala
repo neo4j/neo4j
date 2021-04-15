@@ -210,7 +210,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       query.options.useCompiledExpressions,
       query.options.materializedEntitiesMode,
       query.options.queryOptions.operatorEngine,
-      query.options.queryOptions.interpretedPipesFallback)
+      query.options.queryOptions.interpretedPipesFallback,
+      logicalPlanResult.plannerContext.allNameGenerators)
 
     // Make copy, so per-runtime logical plan rewriting does not mutate cached attributes
     val planningAttributesCopy = planState.planningAttributes.createCopy()

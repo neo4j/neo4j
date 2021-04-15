@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.junit.runner.RunWith
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 import org.scalatest.Assertion
@@ -50,7 +51,7 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
    */
   protected def assertJavaCCException(query: String, expectedMessage: String): Assertion = {
     val exception = the[OpenCypherExceptionFactory.SyntaxException] thrownBy {
-      JavaCCParser.parse(query, exceptionFactory)
+      JavaCCParser.parse(query, exceptionFactory, new AllNameGenerators())
     }
     exception.getMessage shouldBe fixLineSeparator(expectedMessage)
   }
@@ -60,7 +61,7 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
    */
   protected def assertJavaCCExceptionStart(query: String, expectedMessage: String): Assertion = {
     val exception = the[OpenCypherExceptionFactory.SyntaxException] thrownBy {
-      JavaCCParser.parse(query, exceptionFactory)
+      JavaCCParser.parse(query, exceptionFactory, new AllNameGenerators())
     }
     exception.getMessage should startWith(fixLineSeparator(expectedMessage))
   }
@@ -69,7 +70,7 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
    * Tests that the JavaCC parser produce correct AST.
    */
   protected def assertJavaCCAST(query: String, expected: Statement): Assertion = {
-    val ast = JavaCCParser.parse(query, exceptionFactory)
+    val ast = JavaCCParser.parse(query, exceptionFactory, new AllNameGenerators())
     ast shouldBe expected
   }
 
@@ -83,7 +84,7 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
       val parboiledParser = new org.neo4j.cypher.internal.parser.CypherParser()
       val parboiledAST = Try(parboiledParser.parse(parBoiledQuery, exceptionFactory, None))
 
-      val javaccAST = Try(JavaCCParser.parse(query, exceptionFactory))
+      val javaccAST = Try(JavaCCParser.parse(query, exceptionFactory, new AllNameGenerators()))
 
       (javaccAST, parboiledAST) match {
         case (Failure(javaccEx: SyntaxException), Failure(parboiledEx: SyntaxException)) =>

@@ -275,9 +275,9 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
     plan._2 should beLike {
       case SemiApply(
-             CartesianProduct(_: NodeIndexSeek, _: AllNodesScan, _),
-             Expand(
-               Selection(_, _: Argument), _, _, _, _, _, _)) => ()
+      CartesianProduct(_: NodeIndexSeek, _: AllNodesScan, _),
+      Expand(
+      Selection(_, _: Argument), _, _, _, _, _, _)) => ()
     }
   }
 

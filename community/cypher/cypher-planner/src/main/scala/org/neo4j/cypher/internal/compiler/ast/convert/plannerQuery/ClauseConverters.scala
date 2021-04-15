@@ -118,6 +118,7 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.SyntaxException
 
@@ -133,9 +134,9 @@ object ClauseConverters {
    * @param nextClause the next clause, if there is any
    * @return the updated PlannerQueryBuilder
    */
-  def addToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Clause, nextClause: Option[Clause]): PlannerQueryBuilder = clause match {
+  def addToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Clause, nextClause: Option[Clause], allNameGenerators: AllNameGenerators): PlannerQueryBuilder = clause match {
     case c: Return => addReturnToLogicalPlanInput(acc, c)
-    case c: Match => addMatchToLogicalPlanInput(acc, c)
+    case c: Match => addMatchToLogicalPlanInput(acc, c, allNameGenerators)
     case c: With => addWithToLogicalPlanInput(acc, c, nextClause)
     case c: Unwind => addUnwindToLogicalPlanInput(acc, c)
     case c: ResolvedCall => addCallToLogicalPlanInput(acc, c)
@@ -145,9 +146,9 @@ object ClauseConverters {
     case c: Remove => addRemoveToLogicalPlanInput(acc, c)
     case c: Merge => addMergeToLogicalPlanInput(acc, c)
     case c: LoadCSV => addLoadCSVToLogicalPlanInput(acc, c)
-    case c: Foreach => addForeachToLogicalPlanInput(acc, c)
+    case c: Foreach => addForeachToLogicalPlanInput(acc, c, allNameGenerators)
     case c: InputDataStream => addInputDataStreamToLogicalPlanInput(acc, c)
-    case c: SubQuery => addCallSubqueryToLogicalPlanInput(acc, c)
+    case c: SubQuery => addCallSubqueryToLogicalPlanInput(acc, c, allNameGenerators)
     case c: CommandClause => addCommandClauseToLogicalPlanInput(acc, c)
     case c: Yield => addYieldToLogicalPlanInput(acc, c)
 
@@ -436,8 +437,8 @@ object ClauseConverters {
       Seq.empty
   }
 
-  private def addMatchToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Match): PlannerQueryBuilder = {
-    val patternContent = clause.pattern.destructed
+  private def addMatchToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Match, allNameGenerators: AllNameGenerators): PlannerQueryBuilder = {
+    val patternContent = clause.pattern.destructed(allNameGenerators)
 
     val selections = asSelections(clause.where)
 
@@ -468,9 +469,9 @@ object ClauseConverters {
     withMatch.withInterestingOrderCandidates(interestingOrderCandidates)
   }
 
-  private def addCallSubqueryToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SubQuery): PlannerQueryBuilder = {
+  private def addCallSubqueryToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SubQuery, allNameGenerators: AllNameGenerators): PlannerQueryBuilder = {
     val subquery = clause.part
-    val callSubquery = StatementConverters.toPlannerQueryPart(subquery, acc.semanticTable)
+    val callSubquery = StatementConverters.toPlannerQueryPart(subquery, acc.semanticTable, allNameGenerators)
     acc.withCallSubquery(callSubquery, subquery.isCorrelated)
   }
 
@@ -729,7 +730,7 @@ object ClauseConverters {
       .withTail(SinglePlannerQuery.empty)
   }
 
-  private def addForeachToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Foreach): PlannerQueryBuilder = {
+  private def addForeachToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Foreach, allNameGenerators: AllNameGenerators): PlannerQueryBuilder = {
     val currentlyAvailableVariables = builder.currentlyAvailableVariables
 
     val setOfNodeVariables: Set[String] =
@@ -744,7 +745,7 @@ object ClauseConverters {
         .addArgumentIds(foreachVariable.name +: currentlyAvailableVariables.toIndexedSeq))
       .withHorizon(PassthroughAllHorizon())
 
-    val innerPlannerQuery = StatementConverters.addClausesToPlannerQueryBuilder(clause.updates, innerBuilder).build()
+    val innerPlannerQuery = StatementConverters.addClausesToPlannerQueryBuilder(clause.updates, innerBuilder, allNameGenerators).build()
 
     val foreachPattern = ForeachPattern(
       variable = clause.variable.name,

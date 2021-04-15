@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.asQueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
-import org.neo4j.cypher.internal.util.FreshIdNameGenerator
+import org.neo4j.cypher.internal.util.AllNameGenerators
 
 case object selectPatternPredicates extends SelectionCandidateGenerator {
 
@@ -90,13 +90,15 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
     val qg = e.patternElements.foldLeft(QueryGraph.empty) { (acc, patternElement) =>
       patternElement match {
         case elem: RelationshipChain =>
-          val patternExpr = PatternExpression(RelationshipsPattern(elem)(elem.position))(e.outerScope)
-          val qg = asQueryGraph(patternExpr, lhs.availableSymbols, context.innerVariableNamer)
+          val variableToCollectName = context.allNameGenerators.freshIdNameGenerator.nextName
+          val collectionName = context.allNameGenerators.rollupCollectionNameGenerator.nextName
+          val patternExpr = PatternExpression(RelationshipsPattern(elem)(elem.position))(e.outerScope, variableToCollectName, collectionName)
+          val qg = asQueryGraph(patternExpr, lhs.availableSymbols, context.innerVariableNamer, context.allNameGenerators)
           acc ++ qg
 
         case elem: NodePattern =>
           val patternExpr = NodePatternExpression(List(elem))(elem.position)
-          val qg = asQueryGraph(patternExpr, lhs.availableSymbols)
+          val qg = asQueryGraph(patternExpr, lhs.availableSymbols, context.allNameGenerators)
           acc ++ qg
       }
     }
@@ -184,7 +186,7 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
                                  expressions: Set[Expression],
                                  letExpression: Option[Expression],
                                  context: LogicalPlanningContext) = {
-    val (idName, ident) = freshId(existsExpression)
+    val (idName, ident) = freshId(existsExpression, context.allNameGenerators)
     if (expressions.isEmpty && letExpression.isEmpty)
       (context.logicalPlanProducer.planLetSemiApply(lhs, rhs, idName, context), ident)
     else
@@ -197,7 +199,7 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
                                      expressions: Set[Expression],
                                      letExpression: Option[Expression],
                                      context: LogicalPlanningContext) = {
-    val (idName, ident) = freshId(existsExpression)
+    val (idName, ident) = freshId(existsExpression, context.allNameGenerators)
     if (expressions.isEmpty && letExpression.isEmpty)
       (context.logicalPlanProducer.planLetAntiSemiApply(lhs, rhs, idName, context), ident)
     else
@@ -214,8 +216,8 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
   else
     Ors(expressions.toSeq)(expressions.head.position)
 
-  private def freshId(existsExpression: Expression) = {
-    val name = FreshIdNameGenerator.name(existsExpression.position)
+  private def freshId(existsExpression: Expression, allNameGenerators: AllNameGenerators) = {
+    val name = allNameGenerators.freshIdNameGenerator.nextName
     (name, Variable(name)(existsExpression.position))
   }
 }

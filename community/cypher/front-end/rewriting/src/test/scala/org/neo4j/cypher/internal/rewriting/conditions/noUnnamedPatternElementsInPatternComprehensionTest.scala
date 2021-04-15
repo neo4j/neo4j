@@ -35,7 +35,7 @@ class noUnnamedPatternElementsInPatternComprehensionTest extends CypherFunSuite 
       RelationshipChain(NodePattern(None, Seq.empty, None) _,
                         RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
                         NodePattern(None, Seq.empty, None) _) _) _,
-      None, literalString("foo"))(pos, Set.empty)
+      None, literalString("foo"))(pos, Set.empty, "", "")
 
     condition(input) should equal(Seq(s"Expression $input contains pattern elements which are not named"))
   }
@@ -45,7 +45,7 @@ class noUnnamedPatternElementsInPatternComprehensionTest extends CypherFunSuite 
       RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None) _,
                         RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, SemanticDirection.OUTGOING) _,
                         NodePattern(Some(varFor("b")), Seq.empty, None) _) _) _,
-      None, literalString("foo"))(pos, Set.empty)
+      None, literalString("foo"))(pos, Set.empty, "", "")
 
     condition(input) shouldBe empty
   }

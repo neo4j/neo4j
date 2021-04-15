@@ -183,7 +183,7 @@ trait Expressions extends Parser
     | group(keyword("SINGLE") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (expressions.SingleIterablePredicate(_, _, _))
     | Exists
     | ShortestPathPattern ~~> expressions.ShortestPathExpression
-    | RelationshipsPattern ~~> (PatternExpression(_)(Set.empty))
+    | RelationshipsPattern ~~> (PatternExpression(_)(Set.empty, "", ""))
     | parenthesizedExpression
     | FunctionInvocation
     | Variable
@@ -221,7 +221,7 @@ trait Expressions extends Parser
 
   def PatternComprehension: Rule1[expressions.PatternComprehension] = rule("[") {
     group("[" ~~ optional(Variable ~~ operator("=")) ~~ RelationshipsPattern ~ optional(WS ~ keyword("WHERE") ~~ Expression) ~~ "|" ~~ Expression ~~ "]") ~~>> (
-      (a, b, c, d) => pos => expressions.PatternComprehension(a, b, c, d)(pos, Set.empty))
+      (a, b, c, d) => pos => expressions.PatternComprehension(a, b, c, d)(pos, Set.empty, "", ""))
   }
 
   def Exists: Rule1[ExistsSubClause] =

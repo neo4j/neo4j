@@ -25,14 +25,14 @@ import scala.util.matching.Regex
 object NameDeduplicator {
 
   def nameGeneratorRegex(generatorName: String): Regex =
-    s""" {2}($generatorName)(\\d+)(?:\\(.*?\\))?""".r
+    s""" {2}($generatorName)(\\d+)""".r
 
   val UNNAMED_PATTERN: Regex = {
     val gens = generators.map(_.generatorName).mkString("|")
     nameGeneratorRegex(gens)
   }
 
-  private val UNNAMED_PARAMS_PATTERN = """ {2}(AUTOINT|AUTODOUBLE|AUTOSTRING|AUTOLIST)(\d+)(?:\(.*?\))?""".r
+  private val UNNAMED_PARAMS_PATTERN = """ {2}(AUTOINT|AUTODOUBLE|AUTOSTRING|AUTOLIST)(\d+)""".r
   private val DEDUP_PATTERN = """ {2}([^\s]+)@\d+(?:\(.*?\))?""".r
 
   private val removeGeneratedNamesRewriter = topDown(Rewriter.lift {
@@ -60,7 +60,8 @@ object NameDeduplicator {
     val paramNamed = UNNAMED_PARAMS_PATTERN.replaceAllIn(s, m => s"${(m group 1).toLowerCase()}_${m group 2}")
     val named = UNNAMED_PATTERN.replaceAllIn(paramNamed, m => s"anon_${m group 2}")
 
-    deduplicateVariableNames(named)
+    val str = deduplicateVariableNames(named)
+    str
   }
 
   /**

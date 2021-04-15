@@ -114,7 +114,7 @@ case class patternExpressionRewriter(planArguments: Set[String], context: Logica
           } else {
             val arguments = planArguments ++ scopeMap(expr)
             val plan = context.strategy.planPatternComprehension(arguments, expr, context)
-            val uniqueNamedExpr = expr.copy()(expr.position, expr.outerScope)
+            val uniqueNamedExpr = expr.copy()(expr.position, expr.outerScope, expr.variableToCollectName, expr.collectionName)
 
             val rewrittenExpression = NestedPlanExpression.collect(plan, projection, expr)(uniqueNamedExpr.position)
             acc.updated(expr, rewrittenExpression)
