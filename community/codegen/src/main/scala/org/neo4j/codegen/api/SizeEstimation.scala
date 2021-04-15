@@ -133,10 +133,15 @@ object SizeEstimation {
 
           //Conditions and loops
           case _: Ternary => 2 * JUMP_INSTRUCTION //two jump instructions
-          case Condition(_: BooleanAnd, _, onFalse) =>
+          case Condition(ands: BooleanAnd, _, onFalse) =>
             //Here we subtract the cost of the jump instruction + TRUE + FALSE since we can combine
             //it with the jump instruction of the conditional
-            -5 + onFalse.map(_ => JUMP_INSTRUCTION).getOrElse(0)
+
+            //for each or contained in the ands we also save in on two JUMP INSTRUCTIONS and TRUE, FALSE
+            val numberOfOrs = ands.treeCount {
+              case _: BooleanOr => true
+            }
+            -5 + onFalse.map(_ => JUMP_INSTRUCTION).getOrElse(0) - numberOfOrs * 8
           case Condition(_: BooleanOr, _, onFalse) =>
             //Here we subtract the cost of the jump instruction + TRUE + FALSE since we can combine
             //it with the jump instruction of the conditional
@@ -147,10 +152,15 @@ object SizeEstimation {
           case Condition(_: IsNull, _, onFalse) => 3 - 8 + onFalse.map(_ => JUMP_INSTRUCTION).getOrElse(0)
           case c: Condition => 3 + c.onFalse.map(_ => JUMP_INSTRUCTION).getOrElse(0) //single jump instruction takes 3 bytes
 
-          case Loop(_: BooleanAnd, _, _) =>
+          case Loop(ands: BooleanAnd, _, _) =>
             //Here we subtract the cost of the jump instruction + TRUE + FALSE since we can combine
             //it with the jump instruction of the loop
-            -5 + JUMP_INSTRUCTION
+
+            //for each or contained in the ands we also save in on two JUMP INSTRUCTIONS and TRUE, FALSE
+            val numberOfOrs = ands.treeCount {
+              case _: BooleanOr => true
+            }
+            -5 + JUMP_INSTRUCTION - numberOfOrs * 8
           case Loop(_: BooleanOr, _, _) =>
             //Here we subtract the cost of the jump instruction + TRUE + FALSE since we can combine
             //it with the jump instruction of the loop

@@ -801,6 +801,50 @@ class SizeEstimationTest extends CypherFunSuite {
     sizeOf(instructions) should equal(computeSize(instructions))
   }
 
+  test("condition + and + or") {
+    val instructions =
+      block(
+        condition(and(Seq(callBooleanMethod, or(callBooleanMethod, callBooleanMethod)))) {
+          block(
+            declare[Int]("a"),
+            assign("a", constant(3))
+          )
+        }
+      )
+
+    sizeOf(instructions) should equal(computeSize(instructions))
+  }
+
+  test("condition + and + multiple ors") {
+    val instructions =
+      block(
+        condition(and(Seq(or(callBooleanMethod, or(callBooleanMethod, callBooleanMethod)),
+          or(callBooleanMethod, callBooleanMethod),
+          or(callBooleanMethod, callBooleanMethod)))) {
+          block(
+            declare[Int]("a"),
+            assign("a", constant(3))
+          )
+        }
+      )
+
+    sizeOf(instructions) should equal(computeSize(instructions))
+  }
+
+  test("condition + or + and") {
+    val instructions =
+      block(
+        condition(or(Seq(callBooleanMethod, and(callBooleanMethod, callBooleanMethod)))) {
+          block(
+            declare[Int]("a"),
+            assign("a", constant(3))
+          )
+        }
+      )
+
+    sizeOf(instructions) should equal(computeSize(instructions))
+  }
+
   test("new instance") {
     val instructions =
       block(
@@ -864,6 +908,20 @@ class SizeEstimationTest extends CypherFunSuite {
     sizeOf(instructions) should equal(computeSize(instructions))
   }
 
+  test("loop + and + or") {
+    val instructions =
+      block(
+        loop(and(Seq(callBooleanMethod, or(callBooleanMethod, callBooleanMethod)))) {
+          block(
+            declare[Int]("a"),
+            assign("a", constant(3))
+          )
+        }
+      )
+
+    sizeOf(instructions) should equal(computeSize(instructions))
+  }
+
   test("loop + not + and") {
     val instructions =
       block(
@@ -916,6 +974,25 @@ class SizeEstimationTest extends CypherFunSuite {
             assign("a", callBooleanMethod),
             break("FOO")
           )
+        }
+      )
+
+    sizeOf(instructions) should equal(computeSize(instructions))
+  }
+
+  test("nested loop") {
+    val instructions =
+      block(
+        declare[Boolean]("a"),
+        assign("a", callBooleanMethod),
+        loop(load[Boolean]("a")) {
+          loop(load[Boolean]("a")) {
+            loop(load[Boolean]("a")) {
+              loop(load[Boolean]("a")) {
+                assign("a", callBooleanMethod)
+              }
+            }
+          }
         }
       )
 
