@@ -20,8 +20,6 @@
 package org.neo4j.internal.batchimport.store;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,8 +54,6 @@ import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.index.schema.FullStoreChangeStream;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -81,7 +77,6 @@ import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -113,8 +108,6 @@ import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELA
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStores;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
-import static org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store;
-import static org.neo4j.kernel.impl.index.schema.TokenScanStore.toggledRelationshipTypeScanStore;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForConfig;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -136,11 +129,10 @@ class BatchingNeoStoresTest
     @Inject
     private DatabaseLayout databaseLayout;
 
-    @ParameterizedTest
-    @ValueSource( booleans = {true, false} )
-    void shouldNotOpenStoreWithNodesOrRelationshipsInIt( boolean enableRelationshipTypeScanStore ) throws Throwable
+    @Test
+    void shouldNotOpenStoreWithNodesOrRelationshipsInIt() throws Throwable
     {
-        Config config = Config.newBuilder().set( enable_relationship_type_scan_store, enableRelationshipTypeScanStore ).build();
+        Config config = Config.defaults();
         // GIVEN
         someDataInTheDatabase( config );
 
@@ -407,17 +399,15 @@ class BatchingNeoStoresTest
                             LockVerificationMonitor.Factory.IGNORE ) );
             // Create the relationship type token
             TxState txState = new TxState();
-            Monitors monitors = new Monitors();
             NeoStores neoStores = storageEngine.testAccessNeoStores();
             CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext( NULL, INSTANCE );
             propertyKeyTokenCreator.initialize( neoStores.getPropertyKeyTokenStore(), txState );
             labelTokenCreator.initialize( neoStores.getLabelTokenStore(), txState );
             relationshipTypeTokenCreator.initialize( neoStores.getRelationshipTypeTokenStore(), txState );
             int relTypeId = tokenHolders.relationshipTypeTokens().getOrCreateId( RELTYPE.name() );
-            RelationshipTypeScanStore relationshipTypeScanStore = life.add(
-                    toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, FullStoreChangeStream.EMPTY, writable(), monitors,
-                            recoveryCleanupWorkCollector, config, PageCacheTracer.NULL, INSTANCE ) );
-            storageEngine.addRelationshipTypeUpdateListener( relationshipTypeScanStore.updateListener() );
+            // Need to register a listener to not get NPE in LegacyBatchContext for relationship updates.
+            // Will be removed when the path for updating RTSS is removed from there.
+            storageEngine.addRelationshipTypeUpdateListener( ( labelUpdates, cursorTracer ) -> {} );
             apply( txState, commandCreationContext, storageEngine );
 
             // Finally, we're initialized and ready to create two nodes and a relationship

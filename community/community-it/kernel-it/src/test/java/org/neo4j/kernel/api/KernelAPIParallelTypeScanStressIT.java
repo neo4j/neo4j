@@ -19,15 +19,24 @@
  */
 package org.neo4j.kernel.api;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
+import org.neo4j.internal.kernel.api.TokenPredicate;
+import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -38,6 +47,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
 @DbmsExtension( configurationCallback = "configure" )
@@ -53,6 +63,27 @@ class KernelAPIParallelTypeScanStressIT
     private RandomRule random;
     @Inject
     private Kernel kernel;
+
+    private IndexDescriptor rti;
+
+    @BeforeEach
+    void findRelationshipTypeIndexDescriptor()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( IndexDefinition indexDef : tx.schema().getIndexes() )
+            {
+                IndexDescriptor index = ((IndexDefinitionImpl) indexDef).getIndexReference();
+
+                if ( index.getIndexType() == IndexType.LOOKUP && index.schema().isAnyTokenSchemaDescriptor() &&
+                     index.schema().entityType() == EntityType.RELATIONSHIP )
+                {
+                    rti = index;
+                }
+            }
+        }
+        assertNotNull( rti );
+    }
 
     @Test
     void shouldDoParallelTypeScans() throws Throwable
@@ -87,11 +118,19 @@ class KernelAPIParallelTypeScanStressIT
         return type;
     }
 
-    private Runnable typeScan( Read read, RelationshipTypeIndexCursor cursor, int label )
+    private Runnable typeScan( Read read, RelationshipTypeIndexCursor cursor, int type )
     {
         return () ->
         {
-            read.relationshipTypeScan( label, cursor, IndexOrder.NONE );
+            try
+            {
+                TokenReadSession readSession = read.tokenReadSession( rti );
+                read.relationshipTypeScan( readSession, cursor, IndexQueryConstraints.unconstrained(), new TokenPredicate( type ) );
+            }
+            catch ( KernelException e )
+            {
+                throw new RuntimeException( e );
+            }
 
             int n = 0;
             while ( cursor.next() )
@@ -105,6 +144,6 @@ class KernelAPIParallelTypeScanStressIT
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
+        builder.setConfig( RelationshipTypeScanStoreSettings.enable_scan_stores_as_token_indexes, true );
     }
 }

@@ -27,21 +27,20 @@ import java.io.UncheckedIOException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.recordstorage.TestRelType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static org.neo4j.internal.helpers.collection.Iterators.count;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
-@DbmsExtension( configurationCallback = "configuration" )
+@DbmsExtension
 class TokenScanStoreRebuildIT
 {
     @Inject
@@ -52,12 +51,6 @@ class TokenScanStoreRebuildIT
     private FileSystemAbstraction fs;
     @Inject
     private DbmsController controller;
-
-    @ExtensionCallback
-    void configuration( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store, true );
-    }
 
     @Test
     void shouldReportCorrectEntityCountsOnRebuild()
@@ -74,7 +67,6 @@ class TokenScanStoreRebuildIT
             try
             {
                 fs.deleteFile( layout.labelScanStore() );
-                fs.deleteFile( layout.relationshipTypeScanStore() );
             }
             catch ( IOException e )
             {
@@ -86,17 +78,14 @@ class TokenScanStoreRebuildIT
 
         // then
         assertThat( logProvider ).containsMessagesOnce(
-                "No relationship type index found, this might just be first use. Preparing to rebuild.",
                 "No label index found, this might just be first use. Preparing to rebuild.",
-                "Rebuilding relationship type index, this may take a while",
                 "Rebuilding label index, this may take a while",
-                "Relationship type index rebuilt (roughly " + nbrOfRelationships + " relationships)",
                 "Label index rebuilt (roughly " + nbrOfNodes + " nodes)"
                 );
         try ( Transaction tx = db.beginTx() )
         {
             assertThat( count( tx.findNodes( TestLabels.LABEL_ONE ) ) ).isEqualTo( nbrOfNodes );
-            assertThat( count( tx.findRelationships( TestRelType.LOOP ) ) ).isEqualTo( nbrOfNodes );
+            assertThat( Iterables.count( tx.getAllRelationships() ) ).isEqualTo( nbrOfRelationships );
             tx.commit();
         }
     }
