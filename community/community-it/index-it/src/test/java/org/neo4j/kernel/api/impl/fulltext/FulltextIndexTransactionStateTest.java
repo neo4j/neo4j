@@ -19,10 +19,18 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.OtherThreadExtension;
+import org.neo4j.test.rule.OtherThreadRule;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests testing affect of TX state on index query results.
@@ -30,85 +38,201 @@ import org.neo4j.graphdb.Transaction;
  * Results of index queries must combine the content of the index
  * with relevant changes in the TX state and that is what is tested here.
  */
-abstract class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport
+@ExtendWith( OtherThreadExtension.class )
+class FulltextIndexTransactionStateTest extends FulltextProceduresTestSupport
 {
-    @BeforeEach
-    void setUp()
-    {
-        createIndex();
-    }
+    @Inject
+    private OtherThreadRule otherThread;
 
-    @Test
-    void queryResultFromTransactionStateMustSortTogetherWithResultFromBaseIndex()
+    @MethodSource( "entityTypeProvider" )
+    @ParameterizedTest
+    void queryResultFromTransactionStateMustSortTogetherWithResultFromBaseIndex( EntityUtil entityUtil )
     {
+        createIndexAndWait( entityUtil );
+
         long firstId;
         long secondId;
         long thirdId;
 
         try ( Transaction tx = db.beginTx() )
         {
-            firstId = createEntityWithProperty( tx, "God of War" );
-            thirdId = createEntityWithProperty( tx, "God Wars: Future Past" );
+            firstId = entityUtil.createEntityWithProperty( tx, "God of War" );
+            thirdId = entityUtil.createEntityWithProperty( tx, "God Wars: Future Past" );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            secondId = createEntityWithProperty( tx, "God of War III Remastered" );
-            assertQueryFindsIdsInOrder( tx, "god of war", firstId, secondId, thirdId );
+            secondId = entityUtil.createEntityWithProperty( tx, "God of War III Remastered" );
+            entityUtil.assertQueryFindsIdsInOrder( tx, "god of war", firstId, secondId, thirdId );
             tx.commit();
         }
     }
 
-    @Test
-    void queryResultsMustIncludeEntitiesAddedInTheSameTransaction()
+    @MethodSource( "entityTypeProvider" )
+    @ParameterizedTest
+    void queryResultsMustIncludeEntitiesAddedInTheSameTransaction( EntityUtil entityUtil )
     {
+        createIndexAndWait( entityUtil );
+
         try ( Transaction tx = db.beginTx() )
         {
-            long id = createEntityWithProperty( tx, "value" );
-            assertQueryFindsIdsInOrder( tx, "value", id );
+            long id = entityUtil.createEntityWithProperty( tx, "value" );
+            entityUtil.assertQueryFindsIdsInOrder( tx, "value", id );
             tx.commit();
         }
     }
 
-    @Test
-    void queryResultsMustNotIncludeEntitiesDeletedInTheSameTransaction()
+    @MethodSource( "entityTypeProvider" )
+    @ParameterizedTest
+    void queryResultsMustNotIncludeEntitiesDeletedInTheSameTransaction( EntityUtil entityUtil )
     {
+        createIndexAndWait( entityUtil );
+
         long entityIdA;
         long entityIdB;
         try ( Transaction tx = db.beginTx() )
         {
-            entityIdA = createEntityWithProperty( tx, "value" );
-            entityIdB = createEntityWithProperty( tx, "value" );
+            entityIdA = entityUtil.createEntityWithProperty( tx, "value" );
+            entityIdB = entityUtil.createEntityWithProperty( tx, "value" );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertQueryFindsIdsInOrder( tx, "value", entityIdA, entityIdB );
+            entityUtil.assertQueryFindsIdsInOrder( tx, "value", entityIdA, entityIdB );
 
-            deleteEntity( tx, entityIdA );
-            assertQueryFindsIdsInOrder( tx, "value", entityIdB );
+            entityUtil.deleteEntity( tx, entityIdA );
+            entityUtil.assertQueryFindsIdsInOrder( tx, "value", entityIdB );
 
-            deleteEntity( tx, entityIdB );
-            assertQueryFindsIdsInOrder( tx, "value" );
+            entityUtil.deleteEntity( tx, entityIdB );
+            entityUtil.assertQueryFindsIdsInOrder( tx, "value" );
             tx.commit();
         }
     }
 
-    private void createIndex()
+    @MethodSource( "entityTypeProvider" )
+    @ParameterizedTest
+    void queryingIndexInPopulatingStateMustBlockUntilIndexIsOnlineEvenWhenTransactionHasState( EntityUtil entityUtil ) throws InterruptedException
     {
+        trapPopulation.set( true );
+
         try ( Transaction tx = db.beginTx() )
         {
-            createIndex( tx );
+            entityUtil.createEntityWithProperty( tx, "value" );
             tx.commit();
         }
-        awaitIndexesOnline();
+        try ( Transaction tx = db.beginTx() )
+        {
+            entityUtil.createIndex( tx );
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            entityUtil.createEntityWithProperty( tx, "value" );
+            try ( var resultStream = entityUtil.queryIndex( tx, "value" ).stream() )
+            {
+                populationScanFinished.await();
+                populationScanFinished.release();
+                assertThat( resultStream.count() ).isEqualTo( 2 );
+            }
+            tx.commit();
+        }
     }
 
-    abstract void createIndex( Transaction tx );
+    @MethodSource( "entityTypeProvider" )
+    @ParameterizedTest
+    void queryResultsMustIncludeOldPropertyValuesWhenModificationsAreUndone( EntityUtil entityUtil )
+    {
+        createIndexAndWait( entityUtil );
 
-    abstract long createEntityWithProperty( Transaction tx, String propertyValue );
+        long entityId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            entityId = entityUtil.createEntityWithProperty( tx, "primo" );
+            tx.commit();
+        }
 
-    abstract void assertQueryFindsIdsInOrder( Transaction tx, String query, long... ids );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Entity entity = entityUtil.getEntity( tx, entityId );
+            entityUtil.assertQueryFindsIdsInOrder( tx, "primo", entityId );
+            entityUtil.assertQueryFindsIdsInOrder( tx, "secundo" );
+            entity.setProperty( PROP, "secundo" );
+            entityUtil.assertQueryFindsIdsInOrder( tx, "primo" );
+            entityUtil.assertQueryFindsIdsInOrder( tx, "secundo", entityId );
+            entity.setProperty( PROP, "primo" );
+            entityUtil.assertQueryFindsIdsInOrder( tx, "primo", entityId );
+            entityUtil.assertQueryFindsIdsInOrder( tx, "secundo" );
+            tx.commit();
+        }
+    }
 
-    abstract void deleteEntity( Transaction tx, long entityId );
+    @MethodSource( "entityTypeProvider" )
+    @ParameterizedTest
+    void queryResultsMustIncludeOldPropertyValuesWhenRemovalsAreUndone( EntityUtil entityUtil )
+    {
+        createIndexAndWait( entityUtil );
+
+        long entityId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            entityId = entityUtil.createEntityWithProperty( tx, "primo" );
+            tx.commit();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            entityUtil.assertQueryFindsIdsInOrder( tx, "primo", entityId );
+            Entity entity = entityUtil.getEntity( tx, entityId );
+            entity.removeProperty( PROP );
+            entityUtil.assertQueryFindsIdsInOrder( tx, "primo" );
+            entity.setProperty( PROP, "primo" );
+            entityUtil.assertQueryFindsIdsInOrder( tx, "primo", entityId );
+            tx.commit();
+        }
+    }
+
+    @MethodSource( "entityTypeProvider" )
+    @ParameterizedTest
+    void transactionStateMustNotPreventIndexUpdatesFromBeingApplied( EntityUtil entityUtil ) throws Exception
+    {
+        createIndexAndWait( entityUtil );
+        LongHashSet entityIds = new LongHashSet();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            entityIds.add( entityUtil.createEntityWithProperty( tx, "value" ) );
+
+            otherThread.execute( () ->
+            {
+                try ( Transaction forkedTx = db.beginTx() )
+                {
+                    entityIds.add( entityUtil.createEntityWithProperty( tx, "value" ) );
+                    forkedTx.commit();
+                }
+
+                return null;
+            } ).get();
+            tx.commit();
+        }
+        entityUtil.assertQueryFindsIds( db, "value", entityIds );
+    }
+
+    @MethodSource( "entityTypeProvider" )
+    @ParameterizedTest
+    void fulltextIndexMustWorkAfterRestartWithTxStateChanges( EntityUtil entityUtil )
+    {
+        createIndexAndWait( entityUtil );
+
+        restartDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            // create an indexed entity ...
+            long id = entityUtil.createEntityWithProperty( tx, "value" );
+            // ... and not indexed one
+            entityUtil.createEntity( tx );
+            entityUtil.assertQueryFindsIdsInOrder( tx, "*", id );
+            tx.commit();
+        }
+    }
 }

@@ -55,8 +55,8 @@ class EventuallyConsistentFulltextProceduresTest extends FulltextProceduresTestS
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "node", asStrList( LABEL.name() ), asStrList( PROP, "otherprop" ) ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "rel", asStrList( REL.name() ), asStrList( PROP ) ) );
+            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name() ), asStrList( PROP, "otherprop" ) ) );
+            tx.execute( format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( REL.name() ), asStrList( PROP ) ) );
             tx.commit();
         }
         awaitIndexesOnline();
@@ -84,8 +84,8 @@ class EventuallyConsistentFulltextProceduresTest extends FulltextProceduresTestS
             }
 
             // Index updates are still blocked for eventually consistent indexes, so we should not find anything at this point.
-            assertQueryFindsIds( db, true, "node", "bla", new LongHashSet() );
-            assertQueryFindsIds( db, false, "rel", "bla", new LongHashSet() );
+            assertQueryFindsIdsInOrder( db, true, DEFAULT_NODE_IDX_NAME, "bla" );
+            assertQueryFindsIdsInOrder( db, false, DEFAULT_REL_IDX_NAME, "bla" );
         }
         finally
         {
@@ -101,7 +101,7 @@ class EventuallyConsistentFulltextProceduresTest extends FulltextProceduresTestS
         }
 
         // Now we should see our data.
-        assertQueryFindsIds( db, true, "node", "bla", nodeIds );
-        assertQueryFindsIds( db, false, "rel", "bla", newSetWith( relId ) );
+        assertQueryFindsIds( db, true, DEFAULT_NODE_IDX_NAME, "bla", nodeIds );
+        assertQueryFindsIds( db, false, DEFAULT_REL_IDX_NAME, "bla", newSetWith( relId ) );
     }
 }
