@@ -187,19 +187,17 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           prettifier.asString(c)))
 
       // ALTER CURRENT USER SET PASSWORD FROM currentPassword TO newPassword
-      case c@SetOwnPassword(newPassword, currentPassword) =>
+      case c: SetOwnPassword =>
         Some(plans.LogSystemCommand(
-          plans.SetOwnPassword(newPassword, currentPassword),
+          plans.SetOwnPassword(c.newPassword, c.currentPassword),
           prettifier.asString(c)))
 
-      // SHOW [ ALL | POPULATED ] ROLES
-      case sr @ ShowRoles(false, showAll, _,_) =>
-        Some(plans.ShowRoles(plans.AssertAllowedDbmsActions(ShowRoleAction), withUsers = false, showAll = showAll, sr.defaultColumnNames, sr.yields, sr.returns ))
-
-      // SHOW [ ALL | POPULATED ] ROLES WITH USERS
-      case sr @ ShowRoles(true, showAll, _,_) =>
-        Some(plans.ShowRoles(plans.AssertAllowedDbmsActions(None, Seq(ShowRoleAction, ShowUserAction)), withUsers = true, showAll = showAll,
-          sr.defaultColumnNames, sr.yields, sr.returns ))
+      // SHOW [ ALL | POPULATED ] ROLES [WITH USERS]
+      case sr: ShowRoles =>
+        val assertAllowed =
+          if (sr.withUsers) plans.AssertAllowedDbmsActions(None, Seq(ShowRoleAction, ShowUserAction))
+          else plans.AssertAllowedDbmsActions(ShowRoleAction)
+        Some(plans.ShowRoles(assertAllowed, withUsers = sr.withUsers, showAll = sr.showAll, sr.defaultColumnNames, sr.yields, sr.returns ))
 
       // CREATE [OR REPLACE] ROLE foo [IF NOT EXISTS]
       case c@CreateRole(roleName, None, ifExistsDo) =>
@@ -231,8 +229,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plans.DropRole(source, roleName), prettifier.asString(c)))
 
       // GRANT roles TO users
-      case c@GrantRolesToUsers(roleNames, userNames) =>
-        val plan = (for (userName <- userNames; roleName <- roleNames) yield {
+      case c: GrantRolesToUsers =>
+        val plan = (for (userName <- c.userNames; roleName <- c.roleNames) yield {
           roleName -> userName
         }).foldLeft(plans.AssertAllowedDbmsActions(AssignRoleAction).asInstanceOf[plans.SecurityAdministrationLogicalPlan]) {
           case (source, (roleName, userName)) => plans.GrantRoleToUser(source, roleName, userName)
@@ -240,8 +238,8 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE roles FROM users
-      case c@RevokeRolesFromUsers(roleNames, userNames) =>
-        val plan = (for (userName <- userNames; roleName <- roleNames) yield {
+      case c: RevokeRolesFromUsers =>
+        val plan = (for (userName <- c.userNames; roleName <- c.roleNames) yield {
           roleName -> userName
         }).foldLeft(plans.AssertAllowedDbmsActions(RemoveRoleAction).asInstanceOf[plans.SecurityAdministrationLogicalPlan]) {
           case (source, (userName, roleName)) => plans.RevokeRoleFromUser(source, userName, roleName)
@@ -336,47 +334,47 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
-      // SHOW USER user PRIVILEGES
-      case sp @ ShowPrivileges(scope: ShowUserPrivileges, _, _) =>
-        val user = scope.user
-        val source = if (user.isDefined) Some(plans.AssertAllowedDbmsActionsOrSelf(user.get, Seq(ShowPrivilegeAction, ShowUserAction))) else None
-        Some(plans.ShowPrivileges(source, scope, sp.defaultColumnNames, sp.yields, sp.returns))
-
-      // SHOW USERS user1, user2 PRIVILEGES
-      case sp @ ShowPrivileges(scope: ShowUsersPrivileges, _, _) =>
-        val (newScope, source) = {
-          val users = scope.users
-          if (users.size > 1) (scope, Some(plans.AssertAllowedDbmsActions(None, Seq(ShowPrivilegeAction, ShowUserAction))))
-          else (ShowUserPrivileges(Some(users.head))(scope.position), Some(plans.AssertAllowedDbmsActionsOrSelf(users.head, Seq(ShowPrivilegeAction, ShowUserAction))))
+      // SHOW [ALL | ROLE role | ROLES role1, role2 | USER [user] | USERS user1, user2] PRIVILEGES
+      case sp: ShowPrivileges =>
+        val (newScope, source) = sp.scope match {
+          // SHOW USER [user] PRIVILEGES
+          case scope: ShowUserPrivileges =>
+            val user = scope.user
+            val source = if (user.isDefined) Some(plans.AssertAllowedDbmsActionsOrSelf(user.get, Seq(ShowPrivilegeAction, ShowUserAction))) else None
+            (scope, source)
+          // SHOW USERS user1, user2 PRIVILEGES
+          case scope: ShowUsersPrivileges =>
+            val users = scope.users
+            if (users.size > 1) (scope, Some(plans.AssertAllowedDbmsActions(None, Seq(ShowPrivilegeAction, ShowUserAction))))
+            else (ShowUserPrivileges(Some(users.head))(scope.position), Some(plans.AssertAllowedDbmsActionsOrSelf(users.head, Seq(ShowPrivilegeAction, ShowUserAction))))
+          // SHOW [ALL | ROLE role | ROLES role1, role2] PRIVILEGES
+          case scope =>
+            (scope, Some(plans.AssertAllowedDbmsActions(ShowPrivilegeAction)))
         }
         Some(plans.ShowPrivileges(source, newScope, sp.defaultColumnNames, sp.yields, sp.returns))
 
-      // SHOW [ALL | ROLE role | ROLES role1, role2] PRIVILEGES
-      case sp @ ShowPrivileges(scope, _, _) =>
-        Some(plans.ShowPrivileges(Some(plans.AssertAllowedDbmsActions(ShowPrivilegeAction)), scope, sp.defaultColumnNames, sp.yields, sp.returns))
-
-      // SHOW USER user PRIVILEGES AS [REVOKE] COMMAND
-      case sp @ ShowPrivilegeCommands(scope: ShowUserPrivileges, asRevoke, _,_) =>
-        val user = scope.user
-        val source = if (user.isDefined) Some(plans.AssertAllowedDbmsActionsOrSelf(user.get, Seq(ShowPrivilegeAction, ShowUserAction))) else None
-        Some(plans.ShowPrivilegeCommands(source, scope, asRevoke, sp.defaultColumnNames, sp.yields, sp.returns))
-
-      // SHOW USERS user1, user2 PRIVILEGES AS [REVOKE] COMMAND
-      case sp @ ShowPrivilegeCommands(scope: ShowUsersPrivileges, asRevoke, _, _) =>
-        val (newScope, source) = {
-          val users = scope.users
-          if (users.size > 1) (scope, Some(plans.AssertAllowedDbmsActions(None, Seq(ShowPrivilegeAction, ShowUserAction))))
-          else (ShowUserPrivileges(Some(users.head))(scope.position), Some(plans.AssertAllowedDbmsActionsOrSelf(users.head, Seq(ShowPrivilegeAction, ShowUserAction))))
+      // SHOW [ALL | ROLE role | ROLES role1, role2 | USER [user] | USERS user1, user2] PRIVILEGES AS [REVOKE] COMMAND
+      case sp: ShowPrivilegeCommands =>
+        val (newScope, source) = sp.scope match {
+          // SHOW USER [user] PRIVILEGES
+          case scope: ShowUserPrivileges =>
+            val user = scope.user
+            val source = if (user.isDefined) Some(plans.AssertAllowedDbmsActionsOrSelf(user.get, Seq(ShowPrivilegeAction, ShowUserAction))) else None
+            (scope, source)
+          // SHOW USERS user1, user2 PRIVILEGES
+          case scope: ShowUsersPrivileges =>
+            val users = scope.users
+            if (users.size > 1) (scope, Some(plans.AssertAllowedDbmsActions(None, Seq(ShowPrivilegeAction, ShowUserAction))))
+            else (ShowUserPrivileges(Some(users.head))(scope.position), Some(plans.AssertAllowedDbmsActionsOrSelf(users.head, Seq(ShowPrivilegeAction, ShowUserAction))))
+          // SHOW [ALL | ROLE role | ROLES role1, role2] PRIVILEGES
+          case scope =>
+            (scope, Some(plans.AssertAllowedDbmsActions(ShowPrivilegeAction)))
         }
-        Some(plans.ShowPrivilegeCommands(source, newScope, asRevoke, sp.defaultColumnNames, sp.yields, sp.returns))
-
-      // SHOW [ALL | ROLE role | ROLES role1, role2] PRIVILEGES AS [REVOKE] COMMAND
-      case sp @ ShowPrivilegeCommands(scope, asRevoke, _, returns) =>
-        Some(plans.ShowPrivilegeCommands(Some(plans.AssertAllowedDbmsActions(ShowPrivilegeAction)), scope, asRevoke, sp.defaultColumnNames, sp.yields, sp.returns))
+        Some(plans.ShowPrivilegeCommands(source, newScope, sp.asRevoke, sp.defaultColumnNames, sp.yields, sp.returns))
 
       // SHOW DATABASES | SHOW DEFAULT DATABASE | SHOW DATABASE foo
-      case sd @ ShowDatabase(scope, _,_) =>
-        Some(plans.ShowDatabase(scope, sd.defaultColumnNames, sd.yields, sd.returns))
+      case sd: ShowDatabase =>
+        Some(plans.ShowDatabase(sd.scope, sd.defaultColumnNames, sd.yields, sd.returns))
 
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
       case CreateDatabase(dbName, ifExistsDo, options, waitUntilComplete) =>

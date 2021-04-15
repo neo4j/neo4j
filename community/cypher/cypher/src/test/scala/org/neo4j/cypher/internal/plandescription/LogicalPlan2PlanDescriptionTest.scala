@@ -20,13 +20,15 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.QueryPlanTestSupport.StubExecutionPlan
-import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AllConstraints
+import org.neo4j.cypher.internal.ast.AllDatabasesScope
+import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.AllPropertyResource
 import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
+import org.neo4j.cypher.internal.ast.DefaultGraphScope
 import org.neo4j.cypher.internal.ast.DropRoleAction
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementsAllQualifier
@@ -38,6 +40,8 @@ import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LookupIndexes
+import org.neo4j.cypher.internal.ast.NamedDatabaseScope
+import org.neo4j.cypher.internal.ast.NewSyntax
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
@@ -809,7 +813,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(ShowConstraints(constraintType = NodeKeyConstraints, verbose = false, Set.empty), 1.0),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("nodeKeyConstraints, defaultColumns")), Set.empty))
 
-    assertGood(attach(ShowConstraints(constraintType = ExistsConstraints(ast.NewSyntax), verbose = true, Set.empty), 1.0),
+    assertGood(attach(ShowConstraints(constraintType = ExistsConstraints(NewSyntax), verbose = true, Set.empty), 1.0),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("existenceConstraints, allColumns")), Set.empty))
 
     assertGood(attach(ShowConstraints(constraintType = NodeExistsConstraints(), verbose = false, Set.empty), 1.0),
@@ -1300,27 +1304,27 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       RevokeDbmsAction(privLhsLP, ExecuteAdminProcedureAction, ProcedureAllQualifier()(pos), util.Left("role1"), "GRANTED"), 1.0), adminPlanDescription)
 
     assertGood(attach(
-      GrantDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.NamedDatabaseScope(util.Left("foo"))(pos), UserAllQualifier()(pos), util.Left("role1")),
+      GrantDatabaseAction(privLhsLP, CreateNodeLabelAction, NamedDatabaseScope(util.Left("foo"))(pos), UserAllQualifier()(pos), util.Left("role1")),
       1.0), adminPlanDescription)
 
     assertGood(attach(
-      DenyDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.AllDatabasesScope()(pos), UserQualifier(util.Left("user1"))(pos), util.Left("role1")),
+      DenyDatabaseAction(privLhsLP, CreateNodeLabelAction, AllDatabasesScope()(pos), UserQualifier(util.Left("user1"))(pos), util.Left("role1")),
       1.0), adminPlanDescription)
 
     assertGood(attach(
-      RevokeDatabaseAction(privLhsLP, CreateNodeLabelAction, ast.AllDatabasesScope()(pos), UserQualifier(util.Left("user1"))(pos), util.Left("role1"), "GRANTED"),
+      RevokeDatabaseAction(privLhsLP, CreateNodeLabelAction, AllDatabasesScope()(pos), UserQualifier(util.Left("user1"))(pos), util.Left("role1"), "GRANTED"),
       1.0), adminPlanDescription)
 
     assertGood(attach(
-      GrantGraphAction(privLhsLP, TraverseAction, NoResource()(pos), ast.DefaultGraphScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")),
+      GrantGraphAction(privLhsLP, TraverseAction, NoResource()(pos), DefaultGraphScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")),
       1.0), adminPlanDescription)
 
     assertGood(attach(
-      DenyGraphAction(privLhsLP, ReadAction, AllPropertyResource()(pos), ast.DefaultGraphScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")),
+      DenyGraphAction(privLhsLP, ReadAction, AllPropertyResource()(pos), DefaultGraphScope()(pos), LabelQualifier("Label1")(pos), util.Left("role1")),
       1.0), adminPlanDescription)
 
     assertGood(attach(
-      RevokeGraphAction(privLhsLP, WriteAction, NoResource()(pos), ast.AllGraphsScope()(pos), ElementsAllQualifier()(pos), util.Left("role1"), "GRANTED"),
+      RevokeGraphAction(privLhsLP, WriteAction, NoResource()(pos), AllGraphsScope()(pos), ElementsAllQualifier()(pos), util.Left("role1"), "GRANTED"),
       1.0), adminPlanDescription)
 
     assertGood(attach(
@@ -1331,7 +1335,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       ShowPrivilegeCommands(Some(privLhsLP), ShowUsersPrivileges(List(util.Left("user1"), util.Right(parameter("user2", CTString))))(pos), asRevoke = false, List(), None, None),
       1.0), adminPlanDescription)
 
-    assertGood(attach(ShowDatabase(ast.AllDatabasesScope()(pos), List("foo", "bar"), None, None), 1.0), adminPlanDescription)
+    assertGood(attach(ShowDatabase(AllDatabasesScope()(pos), List("foo", "bar"), None, None), 1.0), adminPlanDescription)
 
     assertGood(attach(CreateDatabase(privLhsLP, util.Left("db1"), NoOptions), 1.0), adminPlanDescription)
 
