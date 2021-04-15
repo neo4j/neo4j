@@ -675,7 +675,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "Whether or not DBMS's byte buffer manager should be used for network stack buffers instead " +
             "of each network library managing its buffers on its own" )
     public static Setting<Boolean> managed_network_buffers =
-            newBuilder( "unsupported.dbms.memory.managed_network_buffers", BOOL, false ).build();
+            newBuilder( "unsupported.dbms.memory.managed_network_buffers", BOOL, true ).build();
 
     @Internal
     public static Setting<Duration> neo_byte_buffer_pool_collection_interval_override =
