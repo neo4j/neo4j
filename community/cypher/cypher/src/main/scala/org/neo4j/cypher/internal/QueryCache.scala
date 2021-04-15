@@ -273,7 +273,7 @@ class QueryCache[QUERY_REP <: AnyRef,
                               metaData: String,
                               hitCache: Boolean = false
                              ): EXECUTABLE_QUERY = {
-    val result = compileOrcompileWithExpressionCodeGenAndCache(queryKey, () => compiler.compile(), metaData, hitCache)
+    val result = compileOrCompileWithExpressionCodeGenAndCache(queryKey, () => compiler.compile(), metaData, hitCache)
     tracer.queryCompile(queryKey, metaData)
     result
   }
@@ -283,7 +283,7 @@ class QueryCache[QUERY_REP <: AnyRef,
                                                    metaData: String,
                                                    hitCache: Boolean = false
                                                   ): EXECUTABLE_QUERY = {
-    val result = compileOrcompileWithExpressionCodeGenAndCache(queryKey, () => compiler.compileWithExpressionCodeGen(), metaData, hitCache)
+    val result = compileOrCompileWithExpressionCodeGenAndCache(queryKey, () => compiler.compileWithExpressionCodeGen(), metaData, hitCache)
     tracer.queryCompileWithExpressionCodeGen(queryKey, metaData)
     result
   }
@@ -296,7 +296,7 @@ class QueryCache[QUERY_REP <: AnyRef,
    * take a long time. The only exception is if hitCache is true, which should only happen
    * when we are forced to recompile due to previously present warnings not being valid anymore
    */
-  private def compileOrcompileWithExpressionCodeGenAndCache(queryKey: QUERY_KEY,
+  private def compileOrCompileWithExpressionCodeGenAndCache(queryKey: QUERY_KEY,
                                                             compile: () => EXECUTABLE_QUERY,
                                                             metaData: String,
                                                             hitCache: Boolean

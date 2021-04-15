@@ -38,17 +38,17 @@ import scala.collection.mutable
 class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with TableDrivenPropertyChecks {
 
   override def databaseConfig(): Map[Setting[_], Object] = super.databaseConfig() ++ Map(
+    // String cache JIT compiles on the first hit
     GraphDatabaseInternalSettings.cypher_expression_recompilation_limit -> Integer.valueOf(1)
   )
 
   private val empty_parameters = "Map()"
 
-  test("re-uses cached plan in AstLogicalPlanCache across different execution modes") {
+  test("AstLogicalPlanCache re-uses cached plan across different execution modes") {
     // ensure label exists
     graph.withTx( tx => tx.createNode(Label.label("Person")) )
 
-    val cacheListener = new LogginAstLogicalPlanCacheTracer
-    kernelMonitors.addMonitorListener(cacheListener)
+    val cacheListener = new LoggingTracer(traceExecutionEngineQueryCache = false)
 
     val query = "MATCH (n:Person) RETURN n"
     val profileQuery = s"PROFILE $query"
@@ -73,7 +73,6 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       case (firstQuery, secondQuery) =>
         // Flush cache
         cacheListener.clear()
-
         graph.withTx( tx => {
           tx.kernelTransaction().schemaRead().schemaStateFlush()
         } )
@@ -81,24 +80,22 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         graph.withTx( tx => tx.execute(firstQuery).resultAsString() )
         graph.withTx( tx => tx.execute(secondQuery).resultAsString() )
 
-        val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
-        val expected = List(
-          s"cacheFlushDetected",
-          s"cacheMiss",
-          s"cacheCompile",
-          s"cacheHit"
-        )
-
-        actual should equal(expected)
+        cacheListener.expectTrace(List(
+          "AST:    cacheFlushDetected",
+          // firstQuery
+          "AST:    cacheMiss",
+          "AST:    cacheCompile",
+          // secondQuery
+          "AST:    cacheHit"
+        ))
     }
   }
 
-  test("re-uses cached plan with and without explain") {
+  test("ExecutionEngineQueryCache re-uses cached plan with and without explain") {
     // ensure label exists
     graph.withTx( tx => tx.createNode(Label.label("Person")) )
 
-    val cacheListener = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(cacheListener)
+    val cacheListener = new LoggingTracer(traceAstLogicalPlanCache = false)
 
     val query = "MATCH (n:Person) RETURN n"
     val explainQuery = s"EXPLAIN $query"
@@ -116,7 +113,6 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       case (firstQuery, secondQuery) =>
         // Flush cache
         cacheListener.clear()
-
         graph.withTx( tx => {
           tx.kernelTransaction().schemaRead().schemaStateFlush()
         } )
@@ -124,16 +120,15 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         graph.withTx( tx => tx.execute(firstQuery).resultAsString() )
         graph.withTx( tx => tx.execute(secondQuery).resultAsString() )
 
-        val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
-        val expected = List(
-          s"cacheFlushDetected",
-          s"cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
-          s"cacheCompile: (CYPHER 4.3 $query, $empty_parameters)",
-          s"cacheHit: (CYPHER 4.3 $query, $empty_parameters)",
-          s"cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, $empty_parameters)",
-        )
-
-        actual should equal(expected)
+        cacheListener.expectTrace(List(
+          s"String: cacheFlushDetected",
+          // firstQuery
+          s"String: cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
+          s"String: cacheCompile: (CYPHER 4.3 $query, $empty_parameters)",
+          // secondQuery
+          s"String: cacheHit: (CYPHER 4.3 $query, $empty_parameters)",
+          s"String: cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, $empty_parameters)", // String cache JIT compiles on the first hit
+        ))
     }
   }
 
@@ -141,93 +136,85 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     // ensure label exists
     graph.withTx( tx => tx.createNode(Label.label("Person")) )
 
-    val logicalPlanTracer = new LogginAstLogicalPlanCacheTracer
-    val physicalPlanTracer = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(logicalPlanTracer)
-    kernelMonitors.addMonitorListener(physicalPlanTracer)
+    val cacheListener = new LoggingTracer()
 
     val query = "MATCH (n:Person) RETURN n"
     val profileQuery = s"PROFILE $query"
 
-    // Flush cache
-    logicalPlanTracer.clear()
-
-    graph.withTx(tx => {
-      tx.kernelTransaction().schemaRead().schemaStateFlush()
-    })
-
     graph.withTx(tx => tx.execute(query).resultAsString())
     graph.withTx(tx => tx.execute(profileQuery).resultAsString())
 
-    val actualLogicalPlanTrace = logicalPlanTracer.trace.map(str => str.replaceAll("\\s+", " "))
-    val expectedLogicalPlanTrace = List(
-      s"cacheFlushDetected",
-      s"cacheMiss",
-      s"cacheCompile",
-      s"cacheHit"
-    )
-
-    actualLogicalPlanTrace should equal(expectedLogicalPlanTrace)
-
-    val actualPhysicalPlanTrace = physicalPlanTracer.trace.map(str => str.replaceAll("\\s+", " "))
-    val expectedPhysicalPlanTrace = List(
-      s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
-      s"cacheCompile: (CYPHER 4.3 $query, $empty_parameters)",
-      s"cacheMiss: (CYPHER 4.3 PROFILE $query, $empty_parameters)",
-      s"cacheCompile: (CYPHER 4.3 PROFILE $query, $empty_parameters)",
-    )
-
-    actualPhysicalPlanTrace should equal(expectedPhysicalPlanTrace)
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // query
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      s"String: cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
+      s"String: cacheCompile: (CYPHER 4.3 $query, $empty_parameters)",
+      // profileQuery
+      s"AST:    cacheHit", // no logical planning
+      s"String: cacheMiss: (CYPHER 4.3 PROFILE $query, $empty_parameters)",
+      s"String: cacheCompile: (CYPHER 4.3 PROFILE $query, $empty_parameters)", // physical planning
+    ))
   }
 
   test("profile followed by normal execution triggers physical planning but not logical planning") {
     // ensure label exists
     graph.withTx( tx => tx.createNode(Label.label("Person")) )
 
-    val logicalPlanTracer = new LogginAstLogicalPlanCacheTracer
-    val physicalPlanTracer = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(logicalPlanTracer)
-    kernelMonitors.addMonitorListener(physicalPlanTracer)
+    val cacheListener = new LoggingTracer()
 
     val query = "MATCH (n:Person) RETURN n"
     val profileQuery = s"PROFILE $query"
 
-    // Flush cache
-    logicalPlanTracer.clear()
-
-    graph.withTx(tx => {
-      tx.kernelTransaction().schemaRead().schemaStateFlush()
-    })
-
     graph.withTx(tx => tx.execute(profileQuery).resultAsString())
     graph.withTx(tx => tx.execute(query).resultAsString())
 
-    val actualLogicalPlanTrace = logicalPlanTracer.trace.map(str => str.replaceAll("\\s+", " "))
-    val expectedLogicalPlanTrace = List(
-      s"cacheFlushDetected",
-      s"cacheMiss",
-      s"cacheCompile",
-      s"cacheHit"
-    )
-
-    actualLogicalPlanTrace should equal(expectedLogicalPlanTrace)
-
-    val actualPhysicalPlanTrace = physicalPlanTracer.trace.map(str => str.replaceAll("\\s+", " "))
-    val expectedPhysicalPlanTrace = List(
-      s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.3 PROFILE $query, $empty_parameters)",
-      s"cacheCompile: (CYPHER 4.3 PROFILE $query, $empty_parameters)",
-      s"cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
-      s"cacheCompile: (CYPHER 4.3 $query, $empty_parameters)",
-    )
-
-    actualPhysicalPlanTrace should equal(expectedPhysicalPlanTrace)
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // profileQuery
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      s"String: cacheMiss: (CYPHER 4.3 PROFILE $query, $empty_parameters)",
+      s"String: cacheCompile: (CYPHER 4.3 PROFILE $query, $empty_parameters)",
+      // query
+      s"AST:    cacheHit", // no logical planning
+      s"String: cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
+      s"String: cacheCompile: (CYPHER 4.3 $query, $empty_parameters)", // physical planning
+    ))
   }
 
-  test("repeating query with same parameters should hit the cache") {
-    val cacheListener = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(cacheListener)
+  test("Different String but same AST should hit AstExecutableQueryCache but miss ExecutionEngineQueryCache") {
+    // ensure label exists
+    graph.withTx( tx => tx.createNode(Label.label("Person")) )
+
+    val cacheListener = new LoggingTracer()
+
+    val query1 = "MATCH (n:Person) RETURN n"
+    val query2 = "MATCH (n:`Person`) RETURN n"
+
+    graph.withTx(tx => tx.execute(query1).resultAsString())
+    graph.withTx(tx => tx.execute(query2).resultAsString())
+
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // query1
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      s"String: cacheMiss: (CYPHER 4.3 $query1, $empty_parameters)",
+      s"String: cacheCompile: (CYPHER 4.3 $query1, $empty_parameters)",
+      // query2
+      s"AST:    cacheHit", // Same AST, we should hit the cache
+      s"String: cacheMiss: (CYPHER 4.3 $query2, $empty_parameters)", // Different string, we should miss the cache
+      s"String: cacheCompile: (CYPHER 4.3 $query2, $empty_parameters)",
+    ))
+  }
+
+  test("repeating query with same parameters should hit the caches") {
+    val cacheListener = new LoggingTracer()
 
     val query = "RETURN $n"
     val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
@@ -239,21 +226,23 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       tx.execute(query, params1.asJava).resultAsString()
     })
 
-    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
-    val expected = List(
-      s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheHit: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-    )
-
-    actual should equal(expected)
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // params1
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      // params2
+      s"String: cacheHit: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"AST:    cacheHit",
+      s"String: cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))", // String cache JIT compiles on the first hit
+    ))
   }
 
-  test("repeating query with replan=force should not hit the cache") {
-    val cacheListener = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(cacheListener)
+  test("repeating query with replan=force should not hit the caches") {
+    val cacheListener = new LoggingTracer()
 
     val query = "RETURN 42"
 
@@ -267,22 +256,29 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       tx.execute(s"CYPHER replan=force $query").resultAsString()
     })
 
-    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
-    val expected = List(
-      s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
-      s"cacheCompile: (CYPHER 4.3 $query, $empty_parameters)",
-      s"cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
-      s"cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, $empty_parameters)",
-      s"cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
-      s"cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, $empty_parameters)",
-    )
-    actual should equal(expected)
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // 1st run
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      s"String: cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
+      s"String: cacheCompile: (CYPHER 4.3 $query, $empty_parameters)",
+      // 2nd run
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompileWithExpressionCodeGen", // replan=force calls into a method for immediate recompilation, even though recompilation is doing the same steps in the AST cache, but the tracer calls are unaware of that.
+      s"String: cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
+      s"String: cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, $empty_parameters)",
+      // 3rd run
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompileWithExpressionCodeGen",
+      s"String: cacheMiss: (CYPHER 4.3 $query, $empty_parameters)",
+      s"String: cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, $empty_parameters)",
+    ))
   }
 
-  test("repeating query with same parameter types but different values should hit the cache") {
-    val cacheListener = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(cacheListener)
+  test("repeating query with same parameter types but different values should hit the caches") {
+    val cacheListener = new LoggingTracer()
 
     val query = "RETURN $n"
     val params1: Map[String, AnyRef] = Map("n" -> Long.box(12))
@@ -290,21 +286,23 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     graph.withTx( tx => tx.execute(query, params1.asJava).resultAsString() )
     graph.withTx( tx => tx.execute(query, params2.asJava).resultAsString() )
 
-    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
-    val expected = List(
-      s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheHit: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-    )
-
-    actual should equal(expected)
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // params1
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      // params2
+      s"String: cacheHit: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"AST:    cacheHit",
+      s"String: cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",  // String cache JIT compiles on the first hit
+    ))
   }
 
-  test("repeating query with different parameters types should not hit the cache") {
-    val cacheListener = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(cacheListener)
+  test("repeating query with different parameters types should not hit the caches") {
+    val cacheListener = new LoggingTracer()
 
     val query = "RETURN $n"
     val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
@@ -313,50 +311,58 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     graph.withTx( tx => tx.execute(query, params1.asJava).resultAsString() )
     graph.withTx( tx => tx.execute(query, params2.asJava).resultAsString() )
 
-    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
-    val expected = List(
-      s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.UTF8StringValue))",
-      s"cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.UTF8StringValue))",
-    )
-
-    actual should equal(expected)
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // params1
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      // params2
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.UTF8StringValue))",
+      s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.UTF8StringValue))",
+    ))
   }
 
   test("Query with missing parameters should not be cached") {
-    val cacheListener = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(cacheListener)
+    val cacheListener = new LoggingTracer()
 
     val query = "RETURN $n, $m"
     val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
 
-    try {
-      graph.withTx( tx => tx.execute(query, params1.asJava).resultAsString() )
-    } catch {
-      case qee: QueryExecutionException => qee.getMessage should equal("Expected parameter(s): m")
+    for (_ <- 0 to 1) {
+      try {
+        graph.withTx(tx => tx.execute(query, params1.asJava).resultAsString())
+      } catch {
+        case qee: QueryExecutionException => qee.getMessage should equal("Expected parameter(s): m")
+      }
     }
 
-    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
-    val expected = List(
-      s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-    )
-
-    actual should equal(expected)
+    // The query is not even run by the AST cache
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // 1st run
+      s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      // 2nd run
+      s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+    ))
   }
 
   test("EXPLAIN Query with missing parameters should not be cached") {
-    val cacheListener = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(cacheListener)
+    val cacheListener = new LoggingTracer()
 
     val actualQuery = "RETURN $n, $m"
     val executedQuery = "EXPLAIN " + actualQuery
-    val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
+    val params: Map[String, AnyRef] = Map("n" -> Long.box(42))
 
-    val notifications = graph.withTx( tx => { tx.execute(executedQuery, params1.asJava).getNotifications } )
+    val notifications = graph.withTx( tx => { tx.execute(executedQuery, params.asJava).getNotifications } )
+    graph.withTx( tx => { tx.execute(executedQuery, params.asJava).getNotifications } )
 
     var acc = 0
     notifications.asScala.foreach(n => {
@@ -367,60 +373,68 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     })
     acc should be (1)
 
-    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
-    val expected = List(
-      s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.3 $actualQuery, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheCompile: (CYPHER 4.3 $actualQuery, Map(n -> class org.neo4j.values.storable.LongValue))",
-    )
-
-    actual should equal(expected)
+    // The query is not even run by the AST cache
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // 1st run
+      s"String: cacheMiss: (CYPHER 4.3 $actualQuery, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"String: cacheCompile: (CYPHER 4.3 $actualQuery, Map(n -> class org.neo4j.values.storable.LongValue))",
+      // 2nd run
+      s"String: cacheMiss: (CYPHER 4.3 $actualQuery, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"String: cacheCompile: (CYPHER 4.3 $actualQuery, Map(n -> class org.neo4j.values.storable.LongValue))",
+    ))
   }
 
   test("EXPLAIN Query with enough parameters should be cached") {
-    val cacheListener = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(cacheListener)
+    val cacheListener = new LoggingTracer()
 
     val actualQuery = "RETURN $n, $m"
     val executedQuery = "EXPLAIN " + actualQuery
     val params1: Map[String, AnyRef] = Map("n" -> Long.box(42), "m" -> Long.box(21))
 
-    graph.withTx( tx => tx.execute(executedQuery, params1.asJava).resultAsString() )
+    for (_ <- 0 to 1) graph.withTx( tx => tx.execute(executedQuery, params1.asJava).resultAsString() )
 
-    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
-    val expected = List(
-      s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.3 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheCompile: (CYPHER 4.3 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))",
-    )
-
-    actual should equal(expected)
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // 1st run
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      s"String: cacheMiss: (CYPHER 4.3 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))",
+      s"String: cacheCompile: (CYPHER 4.3 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))",
+      // 2nd run
+      s"String: cacheHit: (CYPHER 4.3 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))",
+      s"AST:    cacheHit",
+      s"String: cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))", // String cache JIT compiles on the first hit
+    ))
   }
 
-  test("Different expressionEngine in query should not use same plan") {
-    val cacheListener = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(cacheListener)
+  test("Different expressionEngine in query should not use same executableQuery, but the same LogicalPlan") {
+    val cacheListener = new LoggingTracer()
 
     graph.withTx { tx =>
       tx.execute("CYPHER expressionEngine=interpreted RETURN 42 AS a").resultAsString()
       tx.execute("CYPHER expressionEngine=compiled RETURN 42 AS a").resultAsString()
     }
 
-    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
-    val expected = List(
-      s"cacheFlushDetected",
-      "cacheMiss: (CYPHER 4.3 expressionEngine=interpreted RETURN 42 AS a, Map())",
-      "cacheCompile: (CYPHER 4.3 expressionEngine=interpreted RETURN 42 AS a, Map())",
-      "cacheMiss: (CYPHER 4.3 expressionEngine=compiled RETURN 42 AS a, Map())",
-      "cacheCompile: (CYPHER 4.3 expressionEngine=compiled RETURN 42 AS a, Map())",
-    )
-
-    actual should equal(expected)
+    cacheListener.expectTrace(List(
+      "String: cacheFlushDetected",
+      "AST: cacheFlushDetected",
+      // 1st run
+      "AST: cacheMiss",
+      "AST: cacheCompile",
+      "String: cacheMiss: (CYPHER 4.3 expressionEngine=interpreted RETURN 42 AS a, Map())",
+      "String: cacheCompile: (CYPHER 4.3 expressionEngine=interpreted RETURN 42 AS a, Map())",
+      // 2nd run
+      "AST: cacheHit",
+      "String: cacheMiss: (CYPHER 4.3 expressionEngine=compiled RETURN 42 AS a, Map())",
+      "String: cacheCompile: (CYPHER 4.3 expressionEngine=compiled RETURN 42 AS a, Map())",
+    ))
   }
 
-  test("Different operatorEngine in query should not use same plan") {
-    val cacheListener = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(cacheListener)
+  test("Different operatorEngine in query should not use same executableQuery, but the same LogicalPlan") {
+    val cacheListener = new LoggingTracer()
 
     graph.withTx { tx =>
       tx.execute("CYPHER operatorEngine=interpreted RETURN 42 AS a").resultAsString()
@@ -428,82 +442,93 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       tx.execute("CYPHER RETURN 42 AS a").resultAsString()
     }
 
-    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
-    val expected = List(
-      s"cacheFlushDetected",
-      "cacheMiss: (CYPHER 4.3 operatorEngine=interpreted RETURN 42 AS a, Map())",
-      "cacheCompile: (CYPHER 4.3 operatorEngine=interpreted RETURN 42 AS a, Map())",
-      "cacheMiss: (CYPHER 4.3 operatorEngine=compiled RETURN 42 AS a, Map())",
-      "cacheCompile: (CYPHER 4.3 operatorEngine=compiled RETURN 42 AS a, Map())",
-      "cacheMiss: (CYPHER 4.3 RETURN 42 AS a, Map())",
-      "cacheCompile: (CYPHER 4.3 RETURN 42 AS a, Map())",
-    )
-
-    actual should equal(expected)
+    cacheListener.expectTrace(List(
+      "String: cacheFlushDetected",
+      "AST: cacheFlushDetected",
+      // 1st run
+      "AST: cacheMiss",
+      "AST: cacheCompile",
+      "String: cacheMiss: (CYPHER 4.3 operatorEngine=interpreted RETURN 42 AS a, Map())",
+      "String: cacheCompile: (CYPHER 4.3 operatorEngine=interpreted RETURN 42 AS a, Map())",
+      // 2nd run
+      "AST: cacheHit",
+      "String: cacheMiss: (CYPHER 4.3 operatorEngine=compiled RETURN 42 AS a, Map())",
+      "String: cacheCompile: (CYPHER 4.3 operatorEngine=compiled RETURN 42 AS a, Map())",
+      // 3rd run
+      "AST: cacheHit",
+      "String: cacheMiss: (CYPHER 4.3 RETURN 42 AS a, Map())",
+      "String: cacheCompile: (CYPHER 4.3 RETURN 42 AS a, Map())",
+    ))
   }
 
   test("Different runtime in query should not use same plan") {
-    val cacheListener = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(cacheListener)
+    val cacheListener = new LoggingTracer()
 
     graph.withTx { tx =>
       tx.execute("CYPHER runtime=interpreted RETURN 42 AS a").resultAsString()
       tx.execute("CYPHER runtime=slotted RETURN 42 AS a").resultAsString()
     }
 
-    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
-    val expected = List(
-      s"cacheFlushDetected",
-      "cacheMiss: (CYPHER 4.3 runtime=interpreted RETURN 42 AS a, Map())",
-      "cacheCompile: (CYPHER 4.3 runtime=interpreted RETURN 42 AS a, Map())",
-      "cacheMiss: (CYPHER 4.3 runtime=slotted RETURN 42 AS a, Map())",
-      "cacheCompile: (CYPHER 4.3 runtime=slotted RETURN 42 AS a, Map())",
-    )
-
-    actual should equal(expected)
+    cacheListener.expectTrace(List(
+      "String: cacheFlushDetected",
+      "AST:    cacheFlushDetected",
+      // 1st run
+      "AST:    cacheMiss",
+      "AST:    cacheCompile",
+      "String: cacheMiss: (CYPHER 4.3 runtime=interpreted RETURN 42 AS a, Map())",
+      "String: cacheCompile: (CYPHER 4.3 runtime=interpreted RETURN 42 AS a, Map())",
+      // 2nd run
+      "AST:    cacheFlushDetected", // Different runtimes actually use different compilers (thus different AST caches), but they write to the same monitor
+      "AST:    cacheMiss",
+      "AST:    cacheCompile",
+      "String: cacheMiss: (CYPHER 4.3 runtime=slotted RETURN 42 AS a, Map())",
+      "String: cacheCompile: (CYPHER 4.3 runtime=slotted RETURN 42 AS a, Map())",
+    ))
   }
 
   test("should cache plans when same parameter appears multiple times") {
-    val cacheListener = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(cacheListener)
+    val cacheListener = new LoggingTracer()
 
     val query = "RETURN $n + $n"
     val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
 
-    graph.withTx( tx => tx.execute(query, params1.asJava).resultAsString() )
+    for (_ <- 0 to 1) graph.withTx( tx => tx.execute(query, params1.asJava).resultAsString() )
 
-    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
-    val expected = List(
-      s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-    )
-
-    actual should equal(expected)
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // 1st run
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      // 2nd run
+      s"String: cacheHit: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"AST:    cacheHit",
+      s"String: cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))", // String cache JIT compiles on the first hit
+    ))
   }
 
   test("No compilation with expression code generation on first attempt") {
-    val cacheListener = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(cacheListener)
+    val cacheListener = new LoggingTracer()
 
     val query = "RETURN $n + 3 < 6"
     val params: Map[String, AnyRef] = Map("n" -> Long.box(42))
 
     graph.withTx( tx => tx.execute(query, params.asJava).resultAsString() )
 
-    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
-    val expected = List(
-      s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-    )
-
-    actual should equal(expected)
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+    ))
   }
 
-  test("One and only one compilation with expression code generation after several attempts") {
-    val cacheListener = new LoggingExecutionEngineQueryCacheListener
-    kernelMonitors.addMonitorListener(cacheListener)
+  test("One and only one compilation with expression code generation after several attempts. LogicalPlan is reused.") {
+    val cacheListener = new LoggingTracer()
 
     val query = "RETURN $n + 3 < 6"
     val params: Map[String, AnyRef] = Map("n" -> Long.box(42))
@@ -516,89 +541,94 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       tx.execute(s"CYPHER $query", params.asJava).resultAsString()
     } )
 
-    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
-    val expected = List(
-      s"cacheFlushDetected",
-      s"cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheHit: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheHit: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheHit: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
-      s"cacheHit: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))")
-
-    actual should equal(expected)
+    cacheListener.expectTrace(List(
+      s"String: cacheFlushDetected",
+      s"AST:    cacheFlushDetected",
+      // 1st run
+      s"AST:    cacheMiss",
+      s"AST:    cacheCompile",
+      s"String: cacheMiss: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"String: cacheCompile: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      // 2nd run
+      s"String: cacheHit: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"AST:    cacheHit",
+      s"String: cacheCompileWithExpressionCodeGen: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      // 3rd run
+      s"String: cacheHit: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      // 4th run
+      s"String: cacheHit: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      // 5th run
+      s"String: cacheHit: (CYPHER 4.3 $query, Map(n -> class org.neo4j.values.storable.LongValue))"))
   }
 
-  private class LogginAstLogicalPlanCacheTracer extends CacheTracer[Pair[Statement, ParameterTypeMap]] {
+  private class LoggingTracer(traceAstLogicalPlanCache: Boolean = true, traceExecutionEngineQueryCache: Boolean = true)
+    extends CacheTracer[Pair[Pair[String, Statement], ParameterTypeMap]] with ExecutionEngineQueryCacheMonitor {
+    kernelMonitors.addMonitorListener(this)
+
     private val log: mutable.Builder[String, List[String]] = List.newBuilder
 
-    def trace: Seq[String] = log.result()
+    private def trace: Seq[String] = log.result()
 
     def clear(): Unit = {
       log.clear()
     }
 
-    override def queryCacheHit(queryKey: Pair[Statement, ParameterTypeMap],
+    def expectTrace(expected: List[String]): Unit = {
+      val actual = trace.map(str => str.replaceAll("\\s+", " "))
+      val expectedFormatted = expected.map(str => str.replaceAll("\\s+", " "))
+      actual should equal(expectedFormatted)
+    }
+
+    override def queryCacheHit(queryKey: Pair[Pair[String, Statement], ParameterTypeMap],
                                metaData: String): Unit = {
-      log += s"cacheHit"
+      if (traceAstLogicalPlanCache) log += "AST: cacheHit"
     }
 
-    override def queryCacheMiss(queryKey: Pair[Statement, ParameterTypeMap], metaData: String): Unit = {
-      log += s"cacheMiss"
+    override def queryCacheMiss(queryKey: Pair[Pair[String, Statement], ParameterTypeMap], metaData: String): Unit = {
+      if (traceAstLogicalPlanCache) log += "AST: cacheMiss"
     }
 
-    override def queryCompile(queryKey: Pair[Statement, ParameterTypeMap], metaData: String): Unit = {
-      log += s"cacheCompile"
+    override def queryCompile(queryKey: Pair[Pair[String, Statement], ParameterTypeMap], metaData: String): Unit = {
+      if (traceAstLogicalPlanCache) log += "AST: cacheCompile"
     }
 
-    override def queryCompileWithExpressionCodeGen(queryKey: Pair[Statement, ParameterTypeMap], metaData: String): Unit = {
-      log += s"cacheCompileWithExpressionCodeGen"
+    override def queryCompileWithExpressionCodeGen(queryKey: Pair[Pair[String, Statement], ParameterTypeMap], metaData: String): Unit = {
+      if (traceAstLogicalPlanCache) log += "AST: cacheCompileWithExpressionCodeGen"
     }
 
-    override def queryCacheStale(queryKey:  Pair[Statement, ParameterTypeMap],
+    override def queryCacheStale(queryKey: Pair[Pair[String, Statement], ParameterTypeMap],
                                  secondsSincePlan: Int,
-                                 metaData:  String,
-                                 maybeReason:  Option[String]): Unit = {
-      log += s"cacheStale"
+                                 metaData: String,
+                                 maybeReason: Option[String]): Unit = {
+      if (traceAstLogicalPlanCache) log += "AST: cacheStale"
     }
 
     override def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit = {
-      log += s"cacheFlushDetected"
-    }
-}
-
-  private class LoggingExecutionEngineQueryCacheListener extends ExecutionEngineQueryCacheMonitor {
-    private val log: mutable.Builder[String, List[String]] = List.newBuilder
-
-    def trace: Seq[String] = log.result()
-
-    def clear(): Unit = {
-      log.clear()
+      if (traceAstLogicalPlanCache) log += "AST: cacheFlushDetected"
     }
 
     override def cacheFlushDetected(sizeBeforeFlush: Long): Unit = {
-      log += s"cacheFlushDetected"
+      if (traceExecutionEngineQueryCache) log += "String: cacheFlushDetected"
     }
 
     override def cacheHit(key: Pair[String, ParameterTypeMap]): Unit = {
-      log += s"cacheHit: $key"
+      if (traceExecutionEngineQueryCache) log += s"String: cacheHit: $key"
     }
 
     override def cacheMiss(key: Pair[String, ParameterTypeMap]): Unit = {
-      log += s"cacheMiss: $key"
+      if (traceExecutionEngineQueryCache) log += s"String: cacheMiss: $key"
     }
 
     override def cacheDiscard(key: Pair[String, ParameterTypeMap], ignored: String, secondsSinceReplan: Int, maybeReason: Option[String]): Unit = {
-      log += s"cacheDiscard: $key"
+      if (traceExecutionEngineQueryCache) log += s"String: cacheDiscard: $key"
     }
 
     override def cacheCompile(key: Pair[String, ParameterTypeMap]): Unit = {
-      log += s"cacheCompile: $key"
+      if (traceExecutionEngineQueryCache) log += s"String: cacheCompile: $key"
     }
 
     override def cacheCompileWithExpressionCodeGen(key: Pair[String, ParameterTypeMap]): Unit = {
-      log += s"cacheCompileWithExpressionCodeGen: $key"
+      if (traceExecutionEngineQueryCache) log += s"String: cacheCompileWithExpressionCodeGen: $key"
     }
   }
 }
