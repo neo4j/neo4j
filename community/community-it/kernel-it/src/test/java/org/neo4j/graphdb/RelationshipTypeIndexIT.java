@@ -34,7 +34,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.IndexReadSession;
-import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -43,6 +42,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -306,7 +306,7 @@ class RelationshipTypeIndexIT
         try ( TokenIndexReader reader = indexProxy.newTokenReader() )
         {
             SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
-            reader.query( QueryContext.NULL_CONTEXT, tokenClient, unconstrained(), new TokenPredicate( relationshipTypeId ) );
+            reader.query( tokenClient, unconstrained(), new TokenPredicate( relationshipTypeId ), PageCursorTracer.NULL );
             while ( tokenClient.next() )
             {
                 actualIds.add( tokenClient.reference );
