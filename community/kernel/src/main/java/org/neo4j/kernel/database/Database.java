@@ -477,7 +477,7 @@ public class Database extends LifecycleAdapter
             versionContextSupplier.init( metadataProvider::getLastClosedTransactionId );
 
             CheckPointerImpl.ForceOperation forceOperation =
-                    new DefaultForceOperation( indexingService, labelScanStore, relationshipTypeScanStore, storageEngine );
+                    new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
             DatabaseTransactionLogModule transactionLogModule =
                     buildTransactionLogs( logFiles, databaseConfig, internalLogProvider, scheduler, forceOperation,
                             logEntryReader, metadataProvider, databaseMonitors, databaseDependencies );

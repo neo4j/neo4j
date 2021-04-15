@@ -367,7 +367,7 @@ public final class Recovery
                         monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine, transactionStore, metadataProvider,
                         schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog, startupChecker, tracers.getPageCacheTracer(), memoryTracker );
 
-        CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, relationshipTypeScanStore, storageEngine );
+        CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
         CheckPointerImpl checkPointer =
                 new CheckPointerImpl( metadataProvider, RecoveryThreshold.INSTANCE, forceOperation, LogPruning.NO_PRUNING, checkpointAppender,
