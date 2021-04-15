@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
 
@@ -37,7 +36,6 @@ class IndexStoreViewFactoryTest
 
     FullScanStoreView fullScanStoreView = mock( FullScanStoreView.class );
     LabelScanStore labelScanStore = mock( LabelScanStore.class );
-    RelationshipTypeScanStore relTypeScanStore = mock( RelationshipTypeScanStore.class );
     LockService lockService = mock( LockService.class );
     LogProvider logProvider = mock( LogProvider.class );
     IndexProxyProvider indexProxies = mock( IndexProxyProvider.class );
@@ -47,7 +45,7 @@ class IndexStoreViewFactoryTest
     {
         //Given
         var config = Config.newBuilder().set( enable_scan_stores_as_token_indexes, true ).build();
-        var factory = new IndexStoreViewFactory( config, () -> null, fullScanStoreView, labelScanStore, relTypeScanStore, lockService, logProvider );
+        var factory = new IndexStoreViewFactory( config, () -> null, fullScanStoreView, labelScanStore, lockService, logProvider );
 
         //When
         var indexStoreView = factory.createTokenIndexStoreView( indexProxies );
@@ -61,7 +59,7 @@ class IndexStoreViewFactoryTest
     {
         //Given
         var config = Config.newBuilder().set( enable_scan_stores_as_token_indexes, false ).build();
-        var factory = new IndexStoreViewFactory( config, () -> null, fullScanStoreView, labelScanStore, relTypeScanStore, lockService, logProvider );
+        var factory = new IndexStoreViewFactory( config, () -> null, fullScanStoreView, labelScanStore, lockService, logProvider );
 
         //When
         var indexStoreView = factory.createTokenIndexStoreView( indexProxies );

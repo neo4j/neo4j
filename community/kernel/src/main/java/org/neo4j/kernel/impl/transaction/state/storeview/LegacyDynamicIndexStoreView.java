@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.io.IOException;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
@@ -33,8 +32,6 @@ import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -49,23 +46,19 @@ import org.neo4j.storageengine.api.StorageReader;
 public class LegacyDynamicIndexStoreView implements IndexStoreView
 {
     private static final String ALL_NODE_STORE_SCAN_TAG = "DynamicIndexStoreView_useAllNodeStoreScan";
-    private static final String ALL_RELATIONSHIP_SCAN_TAG = "DynamicIndexStoreView_useAllRelationshipStoreScan";
 
     private final FullScanStoreView fullScanStoreView;
     private final LabelScanStore labelScanStore;
-    private final RelationshipTypeScanStore relationshipTypeScanStore;
     protected final LockService locks;
     private final Log log;
     private final Config config;
     protected final Supplier<StorageReader> storageEngine;
 
     public LegacyDynamicIndexStoreView( FullScanStoreView fullScanStoreView, LabelScanStore labelScanStore,
-                                        RelationshipTypeScanStore relationshipTypeScanStore, LockService locks,
-                                        Supplier<StorageReader> storageEngine, LogProvider logProvider, Config config )
+            LockService locks, Supplier<StorageReader> storageEngine, LogProvider logProvider, Config config )
     {
         this.fullScanStoreView = fullScanStoreView;
         this.labelScanStore = labelScanStore;
-        this.relationshipTypeScanStore = relationshipTypeScanStore;
         this.locks = locks;
         this.storageEngine = storageEngine;
         this.log = logProvider.getLog( getClass() );
@@ -91,14 +84,8 @@ public class LegacyDynamicIndexStoreView implements IndexStoreView
             TokenScanConsumer relationshipTypeScanConsumer, boolean forceStoreScan, boolean parallelWrite, PageCacheTracer cacheTracer,
             MemoryTracker memoryTracker )
     {
-        if ( forceStoreScan || useAllRelationshipStoreScan( relationshipTypeIds, cacheTracer ) )
-        {
-            return fullScanStoreView.visitRelationships( relationshipTypeIds, propertyKeyIdFilter, propertyScanConsumer, relationshipTypeScanConsumer,
-                                                         forceStoreScan, parallelWrite, cacheTracer, memoryTracker );
-        }
-        return new RelationshipTypeViewRelationshipStoreScan( config, storageEngine.get(), locks, relationshipTypeScanStore, relationshipTypeScanConsumer,
-                                                              propertyScanConsumer, relationshipTypeIds, propertyKeyIdFilter, parallelWrite,
-                                                              fullScanStoreView.scheduler, cacheTracer, memoryTracker );
+        return fullScanStoreView.visitRelationships( relationshipTypeIds, propertyKeyIdFilter, propertyScanConsumer, relationshipTypeScanConsumer,
+                forceStoreScan, parallelWrite, cacheTracer, memoryTracker );
     }
 
     @Override
@@ -120,28 +107,9 @@ public class LegacyDynamicIndexStoreView implements IndexStoreView
         }
     }
 
-    private boolean useAllRelationshipStoreScan( int[] relationshipTypeIds, PageCacheTracer cacheTracer )
-    {
-        try ( PageCursorTracer cursorTracer = cacheTracer.createPageCursorTracer( ALL_RELATIONSHIP_SCAN_TAG ) )
-        {
-            return !config.get( RelationshipTypeScanStoreSettings.enable_relationship_type_scan_store ) || ArrayUtils.isEmpty( relationshipTypeIds ) ||
-                    isEmptyRelationshipTypeStoreScan( cursorTracer );
-        }
-        catch ( Exception e )
-        {
-            log.error( "Cannot determine number of relationships in scan store, falling back to all relationships scan.", e );
-            return true;
-        }
-    }
-
     private boolean isEmptyLabelScanStore( PageCursorTracer cursorTracer ) throws Exception
     {
         return labelScanStore.isEmpty( cursorTracer );
-    }
-
-    private boolean isEmptyRelationshipTypeStoreScan( PageCursorTracer cursorTracer ) throws IOException
-    {
-        return relationshipTypeScanStore.isEmpty( cursorTracer );
     }
 
     @Override

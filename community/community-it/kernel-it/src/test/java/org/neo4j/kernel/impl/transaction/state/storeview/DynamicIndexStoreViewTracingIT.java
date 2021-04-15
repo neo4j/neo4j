@@ -28,7 +28,6 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
@@ -51,8 +50,6 @@ class DynamicIndexStoreViewTracingIT
     private LockService lockService;
     @Inject
     private LabelScanStore labelScanStore;
-    @Inject
-    private RelationshipTypeScanStore relationshipTypeScanStore;
     @Inject
     private RecordStorageEngine storageEngine;
     private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
@@ -80,7 +77,7 @@ class DynamicIndexStoreViewTracingIT
 
         var pageCacheTracer = new DefaultPageCacheTracer();
         var neoStoreStoreView = new FullScanStoreView( lockService, storageEngine::newReader, Config.defaults(), jobScheduler );
-        var indexStoreView = new LegacyDynamicIndexStoreView( neoStoreStoreView, labelScanStore, relationshipTypeScanStore,
+        var indexStoreView = new LegacyDynamicIndexStoreView( neoStoreStoreView, labelScanStore,
                 lockService, storageEngine::newReader, NullLogProvider.nullLogProvider(), Config.defaults() );
         var storeScan = indexStoreView.visitNodes( new int[]{0, 1, 2}, ALWAYS_TRUE_INT, null,
                 new TestTokenScanConsumer(), false, true, pageCacheTracer, INSTANCE );

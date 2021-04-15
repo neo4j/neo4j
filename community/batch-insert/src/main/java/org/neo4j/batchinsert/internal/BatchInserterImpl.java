@@ -111,7 +111,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
-import org.neo4j.kernel.impl.api.scan.FullRelationshipTypeStream;
 import org.neo4j.kernel.impl.coreapi.schema.BaseNodeConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
@@ -122,7 +121,6 @@ import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstra
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenScanStore;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
@@ -153,8 +151,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.locker.DatabaseLocker;
 import org.neo4j.kernel.internal.locker.Locker;
@@ -592,7 +590,7 @@ public class BatchInserterImpl implements BatchInserter
         return prototype.getIndexType() == org.neo4j.internal.schema.IndexType.FULLTEXT;
     }
 
-    private void repopulateAllIndexes( LabelScanStore labelIndex, RelationshipTypeScanStore relationshipTypeIndex ) throws IOException
+    private void repopulateAllIndexes( LabelScanStore labelIndex ) throws IOException
     {
         LogProvider logProvider = logService.getInternalLogProvider();
         LogProvider userLogProvider = logService.getUserLogProvider();
@@ -600,7 +598,7 @@ public class BatchInserterImpl implements BatchInserter
 
         IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
                 config, () -> new RecordStorageReader( neoStores, schemaCache ), fullScanStoreView, labelIndex,
-                relationshipTypeIndex, NO_LOCK_SERVICE, logProvider );
+                NO_LOCK_SERVICE, logProvider );
 
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout.indexStatisticsStore(),
                 immediate(), readOnlyChecker, databaseLayout.getDatabaseName(), cacheTracer );
@@ -1143,8 +1141,7 @@ public class BatchInserterImpl implements BatchInserter
         {
             rebuildCounts( pageCacheTracer, memoryTracker );
             LabelScanStore labelIndex = buildLabelIndex();
-            RelationshipTypeScanStore relationshipTypeIndex = buildRelationshipTypeIndex();
-            repopulateAllIndexes( labelIndex, relationshipTypeIndex );
+            repopulateAllIndexes( labelIndex );
             idGeneratorFactory.visit( IdGenerator::markHighestWrittenAtHighId );
             neoStores.flush( cursorTracer );
             groupDegreesStore.checkpoint( cursorTracer );
@@ -1170,21 +1167,6 @@ public class BatchInserterImpl implements BatchInserter
         // Rebuild will happen as part of this call if it was dropped
         life.add( labelIndex );
         return labelIndex;
-    }
-
-    private RelationshipTypeScanStore buildRelationshipTypeIndex() throws IOException
-    {
-        FullRelationshipTypeStream fullRelationshipTypeStream = new FullRelationshipTypeStream( fullScanStoreView );
-        RelationshipTypeScanStore relationshipTypeIndex =
-                TokenScanStore.toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, fullRelationshipTypeStream, readOnlyChecker, monitors,
-                        immediate(), config, pageCacheTracer, memoryTracker );
-        if ( relationshipTypesTouched )
-        {
-            relationshipTypeIndex.drop();
-        }
-        // Rebuild will happen as part of this call if it was dropped
-        life.add( relationshipTypeIndex );
-        return relationshipTypeIndex;
     }
 
     @Override

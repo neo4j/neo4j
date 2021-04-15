@@ -23,10 +23,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageReader;
@@ -41,14 +39,12 @@ public class IndexStoreViewFactory
     private final Supplier<StorageReader> storageReader;
     private final LogProvider logProvider;
     private final LabelScanStore labelScanStore;
-    private final RelationshipTypeScanStore relationshipTypeScanStore;
 
     public IndexStoreViewFactory(
             Config config,
             Supplier<StorageReader> storageReader,
             FullScanStoreView fullScanStoreView,
             LabelScanStore labelScanStore,
-            RelationshipTypeScanStore relationshipTypeScanStore,
             LockService lockService,
             LogProvider logProvider )
     {
@@ -57,7 +53,6 @@ public class IndexStoreViewFactory
         this.storageReader = storageReader;
         this.logProvider = logProvider;
         this.labelScanStore = labelScanStore;
-        this.relationshipTypeScanStore = relationshipTypeScanStore;
         this.fullScanStoreView = fullScanStoreView;
     }
 
@@ -70,7 +65,7 @@ public class IndexStoreViewFactory
         else
         {
             return new LegacyDynamicIndexStoreView(
-                    fullScanStoreView, labelScanStore, relationshipTypeScanStore, lockService, storageReader, logProvider, config );
+                    fullScanStoreView, labelScanStore, lockService, storageReader, logProvider, config );
         }
     }
 }

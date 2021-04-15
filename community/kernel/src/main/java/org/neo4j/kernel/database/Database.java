@@ -143,8 +143,8 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.state.DatabaseFileListing;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
@@ -464,7 +464,7 @@ public class Database extends LifecycleAdapter
                             databaseConfig, otherDatabaseMemoryTracker );
 
             IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
-                    databaseConfig, storageEngine::newReader, fullScanStoreView, labelScanStore, relationshipTypeScanStore, lockService, internalLogProvider );
+                    databaseConfig, storageEngine::newReader, fullScanStoreView, labelScanStore, lockService, internalLogProvider );
 
             // Schema indexes
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector,

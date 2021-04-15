@@ -23,7 +23,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -75,12 +74,11 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
+import org.neo4j.kernel.impl.transaction.state.storeview.EntityIdIterator;
+import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.LegacyDynamicIndexStoreView;
-import org.neo4j.kernel.impl.transaction.state.storeview.EntityIdIterator;
 import org.neo4j.kernel.impl.transaction.state.storeview.LegacyLabelViewNodeStoreScan;
-import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
@@ -108,7 +106,6 @@ import static org.neo4j.internal.helpers.collection.Iterables.iterable;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer.NULL;
 import static org.neo4j.kernel.database.Database.initialSchemaRulesLoader;
-import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 //[NodePropertyUpdate[0, prop:0 add:Sweden, labelsBefore:[], labelsAfter:[0]]]
@@ -327,7 +324,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         RecordStorageEngine storageEngine = getStorageEngine();
         LabelScanStore labelScanStore = getLabelScanStore();
-        RelationshipTypeScanStore relationshipTypeScanStore = getRelationshipTypeScanStore();
 
         try ( Transaction transaction = db.beginTx() )
         {
@@ -337,7 +333,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             NullLogProvider nullLogProvider = NullLogProvider.getInstance();
 
             LegacyDynamicIndexStoreView storeView =
-                    dynamicIndexStoreViewWrapper( customAction, storageEngine::newReader, labelScanStore, relationshipTypeScanStore, config, scheduler );
+                    dynamicIndexStoreViewWrapper( customAction, storageEngine::newReader, labelScanStore, config, scheduler );
 
             IndexStoreViewFactory indexStoreViewFactory = mock( IndexStoreViewFactory.class );
             when( indexStoreViewFactory.createTokenIndexStoreView( any() ) ).thenReturn( storeView );
@@ -361,11 +357,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private LegacyDynamicIndexStoreView dynamicIndexStoreViewWrapper(
             Runnable customAction, Supplier<StorageReader> readerSupplier, LabelScanStore labelScanStore,
-            RelationshipTypeScanStore relationshipTypeScanStore, Config config, JobScheduler scheduler )
+            Config config, JobScheduler scheduler )
     {
         LockService locks = LockService.NO_LOCK_SERVICE;
         FullScanStoreView fullScanStoreView = new FullScanStoreView( locks, readerSupplier, Config.defaults(), scheduler );
-        return new DynamicIndexStoreViewWrapper( fullScanStoreView, labelScanStore, relationshipTypeScanStore, locks, readerSupplier, customAction,
+        return new DynamicIndexStoreViewWrapper( fullScanStoreView, labelScanStore, locks, readerSupplier, customAction,
                                                  config, scheduler );
     }
 
@@ -486,11 +482,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return db.getDependencyResolver().resolveDependency( LabelScanStore.class );
     }
 
-    private RelationshipTypeScanStore getRelationshipTypeScanStore()
-    {
-        return db.getDependencyResolver().resolveDependency( RelationshipTypeScanStore.class );
-    }
-
     private RecordStorageEngine getStorageEngine()
     {
         return db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
@@ -517,10 +508,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         private final JobScheduler jobScheduler;
 
         DynamicIndexStoreViewWrapper( FullScanStoreView fullScanStoreView, LabelScanStore labelScanStore,
-                RelationshipTypeScanStore relationshipTypeScanStore, LockService locks,
-                Supplier<StorageReader> storageEngine, Runnable customAction, Config config, JobScheduler jobScheduler )
+                LockService locks, Supplier<StorageReader> storageEngine, Runnable customAction, Config config, JobScheduler jobScheduler )
         {
-            super( fullScanStoreView, labelScanStore, relationshipTypeScanStore, locks, storageEngine, NullLogProvider.getInstance(), config );
+            super( fullScanStoreView, labelScanStore, locks, storageEngine, NullLogProvider.getInstance(), config );
             this.customAction = customAction;
             this.jobScheduler = jobScheduler;
         }
