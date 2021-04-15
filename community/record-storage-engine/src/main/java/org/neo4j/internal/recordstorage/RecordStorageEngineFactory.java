@@ -93,6 +93,7 @@ import org.neo4j.token.api.TokenHolder;
 
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
@@ -222,7 +223,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     {
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
-                        NullLogProvider.nullLogProvider(), PageCacheTracer.NULL );
+                        NullLogProvider.nullLogProvider(), PageCacheTracer.NULL, readOnly() );
         try ( NeoStores stores = factory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
         {
             stores.start( cursorTracer );
