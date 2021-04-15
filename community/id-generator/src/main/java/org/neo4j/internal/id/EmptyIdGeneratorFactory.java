@@ -28,13 +28,14 @@ import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.DatabaseReadOnlyChecker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static java.util.Collections.emptyList;
-import static org.neo4j.internal.id.EmptyIdGenerator.EMPTY_ID_GENERATOR;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 
 public class EmptyIdGeneratorFactory implements IdGeneratorFactory
 {
@@ -48,20 +49,20 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory
     public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
             Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
-        return EMPTY_ID_GENERATOR;
+        return EmptyIdGenerator.EMPTY_ID_GENERATOR;
     }
 
     @Override
     public IdGenerator create( PageCache pageCache, Path filename, IdType idType, long highId, boolean throwIfFileExists, long maxId,
             DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCursorTracer cursorTracer, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
-        return EMPTY_ID_GENERATOR;
+        return EmptyIdGenerator.EMPTY_ID_GENERATOR;
     }
 
     @Override
     public IdGenerator get( IdType idType )
     {
-        return EMPTY_ID_GENERATOR;
+        return EmptyIdGenerator.EMPTY_ID_GENERATOR;
     }
 
     @Override
@@ -80,5 +81,111 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory
     public Collection<Path> listIdFiles()
     {
         return emptyList();
+    }
+
+    private static class EmptyIdGenerator implements IdGenerator
+    {
+        private static final EmptyIdGenerator EMPTY_ID_GENERATOR = new EmptyIdGenerator();
+        private static final int EMPTY_ID = -1;
+
+        private EmptyIdGenerator()
+        {
+        }
+
+        @Override
+        public IdRange nextIdBatch( int size, boolean forceConsecutiveAllocation, PageCursorTracer cursorTracer )
+        {
+            return new IdRange( EMPTY_LONG_ARRAY, EMPTY_ID, EMPTY_ID );
+        }
+
+        @Override
+        public void setHighId( long id )
+        {
+            // nothing
+        }
+
+        @Override
+        public void markHighestWrittenAtHighId()
+        {
+            // nothing
+        }
+
+        @Override
+        public long getHighestWritten()
+        {
+            return EMPTY_ID;
+        }
+
+        @Override
+        public long getHighId()
+        {
+            return EMPTY_ID;
+        }
+
+        @Override
+        public long getHighestPossibleIdInUse()
+        {
+            return EMPTY_ID;
+        }
+
+        @Override
+        public Marker marker( PageCursorTracer cursorTracer )
+        {
+            return NOOP_MARKER;
+        }
+
+        @Override
+        public void close()
+        {
+            // nothing
+        }
+
+        @Override
+        public long getNumberOfIdsInUse()
+        {
+            return -1;
+        }
+
+        @Override
+        public long getDefragCount()
+        {
+            return -1;
+        }
+
+        @Override
+        public void checkpoint( PageCursorTracer cursorTracer )
+        {
+            // nothing
+        }
+
+        @Override
+        public void maintenance( boolean awaitOngoing, PageCursorTracer cursorTracer )
+        {
+            // nothing
+        }
+
+        @Override
+        public void start( FreeIds freeIdsForRebuild, PageCursorTracer cursorTracer ) throws IOException
+        {
+            // nothing
+        }
+
+        @Override
+        public void clearCache( PageCursorTracer cursorTracer )
+        {
+            // nothing
+        }
+
+        @Override
+        public long nextId( PageCursorTracer cursorTracer )
+        {
+            return EMPTY_ID;
+        }
+
+        @Override
+        public boolean consistencyCheck( ReporterFactory reporterFactory, PageCursorTracer cursorTracer )
+        {
+            return true;
+        }
     }
 }
