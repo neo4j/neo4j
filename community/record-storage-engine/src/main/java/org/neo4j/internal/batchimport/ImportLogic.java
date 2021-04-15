@@ -543,7 +543,7 @@ public class ImportLogic implements Closeable
                     executeStage( new RelationshipCountsAndTypeIndexBuildStage( config, nodeLabelsCache, neoStore.getRelationshipStore(),
                             neoStore.getLabelRepository().getHighId(),
                             neoStore.getRelationshipTypeRepository().getHighId(), updater, numberArrayFactory,
-                            progressMonitor.startSection( "Relationships" ), neoStore.getRelationshipTypeScanStore(), pageCacheTracer, memoryTracker ) );
+                            progressMonitor.startSection( "Relationships" ), pageCacheTracer, memoryTracker ) );
                 }
 
                 @Override

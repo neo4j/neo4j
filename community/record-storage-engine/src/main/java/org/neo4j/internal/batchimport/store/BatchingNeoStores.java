@@ -55,7 +55,6 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.TokenScanStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -141,7 +140,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private TokenHolders tokenHolders;
     private LifeSupport life = new LifeSupport();
     private LabelScanStore labelScanStore;
-    private RelationshipTypeScanStore relationshipTypeScanStore;
     private PageCacheFlusher flusher;
     private boolean doubleRelationshipRecordUnits;
 
@@ -257,10 +255,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         labelScanStore = TokenScanStore.labelScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(), new Monitors(), immediate(),
                 neo4jConfig, pageCacheTracer, memoryTracker );
         life.add( labelScanStore );
-        relationshipTypeScanStore = TokenScanStore
-                .toggledRelationshipTypeScanStore( pageCache, databaseLayout, fileSystem, EMPTY, writable(), new Monitors(), immediate(), neo4jConfig,
-                        pageCacheTracer, memoryTracker );
-        life.add( relationshipTypeScanStore );
     }
 
     private void instantiateStores() throws IOException
@@ -481,11 +475,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return labelScanStore;
     }
 
-    public RelationshipTypeScanStore getRelationshipTypeScanStore()
-    {
-        return relationshipTypeScanStore;
-    }
-
     public NeoStores getNeoStores()
     {
         return neoStores;
@@ -558,10 +547,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         if ( labelScanStore != null )
         {
             labelScanStore.force( cursorTracer );
-        }
-        if ( relationshipTypeScanStore != null )
-        {
-            relationshipTypeScanStore.force( cursorTracer );
         }
     }
 

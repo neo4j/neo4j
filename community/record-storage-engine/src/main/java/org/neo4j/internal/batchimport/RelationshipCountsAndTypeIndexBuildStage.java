@@ -28,7 +28,6 @@ import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.memory.MemoryTracker;
 
@@ -44,14 +43,12 @@ public class RelationshipCountsAndTypeIndexBuildStage extends Stage
 
     public RelationshipCountsAndTypeIndexBuildStage( Configuration config, NodeLabelsCache cache, RelationshipStore relationshipStore,
             int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater, NumberArrayFactory cacheFactory,
-            ProgressReporter progressReporter, RelationshipTypeScanStore relationshipTypeIndex, PageCacheTracer pageCacheTracer,
-            MemoryTracker memoryTracker )
+            ProgressReporter progressReporter, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
     {
         super( NAME, null, config, Step.RECYCLE_BATCHES );
         add( new BatchFeedStep( control(), config, allIn( relationshipStore, config ),
                 relationshipStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, relationshipStore, pageCacheTracer ) );
-        add( new RelationshipTypeIndexWriterStep( control(), config, relationshipTypeIndex, pageCacheTracer ) );
         add( new ProcessRelationshipCountsDataStep( control(), cache, config,
                 highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, progressReporter, pageCacheTracer, memoryTracker ) );
     }
