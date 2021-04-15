@@ -81,7 +81,7 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
   }
 
   test("should leave where clause alone") {
-    val where: Where = Where(PatternExpression(RelationshipsPattern(chain(node(None), relationship(None), node(None)))_)(Set.empty))_
+    val where: Where = Where(PatternExpression(RelationshipsPattern(chain(node(None), relationship(None), node(None)))_)(Set.empty, "", ""))_
     val ast: ASTNode = SingleQuery(Seq(
       Match(optional = false, Pattern(Seq(EveryPath(chain(chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))), relationship(Some(varFor("r"))), node(Some(varFor("m")))))))_, Seq.empty, Some(where))_,
       Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, None, None, None)_

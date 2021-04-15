@@ -16,15 +16,12 @@
  */
 package org.neo4j.cypher.internal.expressions
 
-import org.neo4j.cypher.internal.util.FreshIdNameGenerator
-import org.neo4j.cypher.internal.util.RollupCollectionNameGenerator
-
 /**
  * An expression that can be solved using RollupApply.
  *
  * It defines the variable names to use for that.
  */
 trait RollupApplySolvable extends Expression {
-  val variableToCollectName: String = FreshIdNameGenerator.name(this.position)
-  val collectionName: String = RollupCollectionNameGenerator.name(this.position)
+  def variableToCollectName: String
+  def collectionName: String
 }

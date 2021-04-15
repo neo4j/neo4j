@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Projec
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.nilProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.singleNodeProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.singleRelationshipWithKnownTargetProjector
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -41,7 +42,7 @@ import scala.language.implicitConversions
 
 class PathExpressionConversionTest extends CypherFunSuite {
 
-  val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
+  val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY, new AllNameGenerators()))
 
   val pos = DummyPosition(0)
 

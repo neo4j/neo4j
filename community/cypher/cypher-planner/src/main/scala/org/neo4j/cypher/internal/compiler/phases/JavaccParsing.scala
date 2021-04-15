@@ -36,7 +36,7 @@ case object JavaccParsing extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
     try {
-      val statement = JavaCCParser.parse(in.queryText, context.cypherExceptionFactory)
+      val statement = JavaCCParser.parse(in.queryText, context.cypherExceptionFactory, context.allNameGenerators)
       in.withStatement(statement)
     } catch {
       case e: SyntaxException if JavaCCParser.shouldFallBack(e.getMessage) =>

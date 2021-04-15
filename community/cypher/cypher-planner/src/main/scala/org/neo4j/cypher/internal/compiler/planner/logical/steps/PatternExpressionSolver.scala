@@ -186,7 +186,7 @@ object PatternExpressionSolver {
                                       context: LogicalPlanningContext): ListSubQueryExpressionSolver[PatternExpression] = {
 
     def extractQG(source: LogicalPlan, namedExpr: PatternExpression): QueryGraph = {
-      asQueryGraph(namedExpr, availableSymbols, context.innerVariableNamer)
+      asQueryGraph(namedExpr, availableSymbols, context.innerVariableNamer, context.allNameGenerators)
     }
 
     def createPathExpression(pattern: PatternExpression): PathExpression = {
@@ -205,7 +205,7 @@ object PatternExpressionSolver {
   private def solvePatternComprehensions(availableSymbols: Set[String],
                                          context: LogicalPlanningContext): ListSubQueryExpressionSolver[PatternComprehension] = {
     def extractQG(source: LogicalPlan, namedExpr: PatternComprehension) = {
-      asQueryGraph(namedExpr, source.availableSymbols, context.innerVariableNamer)
+      asQueryGraph(namedExpr, source.availableSymbols, context.innerVariableNamer, context.allNameGenerators)
     }
 
     def createProjectionToCollect(pattern: PatternComprehension): Expression = pattern.projection

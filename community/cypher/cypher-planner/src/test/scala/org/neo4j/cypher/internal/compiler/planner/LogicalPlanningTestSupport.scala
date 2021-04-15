@@ -89,6 +89,7 @@ import org.neo4j.cypher.internal.planner.spi.InstrumentedGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.LabelId
@@ -198,15 +199,24 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       useErrorsOverWarnings: Boolean = false
                                      ): LogicalPlanningContext = {
     val planningAttributes = PlanningAttributes.newAttributes
-    LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen), metrics, semanticTable,
-      strategy, QueryGraphSolverInput(Map.empty, Map.empty),
-      notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
-      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,
+    LogicalPlanningContext(planContext,
+      LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen),
+      metrics,
+      semanticTable,
+      strategy,
+      QueryGraphSolverInput(Map.empty, Map.empty),
+      notificationLogger = notificationLogger,
+      useErrorsOverWarnings = useErrorsOverWarnings,
+      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping,
+      config = QueryPlannerConfiguration.default,
+      costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
       innerVariableNamer = innerVariableNamer,
       idGen = idGen,
       executionModel = ExecutionModel.default,
-      debugOptions = CypherDebugOptions.default)
+      debugOptions = CypherDebugOptions.default,
+      allNameGenerators = new AllNameGenerators()
+    )
   }
 
   def newMockedLogicalPlanningContextWithFakeAttributes(planContext: PlanContext,
@@ -216,16 +226,23 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                                         notificationLogger: InternalNotificationLogger = devNullLogger,
                                                         useErrorsOverWarnings: Boolean = false): LogicalPlanningContext = {
     val planningAttributes = newStubbedPlanningAttributes
-    LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen), metrics, semanticTable,
+    LogicalPlanningContext(planContext,
+      LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen),
+      metrics,
+      semanticTable,
       strategy, QueryGraphSolverInput(Map.empty, Map.empty),
-      notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
-      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, csvBufferSize = config.csvBufferSize,
-      config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,
+      notificationLogger = notificationLogger,
+      useErrorsOverWarnings = useErrorsOverWarnings,
+      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping,
+      csvBufferSize = config.csvBufferSize,
+      config = QueryPlannerConfiguration.default,
+      costComparisonListener = devNullListener,
       planningAttributes = planningAttributes,
       innerVariableNamer = innerVariableNamer,
       idGen = idGen,
       executionModel = ExecutionModel.default,
-      debugOptions = CypherDebugOptions.default)
+      debugOptions = CypherDebugOptions.default,
+      allNameGenerators = new AllNameGenerators())
   }
 
   def newMockedStatistics: InstrumentedGraphStatistics = mock[InstrumentedGraphStatistics]

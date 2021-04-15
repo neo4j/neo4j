@@ -25,20 +25,37 @@ import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSema
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
-import org.neo4j.cypher.internal.util.NodeNameGenerator
-import org.neo4j.cypher.internal.util.RelNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
-case object nameAllPatternElements extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
+case class nameAllPatternElements(allNameGenerators: AllNameGenerators) extends Rewriter {
 
+  override def apply(that: AnyRef): AnyRef = namingRewriter.apply(that)
+
+  private def namingRewriter: Rewriter = bottomUp(Rewriter.lift {
+    case pattern: NodePattern if pattern.variable.isEmpty =>
+      val syntheticName = allNameGenerators.nodeNameGenerator.nextName
+      pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
+
+    case pattern: RelationshipPattern if pattern.variable.isEmpty  =>
+      val syntheticName = allNameGenerators.relNameGenerator.nextName
+      pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
+  }, stopper = {
+    case _: ShortestPathExpression => true
+    case _ => false
+  })
+}
+
+object nameAllPatternElements extends StepSequencer.Step with ASTRewriterFactory {
   override def getRewriter(innerVariableNamer: InnerVariableNamer,
                            semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory): Rewriter = namingRewriter
+                           cypherExceptionFactory: CypherExceptionFactory,
+                           allNameGenerators: AllNameGenerators): Rewriter = nameAllPatternElements(allNameGenerators)
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
@@ -51,19 +68,4 @@ case object nameAllPatternElements extends Rewriter with StepSequencer.Step with
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
     PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
   )
-
-  override def apply(that: AnyRef): AnyRef = namingRewriter.apply(that)
-
-  private val namingRewriter: Rewriter = bottomUp(Rewriter.lift {
-    case pattern: NodePattern if pattern.variable.isEmpty =>
-      val syntheticName = NodeNameGenerator.name(pattern.position.newUniquePos())
-      pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
-
-    case pattern: RelationshipPattern if pattern.variable.isEmpty  =>
-      val syntheticName = RelNameGenerator.name(pattern.position.newUniquePos())
-      pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
-  }, stopper = {
-    case _: ShortestPathExpression => true
-    case _ => false
-  })
 }

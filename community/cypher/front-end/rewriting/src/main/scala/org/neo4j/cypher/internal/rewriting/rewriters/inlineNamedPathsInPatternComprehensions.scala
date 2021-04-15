@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -52,7 +53,7 @@ case object inlineNamedPathsInPatternComprehensions extends Rewriter with Step w
         namedPath = None,
         predicate = predicate.map(_.inline(path, patternElement)),
         projection = projection.inline(path, patternElement)
-      )(expr.position, expr.outerScope)
+      )(expr.position, expr.outerScope, expr.variableToCollectName, expr.collectionName)
   })
 
   private implicit final class InliningExpression(val expr: Expression) extends AnyVal {
@@ -67,5 +68,6 @@ case object inlineNamedPathsInPatternComprehensions extends Rewriter with Step w
   override def getRewriter(innerVariableNamer: InnerVariableNamer,
                            semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
-                           cypherExceptionFactory: CypherExceptionFactory): Rewriter = instance
+                           cypherExceptionFactory: CypherExceptionFactory,
+                           allNameGenerators: AllNameGenerators): Rewriter = instance
 }

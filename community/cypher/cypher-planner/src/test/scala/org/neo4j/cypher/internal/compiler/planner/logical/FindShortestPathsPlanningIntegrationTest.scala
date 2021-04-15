@@ -28,7 +28,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
     val plan = cfg.plan("MATCH (a), (b), shortestPath((a)-[r]->(b)) RETURN b").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .shortestPath("(a)-[r]->(b)", pathName = Some("anon_16"))
+      .shortestPath("(a)-[r]->(b)", pathName = Some("anon_0"))
       .cartesianProduct()
       .|.allNodeScan("b")
       .allNodeScan("a")
@@ -51,7 +51,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
     val plan = cfg.plan("MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .shortestPath("(a)-[r]->(b)", pathName = Some("anon_16"), all = true)
+      .shortestPath("(a)-[r]->(b)", pathName = Some("anon_0"), all = true)
       .cartesianProduct()
       .|.allNodeScan("b")
       .allNodeScan("a")

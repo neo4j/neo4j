@@ -45,8 +45,8 @@ import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
 
 class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val patExpr1 = newPatExpr("a", 0, 1, 2, SemanticDirection.OUTGOING)
-  private val patExpr2 = newPatExpr("a", 3, 4, 5, SemanticDirection.INCOMING)
+  private val patExpr1 = newPatExpr("a", 0, 1, 2, SemanticDirection.OUTGOING, "varToCollect", "collectionName")
+  private val patExpr2 = newPatExpr("a", 3, 4, 5, SemanticDirection.INCOMING, "varToCollect2", "collectionName2")
 
   test("Rewrites single pattern expression") {
     // given MATCH (a) RETURN (a)-->() as x
@@ -65,8 +65,8 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     // then
     resultPlan should beLike {
       case RollUpApply(`source`,
-      Projection(`otherSide`, MapKeys("anon_0")),
-      "x", "anon_0") => ()
+      Projection(`otherSide`, MapKeys("varToCollect")),
+      "x", "varToCollect") => ()
     }
     expressions should equal(Map("x" -> varFor("x")))
   }
@@ -97,10 +97,10 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     resultPlan should beLike {
       case RollUpApply(
       RollUpApply(`source`,
-      Projection(`b1`, MapKeys("anon_0")),
-      "x", "anon_0"),
-      Projection(`b2`, MapKeys("anon_3")),
-      "y", "anon_3") => ()
+      Projection(`b1`, MapKeys("varToCollect")),
+      "x", "varToCollect"),
+      Projection(`b2`, MapKeys("varToCollect2")),
+      "y", "varToCollect2") => ()
     }
     expressions should equal(Map("x" -> varFor("x"), "y" -> varFor("y")))
   }
@@ -123,13 +123,13 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     resultPlan should beLike {
       case RollUpApply(
       RollUpApply(`source`,
-      Projection(`b1`, MapKeys("anon_0")),
-      "anon_0", "anon_0"),
-      Projection(`b2`, MapKeys("anon_3")),
-      "anon_3", "anon_3") => ()
+      Projection(`b1`, MapKeys("varToCollect")),
+      "collectionName", "varToCollect"),
+      Projection(`b2`, MapKeys("varToCollect2")),
+      "collectionName2", "varToCollect2") => ()
     }
 
-    expressions should equal(Map("x" -> equals(varFor("anon_0"), varFor("anon_3"))))
+    expressions should equal(Map("x" -> equals(varFor("collectionName"), varFor("collectionName2"))))
   }
 
   test("Rewrites pattern expression inside complex expression, as a WHERE predicate") {
@@ -150,33 +150,36 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     resultPlan should beLike {
       case RollUpApply(
       RollUpApply(`source`,
-      Projection(`b1`, MapKeys("anon_0")),
-      "anon_0", "anon_0"),
-      Projection(`b2`, MapKeys("anon_3")),
-      "anon_3", "anon_3") => ()
+      Projection(`b1`, MapKeys("varToCollect")),
+      "collectionName", "varToCollect"),
+      Projection(`b2`, MapKeys("varToCollect2")),
+      "collectionName2", "varToCollect2") => ()
     }
 
-    expression should equal(equals(varFor("anon_0"), varFor("anon_3")))
+    expression should equal(equals(varFor("collectionName"), varFor("collectionName2")))
   }
 
   private def logicalPlanningContext(strategy: QueryGraphSolver): LogicalPlanningContext =
     newMockedLogicalPlanningContext(newMockedPlanContext(), semanticTable = new SemanticTable(), strategy = strategy)
 
-  private def newPatExpr(left: String, position: Int, rightOffset: Int, relOffset: Int, dir: SemanticDirection): PatternExpression =
-    newPatExpr(left, position, Left(rightOffset), Left(relOffset), dir)
+  private def newPatExpr(left: String, position: Int,
+                         rightOffset: Int,
+                         relOffset: Int,
+                         dir: SemanticDirection,
+                         varToCollect: String,
+                         collectionName: String): PatternExpression = {
+      def getNameAndPosition(rightE: Either[Int, String]) = rightE match {
+        case Left(i) => (Some(varFor(s"  REL$i")), DummyPosition(i))
+        case Right(name) => (Some(varFor(name)), pos)
+      }
 
-  private def newPatExpr(left: String, position: Int, rightE: Either[Int, String], relNameE: Either[Int, String], dir: SemanticDirection): PatternExpression = {
-    def getNameAndPosition(rightE: Either[Int, String]) = rightE match {
-      case Left(i) => (Some(varFor(s"  REL$i")), DummyPosition(i))
-      case Right(name) => (Some(varFor(name)), pos)
+      val (right, rightPos) = getNameAndPosition(Left(rightOffset))
+      val (relName, relPos) = getNameAndPosition(Left(relOffset))
+
+      PatternExpression(RelationshipsPattern(RelationshipChain(
+        NodePattern(Some(varFor(left)), Seq.empty, None) _,
+        RelationshipPattern(relName, Seq.empty, None, None, dir)(relPos),
+        NodePattern(right, Seq.empty, None)(rightPos)) _)(DummyPosition(position)))(Set.empty, varToCollect, collectionName)
     }
 
-    val (right, rightPos) = getNameAndPosition(rightE)
-    val (relName, relPos) = getNameAndPosition(relNameE)
-
-    PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor(left)), Seq.empty, None) _,
-      RelationshipPattern(relName, Seq.empty, None, None, dir)(relPos),
-      NodePattern(right, Seq.empty, None)(rightPos)) _)(DummyPosition(position)))(Set.empty)
-  }
 }

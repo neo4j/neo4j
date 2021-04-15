@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.normalizeNotEquals
 import org.neo4j.cypher.internal.rewriting.rewriters.parameterValueTypeReplacement
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
@@ -74,9 +75,11 @@ class ASTRewriter(innerVariableNamer: InnerVariableNamer) {
   def rewrite(statement: Statement,
               semanticState: SemanticState,
               parameterTypeMapping: Map[String, CypherType],
-              cypherExceptionFactory: CypherExceptionFactory): Statement = {
+              cypherExceptionFactory: CypherExceptionFactory,
+              allNameGenerators: AllNameGenerators
+             ): Statement = {
     val rewriters = orderedSteps.map { step =>
-      val rewriter = step.getRewriter(innerVariableNamer, semanticState, parameterTypeMapping, cypherExceptionFactory)
+      val rewriter = step.getRewriter(innerVariableNamer, semanticState, parameterTypeMapping, cypherExceptionFactory, allNameGenerators)
       RewriterStep.validatingRewriter(rewriter, step)
     }
 

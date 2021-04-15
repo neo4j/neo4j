@@ -16,5 +16,71 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
-case object normalizeMatchPredicates
-  extends MatchPredicateNormalization(MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer))
+import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
+import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
+import org.neo4j.cypher.internal.util.AllNameGenerators
+import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.symbols.CypherType
+import org.neo4j.cypher.internal.util.topDown
+
+case object NoPredicatesInNamedPartsOfMatchPattern extends StepSequencer.Condition
+
+object normalizeMatchPredicates extends StepSequencer.Step with ASTRewriterFactory {
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    noUnnamedPatternElementsInMatch // unnamed pattern cannot be rewritten, so they need to handled first
+  )
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(NoPredicatesInNamedPartsOfMatchPattern)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def getRewriter(innerVariableNamer: InnerVariableNamer,
+                           semanticState: SemanticState,
+                           parameterTypeMapping: Map[String, CypherType],
+                           cypherExceptionFactory: CypherExceptionFactory,
+                           allNameGenerators: AllNameGenerators): Rewriter = normalizeMatchPredicates(MatchPredicateNormalizerChain(PropertyPredicateNormalizer(allNameGenerators), LabelPredicateNormalizer))
+
+
+}
+
+case class normalizeMatchPredicates(normalizer: MatchPredicateNormalizer) extends Rewriter {
+  override def apply(that: AnyRef): AnyRef = instance(that)
+
+  private val rewriter = Rewriter.lift {
+    case m@Match(_, pattern, _, where) =>
+      val predicates = pattern.fold(Vector.empty[Expression]) {
+        case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
+        case _                                                          => identity
+      }
+
+      val rewrittenPredicates: List[Expression] = (predicates ++ where.map(_.expression)).toList
+
+      val predOpt: Option[Expression] = rewrittenPredicates match {
+        case Nil => None
+        case exp :: Nil => Some(exp)
+        case list => Some(list.reduce(And(_, _)(m.position)))
+      }
+
+      val newWhere: Option[Where] = predOpt.map {
+        exp =>
+          val pos: InputPosition = where.fold(m.position)(_.position)
+          Where(exp)(pos)
+      }
+
+      m.copy(
+        pattern = pattern.endoRewrite(topDown(Rewriter.lift(normalizer.replace))),
+        where = newWhere
+      )(m.position)
+  }
+
+  private val instance = topDown(rewriter, _.isInstanceOf[Expression])
+}

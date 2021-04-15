@@ -170,6 +170,30 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     counter.counts should equal(CacheCounts(hits = 2, misses = 1, flushes = 1, compilations = 1))
   }
 
+  test("Query with generated names (pattern expression) should use same plan") {
+    runQuery("MATCH (a) WHERE (a)-[:REL]->(:L) RETURN a")
+    // Different whitespace so the String->AST cache does not hit
+    runQuery("MATCH (a)  WHERE (a)-[:REL]->(:L) RETURN a")
+
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+  }
+
+  test("Query with generated names (pattern comprehension) should use same plan") {
+    runQuery("MATCH (a) RETURN [(a)-[:REL]->(:L) WHERE a.prop = 0 | a.foo]")
+    // Different whitespace so the String->AST cache does not hit
+    runQuery("MATCH (a)  RETURN [(a)-[:REL]->(:L) WHERE a.prop = 0 | a.foo]")
+
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+  }
+
+  test("Query with generated names (unnamed elements in pattern) should use same plan") {
+    runQuery("MATCH (a)-[:REL]->(:L) RETURN a")
+    // Different whitespace so the String->AST cache does not hit
+    runQuery("MATCH  (a)-[:REL]->(:L) RETURN a")
+
+    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, compilations = 1))
+  }
+
   test("should fold to constants and use the same plan") {
     runQuery("return 42 AS a")
     runQuery("return 5 + 3 AS a")

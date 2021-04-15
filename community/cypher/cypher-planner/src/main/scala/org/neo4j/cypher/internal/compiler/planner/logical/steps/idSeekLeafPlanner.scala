@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.SeekableArgs
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.NodeNameGenerator
 
 case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
@@ -73,7 +72,7 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
               case Some(relationship) =>
                 val types = relationship.types.toList
                 val oldNodes = relationship.nodes
-                val newNodes = generateNewStartEndNodes(oldNodes, queryGraph.argumentIds, variable.position)
+                val newNodes = generateNewStartEndNodes(oldNodes, queryGraph.argumentIds, context)
                 val nodePredicates = buildNodePredicates(oldNodes, newNodes)
 
                 val seekPlan = planRelationshipByIdSeek(relationship, newNodes, idValues, Seq(predicate), queryGraph.argumentIds, context)
@@ -129,10 +128,10 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
   private def generateNewStartEndNodes(oldNodes: (String, String),
                                        argumentIds: Set[String],
-                                       pos: InputPosition): (String, String) = {
+                                       context: LogicalPlanningContext): (String, String) = {
     val (left, right) = oldNodes
-    val newLeft = if (!argumentIds.contains(left)) left else NodeNameGenerator.name(pos.newUniquePos())
-    val newRight = if (!argumentIds.contains(right)) right else NodeNameGenerator.name(pos.newUniquePos())
+    val newLeft = if (!argumentIds.contains(left)) left else context.allNameGenerators.nodeNameGenerator.nextName
+    val newRight = if (!argumentIds.contains(right)) right else context.allNameGenerators.nodeNameGenerator.nextName
     (newLeft, newRight)
   }
 

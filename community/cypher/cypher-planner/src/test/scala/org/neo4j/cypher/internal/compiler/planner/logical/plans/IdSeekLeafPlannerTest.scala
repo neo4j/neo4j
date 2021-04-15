@@ -392,10 +392,10 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     // then
     val newFrom = "anon_0"
-    val newEnd = "anon_0"
+    val newTo = "anon_1"
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
-      .filter(s"$from = `$newFrom`", s"$end = `$newEnd``")
-      .directedRelationshipByIdSeek("r", newFrom, newEnd, Set(from, end), 42, 43, 43)
+      .filter(s"$from = `$newFrom`", s"$end = `$newTo``")
+      .directedRelationshipByIdSeek("r", newFrom, newTo, Set(from, end), 42, 43, 43)
       .build()
 
     resultPlans shouldEqual Seq(expectedPlan)

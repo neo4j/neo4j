@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
-import java.time.Clock
-
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.compiler.ContextCreator
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
@@ -39,12 +37,15 @@ import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.values.virtual.MapValue
+
+import java.time.Clock
 
 class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,
                      val tracer: CompilationPhaseTracer,
@@ -65,10 +66,11 @@ class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,
   override val errorHandler: Seq[SemanticErrorDef] => Unit =
     SyntaxExceptionCreator.throwOnError(cypherExceptionFactory)
 
+  val allNameGenerators = new AllNameGenerators()
+
   def getParameterValueTypeMapping: Map[String, CypherType] = {
     ParameterValueTypeHelper.asCypherTypeMap(params)
   }
-
 }
 
 object PlannerContextCreator extends ContextCreator[PlannerContext] {

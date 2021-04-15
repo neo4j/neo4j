@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
@@ -37,6 +38,8 @@ object ContextHelper extends MockitoSugar {
 
       override def errorHandler: Seq[SemanticErrorDef] => Unit =
         (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw cypherExceptionFactory.syntaxException(e.msg, e.position))
+
+      override def allNameGenerators: AllNameGenerators = new AllNameGenerators()
     }
   }
 }

@@ -80,13 +80,16 @@ object ListComprehension {
 
 case class PatternComprehension(namedPath: Option[LogicalVariable], pattern: RelationshipsPattern,
                                 predicate: Option[Expression], projection: Expression)
-                               (val position: InputPosition, override val outerScope: Set[Variable])
+                               (val position: InputPosition,
+                                override val outerScope: Set[Variable],
+                                override val variableToCollectName: String,
+                                override val collectionName: String)
   extends ScopeExpression with ExpressionWithOuterScope with RollupApplySolvable {
 
   self =>
 
   override def withOuterScope(outerScope: Set[Variable]): PatternComprehension =
-    copy()(position, outerScope)
+    copy()(position, outerScope, variableToCollectName, collectionName)
 
   override val introducedVariables: Set[LogicalVariable] = {
     val introducedInternally = namedPath.toSet ++ pattern.element.allVariables
@@ -100,7 +103,7 @@ case class PatternComprehension(namedPath: Option[LogicalVariable], pattern: Rel
       children(1).asInstanceOf[RelationshipsPattern],
       children(2).asInstanceOf[Option[Expression]],
       children(3).asInstanceOf[Expression]
-    )(position, outerScope).asInstanceOf[this.type]
+    )(position, outerScope, variableToCollectName, collectionName).asInstanceOf[this.type]
   }
 }
 

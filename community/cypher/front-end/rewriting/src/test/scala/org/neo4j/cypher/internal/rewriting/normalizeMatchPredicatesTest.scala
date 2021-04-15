@@ -23,27 +23,24 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelPredicateNormalizer
-import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalization
+import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizerChain
 import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
+import org.neo4j.cypher.internal.rewriting.rewriters.normalizeMatchPredicates
+import org.neo4j.cypher.internal.util.AllNameGenerators
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 
-class MatchPredicateNormalizerTest extends CypherFunSuite {
+class normalizeMatchPredicatesTest extends CypherFunSuite {
 
   private val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
 
-  object PropertyPredicateNormalization extends MatchPredicateNormalization(PropertyPredicateNormalizer)
-
-  object LabelPredicateNormalization extends MatchPredicateNormalization(LabelPredicateNormalizer)
-
   def rewriter(semanticState: SemanticState): Rewriter = inSequence(
     normalizeHasLabelsAndHasType(semanticState),
-    PropertyPredicateNormalization,
-    LabelPredicateNormalization
+    normalizeMatchPredicates(MatchPredicateNormalizerChain(PropertyPredicateNormalizer(new AllNameGenerators), LabelPredicateNormalizer)),
   )
 
   def parseForRewriting(queryText: String): Statement = parser.parse(queryText.replace("\r\n", "\n"), OpenCypherExceptionFactory(None))
@@ -157,30 +154,30 @@ class MatchPredicateNormalizerTest extends CypherFunSuite {
   test("move properties and labels from nodes and relationships to WHERE clause") {
     assertRewrite(
       "MATCH (a:A {foo:'v1', bar:'v2'})-[r:R {baz: 'v1'}]->(b:B {foo:'v2', baz:'v2'}) RETURN *",
-      "MATCH (a)-[r:R]->(b) WHERE (a:A AND b:B) AND (a.foo = 'v1' AND a.bar = 'v2' AND r.baz = 'v1' AND b.foo = 'v2' AND b.baz = 'v2') RETURN *")
+      "MATCH (a)-[r:R]->(b) WHERE a.foo = 'v1' AND a.bar = 'v2' AND a:A AND r.baz = 'v1' AND b.foo = 'v2' AND b.baz = 'v2' AND b:B RETURN *")
   }
 
   test("move single property from var length relationship to the where clause") {
     assertRewrite(
       "MATCH (n)-[r* {prop: 42}]->(b) RETURN n",
-      "MATCH (n)-[r*]->(b) WHERE ALL(`  FRESHID9` in r where `  FRESHID9`.prop = 42) RETURN n")
+      "MATCH (n)-[r*]->(b) WHERE ALL(`  FRESHID0` in r where `  FRESHID0`.prop = 42) RETURN n")
   }
 
   test("move multiple properties from var length relationship to the where clause") {
     assertRewrite(
       "MATCH (n)-[r* {prop: 42, p: 'aaa'}]->(b) RETURN n",
-      "MATCH (n)-[r*]->(b) WHERE ALL(`  FRESHID9` in r where `  FRESHID9`.prop = 42 AND `  FRESHID9`.p = 'aaa') RETURN n")
+      "MATCH (n)-[r*]->(b) WHERE ALL(`  FRESHID0` in r where `  FRESHID0`.prop = 42 AND `  FRESHID0`.p = 'aaa') RETURN n")
   }
 
   test("varlength with labels") {
     assertRewrite(
       "MATCH (a:Artist)-[r:WORKED_WITH* { year: 1988 }]->(b:Artist) RETURN *",
-      "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND b:Artist AND ALL(`  FRESHID16` in r where `  FRESHID16`.year = 1988)  RETURN *")
+      "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND ALL(`  FRESHID0` in r where `  FRESHID0`.year = 1988) AND b:Artist  RETURN *")
   }
 
   test("varlength with labels and parameters") {
     assertRewrite(
       "MATCH (a:Artist)-[r:WORKED_WITH* { year: $foo }]->(b:Artist) RETURN *",
-      "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND b:Artist AND ALL(`  FRESHID16` in r where `  FRESHID16`.year = $foo)  RETURN *")
+      "MATCH (a)-[r:WORKED_WITH*]->(b) WHERE a:Artist AND ALL(`  FRESHID0` in r where `  FRESHID0`.year = $foo)  AND b:Artist RETURN *")
   }
 }
