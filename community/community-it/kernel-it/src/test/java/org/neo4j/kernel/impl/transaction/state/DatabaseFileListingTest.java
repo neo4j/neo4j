@@ -45,7 +45,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.schema.LabelScanStore;
-import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStore;
 import org.neo4j.kernel.impl.index.schema.RelationshipTypeScanStoreSettings;
 import org.neo4j.kernel.impl.index.schema.TokenScanStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -131,7 +130,6 @@ class DatabaseFileListingTest
     {
         // Given
         LabelScanStore labelScanStore = mock( LabelScanStore.class );
-        RelationshipTypeScanStore relationshipTypeScanStore = mock( RelationshipTypeScanStore.class );
         IndexingService indexingService = mock( IndexingService.class );
         DatabaseLayout databaseLayout = mock( DatabaseLayout.class );
         when( databaseLayout.metadataStore() ).thenReturn( mock( Path.class ) );
@@ -139,12 +137,10 @@ class DatabaseFileListingTest
         filesInStoreDirAre( databaseLayout, STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
         StorageEngine storageEngine = mock( StorageEngine.class );
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
-        DatabaseFileListing fileListing = new DatabaseFileListing( databaseLayout, logFiles, labelScanStore, relationshipTypeScanStore,
+        DatabaseFileListing fileListing = new DatabaseFileListing( databaseLayout, logFiles, labelScanStore,
                 indexingService, storageEngine, idGeneratorFactory );
 
         ResourceIterator<Path> labelScanSnapshot = scanStoreFilesAre( labelScanStore,
-                new String[]{"blah/scan.store", "scan.more"} );
-        ResourceIterator<Path> relationshipTypeScanSnapshot = scanStoreFilesAre( relationshipTypeScanStore,
                 new String[]{"blah/scan.store", "scan.more"} );
         ResourceIterator<Path> indexSnapshot = indexFilesAre( indexingService, new String[]{"schema/index/my.index"} );
 
@@ -155,7 +151,6 @@ class DatabaseFileListingTest
 
         // Then
         verify( labelScanSnapshot ).close();
-        verify( relationshipTypeScanSnapshot ).close();
         verify( indexSnapshot ).close();
     }
 

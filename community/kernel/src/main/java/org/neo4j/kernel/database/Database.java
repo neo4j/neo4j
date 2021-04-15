@@ -489,7 +489,6 @@ public class Database extends LifecycleAdapter
                     indexingService,
                     databaseSchemaState,
                     labelScanStore,
-                    relationshipTypeScanStore,
                     storageEngine,
                     metadataProvider,
                     databaseAvailabilityGuard,
@@ -846,7 +845,7 @@ public class Database extends LifecycleAdapter
 
     private DatabaseKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
             IndexingService indexingService, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
-            RelationshipTypeScanStore relationshipTypeScanStore, StorageEngine storageEngine, TransactionIdStore transactionIdStore,
+            StorageEngine storageEngine, TransactionIdStore transactionIdStore,
             AvailabilityGuard databaseAvailabilityGuard, SystemNanoClock clock,
             IndexStatisticsStore indexStatisticsStore,
             LeaseService leaseService )
@@ -882,8 +881,7 @@ public class Database extends LifecycleAdapter
         life.add( kernel );
 
         final DatabaseFileListing fileListing =
-                new DatabaseFileListing( databaseLayout, logFiles, labelScanStore, relationshipTypeScanStore, indexingService, storageEngine,
-                        idGeneratorFactory );
+                new DatabaseFileListing( databaseLayout, logFiles, labelScanStore, indexingService, storageEngine, idGeneratorFactory );
         databaseDependencies.satisfyDependency( fileListing );
 
         return new DatabaseKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
