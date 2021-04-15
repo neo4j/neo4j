@@ -54,7 +54,6 @@ import static java.lang.String.format;
 
 public final class SchemaStatementProcedure
 {
-
     private static final String CREATE_UNIQUE_PROPERTY_CONSTRAINT = "CALL db.createUniquePropertyConstraint( '%s', %s, %s, '%s', %s )";
     private static final String CREATE_NODE_KEY_CONSTRAINT = "CALL db.createNodeKey( '%s', %s, %s, '%s', %s )";
     private static final String CREATE_NODE_EXISTENCE_CONSTRAINT = "CREATE CONSTRAINT `%s` ON (a:`%s`) ASSERT (a.`%s`) IS NOT NULL";
@@ -62,6 +61,8 @@ public final class SchemaStatementProcedure
     private static final String CREATE_BTREE_INDEX = "CALL db.createIndex('%s', %s, %s, '%s', %s)";
     private static final String CREATE_NODE_FULLTEXT_INDEX = "CALL db.index.fulltext.createNodeIndex('%s', %s, %s, %s)";
     private static final String CREATE_RELATIONSHIP_FULLTEXT_INDEX = "CALL db.index.fulltext.createRelationshipIndex('%s', %s, %s, %s)";
+    private static final String CREATE_NODE_LABEL_INDEX = "CREATE LOOKUP INDEX `%s` FOR (n) ON EACH labels(n)";
+    private static final String CREATE_RELATIONSHIP_TYPE_INDEX = "CREATE LOOKUP INDEX `%s` FOR ()-[r]-() ON EACH type(r)";
     private static final String DROP_CONSTRAINT = "DROP CONSTRAINT `%s`";
     private static final String DROP_INDEX = "DROP INDEX `%s`";
     private static final String SINGLE_CONFIG = "`%s`: %s";
@@ -240,8 +241,10 @@ public final class SchemaStatementProcedure
                     throw new IllegalArgumentException( "Did not recognize entity type " + indexDescriptor.schema().entityType() );
                 }
             case LOOKUP:
-                // new index type, not adding it to the deprecated procedure
-                return "";
+                String createStatement = indexDescriptor.schema().entityType() == EntityType.NODE
+                                         ? CREATE_NODE_LABEL_INDEX
+                                         : CREATE_RELATIONSHIP_TYPE_INDEX;
+                return format( createStatement, name );
             default:
                 throw new IllegalArgumentException( "Did not recognize index type " + indexDescriptor.getIndexType() );
             }
