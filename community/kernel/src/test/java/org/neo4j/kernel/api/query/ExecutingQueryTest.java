@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.ZonedDateTime;
 import java.util.Collections;
+import java.util.OptionalLong;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -187,7 +188,7 @@ class ExecutingQueryTest
         cpuClock.add( 60, TimeUnit.MICROSECONDS );
 
         // when
-        long cpuTime = query.snapshot().cpuTimeMicros();
+        long cpuTime = query.snapshot().cpuTimeMicros().getAsLong();
 
         // then
         assertEquals( 60, cpuTime );
@@ -212,8 +213,8 @@ class ExecutingQueryTest
         QuerySnapshot snapshot = query.snapshot();
 
         // then
-        assertNull( snapshot.cpuTimeMicros() );
-        assertNull( snapshot.idleTimeMicros() );
+        assertEquals( snapshot.cpuTimeMicros(), OptionalLong.empty() );
+        assertEquals( snapshot.idleTimeMicros(), OptionalLong.empty() );
     }
 
     @Test

@@ -23,6 +23,7 @@ import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Node;
@@ -106,12 +107,14 @@ public class QueryStatusResult
         this.clientAddress = clientConnection.clientAddress();
         this.requestUri = clientConnection.requestURI();
         this.metaData = query.transactionAnnotationData();
-        this.cpuTimeMillis = asMillis( query.cpuTimeMicros() );
+        OptionalLong cpuTime = query.cpuTimeMicros();
+        this.cpuTimeMillis = cpuTime.isPresent() ? cpuTime.getAsLong() : null;
         this.status = query.status();
         this.resourceInformation = query.resourceInformation();
         this.activeLockCount = query.activeLockCount();
         this.waitTimeMillis = asMillis( query.waitTimeMicros() );
-        this.idleTimeMillis = asMillis( query.idleTimeMicros() );
+        OptionalLong idleTimeMicros = query.idleTimeMicros();
+        this.idleTimeMillis = idleTimeMicros.isPresent() ? asMillis( idleTimeMicros.getAsLong() ) : null;
         this.planner = query.planner();
         this.runtime = query.runtime();
         this.indexes = query.indexes();

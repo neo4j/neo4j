@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -209,9 +210,9 @@ public class QuerySnapshot
      * @return the time in microseconds that the CPU has spent on this query, or {@code null} if the cpu time could not
      * be measured.
      */
-    public Long cpuTimeMicros()
+    public OptionalLong cpuTimeMicros()
     {
-        return cpuTimeMicros < 0 ? null : cpuTimeMicros;
+        return cpuTimeMicros < 0 ? OptionalLong.empty() : OptionalLong.of( cpuTimeMicros );
     }
 
     /**
@@ -227,9 +228,9 @@ public class QuerySnapshot
      * @return the time in microseconds that this query was de-scheduled, or {@code null} if the cpu time could not be
      * measured.
      */
-    public Long idleTimeMicros()
+    public OptionalLong idleTimeMicros()
     {
-        return cpuTimeMicros < 0 ? null : (elapsedTimeMicros - cpuTimeMicros - waitTimeMicros);
+        return cpuTimeMicros < 0 ? OptionalLong.empty() : OptionalLong.of( elapsedTimeMicros - cpuTimeMicros - waitTimeMicros );
     }
 
     /**
