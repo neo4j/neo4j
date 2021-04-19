@@ -44,8 +44,8 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     }
   }
 
-  private val hint1: UsingIndexHint = UsingIndexHint(varFor("n"), labelName("Person"), Seq(PropertyKeyName("name")_))_
-  private val hint2: UsingIndexHint = UsingIndexHint(varFor("n"), labelName("Person"), Seq(PropertyKeyName("age")_))_
+  private val hint1: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Person"), Seq(PropertyKeyName("name")_))_
+  private val hint2: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Person"), Seq(PropertyKeyName("age")_))_
 
   test("picks the right plan by cost, no matter the cardinality") {
     val a = fakeLogicalPlanFor("a")

@@ -1091,10 +1091,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _usingIndexHint: Gen[UsingIndexHint] = for {
     variable <- _variable
-    label <- _labelName
+    labelOrRelType <- _labelOrTypeName
     properties <- oneOrMore(_propertyKeyName)
     spec <- oneOf(SeekOnly, SeekOrScan)
-  } yield UsingIndexHint(variable, label, properties, spec)(pos)
+  } yield UsingIndexHint(variable, labelOrRelType, properties, spec)(pos)
 
   def _usingJoinHint: Gen[UsingJoinHint] = for {
     variables <- oneOrMore(_variable)
@@ -1102,8 +1102,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _usingScanHint: Gen[UsingScanHint] = for {
     variable <- _variable
-    label <- _labelName
-  } yield UsingScanHint(variable, label)(pos)
+    labelOrRelType <- _labelOrTypeName
+  } yield UsingScanHint(variable, labelOrRelType)(pos)
 
   def _hint: Gen[UsingHint] = oneOf(
     _usingIndexHint,

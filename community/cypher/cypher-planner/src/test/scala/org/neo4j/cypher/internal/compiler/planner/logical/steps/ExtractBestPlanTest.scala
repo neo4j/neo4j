@@ -46,7 +46,7 @@ import org.neo4j.exceptions.JoinHintException
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private def newIndexHint(): Hint = { UsingIndexHint(varFor("a"), labelName("User"), Seq(PropertyKeyName("name")(pos)))_ }
+  private def newIndexHint(): Hint = { UsingIndexHint(varFor("a"), labelOrRelTypeName("User"), Seq(PropertyKeyName("name")(pos)))_ }
 
   private def newJoinHint(): Hint = { UsingJoinHint(Seq(varFor("a")))_ }
 

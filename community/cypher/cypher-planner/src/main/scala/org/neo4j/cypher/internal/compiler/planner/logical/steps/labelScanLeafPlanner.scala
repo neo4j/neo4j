@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -43,7 +44,7 @@ case class labelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with L
         if (qg.patternNodes(varName) && !qg.argumentIds(varName)) {
           val labelName = labels.head
           val hint = qg.hints.collectFirst {
-            case hint@UsingScanHint(`variable`, `labelName`) => hint
+            case hint@UsingScanHint(`variable`, LabelOrRelTypeName(labelName.name)) => hint
           }
           val providedOrder = ResultOrdering.providedOrderForLabelScan(interestingOrderConfig.orderToSolve, variable)
           val plan = context.logicalPlanProducer.planNodeByLabelScan(variable, labelName, Seq(labelPredicate), hint, qg.argumentIds, providedOrder, context)

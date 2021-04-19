@@ -153,7 +153,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     //(a:L)-[:R]->(b)
     val context = planningContext()
     val qg = pattern("r", "a", "b", OUTGOING, "R")
-      .addHints(Seq(UsingScanHint(varFor("a"), labelName("L"))(pos)))
+      .addHints(Seq(UsingScanHint(varFor("a"), labelOrRelTypeName("L"))(pos)))
 
     // then
     relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context) should be(empty)
@@ -164,7 +164,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     //(a:L)-[:R]->(b)
     val context = planningContext()
     val qg = pattern("r", "a", "b", OUTGOING, "R")
-      .addHints(Seq(UsingScanHint(varFor("b"), labelName("L"))(pos)))
+      .addHints(Seq(UsingScanHint(varFor("b"), labelOrRelTypeName("L"))(pos)))
 
     // then
     relationshipTypeScanLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context) should be(empty)

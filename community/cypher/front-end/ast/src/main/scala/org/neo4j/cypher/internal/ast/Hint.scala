@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.UnsignedIntegerLiteral
@@ -61,21 +62,24 @@ case object SeekOrScan extends UsingIndexHintSpec {
 
 case class UsingIndexHint(
                            variable: Variable,
-                           label: LabelName,
+                           labelOrRelType: LabelOrRelTypeName,
                            properties: Seq[PropertyKeyName],
                            spec: UsingIndexHintSpec = SeekOrScan
                          )(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
   def semanticCheck = ensureDefined(variable) chain expectType(CTNode.covariant, variable)
 
-  override def toString: String = s"USING INDEX ${if(spec == SeekOnly) "SEEK " else ""}${variable.name}:${label.name}(${properties.map(_.name).mkString(", ")})"
+  override def toString: String = s"USING INDEX ${if(spec == SeekOnly) "SEEK " else ""}${variable.name}:${labelOrRelType.name}(${properties.map(_.name).mkString
+    ("," +
+    " " +
+    "")})"
 }
 
-case class UsingScanHint(variable: Variable, label: LabelName)(val position: InputPosition) extends UsingHint with NodeHint {
+case class UsingScanHint(variable: Variable, labelOrRelType: LabelOrRelTypeName)(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
   def semanticCheck = ensureDefined(variable) chain expectType(CTNode.covariant, variable)
 
-  override def toString: String = s"USING SCAN ${variable.name}:${label.name}"
+  override def toString: String = s"USING SCAN ${variable.name}:${labelOrRelType.name}"
 }
 
 object UsingJoinHint {

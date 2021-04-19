@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.Property
@@ -197,7 +198,7 @@ case class indexScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner with L
                            labelId: LabelId,
                            indexDescriptor: IndexDescriptor) = {
     val hint = qg.hints.collectFirst {
-      case hint@UsingIndexHint(Variable(`variableName`), `labelName`, properties, spec)
+      case hint@UsingIndexHint(Variable(`variableName`), LabelOrRelTypeName(labelName.name), properties, spec)
         if spec.fulfilledByScan && properties.map(_.name) == Seq(property.propertyKey.name) => hint
     }
     // Index scan is always on just one property

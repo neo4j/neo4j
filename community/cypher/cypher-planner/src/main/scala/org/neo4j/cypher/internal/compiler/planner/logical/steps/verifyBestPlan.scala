@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -98,10 +98,10 @@ object verifyBestPlan {
       // hints referred to non-existent indexes ("explicit hints")
       if (context.useErrorsOverWarnings) {
         val firstIndexHint = hints.head
-        throw new IndexHintException(firstIndexHint.label.name, firstIndexHint.properties.map(_.name).asJava, "No such index")
+        throw new IndexHintException(firstIndexHint.labelOrRelType.name, firstIndexHint.properties.map(_.name).asJava, "No such index")
       } else {
         hints.foreach { hint =>
-          context.notificationLogger.log(IndexHintUnfulfillableNotification(hint.label.name, hint.properties.map(_.name)))
+          context.notificationLogger.log(IndexHintUnfulfillableNotification(hint.labelOrRelType.name, hint.properties.map(_.name)))
         }
       }
     }
@@ -123,7 +123,7 @@ object verifyBestPlan {
   private def findUnfulfillableIndexHints(query: PlannerQueryPart, planContext: PlanContext): Set[UsingIndexHint] = {
     query.allHints.flatMap {
       // using index name:label(property1,property2)
-      case UsingIndexHint(_, LabelName(label), properties, _)
+      case UsingIndexHint(_, LabelOrRelTypeName(label), properties, _)
         if planContext.indexExistsForLabelAndProperties(label, properties.map(_.name)) => None
       // no such index exists
       case hint: UsingIndexHint => Some(hint)

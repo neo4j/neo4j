@@ -150,7 +150,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL usingIndexHint( NULL p, Object v, String label, List<String> properties, boolean seekOnly )
+    public NULL usingIndexHint( NULL p, Object v, String labelOrRelType, List<String> properties, boolean seekOnly )
     {
         throw new UnsupportedOperationException( "usingIndexHint is not a literal" );
     }
@@ -162,7 +162,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL usingScan( NULL p, Object v, String label )
+    public NULL usingScan( NULL p, Object v, String labelOrRelType )
     {
         throw new UnsupportedOperationException( "usingScan is not a literal" );
     }

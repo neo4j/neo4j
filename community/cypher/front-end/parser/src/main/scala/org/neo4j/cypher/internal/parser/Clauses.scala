@@ -115,10 +115,10 @@ trait Clauses extends Parser
   )
 
   private def Hint: Rule1[ast.UsingHint] = rule("USING")(
-    group(keyword("USING INDEX SEEK") ~~ Variable ~~ NodeLabel ~~ "(" ~~ oneOrMore(PropertyKeyName, separator = CommaSep) ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _, ast.SeekOnly))
-      | group(keyword("USING INDEX") ~~ Variable ~~ NodeLabel ~~ "(" ~~ oneOrMore(PropertyKeyName, separator = CommaSep) ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _, ast.SeekOrScan))
+    group(keyword("USING INDEX SEEK") ~~ Variable ~~ NodeLabelOrRelType ~~ "(" ~~ oneOrMore(PropertyKeyName, separator = CommaSep) ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _, ast.SeekOnly))
+      | group(keyword("USING INDEX") ~~ Variable ~~ NodeLabelOrRelType ~~ "(" ~~ oneOrMore(PropertyKeyName, separator = CommaSep) ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _, ast.SeekOrScan))
       | group(keyword("USING JOIN ON") ~~ oneOrMore(Variable, separator = CommaSep)) ~~>> (ast.UsingJoinHint(_))
-      | group(keyword("USING SCAN") ~~ Variable ~~ NodeLabel) ~~>> (ast.UsingScanHint(_, _))
+      | group(keyword("USING SCAN") ~~ Variable ~~ NodeLabelOrRelType) ~~>> (ast.UsingScanHint(_, _))
   )
 
   private def MergeAction = rule("ON")(

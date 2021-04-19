@@ -64,8 +64,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     val aNode = "a"
     val bNode = "b"
     val pattern = PatternRelationship("r1", (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-    val hint1 = UsingIndexHint(varFor("a"), labelName("X"), Seq(PropertyKeyName("p")(pos)))(pos)
-    val hint2 = UsingIndexHint(varFor("b"), labelName("X"), Seq(PropertyKeyName("p")(pos)))(pos)
+    val hint1 = UsingIndexHint(varFor("a"), labelOrRelTypeName("X"), Seq(PropertyKeyName("p")(pos)))(pos)
+    val hint2 = UsingIndexHint(varFor("b"), labelOrRelTypeName("X"), Seq(PropertyKeyName("p")(pos)))(pos)
     val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(aNode, bNode), hints = Set(hint1, hint2))
     val context = newMockedLogicalPlanningContext(planContext = mock[PlanContext])
     val aPlan = newMockedLogicalPlan(context.planningAttributes, "a")

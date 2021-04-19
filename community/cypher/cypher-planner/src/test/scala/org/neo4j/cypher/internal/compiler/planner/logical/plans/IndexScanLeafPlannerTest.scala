@@ -145,7 +145,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(existsPredicate, hasLabelsPredicate).addHints(Some(hint))
@@ -167,7 +167,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans unique index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(existsPredicate, hasLabelsPredicate).addHints(Some(hint))
@@ -456,7 +456,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans index contains scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(containsPredicate, hasLabelsPredicate).addHints(Some(hint))
@@ -478,7 +478,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans unique index contains scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(containsPredicate, hasLabelsPredicate).addHints(Some(hint))

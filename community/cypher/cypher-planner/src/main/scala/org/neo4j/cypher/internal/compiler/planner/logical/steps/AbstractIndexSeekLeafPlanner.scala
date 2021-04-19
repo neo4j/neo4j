@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PartialPredicate
@@ -215,12 +216,12 @@ abstract class AbstractIndexSeekLeafPlanner(restrictions: LeafPlanRestrictions) 
     val hint: Option[UsingIndexHint] = {
       val propertyNames = indexCompatiblePredicates.map(_.propertyKeyName.name)
       val relevantHint = hints.collectFirst {
-        case hint@UsingIndexHint(Variable(`idName`), `labelName`, propertyKeyName, _)
+        case hint@UsingIndexHint(Variable(`idName`), LabelOrRelTypeName(labelName.name), propertyKeyName, _)
           if propertyKeyName.map(_.name) == propertyNames => hint
       }
 
       // Although this is the AbstractIndexSeekLeafPlanner, if `onlyExists == true` we plan a scan in `constructPlan()`. And if `hint.spec.fulfilledByScan == false`, that hint is not solve in that case.
-      relevantHint.filter{case h if h.spec.fulfilledByScan || !onlyExists => true; case _ => false}
+      relevantHint.filter(_.spec.fulfilledByScan || !onlyExists)
     }
 
     val entryConstructor: (Seq[Expression], Seq[Expression]) => LogicalPlan =

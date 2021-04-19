@@ -1491,7 +1491,7 @@ List<HINT> Hints() :
     Token t;
     boolean seek;
     VARIABLE v;
-    Token label;
+    Token labelOrRelType;
     List<String> propNames;
     List<VARIABLE> joinVariables;
     HINT hint;
@@ -1500,11 +1500,11 @@ List<HINT> Hints() :
 {
     ( t=<USING>
         (
-            <INDEX> { seek = false; } ( LOOKAHEAD( 2 ) <SEEK> { seek = true; } )? v=Variable() label=NodeLabel()
+            <INDEX> { seek = false; } ( LOOKAHEAD( 2 ) <SEEK> { seek = true; } )? v=Variable() labelOrRelType=LabelOrRelType()
                 <LPAREN> propNames=SymbolicNameList1() <RPAREN>
-                { hint = astFactory.usingIndexHint( pos( t ), v, label.image, propNames, seek ); }
+                { hint = astFactory.usingIndexHint( pos( t ), v, labelOrRelType.image, propNames, seek ); }
             | <JOIN> <ON> joinVariables=VariableList1() { hint = astFactory.usingJoin( pos( t ), joinVariables ); }
-            | <SCAN> v=Variable() label=NodeLabel() { hint = astFactory.usingScan( pos( t ), v, label.image ); }
+            | <SCAN> v=Variable() labelOrRelType=LabelOrRelType() { hint = astFactory.usingScan( pos( t ), v, labelOrRelType.image ); }
         )
         {
             if ( hints == null )
@@ -1794,7 +1794,7 @@ List<StringPos<POS>> NodeLabels() :
     List<StringPos<POS>> labels = new ArrayList<>();
 }
 {
-    ( LOOKAHEAD( 2 ) label=NodeLabel() { labels.add( new StringPos<>( label.image, pos( label ) ) ); } )+
+    ( LOOKAHEAD( 2 ) label=LabelOrRelType() { labels.add( new StringPos<>( label.image, pos( label ) ) ); } )+
     {
         return labels;
     }
@@ -1811,7 +1811,7 @@ EXPRESSION HasLabels(EXPRESSION subject) :
     }
 }
 
-Token NodeLabel() :
+Token LabelOrRelType() :
 {
     Token t;
 }

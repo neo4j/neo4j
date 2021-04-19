@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.UsingIndexHint
-import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.Variable
@@ -40,8 +40,8 @@ class QueryGraphTest extends CypherFunSuite {
   val r3 = "r3"
 
   private val pos = InputPosition.NONE
-  private val hint1 = UsingIndexHint(Variable("n")(pos), LabelName("Label")(pos), Seq(PropertyKeyName("prop1")(pos)))(pos)
-  private val hint2 = UsingIndexHint(Variable("m")(pos), LabelName("Label")(pos), Seq(PropertyKeyName("prop2")(pos)))(pos)
+  private val hint1 = UsingIndexHint(Variable("n")(pos), LabelOrRelTypeName("Label")(pos), Seq(PropertyKeyName("prop1")(pos)))(pos)
+  private val hint2 = UsingIndexHint(Variable("m")(pos), LabelOrRelTypeName("Label")(pos), Seq(PropertyKeyName("prop2")(pos)))(pos)
 
   test("returns no pattern relationships when the query graph doesn't contain any") {
     val rels: Set[PatternRelationship] = Set.empty
@@ -92,7 +92,7 @@ class QueryGraphTest extends CypherFunSuite {
   }
 
   test("should not get duplicate hints when combining query graphs") {
-    val hint3 = UsingIndexHint(Variable("o")(pos), LabelName("Label")(pos), Seq(PropertyKeyName("prop3")(pos)))(pos)
+    val hint3 = UsingIndexHint(Variable("o")(pos), LabelOrRelTypeName("Label")(pos), Seq(PropertyKeyName("prop3")(pos)))(pos)
     val qg1 = QueryGraph(hints = Set(hint1, hint2))
     val qg2 = QueryGraph(hints = Set(hint1, hint3))
     val qg3 = QueryGraph(hints = Set(hint1, hint2, hint3))
