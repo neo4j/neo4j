@@ -29,18 +29,23 @@ import java.util.Map.Entry;
 
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
+import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
+import static org.neo4j.values.virtual.VirtualValues.map;
 
 class InCacheTest
 {
@@ -81,7 +86,7 @@ class InCacheTest
 
         for ( Entry<Value,Value> entry : shuffled( expected ) )
         {
-            assertThat( cache.check( entry.getKey(), list, EmptyMemoryTracker.INSTANCE) ).isEqualTo( entry.getValue() );
+            assertThat( cache.check( entry.getKey(), list, EmptyMemoryTracker.INSTANCE ) ).isEqualTo( entry.getValue() );
         }
     }
 
@@ -107,12 +112,40 @@ class InCacheTest
 
         //when
         MemoryTracker memoryTracker = mock( MemoryTracker.class );
-        cache.check( stringValue( "a" ), list, memoryTracker);
+        cache.check( stringValue( "a" ), list, memoryTracker );
 
         //then
         ArgumentCaptor<Long> arg = ArgumentCaptor.forClass( Long.class );
         verify( memoryTracker ).allocateHeap( arg.capture() );
         assertThat( arg.getValue() ).isGreaterThan( 0 );
+    }
+
+    @Test
+    void shouldHandleArraysWithNulls()
+    {
+        //given
+        InCache cache = new InCache();
+
+        //when
+        var list = list( list( intValue( 1 ), intValue( 2 ) ), list( intValue( 3 ), intValue( 4 ) ) );
+
+        // then
+        assertEquals( BooleanValue.FALSE, cache.check( intValue( 0 ), list, EmptyMemoryTracker.INSTANCE ) );
+        assertEquals( NO_VALUE, cache.check( list( intValue( 1 ), NO_VALUE ), list, EmptyMemoryTracker.INSTANCE ) );
+    }
+
+    @Test
+    void shouldHandleMapsWithNulls()
+    {
+        //given
+        InCache cache = new InCache();
+
+        //when
+        var list = list( map( new String[]{ "a" }, new AnyValue[]{ intValue( 1 ) } ) );
+
+        // then
+        assertEquals( BooleanValue.FALSE, cache.check( intValue( 0 ), list, EmptyMemoryTracker.INSTANCE ) );
+        assertEquals( NO_VALUE, cache.check( map( new String[]{ "a" }, new AnyValue[]{ NO_VALUE } ), list, EmptyMemoryTracker.INSTANCE ) );
     }
 
     private <K, V> Iterable<Entry<K,V>> shuffled( Map<K,V> map )
