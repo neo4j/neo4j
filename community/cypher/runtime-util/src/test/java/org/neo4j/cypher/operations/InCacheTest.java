@@ -26,17 +26,22 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
+import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
+import static org.neo4j.values.virtual.VirtualValues.map;
 
 class InCacheTest
 {
@@ -92,6 +97,34 @@ class InCacheTest
 
         //then
         assertThat( check, equalTo( FALSE ) );
+    }
+
+    @Test
+    void shouldHandleArraysWithNulls()
+    {
+        //given
+        InCache cache = new InCache();
+
+        //when
+        var list = list( list( intValue( 1 ), intValue( 2 ) ), list( intValue( 3 ), intValue( 4 ) ) );
+
+        // then
+        assertEquals( BooleanValue.FALSE, cache.check( intValue( 0 ), list ) );
+        assertEquals( NO_VALUE, cache.check( list( intValue( 1 ), NO_VALUE ), list ) );
+    }
+
+    @Test
+    void shouldHandleMapsWithNulls()
+    {
+        //given
+        InCache cache = new InCache();
+
+        //when
+        var list = list( map( new String[]{ "a" }, new AnyValue[]{ intValue( 1 ) } ) );
+
+        // then
+        assertEquals( BooleanValue.FALSE, cache.check( intValue( 0 ), list ) );
+        assertEquals( NO_VALUE, cache.check( map( new String[]{ "a" }, new AnyValue[]{ NO_VALUE } ), list ) );
     }
 
     private <K, V> Iterable<Entry<K,V>> shuffled( Map<K,V> map )
