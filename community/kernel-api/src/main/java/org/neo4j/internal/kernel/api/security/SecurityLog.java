@@ -100,7 +100,10 @@ public interface SecurityLog
         @Override
         public void asStructure( FieldConsumer fieldConsumer )
         {
-
+            fieldConsumer.add( "type", "security" );
+            fieldConsumer.add( "source", sourceString );
+            fieldConsumer.add( "username", username );
+            fieldConsumer.add( "message", message );
         }
     }
 }
