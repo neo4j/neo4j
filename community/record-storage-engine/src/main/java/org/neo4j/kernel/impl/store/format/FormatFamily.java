@@ -28,38 +28,22 @@ import org.neo4j.storageengine.api.format.Capability;
  */
 public enum FormatFamily
 {
-    standard( 0, "Standard format family" ),
-    aligned( 1, "Page-aligned format family" ),
-    high_limit( 2, "High-limit format family" );
+    standard( 0 ),
+    aligned( 1 ),
+    high_limit( 2 );
 
     private final int rank;
-    private final String description;
     private final Capability formatCapability;
 
-    FormatFamily( int rank, String description )
+    FormatFamily( int rank )
     {
         this.rank = rank;
-        this.description = description;
-        this.formatCapability = new RecordFormatFamilyCapability( name() );
+        this.formatCapability = new RecordFormatFamilyCapability( this );
     }
 
     public Capability formatCapability()
     {
         return formatCapability;
-    }
-
-    public String description()
-    {
-        return description;
-    }
-
-    /**
-     * get format family rank
-     * @return rank
-     */
-    public int rank()
-    {
-        return rank;
     }
 
     /**

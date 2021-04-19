@@ -19,16 +19,18 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import java.util.Objects;
+
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
 class RecordFormatFamilyCapability implements Capability
 {
-    private final String familyName;
+    private final FormatFamily family;
 
-    RecordFormatFamilyCapability( String familyName )
+    RecordFormatFamilyCapability( FormatFamily family )
     {
-        this.familyName = familyName;
+        this.family = family;
     }
 
     @Override
@@ -41,5 +43,32 @@ class RecordFormatFamilyCapability implements Capability
     public boolean isAdditive()
     {
         return false;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        RecordFormatFamilyCapability that = (RecordFormatFamilyCapability) o;
+        return family == that.family;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( family );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "RecordFormatFamilyCapability{" + "family='" + family + '\'' + '}';
     }
 }

@@ -231,7 +231,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             boolean requiresPropertyMigration =
                     !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
             boolean requiresIdFilesMigration = requiresIdFilesMigration( oldFormat, newFormat );
-            // The FORMAT capability now also includes the format family so this comparison is enough
+            // The FORMAT capability also includes the format family so this comparison is enough
             if ( !oldFormat.hasCompatibleCapabilities( newFormat, CapabilityType.FORMAT ) )
             {
                 // Some form of migration is required (a fallback/catch-all option)

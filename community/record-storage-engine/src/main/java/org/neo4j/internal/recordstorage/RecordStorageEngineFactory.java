@@ -224,7 +224,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         StoreFactory factory =
                 new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
                         NullLogProvider.nullLogProvider(), PageCacheTracer.NULL, readOnly() );
-        try ( NeoStores stores = factory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
+        try ( NeoStores stores = factory.openNeoStores( false, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
         {
             stores.start( cursorTracer );
             TokenHolders tokenHolders = tokenHoldersForSchemaStore( stores, new ReadOnlyTokenCreator(), cursorTracer );
