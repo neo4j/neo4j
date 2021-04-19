@@ -121,9 +121,9 @@ public abstract class KnownSystemComponentVersion
     {
         Node versionNode = findOrCreateVersionNode( tx );
         var oldVersion = versionNode.getProperty( componentVersionProperty, null );
-        if ( oldVersion instanceof Integer )
+        if ( oldVersion != null )
         {
-            log.info( String.format( "Upgrading '%s' version property from %d to %d", componentVersionProperty, oldVersion, newVersion ) );
+            log.info( String.format( "Upgrading '%s' version property from %s to %d", componentVersionProperty, oldVersion, newVersion ) );
         }
         else
         {
