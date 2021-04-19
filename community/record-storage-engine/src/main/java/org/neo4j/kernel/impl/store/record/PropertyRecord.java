@@ -156,6 +156,12 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         entityId = id;
     }
 
+    public void setEntity( PropertyRecord other )
+    {
+        entityType = other.entityType;
+        entityId = other.entityId;
+    }
+
     public boolean isNodeSet()
     {
         return entityType == TYPE_NODE;
@@ -303,7 +309,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
      * Reads blocks[] and constructs {@link PropertyBlock} instances from them, making that abstraction
      * available to the outside. Done the first time any PropertyBlock is needed or manipulated.
      */
-    private void ensureBlocksLoaded()
+    public void ensureBlocksLoaded()
     {
         if ( !blocksLoaded )
         {
@@ -468,7 +474,8 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
             return false;
         }
         PropertyRecord other = (PropertyRecord) obj;
-        return nextProp == other.nextProp && prevProp == other.prevProp && Arrays.equals( blocks, other.blocks ) && entityId == other.entityId &&
+        return nextProp == other.nextProp && prevProp == other.prevProp &&
+                Arrays.equals( blocks, 0, blocksCursor, other.blocks, 0, other.blocksCursor ) && entityId == other.entityId &&
                 entityType == other.entityType;
     }
 }

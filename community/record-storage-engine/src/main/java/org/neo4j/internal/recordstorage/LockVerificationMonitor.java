@@ -19,19 +19,28 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import java.util.Objects;
 import java.util.function.LongFunction;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.hashing.HashFunction;
+import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.recordstorage.RecordAccess.LoadMonitor;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.lock.ResourceType;
@@ -43,6 +52,7 @@ import static org.neo4j.lock.ResourceTypes.NODE;
 import static org.neo4j.lock.ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
+import static org.neo4j.lock.ResourceTypes.SCHEMA_NAME;
 import static org.neo4j.util.Preconditions.checkState;
 
 public class LockVerificationMonitor implements LoadMonitor
@@ -78,6 +88,49 @@ public class LockVerificationMonitor implements LoadMonitor
         else if ( before instanceof RelationshipGroupRecord )
         {
             verifyRelationshipGroupSufficientlyLocked( (RelationshipGroupRecord) before );
+        }
+        else if ( before instanceof PropertyRecord )
+        {
+            verifyPropertySufficientlyLocked( (PropertyRecord) before );
+        }
+        else if ( before instanceof SchemaRecord )
+        {
+            verifySchemaSufficientlyLocked( (SchemaRecord) before );
+        }
+    }
+
+    private void verifySchemaSufficientlyLocked( SchemaRecord record )
+    {
+        assertRecordsEquals( record, loader::loadSchemaRecord );
+        assertSchemaLocked( locks, loader.loadSchema( record.getId() ), record );
+    }
+
+    private void verifyPropertySufficientlyLocked( PropertyRecord before )
+    {
+        assertRecordsEquals( before, id ->
+        {
+            PropertyRecord stored = loader.loadProperty( id ); //This loads without inferred data, so just move it over so we can do equality check
+            stored.setEntity( before );
+            return stored;
+        } );
+
+        if ( before.isNodeSet() )
+        {
+            if ( !txState.nodeIsAddedInThisTx( before.getNodeId() ) )
+            {
+                assertLocked( before.getNodeId(), NODE, before );
+            }
+        }
+        else if ( before.isRelSet() )
+        {
+            if ( !txState.relationshipIsAddedInThisTx( before.getRelId() ) )
+            {
+                assertLocked( before.getRelId(), RELATIONSHIP, before );
+            }
+        }
+        else if ( before.isSchemaSet() )
+        {
+            assertSchemaLocked( locks, loader.loadSchema( before.getSchemaRuleId() ), before );
         }
     }
 
@@ -163,9 +216,37 @@ public class LockVerificationMonitor implements LoadMonitor
         checkState( hasLock( locks, id, resource, type ), "%s [%s,%s] modified without %s lock, record:%s.", locks, resource, id, type, record );
     }
 
+    static void assertSchemaLocked( ResourceLocker locks, SchemaRule schemaRule, AbstractBaseRecord record )
+    {
+        if ( schemaRule instanceof IndexDescriptor && ((IndexDescriptor) schemaRule).isUnique() )
+        {
+            // These are created in an inner transaction without locks. Should be protected by the parent transaction.
+            // Current lock abstraction does not let us check if anyone (parent) has those locks so there is nothing we can check here unfortunately
+            return;
+        }
+        Objects.requireNonNull( schemaRule );
+        assertLocked( locks, schemaNameResourceId( schemaRule.getName() ), SCHEMA_NAME, EXCLUSIVE, record );
+
+        SchemaDescriptor schema = schemaRule.schema();
+        for ( long key : schema.lockingKeys() )
+        {
+            assertLocked( locks, key, schema.keyType(), EXCLUSIVE, record );
+        }
+    }
+
     private static boolean hasLock( ResourceLocker locks, long id, ResourceType resource, LockType type )
     {
         return locks.activeLocks().anyMatch( lock -> lock.resourceId() == id && lock.resourceType() == resource && lock.lockType() == type );
+    }
+
+    private static long schemaNameResourceId( String schemaName )
+    {
+        //Copy of ResourceIds.schemaNameResourceId, as that is not accessible from in here
+        final HashFunction hashFunc = HashFunction.incrementalXXH64();
+        long hash = hashFunc.initialise( 0x0123456789abcdefL );
+
+        hash = schemaName.chars().asLongStream().reduce( hash, hashFunc::update );
+        return hashFunc.finalise( hash );
     }
 
     static <RECORD extends AbstractBaseRecord> void assertRecordsEquals( RECORD before, LongFunction<RECORD> loader )
@@ -181,15 +262,16 @@ public class LockVerificationMonitor implements LoadMonitor
 
     public interface Factory
     {
-        RecordAccess.LoadMonitor create( ResourceLocker locks, ReadableTransactionState txState, NeoStores neoStores );
+        RecordAccess.LoadMonitor create( ResourceLocker locks, ReadableTransactionState txState, NeoStores neoStores, SchemaRuleAccess schemaRuleAccess );
 
         static Factory defaultFactory( Config config )
         {
             boolean enabled = config.get( GraphDatabaseInternalSettings.additional_lock_verification );
-            return enabled ? ( locks, txState, neoStores ) -> new LockVerificationMonitor( locks, txState, new NeoStoresLoader( neoStores ) ) : IGNORE;
+            return enabled ? ( locks, txState, neoStores, schemaRuleAccess ) -> new LockVerificationMonitor( locks, txState,
+                    new NeoStoresLoader( neoStores, schemaRuleAccess ) ) : IGNORE;
         };
 
-        Factory IGNORE = ( locks, txState, neoStores ) -> LoadMonitor.NULL_MONITOR;
+        Factory IGNORE = ( locks, txState, neoStores, schemaRuleAccess ) -> LoadMonitor.NULL_MONITOR;
     }
 
     public interface StoreLoader
@@ -199,15 +281,23 @@ public class LockVerificationMonitor implements LoadMonitor
         RelationshipRecord loadRelationship( long id );
 
         RelationshipGroupRecord loadRelationshipGroup( long id );
+
+        PropertyRecord loadProperty( long id );
+
+        SchemaRule loadSchema( long id );
+
+        SchemaRecord loadSchemaRecord( long id );
     }
 
     public static class NeoStoresLoader implements StoreLoader
     {
         private final NeoStores neoStores;
+        private final SchemaRuleAccess schemaRuleAccess;
 
-        public NeoStoresLoader( NeoStores neoStores )
+        public NeoStoresLoader( NeoStores neoStores, SchemaRuleAccess schemaRuleAccess )
         {
             this.neoStores = neoStores;
+            this.schemaRuleAccess = schemaRuleAccess;
         }
 
         @Override
@@ -226,6 +316,34 @@ public class LockVerificationMonitor implements LoadMonitor
         public RelationshipGroupRecord loadRelationshipGroup( long id )
         {
             return readRecord( id, neoStores.getRelationshipGroupStore() );
+        }
+
+        @Override
+        public PropertyRecord loadProperty( long id )
+        {
+            PropertyStore propertyStore = neoStores.getPropertyStore();
+            PropertyRecord record = readRecord( id, propertyStore );
+            propertyStore.ensureHeavy( record, PageCursorTracer.NULL );
+            return record;
+        }
+
+        @Override
+        public SchemaRule loadSchema( long id )
+        {
+            try
+            {
+                return schemaRuleAccess.loadSingleSchemaRule( id, PageCursorTracer.NULL );
+            }
+            catch ( MalformedSchemaRuleException e )
+            {
+                return null;
+            }
+        }
+
+        @Override
+        public SchemaRecord loadSchemaRecord( long id )
+        {
+            return readRecord( id, neoStores.getSchemaStore() );
         }
 
         private <RECORD extends AbstractBaseRecord> RECORD readRecord( long id, RecordStore<RECORD> store )

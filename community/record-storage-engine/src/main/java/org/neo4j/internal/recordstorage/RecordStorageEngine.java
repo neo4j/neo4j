@@ -370,7 +370,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get( version );
             TransactionRecordState recordState =
                     creationContext.createTransactionRecordState( integrityValidator, lastTransactionIdWhenStarted, locks, lockTracer,
-                            serialization, lockVerificationFactory.create( locks, txState, neoStores ) );
+                            serialization, lockVerificationFactory.create( locks, txState, neoStores, schemaRuleAccess ) );
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
@@ -388,7 +388,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             countsRecordState.extractCommands( commands, transactionMemoryTracker );
 
             //Verify sufficient locks
-            CommandLockVerification commandLockVerification = commandLockVerificationFactory.create( locks, txState, neoStores );
+            CommandLockVerification commandLockVerification = commandLockVerificationFactory.create( locks, txState, neoStores, schemaRuleAccess );
             commandLockVerification.verifySufficientlyLocked( commands );
         }
     }

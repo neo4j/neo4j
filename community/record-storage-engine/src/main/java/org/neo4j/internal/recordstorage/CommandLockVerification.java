@@ -27,6 +27,7 @@ import org.neo4j.internal.recordstorage.LockVerificationMonitor.NeoStoresLoader;
 import org.neo4j.internal.recordstorage.LockVerificationMonitor.StoreLoader;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.lock.ResourceType;
@@ -34,9 +35,11 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static org.neo4j.internal.recordstorage.LockVerificationMonitor.assertRecordsEquals;
+import static org.neo4j.internal.recordstorage.LockVerificationMonitor.assertSchemaLocked;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.ResourceTypes.NODE;
 import static org.neo4j.lock.ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
+import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
 import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
 
 /**
@@ -55,11 +58,11 @@ public interface CommandLockVerification
         private final ReadableTransactionState txState;
         private final StoreLoader loader;
 
-        RealChecker( ResourceLocker locks, ReadableTransactionState txState, NeoStores neoStores )
+        RealChecker( ResourceLocker locks, ReadableTransactionState txState, NeoStores neoStores, SchemaRuleAccess schemaRuleAccess )
         {
             this.locks = locks;
             this.txState = txState;
-            this.loader = new NeoStoresLoader( neoStores );
+            this.loader = new NeoStoresLoader( neoStores, schemaRuleAccess );
         }
 
         @Override
@@ -81,6 +84,46 @@ public interface CommandLockVerification
             else if ( command instanceof Command.RelationshipGroupCommand )
             {
                 verifyRelationshipGroupSufficientlyLocked( (Command.RelationshipGroupCommand) command );
+            }
+            else if ( command instanceof Command.PropertyCommand )
+            {
+                verifyPropertySufficientlyLocked( (Command.PropertyCommand) command );
+            }
+            else if ( command instanceof Command.SchemaRuleCommand )
+            {
+                verifySchemaSufficientlyLocked( (Command.SchemaRuleCommand) command );
+            }
+        }
+
+        private void verifySchemaSufficientlyLocked( Command.SchemaRuleCommand command )
+        {
+            assertSchemaLocked( locks, command.getSchemaRule(), command.before.inUse() ? command.before : command.after );
+        }
+
+        private void verifyPropertySufficientlyLocked( Command.PropertyCommand command )
+        {
+            PropertyRecord record = command.after.inUse() ? command.after : command.before;
+            if ( record.isNodeSet() )
+            {
+                if ( !txState.nodeIsAddedInThisTx( record.getNodeId() ) )
+                {
+                    assertLocked( record.getNodeId(), NODE, EXCLUSIVE, record );
+                }
+            }
+            else if ( record.isRelSet() )
+            {
+                if ( !txState.relationshipIsAddedInThisTx( record.getRelId() ) )
+                {
+                    assertLocked( record.getRelId(), RELATIONSHIP, EXCLUSIVE, record );
+                }
+            }
+            else if ( record.isSchemaSet() )
+            {
+                if ( !command.before.inUse() && command.after.inUse() )
+                {
+                    return; //Created, we can't check anything here (might be in an inner transaction)
+                }
+                assertSchemaLocked( locks, loader.loadSchema( command.getSchemaRuleId() ), record );
             }
         }
 
@@ -135,9 +178,10 @@ public interface CommandLockVerification
 
     interface Factory
     {
-        Factory IGNORE = ( locker, txState, storageReader ) -> CommandLockVerification.IGNORE;
 
-        CommandLockVerification create( ResourceLocker locker, ReadableTransactionState txState, NeoStores neoStores );
+        Factory IGNORE = ( locker, txState, storageReader, schemaRuleAccess ) -> CommandLockVerification.IGNORE;
+
+        CommandLockVerification create( ResourceLocker locker, ReadableTransactionState txState, NeoStores neoStores, SchemaRuleAccess schemaRuleAccess );
 
         class RealFactory implements Factory
         {
@@ -149,10 +193,11 @@ public interface CommandLockVerification
             }
 
             @Override
-            public CommandLockVerification create( ResourceLocker locker, ReadableTransactionState txState, NeoStores neoStores )
+            public CommandLockVerification create( ResourceLocker locker, ReadableTransactionState txState, NeoStores neoStores,
+                    SchemaRuleAccess schemaRuleAccess )
             {
                 boolean enabled = config.get( GraphDatabaseInternalSettings.additional_lock_verification );
-                return enabled ? new RealChecker( locker, txState, neoStores ) : CommandLockVerification.IGNORE;
+                return enabled ? new RealChecker( locker, txState, neoStores, schemaRuleAccess ) : CommandLockVerification.IGNORE;
             }
         }
     }
