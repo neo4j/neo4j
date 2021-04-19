@@ -26,8 +26,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.Equality;
+import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -76,7 +79,7 @@ public class InCache
     {
         private final Set<AnyValue> seen = new HashSet<>();
         private final Iterator<AnyValue> iterator;
-        private boolean seenUndefined;
+        private boolean seenUndefined; // Not valid for sequence values and maps
 
         private InCacheChecker( Iterator<AnyValue> iterator )
         {
@@ -85,36 +88,43 @@ public class InCache
 
         private Value check( AnyValue value )
         {
+            assert value != NO_VALUE;
+
             if ( seen.contains( value ) )
             {
                 return TRUE;
             }
-            else
+
+            while ( iterator.hasNext() )
             {
-                while ( iterator.hasNext() )
+                var next = iterator.next();
+                if ( next == NO_VALUE )
                 {
-                    var next = iterator.next();
-                    if ( next == NO_VALUE )
+                    seenUndefined = true;
+                }
+                else
+                {
+                    seen.add( next );
+
+                    if ( next.ternaryEquals( value ) == Equality.TRUE )
                     {
-                        seenUndefined = true;
-                    }
-                    else
-                    {
-                        seen.add( next );
-                        switch ( next.ternaryEquals( value ) )
-                        {
-                        case TRUE:
-                            return TRUE;
-                        case UNDEFINED:
-                            seenUndefined = true;
-                        case FALSE:
-                            break;
-                        default:
-                            throw new IllegalStateException( "Unknown state" );
-                        }
+                        return TRUE;
                     }
                 }
-                return seenUndefined ? NO_VALUE : FALSE;
+            }
+
+            if ( seenUndefined )
+            {
+                return NO_VALUE;
+            }
+            else if ( value instanceof SequenceValue || value instanceof MapValue )
+            {
+                var undefinedEquality = seen.stream().anyMatch( seenValue -> value.ternaryEquals( seenValue ) == Equality.UNDEFINED );
+                return undefinedEquality ? NO_VALUE : FALSE;
+            }
+            else
+            {
+                return FALSE;
             }
         }
     }
