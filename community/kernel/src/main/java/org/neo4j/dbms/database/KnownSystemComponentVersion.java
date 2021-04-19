@@ -120,9 +120,9 @@ public abstract class KnownSystemComponentVersion
     public void setVersionProperty( Transaction tx, int newVersion )
     {
         Node versionNode = findOrCreateVersionNode( tx );
-        if ( versionNode.hasProperty( componentVersionProperty ) )
+        var oldVersion = versionNode.getProperty( componentVersionProperty, null );
+        if ( oldVersion instanceof Integer )
         {
-            int oldVersion = (Integer) versionNode.getProperty( componentVersionProperty );
             log.info( String.format( "Upgrading '%s' version property from %d to %d", componentVersionProperty, oldVersion, newVersion ) );
         }
         else

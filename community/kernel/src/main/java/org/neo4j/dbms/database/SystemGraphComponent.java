@@ -107,10 +107,7 @@ public interface SystemGraphComponent
             if ( nodes.hasNext() )
             {
                 Node versionNode = nodes.next();
-                if ( versionNode.hasProperty( componentVersionProperty ) )
-                {
-                    result = (Integer) versionNode.getProperty( componentVersionProperty );
-                }
+                result = (Integer) versionNode.getProperty( componentVersionProperty, null );
             }
         }
         return result;

@@ -35,6 +35,7 @@ import org.neo4j.kernel.database.DefaultDatabaseResolver;
 
 public class CommunityDefaultDatabaseResolver extends TransactionEventListenerAdapter<Object> implements DefaultDatabaseResolver
 {
+    private static final String NAME_PROPERTY = "name";
     private final Config config;
     private final Supplier<GraphDatabaseService> systemDbSupplier;
     private GraphDatabaseService systemDb;
@@ -60,9 +61,9 @@ public class CommunityDefaultDatabaseResolver extends TransactionEventListenerAd
         try ( Transaction tx = getSystemDb().beginTx() )
         {
             Node defaultDatabaseNode = tx.findNode( Label.label( "Database" ), "default", true );
-            if ( defaultDatabaseNode != null && defaultDatabaseNode.hasProperty( "name" ) )
+            if ( defaultDatabaseNode != null )
             {
-                defaultDatabase = (String) defaultDatabaseNode.getProperty( "name" );
+                defaultDatabase = (String) defaultDatabaseNode.getProperty( NAME_PROPERTY, defaultDatabase );
             }
             tx.commit();
             cachedDefaultDatabase.set( defaultDatabase );

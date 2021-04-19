@@ -54,10 +54,7 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<Db
             if ( nodes.hasNext() )
             {
                 Node versionNode = nodes.next();
-                if ( versionNode.hasProperty( OLD_PROPERTY_NAME ) )
-                {
-                    result = (Integer) versionNode.getProperty( OLD_PROPERTY_NAME );
-                }
+                result = (Integer) versionNode.getProperty( OLD_PROPERTY_NAME, null );
             }
         }
         return result != null ? result : SystemGraphComponent.getVersionNumber( tx, componentName );
