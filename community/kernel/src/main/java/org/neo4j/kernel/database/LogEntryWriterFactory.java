@@ -19,18 +19,24 @@
  */
 package org.neo4j.kernel.database;
 
+import javax.annotation.Nullable;
+
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 
 /**
- * The LogEntryWriterFactory is responsible for picking the transaction log format version to
- * use for LogEntryWriters. The version should be the same in one complete transaction in the log
- * but should be able to be upgraded without a restart. Therefore createEntryWriter should be used
- * to get a new LogEntryWriter for each transaction.
+ * The LogEntryWriterFactory is responsible for picking the transaction log format version to use for LogEntryWriters. The version should be the same in one
+ * complete transaction in the log but should be able to be upgraded without a restart. Therefore createEntryWriter should be used to get a new LogEntryWriter
+ * for each transaction.
  */
 @FunctionalInterface
 public interface LogEntryWriterFactory
 {
     <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel );
+
+    default <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel, @Nullable KernelVersion version )
+    {
+        return version == null ? createEntryWriter( channel ) : new LogEntryWriter<>( channel, version );
+    }
 }

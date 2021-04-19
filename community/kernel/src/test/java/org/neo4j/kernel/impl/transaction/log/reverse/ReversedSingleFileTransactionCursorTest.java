@@ -281,6 +281,12 @@ class ReversedSingleFileTransactionCursorTest
         {
             return new CorruptedLogEntryWriter<>( channel, KernelVersion.LATEST );
         }
+
+        @Override
+        public <T extends WritableChecksumChannel> LogEntryWriter<T> createEntryWriter( T channel, KernelVersion version )
+        {
+            return new CorruptedLogEntryWriter<>( channel, version );
+        }
     }
 
     private static class CorruptedLogEntryWriter<T extends WritableChecksumChannel> extends LogEntryWriter<T>
