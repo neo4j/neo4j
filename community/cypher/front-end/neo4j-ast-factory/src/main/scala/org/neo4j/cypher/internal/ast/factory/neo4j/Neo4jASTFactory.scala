@@ -63,12 +63,15 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NewSyntax
+import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
 import org.neo4j.cypher.internal.ast.OldValidSyntax
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
+import org.neo4j.cypher.internal.ast.OptionsMap
+import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.ProcedureResult
@@ -129,6 +132,7 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.factory.ASTFactory
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.MergeActionType
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.StringPos
+import org.neo4j.cypher.internal.ast.factory.ParameterType
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
@@ -222,6 +226,7 @@ import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
 
 import java.lang
@@ -229,6 +234,7 @@ import java.nio.charset.StandardCharsets
 import java.util
 import java.util.stream.Collectors
 import scala.collection.JavaConverters.asScalaBufferConverter
+import scala.collection.JavaConverters.mapAsScalaMap
 import scala.util.Either
 
 class Neo4jASTFactory(query: String)
@@ -520,14 +526,22 @@ class Neo4jASTFactory(query: String)
 
   override def newVariable(p: InputPosition, name: String): Variable = Variable(name)(p)
 
-  override def newParameter(p: InputPosition, v: Variable): Parameter = Parameter(v.name, CTAny)(p)
+  override def newParameter(p: InputPosition, v: Variable, t: ParameterType): Parameter = {
+    Parameter(v.name, transformParameterType(t))(p)
+  }
 
-  override def newParameter(p: InputPosition, offset: String): Parameter = Parameter(offset, CTAny)(p)
+  override def newParameter(p: InputPosition, offset: String, t: ParameterType): Parameter = {
+    Parameter(offset, transformParameterType(t))(p)
+  }
 
-  override def newStringParameter(p: InputPosition, v: Variable): Parameter = Parameter(v.name, CTString)(p)
-
-  override def newStringParameter(p: InputPosition, offset: String): Parameter = Parameter(offset, CTString)(p)
-
+  private def transformParameterType(t: ParameterType) = {
+    t match {
+      case ParameterType.ANY => CTAny
+      case ParameterType.STRING => CTString
+      case ParameterType.MAP => CTMap
+      case _ => throw new IllegalArgumentException("unknown parameter type: " + t.toString)
+    }
+  }
   override def newSensitiveStringParameter(p: InputPosition, v: Variable): Parameter = new ExplicitParameter(v.name, CTString)(p) with SensitiveParameter
 
   override def newSensitiveStringParameter(p: InputPosition, offset: String): Parameter = new ExplicitParameter(offset, CTString)(p) with SensitiveParameter
@@ -992,8 +1006,14 @@ class Neo4jASTFactory(query: String)
                               replace: Boolean,
                               databaseName: Either[String, Parameter],
                               ifNotExists: Boolean,
-                              wait: WaitUntilComplete): CreateDatabase = {
-    CreateDatabase(databaseName, ifExistsDo(replace, ifNotExists), wait)(p)
+                              wait: WaitUntilComplete,
+                              options: Either[util.Map[String, Expression], Parameter]): CreateDatabase = {
+    val optionsAst = Option(options) match {
+      case Some(Left(map)) => OptionsMap(mapAsScalaMap(map).toMap)
+      case Some(Right(param)) => OptionsParam(param)
+      case None => NoOptions
+    }
+    CreateDatabase(databaseName, ifExistsDo(replace, ifNotExists), optionsAst, wait)(p)
   }
 
   override def dropDatabase(p:InputPosition, databaseName: Either[String, Parameter], ifExists: Boolean, dumpData: Boolean, wait: WaitUntilComplete): DropDatabase = {

@@ -327,6 +327,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     @Override
     public void beginArray( int size, ArrayType arrayType )
     {
+        assert !stack.isEmpty();
         stack.peek().nest();
         stack.push( new ListWriter( builder, quoteMark, counter ) );
     }
@@ -336,6 +337,10 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     {
         assert !stack.isEmpty();
         stack.pop().done();
+        if ( !stack.isEmpty() )
+        {
+            stack.peek().next();
+        }
     }
 
     @Override

@@ -347,6 +347,21 @@ class PrettyPrinterTest
     }
 
     @Test
+    void shouldHandleArraysInMaps()
+    {
+        // Given
+        PrettyPrinter printer = new PrettyPrinter();
+        TextArray array = Values.stringArray( "a", "b", "c" );
+        MapValue map = props( "k1", array, "k2", array );
+
+        // When
+        map.writeTo( printer );
+
+        // Then
+        assertThat( printer.value() ).isEqualTo( "{k1: [\"a\", \"b\", \"c\"], k2: [\"a\", \"b\", \"c\"]}" );
+    }
+
+    @Test
     void shouldHandleBooleans()
     {
         // Given

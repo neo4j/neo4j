@@ -1214,6 +1214,12 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "catalog create database graph.db if not exists wait" ->
       "CREATE DATABASE `graph.db` IF NOT EXISTS WAIT",
 
+    "catalog create database graph.db options {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'} wait" ->
+      "CREATE DATABASE `graph.db` OPTIONS {existingData: \"use\", existingDataSeedInstance: \"84c3ee6f-260e-47db-a4b6-589c807f2c2e\"} WAIT",
+
+    "catalog create database graph.db options $ops wait" ->
+      "CREATE DATABASE `graph.db` OPTIONS $ops WAIT",
+
     "catalog DROP database foO_Bar_42" ->
       "DROP DATABASE foO_Bar_42 DESTROY DATA",
 

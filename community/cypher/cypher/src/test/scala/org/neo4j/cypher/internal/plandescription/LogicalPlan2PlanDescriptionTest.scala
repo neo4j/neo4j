@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LookupIndexes
+import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
@@ -1332,7 +1333,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(ShowDatabase(ast.AllDatabasesScope()(pos), List("foo", "bar"), None, None), 1.0), adminPlanDescription)
 
-    assertGood(attach(CreateDatabase(privLhsLP, util.Left("db1")), 1.0), adminPlanDescription)
+    assertGood(attach(CreateDatabase(privLhsLP, util.Left("db1"), NoOptions), 1.0), adminPlanDescription)
 
     assertGood(attach(DropDatabase(privLhsLP, util.Left("db1"), DumpData), 1.0), adminPlanDescription)
 
@@ -1342,7 +1343,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(EnsureValidNonSystemDatabase(privLhsLP, util.Left("db1"), "action1"), 1.0), adminPlanDescription)
 
-    assertGood(attach(EnsureValidNumberOfDatabases(CreateDatabase(privLhsLP, util.Left("db1"))), 1.0), adminPlanDescription)
+    assertGood(attach(EnsureValidNumberOfDatabases(CreateDatabase(privLhsLP, util.Left("db1"), NoOptions)), 1.0), adminPlanDescription)
 
     assertGood(attach(LogSystemCommand(privLhsLP, "command1"), 1.0), adminPlanDescription)
 

@@ -64,10 +64,6 @@ trait SchemaCommand extends Parser
     oneOrMore(WS ~ VariablePropertyExpression, separator = CommaSep)
   }
 
-  private def options: Rule1[Map[String, Expression]] = rule {
-    keyword("OPTIONS") ~~ group(ch('{') ~~ zeroOrMore(SymbolicNameString ~~ ch(':') ~~ Expression, separator = CommaSep) ~~ ch('}')) ~~>> (l => _ => l.toMap)
-  }
-
   private def SchemaOutput: Rule1[Boolean] = rule("type of show output") {
     keyword("VERBOSE") ~~ optional(keyword("OUTPUT")) ~~~> (_ => true) |
     keyword("BRIEF") ~~ optional(keyword("OUTPUT")) ~~~> (_ => false)

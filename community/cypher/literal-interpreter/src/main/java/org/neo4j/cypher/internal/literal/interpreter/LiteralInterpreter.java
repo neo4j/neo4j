@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory.NULL;
+import org.neo4j.cypher.internal.ast.factory.ParameterType;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationValue;
@@ -440,7 +441,8 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL createDatabase( NULL p, boolean replace, Either<String,Object> databaseName, boolean ifNotExists, NULL aNull )
+    public NULL createDatabase( NULL p, boolean replace, Either<String,Object> databaseName, boolean ifNotExists, NULL aNull,
+                                Either<Map<String,Object>,Object> options )
     {
         throw new UnsupportedOperationException( "createDatabase is not a literal" );
     }
@@ -482,27 +484,15 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public Object newParameter( NULL p, Object v )
+    public Object newParameter( NULL p, Object v, ParameterType type )
     {
         throw new UnsupportedOperationException( "newParameter is not a literal" );
     }
 
     @Override
-    public Object newParameter( NULL p, String offset )
+    public Object newParameter( NULL p, String offset, ParameterType type )
     {
         throw new UnsupportedOperationException( "newParameter is not a literal" );
-    }
-
-    @Override
-    public Object newStringParameter( NULL p, Object v )
-    {
-        throw new UnsupportedOperationException( "newStringParameter is not a literal" );
-    }
-
-    @Override
-    public Object newStringParameter( NULL p, String offset )
-    {
-        throw new UnsupportedOperationException( "newStringParameter is not a literal" );
     }
 
     @Override

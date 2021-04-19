@@ -134,6 +134,7 @@ import org.neo4j.cypher.internal.ast.MergeAdminAction
 import org.neo4j.cypher.internal.ast.NamedDatabaseScope
 import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.ast.NewSyntax
+import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.NodeByIds
 import org.neo4j.cypher.internal.ast.NodeByParameter
@@ -142,6 +143,9 @@ import org.neo4j.cypher.internal.ast.NodeKeyConstraints
 import org.neo4j.cypher.internal.ast.OldValidSyntax
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
+import org.neo4j.cypher.internal.ast.Options
+import org.neo4j.cypher.internal.ast.OptionsMap
+import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.PrivilegeCommand
@@ -375,6 +379,7 @@ import org.scalacheck.Gen.some
 import org.scalacheck.util.Buildable
 
 import java.nio.charset.StandardCharsets
+import org.neo4j.cypher.internal.util.symbols.CTMap
 
 object AstGenerator {
   val OR_MORE_UPPER_BOUND = 3
@@ -522,6 +527,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     _identifier.map(Parameter(_, AnyType.instance)(pos))
 
   def _stringParameter: Gen[Parameter] = _identifier.map(Parameter(_, CTString)(pos))
+
+  def _mapParameter: Gen[Parameter] = _identifier.map(Parameter(_, CTMap)(pos))
 
   def _sensitiveStringParameter: Gen[Parameter with SensitiveParameter] =
     _identifier.map(new ExplicitParameter(_, CTString)(pos) with SensitiveParameter)
@@ -1314,6 +1321,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     finalName <- oneOf(Left(name), Right(param))
   } yield finalName
 
+  def _optionsMapAsEither: Gen[Options] = for {
+    map  <- oneOrMore(tuple(_identifier, _expression)).map(_.toMap)
+    param <- _mapParameter
+    finalMap <- oneOf(OptionsMap(map), OptionsParam(param), NoOptions)
+  } yield finalMap
+
   def _listOfNameOfEither: Gen[List[Either[String, Parameter]]] = for {
     names <- oneOrMore(_nameAsEither)
   } yield names
@@ -1607,7 +1620,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     dbName <- _nameAsEither
     ifExistsDo <- _ifExistsDo
     wait <- _waitUntilComplete
-  } yield CreateDatabase(dbName, ifExistsDo, wait)(pos)
+    options <- _optionsMapAsEither
+  } yield CreateDatabase(dbName, ifExistsDo, options, wait)(pos)
 
   def _dropDatabase: Gen[DropDatabase] = for {
     dbName <- _nameAsEither

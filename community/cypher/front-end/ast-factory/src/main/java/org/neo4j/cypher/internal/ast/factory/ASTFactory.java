@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ast.factory;
 import scala.util.Either;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Factory for constructing ASTs.
@@ -271,7 +272,12 @@ public interface ASTFactory<STATEMENT,
 
     //Database Administration Commands
 
-    ADMINISTRATION_COMMAND createDatabase( POS p, boolean replace, Either<String,PARAMETER> databaseName, boolean ifNotExists, WAIT_CLAUSE waitClause );
+    ADMINISTRATION_COMMAND createDatabase( POS p,
+                                           boolean replace,
+                                           Either<String,PARAMETER> databaseName,
+                                           boolean ifNotExists,
+                                           WAIT_CLAUSE waitClause,
+                                           Either<Map<String,EXPRESSION>,PARAMETER> options );
 
     ADMINISTRATION_COMMAND dropDatabase( POS p, Either<String,PARAMETER> databaseName, boolean ifExists, boolean dumpData, WAIT_CLAUSE wait );
 

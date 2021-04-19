@@ -840,7 +840,15 @@ sealed trait WaitableAdministrationCommand extends WriteAdministrationCommand {
   }
 }
 
-final case class CreateDatabase(dbName: Either[String, Parameter], ifExistsDo: IfExistsDo, waitUntilComplete: WaitUntilComplete)(val position: InputPosition)
+sealed trait Options
+case object NoOptions extends Options
+case class OptionsParam(parameter: Parameter) extends Options
+case class OptionsMap(map: Map[String, Expression]) extends Options
+
+final case class CreateDatabase(dbName: Either[String, Parameter],
+                                ifExistsDo: IfExistsDo,
+                                options: Options,
+                                waitUntilComplete: WaitUntilComplete)(val position: InputPosition)
   extends WaitableAdministrationCommand {
 
   override def name: String = ifExistsDo match {

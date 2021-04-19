@@ -511,6 +511,9 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
 
     assertFailure(s"CREATE OR REPLACE DATABASE $DEFAULT_DATABASE_NAME",
       s"Unsupported administration command: CREATE OR REPLACE DATABASE $DEFAULT_DATABASE_NAME")
+
+    assertFailure(s"CREATE DATABASE $DEFAULT_DATABASE_NAME OPTIONS {existingData: 'use', existingDataSeedInstance: '1'}",
+      s"Unsupported administration command: CREATE DATABASE $DEFAULT_DATABASE_NAME OPTIONS {existingData: 'use', existingDataSeedInstance: '1'}")
   }
 
   test("should fail on dropping database from community") {

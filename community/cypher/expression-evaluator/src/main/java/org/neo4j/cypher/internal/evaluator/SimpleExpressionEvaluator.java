@@ -19,8 +19,11 @@
  */
 package org.neo4j.cypher.internal.evaluator;
 
+import org.neo4j.cypher.internal.expressions.Expression;
+import org.neo4j.cypher.internal.runtime.CypherRow;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
@@ -42,6 +45,16 @@ class SimpleExpressionEvaluator implements ExpressionEvaluator
         }
 
         return cast( map( evaluator.evaluate( expression ) ), type );
+    }
+
+    @Override
+    public AnyValue evaluate( Expression expression, MapValue params ) throws EvaluationException
+    {
+        if ( expression == null )
+        {
+            throw new EvaluationException( "Cannot evaluate null as an expression " );
+        }
+        return evaluator.evaluate( expression, params, CypherRow.empty() );
     }
 
     private <T> T cast( Object value, Class<T> type ) throws EvaluationException

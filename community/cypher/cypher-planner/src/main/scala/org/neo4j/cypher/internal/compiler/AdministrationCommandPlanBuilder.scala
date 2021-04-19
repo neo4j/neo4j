@@ -379,7 +379,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.ShowDatabase(scope, sd.defaultColumnNames, sd.yields, sd.returns))
 
       // CREATE [OR REPLACE] DATABASE foo [IF NOT EXISTS]
-      case CreateDatabase(dbName, ifExistsDo, waitUntilComplete) =>
+      case CreateDatabase(dbName, ifExistsDo, options, waitUntilComplete) =>
         val source = ifExistsDo match {
           case IfExistsReplace =>
             plans.DropDatabase(plans.AssertAllowedDbmsActions(Some(plans.AssertNotBlocked(CreateDatabaseAction)), Seq(DropDatabaseAction, CreateDatabaseAction)),
@@ -391,7 +391,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
           case _ => plans.AssertAllowedDbmsActions(plans.AssertNotBlocked(CreateDatabaseAction), CreateDatabaseAction)
         }
-        Some(wrapInWait(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, dbName)), dbName, waitUntilComplete))
+        Some(wrapInWait(plans.EnsureValidNumberOfDatabases(plans.CreateDatabase(source, dbName, options)), dbName, waitUntilComplete))
 
       // DROP DATABASE foo [IF EXISTS] [DESTROY | DUMP DATA]
       case DropDatabase(dbName, ifExists, additionalAction, waitUntilComplete) =>

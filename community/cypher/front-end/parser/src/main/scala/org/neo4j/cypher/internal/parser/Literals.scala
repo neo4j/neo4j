@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.parser
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.parboiled.scala.Parser
 import org.parboiled.scala.Rule0
@@ -126,6 +127,9 @@ trait Literals extends Parser
 
   def StringParameter: Rule1[expressions.Parameter] =
     parameterName ~~>> (expressions.ExplicitParameter(_, CTString))
+
+  def MapParameter: Rule1[expressions.Parameter] =
+    parameterName ~~>> (expressions.ExplicitParameter(_, CTMap))
 
   def SensitiveStringParameter: Rule1[expressions.Parameter] =
     parameterName ~~>> (name => pos => new expressions.ExplicitParameter(name, CTString)(pos) with SensitiveParameter)

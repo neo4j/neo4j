@@ -52,7 +52,7 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
       doEvaluate(parsedExpression, MapValue.EMPTY, CypherRow.empty)
     }
 
-  def evaluate(
+  override def evaluate(
     expression: Expression,
     params: MapValue = MapValue.EMPTY,
     context: CypherRow = CypherRow.empty

@@ -95,6 +95,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherConstants.NULL
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.OF
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ON
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.OPTIONAL
+import org.neo4j.cypher.internal.parser.javacc.CypherConstants.OPTIONS
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.OR
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.ORDER
 import org.neo4j.cypher.internal.parser.javacc.CypherConstants.OUTPUT
@@ -226,6 +227,7 @@ object IdentifierTokens {
     NULL,
     OF,
     ON,
+    OPTIONS,
     OPTIONAL,
     OR,
     ORDER,

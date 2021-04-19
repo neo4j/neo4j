@@ -19,6 +19,10 @@
  */
 package org.neo4j.cypher.internal.evaluator;
 
+import org.neo4j.cypher.internal.expressions.Expression;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.MapValue;
+
 /**
  * An ExpressionEvaluator takes an arbitrary Cypher expression and evaluates it to a java value.
  */
@@ -33,4 +37,14 @@ public interface ExpressionEvaluator
      * @throws EvaluationException if the evaluation fails.
      */
     <T> T evaluate( String expression, Class<T> type ) throws EvaluationException;
+
+    /**
+     * Evaluates a Cypher expression
+     *
+     * @param expression The expression to evaluate.
+     * @param params Parameter map to use whilst evaluating
+     * @return The evaluated Cypher expression.
+     * @throws EvaluationException if the evaluation fails.
+     */
+    AnyValue evaluate( Expression expression, MapValue params ) throws EvaluationException;
 }

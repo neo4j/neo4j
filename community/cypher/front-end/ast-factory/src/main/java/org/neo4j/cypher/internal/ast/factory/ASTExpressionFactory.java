@@ -44,13 +44,9 @@ public interface ASTExpressionFactory<
 {
     VARIABLE newVariable( POS p, String name );
 
-    PARAMETER newParameter( POS p, VARIABLE v );
+    PARAMETER newParameter( POS p, VARIABLE v, ParameterType type );
 
-    PARAMETER newParameter( POS p, String offset );
-
-    PARAMETER newStringParameter( POS p, VARIABLE v );
-
-    PARAMETER newStringParameter( POS p, String offset );
+    PARAMETER newParameter( POS p, String offset, ParameterType type );
 
     PARAMETER newSensitiveStringParameter( POS p, VARIABLE v );
 

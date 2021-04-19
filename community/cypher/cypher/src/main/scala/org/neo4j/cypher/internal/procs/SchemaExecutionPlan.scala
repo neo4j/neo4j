@@ -36,7 +36,7 @@ import org.neo4j.values.virtual.MapValue
  * @param name        A name of the schema write
  * @param schemaWrite The actual schema write to perform
  */
-case class SchemaExecutionPlan(name: String, schemaWrite: QueryContext => SchemaExecutionResult, source: Option[ExecutionPlan] = None)
+case class SchemaExecutionPlan(name: String, schemaWrite: (QueryContext, MapValue) => SchemaExecutionResult, source: Option[ExecutionPlan] = None)
   extends ChainedExecutionPlan[UpdateCountingQueryContext](source) {
   override def createContext(originalCtx: QueryContext) = new UpdateCountingQueryContext(originalCtx)
   override def querySubscriber(context: UpdateCountingQueryContext, qs : QuerySubscriber): QuerySubscriber = qs
@@ -52,7 +52,7 @@ case class SchemaExecutionPlan(name: String, schemaWrite: QueryContext => Schema
 
     ctx.assertSchemaWritesAllowed()
 
-    if (schemaWrite(ctx) == SuccessResult) {
+    if (schemaWrite(ctx, params) == SuccessResult) {
       ctx.transactionalContext.close()
       val runtimeResult = SchemaRuntimeResult(ctx, subscriber)
       runtimeResult

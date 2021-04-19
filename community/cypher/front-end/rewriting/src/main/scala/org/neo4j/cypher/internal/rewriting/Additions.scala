@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.rewriting
 import org.neo4j.cypher.internal.ast.AlterUser
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
+import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
@@ -40,6 +41,8 @@ import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NewSyntax
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
+import org.neo4j.cypher.internal.ast.OptionsMap
+import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RenameRole
 import org.neo4j.cypher.internal.ast.RenameUser
@@ -221,6 +224,12 @@ object Additions {
       // CREATE LOOKUP INDEX ...
       case c: CreateLookupIndex =>
         throw cypherExceptionFactory.syntaxException("Lookup indexes are not supported in this Cypher version.", c.position)
+
+      // CREATE DATABASE OPTIONS {}
+      case c@CreateDatabase(_, _, OptionsMap(_), _) =>
+        throw cypherExceptionFactory.syntaxException("Using OPTIONS with CREATE DATABASE is not supported in this Cypher version.", c.position)
+      case c@CreateDatabase(_, _, OptionsParam(_), _) =>
+        throw cypherExceptionFactory.syntaxException("Using OPTIONS with CREATE DATABASE is not supported in this Cypher version.", c.position)
     }
   }
 
